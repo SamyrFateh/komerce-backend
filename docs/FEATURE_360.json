@@ -4443,7 +4443,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 96,
+            "count": 97,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4826,6 +4826,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/action-center.js",
+                "resolvedPath": "public/dashboards/canonical/js/action-center.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/admin-context.js",
                 "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5103,7 +5108,7 @@
             ]
           },
           "tests": {
-            "count": 42,
+            "count": 43,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5158,6 +5163,11 @@
               {
                 "declared": "tests/unit/admin-system.test.js",
                 "resolvedPath": "tests/unit/admin-system.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-action-center-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-action-center-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5318,7 +5328,7 @@
             ]
           }
         },
-        "totalFiles": 170,
+        "totalFiles": 172,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5911,24 +5921,52 @@
         "in": [
           "generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)",
           "cycle de vie du signal : acknowledge / resolve / snooze",
-          "consultation admin des signaux (routes/signals.js)"
+          "consultation admin des signaux (routes/signals.js)",
+          "Action Center Canonical : projection globale + lifecycle par signal_ref"
         ],
         "out": [
           "aucune decision metier engageante : la capability detecte, elle ne tranche aucun statut de commande, colis ou wallet",
-          "aucune UI propre : la restitution visuelle passe par dashboard (routes/admin-radar.js), qui reste une projection",
+          "aucune UI ne devient propriétaire de la donnée source : Action Center reste une projection dashboard de cette capability",
           "classement produit boutique (feature recommendations, qui reste seule proprietaire du ranking)"
         ]
       },
       "authority": null,
       "invariants": [
         "un signal est un constat derive, jamais une mutation d'une table possedee par une autre feature",
-        "acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source"
+        "acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source",
+        "open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution",
+        "aucune autorite market n'est inventee tant que signals ne porte pas un market_id canonique"
       ],
       "implementation": {
         "byCategory": {
-          "routes": {
+          "middleware": {
             "count": 1,
             "files": [
+              {
+                "declared": "middleware/require-decision-signal-global-authority.js",
+                "resolvedPath": "middleware/require-decision-signal-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/153_action_center_signal_authority.sql",
+                "resolvedPath": "migrations/153_action_center_signal_authority.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "routes/admin-action-center.js",
+                "resolvedPath": "routes/admin-action-center.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/signals.js",
                 "resolvedPath": "routes/signals.js",
@@ -5937,11 +5975,21 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "services/action-center-workspace.js",
+                "resolvedPath": "services/action-center-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/radar-queries.js",
                 "resolvedPath": "services/radar-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/signal-admin-service.js",
+                "resolvedPath": "services/signal-admin-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5952,16 +6000,46 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 9,
             "files": [
+              {
+                "declared": "tests/unit/action-center-migration-contract.test.js",
+                "resolvedPath": "tests/unit/action-center-migration-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/action-center-workspace.test.js",
+                "resolvedPath": "tests/unit/action-center-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-action-center-route.test.js",
+                "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/radar-queries.test.js",
                 "resolvedPath": "tests/unit/radar-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/require-decision-signal-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-decision-signal-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/signal-admin-service.test.js",
+                "resolvedPath": "tests/unit/signal-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/signal-service.test.js",
                 "resolvedPath": "tests/unit/signal-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/signals-error-propagation.test.js",
+                "resolvedPath": "tests/unit/signals-error-propagation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5972,7 +6050,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6016,7 +6094,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 0
+          "count": 5
         }
       },
       "businessDependencies": [

@@ -60,6 +60,7 @@ module.exports = {
     'docs/design/analyse-dashboard-pilotage.md',
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
+      'docs/contract/ACTION_CENTER_4G.md',
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
@@ -354,6 +355,7 @@ module.exports = {
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/sourcing-workspace.js',
       'dashboards/canonical/js/pricing-workspace.js',
+      'dashboards/canonical/js/action-center.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -470,6 +472,7 @@ module.exports = {
       'tests/unit/canonical-demo-order-flow.test.js',
       'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',
       'tests/unit/canonical-sourcing-workspace-boundary.test.js',
+      'tests/unit/canonical-action-center-boundary.test.js',
       'tests/unit/canonical-pricing-workspace-boundary.test.js',
       'tests/unit/finance-accounting-workspace.test.js',
       'tests/unit/admin-finance-accounting-workspace-route.test.js',

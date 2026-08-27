@@ -23,7 +23,7 @@ Source factuelle : extracteur reproductible `tools/surfaces-inventory/inventory-
 | AccountingView | A lecture seule ⚠️ | B | 4 | 0 | — | Finance/Compta WS | MERGE |
 | InvoicesView | A lecture seule ⚠️ | B | 4 | 0 | — | Finance/Compta WS | MERGE |
 | EconomicFlowView | A lecture seule ⚠️ | B | 2 | 0 | — | Pricing WS (carte éco) | MERGE |
-| SimulatorView | A lecture seule ⚠️ | B | 5 | 0 | — | Pricing WS (simulation) | MERGE |
+| SimulatorView | A lecture seule ⚠️ | B | 5 | 0 | — | Simulateur opérationnel / staging | **RECLASSIFY** |
 | HubRelaisView | **MIXTE** | B | 3 | 6 | hubMarkOrdered, hubShip, autoDistribute, relaisConfirmCash, relaisReceive, relaisCollect | Operations/Hub-Relais WS | KEEP |
 | InventoryView | **MIXTE** | B | 3 | 2 | hubInventoryScanAssign, hubInventoryProposeAll | Operations/Hub-Relais WS | MERGE |
 | TransitaireView | **MIXTE** | B | 3 | 1 | shipTransitaireParcel | Expéditions & Douane WS | MERGE |
@@ -44,7 +44,7 @@ Source factuelle : extracteur reproductible `tools/surfaces-inventory/inventory-
 
 **① 11 surfaces MIXTES (lecture + écriture) → à scinder** en un dashboard (la partie lecture) et un workspace (les actions). Confirme la doctrine : une surface qui observe *et* exécute mélange deux natures (I-2). Les plus denses côté écriture : **HubRelaisView** (6 verbes — d'où le drapeau doctrine « inventorier avant fusion ») et **SourcingScannerView** (6).
 
-**② 4 workspaces-cibles actuellement en LECTURE SEULE** — AccountingView, InvoicesView, EconomicFlowView, SimulatorView. Leur côté *exécution* n'existe pas encore dans l'UI : il est à **construire**, pas seulement à migrer (LOT 6/7/8). Généralise le constat déjà fait sur Finance (II-5b).
+**② 3 workspaces-cibles actuellement en LECTURE SEULE** — AccountingView, InvoicesView, EconomicFlowView. Leur côté *exécution* n'existe pas encore dans l'UI : il est à **construire**, pas seulement à migrer. **SimulatorView est reclassé hors Pricing** après lecture du code réel : il pilote des scénarios opérationnels de commandes (douane, relais, litiges, start/stop/cleanup) et relève du staging/opérations.
 
 **③ 2 angles morts du scanner** — PricingView, PricingWorkshopView utilisent un wrapper `fetch(path, opts)` (méthode dans une variable, non résoluble statiquement). Passe manuelle : PricingWorkshopView **écrit** (édite `cost_components` via un drawer) → workspace ; PricingView à confirmer (probablement lecture + `apply`).
 

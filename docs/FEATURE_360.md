@@ -530,12 +530,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 170 fichier(s) déclaré(s)
-  - dash : 96
+**Implementation** : 172 fichier(s) déclaré(s)
+  - dash : 97
   - migrations : 2
   - routes : 18
   - services : 12
-  - tests : 42
+  - tests : 43
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -550,18 +550,21 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)
   - cycle de vie du signal : acknowledge / resolve / snooze
   - consultation admin des signaux (routes/signals.js)
+  - Action Center Canonical : projection globale + lifecycle par signal_ref
 - _out_ :
   - aucune decision metier engageante : la capability detecte, elle ne tranche aucun statut de commande, colis ou wallet
-  - aucune UI propre : la restitution visuelle passe par dashboard (routes/admin-radar.js), qui reste une projection
+  - aucune UI ne devient propriétaire de la donnée source : Action Center reste une projection dashboard de cette capability
   - classement produit boutique (feature recommendations, qui reste seule proprietaire du ranking)
 
 **Invariants** :
 - un signal est un constat derive, jamais une mutation d'une table possedee par une autre feature
 - acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source
+- open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution
+- aucune autorite market n'est inventee tant que signals ne porte pas un market_id canonique
 
 **Owns** : `signals`
 
-**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+**Exposes** : 0 internal API(s), 5 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED)
@@ -576,10 +579,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 6 fichier(s) déclaré(s)
-  - routes : 1
-  - services : 2
-  - tests : 3
+**Implementation** : 17 fichier(s) déclaré(s)
+  - middleware : 1
+  - migrations : 1
+  - routes : 2
+  - services : 4
+  - tests : 9
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="decision-signals"]_
 
