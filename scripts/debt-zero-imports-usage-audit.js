@@ -54,15 +54,18 @@ function importsOf(file) {
   return out;
 }
 
+function parseRequiredNames(block) {
+  return block.split(',').map(x => x.trim()).filter(Boolean).map((item) => item.split(':')[0].trim()).filter(Boolean);
+}
+
 function requiresOf(file) {
   const src = fs.readFileSync(file, 'utf8');
   const out = [];
   let m;
-  const destructured = /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/gms;
-  while ((m = destructured.exec(src))) {
-    const names = m[1].split(',').map(x => x.trim()).filter(Boolean).map((item) => item.split(':')[0].trim()).filter(Boolean);
-    out.push({ names, source: m[2], kind: 'require' });
-  }
+  const declared = /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/gms;
+  while ((m = declared.exec(src))) out.push({ names: parseRequiredNames(m[1]), source: m[2], kind: 'require' });
+  const assigned = /\(\s*\{([^}]+)\}\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)\s*\)/gms;
+  while ((m = assigned.exec(src))) out.push({ names: parseRequiredNames(m[1]), source: m[2], kind: 'require-assignment' });
   return out;
 }
 
