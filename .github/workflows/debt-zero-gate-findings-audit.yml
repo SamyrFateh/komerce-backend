@@ -1,16 +1,20 @@
-name: Debt Zero Gate Findings audit
+name: Debt Zero Gate Findings closure
 
 on:
   push:
     branches:
       - ci/debt-zero-gate-findings
 
+permissions:
+  contents: write
+
 jobs:
-  audit:
+  close:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout product branch
+        uses: actions/checkout@v4
         with:
           ref: chore/debt-zero-gate-findings
           fetch-depth: 0
@@ -19,37 +23,167 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Regenerate Gate Findings for diagnosis
+      - run: npm --prefix public/boutique ci
+
+      - name: Declare the seven missing ownership edges
         run: |
-          set +e
-          node scripts/gen-gate-findings.js
-          code=$?
-          set -e
-          node <<'NODE'
-          const j = require('./docs/GATE_FINDINGS.json');
-          console.log('CONTRACT', JSON.stringify(j.contract));
-          for (const s of j.sources) {
-            if (s.status !== 'ok' || s.unprojectableCount || s.multiProjectedCount || (s.unattributedFindings || []).length) {
-              console.log('SOURCE', JSON.stringify({
-                gate: s.gate,
-                status: s.status,
-                exitCode: s.exitCode,
-                unprojectableFiles: s.unprojectableFiles,
-                multiProjectedFiles: s.multiProjectedFiles,
-                unattributedFindings: s.unattributedFindings,
-                error: s.error,
-              }));
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def add_after(path, anchor, entries):
+              p = Path(path)
+              src = p.read_text()
+              if anchor not in src:
+                  raise SystemExit(f'anchor not found in {path}: {anchor}')
+              missing = [e for e in entries if e not in src]
+              if not missing:
+                  return
+              indent = anchor[:len(anchor)-len(anchor.lstrip())]
+              block = '\n'.join(f"{indent}'{e}'," for e in missing)
+              src = src.replace(anchor, anchor + '\n' + block, 1)
+              p.write_text(src)
+
+          p = Path('features/dashboard.feature.js')
+          src = p.read_text()
+          middleware = 'middleware/require-dashboard-global-authority.js'
+          if middleware not in src:
+              anchor = "  files: {\n    services: ["
+              replacement = (
+                  "  files: {\n"
+                  "    middleware: [\n"
+                  "      'middleware/require-dashboard-global-authority.js',\n"
+                  "    ],\n"
+                  "    services: ["
+              )
+              if anchor not in src:
+                  raise SystemExit('dashboard files.services anchor not found')
+              src = src.replace(anchor, replacement, 1)
+              p.write_text(src)
+
+          add_after(
+              'features/dashboard.feature.js',
+              "      'tests/unit/partner-admin-service.test.js',",
+              ['tests/unit/require-dashboard-global-authority.test.js'],
+          )
+
+          add_after(
+              'public/boutique/features/orders-client.feature.js',
+              "      '../css/cart.css',",
+              ['../css/mobile-cart-convergence.css'],
+          )
+          add_after(
+              'public/boutique/features/orders-client.feature.js',
+              "      '../tests/unit/b-mini-cart.test.js',",
+              ['../tests/unit/mobile-cart-convergence.test.js'],
+          )
+
+          add_after(
+              'public/boutique/features/catalog.feature.js',
+              "      '../css/category-cutout-navigation-desktop.css',",
+              ['../css/mobile-catalog-convergence.css'],
+          )
+          add_after(
+              'public/boutique/features/catalog.feature.js',
+              "      '../tests/unit/products.test.js',",
+              ['../tests/unit/mobile-catalog-convergence.test.js'],
+          )
+
+          add_after(
+              'public/boutique/features/platform-ops.feature.js',
+              "      '../css/interactions.css',",
+              ['../css/mobile-shell-convergence.css'],
+          )
+          add_after(
+              'public/boutique/features/platform-ops.feature.js',
+              "      '../tests/unit/layout.test.js',",
+              ['../tests/unit/mobile-shell-convergence.test.js'],
+          )
+
+          add_after(
+              'public/boutique/features/modal-product.feature.js',
+              "      '../css/modal-cart-sku-guard.css',",
+              ['../css/modal-desktop-density.css'],
+          )
+
+          add_after(
+              'public/boutique/features/recommendations.feature.js',
+              "      '../css/modal-product-polish.css',",
+              [
+                  '../css/modal-suggestion-card-polish.css',
+                  '../css/modal-suggestion-filter.css',
+              ],
+          )
+          PY
+
+      - name: Run direct witnesses
+        run: |
+          npx jest --config jest.unit.config.js --runInBand tests/unit/require-dashboard-global-authority.test.js
+          npm --prefix public/boutique test -- \
+            tests/unit/mobile-cart-convergence.test.js \
+            tests/unit/mobile-catalog-convergence.test.js \
+            tests/unit/mobile-shell-convergence.test.js \
+            --runInBand
+
+      - name: Prove both registries have zero unresolved ownership
+        run: |
+          node scripts/feature-registry-check.js --json > /tmp/root-registry.json
+          node public/boutique/scripts/feature-registry-check.js --json > /tmp/boutique-registry.json
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const [name, file] of [['root','/tmp/root-registry.json'], ['boutique','/tmp/boutique-registry.json']]) {
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const errors = j.errors || [];
+            const warnings = j.warnings || [];
+            console.log(`${name}: errors=${errors.length} warnings=${warnings.length}`);
+            if (errors.length || warnings.length) {
+              console.error(JSON.stringify({ errors, warnings }, null, 2));
+              process.exit(1);
             }
           }
           NODE
-          echo "generator_exit=$code"
-      - name: Root registry diagnosis
+
+      - name: Regenerate and prove Gate Findings 18 of 18
         run: |
-          set +e
-          node scripts/feature-registry-check.js --json > /tmp/root.json
-          set -e
+          node scripts/gen-gate-findings.js
           node - <<'NODE'
-          const fs = require('fs');
-          const j = JSON.parse(fs.readFileSync('/tmp/root.json','utf8'));
-          console.log(JSON.stringify({ errors: j.errors, warnings: j.warnings }, null, 2));
+          const j = require('./docs/GATE_FINDINGS.json');
+          const bad = j.sources.filter(s =>
+            s.status !== 'ok' ||
+            s.unprojectableCount ||
+            s.multiProjectedCount ||
+            (s.unattributedFindings || []).length
+          );
+          console.log('contract=', JSON.stringify(j.contract));
+          console.log('bad_sources=', bad.length);
+          if (j.contract.attributableSources !== 18 || j.contract.configuredSources !== 18 || bad.length) {
+            console.error(JSON.stringify(bad, null, 2));
+            process.exit(1);
+          }
           NODE
+
+      - name: Refresh dependent governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Standard governance gates
+        run: |
+          node scripts/feature-guard.js --strict
+          npm --prefix public/boutique run feature:guard:strict
+          npm run business-graph:check
+          npm run feature:360:check
+          node scripts/code-quality-gate.js --strict
+          node scripts/contract-check.js
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/dashboard.feature.js
+          git add public/boutique/features/orders-client.feature.js public/boutique/features/catalog.feature.js public/boutique/features/platform-ops.feature.js public/boutique/features/modal-product.feature.js public/boutique/features/recommendations.feature.js
+          git add docs/GATE_FINDINGS.json docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md
+          git status --short
+          git commit -m "chore(governance): fermer la projection Gate Findings"
+          git push origin HEAD:chore/debt-zero-gate-findings
