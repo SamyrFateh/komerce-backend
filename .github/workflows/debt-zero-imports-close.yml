@@ -33,7 +33,7 @@ jobs:
         run: npm ci --prefix product/public/boutique
 
       - name: Patch and prove Debt Zero imports
-        run: python3 tooling/scripts/debt-zero-imports-close-v5.py product
+        run: python3 tooling/scripts/debt-zero-imports-close-v6.py product
 
       - name: Commit verified product branch
         working-directory: product
@@ -46,7 +46,7 @@ jobs:
                   public/boutique/js/b-modal.js \
                   public/boutique/js/b-scroll-owner.js \
                   public/boutique/js/b-utils.js \
-                  docs/GATE_FINDINGS.json docs/GATE_FINDINGS.md \
+                  docs/GATE_FINDINGS.json \
                   docs/FEATURE_360.json docs/FEATURE_360.md
           git diff --cached --check
           git commit -m "chore(boutique): close actionable import debt"
