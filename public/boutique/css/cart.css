@@ -2182,19 +2182,3 @@ body.cart-open .k-wa-fab {
   .k-confirm-actions    { gap: 6px; margin-top: 2px; }
   .k-confirm-btn        { padding: 11px 18px; font-size: .88rem; }
 }
-
-/* « Numéro changé ? · Ce n'est pas vous ? » — une seule ligne */
-.k-ck-id-btns-row {
-  display: none; /* masqué par défaut — visible via body.ck-is-me */
-  flex-direction: row;
-  align-items: center;
-  white-space: nowrap;
-}
-.k-ck-id-sep {
-  color: var(--text-muted);
-  font-size: .7rem;
-  pointer-events: none;
-}
-
-/* §3 doctrine : body.ck-is-me posé par JS — CSS gère la visibilité */
-body.ck-is-me .k-ck-id-btns-row { display: flex; }

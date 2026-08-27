@@ -105,7 +105,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 11,
+      "warningCount": 0,
       "coverageCount": 130,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -280,116 +280,6 @@
     }
   ],
   "findings": [
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "orders",
-      "file": null,
-      "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant",
-      "sourceFile": "public/boutique/css/cart.css"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "orders",
-      "file": null,
-      "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0",
-      "sourceFile": "public/boutique/css/cart.css"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "orders",
-      "file": null,
-      "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline",
-      "sourceFile": "public/boutique/js/b-checkout.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "ck-is-me                     0     0     0     ✔      ⚠ warning",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "k-order-body--recap          0     1     0     ·      ⚠ warning",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:body-classes",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
-      "file": null,
-      "message": "k-view-komerce               0     1     0     ·      ⚠ warning",
-      "sourceFile": "public/boutique/js/b-nav.js"
-    },
     {
       "gate": "check:imports",
       "scope": "boutique",

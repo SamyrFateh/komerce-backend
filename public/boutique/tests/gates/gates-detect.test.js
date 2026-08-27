@@ -118,18 +118,37 @@ describe('gate check:no-injection', () => {
 // 4. check:body-classes — classe non déclarée sur <body>
 // ══════════════════════════════════════════════════════════════════════
 describe('gate check:body-classes', () => {
-  test('état initial → exit 0', () => {
+  const TARGET = path.join(ROOT, 'js', 'anti-fouc.js');
+
+  test('état nominal → zéro warning body-class', () => {
     const r = runGate('check-body-classes.js');
+    const out = r.stdout + r.stderr;
     expect(r.code).toBe(0);
+    expect(out).toMatch(/Toutes les classes body sont correctement appairées/);
+    expect(out).not.toMatch(/\[B-2\]|\[B-3\]|Avertissements/);
   });
 
-  // Ce gate scanne les classes JS qui ajoutent sur body — pas trivial à tester
-  // sans modifier un fichier JS. On vérifie au moins qu'il passe l'état nominal.
-  // La détection complète est dans audit:ownership.
-  test('exit 0 signifie que le gate peut s\'exécuter sans erreur fatale', () => {
+  test('une variable locale nommée body ne devient jamais document.body', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, `
+{
+  const body = document.createElement('div');
+  body.classList.remove('k-local-component-state');
+}
+`);
     const r = runGate('check-body-classes.js');
-    expect(typeof r.code).toBe('number');
-    expect(r.stderr).not.toMatch(/TypeError|ReferenceError|SyntaxError/);
+    const out = r.stdout + r.stderr;
+    expect(r.code).toBe(0);
+    expect(out).not.toMatch(/k-local-component-state/);
+  });
+
+  test('un vrai document.body add sans cleanup reste bloquant B-1', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, "\ndocument.body.classList.add('k-body-gate-detect');\n");
+    const r = runGate('check-body-classes.js');
+    const out = r.stdout + r.stderr;
+    expect(r.code).toBe(1);
+    expect(out).toMatch(/\[B-1\].*k-body-gate-detect|k-body-gate-detect.*B-1/s);
   });
 });
 
