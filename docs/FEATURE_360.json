@@ -11066,7 +11066,7 @@
               {
                 "declared": "services/local-stock-service.js",
                 "resolvedPath": "services/local-stock-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
