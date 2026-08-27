@@ -9,23 +9,14 @@
  * @version       2026-08
  */
 
-.k-library-item-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 0;
-}
-
-.k-library-item-row .k-library-item {
-  flex: 1 1 22rem;
-  min-width: min(100%, 22rem);
-}
-
+/*
+ * La géométrie de .k-library-item-row appartient à shared-list-lists-tab.css.
+ * Ce fichier ne possède que l'action ajoutée par group-library-remove.js :
+ * aucun breakpoint ni second modèle de layout parallèle.
+ */
 .k-library-item-remove {
-  flex: 0 0 auto;
+  justify-self: end;
   align-self: center;
-  margin-left: auto;
   min-height: 40px;
   padding: 0 10px;
   border: 1px solid var(--red-danger-border);
