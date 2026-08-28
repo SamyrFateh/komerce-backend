@@ -431,6 +431,7 @@ describe('transitionOrderStatus() — effets annulation : wallet reversal', () =
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] }) // SELECT order
       .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: walletRows }) // SELECT wallet_applied_kmf/user_id/reference
       .mockResolvedValueOnce({ rows: itemsRows }) // SELECT order_items (stock restore)
       .mockResolvedValueOnce({ rows: [] }); // INSERT history
@@ -501,6 +502,7 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'shipped' }] }) // SELECT order
       .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-STK' }] }) // SELECT wallet
       .mockResolvedValueOnce({
         rows: [{
@@ -519,14 +521,14 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
     });
 
     expect(result.cancelEffects.stockItemsRestored).toBe(1);
-    expect(mockQuery).toHaveBeenNthCalledWith(5,
+    expect(mockQuery).toHaveBeenNthCalledWith(6,
       'UPDATE products SET stock = stock + $1 WHERE id = $2', [3, 'prod-1']
     );
-    expect(mockQuery).toHaveBeenNthCalledWith(6,
+    expect(mockQuery).toHaveBeenNthCalledWith(7,
       expect.stringContaining('UPDATE product_variants'),
       [3, 'prod-1', 'taille', 'M']
     );
-    expect(mockQuery).toHaveBeenNthCalledWith(7,
+    expect(mockQuery).toHaveBeenNthCalledWith(8,
       expect.stringContaining('UPDATE product_variants'),
       [3, 'prod-1', 'couleur', 'rouge']
     );
@@ -536,6 +538,7 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT order
       .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-PEND' }] }) // SELECT wallet
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE order_items SET shared_cart_item_id = NULL (D2)
       .mockResolvedValueOnce({ rows: [] }); // INSERT history — PAS de SELECT order_items
@@ -546,7 +549,7 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
     });
 
     expect(result.cancelEffects.stockItemsRestored).toBe(0);
-    expect(mockQuery).toHaveBeenCalledTimes(5); // SELECT, UPDATE, SELECT wallet, UPDATE claim release, INSERT history — pas de SELECT items
+    expect(mockQuery).toHaveBeenCalledTimes(6); // SELECT, UPDATE, release allocation (D2), SELECT wallet, UPDATE claim release, INSERT history — pas de SELECT items
   });
 });
 
@@ -564,6 +567,7 @@ describe('transitionOrderStatus() — effets annulation : libération du claim l
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT order
       .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-CLAIM' }] }) // SELECT wallet
       .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // UPDATE order_items SET shared_cart_item_id = NULL (D2) — 2 lignes libérées
       .mockResolvedValueOnce({ rows: [] }); // INSERT history
@@ -574,7 +578,7 @@ describe('transitionOrderStatus() — effets annulation : libération du claim l
     });
 
     expect(result.cancelEffects.sharedListClaimsReleased).toBe(2);
-    expect(mockQuery).toHaveBeenNthCalledWith(4,
+    expect(mockQuery).toHaveBeenNthCalledWith(5,
       expect.stringContaining('UPDATE order_items'),
       [mockOrder.id]
     );
@@ -584,6 +588,7 @@ describe('transitionOrderStatus() — effets annulation : libération du claim l
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-NOCLAIM' }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 })
       .mockResolvedValueOnce({ rows: [] });
@@ -605,6 +610,7 @@ describe('transitionOrderStatus() — effets annulation : libération du claim l
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-ERR' }] })
       .mockRejectedValueOnce(new Error('connection lost')) // UPDATE order_items SET shared_cart_item_id = NULL échoue
       .mockResolvedValueOnce({ rows: [] }); // INSERT history — doit quand même s'exécuter
@@ -617,10 +623,10 @@ describe('transitionOrderStatus() — effets annulation : libération du claim l
     expect(result.cancelEffects.sharedListClaimsReleased).toMatchObject({
       error: 'connection lost',
     });
-    // 5 appels attendus : SELECT, UPDATE status, SELECT wallet, UPDATE claim
-    // (échoue mais est comptée), INSERT history — l'échec n'a pas coupé la
-    // chaîne.
-    expect(mockQuery).toHaveBeenCalledTimes(5);
+    // 6 appels attendus : SELECT, UPDATE status, release allocation (D2),
+    // SELECT wallet, UPDATE claim (échoue mais est comptée), INSERT
+    // history — l'échec n'a pas coupé la chaîne.
+    expect(mockQuery).toHaveBeenCalledTimes(6);
   });
 });
 
@@ -629,6 +635,7 @@ describe('transitionOrderStatus() — effets annulation : sync purchase orders',
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-PO' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
@@ -649,6 +656,7 @@ describe('transitionOrderStatus() — effets annulation : sync purchase orders',
     mockQuery
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Vague 2 D2 : releaseAllocationsForOrder
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-POERR' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });

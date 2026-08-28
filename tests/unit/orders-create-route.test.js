@@ -236,6 +236,7 @@ describe('orders/create — résolution relais', () => {
       { rows: [orderRow()] }, // INSERT orders
       { rows: [] }, // INSERT order_status_history
       { rows: [] }, // INSERT order_items
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -281,6 +282,7 @@ describe('orders/create — recipient', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -371,6 +373,7 @@ describe('orders/create — variant_combo', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -452,6 +455,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -485,6 +489,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
       { rows: [orderRow({ total_kmf: 15000 })] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -516,6 +521,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
       { rows: [orderRow({ total_kmf: 10000 })] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -543,6 +549,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
       { rows: [orderRow({ total_kmf: 9000 })] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -620,6 +627,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -644,6 +652,7 @@ describe('orders/create — loyalty discount', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -668,6 +677,7 @@ describe('orders/create — wallet', () => {
       { rows: [] }, // INSERT order_status_history
       { rows: [] }, // UPDATE orders SET wallet_applied_kmf
       { rows: [] }, // INSERT order_items
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -697,6 +707,7 @@ describe('orders/create — wallet', () => {
       { rows: [] }, // INSERT order_status_history
       { rows: [] }, // UPDATE wallet_applied_kmf
       { rows: [] }, // INSERT order_items
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
       { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
       { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
       { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
@@ -724,6 +735,7 @@ describe('orders/create — wallet', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
       { rows: [] },
     ]);
     db.getClient.mockResolvedValue(client);
@@ -747,6 +759,7 @@ describe('orders/create — cost snapshot non-bloquant', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -766,6 +779,7 @@ describe('orders/create — share_token (fire-and-forget)', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
     db.query.mockResolvedValue({ rows: [] });
@@ -790,6 +804,7 @@ describe('orders/create — réponse nominale', () => {
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -1041,6 +1056,7 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -1067,6 +1083,7 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
       { rows: [orderRow({ pickup_code_recipient: 'organizer' })] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -1080,11 +1097,15 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     expect(res.status).toBe(201);
     const orderInsert = client.calls.find(call => /INSERT INTO orders/.test(call.sql));
     expect(orderInsert.sql).toMatch(/pickup_code_recipient_user_id/);
-    // P3 (22-08-2026) a ajouté 3 paramètres après pickup_code_recipient*
-    // (display_total_amount, display_currency, display_parity_snapshot) —
-    // ces deux valeurs ne sont plus .slice(-2), mais .slice(-5, -3).
-    // Comportement inchangé, juste un décalage d'index dans le tableau.
-    expect(orderInsert.params.slice(-5, -3)).toEqual(['organizer', 'organizer-1']);
+    // Dette préexistante corrigée (confirmée via git stash indépendante de
+    // Vague 2 D2) : le commentaire P3 (22-08-2026) documentait .slice(-5,-3)
+    // pour [pickup_code_recipient, pickupCodeRecipientUserId], mais market_id
+    // a été ajouté APRÈS comme tout dernier paramètre (routes/orders/create.js)
+    // sans que ce test soit mis à jour — 6 paramètres finaux réels
+    // (pickup_code_recipient, pickupCodeRecipientUserId, display_total_amount,
+    // display_currency, display_parity_snapshot, market_id), pas 5.
+    // .slice(-6, -4) est le bon découpage pour ces deux valeurs précises.
+    expect(orderInsert.params.slice(-6, -4)).toEqual(['organizer', 'organizer-1']);
     expect(res.body.order.pickup_code_recipient).toBe('organizer');
   });
 
@@ -1099,6 +1120,7 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -1121,6 +1143,7 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
       { rows: [orderRow()] },
       { rows: [] },
       { rows: [] },
+      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
     ]);
     db.getClient.mockResolvedValue(client);
 

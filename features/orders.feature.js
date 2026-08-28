@@ -261,6 +261,10 @@ module.exports = {
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
+      'local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, ' +
+        'consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions ' +
+        'confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; ' +
+        'services/order-status-machine.js -> services/local-stock-service.js)',
       'market (P3 — resolveDisplaySnapshot() résout le contexte marché du client ' +
         'via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)',
       'purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)',

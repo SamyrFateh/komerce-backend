@@ -48,15 +48,31 @@ function walk(dir, exts, out = []) {
   return out;
 }
 
-describe('Shadow boundary — local-stock & providers-services (Vague 1)', () => {
+describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 2 D2)', () => {
 
-  test('aucune route (routes/) ne require() les services shadow', () => {
+  // Vague 2 D2 (28-08-2026) : deux points d'intégration backend délibérés et
+  // revus — routes/orders/create.js (allocateForOrderItem, dans la même
+  // transaction que la commande) et services/order-status-machine.js
+  // (consumeAllocationsForOrder/releaseAllocationsForOrder, sur les
+  // transitions confirmed/cancelled déjà existantes). Le test ne garantit
+  // plus "zéro consommateur backend" mais "EXACTEMENT ces deux, jamais un
+  // troisième non revu" — la vraie garantie (zéro Boutique/frontend) reste
+  // inchangée dans les tests suivants.
+  const ALLOWED_LOCAL_STOCK_CONSUMERS = [
+    'routes/orders/create.js',
+    'services/order-status-machine.js',
+  ];
+
+  test('aucune route (routes/) ne require() les services shadow, sauf le point d\'intégration D2 revu', () => {
     const routeFiles = walk(path.join(ROOT, 'routes'), ['.js']);
     const offenders = [];
     for (const file of routeFiles) {
+      const rel = path.relative(ROOT, file);
       const src = fs.readFileSync(file, 'utf8');
       for (const svc of SHADOW_SERVICES) {
-        if (src.includes(svc)) offenders.push(`${path.relative(ROOT, file)} → ${svc}`);
+        if (src.includes(svc) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
+          offenders.push(`${rel} → ${svc}`);
+        }
       }
     }
     expect(offenders).toEqual([]);
@@ -125,7 +141,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1)', () =>
     expect(offenders).toEqual([]);
   });
 
-  test('services/local-stock-service.js et services/providers-service.js ne sont require() par AUCUN fichier hors tests/scripts', () => {
+  test('services/local-stock-service.js n\'est require() que par les points d\'intégration D2 revus (jamais providers-service.js, encore zéro consommateur)', () => {
     const allJs = walk(ROOT, ['.js'])
       .filter(f => !f.includes(`${path.sep}node_modules${path.sep}`))
       .filter(f => !f.includes(`${path.sep}tests${path.sep}`))
@@ -135,9 +151,14 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1)', () =>
 
     const offenders = [];
     for (const file of allJs) {
+      const rel = path.relative(ROOT, file);
       const src = fs.readFileSync(file, 'utf8');
-      if (/require\(.*local-stock-service/.test(src)) offenders.push(`${path.relative(ROOT, file)} → local-stock-service`);
-      if (/require\(.*providers-service/.test(src)) offenders.push(`${path.relative(ROOT, file)} → providers-service`);
+      if (/require\(.*local-stock-service/.test(src) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
+        offenders.push(`${rel} → local-stock-service`);
+      }
+      // providers-service.js reste à zéro consommateur backend — aucune
+      // intégration D2 n'a encore été décidée pour ce domaine.
+      if (/require\(.*providers-service/.test(src)) offenders.push(`${rel} → providers-service`);
     }
     expect(offenders).toEqual([]);
   });

@@ -4,16 +4,26 @@
  * @domain        local-stock
  * @layer         service
  * @criticality   high
- * @inputs        product_id, market_id, location, qty_physical, actor_user_id
- * @outputs       local_stock_row, availability_projection
+ * @inputs        product_id, market_id, location, qty_physical, actor_user_id,
+ *                order_id, quantity (allocations)
+ * @outputs       local_stock_row, availability_projection, allocation_row
  * @depends       db
- * @used-by       (aucun — shadow, appel direct scripts/tests dans cette PR)
- * @db-read       local_stock, products, markets
- * @db-write      local_stock
- * @db-txn        single_statement_sufficient
+ * @used-by       order-status-machine.js (consume à confirmed, release à
+ *                cancelled), routes/orders/create.js (allocate à la création)
+ * @db-read       local_stock, local_stock_allocations, products, markets
+ * @db-write      local_stock, local_stock_allocations
+ * @db-txn        multi_statement — allocateForOrderItem/consumeAllocationsForOrder/
+ *                releaseAllocationsForOrder EXIGENT le client de transaction
+ *                appelant (jamais le pool global), pour rester atomiques avec
+ *                la mutation orders qui les entoure
  * @doctrine      IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1, §4 (capacité
- *                sœur d'inventory, jamais une extension — invariants distincts)
- * @impact-areas  local-stock
+ *                sœur d'inventory, jamais une extension — invariants distincts) ;
+ *                RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I (allocation
+ *                minimale avant exposition, pas de réservation TTL complète) ;
+ *                micro-arbitrage 2026-08-28 (cycle allocate/consume/release,
+ *                pas de qty_allocated matérialisé, pas de branchement
+ *                unsold-resolution)
+ * @impact-areas  local-stock, orders
  * @version       2026-08
  */
 
@@ -21,7 +31,7 @@
 
 /**
  * ═══════════════════════════════════════════════════════════════
- * LOCAL STOCK — Vague 1 Shadow (PR A)
+ * LOCAL STOCK — Vague 1 Shadow (PR A) + Vague 2 D2
  *
  * Stock physique vendable détenu par Komerce dans un marché donné.
  * STRICTEMENT DISTINCT de :
@@ -30,15 +40,27 @@
  *     commercial.
  *   - products.stock / product_skus.stock      → stock IMPORT/NATIONAL,
  *     jamais scopé par lieu (products.stock a un défaut de 100 — largement
- *     conventionnel pour l'import, jamais une vérité physique).
+ *     conventionnel pour l'import, jamais une vérité physique). Le bloc
+ *     "5b. Auto-effects: cancelled → stock restore" d'order-status-machine.js
+ *     restaure CE stock-là (products/product_skus) — totalement indépendant
+ *     du cycle allocate/consume/release de ce fichier.
  *
  * Ce module ne lit JAMAIS products.stock ni product_skus.stock pour
  * répondre à une question de disponibilité locale. C'est l'invariant
  * central de cette feature — voir tests/unit/local-stock-service.test.js.
  *
- * SHADOW STRICT : aucune route HTTP dans cette PR, aucun consommateur
- * Boutique/checkout. Le service existe pour être observé (Pilotage,
- * scripts, tests), jamais pour être appelé par un parcours client.
+ * D2 — le SEUL point d'intégration avec orders : allocateForOrderItem()
+ * appelé depuis routes/orders/create.js (dans la même transaction que la
+ * commande), consumeAllocationsForOrder()/releaseAllocationsForOrder()
+ * appelés depuis order-status-machine.js (transitions confirmed/cancelled).
+ * Toute la LOGIQUE d'allocation reste ici — orders n'est qu'un appelant,
+ * jamais un propriétaire de cette règle métier.
+ *
+ * SHADOW toujours strict côté FRONTEND : aucune route HTTP publique dans
+ * cette PR, aucun composant Boutique, `commercial_exposure` reste DISABLED
+ * par défaut. Le service existe pour être observé (Pilotage, scripts,
+ * tests) et pour protéger le stock réel dès la première commande réelle —
+ * mais rien n'est encore visible côté client.
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -91,6 +113,14 @@ async function getLocalStock(productId, marketId, location = DEFAULT_LOCATION) {
 /**
  * Projection de disponibilité — calculée, jamais persistée.
  *
+ * Vague 2 D2 : tient compte des allocations actives (local_stock_
+ * allocations, consumed_at IS NULL AND released_at IS NULL), pas seulement
+ * qty_physical brut — sinon le badge "Disponible maintenant" mentirait dès
+ * qu'une commande en cours de paiement détient déjà la dernière unité.
+ * Micro-arbitrage validé 2026-08-28 : available = qty_physical -
+ * SUM(allocations actives), calculé à la volée, jamais qty_allocated
+ * matérialisé (pas de besoin de performance constaté à ce stade).
+ *
  * Aucune ligne locale ou qty_physical = 0 mènent au même résultat client
  * (UNAVAILABLE) : du point de vue de la promesse "disponible maintenant",
  * les deux signifient identiquement "pas d'unité physique ici". La
@@ -105,7 +135,8 @@ async function getLocalStock(productId, marketId, location = DEFAULT_LOCATION) {
 async function getAvailability(productId, marketId, location = DEFAULT_LOCATION) {
   const row = await getLocalStock(productId, marketId, location);
   if (!row) return AVAILABILITY.UNAVAILABLE;
-  return row.qty_physical > 0 ? AVAILABILITY.AVAILABLE_NOW : AVAILABILITY.UNAVAILABLE;
+  const available = row.qty_physical - await _activeAllocatedQuantity(row.id);
+  return available > 0 ? AVAILABILITY.AVAILABLE_NOW : AVAILABILITY.UNAVAILABLE;
 }
 
 /**
@@ -161,10 +192,185 @@ async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION,
   return rows[0];
 }
 
+// ── Exposition ───────────────────────────────────────────────────────────
+
+/**
+ * Même patron que isServiceExposable/isPhysicalOfferExposable
+ * (providers-service.js) : exposable seulement si l'exposition est activée
+ * ET qu'une quantité réellement disponible existe (allocations actives
+ * déduites) — un stock à exposure=ENABLED mais entièrement alloué n'est
+ * PAS exposable, exposer reviendrait à mentir.
+ *
+ * @param {string} productId
+ * @param {string} marketId
+ * @param {string} [location]
+ * @returns {Promise<boolean>}
+ */
+async function isStockExposable(productId, marketId, location = DEFAULT_LOCATION) {
+  const row = await getLocalStock(productId, marketId, location);
+  if (!row) return false;
+  if (row.commercial_exposure !== 'ENABLED') return false;
+  const available = row.qty_physical - await _activeAllocatedQuantity(row.id);
+  return available > 0;
+}
+
+// ── Cycle allocate → consume | release ──────────────────────────────────
+//
+// Micro-arbitrage validé 2026-08-28. Une allocation engage une commande sur
+// un stock local, AVANT tout paiement — c'est ce qui empêche la survente
+// dès l'instant T, quel que soit le mode de paiement (cash payé au retrait,
+// carte pouvant échouer après création de la commande). PAS de qty_allocated
+// matérialisé : la vérité active se lit toujours depuis
+// local_stock_allocations. PAS de TTL / cron dédié — le release se
+// déclenche uniquement sur un événement réel déjà émis par orders
+// (annulation, échec paiement, abandon cash), jamais une horloge inventée
+// par ce domaine. Voir migration 157 pour le détail de la doctrine.
+
+/**
+ * Somme des quantités actuellement engagées (ni consommées, ni libérées)
+ * pour un local_stock_id donné.
+ * @param {string} localStockId
+ * @param {object} [client] — client de transaction optionnel (cohérence de
+ *   lecture sous verrou dans allocateForOrderItem)
+ * @returns {Promise<number>}
+ */
+async function _activeAllocatedQuantity(localStockId, client = db) {
+  const { rows } = await client.query(
+    `SELECT COALESCE(SUM(quantity), 0)::int AS active
+       FROM local_stock_allocations
+      WHERE local_stock_id = $1 AND consumed_at IS NULL AND released_at IS NULL`,
+    [localStockId]
+  );
+  return rows[0].active;
+}
+
+/**
+ * Engage une commande sur le stock local d'un produit, à la création de la
+ * commande — avant tout paiement. No-op silencieux (retourne null) si ce
+ * produit n'a pas de ligne local_stock à ce marché/lieu : le stock local
+ * est strictement opt-in, la majorité des produits n'en ont pas.
+ *
+ * DOIT être appelé avec le client de transaction de la commande elle-même
+ * (dbClient d'orders/create.js) — le verrou FOR UPDATE posé ici tient tant
+ * que cette transaction n'est pas commit/rollback, ce qui sérialise deux
+ * allocations concurrentes sur le même produit (protection contre la
+ * survente, même esprit que les migrations 123/129 : arbitrage par la base,
+ * jamais par du code applicatif seul).
+ *
+ * @param {object} client — client de transaction (obligatoire, jamais `db` global)
+ * @param {object} params
+ * @param {string} params.productId
+ * @param {string} params.marketId
+ * @param {string} params.orderId
+ * @param {string} [params.location]
+ * @param {number} params.quantity
+ * @returns {Promise<object|null>} la ligne d'allocation créée, ou null si
+ *   ce produit n'est pas suivi en stock local à ce marché/lieu
+ */
+async function allocateForOrderItem(client, { productId, marketId, orderId, location = DEFAULT_LOCATION, quantity }) {
+  if (!client) throw new Error('allocateForOrderItem: client de transaction requis');
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error('allocateForOrderItem: quantity doit être un entier positif');
+  }
+
+  const { rows: stockRows } = await client.query(
+    `SELECT id, qty_physical FROM local_stock
+      WHERE product_id = $1 AND market_id = $2 AND location = $3
+      FOR UPDATE`,
+    [productId, marketId, location]
+  );
+  if (!stockRows.length) return null; // produit non suivi en stock local — no-op, pas une erreur
+
+  const localStock = stockRows[0];
+  const active = await _activeAllocatedQuantity(localStock.id, client);
+  const available = localStock.qty_physical - active;
+  if (available < quantity) {
+    const err = new Error(
+      `allocateForOrderItem: stock local insuffisant (disponible ${available}, demandé ${quantity})`
+    );
+    err.code = 'local_stock_insufficient';
+    throw err;
+  }
+
+  const { rows } = await client.query(
+    `INSERT INTO local_stock_allocations (local_stock_id, order_id, quantity)
+     VALUES ($1, $2, $3)
+     RETURNING id, local_stock_id, order_id, quantity, allocated_at, consumed_at, released_at`,
+    [localStock.id, orderId, quantity]
+  );
+  return rows[0];
+}
+
+/**
+ * Consomme toutes les allocations actives d'une commande — décrémente
+ * réellement qty_physical. Appelée au moment où le paiement est
+ * effectivement confirmé (point d'accroche unique : order-status-machine.js,
+ * même bloc que payment_status='paid').
+ *
+ * Idempotente par construction : la garde WHERE consumed_at IS NULL AND
+ * released_at IS NULL fait qu'un appel répété (webhook rejoué) ne trouve
+ * plus rien à consommer la deuxième fois — jamais un double décrément.
+ *
+ * @param {object} client — client de transaction
+ * @param {string} orderId
+ * @returns {Promise<number>} nombre d'allocations consommées
+ */
+async function consumeAllocationsForOrder(client, orderId) {
+  if (!client) throw new Error('consumeAllocationsForOrder: client de transaction requis');
+  const { rows: allocations } = await client.query(
+    `SELECT id, local_stock_id, quantity FROM local_stock_allocations
+      WHERE order_id = $1 AND consumed_at IS NULL AND released_at IS NULL
+      FOR UPDATE`,
+    [orderId]
+  );
+  for (const alloc of allocations) {
+    await client.query(
+      `UPDATE local_stock_allocations SET consumed_at = now()
+        WHERE id = $1 AND consumed_at IS NULL AND released_at IS NULL`,
+      [alloc.id]
+    );
+    await client.query(
+      `UPDATE local_stock SET qty_physical = qty_physical - $2, updated_at = now()
+        WHERE id = $1`,
+      [alloc.local_stock_id, alloc.quantity]
+    );
+  }
+  return allocations.length;
+}
+
+/**
+ * Libère toutes les allocations actives d'une commande — sans jamais
+ * toucher qty_physical (l'unité n'avait jamais été réellement prélevée).
+ * Appelée sur toute transition d'annulation (point d'accroche unique :
+ * order-status-machine.js, transition vers 'cancelled', quelle que soit la
+ * source — annulation utilisateur/admin, chaos simulateur, abandon cash
+ * automatique via cash-reminder-service.js : les trois passent déjà par
+ * transitionOrderStatus, un seul point suffit).
+ *
+ * Idempotente par la même garde que consumeAllocationsForOrder.
+ *
+ * @param {object} client — client de transaction
+ * @param {string} orderId
+ * @returns {Promise<number>} nombre d'allocations libérées
+ */
+async function releaseAllocationsForOrder(client, orderId) {
+  if (!client) throw new Error('releaseAllocationsForOrder: client de transaction requis');
+  const { rowCount } = await client.query(
+    `UPDATE local_stock_allocations SET released_at = now()
+      WHERE order_id = $1 AND consumed_at IS NULL AND released_at IS NULL`,
+    [orderId]
+  );
+  return rowCount;
+}
+
 module.exports = {
   AVAILABILITY,
   DEFAULT_LOCATION,
   getLocalStock,
   getAvailability,
   setLocalStock,
+  isStockExposable,
+  allocateForOrderItem,
+  consumeAllocationsForOrder,
+  releaseAllocationsForOrder,
 };
