@@ -33,6 +33,13 @@ jobs:
         run: |
           cp /tmp/debt-zero-close-specialized-360.js scripts/debt-zero-close-specialized-360.js
           cp /tmp/debt-zero-close-golive.js scripts/debt-zero-close-golive.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/debt-zero-close-golive.js')
+          text = p.read_text()
+          text = text.replace('${bypassEnvVar}=true', r'\${bypassEnvVar}=true')
+          p.write_text(text)
+          PY
           node scripts/debt-zero-close-specialized-360.js
           node scripts/debt-zero-close-golive.js
           rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js
