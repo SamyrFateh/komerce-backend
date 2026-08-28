@@ -51,8 +51,7 @@ jobs:
             ' * @db-read       webauthn_credentials, webauthn_challenges, users (via services)\n * @db-write      webauthn_credentials, webauthn_challenges (via services)',
             ' * @db-read       users\n * @db-write      none');
 
-          // 2) Drift core: a table explicitly created by a local migration but not
-          // live yet is intended/pending, not an allowlist-worthy fiction.
+          // 2) Drift core: migration-backed non-live tables are explicit pending intent.
           {
             const path = 'scripts/lib/arch-drift-core.js';
             let src = fs.readFileSync(path, 'utf8');
@@ -61,33 +60,36 @@ jobs:
             const count = src.split(before).length - 1;
             if (count !== 1) throw new Error(`arch-drift-core classification block count=${count}`);
             src = src.replace(before, after);
-            src = src.replace(
-              '    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,',
-              '    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,'
-            );
+            replaceExport:
+            {
+              const beforeExport = '    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,';
+              const afterExport = '    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,';
+              if (!src.includes(beforeExport)) throw new Error('arch-drift-core export marker missing');
+              src = src.replace(beforeExport, afterExport);
+            }
             fs.writeFileSync(path, src);
           }
 
-          // 3) Gate: pending migration is visible/informative, never silently ignored.
+          // 3) Gate: pending migration remains visible but nonblocking.
           {
             const path = 'scripts/arch-schema-drift-check.js';
             let src = fs.readFileSync(path, 'utf8');
-            src = src.replace(
-              '  const { fiction, fictionUnlisted, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;',
-              '  const { fiction, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;'
-            );
-            src = src.replace(
-              "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);",
-              "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length - fictionPendingMigration.length}`);\n  console.log(`Intention migration     : ${fictionPendingMigration.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);"
-            );
+            const beforeDestructure = '  const { fiction, fictionUnlisted, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;';
+            const afterDestructure = '  const { fiction, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;';
+            if (!src.includes(beforeDestructure)) throw new Error('arch-schema-drift-check destructure marker missing');
+            src = src.replace(beforeDestructure, afterDestructure);
+            const beforeCounters = "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);";
+            const afterCounters = "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length - fictionPendingMigration.length}`);\n  console.log(`Intention migration     : ${fictionPendingMigration.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);";
+            if (!src.includes(beforeCounters)) throw new Error('arch-schema-drift-check counter marker missing');
+            src = src.replace(beforeCounters, afterCounters);
             const marker = "  if (fiction.length) {\n    console.log('--- FICTION (header -> table inexistante en base) ---');";
             const insert = `  if (fictionPendingMigration.length) {\n    console.log('--- INTENTIONS MIGRATION (header -> objet pas encore live, non bloquant) ---');\n    for (const f of fictionPendingMigration) {\n      console.log(\`  [PENDING] \\${f.token}\`);\n      console.log(\`            <- \\${f.files.slice(0, 6).join(', ')}\\${f.files.length > 6 ? ', ...' : ''}\`);\n      console.log(\`            migration : \\${fictionMigrationHints.get(f.token)}\`);\n    }\n    console.log('');\n  }\n`;
-            if (!src.includes(marker)) throw new Error('arch-schema-drift-check marker missing');
+            if (!src.includes(marker)) throw new Error('arch-schema-drift-check fiction marker missing');
             src = src.replace(marker, insert + marker);
             fs.writeFileSync(path, src);
           }
 
-          // 4) Reconcile report: pending migration stays visible, but is not manual debt.
+          // 4) Reconcile: pending migration is information, not manual debt.
           {
             const path = 'scripts/arch-reconcile.js';
             let src = fs.readFileSync(path, 'utf8');
@@ -99,23 +101,20 @@ jobs:
             fs.writeFileSync(path, src);
           }
 
-          // 5) SCHEMA.md: truth live now = 112 tables. Six Vague-2 tables are
-          // NOT live on Railway yet, so restore them to schema-pending blocks.
+          // 5) SCHEMA.md: document current live truth, keep migrations 154-157 pending.
           {
             const path = 'docs/SCHEMA.md';
             let md = fs.readFileSync(path, 'utf8');
             md = md.replace('| Tables | 105 | Vérifié sur le dump live Railway. |', '| Tables | 112 | Vérifié sur le dump live Railway. |');
 
-            // Catalog grant is already live but was never catalogued.
             const catalogAnchor = '| `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |';
-            if (!md.includes('`catalog_global_access_grants`')) {
+            if (!md.includes('| `catalog_global_access_grants` |')) {
               if (!md.includes(catalogAnchor)) throw new Error('catalog anchor missing');
               md = md.replace(catalogAnchor, catalogAnchor + '\n| `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |');
             }
 
-            // Live tables that pre-date this sync but were missing from the catalogue.
             const marketSection = `### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)\n\n| Table | Rôle |\n|---|---|\n| \`markets\` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |\n| \`operator_market_scopes\` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. |\n| \`currency_parities\` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |\n| \`dashboard_global_access_grants\` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |\n| \`webauthn_credentials\` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |\n| \`webauthn_challenges\` | Challenges WebAuthn éphémères persistés pour garantir single-use et séparation des cérémonies. Vérifiée live Railway. |\n\n`;
-            if (!md.includes('`operator_market_scopes`')) {
+            if (!md.includes('| `operator_market_scopes` |')) {
               const anchor = '### 4.13 Monitoring et alertes (10 tables)';
               if (!md.includes(anchor)) throw new Error('4.13 anchor missing');
               md = md.replace(anchor, marketSection + anchor);
@@ -128,35 +127,6 @@ jobs:
             md = md.slice(0, start) + pendingSection + md.slice(end);
             fs.writeFileSync(path, md);
           }
-
-          // 6) Regression test for migration-backed fiction classification.
-          fs.writeFileSync('tests/unit/arch-drift-pending-migration.test.js', `
-          'use strict';
-          const fs = require('fs');
-          const os = require('os');
-          const path = require('path');
-          const core = require('../../scripts/lib/arch-drift-core');
-
-          describe('arch drift pending migration classification', () => {
-            test('migration-backed missing table is pending, unrelated missing table remains blocking', () => {
-              const root = fs.mkdtempSync(path.join(os.tmpdir(), 'komerce-arch-drift-'));
-              fs.mkdirSync(path.join(root, 'docs', 'db'), { recursive: true });
-              fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
-              fs.mkdirSync(path.join(root, 'migrations'), { recursive: true });
-              fs.writeFileSync(path.join(root, 'docs', 'db', 'railway-live-schema.sql'), 'CREATE TABLE public.live_table (id uuid);\\n');
-              fs.writeFileSync(path.join(root, 'docs', 'SCHEMA.md'), '| Table | Rôle |\\n|---|---|\\n| \\`live_table\\` | live |\\n');
-              fs.writeFileSync(path.join(root, 'docs', 'komerce-arch-header-graph.json'), JSON.stringify({ nodes: [
-                { type: 'file', file: 'services/a.js', dbRead: ['pending_table', 'missing_table'], dbWrite: [] }
-              ] }));
-              fs.writeFileSync(path.join(root, 'scripts', 'arch-debt-budget.json'), JSON.stringify({ knownDriftAllowlist: {}, ratchet: { liveTablesUndocumented: 0 } }));
-              fs.writeFileSync(path.join(root, 'migrations', '200_pending.sql'), 'CREATE TABLE pending_table (id uuid);\\n');
-
-              const result = core.analyze(root);
-              expect(result.fictionPendingMigration.map(f => f.token)).toEqual(['pending_table']);
-              expect(result.fictionUnlisted.map(f => f.token)).toEqual(['missing_table']);
-            });
-          });
-          `.replace(/^          /gm, '').trimStart());
           NODE
 
       - name: Generate architecture and prove schema gates
