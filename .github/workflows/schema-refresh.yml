@@ -1,4 +1,4 @@
-name: Refresh docs/db/railway-live-schema.sql
+name: Refresh Railway schema → SCHEMA.md
 
 # Déclenché automatiquement quand une migration est mergée sur main,
 # ou manuellement depuis l'UI GitHub.
@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   refresh:
-    name: Dump schema Railway → docs/db/ → PR
+    name: Railway → dump → SCHEMA.md → architecture → PR
     runs-on: ubuntu-latest
 
     steps:
@@ -114,6 +114,20 @@ jobs:
           echo "❌ Toutes les tentatives ont échoué (${MAX_ATTEMPTS} x ${SLEEP_SECONDS}s)."
           exit 1
 
+      # Une fois Railway effectivement à jour, fermer toute la boucle de
+      # gouvernance. schema-promote ne découvre rien arbitrairement : il ne
+      # promeut que les objets déjà déclarés schema-pending et confirmés live.
+      # arch-reconcile puis arch-gate remettent ensuite les projections et
+      # invariants d'architecture en cohérence avec la vérité DB fraîche.
+      - name: Promote SCHEMA.md + reconcile architecture
+        if: steps.snapshot.outputs.success == 'true'
+        run: |
+          npm run schema:promote:write
+          npm run arch:reconcile:write
+          npm run arch:gate
+          npm run schema:promote:check
+          git diff --check
+
       # ── Alerte visible si toutes les tentatives ont échoué ─────────────
       # Remplace le silence précédent : plutôt qu'un job rouge que personne
       # ne regarde, on ouvre (ou met à jour) une issue explicite. Recherche
@@ -180,13 +194,19 @@ jobs:
               });
             }
 
-
+      # La chaîne peut maintenant modifier le dump, SCHEMA.md et les artefacts
+      # d'architecture réconciliés. Ne surtout plus limiter la détection au
+      # seul railway-live-schema.sql, sinon SCHEMA.md pourrait rester derrière.
       - name: Check for changes
         id: diff
         run: |
-          git diff --quiet docs/db/railway-live-schema.sql \
-            && echo "changed=false" >> $GITHUB_OUTPUT \
-            || echo "changed=true" >> $GITHUB_OUTPUT
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Fichiers synchronisés :"
+            git status --short
+          fi
 
       # ── Token dédié pour la création de PR (jamais GITHUB_TOKEN ici) ────
       # PROBLÈME : une PR ouverte avec le GITHUB_TOKEN automatique d'un run
@@ -232,18 +252,23 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
-          commit-message: 'chore(schema): refresh docs/db/railway-live-schema.sql depuis Railway prod'
+          commit-message: 'chore(schema): sync Railway live schema into canonical docs'
           branch: chore/schema-refresh-auto
           delete-branch: true
-          title: '🗄️ Refresh railway-live-schema.sql (post-migration)'
+          title: '🗄️ Sync Railway schema → SCHEMA.md'
           body: |
-            Refresh automatique de `docs/db/railway-live-schema.sql` après merge d'une migration.
+            Synchronisation automatique post-migration depuis Railway prod.
 
-            Généré par `node scripts/db-snapshot.js` (pg_dump --schema-only sur Railway prod,
-            artefacts PG18 neutralisés — `\restrict`, `transaction_timeout`).
+            Chaîne exécutée :
+            `Railway → pg_dump → railway-live-schema.sql → schema-promote → arch-reconcile → arch-gate`.
+
+            `schema-promote` ne promeut que les objets préalablement déclarés
+            `schema-pending` et effectivement observés dans le dump live : la
+            documentation ne peut donc pas devancer la base.
 
             Vérifié en mode strict `node scripts/check-schema-freshness.js --all` :
-            toutes les migrations courantes doivent être présentes dans le dump.
+            toutes les migrations courantes doivent être présentes dans le dump,
+            puis `arch:gate` doit rester vert après réconciliation.
 
             Auto-merge activé — se fusionne seul dès que les checks obligatoires
             (dont `Required verdict`) passent au vert. Aucun check n'est court-circuité :
@@ -273,4 +298,4 @@ jobs:
 
       - name: No changes
         if: steps.diff.outputs.changed == 'false'
-        run: echo "ℹ️ railway-live-schema.sql déjà à jour — aucune PR créée."
+        run: echo "ℹ️ Railway, SCHEMA.md et projections d'architecture sont déjà synchronisés — aucune PR créée."
