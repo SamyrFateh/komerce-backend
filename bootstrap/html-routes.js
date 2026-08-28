@@ -225,6 +225,21 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 4N — AlertsView est remplacée par l'Action Center 4G et la
+  // vérité utile de ProblemsView a été auditée/absorbée par 4H. Aucun moteur
+  // Problems parallèle n'est recréé ; ?legacy=1 garde les témoins historiques.
+  const ACTION_CENTER_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/alerts',
+    '/admin/problems',
+  ]);
+
+  ACTION_CENTER_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/action-center');
+    });
+  });
+
   // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
   // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
@@ -233,9 +248,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/orders-logistics',
     '/admin/customs',
     '/admin/suppliers',
-    '/admin/alerts',
     '/admin/sales',
-    '/admin/problems',
     '/admin/hub-relais',
     '/admin/transitaire',
     '/admin/inventory',
