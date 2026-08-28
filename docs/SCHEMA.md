@@ -269,6 +269,17 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `business_rules_history` | Historique règles. |
 | `economic_snapshots` | Snapshots économiques. |
 
+### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2, 6 tables)
+
+| Table | Rôle |
+|---|---|
+| `local_stock` | Stock physique vendable détenu par Komerce dans un marché donné (`product_id` + `market_id` + `location`). Distinct de `products.stock`/`product_skus.stock` (import/national) et de `inventory_items` (transit hub). `commercial_exposure` (DISABLED par défaut) gouverne l'affichage du badge "Disponible maintenant" — jamais exposé sans que le cycle allocate/consume/release (ci-dessous) garantisse la promesse. Migration 154 (PR A), `commercial_exposure` ajoutée migration 157 (D2), toutes deux confirmées live. |
+| `local_stock_allocations` | Engagement d'une commande sur un `local_stock`, avant tout paiement — empêche la survente. Cycle `allocated_at` → `consumed_at` (paiement confirmé, décrémente réellement `qty_physical`) XOR `released_at` (annulation/échec, ne touche jamais `qty_physical`). Idempotent par construction (`WHERE consumed_at IS NULL AND released_at IS NULL`). Aucun `qty_allocated` matérialisé : la disponibilité active se calcule à la volée. Migration 157 (D2), confirmée live. |
+| `providers` | Le second principal payable — un tiers local (ex. artisan, prestataire) qui prépare/détient sa propre marchandise ou porte l'exécution d'un service, fixe son prix, porte le risque d'exécution. PAS une ligne `users` / PAS un `user_role` : identité vérifiée par téléphone, aucune authentification app à ce stade. Statut `pending` \| `active` \| `suspended` — seul levier de sanction disponible dans l'informel (visibilité, jamais une pénalité financière). Migration 155 (PR B), confirmée live. |
+| `services` | Prestation (travail) proposée par un `provider`. `commercial_exposure` (DISABLED par défaut) — même patron que `local_stock`. Migration 155 (PR B), confirmée live. |
+| `physical_offers` | Produit physique réellement proposé par un tiers local (ex. samboussas pour mariage) — table SŒUR de `services`, jamais la même table : le tiers prépare/détient la marchandise, fixe le prix, porte le risque d'exécution ; distinct d'une prestation de travail par le nom, pas seulement par convention. Enum de statut propre (`physical_offer_status`), jamais partagé avec `services`. Migration 156 (D1), confirmée live. |
+| `inquiries` | Une DEMANDE adressée à un provider, jamais une réservation — aucune ressource engagée avant la décision finale. Porte sur EXACTEMENT une cible (`service_id` XOR `physical_offer_id`, contrainte `inquiries_exactly_one_target` via `num_nonnulls()`) — jamais une association polymorphe `offer_type`/`offer_id` (rejetée : aucune FK Postgres réelle possible sur une cible conditionnelle). Cycle linéaire `sent` → `answered` → `accepted`\|`declined`. Migration 155 (PR B), `physical_offer_id` + contrainte ajoutés migration 156 (D1), toutes deux confirmées live. |
+
 ---
 
 ## 5. Vues critiques
