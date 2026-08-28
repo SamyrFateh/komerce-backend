@@ -37,6 +37,38 @@ replace_once(
     ' * @db-read       users\n * @db-write      none',
 )
 
+# Exact SQL under-declarations exposed after drift became clean.
+replace_once(
+    'middleware/require-market-scope.js',
+    ' * @used-by       routes admin scoping un market_id (branchement futur, hors M2)\n * @doctrine',
+    ' * @used-by       routes admin scoping un market_id (branchement futur, hors M2)\n * @db-read       operator_market_scopes\n * @db-write      none\n * @db-txn        none\n * @doctrine',
+)
+replace_once(
+    'routes/admin/orders.js',
+    ' * @db-read       order_items, orders, products, recipients, relais, users',
+    ' * @db-read       markets, order_items, orders, products, recipients, relais, users',
+)
+replace_once(
+    'server.js',
+    ' * @db-read      none',
+    ' * @db-read      currency_parities',
+)
+replace_once(
+    'services/dashboard-metrics/_helpers.js',
+    ' * @db-read       (none)',
+    ' * @db-read       cash_collections, orders, parcels',
+)
+replace_once(
+    'services/operations-workspace.js',
+    ' * @db-read       orders, order_items, parcels, parcel_items, relais, users, inventory_items',
+    ' * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items',
+)
+replace_once(
+    'services/shipping-customs-workspace.js',
+    ' * @db-read       orders, parcels, users, relais, scan_events, customs_shipments, customs_shipment_parcels',
+    ' * @db-read       orders, parcels, parcel_items, users, relais, scan_events, customs_shipments, customs_shipment_parcels',
+)
+
 # Support schema-qualified CREATE TABLE public.foo in local migration detection.
 replace_once(
     'scripts/lib/arch-drift-core.js',
