@@ -186,6 +186,10 @@ module.exports = {
       { fn: 'hasActiveAuthorization', file: 'services/pickup-authorization-service.js' },
     ],
     consumes: [
+      'orders (dépendance data cross-feature observée et gouvernée par O5)',
+      'loyalty (dépendance data cross-feature observée et gouvernée par O5)',
+      'logistics (dépendance data cross-feature observée et gouvernée par O5)',
+      'catalog (dépendance data cross-feature observée et gouvernée par O5)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, non des inversions :

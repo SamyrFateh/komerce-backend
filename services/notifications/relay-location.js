@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          notification-relay-location-formatting
+ * @domain        notification
+ * @layer         util
+ * @criticality   medium
+ * @inputs        relay_location_data, notification_message
+ * @outputs       canonical_relay_map_url, localized_notification_text
+ * @db-write      none
+ * @db-read       none
+ * @used-by       services/notifications/notification-service.js, services/notifications/order.js
+ * @doctrine      relay_location_single_formatter
+ * @impact-areas  notification, logistics, pickup
+ * @version       2026-08
+ */
 'use strict';
 
 const GOOGLE_MAPS_SEARCH_URL = 'https://www.google.com/maps/search/?api=1&query=';

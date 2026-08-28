@@ -269,7 +269,6 @@ module.exports = {
       'auth',
       'auth-identity (projection checkout boutique : identité client et téléphone)',
       'customs',
-      'dashboard',
       'documents',
       'notifications (projection idempotente du retrait disponible)',
       'refunds',

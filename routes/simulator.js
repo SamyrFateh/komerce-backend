@@ -29,11 +29,12 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
+const { requireNonProduction } = require('../middleware/require-non-production');
 const engine = require('../services/simulator/engine');
 const journal = require('../services/simulator/journal');
 const { cleanup } = require('../services/simulator/cleanup');
 
-const adminAuth = [authenticate, requireRole(['admin'])];
+const adminAuth = [authenticate, requireRole(['admin']), requireNonProduction()];
 
 // POST /start — Démarrer la simulation
 router.post('/start', ...adminAuth, async (req, res, next) => {

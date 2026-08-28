@@ -79,3 +79,4 @@ Voir `docs/chantier/STATUS.md` section A4 pour le contexte des collisions 060/06
 - COLLISION: `074` = 074_add_v4_status_values.sql, 074_invoice_public_token.sql
 - COLLISION: `119` = 119_drop_orders_pickup_code.sql, 119_economic_variables_to_finance_config.sql
 - COLLISION: `128` = 128_shared_cart_items_sellable_unit.sql, 128_shared_list_pickup_code_recipient.sql
+- COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql

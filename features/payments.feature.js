@@ -196,6 +196,7 @@ module.exports = {
     internalApi: [
     ],
     consumes: [
+      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",

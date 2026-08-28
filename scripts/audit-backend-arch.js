@@ -70,34 +70,19 @@ function rel(filePath) {
 // ALLOWLISTS — violations connues, lots de correction référencés
 // ════════════════════════════════════════════════════════════════
 
-// I-BACK-2 : fichiers > 800 lignes existants au 2026-05-17
-// Correction prévue : Lot B (extraction engines) + Lot B3/B4/B5
+// I-BACK-2 : exception de taille explicitement réauditée le 2026-08-28.
+// Les 16 anciennes entrées ont été supprimées : elles sont désormais <800 lignes
+// ou n'existent plus. scan-engine.js reste volontairement monolithique : state
+// machine de scan cohésive, testée et sans contournement de lifecycle owner.
 const ALLOWED_LARGE_FILES = new Set([
-  'routes/dashboard.js',                         // 2614 l → Lot B4
-  'routes/admin.js',                             // 1207 l → Lot B5
-  'routes/order-api-v2.js',                      // 532 l  → OK, en dessous du seuil warning
-  'routes/parcel-api-v2.js',                     // 1299 l → Lot B (legacy figé)
-  'routes/pricing.js',                           // 1316 l → Lot B3
-  'routes/pickup-secret.js',                     // 1122 l → Lot B6
-  'routes/hub-dashboard.js',                     // 1015 l → Lot B
-  'routes/admin-radar.js',                       // 894 l  → Lot B
-  'routes/scans.js',                             // 835 l  → Lot B
-  'routes/admin-dashboard.js',                   // 786 l  → Lot B
-  'routes/purchasing.js',                        // 762 l  → Lot B
-  'services/pricing-engine.js',                  // 1483 l → Lot B3 (service, acceptable)
-  'services/shared-cart-engine.js',              // 1037 l → OK si pas d'extension prévue
-  'services/collective-workspace-engine.js',     // 965 l  → OK service
-  'services/collective-payment-orchestrator.js', // 942 l  → OK service
-  'services/scan-engine.js',                     // 872 l  → OK service
-  'services/notification-service.js',            // 814 l  → OK service
-  // 'services/dashboard-metrics.js' retiré — Lot C3 clôturé 2026-06-28 :
-  // découpé en services/dashboard-metrics/{_helpers,control-tower,costing,logistics,workspaces,index}.js,
-  // aucun fragment > 800L. Voir tests/unit/dashboard-metrics.test.js (49 cas, caractérisation pré-split).
-  // 'services/cost-allocation.js' retiré — Lot C5 clôturé 2026-06-28 :
-  // découpé en services/cost-allocation/{_helpers,allocate,variance,index}.js,
-  // aucun fragment > 800L. Voir tests/unit/cost-allocation.test.js (helpers +
-  // variance) et tests/unit/cost-allocation-allocate.test.js (12 cas, les 4
-  // allocate* — caractérisation pré-split, calcul financier).
+  'services/scan-engine.js', // 935L au 2026-08-28 — KEEP_LARGE, vigilance si content verification grossit
+]);
+
+// Sous-ensemble réaudité : exception saine, pas dette à résorber. Toute future
+// entrée ajoutée à ALLOWED_LARGE_FILES reste une dette ouverte tant qu'elle
+// n'est pas explicitement revue ici.
+const REVIEWED_LARGE_FILES = new Set([
+  'services/scan-engine.js', // audit 2026-08-28 : state machine cohésive, owners respectés, KEEP_LARGE
 ]);
 
 // ════════════════════════════════════════════════════════════════
@@ -128,13 +113,6 @@ const COLUMN_OWNERSHIP = [
       'scripts/fix-schema.js',
       'scripts/reset-admin.js',
       'scripts/seed.js',
-      // ── Exception délibérée (P3-A.4, 2026-06) — PAS une dette à fermer ──
-      // refundPaypalOrder force status='refunded' depuis N'IMPORTE QUEL statut
-      // payé (seule précondition : payment_status='paid' + capture existante).
-      // order-status-machine n'autorise 'refunded' que depuis 'cancelled' :
-      // y passer bloquerait ce refund APRÈS que l'argent ait déjà été rendu.
-      // Resoumettre à revue si la précondition métier change.
-      'services/payment-paypal.js',
     ]),
     remedy: 'Passer par transitionOrderStatus() de services/order-status-machine.js',
   },
@@ -218,6 +196,11 @@ const COLUMN_OWNERSHIP = [
 // le suffixe -scanner.js reste par choix nominal, plus de dette logique.
 const ALLOWED_ENGINE_ROUTES = new Set([
   'routes/sourcing-scanner.js',  // catalogs/import extrait (2026-06-28) ; reste *-scanner.js par choix nominal
+]);
+
+// Exception nominale réauditée : la route est une façade mince, pas un engine.
+const REVIEWED_ENGINE_ROUTE_EXCEPTIONS = new Set([
+  'routes/sourcing-scanner.js',
 ]);
 
 // I-BACK-7 : console.log dans routes/ et services/

@@ -284,9 +284,30 @@ function build() {
     // fréquent), ou une chaîne "signature(args)" nue — pattern assumé pour une
     // API polymorphe qui ne mappe pas à un fichier unique (ex. refunds).
     const declaredInternalApiRaw = (manifestOk && man.contract && man.contract.internalApi) || [];
-    const declaredInternalApi = declaredInternalApiRaw.map(a =>
-      typeof a === 'string' ? { fn: a, file: null } : { fn: a.fn, file: a.file || null }
-    );
+    // Normaliser avec exactement les mêmes formes que business-graph-gen :
+    // - signature nue -> API documentée sans fichier ;
+    // - chaîne "path — description" -> chemin résolvable ;
+    // - objet {fn,file} avec plusieurs fichiers séparés par virgules ->
+    //   une entrée par fichier. Feature 360 est une projection : elle ne doit
+    //   jamais recréer une autre sémantique que le Business Feature Graph.
+    const declaredInternalApi = declaredInternalApiRaw.flatMap((entry) => {
+      if (typeof entry === 'string') {
+      const raw = entry.trim();
+      const looksLikeBareSignature = !raw.includes('/')
+        && /^[A-Za-z_$][\w$]*\([^()]*\)$/.test(raw);
+      if (looksLikeBareSignature) return [{ fn: raw, file: null }];
+      const file = raw.split(' — ')[0].trim();
+      return file ? [{ fn: null, file }] : [];
+      }
+
+    const fn = entry && entry.fn;
+    const rawFile = entry && entry.file;
+      if (!rawFile) return [{ fn: fn || null, file: null }];
+      return String(rawFile).split(',')
+        .map(file => file.trim())
+        .filter(Boolean)
+        .map(file => ({ fn: fn || null, file }));
+    });
     const resolvedInternalApiByFn = new Map();
     for (const e of (internalApiByFeature.get(id) || [])) {
       resolvedInternalApiByFn.set(`${e.fn}::${e.file}`, e.status);

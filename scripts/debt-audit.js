@@ -205,15 +205,29 @@ const auditSrc = readFile('scripts/audit-backend-arch.js')
 
 if (auditSrc) {
 
-  // I-BACK-2 : fichiers trop grands
+  // I-BACK-2 : séparer la dette historique des exceptions réauditées.
   const largeFiles = extractSet(auditSrc, 'ALLOWED_LARGE_FILES');
-  addDebt({
-    rule: 'I-BACK-2',
-    label: 'Fichiers > 800 lignes (à décomposer)',
-    lot: 'Lot B / B1-B6',
-    entries: largeFiles,
-    note: 'Extraction engines + routes volumineuses',
-  });
+  const reviewedLargeFiles = new Set(extractSet(auditSrc, 'REVIEWED_LARGE_FILES'));
+  const openLargeFiles = largeFiles.filter(file => !reviewedLargeFiles.has(file));
+  if (openLargeFiles.length > 0) {
+    addDebt({
+      rule: 'I-BACK-2',
+      label: 'Fichiers > 800 lignes (à décomposer)',
+      lot: 'Lot B / B1-B6',
+      entries: openLargeFiles,
+      note: 'Entrées grandfathered non encore réauditées',
+    });
+  }
+  const healthyLargeFiles = largeFiles.filter(file => reviewedLargeFiles.has(file));
+  if (healthyLargeFiles.length > 0) {
+    addDebt({
+      rule: 'I-BACK-2 (reviewed)',
+      label: 'Fichiers volumineux réaudités et cohésifs',
+      lot: 'Exception documentée — revue architecturale 2026-08-28',
+      entries: healthyLargeFiles,
+      note: 'Conservés grands par cohésion métier ; à revalider seulement si leur responsabilité évolue',
+    });
+  }
 
   // I-BACK-3/4/12/14 : COLUMN_OWNERSHIP — auto-découverte depuis la source
   const ruleLabels   = extractRuleLabels(auditSrc);
@@ -234,14 +248,28 @@ if (auditSrc) {
     });
   }
 
-  // I-BACK-6 : engine routes
+  // I-BACK-6 : une allowlist nominale n'est fermée que si elle a été réauditée.
   const engineRoutes = extractSet(auditSrc, 'ALLOWED_ENGINE_ROUTES');
-  addDebt({
-    rule: 'I-BACK-6',
-    label: 'Engines dans routes/ (à migrer vers services/)',
-    lot: 'Lot B1 (sourcing-engine, sourcing-scanner) + Lot B2 (economic-engine)',
-    entries: engineRoutes,
-  });
+  const reviewedEngineRoutes = new Set(extractSet(auditSrc, 'REVIEWED_ENGINE_ROUTE_EXCEPTIONS'));
+  const openEngineRoutes = engineRoutes.filter(file => !reviewedEngineRoutes.has(file));
+  if (openEngineRoutes.length > 0) {
+    addDebt({
+      rule: 'I-BACK-6',
+      label: 'Engines dans routes/ (à migrer vers services/)',
+      lot: 'Lot B1/B2',
+      entries: openEngineRoutes,
+    });
+  }
+  const nominalEngineRoutes = engineRoutes.filter(file => reviewedEngineRoutes.has(file));
+  if (nominalEngineRoutes.length > 0) {
+    addDebt({
+      rule: 'I-BACK-6 (reviewed)',
+      label: 'Routes au nom historique *-scanner, façade déjà mince',
+      lot: 'Exception documentée — dette nominale réauditée',
+      entries: nominalEngineRoutes,
+      note: 'Le suffixe historique ne correspond plus à une responsabilité engine',
+    });
+  }
 
   // I-BACK-7 : console.log baseline
   const baselineMatch = auditSrc.match(/const CONSOLE_LOG_BASELINE\s*=\s*\{([^}]*)\}/s);
@@ -340,13 +368,15 @@ if (cqSrc) {
     const totalErrors   = cqBaseline.totalErrors   || 0;
     const totalWarnings = cqBaseline.totalWarnings || 0;
     const fileCount     = Object.keys(cqBaseline.files || {}).length;
-    addDebt({
-      rule: 'N2 (baseline)',
-      label: 'Violations N2 figées dans la baseline',
-      lot: 'Correction progressive — relance npm run quality:gate pour mesurer',
-      entries: [`${totalErrors} erreur(s), ${totalWarnings} avertissement(s) dans ${fileCount} fichier(s)`],
-      note: `Baseline sauvegardée le ${cqBaseline.savedAt || '?'}`,
-    });
+    if (totalErrors > 0 || totalWarnings > 0) {
+      addDebt({
+        rule: 'N2 (baseline)',
+        label: 'Violations N2 figées dans la baseline',
+        lot: 'Correction progressive — relance npm run quality:gate pour mesurer',
+        entries: [`${totalErrors} erreur(s), ${totalWarnings} avertissement(s) dans ${fileCount} fichier(s)`],
+        note: `Baseline sauvegardée le ${cqBaseline.savedAt || '?'}`,
+      });
+    }
   }
 }
 

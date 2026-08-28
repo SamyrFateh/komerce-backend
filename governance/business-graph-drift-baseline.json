@@ -9,8 +9,7 @@
     "EXPOSED-ROUTE-OWNER-MISMATCH::ACTIONABLE_DRIFT": 0,
     "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 0,
     "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
-    "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0,
-    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 1
+    "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0
   },
   "_comment_wno_lot0_20260817": "LOT0 post-#763 certifie par PR #764 : WRITER-NOT-OWNER ACTIONABLE_DRIFT passe de 1 a 0 (cle retiree de la baseline conformement a la doctrine du ratchet) et KNOWN_DEBT passe de 25 a 14. Aucun budget de dette augmente ; toute reapparition ACTIONABLE_DRIFT redeviendra une nouvelle cle et echouera.",
   "_comment_wno_lot1_20260817": "LOT1 certifie par PR #766 : le SQL d'annulation purchase_orders est désormais porté par purchasing, lifecycle owner, et orders ne conserve qu'une frontière d'appel sans SQL direct. WRITER-NOT-OWNER::KNOWN_DEBT resserré de 14 à 13, jamais relevé.",
@@ -33,5 +32,6 @@
   "_comment_test_only_contract_truth_20260817": "6 dépendances test-only O6 NON_RUNTIME_TEST restent visibles en EXPECTED_TOPOLOGY ; 6 vrais contrats runtime sont déclarés. OBSERVED-UNDECLARED ACTIONABLE resserré 16→4, jamais relevé.",
   "_comment_decision_signals_infra_20260817": "decision-signals déclare désormais explicitement infrastructure comme dépendance technique prouvée par db.js / utils/logger.js. Baseline OBSERVED-UNDECLARED resserrée 4→3, jamais relevée.",
   "_comment_recommendations_orders_boundary_20260817": "recommendations ne dépend plus des internes b-cart.js/cart-product-summary.js : cart-public-api.js, possédé par orders-client, est la frontière publique stable. Ancienne exception O6 supprimée ; baseline resserrée 3→2, jamais relevée.",
-  "_comment_orders_shared_cart_boundary_20260817": "orders-client ne consomme plus directement group-side-cart.js/group-api.js/group-list-labels.js : deux frontières shared-cart étroites (surface + library) portent le contrat public. Exception O6 supprimée ; baseline resserrée 2→1, jamais relevée."
+  "_comment_orders_shared_cart_boundary_20260817": "orders-client ne consomme plus directement group-side-cart.js/group-api.js/group-list-labels.js : deux frontières shared-cart étroites (surface + library) portent le contrat public. Exception O6 supprimée ; baseline resserrée 2→1, jamais relevée.",
+  "_comment_debt_zero_20260828": "Debt Zero absolute : OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT est certifié à 0 et la dernière allowance historique 1 est retirée. Toute réapparition devient une nouvelle clé non budgétisée et échoue."
 }

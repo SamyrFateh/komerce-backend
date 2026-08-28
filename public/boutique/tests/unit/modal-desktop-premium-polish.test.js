@@ -15,11 +15,13 @@ const source = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const shell = source('css/modal-shell.css');
 const media = source('css/modal-media.css');
 const hybrid = source('css/modal-product-lot4-hybrid.css');
+const density = source('css/modal-desktop-density.css');
 
 describe('PDP desktop premium polish', () => {
   test('Ã©largit la coque commerciale sans casser les rÃ©gions', () => {
     expect(shell).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*296px/);
-    expect(hybrid).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(390px,\s*420px\)/);
+    expect(hybrid).toMatch(/grid-template-columns:\s*minmax\(0,\s*48%\)\s*minmax\(0,\s*52%\)/);
+    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(460px,\s*520px\)/);
     expect(hybrid).toMatch(/clamp\(24px,\s*2vw,\s*36px\)/);
   });
 
