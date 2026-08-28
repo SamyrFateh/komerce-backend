@@ -24,6 +24,7 @@
         "features/orders.feature.js",
         "features/payments.feature.js",
         "features/platform-ops.feature.js",
+        "features/providers-services.feature.js",
         "features/purchasing.feature.js",
         "features/recommendations.feature.js",
         "features/refunds.feature.js",
@@ -44,17 +45,17 @@
     }
   },
   "summary": {
-    "features": 32,
-    "healthy": 32,
+    "features": 33,
+    "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 225,
+    "businessDependencies": 227,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
     "debtItemsTotal": 0,
-    "gateHealthy": 32,
+    "gateHealthy": 33,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
@@ -10572,6 +10573,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13276,6 +13284,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -16841,6 +16856,233 @@
             "family": "COMPOSITION_ROOT_WIRING"
           }
         ]
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "providers-services",
+      "kind": "business-feature",
+      "status": "staging",
+      "manifestFile": "features/providers-services.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "providers-services",
+        "kind": "business-feature",
+        "status": "staging"
+      },
+      "service": "Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.",
+      "perimeter": {
+        "in": [
+          "table providers (identité, contact, market, statut pending|active|suspended)",
+          "table services (proposition d'un provider, exposition DISABLED par défaut)",
+          "table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation)",
+          "isServiceExposable() — le statut provider gouverne toujours l'exposition d'un service"
+        ],
+        "out": [
+          "authentification provider (pas de users / user_role — identité par téléphone, contact réel hors app à ce stade)",
+          "scheduler / créneaux structurés (requested_window/proposed_window sont du texte libre, jamais un slot — RECHALLENGE_MODELE_MINIMAL §5/§7)",
+          "paiement, commission, settlement, provider wallet (le vrai chantier — ARBITRAGE_RECHALLENGE_SONNET.md : le jour où de l'argent doit sortir vers quelqu'un qui n'est pas Komerce)",
+          "market_offer / multi-offres / ranking (aucune deuxième origine commerciale à ce stade)",
+          "prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)",
+          "toute exposition Boutique/Discovery (Vague 2)"
+        ]
+      },
+      "authority": "backend-core — tout changement du cycle demande/confirmation doit être validé par le propriétaire de providers-service.js",
+      "invariants": [
+        {
+          "statement": "un service ne peut être créé que pour un provider déjà actif",
+          "test": "tests/unit/providers-service.test.js"
+        },
+        {
+          "statement": "un service n'est exposable que si lui-même actif, exposition activée, ET son provider actif — le statut provider prime toujours",
+          "test": "tests/unit/providers-service.test.js"
+        },
+        {
+          "statement": "une inquiry ne représente jamais une ressource engagée avant la décision finale (accepted|declined) — jamais un objet réservation",
+          "test": "tests/unit/providers-service.test.js"
+        },
+        {
+          "statement": "le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined, jamais de saut d'état",
+          "test": "tests/unit/providers-service.test.js"
+        }
+      ],
+      "implementation": {
+        "byCategory": {
+          "services": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "services/providers-service.js",
+                "resolvedPath": "services/providers-service.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "tests/unit/providers-service.test.js",
+                "resolvedPath": "tests/unit/providers-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 2,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "inquiries",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "providers",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "services",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "inquiries",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "providers",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "services",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "inquiries",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "providers",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "services",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "inquiries",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "providers",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "services",
+            "mode": "RW",
+            "lifecycleOwner": "providers-services",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        }
+      ],
+      "consumedBy": [],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",

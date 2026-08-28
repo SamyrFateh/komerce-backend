@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 448
-- Files with full headers: 420
+- Scanned code files: 449
+- Files with full headers: 421
 - Files with lite headers: 28
-- Files with any headers: 448
+- Files with any headers: 449
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1013
-- Edges: 5195
-- DB tables: 123
-- Doctrines: 278
-- Impact areas: 164
-- Unresolved code edges: 528
+- Graph nodes: 1019
+- Edges: 5207
+- DB tables: 126
+- Doctrines: 279
+- Impact areas: 165
+- Unresolved code edges: 531
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
@@ -50,6 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 11
 - orders: 25
 - payment: 17
+- providers-services: 1
 - purchasing: 8
 - recommendations: 4
 - refunds: 2
@@ -81,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 111
 - route-manifest: 1
 - schema: 1
-- service: 181
+- service: 182
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -368,6 +369,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-price-audit.js — catalog-product-price-audit-boundary (catalog, high, full)
 - services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
 - services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
+- services/providers-service.js — providers-services-providers-service (providers-services, high, full)
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
@@ -507,6 +509,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/modules.js -> garment_models
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
+- WRITE services/providers-service.js -> inquiries
 - WRITE services/inventory-service.js -> inventory_items
 - WRITE routes/admin/system.js -> invoices
 - WRITE routes/documents.js -> invoices
@@ -553,7 +556,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
-- WRITE routes/orders/qr.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -732,6 +734,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (aucun — shadow -> services/local-stock-service.js ((aucun — shadow)
+- uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -739,6 +742,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
 - uses: appel direct scripts/tests dans cette PR) -> services/local-stock-service.js (appel direct scripts/tests dans cette PR))
+- uses: appel direct scripts/tests dans cette PR) -> services/providers-service.js (appel direct scripts/tests dans cette PR))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
@@ -849,8 +853,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> services/dashboard-pilotage-market (services/dashboard-pilotage-market)
 - depends: routes/admin-dashboard.js -> db.js (db.js)
 - depends: routes/admin-dashboard.js -> services/* (services/*)
-- depends: routes/admin-finance-accounting-workspace.js -> db (db)
-- depends: routes/admin-finance-accounting-workspace.js -> middleware/auth (middleware/auth)
 
 ## Files Still Without Headers Or Aggregation
 
