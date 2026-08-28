@@ -38,7 +38,6 @@ if marker not in text:
     raise SystemExit('HTML_CATALOG_CUTOVER_MARKER_MISSING')
 text = text.replace(marker, block + marker, 1)
 
-# Remove only from the Legacy route table, never from the newly inserted block.
 legacy_start = text.index("  const ADMIN_DASHBOARD_PATHS = [")
 legacy_end_marker = "  ];\n\n  ADMIN_DASHBOARD_PATHS.forEach"
 legacy_end = text.index(legacy_end_marker, legacy_start) + len("  ];")
@@ -65,8 +64,7 @@ text = text.replace(old_product_comment, new_product_comment, 1)
 html.write_text(text, encoding='utf-8')
 
 
-# 2) Unit proof — convergence + explicit rollback, while Product 360 keeps its
-# dedicated detail pathname and unrelated Legacy routes remain untouched.
+# 2) Bootstrap proof — convergence + explicit rollback.
 test_path = Path('tests/unit/bootstrap-html-routes.test.js')
 test = test_path.read_text(encoding='utf-8')
 insert_before = """    test('un second chemin admin au hasard sert bien le même index.html (pas de copier-coller cassé)', () => {
@@ -103,7 +101,71 @@ if insert_before not in test:
 test_path.write_text(test.replace(insert_before, new_tests, 1), encoding='utf-8')
 
 
-# 3) Catalog Workspace contract — record the post-proof entrypoint cutover.
+# 3) The dedicated Catalog boundary witness must now prove convergence, not the
+# pre-cutover statement that the three historical paths remain Legacy.
+boundary_path = Path('tests/unit/canonical-catalog-workspace-boundary.test.js')
+boundary = boundary_path.read_text(encoding='utf-8')
+old_boundary = """test('URL Catalogue est Canonical tandis que les trois vues historiques restent Legacy', () => {
+  const app = fakeApp();
+  mountHtmlRoutes(app, ROOT);
+
+  const canonicalRes = fakeRes();
+  app._routes['/admin/workspaces/catalog']({}, canonicalRes);
+  expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+  expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
+
+  for (const legacyPath of ['/admin/products', '/admin/categories', '/admin/catalog-approval']) {
+    const legacyRes = fakeRes();
+    app._routes[legacyPath]({}, legacyRes);
+    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  }
+});
+"""
+new_boundary = """test('URL Catalogue et anciens points d’entrée convergent vers Canonical avec rollback Legacy', () => {
+  const app = fakeApp();
+  mountHtmlRoutes(app, ROOT);
+
+  const canonicalRes = fakeRes();
+  app._routes['/admin/workspaces/catalog']({}, canonicalRes);
+  expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+  expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
+
+  for (const routePath of ['/admin/products', '/admin/categories', '/admin/catalog-approval']) {
+    const cutoverRes = fakeRes();
+    app._routes[routePath]({ query: {} }, cutoverRes);
+    expect(cutoverRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/catalog');
+    expect(cutoverRes.sendFile).not.toHaveBeenCalled();
+
+    const legacyRes = fakeRes();
+    app._routes[routePath]({ query: { legacy: '1' } }, legacyRes);
+    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(legacyRes.sendFile).toHaveBeenCalledWith(
+      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
+      expect.any(Function)
+    );
+  }
+});
+"""
+if old_boundary not in boundary:
+    raise SystemExit('CATALOG_BOUNDARY_WITNESS_ANCHOR_MISSING')
+boundary_path.write_text(boundary.replace(old_boundary, new_boundary, 1), encoding='utf-8')
+
+
+# 4) Authority witness was stale since other global-authority workspaces joined
+# Catalog in the no-AdminContext branch. Keep the invariant but stop pinning an
+# obsolete one-surface ternary string.
+authority_path = Path('tests/unit/canonical-catalog-authority-boundary.test.js')
+authority = authority_path.read_text(encoding='utf-8')
+old_assert = """  expect(source).toContain('surface === SURFACES.CATALOG_WORKSPACE ? null : await requireAdminContext()');
+"""
+new_assert = """  expect(source).toMatch(/surface === SURFACES\\.CATALOG_WORKSPACE[\\s\\S]{0,320}\\? null[\\s\\S]{0,100}: await requireAdminContext\\(\\)/);
+"""
+if old_assert not in authority:
+    raise SystemExit('CATALOG_AUTHORITY_WITNESS_ANCHOR_MISSING')
+authority_path.write_text(authority.replace(old_assert, new_assert, 1), encoding='utf-8')
+
+
+# 5) Catalog Workspace contract — record the post-proof entrypoint cutover.
 replace_once(
     'docs/contract/CATALOG_WORKSPACE_4C.md',
     """Legacy reste disponible pendant la preuve :
@@ -125,8 +187,7 @@ Sans query de rollback, ils redirigent vers `/admin/workspaces/catalog`. `?legac
 )
 
 
-# 4) Global dashboard cutover contract — add the catalogue convergence and stop
-# advertising "Catalogue" as an unreconstructed surface.
+# 6) Global cutover contract.
 cutover = Path('docs/contract/DASHBOARD_CUTOVER_2.md')
 cut = cutover.read_text(encoding='utf-8')
 marker = "## Migration additive\n\n"
@@ -156,7 +217,7 @@ cut = cut.replace('- Catalogue\n', '', 1)
 cutover.write_text(cut, encoding='utf-8')
 
 
-# 5) Canonical README — expose reduction, not a new surface.
+# 7) Canonical README.
 readme = Path('public/dashboards/canonical/README.md')
 r = readme.read_text(encoding='utf-8')
 anchor = """LOT 4J réduit aussi quatre anciens points d’entrée Pricing à une seule surface :
@@ -174,7 +235,7 @@ if anchor not in r:
 readme.write_text(r.replace(anchor, addition, 1), encoding='utf-8')
 
 
-# 6) Dedicated cutover contract.
+# 8) Dedicated cutover contract.
 Path('docs/contract/CATALOG_CUTOVER_4K.md').write_text('''# LOT 4K — Catalog entrypoint cutover
 
 ## But
@@ -202,7 +263,7 @@ La redirection est HTTP 302 pendant la fenêtre de cutover. Sur chacun de ces pa
 
 ## Preuve
 
-Le bootstrap doit prouver les trois redirections et les trois rollbacks `?legacy=1`. Les tests du Catalog Workspace, de son autorité globale et les gates Backend/Governance doivent rester verts.
+Le bootstrap et le témoin de frontière Catalogue doivent prouver les trois redirections et les trois rollbacks `?legacy=1`. Le témoin d’autorité doit prouver que Catalogue reste dans le groupe des Workspaces globaux indépendants de Dashboard AdminContext. Les tests du Catalog Workspace et les gates Backend/Governance doivent rester verts.
 ''', encoding='utf-8')
 
 print('CATALOG_CUTOVER_4K_APPLIED')
