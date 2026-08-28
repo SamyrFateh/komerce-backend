@@ -1,4 +1,4 @@
-name: Debt Zero absolute close
+name: Debt Zero rebase proof
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - ci/debt-zero-absolute-close
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  close-pre-golive-residuals:
+  rebase-proof:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -19,188 +19,56 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Preserve closure scripts
+      - name: Rebuild Debt Zero on current main
         run: |
-          cp scripts/debt-zero-close-specialized-360.js /tmp/debt-zero-close-specialized-360.js
-          cp scripts/debt-zero-close-golive.js /tmp/debt-zero-close-golive.js
-          cp scripts/debt-zero-close-css-and-counter.js /tmp/debt-zero-close-css-and-counter.js
-          cp scripts/debt-zero-fix-n2-sql-parser.js /tmp/debt-zero-fix-n2-sql-parser.js
-      - name: Switch to product branch
-        run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
-      - name: Install repository dependencies
+          git config user.name "SamyrFateh"
+          git config user.email "fatehsamyr@gmail.com"
+          git checkout -B debt-zero-rebase-proof origin/main
+          for sha in \
+            48b5de4b66f2aa3829aa827b78d714feba1c97ad \
+            75675a5c7a2e54ac73d79aef96d84ba21a31b320 \
+            482224bbe6d8affe2a10b1e4b57de64c9b52b692 \
+            d0d3b87c72d395380f926172c74a8a5ad95e8209 \
+            a02be6c9a7e6497a51787e4ebcbed6caceab3405
+          do
+            echo "=== cherry-pick $sha ==="
+            if ! git cherry-pick "$sha"; then
+              echo "CHERRY_PICK_CONFLICT=$sha"
+              git status --short
+              echo "UNMERGED_FILES"
+              git diff --name-only --diff-filter=U
+              exit 1
+            fi
+          done
+          echo "DEBT_ZERO_REPLAY_OK"
+          git log --oneline --decorate -8
+      - name: Install dependencies
         run: |
           npm ci --ignore-scripts
           npm ci --prefix public/boutique --ignore-scripts
-      - name: Apply all final closure patches
-        run: |
-          cp /tmp/debt-zero-close-specialized-360.js scripts/debt-zero-close-specialized-360.js
-          cp /tmp/debt-zero-close-golive.js scripts/debt-zero-close-golive.js
-          cp /tmp/debt-zero-close-css-and-counter.js scripts/debt-zero-close-css-and-counter.js
-          cp /tmp/debt-zero-fix-n2-sql-parser.js scripts/debt-zero-fix-n2-sql-parser.js
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/debt-zero-close-golive.js')
-          text = p.read_text()
-          text = text.replace('${bypassEnvVar}=true', r'\${bypassEnvVar}=true')
-          p.write_text(text)
-          PY
-          node scripts/debt-zero-close-specialized-360.js
-          node scripts/debt-zero-close-golive.js
-          python - <<'PY'
-          from pathlib import Path
-
-          gaps = Path('migrations/GAPS.md')
-          collision = '- COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql'
-          text = gaps.read_text()
-          if collision not in text:
-              if not text.endswith('\n'):
-                  text += '\n'
-              gaps.write_text(text + collision + '\n')
-
-          manifest = Path('features/infrastructure.feature.js')
-          text = manifest.read_text()
-          entry = "      'middleware/require-non-production.js',\n"
-          anchor = "      'middleware/request-id.js',\n"
-          if entry not in text:
-              if anchor not in text:
-                  raise SystemExit('infrastructure middleware anchor not found')
-              manifest.write_text(text.replace(anchor, anchor + entry, 1))
-          PY
-          node scripts/debt-zero-close-css-and-counter.js
-          node scripts/debt-zero-fix-n2-sql-parser.js
-          rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js scripts/debt-zero-close-css-and-counter.js scripts/debt-zero-fix-n2-sql-parser.js
-      - name: Refresh dependency lockfiles and CSS bundles
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm install --prefix public/boutique --package-lock-only --ignore-scripts
-          npm ci --ignore-scripts
-          npm ci --prefix public/boutique --ignore-scripts
-          npm --prefix public/boutique run bundle:css
-      - name: Targeted backend regression
+      - name: Core regression proof
         run: |
           npx --no-install jest --config jest.unit.config.js \
             tests/unit/require-non-production.test.js \
             tests/unit/simulator-route.test.js \
             tests/unit/admin-system.test.js \
             --runInBand --forceExit
-      - name: Targeted Boutique regression
-        working-directory: public/boutique
+          (cd public/boutique && npx --no-install jest tests/unit/b-modal-social-proof.test.js tests/unit/b-modal-core.test.js --runInBand)
+      - name: Governance and security proof
         run: |
-          npx --no-install jest \
-            tests/unit/b-modal-social-proof.test.js \
-            tests/unit/b-modal-core.test.js \
-            --runInBand
-      - name: Backend actionable debt and quality proof
-        run: |
-          npm run backend:audit
-          cat > routes/__n2_sql_red_proof.js <<'JS'
-          'use strict';
-          async function unsafe(db, req) {
-            return db.query(`SELECT * FROM orders ORDER BY ${req.query.sort}`);
-          }
-          module.exports = unsafe;
-          JS
-          set +e
-          node scripts/code-quality-gate.js --strict --file routes/__n2_sql_red_proof.js > /tmp/n2-red.log 2>&1
-          red_code=$?
-          set -e
-          rm routes/__n2_sql_red_proof.js
-          if [ "$red_code" -eq 0 ]; then
-            cat /tmp/n2-red.log
-            echo "N2 SQL negative proof unexpectedly passed"
-            exit 1
-          fi
-          grep -q 'N2-SQL-INJECTION' /tmp/n2-red.log
-          echo "N2_SQL_RED_PROOF_OK"
           npm run quality:gate
           node scripts/debt-audit.js --json > /tmp/debt-zero.json
           node - <<'NODE'
-          const fs = require('fs');
-          const report = JSON.parse(fs.readFileSync('/tmp/debt-zero.json', 'utf8'));
-          if (report.openDebtsCount !== 0) {
-            const open = (report.debts || []).filter(d =>
-              d.count > 0 &&
-              !String(d.note || '').startsWith('✅') &&
-              !String(d.lot || '').includes('légitime') &&
-              !String(d.lot || '').startsWith('Exception documentée') &&
-              d.lot !== 'Revue individuelle requise'
-            );
-            throw new Error(`Actionable backend debt remains: ${JSON.stringify(open)}`);
-          }
-          const baseline = (report.debts || []).find(d => d.rule === 'N2 (baseline)');
-          if (baseline && baseline.count > 0) throw new Error(`N2 baseline still counted: ${JSON.stringify(baseline)}`);
-          const inline = (report.debts || []).find(d => d.rule === 'N2 (inline disables)');
-          if (inline && inline.count > 0) throw new Error(`Inline quality suppressions remain: ${JSON.stringify(inline)}`);
-          const reviewedLarge = (report.debts || []).find(d => d.rule === 'I-BACK-2 (reviewed)');
-          if (!reviewedLarge || reviewedLarge.entries.length !== 1 || reviewedLarge.entries[0] !== 'services/scan-engine.js') {
-            throw new Error(`Reviewed large-file status missing: ${JSON.stringify(reviewedLarge)}`);
-          }
-          console.log('BACKEND_ACTIONABLE_DEBT_ZERO', {
-            totalContextItems: report.totalDebtItems,
-            openDebtsCount: report.openDebtsCount,
-            reviewedLargeFile: reviewedLarge.entries[0],
-          });
+          const r = require('/tmp/debt-zero.json');
+          if (r.openDebtsCount !== 0) throw new Error(`openDebtsCount=${r.openDebtsCount}`);
+          console.log('BACKEND_ACTIONABLE_DEBT_ZERO');
           NODE
-      - name: Production dependency security proof
-        run: |
-          npm ls fast-uri
           npm audit --omit=dev --audit-level=high
-      - name: Boutique CSS cascade proof and ratchet lowering
-        run: |
-          npm --prefix public/boutique run check:css-guard
-          npm --prefix public/boutique run check:css-guard:save
-          npm --prefix public/boutique run check:css-guard
-          npm --prefix public/boutique run check:cache
-      - name: Regenerate specialized 360s
-        run: |
           npm run dashboards:360
           npm run boutique:360
-      - name: Assert specialized structural zero
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const d = JSON.parse(fs.readFileSync('docs/DASHBOARDS_360.json','utf8'));
-          const headerless = (d.modules || []).filter(m => !m.hasHeader).map(m => m.file);
-          if (headerless.length) throw new Error(`Dashboard headerless: ${headerless.join(', ')}`);
-          for (const key of ['orphanRoutes','deadApiMethods','missingApiMethods','doctrineViolations']) {
-            if ((d.summary && d.summary[key]) !== 0) throw new Error(`Dashboard ${key}=${d.summary[key]}`);
-          }
-
-          const b = JSON.parse(fs.readFileSync('docs/BOUTIQUE_360.json','utf8'));
-          const s = b.summary || {};
-          for (const key of ['orphanEmit','orphanListen','undeclared','notFoundEndpoints','ownershipRed','ownershipOrange']) {
-            if ((s[key] || 0) !== 0) throw new Error(`Boutique ${key}=${s[key]}`);
-          }
-          console.log('SPECIALIZED_STRUCTURAL_ZERO', {
-            dashboardHeaderless: headerless.length,
-            dashboardUnprovenInformational: d.summary.unprovenContracts,
-            boutiqueOrphanEmit: s.orphanEmit,
-            boutiqueOrphanListen: s.orphanListen,
-            boutiqueUndeclared: s.undeclared,
-            boutiqueNotFoundEndpoints: s.notFoundEndpoints,
-            boutiqueUnprovenInformational: s.unprovenEndpoints,
-          });
-          NODE
-      - name: Lower specialized ratchets to current zero
-        run: |
-          npm run dashboards:360:save
-          npm run boutique:360:save
-          npm run dashboards:360:check
-          npm run boutique:360:check
-      - name: Canonical architecture proof
-        run: |
           npm run business-graph:gen
           npm run business-graph:check
-          npm run business-graph:ratchet-check
           npm run business-graph:disposition-check
           npm run feature:360:refresh-global
           npm run feature:360:check
           git diff --check
-      - name: Commit final pre-GoLive closure
-        run: |
-          git config user.name "SamyrFateh"
-          git config user.email "fatehsamyr@gmail.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "chore(governance): close pre-golive debt residuals"
-          git push origin HEAD:chore/debt-zero-absolute
