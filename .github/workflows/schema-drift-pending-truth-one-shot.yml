@@ -60,13 +60,10 @@ jobs:
             const count = src.split(before).length - 1;
             if (count !== 1) throw new Error(`arch-drift-core classification block count=${count}`);
             src = src.replace(before, after);
-            replaceExport:
-            {
-              const beforeExport = '    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,';
-              const afterExport = '    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,';
-              if (!src.includes(beforeExport)) throw new Error('arch-drift-core export marker missing');
-              src = src.replace(beforeExport, afterExport);
-            }
+            const beforeExport = '    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,';
+            const afterExport = '    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,';
+            if (!src.includes(beforeExport)) throw new Error('arch-drift-core export marker missing');
+            src = src.replace(beforeExport, afterExport);
             fs.writeFileSync(path, src);
           }
 
@@ -83,7 +80,18 @@ jobs:
             if (!src.includes(beforeCounters)) throw new Error('arch-schema-drift-check counter marker missing');
             src = src.replace(beforeCounters, afterCounters);
             const marker = "  if (fiction.length) {\n    console.log('--- FICTION (header -> table inexistante en base) ---');";
-            const insert = `  if (fictionPendingMigration.length) {\n    console.log('--- INTENTIONS MIGRATION (header -> objet pas encore live, non bloquant) ---');\n    for (const f of fictionPendingMigration) {\n      console.log(\`  [PENDING] \\${f.token}\`);\n      console.log(\`            <- \\${f.files.slice(0, 6).join(', ')}\\${f.files.length > 6 ? ', ...' : ''}\`);\n      console.log(\`            migration : \\${fictionMigrationHints.get(f.token)}\`);\n    }\n    console.log('');\n  }\n`;
+            const insert = [
+              '  if (fictionPendingMigration.length) {',
+              "    console.log('--- INTENTIONS MIGRATION (header -> objet pas encore live, non bloquant) ---');",
+              '    for (const f of fictionPendingMigration) {',
+              '      console.log(`  [PENDING] ${f.token}`);',
+              "      console.log(`            <- ${f.files.slice(0, 6).join(', ')}${f.files.length > 6 ? ', ...' : ''}`);",
+              '      console.log(`            migration : ${fictionMigrationHints.get(f.token)}`);',
+              '    }',
+              "    console.log('');",
+              '  }',
+              '',
+            ].join('\n');
             if (!src.includes(marker)) throw new Error('arch-schema-drift-check fiction marker missing');
             src = src.replace(marker, insert + marker);
             fs.writeFileSync(path, src);
