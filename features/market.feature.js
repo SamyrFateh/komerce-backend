@@ -99,6 +99,18 @@ module.exports = {
     ],
   },
 
+  // ── Tables DB — autorité lifecycle Market ───────────────────────────────
+  // Les écritures de référentiel sont portées par les migrations de cette feature ;
+  // les services runtime sont en lecture. Le marqueur ! rend l'owner de lifecycle
+  // déjà affirmé par perimeter/classification observable par O5.
+  db: {
+    tables: [
+      'markets: RW!',
+      'operator_market_scopes: RW!',
+      'currency_parities: RW!',
+    ],
+  },
+
   // ── Securite ─────────────────────────────────────────────────────────────
   // M0 et M1 sont des lots purs DB : aucune route, aucun middleware. Le
   // champ est posé à son état réel (zéro surface) plutôt qu'omis, pour que

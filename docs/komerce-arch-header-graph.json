@@ -13,27 +13,27 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 446,
-    "filesWithFullHeaders": 416,
+    "scannedCodeFiles": 448,
+    "filesWithFullHeaders": 420,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 444,
-    "filesWithoutHeaders": 2,
+    "filesWithAnyHeaders": 448,
+    "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1004,
-    "edges": 5166,
+    "graphNodes": 1013,
+    "edges": 5195,
     "dbTables": 123,
-    "doctrines": 275,
-    "impactAreas": 162,
-    "unresolvedCodeEdges": 529,
+    "doctrines": 278,
+    "impactAreas": 164,
+    "unresolvedCodeEdges": 528,
     "dbWriteViaOverlapWarnings": 1,
     "multiWriterTables": 62
   },
   "byDomain": {
-    "infrastructure": 19,
+    "infrastructure": 20,
     "bootstrap": 2,
-    "notification": 20,
-    "auth": 13,
+    "notification": 21,
+    "auth": 14,
     "catalog": 73,
     "admin-dashboard": 19,
     "decision-signals": 7,
@@ -43,7 +43,7 @@
     "logistics": 38,
     "boutique": 20,
     "checkout": 2,
-    "shared-cart": 24,
+    "shared-cart": 25,
     "account": 2,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -52,14 +52,14 @@
     "tracking": 1,
     "wallet": 4,
     "customs": 6,
-    "dashboard": 28,
+    "dashboard": 27,
+    "loyalty": 3,
     "business-rules": 1,
     "orders": 25,
     "documents": 15,
     "auth-identity": 6,
     "operations": 11,
     "inventory": 2,
-    "loyalty": 2,
     "purchasing": 8,
     "unsold-resolution": 1,
     "incident-management": 2,
@@ -73,7 +73,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 19,
+    "middleware": 20,
     "ui-bootstrap": 4,
     "ui-component": 38,
     "ui-enhancer": 3,
@@ -86,7 +86,7 @@
     "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 30,
+    "util": 32,
     "domain-helper": 1,
     "adapter": 4,
     "controller": 1,
@@ -98,7 +98,7 @@
     "schema": 1,
     "route": 111,
     "entrypoint": 1,
-    "service": 180,
+    "service": 181,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -106,8 +106,8 @@
   },
   "byCriticality": {
     "critical": 61,
-    "medium": 111,
-    "high": 235,
+    "medium": 112,
+    "high": 238,
     "low": 37
   },
   "nodes": [
@@ -1019,6 +1019,44 @@
       "version": "2026-08"
     },
     {
+      "id": "middleware/require-non-production.js",
+      "file": "middleware/require-non-production.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "runtime-environment-guard",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "KOMERCE_ENV",
+        "NODE_ENV",
+        "optional_bypass_env_var"
+      ],
+      "outputs": [
+        "next_or_403"
+      ],
+      "depends": [],
+      "usedBy": [
+        "routes/admin/system.js",
+        "routes/simulator.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "production_sensitive_routes_fail_closed_on_business_environment"
+      ],
+      "impactAreas": [
+        "security",
+        "admin-dashboard",
+        "simulator"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "middleware/require-pricing-global-authority.js",
       "file": "middleware/require-pricing-global-authority.js",
       "type": "file",
@@ -1474,7 +1512,6 @@
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-nav.js",
         "public/boutique/js/b-modal-product.js",
-        "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-notifications.js",
@@ -5522,8 +5559,8 @@
       "file": "routes/admin-loyalty.js",
       "type": "file",
       "headerType": "full",
-      "role": "dashboard-admin-loyalty",
-      "domain": "dashboard",
+      "role": "loyalty-admin-rewards",
+      "domain": "loyalty",
       "layer": "route",
       "criticality": "high",
       "owner": null,
@@ -5560,6 +5597,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
+        "loyalty",
         "dashboard",
         "admin-dashboard"
       ],
@@ -6649,8 +6687,6 @@
         "users"
       ],
       "dbWrite": [
-        "basket_items",
-        "baskets",
         "order_status_history",
         "recipients",
         "scan_events",
@@ -14556,6 +14592,44 @@
       "version": "2026-06"
     },
     {
+      "id": "services/notifications/relay-location.js",
+      "file": "services/notifications/relay-location.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-relay-location-formatting",
+      "domain": "notification",
+      "layer": "util",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "relay_location_data",
+        "notification_message"
+      ],
+      "outputs": [
+        "canonical_relay_map_url",
+        "localized_notification_text"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/notifications/notification-service.js",
+        "services/notifications/order.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "relay_location_single_formatter"
+      ],
+      "impactAreas": [
+        "notification",
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/operations-workspace.js",
       "file": "services/operations-workspace.js",
       "type": "file",
@@ -18000,6 +18074,46 @@
       "version": "2026-08"
     },
     {
+      "id": "services/shared-cart-user-cleanup.js",
+      "file": "services/shared-cart-user-cleanup.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-user-cleanup-boundary",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "caller_owned_executor",
+        "user_id"
+      ],
+      "outputs": [
+        "deletion_result"
+      ],
+      "depends": [],
+      "usedBy": [
+        "dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "basket_items",
+        "baskets"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "lifecycle_owner_persistence_boundary"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/shipping-customs-workspace.js",
       "file": "services/shipping-customs-workspace.js",
       "type": "file",
@@ -19704,6 +19818,53 @@
         "purchasing"
       ],
       "version": "2026-07-14"
+    },
+    {
+      "id": "utils/auth-cookie.js",
+      "file": "utils/auth-cookie.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-cookie-policy",
+      "domain": "auth",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_environment",
+        "jwt_token",
+        "http_request"
+      ],
+      "outputs": [
+        "auth_cookie_options",
+        "auth_token"
+      ],
+      "depends": [
+        "utils/auth-session-policy.js"
+      ],
+      "usedBy": [
+        "middleware/auth.js",
+        "middleware/auth-guest.js",
+        "middleware/soft-auth.js",
+        "middleware/csrf-origin.js",
+        "routes/auth.js",
+        "routes/auth-passkey.js",
+        "routes/client-auth.js",
+        "routes/otp.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "auth_cookie_single_source_of_truth"
+      ],
+      "impactAreas": [
+        "auth",
+        "security",
+        "session"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "utils/auth-session-policy.js",
@@ -21685,6 +21846,11 @@
       "doctrine": "KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope"
     },
     {
+      "id": "doctrine:production_sensitive_routes_fail_closed_on_business_environment",
+      "type": "doctrine",
+      "doctrine": "production_sensitive_routes_fail_closed_on_business_environment"
+    },
+    {
       "id": "doctrine:pricing_global_authority_explicit",
       "type": "doctrine",
       "doctrine": "pricing_global_authority_explicit"
@@ -22650,6 +22816,11 @@
       "doctrine": "otp_message_lisible"
     },
     {
+      "id": "doctrine:relay_location_single_formatter",
+      "type": "doctrine",
+      "doctrine": "relay_location_single_formatter"
+    },
+    {
       "id": "doctrine:no_client_market_authority",
       "type": "doctrine",
       "doctrine": "no_client_market_authority"
@@ -22920,6 +23091,11 @@
       "doctrine": "secrets_env_only"
     },
     {
+      "id": "doctrine:auth_cookie_single_source_of_truth",
+      "type": "doctrine",
+      "doctrine": "auth_cookie_single_source_of_truth"
+    },
+    {
       "id": "doctrine:auth8_absolute_session_ttl_bounded",
       "type": "doctrine",
       "doctrine": "auth8_absolute_session_ttl_bounded"
@@ -23068,6 +23244,16 @@
       "id": "impact:admin-authorization",
       "type": "impact-area",
       "area": "admin-authorization"
+    },
+    {
+      "id": "impact:security",
+      "type": "impact-area",
+      "area": "security"
+    },
+    {
+      "id": "impact:simulator",
+      "type": "impact-area",
+      "area": "simulator"
     },
     {
       "id": "impact:pricing",
@@ -23445,11 +23631,6 @@
       "area": "mon-komerce"
     },
     {
-      "id": "impact:security",
-      "type": "impact-area",
-      "area": "security"
-    },
-    {
       "id": "impact:boutique-home",
       "type": "impact-area",
       "area": "boutique-home"
@@ -23530,6 +23711,11 @@
       "area": "accounting"
     },
     {
+      "id": "impact:loyalty",
+      "type": "impact-area",
+      "area": "loyalty"
+    },
+    {
       "id": "impact:logistics",
       "type": "impact-area",
       "area": "logistics"
@@ -23593,11 +23779,6 @@
       "id": "impact:snapshots",
       "type": "impact-area",
       "area": "snapshots"
-    },
-    {
-      "id": "impact:loyalty",
-      "type": "impact-area",
-      "area": "loyalty"
     },
     {
       "id": "impact:stock",
@@ -23710,14 +23891,14 @@
       "area": "local-stock"
     },
     {
-      "id": "impact:dashboards",
-      "type": "impact-area",
-      "area": "dashboards"
-    },
-    {
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
+    },
+    {
+      "id": "impact:dashboards",
+      "type": "impact-area",
+      "area": "dashboards"
     },
     {
       "id": "impact:auth-identity",
@@ -23733,6 +23914,11 @@
       "id": "impact:supplier-import",
       "type": "impact-area",
       "area": "supplier-import"
+    },
+    {
+      "id": "impact:session",
+      "type": "impact-area",
+      "area": "session"
     },
     {
       "id": "impact:all-authenticated-api",
@@ -25237,6 +25423,42 @@
       "label": "admin-authorization"
     },
     {
+      "from": "routes/admin/system.js",
+      "to": "middleware/require-non-production.js",
+      "type": "uses",
+      "label": "routes/admin/system.js"
+    },
+    {
+      "from": "routes/simulator.js",
+      "to": "middleware/require-non-production.js",
+      "type": "uses",
+      "label": "routes/simulator.js"
+    },
+    {
+      "from": "middleware/require-non-production.js",
+      "to": "doctrine:production_sensitive_routes_fail_closed_on_business_environment",
+      "type": "doctrine",
+      "label": "production_sensitive_routes_fail_closed_on_business_environment"
+    },
+    {
+      "from": "middleware/require-non-production.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
+    },
+    {
+      "from": "middleware/require-non-production.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "middleware/require-non-production.js",
+      "to": "impact:simulator",
+      "type": "impact",
+      "label": "simulator"
+    },
+    {
       "from": "middleware/require-pricing-global-authority.js",
       "to": "db.js",
       "type": "depends",
@@ -25793,12 +26015,6 @@
       "to": "public/boutique/js/b-bus.js",
       "type": "uses",
       "label": "public/boutique/js/b-modal-product.js"
-    },
-    {
-      "from": "public/boutique/js/b-modal-social-proof.js",
-      "to": "public/boutique/js/b-bus.js",
-      "type": "uses",
-      "label": "public/boutique/js/b-modal-social-proof.js"
     },
     {
       "from": "public/boutique/js/b-modal-suggestions.js",
@@ -31533,6 +31749,12 @@
     },
     {
       "from": "routes/admin-loyalty.js",
+      "to": "impact:loyalty",
+      "type": "impact",
+      "label": "loyalty"
+    },
+    {
+      "from": "routes/admin-loyalty.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
@@ -33158,18 +33380,6 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
-    },
-    {
-      "from": "routes/admin/users.js",
-      "to": "db:basket_items",
-      "type": "db-write",
-      "label": "basket_items"
-    },
-    {
-      "from": "routes/admin/users.js",
-      "to": "db:baskets",
-      "type": "db-write",
-      "label": "baskets"
     },
     {
       "from": "routes/admin/users.js",
@@ -44854,6 +45064,42 @@
       "label": "whatsapp"
     },
     {
+      "from": "services/notifications/notification-service.js",
+      "to": "services/notifications/relay-location.js",
+      "type": "uses",
+      "label": "services/notifications/notification-service.js"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "services/notifications/relay-location.js",
+      "type": "uses",
+      "label": "services/notifications/order.js"
+    },
+    {
+      "from": "services/notifications/relay-location.js",
+      "to": "doctrine:relay_location_single_formatter",
+      "type": "doctrine",
+      "label": "relay_location_single_formatter"
+    },
+    {
+      "from": "services/notifications/relay-location.js",
+      "to": "impact:notification",
+      "type": "impact",
+      "label": "notification"
+    },
+    {
+      "from": "services/notifications/relay-location.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/notifications/relay-location.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
       "from": "services/operations-workspace.js",
       "to": "db",
       "type": "depends",
@@ -50330,6 +50576,42 @@
       "label": "creator-flow"
     },
     {
+      "from": "dashboard",
+      "to": "services/shared-cart-user-cleanup.js",
+      "type": "uses",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/shared-cart-user-cleanup.js",
+      "to": "db:basket_items",
+      "type": "db-write",
+      "label": "basket_items"
+    },
+    {
+      "from": "services/shared-cart-user-cleanup.js",
+      "to": "db:baskets",
+      "type": "db-write",
+      "label": "baskets"
+    },
+    {
+      "from": "services/shared-cart-user-cleanup.js",
+      "to": "doctrine:lifecycle_owner_persistence_boundary",
+      "type": "doctrine",
+      "label": "lifecycle_owner_persistence_boundary"
+    },
+    {
+      "from": "services/shared-cart-user-cleanup.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/shared-cart-user-cleanup.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
       "from": "services/shipping-customs-workspace.js",
       "to": "db",
       "type": "depends",
@@ -52744,6 +53026,84 @@
       "to": "impact:purchasing",
       "type": "impact",
       "label": "purchasing"
+    },
+    {
+      "from": "utils/auth-cookie.js",
+      "to": "utils/auth-session-policy.js",
+      "type": "depends",
+      "label": "utils/auth-session-policy.js"
+    },
+    {
+      "from": "middleware/auth.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "middleware/auth-guest.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "middleware/auth-guest.js"
+    },
+    {
+      "from": "middleware/soft-auth.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "middleware/soft-auth.js"
+    },
+    {
+      "from": "middleware/csrf-origin.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "middleware/csrf-origin.js"
+    },
+    {
+      "from": "routes/auth.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "routes/auth.js"
+    },
+    {
+      "from": "routes/auth-passkey.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "routes/auth-passkey.js"
+    },
+    {
+      "from": "routes/client-auth.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "routes/client-auth.js"
+    },
+    {
+      "from": "routes/otp.js",
+      "to": "utils/auth-cookie.js",
+      "type": "uses",
+      "label": "routes/otp.js"
+    },
+    {
+      "from": "utils/auth-cookie.js",
+      "to": "doctrine:auth_cookie_single_source_of_truth",
+      "type": "doctrine",
+      "label": "auth_cookie_single_source_of_truth"
+    },
+    {
+      "from": "utils/auth-cookie.js",
+      "to": "impact:auth",
+      "type": "impact",
+      "label": "auth"
+    },
+    {
+      "from": "utils/auth-cookie.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
+    },
+    {
+      "from": "utils/auth-cookie.js",
+      "to": "impact:session",
+      "type": "impact",
+      "label": "session"
     },
     {
       "from": "utils/auth-session-policy.js",
@@ -55404,6 +55764,7 @@
         "routes/orders/create.js",
         "routes/payments-paypal.js",
         "routes/shared-cart.js",
+        "utils/auth-cookie.js",
         "utils/auth-token-policy.js",
         "utils/logger.js",
         "utils/phone.js",
@@ -55622,6 +55983,7 @@
         "routes/unsold.js",
         "routes/wallet.js",
         "server.js",
+        "utils/auth-cookie.js",
         "utils/auth-token-policy.js",
         "utils/logger.js",
         "utils/user-cache.js"
@@ -55657,7 +56019,8 @@
         "doctrine:cookie_auth_mutations_require_trusted_origin",
         "impact:all-api",
         "impact:auth",
-        "server.js"
+        "server.js",
+        "utils/auth-cookie.js"
       ]
     },
     "middleware/error-handler.js": {
@@ -55895,6 +56258,39 @@
         "impact:market"
       ]
     },
+    "middleware/require-non-production.js": {
+      "role": "runtime-environment-guard",
+      "domain": "infrastructure",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "routes/admin/system.js",
+        "routes/simulator.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "production_sensitive_routes_fail_closed_on_business_environment"
+      ],
+      "impactAreas": [
+        "security",
+        "admin-dashboard",
+        "simulator"
+      ],
+      "mustCheck": [
+        "doctrine:production_sensitive_routes_fail_closed_on_business_environment",
+        "impact:admin-dashboard",
+        "impact:security",
+        "impact:simulator",
+        "routes/admin/system.js",
+        "routes/simulator.js"
+      ]
+    },
     "middleware/require-pricing-global-authority.js": {
       "role": "pricing-global-authorization-guard",
       "domain": "economic-engine",
@@ -56077,6 +56473,7 @@
         "impact:auth",
         "routes/orders/detail.js",
         "routes/shared-cart.js",
+        "utils/auth-cookie.js",
         "utils/auth-token-policy.js",
         "utils/logger.js",
         "utils/user-cache.js"
@@ -56303,7 +56700,6 @@
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-nav.js",
         "public/boutique/js/b-modal-product.js",
-        "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-notifications.js",
@@ -56344,7 +56740,6 @@
         "public/boutique/js/b-modal-nav.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/b-modal-product.js",
-        "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-notifications.js",
@@ -57757,7 +58152,6 @@
       ],
       "mustCheck": [
         "impact:boutique",
-        "public/boutique/js/b-bus.js",
         "public/boutique/js/b-modal-core.js"
       ]
     },
@@ -60462,8 +60856,8 @@
       ]
     },
     "routes/admin-loyalty.js": {
-      "role": "dashboard-admin-loyalty",
-      "domain": "dashboard",
+      "role": "loyalty-admin-rewards",
+      "domain": "loyalty",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
@@ -60490,6 +60884,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
+        "loyalty",
         "dashboard",
         "admin-dashboard"
       ],
@@ -60501,6 +60896,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:loyalty",
         "middleware/auth.js",
         "utils/logger.js"
       ]
@@ -61502,6 +61898,7 @@
         "impact:admin-dashboard",
         "impact:dashboard",
         "middleware/auth.js",
+        "middleware/require-non-production.js",
         "middleware/validate.js",
         "services/customs-classification.js",
         "services/repair-ordered-without-purchase-orders.js",
@@ -61529,8 +61926,6 @@
         "users"
       ],
       "dbWrite": [
-        "basket_items",
-        "baskets",
         "order_status_history",
         "recipients",
         "scan_events",
@@ -61567,8 +61962,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:basket_items",
-        "db:baskets",
         "db:incidents",
         "db:order_status_history",
         "db:orders",
@@ -61672,7 +62065,8 @@
         "public/boutique/js/b-passkey-login.js",
         "public/boutique/js/b-passkey-security.js",
         "services/webauthn-management-service.js",
-        "services/webauthn-service.js"
+        "services/webauthn-service.js",
+        "utils/auth-cookie.js"
       ]
     },
     "routes/auth.js": {
@@ -61716,6 +62110,7 @@
         "middleware/auth.js",
         "middleware/validate.js",
         "services/pickup-authorization-service.js",
+        "utils/auth-cookie.js",
         "utils/logger.js"
       ]
     },
@@ -62052,6 +62447,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
         "middleware/auth.js",
+        "utils/auth-cookie.js",
         "utils/logger.js"
       ]
     },
@@ -63677,6 +64073,7 @@
         "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/otp-test-mode.js",
+        "utils/auth-cookie.js",
         "utils/logger.js",
         "utils/phone.js"
       ]
@@ -64719,6 +65116,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
         "middleware/auth.js",
+        "middleware/require-non-production.js",
         "services/simulator/cleanup.js",
         "services/simulator/engine.js",
         "services/simulator/journal.js"
@@ -69046,6 +69444,7 @@
         "impact:whatsapp",
         "routes/otp.js",
         "services/notification-service.js",
+        "services/notifications/relay-location.js",
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
@@ -69102,7 +69501,8 @@
         "impact:whatsapp",
         "services/authkey-client.js",
         "services/notification-service.js",
-        "services/notifications/internals.js"
+        "services/notifications/internals.js",
+        "services/notifications/relay-location.js"
       ]
     },
     "services/notifications/otp-auth.js": {
@@ -69206,6 +69606,39 @@
         "services/authkey-client.js",
         "services/notification-service.js",
         "services/notifications/internals.js"
+      ]
+    },
+    "services/notifications/relay-location.js": {
+      "role": "notification-relay-location-formatting",
+      "domain": "notification",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/notifications/notification-service.js",
+        "services/notifications/order.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "relay_location_single_formatter"
+      ],
+      "impactAreas": [
+        "notification",
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "doctrine:relay_location_single_formatter",
+        "impact:logistics",
+        "impact:notification",
+        "impact:pickup",
+        "services/notifications/notification-service.js",
+        "services/notifications/order.js"
       ]
     },
     "services/operations-workspace.js": {
@@ -72597,6 +73030,39 @@
         "services/shared-cart-library.js"
       ]
     },
+    "services/shared-cart-user-cleanup.js": {
+      "role": "shared-cart-user-cleanup-boundary",
+      "domain": "shared-cart",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "basket_items",
+        "baskets"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "lifecycle_owner_persistence_boundary"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "db:basket_items",
+        "db:baskets",
+        "doctrine:lifecycle_owner_persistence_boundary",
+        "impact:dashboard",
+        "impact:shared-cart"
+      ]
+    },
     "services/shipping-customs-workspace.js": {
       "role": "canonical-shipping-customs-workspace-service",
       "domain": "admin-dashboard",
@@ -74204,6 +74670,54 @@
         "services/purchasing-cancel-service.js"
       ]
     },
+    "utils/auth-cookie.js": {
+      "role": "auth-cookie-policy",
+      "domain": "auth",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "utils/auth-session-policy.js"
+      ],
+      "directUsedBy": [
+        "middleware/auth.js",
+        "middleware/auth-guest.js",
+        "middleware/soft-auth.js",
+        "middleware/csrf-origin.js",
+        "routes/auth.js",
+        "routes/auth-passkey.js",
+        "routes/client-auth.js",
+        "routes/otp.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "auth_cookie_single_source_of_truth"
+      ],
+      "impactAreas": [
+        "auth",
+        "security",
+        "session"
+      ],
+      "mustCheck": [
+        "doctrine:auth_cookie_single_source_of_truth",
+        "impact:auth",
+        "impact:security",
+        "impact:session",
+        "middleware/auth-guest.js",
+        "middleware/auth.js",
+        "middleware/csrf-origin.js",
+        "middleware/soft-auth.js",
+        "routes/auth-passkey.js",
+        "routes/auth.js",
+        "routes/client-auth.js",
+        "routes/otp.js",
+        "utils/auth-session-policy.js"
+      ]
+    },
     "utils/auth-session-policy.js": {
       "role": "auth-session-policy",
       "domain": "auth",
@@ -74228,6 +74742,7 @@
         "doctrine:auth8_absolute_session_ttl_bounded",
         "impact:account-security",
         "impact:auth",
+        "utils/auth-cookie.js",
         "utils/auth-session.js"
       ]
     },
@@ -75767,9 +76282,9 @@
       "writerCount": 4,
       "writers": [
         "routes/admin/system.js",
-        "routes/admin/users.js",
         "services/shared-cart-creation.js",
-        "services/shared-cart-engine.js"
+        "services/shared-cart-engine.js",
+        "services/shared-cart-user-cleanup.js"
       ]
     },
     {
@@ -75777,9 +76292,9 @@
       "writerCount": 4,
       "writers": [
         "routes/admin/system.js",
-        "routes/admin/users.js",
         "services/shared-cart-creation.js",
-        "services/shared-cart-engine.js"
+        "services/shared-cart-engine.js",
+        "services/shared-cart-user-cleanup.js"
       ]
     },
     {
@@ -76232,12 +76747,6 @@
       "to": "middleware/auth.js",
       "type": "uses",
       "label": "routes/shared-cart-refund-admin.js"
-    },
-    {
-      "from": "middleware/csrf-origin.js",
-      "to": "utils/auth-cookie.js",
-      "type": "depends",
-      "label": "utils/auth-cookie.js"
     },
     {
       "from": "middleware/require-catalog-global-authority.js",
@@ -77030,12 +77539,6 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
-    },
-    {
-      "from": "routes/auth-passkey.js",
-      "to": "utils/auth-cookie.js",
-      "type": "depends",
-      "label": "utils/auth-cookie.js"
     },
     {
       "from": "routes/auth.js",
@@ -78940,6 +79443,12 @@
       "label": "db.js"
     },
     {
+      "from": "dashboard",
+      "to": "services/shared-cart-user-cleanup.js",
+      "type": "uses",
+      "label": "dashboard"
+    },
+    {
       "from": "services/shipping-customs-workspace.js",
       "to": "db",
       "type": "depends",
@@ -79330,10 +79839,7 @@
       "label": "routes/*"
     }
   ],
-  "filesWithoutHeaders": [
-    "services/notifications/relay-location.js",
-    "utils/auth-cookie.js"
-  ],
+  "filesWithoutHeaders": [],
   "filesWithMisplacedHeaders": [],
   "liteWithoutOwner": []
 }

@@ -45,15 +45,15 @@
   },
   "summary": {
     "features": 32,
-    "healthy": 16,
-    "attention": 16,
+    "healthy": 32,
+    "attention": 0,
     "blocked": 0,
-    "businessDependencies": 188,
+    "businessDependencies": 225,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 42,
+    "debtItemsTotal": 0,
     "gateHealthy": 32,
     "gateBlocked": 0
   },
@@ -598,7 +598,7 @@
               {
                 "declared": "utils/auth-cookie.js",
                 "resolvedPath": "utils/auth-cookie.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/auth-session-policy.js",
@@ -657,13 +657,33 @@
         "internalApis": [
           {
             "fn": "requireAuth / requireVerifiedIdentity / softAuth",
-            "file": "middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js",
-            "status": "undeclared-in-graph"
+            "file": "middleware/auth.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "requireAuth / requireVerifiedIdentity / softAuth",
+            "file": "middleware/require-verified-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "requireAuth / requireVerifiedIdentity / softAuth",
+            "file": "middleware/soft-auth.js",
+            "status": "resolved"
           },
           {
             "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
-            "file": "utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js",
-            "status": "undeclared-in-graph"
+            "file": "utils/auth-session-policy.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+            "file": "utils/auth-session.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+            "file": "utils/auth-token-policy.js",
+            "status": "resolved"
           }
         ],
         "httpInterfaces": {
@@ -675,7 +695,8 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -859,21 +880,19 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "orders"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
-        "unresolvedInternalApis": 2,
+        "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
@@ -886,24 +905,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"orders\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict (utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js) — statut: undeclared-in-graph"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -1350,10 +1353,18 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -1364,10 +1375,32 @@
           ]
         },
         {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -1390,14 +1423,23 @@
           "consumer": "auth",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "auth-passkey",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "business-rules",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -1411,21 +1453,45 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -1433,7 +1499,15 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -1441,21 +1515,24 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -1464,14 +1541,9 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "logistics",
-            "family": "NON_RUNTIME_TEST"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -1803,7 +1875,8 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -2049,6 +2122,13 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -2068,7 +2148,8 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -2079,10 +2160,18 @@
           ]
         },
         {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -3685,7 +3774,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -3707,7 +3797,8 @@
           "provider": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -3720,10 +3811,32 @@
           ]
         },
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -3734,17 +3847,33 @@
           ]
         },
         {
+          "consumer": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -3752,28 +3881,46 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -4121,6 +4268,13 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -4145,14 +4299,16 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -4168,7 +4324,22 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -4794,7 +4965,7 @@
             ]
           },
           "routes": {
-            "count": 24,
+            "count": 23,
             "files": [
               {
                 "declared": "routes/admin-client-360.js",
@@ -4814,11 +4985,6 @@
               {
                 "declared": "routes/admin-finance-accounting-workspace.js",
                 "resolvedPath": "routes/admin-finance-accounting-workspace.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "routes/admin-loyalty.js",
-                "resolvedPath": "routes/admin-loyalty.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5344,7 +5510,7 @@
             ]
           }
         },
-        "totalFiles": 207,
+        "totalFiles": 206,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5364,27 +5530,9 @@
         ],
         "writesTables": [
           {
-            "table": "basket_items",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "baskets",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "invoices",
             "mode": "RW",
             "lifecycleOwner": "documents",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "loyalty_rewards",
-            "mode": "RW",
-            "lifecycleOwner": "loyalty",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5546,27 +5694,9 @@
         ],
         "writesTables": [
           {
-            "table": "basket_items",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "baskets",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "invoices",
             "mode": "RW",
             "lifecycleOwner": "documents",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "loyalty_rewards",
-            "mode": "RW",
-            "lifecycleOwner": "loyalty",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5718,7 +5848,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 66
+          "count": 61
         }
       },
       "businessDependencies": [
@@ -5733,49 +5863,57 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "business-rules",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write",
+            "data-read"
           ]
         },
         {
           "provider": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -5796,7 +5934,9 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -5810,14 +5950,17 @@
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write",
+            "data-read"
           ]
         },
         {
@@ -5832,6 +5975,20 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-write"
           ]
         }
       ],
@@ -5870,20 +6027,22 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "loyalty",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
-        "declaredNotObservedEvidence": [
-          "recommendations",
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -5903,19 +6062,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"recommendations\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -6156,7 +6304,8 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -6624,10 +6773,59 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -6643,7 +6841,8 @@
           "consumer": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -6657,7 +6856,16 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -6673,6 +6881,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -6700,18 +6915,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 5,
-        "declaredNotObservedEvidence": [
-          "auth-identity",
-          "customs",
-          "orders",
-          "refunds",
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -6731,34 +6940,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 5,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"auth-identity\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"customs\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"orders\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"refunds\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -8025,10 +8208,32 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "business-rules",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -8049,7 +8254,8 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -8063,7 +8269,22 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -8093,7 +8314,8 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -8101,6 +8323,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -8135,14 +8364,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -8162,14 +8389,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -8191,7 +8412,7 @@
       "perimeter": {
         "in": [
           "création, qualification (type/sévérité/impact client) et résolution (reship/refund/manual_fix/dismissed/auto_resolved) d'un incident",
-          "table incidents en écriture multi-domaines : logistics (scan-engine), payments (reconciliation-service), notifications (alert-engine), dashboard (ops-api legacy, SQL inline hors incident-service.js)",
+          "table incidents possédée par incident-management ; les producteurs cross-feature passent par incident-write-service.js",
           "engagement opérationnel réel déclenché par une résolution (ex. reship crée un incident fils)"
         ],
         "out": [
@@ -8379,6 +8600,20 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
         }
       ],
       "consumedBy": [
@@ -8386,35 +8621,40 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -8428,25 +8668,20 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 4,
-        "declaredNotObservedEvidence": [
-          "dashboard",
-          "logistics",
-          "notifications",
-          "payments"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 1,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
       },
@@ -8458,34 +8693,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 5,
-        "debtItems": [
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"dashboard / ops-api legacy (écrit incidents — SQL inline)\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"dashboard\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"notifications\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"payments\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -9327,7 +9536,7 @@
               {
                 "declared": "middleware/require-non-production.js",
                 "resolvedPath": "middleware/require-non-production.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "middleware/upload.js",
@@ -10059,59 +10268,59 @@
       "interfaces": {
         "internalApis": [
           {
-            "fn": "bootstrap/* — démarrage Express, routage, crons, migrations",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "bootstrap/*",
+            "status": "resolved"
           },
           {
-            "fn": "middleware/error-handler.js — gestion centralisée des erreurs Express",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "middleware/error-handler.js",
+            "status": "resolved"
           },
           {
-            "fn": "middleware/rate-limit.js — rate limiting par IP/route",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "middleware/rate-limit.js",
+            "status": "resolved"
           },
           {
-            "fn": "middleware/request-id.js — injection X-Request-Id",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "middleware/request-id.js",
+            "status": "resolved"
           },
           {
-            "fn": "middleware/upload.js — multer file upload",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "middleware/upload.js",
+            "status": "resolved"
           },
           {
-            "fn": "middleware/validate.js — validation Joi des requêtes",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "middleware/validate.js",
+            "status": "resolved"
           },
           {
-            "fn": "utils/logger.js — wrapper pino structuré",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "utils/logger.js",
+            "status": "resolved"
           },
           {
-            "fn": "utils/phone.js — normalisation numéros téléphone Comores",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "utils/phone.js",
+            "status": "resolved"
           },
           {
-            "fn": "utils/rates.js — taux de change KMF/EUR",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "utils/rates.js",
+            "status": "resolved"
           },
           {
-            "fn": "utils/reference.js — génération de références commande/colis",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "utils/reference.js",
+            "status": "resolved"
           },
           {
-            "fn": "validators/index.js — barrel des schémas Joi",
-            "file": null,
-            "status": "undeclared-in-graph"
+            "fn": null,
+            "file": "validators/index.js",
+            "status": "resolved"
           }
         ],
         "httpInterfaces": {
@@ -10467,11 +10676,11 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
-        "unresolvedInternalApis": 11,
+        "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
@@ -10484,64 +10693,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 11,
-        "debtItems": [
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "bootstrap/* — démarrage Express, routage, crons, migrations (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "middleware/error-handler.js — gestion centralisée des erreurs Express (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "middleware/rate-limit.js — rate limiting par IP/route (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "middleware/request-id.js — injection X-Request-Id (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "middleware/upload.js — multer file upload (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "middleware/validate.js — validation Joi des requêtes (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "utils/logger.js — wrapper pino structuré (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "utils/phone.js — normalisation numéros téléphone Comores (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "utils/rates.js — taux de change KMF/EUR (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "utils/reference.js — génération de références commande/colis (null) — statut: undeclared-in-graph"
-          },
-          {
-            "type": "UNRESOLVED_INTERNAL_API",
-            "severity": "medium",
-            "evidence": "validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -10731,6 +10884,13 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -10741,14 +10901,16 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -10790,14 +10952,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "catalog"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -10817,14 +10977,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -11207,7 +11361,7 @@
         "readsTables": [
           {
             "table": "markets",
-            "lifecycleOwner": null
+            "lifecycleOwner": "market"
           },
           {
             "table": "products",
@@ -11233,7 +11387,7 @@
         "readsTables": [
           {
             "table": "markets",
-            "lifecycleOwner": null
+            "lifecycleOwner": "market"
           },
           {
             "table": "products",
@@ -11249,10 +11403,24 @@
       },
       "businessDependencies": [
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -11267,15 +11435,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
-        "declaredNotObservedEvidence": [
-          "catalog",
-          "market"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -11295,19 +11460,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -12250,28 +12404,39 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "business-rules",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -12299,7 +12464,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -12313,7 +12479,8 @@
           "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -12333,6 +12500,14 @@
           ]
         },
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12343,14 +12518,17 @@
           "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -12361,10 +12539,25 @@
           ]
         },
         {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -12378,7 +12571,15 @@
           "consumer": "inventory",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -12386,14 +12587,16 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -12401,14 +12604,23 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -12422,16 +12634,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 3,
-        "declaredNotObservedEvidence": [
-          "customs",
-          "economic-engine",
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -12451,24 +12659,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"customs\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"economic-engine\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -12491,14 +12683,13 @@
         "in": [
           "calcul et recalcul du palier de fidelite (recalculate_loyalty(), fonction DB appelee par routes/loyalty.js)",
           "compteur et notification de gros panier (big_basket_count / big_basket_last_notified_count)",
-          "creation des recompenses \"pending\" (loyalty_rewards) au declenchement du seuil gros panier",
+          "creation et traitement des recompenses (pending/granted/skipped), y compris les actions admin",
           "synthese de fidelite exposee (v_loyalty_summary) et grille des paliers (loyalty_tiers)"
         ],
         "out": [
           "solde et mouvements wallet (feature wallet, scindee de wallet-loyalty au Lot O1)",
           "paiement carte/PayPal (feature payments)",
-          "remboursement (feature refunds)",
-          "traitement admin des recompenses en attente (routes/admin-loyalty.js — actuellement @domain dashboard, ecrit loyalty_rewards.status ; voir ONTOLOGY_GAP, non deplace dans ce lot)"
+          "remboursement (feature refunds)"
         ]
       },
       "authority": "backend-core — tout changement de calcul de palier ou de recompense doit etre valide par le proprietaire de loyalty-service.js",
@@ -12509,8 +12700,13 @@
       "implementation": {
         "byCategory": {
           "routes": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "routes/admin-loyalty.js",
+                "resolvedPath": "routes/admin-loyalty.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/loyalty.js",
                 "resolvedPath": "routes/loyalty.js",
@@ -12549,7 +12745,7 @@
             ]
           }
         },
-        "totalFiles": 5,
+        "totalFiles": 6,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12560,7 +12756,7 @@
         "ownsTables": [
           {
             "table": "loyalty_rewards",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "loyalty_tiers",
@@ -12604,7 +12800,7 @@
         "ownsTables": [
           {
             "table": "loyalty_rewards",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "loyalty_tiers",
@@ -12647,7 +12843,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 7
+          "count": 12
         }
       },
       "businessDependencies": [
@@ -12662,7 +12858,15 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -12678,9 +12882,23 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
         {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -12720,14 +12938,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -12747,14 +12963,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -12958,13 +13168,77 @@
         }
       },
       "ownership": {
-        "ownsTables": [],
-        "writesTables": [],
+        "ownsTables": [
+          {
+            "table": "currency_parities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "markets",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "operator_market_scopes",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "currency_parities",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "markets",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "operator_market_scopes",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          }
+        ],
         "readsTables": []
       },
       "data": {
-        "ownsTables": [],
-        "writesTables": [],
+        "ownsTables": [
+          {
+            "table": "currency_parities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "markets",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "operator_market_scopes",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "currency_parities",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "markets",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "operator_market_scopes",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          }
+        ],
         "readsTables": []
       },
       "interfaces": {
@@ -12988,6 +13262,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -13202,7 +13483,7 @@
               {
                 "declared": "services/notifications/relay-location.js",
                 "resolvedPath": "services/notifications/relay-location.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/whatsapp-meta.js",
@@ -13549,10 +13830,18 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -13560,6 +13849,20 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -13596,7 +13899,8 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -13667,12 +13971,12 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 1,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
       },
@@ -13684,14 +13988,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\" — ne correspond à aucun nom de feature connu"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -14623,7 +14921,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -14637,7 +14936,8 @@
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -14675,7 +14975,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -14725,7 +15026,8 @@
           "provider": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -14753,31 +15055,57 @@
           ]
         },
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -14791,21 +15119,38 @@
           "consumer": "inventory",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -14813,42 +15158,55 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
           "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -14862,14 +15220,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "dashboard"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -14889,14 +15245,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"dashboard\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -15369,6 +15719,13 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "business-rules",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -15386,7 +15743,8 @@
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -15401,7 +15759,8 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -15422,7 +15781,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -16296,7 +16656,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -16311,7 +16672,15 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -16325,7 +16694,8 @@
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -16341,7 +16711,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -16349,7 +16720,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "interface"
+            "interface",
+            "data-read"
           ]
         },
         {
@@ -16381,6 +16753,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -16791,6 +17170,13 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16801,7 +17187,8 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -16815,7 +17202,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -16831,7 +17219,8 @@
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -17062,7 +17451,8 @@
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -17073,10 +17463,18 @@
           ]
         },
         {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -17114,15 +17512,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
-        "declaredNotObservedEvidence": [
-          "auth",
-          "logistics"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -17142,19 +17537,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"auth\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -17172,7 +17556,7 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.",
+      "service": "Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.",
       "perimeter": {
         "in": [
           "service de remboursement transverse et son orchestration"
@@ -17325,18 +17709,34 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
         {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -17348,7 +17748,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -17378,14 +17779,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "shared-cart"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -17405,14 +17804,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"shared-cart\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -17653,7 +18046,7 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "services/cart-share-service.js",
@@ -17693,6 +18086,11 @@
               {
                 "declared": "services/shared-cart-reads.js",
                 "resolvedPath": "services/shared-cart-reads.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/shared-cart-user-cleanup.js",
+                "resolvedPath": "services/shared-cart-user-cleanup.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
@@ -17768,7 +18166,7 @@
             ]
           }
         },
-        "totalFiles": 56,
+        "totalFiles": 57,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,
@@ -17906,11 +18304,11 @@
         "ownsTables": [
           {
             "table": "basket_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "baskets",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "cart_shares",
@@ -18000,11 +18398,11 @@
         "ownsTables": [
           {
             "table": "basket_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "baskets",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "single-writer"
           },
           {
             "table": "cart_shares",
@@ -18091,7 +18489,13 @@
         ]
       },
       "interfaces": {
-        "internalApis": [],
+        "internalApis": [
+          {
+            "fn": "deleteUserBasketData",
+            "file": "services/shared-cart-user-cleanup.js",
+            "status": "resolved"
+          }
+        ],
         "httpInterfaces": {
           "count": 16
         }
@@ -18108,14 +18512,16 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -18136,7 +18542,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -18162,6 +18569,13 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -18504,7 +18918,8 @@
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -18541,7 +18956,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -18731,10 +19147,24 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -18749,15 +19179,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
-        "declaredNotObservedEvidence": [
-          "catalog",
-          "orders"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -18777,19 +19204,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"orders\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -19070,7 +19486,8 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -19091,7 +19508,8 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -19108,6 +19526,20 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-write"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -19129,7 +19561,8 @@
           "consumer": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -19143,14 +19576,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "payments"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -19170,14 +19601,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"payments\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
