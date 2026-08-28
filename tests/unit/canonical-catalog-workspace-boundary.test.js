@@ -32,7 +32,7 @@ function fakeRes() {
   };
 }
 
-test('URL Catalogue est Canonical tandis que les trois vues historiques restent Legacy', () => {
+test('URL Catalogue et anciens points d’entrée convergent vers Canonical avec rollback Legacy', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
 
@@ -41,10 +41,19 @@ test('URL Catalogue est Canonical tandis que les trois vues historiques restent 
   expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
   expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
-  for (const legacyPath of ['/admin/products', '/admin/categories', '/admin/catalog-approval']) {
+  for (const routePath of ['/admin/products', '/admin/categories', '/admin/catalog-approval']) {
+    const cutoverRes = fakeRes();
+    app._routes[routePath]({ query: {} }, cutoverRes);
+    expect(cutoverRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/catalog');
+    expect(cutoverRes.sendFile).not.toHaveBeenCalled();
+
     const legacyRes = fakeRes();
-    app._routes[legacyPath]({}, legacyRes);
+    app._routes[routePath]({ query: { legacy: '1' } }, legacyRes);
     expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(legacyRes.sendFile).toHaveBeenCalledWith(
+      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
+      expect.any(Function)
+    );
   }
 });
 
