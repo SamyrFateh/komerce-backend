@@ -20,6 +20,7 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Final single-run publication after the earlier concurrent helper race.
       - name: Preserve implementation script
         run: cp scripts/ci-catalog-cutover-4k.py /tmp/ci-catalog-cutover-4k.py
 
