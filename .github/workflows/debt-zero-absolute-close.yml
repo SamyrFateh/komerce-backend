@@ -24,6 +24,7 @@ jobs:
           cp scripts/debt-zero-close-specialized-360.js /tmp/debt-zero-close-specialized-360.js
           cp scripts/debt-zero-close-golive.js /tmp/debt-zero-close-golive.js
           cp scripts/debt-zero-close-css-and-counter.js /tmp/debt-zero-close-css-and-counter.js
+          cp scripts/debt-zero-fix-n2-sql-parser.js /tmp/debt-zero-fix-n2-sql-parser.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Install repository dependencies
@@ -35,6 +36,7 @@ jobs:
           cp /tmp/debt-zero-close-specialized-360.js scripts/debt-zero-close-specialized-360.js
           cp /tmp/debt-zero-close-golive.js scripts/debt-zero-close-golive.js
           cp /tmp/debt-zero-close-css-and-counter.js scripts/debt-zero-close-css-and-counter.js
+          cp /tmp/debt-zero-fix-n2-sql-parser.js scripts/debt-zero-fix-n2-sql-parser.js
           python - <<'PY'
           from pathlib import Path
           p = Path('scripts/debt-zero-close-golive.js')
@@ -65,7 +67,8 @@ jobs:
               manifest.write_text(text.replace(anchor, anchor + entry, 1))
           PY
           node scripts/debt-zero-close-css-and-counter.js
-          rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js scripts/debt-zero-close-css-and-counter.js
+          node scripts/debt-zero-fix-n2-sql-parser.js
+          rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js scripts/debt-zero-close-css-and-counter.js scripts/debt-zero-fix-n2-sql-parser.js
       - name: Refresh dependency lockfiles and CSS bundles
         run: |
           npm install --package-lock-only --ignore-scripts
@@ -90,6 +93,25 @@ jobs:
       - name: Backend actionable debt and quality proof
         run: |
           npm run backend:audit
+          cat > routes/__n2_sql_red_proof.js <<'JS'
+          'use strict';
+          async function unsafe(db, req) {
+            return db.query(`SELECT * FROM orders ORDER BY ${req.query.sort}`);
+          }
+          module.exports = unsafe;
+          JS
+          set +e
+          node scripts/code-quality-gate.js --strict --file routes/__n2_sql_red_proof.js > /tmp/n2-red.log 2>&1
+          red_code=$?
+          set -e
+          rm routes/__n2_sql_red_proof.js
+          if [ "$red_code" -eq 0 ]; then
+            cat /tmp/n2-red.log
+            echo "N2 SQL negative proof unexpectedly passed"
+            exit 1
+          fi
+          grep -q 'N2-SQL-INJECTION' /tmp/n2-red.log
+          echo "N2_SQL_RED_PROOF_OK"
           npm run quality:gate
           node scripts/debt-audit.js --json > /tmp/debt-zero.json
           node - <<'NODE'
