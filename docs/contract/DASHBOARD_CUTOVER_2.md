@@ -64,6 +64,20 @@ Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant l
 
 `/admin/costing`, `/admin/economic`, `/admin/settings` et `/admin/simulator` ne font pas partie de LOT 4J.
 
+## Extension LOT 4K — convergence Catalogue
+
+Les trois besoins historiques explicitement absorbés par le Catalog Workspace ne conservent plus trois runtimes produit distincts :
+
+| Ancien point d’entrée | Destination Canonical |
+|---|---|
+| `/admin/products` | `/admin/workspaces/catalog` |
+| `/admin/categories` | `/admin/workspaces/catalog` |
+| `/admin/catalog-approval` | `/admin/workspaces/catalog` |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback. Cette query ne modifie aucune autorité backend.
+
+Le détail produit reste `/admin/products/:productRef` → Product 360 Canonical.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -72,7 +86,6 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Inventaire
 - Expéditions / Transitaire
 - Douane
-- Catalogue
 - Sourcing
 - Clients / Entity 360
 - Factures / Comptabilité
