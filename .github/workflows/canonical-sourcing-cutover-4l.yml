@@ -1,0 +1,95 @@
+name: Canonical Sourcing Cutover 4L
+
+on:
+  push:
+    branches:
+      - ci/canonical-sourcing-cutover-4l
+
+permissions:
+  contents: write
+
+jobs:
+  build-prove-push:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Preserve implementation script
+        run: cp scripts/ci-sourcing-cutover-4l.py /tmp/ci-sourcing-cutover-4l.py
+
+      - name: Build route-only cutover from current main
+        run: |
+          git config user.name "SamyrFateh"
+          git config user.email "fatehsamyr@gmail.com"
+          git fetch origin main
+          git checkout -B feat/canonical-sourcing-cutover-4l origin/main
+          python3 /tmp/ci-sourcing-cutover-4l.py
+          git status --short
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prove sourcing cutover and both sourcing authorities
+        run: |
+          npx jest \
+            tests/unit/bootstrap-html-routes.test.js \
+            tests/unit/admin-sourcing-workspace-route.test.js \
+            tests/unit/sourcing-workspace.test.js \
+            tests/unit/sourcing-candidate-actions.test.js \
+            tests/unit/require-sourcing-global-authority.test.js \
+            tests/unit/sourcing-scanner.test.js \
+            tests/unit/sourcing-mutations.test.js \
+            tests/unit/canonical-dashboard-boundary.test.js \
+            --runInBand
+
+      - name: Quality and card-first gates
+        run: |
+          npm run quality:gate
+          npm run feature:registry
+          npm run gate:schema
+          npm run gate:docs-lint
+
+      - name: Stage product slice for touched gates
+        run: |
+          git add \
+            bootstrap/html-routes.js \
+            tests/unit/bootstrap-html-routes.test.js \
+            docs/contract/SOURCING_WORKSPACE_4E.md \
+            docs/contract/SOURCING_CUTOVER_4L.md \
+            docs/contract/DASHBOARD_CUTOVER_2.md \
+            public/dashboards/canonical/README.md
+
+      - name: Scoped canonical proof
+        run: |
+          npm run gate:touched-files
+          npm run gate:touched-tests
+          npm run gate:feature-audit
+          npm run dashboards:360:check
+          npm run business-graph:check
+          npm run business-graph:ratchet-check
+          npm run business-graph:disposition-check
+          npm run feature:360:check
+          npm run security:360:check
+
+      - name: Ensure helper files stay out of product branch
+        run: |
+          test ! -e scripts/ci-sourcing-cutover-4l.py
+          test ! -e .github/workflows/canonical-sourcing-cutover-4l.yml
+
+      - name: Commit and push product branch
+        run: |
+          git add \
+            bootstrap/html-routes.js \
+            tests/unit/bootstrap-html-routes.test.js \
+            docs/contract/SOURCING_WORKSPACE_4E.md \
+            docs/contract/SOURCING_CUTOVER_4L.md \
+            docs/contract/DASHBOARD_CUTOVER_2.md \
+            public/dashboards/canonical/README.md
+          git commit -m "feat(canonical): converge sourcing entrypoints"
+          git push --force-with-lease origin HEAD:refs/heads/feat/canonical-sourcing-cutover-4l
