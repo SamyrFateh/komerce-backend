@@ -24,4 +24,13 @@ replace_once(
     "test('surfaceForPath distingue Client Index du détail Client 360', () => {\n  const env = loadApp('/admin/clients/%2B2691234567');\n  expect(env.api.surfaceForPath('/admin/clients/%2B2691234567')).toBe(env.api.SURFACES.CLIENT_360);\n  expect(env.api.surfaceForPath('/admin/clients')).toBe(env.api.SURFACES.CLIENT_INDEX);\n  expect(env.api.surfaceForPath('/admin-next/clients')).toBe(env.api.SURFACES.CLIENT_INDEX);\n});"
 )
 
-print('CLIENT_INDEX_4I_TEST_TRUTH_FIXED')
+# Governance truth only: Feature Audit compares Express route registry syntax.
+# The real route is DELETE /credentials/:id; the manifest used OpenAPI {id},
+# producing a false MISSING_ROUTE + inverse warning. No auth runtime changes.
+replace_once(
+    'features/auth-passkey.feature.js',
+    "      'DELETE /api/auth/passkey/credentials/{id}',",
+    "      'DELETE /api/auth/passkey/credentials/:id',"
+)
+
+print('CLIENT_INDEX_4I_TEST_AND_CONTRACT_TRUTH_FIXED')
