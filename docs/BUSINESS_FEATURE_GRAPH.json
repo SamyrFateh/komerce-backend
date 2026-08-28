@@ -30543,6 +30543,19 @@
       "lifecycleOwner": "providers-services",
       "resolution": "single-writer"
     },
+    "physical_offers": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
     "inquiries": {
       "writers": [
         {
