@@ -48,22 +48,30 @@ function walk(dir, exts, out = []) {
   return out;
 }
 
-describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 2 D2)', () => {
+describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 2)', () => {
 
-  // Vague 2 D2 (28-08-2026) : deux points d'intégration backend délibérés et
-  // revus — routes/orders/create.js (allocateForOrderItem, dans la même
-  // transaction que la commande) et services/order-status-machine.js
-  // (consumeAllocationsForOrder/releaseAllocationsForOrder, sur les
-  // transitions confirmed/cancelled déjà existantes). Le test ne garantit
-  // plus "zéro consommateur backend" mais "EXACTEMENT ces deux, jamais un
-  // troisième non revu" — la vraie garantie (zéro Boutique/frontend) reste
-  // inchangée dans les tests suivants.
-  const ALLOWED_LOCAL_STOCK_CONSUMERS = [
+  // Vague 2 D2 (28-08-2026) : deux points d'intégration backend ÉCRITURE,
+  // délibérés et revus — routes/orders/create.js (allocateForOrderItem,
+  // dans la même transaction que la commande) et services/order-status-
+  // machine.js (consumeAllocationsForOrder/releaseAllocationsForOrder, sur
+  // les transitions confirmed/cancelled déjà existantes).
+  const ALLOWED_WRITE_CONSUMERS = [
     'routes/orders/create.js',
     'services/order-status-machine.js',
   ];
 
-  test('aucune route (routes/) ne require() les services shadow, sauf le point d\'intégration D2 revu', () => {
+  // Vague 2 D4 (28-08-2026) : routes GET read-only shadow — testables,
+  // JAMAIS montées dans bootstrap/api-routes.js (voir test dédié plus bas,
+  // déjà générique et suffisant : il matche tout mount qui contiendrait le
+  // mot-clé du domaine, donc protège aussi ces 2 fichiers sans modification).
+  const ALLOWED_ROUTE_FILE_CONSUMERS = [
+    'routes/local-stock.js',
+    'routes/providers-services.js',
+  ];
+
+  const ALLOWED_LOCAL_STOCK_CONSUMERS = [...ALLOWED_WRITE_CONSUMERS, ...ALLOWED_ROUTE_FILE_CONSUMERS];
+
+  test('aucune route (routes/) ne require() les services shadow, sauf les points d\'intégration D2/D4 revus', () => {
     const routeFiles = walk(path.join(ROOT, 'routes'), ['.js']);
     const offenders = [];
     for (const file of routeFiles) {
@@ -141,7 +149,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     expect(offenders).toEqual([]);
   });
 
-  test('services/local-stock-service.js n\'est require() que par les points d\'intégration D2 revus (jamais providers-service.js, encore zéro consommateur)', () => {
+  test('local-stock-service.js et providers-service.js ne sont require() que par les points d\'intégration D2/D4 revus', () => {
     const allJs = walk(ROOT, ['.js'])
       .filter(f => !f.includes(`${path.sep}node_modules${path.sep}`))
       .filter(f => !f.includes(`${path.sep}tests${path.sep}`))
@@ -156,9 +164,12 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
       if (/require\(.*local-stock-service/.test(src) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
         offenders.push(`${rel} → local-stock-service`);
       }
-      // providers-service.js reste à zéro consommateur backend — aucune
-      // intégration D2 n'a encore été décidée pour ce domaine.
-      if (/require\(.*providers-service/.test(src)) offenders.push(`${rel} → providers-service`);
+      // Vague 2 D4 : routes/providers-services.js require() légitimement
+      // providers-service désormais (route GET shadow, jamais montée) —
+      // même allowlist que local-stock-service, plus le même filet.
+      if (/require\(.*providers-service/.test(src) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
+        offenders.push(`${rel} → providers-service`);
+      }
     }
     expect(offenders).toEqual([]);
   });
@@ -195,6 +206,23 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const providersServices = require('../../features/providers-services.feature.js');
     expect(localStock.status).toBe('staging');
     expect(providersServices.status).toBe('staging');
+  });
+
+  test('Vague 2 D4 — routes/local-stock.js et routes/providers-services.js existent, sont require()-ables, mais jamais montées dans bootstrap/api-routes.js', () => {
+    // Test direct et explicite, en complément de la couverture incidente
+    // déjà offerte par "bootstrap/api-routes.js ne monte aucune route pour
+    // les domaines shadow" (qui matche tout mount contenant le mot-clé du
+    // domaine, donc protège déjà ces 2 fichiers sans modification) — mais
+    // l'invariant D4 mérite sa propre preuve directe, pas seulement une
+    // protection accidentelle d'un test écrit pour une autre raison.
+    expect(fs.existsSync(path.join(ROOT, 'routes', 'local-stock.js'))).toBe(true);
+    expect(fs.existsSync(path.join(ROOT, 'routes', 'providers-services.js'))).toBe(true);
+    expect(() => require('../../routes/local-stock.js')).not.toThrow();
+    expect(() => require('../../routes/providers-services.js')).not.toThrow();
+
+    const bootstrapSrc = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes.js'), 'utf8');
+    expect(bootstrapSrc).not.toMatch(/routes\/local-stock/);
+    expect(bootstrapSrc).not.toMatch(/routes\/providers-services/);
   });
 
 });

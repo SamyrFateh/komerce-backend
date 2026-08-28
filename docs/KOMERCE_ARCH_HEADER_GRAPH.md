@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 451
-- Files with full headers: 423
+- Scanned code files: 453
+- Files with full headers: 425
 - Files with lite headers: 28
-- Files with any headers: 451
+- Files with any headers: 453
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1024
-- Edges: 5243
-- DB tables: 128
-- Doctrines: 280
+- Graph nodes: 1029
+- Edges: 5258
+- DB tables: 130
+- Doctrines: 281
 - Impact areas: 165
-- Unresolved code edges: 537
+- Unresolved code edges: 541
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
@@ -42,7 +42,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
-- local-stock: 1
+- local-stock: 2
 - logistics: 38
 - loyalty: 3
 - market: 2
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 11
 - orders: 25
 - payment: 17
-- providers-services: 1
+- providers-services: 2
 - purchasing: 8
 - recommendations: 4
 - refunds: 2
@@ -79,7 +79,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 20
 - presenter: 1
-- route: 112
+- route: 114
 - route-manifest: 1
 - schema: 1
 - service: 183
@@ -736,6 +736,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
+- uses: (aucun — Vague 2 D4 -> routes/local-stock.js ((aucun — Vague 2 D4)
+- uses: (aucun — Vague 2 D4 -> routes/providers-services.js ((aucun — Vague 2 D4)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -853,8 +855,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> middleware/auth (middleware/auth)
 - depends: routes/admin-dashboard-market.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-admin-context (services/dashboard-admin-context)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-commerce (services/dashboard-commerce)
 
 ## Files Still Without Headers Or Aggregation
 

@@ -7023,9 +7023,23 @@
       },
       {
         "feature": "local-stock",
+        "category": "routes",
+        "declared": "routes/local-stock.js",
+        "resolvedPath": "routes/local-stock.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "local-stock",
         "category": "tests",
         "declared": "tests/unit/local-stock-service.test.js",
         "resolvedPath": "tests/unit/local-stock-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "local-stock",
+        "category": "tests",
+        "declared": "tests/unit/local-stock-routes.test.js",
+        "resolvedPath": "tests/unit/local-stock-routes.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9102,9 +9116,23 @@
       },
       {
         "feature": "providers-services",
+        "category": "routes",
+        "declared": "routes/providers-services.js",
+        "resolvedPath": "routes/providers-services.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "providers-services",
         "category": "tests",
         "declared": "tests/unit/providers-service.test.js",
         "resolvedPath": "tests/unit/providers-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/providers-services-routes.test.js",
+        "resolvedPath": "tests/unit/providers-services-routes.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28732,7 +28760,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 966
+        "filesObserved": 970
       },
       "boutique": {
         "filesObserved": 173,
@@ -30869,8 +30897,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 362,
-        "technicalNodesOwned": 362,
+        "technicalNodesTotal": 364,
+        "technicalNodesOwned": 364,
         "technicalOrphans": 0
       },
       "dash": {
@@ -31124,12 +31152,27 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "local-stock / GET /api/local-stock/availability?product_id=X&market_id=Y — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "logistics / GET/POST /api/parcels",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "orders / GET/POST /api/orders",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market_id=X — idem",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market_id=X — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -31147,8 +31190,8 @@
       "signals": 0,
       "debt": 0,
       "expectedTopology": 29,
-      "generatorLimitations": 6,
-      "classifiedCandidates": 35
+      "generatorLimitations": 9,
+      "classifiedCandidates": 38
     }
   }
 }
