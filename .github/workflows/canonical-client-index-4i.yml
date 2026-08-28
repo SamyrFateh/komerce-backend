@@ -20,8 +20,10 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Preserve implementation script
-        run: cp scripts/ci-client-index-4i.py /tmp/ci-client-index-4i.py
+      - name: Preserve implementation scripts
+        run: |
+          cp scripts/ci-client-index-4i.py /tmp/ci-client-index-4i.py
+          cp scripts/ci-client-index-4i-fix.py /tmp/ci-client-index-4i-fix.py
 
       - name: Build product slice from certified main
         run: |
@@ -30,6 +32,7 @@ jobs:
           git fetch origin main
           git checkout -B feat/canonical-client-index-4i 550728912a1710e68b359e6dcf939c7cadd5b395
           python3 /tmp/ci-client-index-4i.py
+          python3 /tmp/ci-client-index-4i-fix.py
           git status --short
 
       - name: Install dependencies
@@ -80,6 +83,7 @@ jobs:
       - name: Ensure no helper files enter product branch
         run: |
           test ! -e scripts/ci-client-index-4i.py
+          test ! -e scripts/ci-client-index-4i-fix.py
           test ! -e .github/workflows/canonical-client-index-4i.yml
 
       - name: Commit and push product branch
@@ -97,6 +101,7 @@ jobs:
             tests/unit/client-index-service.test.js \
             tests/unit/admin-client-index-route.test.js \
             tests/unit/canonical-client-index.test.js \
+            tests/unit/canonical-client-360-app.test.js \
             docs
           git commit -m "feat(canonical): add scoped client index"
           git push --force-with-lease origin HEAD:refs/heads/feat/canonical-client-index-4i
