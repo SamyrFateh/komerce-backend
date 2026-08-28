@@ -132,9 +132,14 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
-  // LOT 3B — Client 360 Canonical. L'URL détaillée est canonique, tandis que
-  // `/admin/clients` sans identifiant reste Legacy 1 jusqu'à reconstruction
-  // d'une vraie surface de recherche/navigation clients.
+  // LOT 4I — Client Index Canonical : recherche/navigation légère vers Client 360.
+  // Legacy 1 reste disponible par query explicite pour rollback immédiat.
+  app.get('/admin/clients', (req, res) => {
+    if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    sendCanonicalAdmin(res);
+  });
+
+  // LOT 3B — Client 360 Canonical détaillé.
   app.get('/admin/clients/:clientPhone', (req, res) => {
     sendCanonicalAdmin(res);
   });
@@ -160,6 +165,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin-next/workspaces/sourcing': '/admin/workspaces/sourcing',
     '/admin-next/workspaces/pricing': '/admin/workspaces/pricing',
     '/admin-next/action-center': '/admin/action-center',
+    '/admin-next/clients': '/admin/clients',
     '/admin-next/demo': '/admin/demo',
     '/admin/pilotage-v2': '/admin/pilotage',
   });
@@ -188,7 +194,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/products',
     '/admin/catalog-approval',
     '/admin/sales',
-    '/admin/clients',
     '/admin/problems',
     '/admin/hub-relais',
     '/admin/transitaire',

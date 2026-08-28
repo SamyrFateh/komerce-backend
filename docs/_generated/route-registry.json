@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-27T09:51:34.739Z",
+  "generatedAt": "2026-08-28T17:19:32.963Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 535,
+  "count": 537,
   "routes": [
     {
       "method": "GET",
@@ -659,10 +659,30 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/entities/clients",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/clients",
+      "routeFile": "routes/admin-client-index.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/entities/clients/:clientPhone",
       "mountPrefix": "/api/admin/entities",
       "localPath": "/clients/:clientPhone",
       "routeFile": "routes/admin-client-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/clients/market/:marketCode",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/clients/market/:marketCode",
+      "routeFile": "routes/admin-client-index.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

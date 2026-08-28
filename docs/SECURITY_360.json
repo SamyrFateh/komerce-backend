@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-27T14:48:18.132Z",
+  "generatedAt": "2026-08-28T17:19:38.048Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 554,
-    "protected": 507,
+    "total": 556,
+    "protected": 509,
     "public": 7,
     "unprotected": 38,
     "admin_no_guard": 0,
@@ -859,6 +859,20 @@
     },
     {
       "key": "GET /api/admin/entities/clients/{clientPhone}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/clients/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/clients",
       "level": "PROTECTED",
       "roles": [
         "admin"

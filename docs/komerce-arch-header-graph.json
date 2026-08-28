@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 449,
-    "filesWithFullHeaders": 421,
+    "scannedCodeFiles": 451,
+    "filesWithFullHeaders": 423,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 449,
+    "filesWithAnyHeaders": 451,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1021,
-    "edges": 5212,
+    "graphNodes": 1024,
+    "edges": 5243,
     "dbTables": 128,
-    "doctrines": 279,
+    "doctrines": 280,
     "impactAreas": 165,
-    "unresolvedCodeEdges": 531,
+    "unresolvedCodeEdges": 537,
     "dbWriteViaOverlapWarnings": 1,
     "multiWriterTables": 62
   },
@@ -35,7 +35,7 @@
     "notification": 21,
     "auth": 14,
     "catalog": 73,
-    "admin-dashboard": 19,
+    "admin-dashboard": 21,
     "decision-signals": 7,
     "market": 2,
     "economic-engine": 46,
@@ -97,9 +97,9 @@
     "ui-boundary": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 111,
+    "route": 112,
     "entrypoint": 1,
-    "service": 182,
+    "service": 183,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -108,7 +108,7 @@
   "byCriticality": {
     "critical": 61,
     "medium": 112,
-    "high": 239,
+    "high": 241,
     "low": 37
   },
   "nodes": [
@@ -5150,6 +5150,60 @@
         "clients",
         "market-authorization",
         "auth-passkey"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "routes/admin-client-index.js",
+      "file": "routes/admin-client-index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-client-index-route",
+      "domain": "admin-dashboard",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin",
+        "requested_market_code",
+        "client_search",
+        "client_sort",
+        "pagination"
+      ],
+      "outputs": [
+        "authorized_client_index_projection"
+      ],
+      "depends": [
+        "db",
+        "middleware/auth",
+        "middleware/require-market-scope",
+        "middleware/require-dashboard-global-authority",
+        "services/client-index"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants",
+        "orders",
+        "users",
+        "recipients"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "server_market_scope_is_authority",
+        "server_global_context_explicit",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "clients",
+        "market-authorization"
       ],
       "version": "2026-08"
     },
@@ -11758,6 +11812,54 @@
         "shared-cart",
         "auth-passkey",
         "notifications",
+        "market-authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "services/client-index.js",
+      "file": "services/client-index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-client-index-service",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client_search",
+        "client_sort",
+        "pagination",
+        "server_market_scope"
+      ],
+      "outputs": [
+        "canonical_client_index_projection"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "routes/admin-client-index.js"
+      ],
+      "dbRead": [
+        "orders",
+        "users",
+        "recipients",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "server_market_scope_is_authority",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "clients",
+        "commerce",
         "market-authorization"
       ],
       "version": "2026-08"
@@ -21278,6 +21380,16 @@
       "table": "operator_market_scopes"
     },
     {
+      "id": "db:markets",
+      "type": "db-table",
+      "table": "markets"
+    },
+    {
+      "id": "db:recipients",
+      "type": "db-table",
+      "table": "recipients"
+    },
+    {
       "id": "db:customs_shipments",
       "type": "db-table",
       "table": "customs_shipments"
@@ -21326,11 +21438,6 @@
       "id": "db:transaction_documents",
       "type": "db-table",
       "table": "transaction_documents"
-    },
-    {
-      "id": "db:markets",
-      "type": "db-table",
-      "table": "markets"
     },
     {
       "id": "db:signals",
@@ -21406,11 +21513,6 @@
       "id": "db:invoices",
       "type": "db-table",
       "table": "invoices"
-    },
-    {
-      "id": "db:recipients",
-      "type": "db-table",
-      "table": "recipients"
     },
     {
       "id": "db:partners",
@@ -22453,6 +22555,11 @@
       "doctrine": "client_security_global_only"
     },
     {
+      "id": "doctrine:client_index_finds_client_360",
+      "type": "doctrine",
+      "doctrine": "client_index_finds_client_360"
+    },
+    {
       "id": "doctrine:thin_facade",
       "type": "doctrine",
       "doctrine": "thin_facade"
@@ -22803,6 +22910,11 @@
       "doctrine": "client_account_facets_global_only"
     },
     {
+      "id": "doctrine:dashboard_no_business_recompute",
+      "type": "doctrine",
+      "doctrine": "dashboard_no_business_recompute"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
@@ -22816,11 +22928,6 @@
       "id": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "doctrine": "douane_declaration_pivot"
-    },
-    {
-      "id": "doctrine:dashboard_no_business_recompute",
-      "type": "doctrine",
-      "doctrine": "dashboard_no_business_recompute"
     },
     {
       "id": "doctrine:finance_event_date_is_authoritative",
@@ -31152,6 +31259,114 @@
       "to": "impact:auth-passkey",
       "type": "impact",
       "label": "auth-passkey"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/require-market-scope",
+      "type": "depends",
+      "label": "middleware/require-market-scope"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/require-dashboard-global-authority",
+      "type": "depends",
+      "label": "middleware/require-dashboard-global-authority"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "services/client-index",
+      "type": "depends",
+      "label": "services/client-index"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-client-index.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:dashboard_global_access_grants",
+      "type": "db-read",
+      "label": "dashboard_global_access_grants"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "doctrine:server_market_scope_is_authority",
+      "type": "doctrine",
+      "label": "server_market_scope_is_authority"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "doctrine:server_global_context_explicit",
+      "type": "doctrine",
+      "label": "server_global_context_explicit"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "doctrine:client_index_finds_client_360",
+      "type": "doctrine",
+      "label": "client_index_finds_client_360"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "impact:clients",
+      "type": "impact",
+      "label": "clients"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "routes/admin-cost-components.js",
@@ -40676,6 +40891,84 @@
     },
     {
       "from": "services/client-360.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "services/client-index.js",
+      "type": "uses",
+      "label": "routes/admin-client-index.js"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "doctrine:dashboard_no_business_recompute",
+      "type": "doctrine",
+      "label": "dashboard_no_business_recompute"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "doctrine:server_market_scope_is_authority",
+      "type": "doctrine",
+      "label": "server_market_scope_is_authority"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "doctrine:client_index_finds_client_360",
+      "type": "doctrine",
+      "label": "client_index_finds_client_360"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "impact:clients",
+      "type": "impact",
+      "label": "clients"
+    },
+    {
+      "from": "services/client-index.js",
+      "to": "impact:commerce",
+      "type": "impact",
+      "label": "commerce"
+    },
+    {
+      "from": "services/client-index.js",
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
@@ -55492,6 +55785,7 @@
         "routes/admin-boutique-categories.js",
         "routes/admin-catalog-workspace.js",
         "routes/admin-client-360.js",
+        "routes/admin-client-index.js",
         "routes/admin-cost-components.js",
         "routes/admin-costing.js",
         "routes/admin-customs-categories.js",
@@ -60658,6 +60952,61 @@
         "impact:clients",
         "impact:market-authorization",
         "services/client-360.js"
+      ]
+    },
+    "routes/admin-client-index.js": {
+      "role": "canonical-client-index-route",
+      "domain": "admin-dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "middleware/auth",
+        "middleware/require-market-scope",
+        "middleware/require-dashboard-global-authority",
+        "services/client-index"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants",
+        "orders",
+        "users",
+        "recipients"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "server_market_scope_is_authority",
+        "server_global_context_explicit",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "clients",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:dashboard_global_access_grants",
+        "db:markets",
+        "db:operator_market_scopes",
+        "db:orders",
+        "db:recipients",
+        "db:users",
+        "doctrine:client_index_finds_client_360",
+        "doctrine:server_global_context_explicit",
+        "doctrine:server_market_scope_is_authority",
+        "impact:admin-dashboard",
+        "impact:clients",
+        "impact:market-authorization",
+        "services/client-index.js"
       ]
     },
     "routes/admin-cost-components.js": {
@@ -67015,6 +67364,54 @@
         "impact:notifications",
         "impact:shared-cart",
         "routes/admin-client-360.js"
+      ]
+    },
+    "services/client-index.js": {
+      "role": "canonical-client-index-service",
+      "domain": "admin-dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/admin-client-index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "users",
+        "recipients",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "dashboard_no_business_recompute",
+        "server_market_scope_is_authority",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "clients",
+        "commerce",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:orders",
+        "db:recipients",
+        "db:users",
+        "doctrine:client_index_finds_client_360",
+        "doctrine:dashboard_no_business_recompute",
+        "doctrine:server_market_scope_is_authority",
+        "impact:admin-dashboard",
+        "impact:clients",
+        "impact:commerce",
+        "impact:market-authorization",
+        "routes/admin-client-index.js"
       ]
     },
     "services/client-notification-service.js": {
@@ -77346,6 +77743,36 @@
       "label": "services/client-360"
     },
     {
+      "from": "routes/admin-client-index.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/require-market-scope",
+      "type": "depends",
+      "label": "middleware/require-market-scope"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "middleware/require-dashboard-global-authority",
+      "type": "depends",
+      "label": "middleware/require-dashboard-global-authority"
+    },
+    {
+      "from": "routes/admin-client-index.js",
+      "to": "services/client-index",
+      "type": "depends",
+      "label": "services/client-index"
+    },
+    {
       "from": "routes/admin-costing.js",
       "to": "db.js",
       "type": "depends",
@@ -78769,6 +79196,12 @@
     },
     {
       "from": "services/client-360.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/client-index.js",
       "to": "db",
       "type": "depends",
       "label": "db"

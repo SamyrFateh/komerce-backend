@@ -104,7 +104,7 @@ module.exports = {
       'POST /api/auth/passkey/login/options',
       'POST /api/auth/passkey/login/verify',
       'GET /api/auth/passkey/credentials',
-      'DELETE /api/auth/passkey/credentials/{id}',
+      'DELETE /api/auth/passkey/credentials/:id',
       'POST /api/auth/passkey/step-up/options',
       'POST /api/auth/passkey/step-up/verify',
     ],
