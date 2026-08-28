@@ -629,12 +629,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(desktop).toMatch(
         /background\s*:\s*rgba\(255,255,255,\.94\)/
       );
-      expect(desktop).toMatch(
-        /border-bottom\s*:\s*1px solid rgba\(42,33,23,\.08\)/
-      );
-      expect(desktop).toMatch(
-        /box-shadow\s*:\s*0 4px 16px rgba\(42,33,23,\.06\)/
-      );
+      expect(desktop).toMatch(/border-bottom\s*:\s*0/);
+      expect(desktop).toMatch(/box-shadow\s*:\s*none/);
       expect(desktop).not.toMatch(/100,175,90/);
     });
 

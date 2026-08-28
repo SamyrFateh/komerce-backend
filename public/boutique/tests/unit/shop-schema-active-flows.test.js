@@ -58,7 +58,7 @@ describe('shop-schema — fallback déclaratif', () => {
     expect(schema.getCategoryLabel('inconnue')).toBe('inconnue');
     expect(schema.getCategoryIcon('inconnue')).toBeNull();
     expect(schema.getCategorySectionEmoji('inconnue')).toBe('📦');
-    expect(schema.getCategoryImage('Tech')).toContain('/boutique/categories/tech.jpg');
+    expect(schema.getCategoryImage('Tech')).toContain('/boutique/categories/tech-v2.webp');
     expect(schema.getCategoryFilter('Soldes')).toEqual({ promo: true });
     expect(schema.getDbKeysForCategory('Mode & Beauté')).toEqual(['Mode', 'Beauté']);
     expect(schema.getDbKeysForCategory('inconnue')).toEqual(['inconnue']);
