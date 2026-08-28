@@ -94,6 +94,20 @@ describe('getLocalStock', () => {
     expect(params).toEqual([PRODUCT_ID, MARKET_ID, 'KM_MAIN']);
   });
 
+  // Bug réel trouvé en D5 (test bout en bord contre Postgres, jamais détecté
+  // par les mocks D2 — le mock incluait commercial_exposure alors que la
+  // vraie requête SQL ne le sélectionnait pas, isStockExposable() retournait
+  // toujours false en silence). Ce test vérifie le TEXTE de la requête, pas
+  // seulement le comportement sur une réponse mockée — c'est la seule façon
+  // pour un mock d'attraper cette classe de régression.
+  it('la requête SQL réelle sélectionne bien commercial_exposure — sinon isStockExposable mentirait en silence', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await svc.getLocalStock(PRODUCT_ID, MARKET_ID);
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/commercial_exposure/);
+  });
+
   it('ne lit jamais products.stock ni product_skus.stock', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });

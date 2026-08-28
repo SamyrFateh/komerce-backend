@@ -101,7 +101,7 @@ async function getLocalStock(productId, marketId, location = DEFAULT_LOCATION) {
     throw new Error('getLocalStock: product_id et market_id sont requis');
   }
   const { rows } = await db.query(
-    `SELECT id, product_id, market_id, location, qty_physical,
+    `SELECT id, product_id, market_id, location, qty_physical, commercial_exposure,
             updated_by, created_at, updated_at
        FROM local_stock
       WHERE product_id = $1 AND market_id = $2 AND location = $3`,
