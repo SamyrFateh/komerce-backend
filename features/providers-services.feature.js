@@ -127,12 +127,15 @@ module.exports = {
     { statement: 'un service ne peut être créé que pour un provider déjà actif',
       test: 'tests/unit/providers-service.test.js' },
     { statement: 'un service n\'est exposable que si lui-même actif, exposition ' +
-      'activée, ET son provider actif — le statut provider prime toujours',
+      'activée, provider actif, ET market_id correspond exactement au marché ' +
+      'demandé (Vague 2 D3) — le statut provider prime toujours, mais aucune ' +
+      'exposabilité n\'est vraie hors du marché de l\'objet, jamais une ' +
+      'confiance aveugle en l\'appelant',
       test: 'tests/unit/providers-service.test.js' },
     { statement: 'une offre physique (physical_offers) suit exactement les mêmes ' +
-      'garanties qu\'un service : créée seulement pour un provider actif, ' +
-      'exposable seulement si elle-même active, exposition activée, ET son ' +
-      'provider actif',
+      'garanties qu\'un service, market_id inclus (Vague 2 D3) : créée seulement ' +
+      'pour un provider actif, exposable seulement si elle-même active, ' +
+      'exposition activée, provider actif, ET marché correspondant',
       test: 'tests/unit/providers-service.test.js' },
     { statement: 'une inquiry porte sur EXACTEMENT une cible — service_id XOR ' +
       'physical_offer_id, jamais les deux, jamais aucune (contrainte DB ' +
@@ -155,5 +158,13 @@ module.exports = {
   // non-nulle) — voir RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D pour
   // l'arbitrage owner (4 signaux sur 5 de FEATURE_DOCTRINE.md pointent vers
   // un rattachement à cette feature, pas une nouvelle feature).
+  // 2026-08-28 — Vague 2 D3 : isServiceExposable/isPhysicalOfferExposable
+  // exigent et vérifient désormais market_id — asymétrie trouvée avec
+  // isStockExposable (local-stock, déjà market-scopé par construction) en
+  // revoyant le critère "market correct" de D3. Signature cassante mais
+  // sûre : aucun consommateur hors tests avant ce lot (confirmé par
+  // shadow-domains-boundary.test.js). Vérifié réellement contre Postgres :
+  // un samboussas actif+exposé dans un marché n'est jamais exposable
+  // depuis un autre marché.
 
 };

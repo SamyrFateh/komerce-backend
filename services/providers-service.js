@@ -210,9 +210,24 @@ async function getService(serviceId) {
  * @param {string} serviceId
  * @returns {Promise<boolean>}
  */
-async function isServiceExposable(serviceId) {
+/**
+ * Mêmes 3 conditions que isPhysicalOfferExposable — le statut provider
+ * prime toujours, une suspension masque immédiatement tous ses services
+ * sans avoir à les toucher un par un. Vague 2 D3 : exige et vérifie
+ * marketId — jamais une confiance aveugle en l'appelant sur le marché.
+ * Même patron que local-stock-service.js#isStockExposable (déjà
+ * market-scopé par construction, via la clé composite de local_stock).
+ *
+ * @param {string} serviceId
+ * @param {string} marketId
+ * @returns {Promise<boolean>}
+ */
+async function isServiceExposable(serviceId, marketId) {
+  if (!marketId) {
+    throw new Error('isServiceExposable: market_id est requis — jamais une confiance aveugle en l\'appelant');
+  }
   const { rows } = await db.query(
-    `SELECT s.status AS service_status, s.commercial_exposure, p.status AS provider_status
+    `SELECT s.status AS service_status, s.commercial_exposure, s.market_id, p.status AS provider_status
        FROM services s
        JOIN providers p ON p.id = s.provider_id
       WHERE s.id = $1`,
@@ -222,7 +237,8 @@ async function isServiceExposable(serviceId) {
   const r = rows[0];
   return r.service_status === SERVICE_STATUS.ACTIVE
     && r.commercial_exposure === 'ENABLED'
-    && r.provider_status === PROVIDER_STATUS.ACTIVE;
+    && r.provider_status === PROVIDER_STATUS.ACTIVE
+    && String(r.market_id) === String(marketId);
 }
 
 // ── PhysicalOffer ────────────────────────────────────────────────────────
@@ -289,9 +305,23 @@ async function getPhysicalOffer(physicalOfferId) {
  * @param {string} physicalOfferId
  * @returns {Promise<boolean>}
  */
-async function isPhysicalOfferExposable(physicalOfferId) {
+/**
+ * Mêmes 3 conditions simultanées que isServiceExposable — le statut
+ * provider prime toujours, une suspension masque immédiatement l'offre
+ * sans avoir à la toucher. Vague 2 D3 : exige et vérifie marketId — même
+ * discipline que isServiceExposable, jamais une confiance aveugle en
+ * l'appelant sur le marché.
+ *
+ * @param {string} physicalOfferId
+ * @param {string} marketId
+ * @returns {Promise<boolean>}
+ */
+async function isPhysicalOfferExposable(physicalOfferId, marketId) {
+  if (!marketId) {
+    throw new Error('isPhysicalOfferExposable: market_id est requis — jamais une confiance aveugle en l\'appelant');
+  }
   const { rows } = await db.query(
-    `SELECT o.status AS offer_status, o.commercial_exposure, p.status AS provider_status
+    `SELECT o.status AS offer_status, o.commercial_exposure, o.market_id, p.status AS provider_status
        FROM physical_offers o
        JOIN providers p ON p.id = o.provider_id
       WHERE o.id = $1`,
@@ -301,7 +331,8 @@ async function isPhysicalOfferExposable(physicalOfferId) {
   const r = rows[0];
   return r.offer_status === PHYSICAL_OFFER_STATUS.ACTIVE
     && r.commercial_exposure === 'ENABLED'
-    && r.provider_status === PROVIDER_STATUS.ACTIVE;
+    && r.provider_status === PROVIDER_STATUS.ACTIVE
+    && String(r.market_id) === String(marketId);
 }
 
 // ── Inquiry ──────────────────────────────────────────────────────────────

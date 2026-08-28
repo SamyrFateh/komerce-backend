@@ -155,43 +155,57 @@ describe('createService', () => {
 
 // ─── isServiceExposable ─────────────────────────────────────────────────────
 
-describe('isServiceExposable — les 3 conditions doivent TOUTES tenir', () => {
+describe('isServiceExposable — les 4 conditions doivent TOUTES tenir (Vague 2 D3 : market ajouté)', () => {
+  it('lève si market_id manquant — jamais une confiance aveugle en l\'appelant', async () => {
+    const svc = loadService();
+    await expect(svc.isServiceExposable(SERVICE_ID)).rejects.toThrow(/market_id est requis/);
+  });
+
   it('service inconnu -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });
-    expect(await svc.isServiceExposable(SERVICE_ID)).toBe(false);
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
 
-  it('service actif + exposure ENABLED + provider actif -> true', async () => {
+  it('service actif + exposure ENABLED + provider actif + market correct -> true', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active' }],
+      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
     });
-    expect(await svc.isServiceExposable(SERVICE_ID)).toBe(true);
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(true);
+  });
+
+  it('tout correct MAIS market_id différent -> false — jamais de fuite cross-market', async () => {
+    const svc = loadService();
+    const AUTRE_MARKET_ID = '99999999-9999-9999-9999-999999999999';
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: AUTRE_MARKET_ID }],
+    });
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
 
   it('service actif + exposure ENABLED mais provider suspendu -> false (le provider prime)', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'suspended' }],
+      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'suspended', market_id: MARKET_ID }],
     });
-    expect(await svc.isServiceExposable(SERVICE_ID)).toBe(false);
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
 
   it('provider actif + exposure ENABLED mais service en draft -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'draft', commercial_exposure: 'ENABLED', provider_status: 'active' }],
+      rows: [{ service_status: 'draft', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
     });
-    expect(await svc.isServiceExposable(SERVICE_ID)).toBe(false);
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
 
   it('service actif + provider actif mais exposure toujours DISABLED -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'active', commercial_exposure: 'DISABLED', provider_status: 'active' }],
+      rows: [{ service_status: 'active', commercial_exposure: 'DISABLED', provider_status: 'active', market_id: MARKET_ID }],
     });
-    expect(await svc.isServiceExposable(SERVICE_ID)).toBe(false);
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
 });
 
@@ -248,27 +262,41 @@ describe('createPhysicalOffer — table sœur de createService, mêmes garanties
 
 // ─── isPhysicalOfferExposable ─────────────────────────────────────────────────
 
-describe('isPhysicalOfferExposable — les 3 conditions doivent TOUTES tenir', () => {
+describe('isPhysicalOfferExposable — les 4 conditions doivent TOUTES tenir (Vague 2 D3 : market ajouté)', () => {
+  it('lève si market_id manquant', async () => {
+    const svc = loadService();
+    await expect(svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).rejects.toThrow(/market_id est requis/);
+  });
+
   it('offre inconnue -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });
-    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(false);
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(false);
   });
 
-  it('offre active + exposure ENABLED + provider actif -> true', async () => {
+  it('offre active + exposure ENABLED + provider actif + market correct -> true', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active' }],
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
     });
-    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(true);
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(true);
+  });
+
+  it('tout correct MAIS market_id différent -> false — cas de vérité samboussas : jamais visible hors de son marché', async () => {
+    const svc = loadService();
+    const AUTRE_MARKET_ID = '99999999-9999-9999-9999-999999999999';
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: AUTRE_MARKET_ID }],
+    });
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(false);
   });
 
   it('offre active + exposure ENABLED mais provider suspendu -> false (le provider prime, même invariant que pour un service)', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'suspended' }],
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'suspended', market_id: MARKET_ID }],
     });
-    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(false);
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(false);
   });
 });
 

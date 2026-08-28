@@ -17017,11 +17017,11 @@
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "un service n'est exposable que si lui-même actif, exposition activée, ET son provider actif — le statut provider prime toujours",
+          "statement": "un service n'est exposable que si lui-même actif, exposition activée, provider actif, ET market_id correspond exactement au marché demandé (Vague 2 D3) — le statut provider prime toujours, mais aucune exposabilité n'est vraie hors du marché de l'objet, jamais une confiance aveugle en l'appelant",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une offre physique (physical_offers) suit exactement les mêmes garanties qu'un service : créée seulement pour un provider actif, exposable seulement si elle-même active, exposition activée, ET son provider actif",
+          "statement": "une offre physique (physical_offers) suit exactement les mêmes garanties qu'un service, market_id inclus (Vague 2 D3) : créée seulement pour un provider actif, exposable seulement si elle-même active, exposition activée, provider actif, ET marché correspondant",
           "test": "tests/unit/providers-service.test.js"
         },
         {
