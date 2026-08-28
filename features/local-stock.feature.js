@@ -93,8 +93,12 @@ module.exports = {
     services: [
       'services/local-stock-service.js',
     ],
+    routes: [
+      'routes/local-stock.js',
+    ],
     tests: [
       'tests/unit/local-stock-service.test.js',
+      'tests/unit/local-stock-routes.test.js',
     ],
   },
 
@@ -109,18 +113,22 @@ module.exports = {
   },
 
   security: {
-    status: 'NO_ROUTE_YET',
-    note: 'Shadow côté frontend — aucune route HTTP publique dans cette PR. ' +
-      'Le service est appelé directement (scripts/tests) et depuis deux ' +
-      'points d\'intégration backend revus (routes/orders/create.js, ' +
-      'order-status-machine.js, tous deux dans la feature orders — voir ' +
-      'features/orders.feature.js contract.consumes). Une route admin ' +
-      'd\'ajustement sera un lot séparé, avec sa propre revue d\'autorisation.',
+    status: 'ROUTE_SHADOW',
+    note: 'Vague 2 D4 : routes/local-stock.js existe (GET /availability), ' +
+      'testable, mais JAMAIS montée dans bootstrap/api-routes.js — vérifié ' +
+      'par tests/unit/shadow-domains-boundary.test.js. "Le frontend peut ' +
+      'techniquement lire, mais rien n\'est encore branché." Deux points ' +
+      'd\'intégration backend écriture restent revus séparément ' +
+      '(routes/orders/create.js, order-status-machine.js, tous deux dans la ' +
+      'feature orders — voir features/orders.feature.js contract.consumes). ' +
+      'Montage réel + auth + rate-limit seront un lot séparé (D6/D7), avec ' +
+      'sa propre revue.',
   },
 
   contract: {
     exposes: [
-      // Aucune route HTTP dans cette PR — appel direct du service.
+      'GET /api/local-stock/availability?product_id=X&market_id=Y — jamais ' +
+        'monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)',
     ],
     consumes: [
       'catalog (produit concerné — lecture seule, jamais products.stock)',
@@ -166,6 +174,11 @@ module.exports = {
       'chemin Boutique/checkout tant que l\'exposition n\'est pas activée ' +
       '(shadow frontend strict, y compris après D2)',
       test: 'tests/unit/shadow-domains-boundary.test.js' },
+    { statement: 'GET /api/local-stock/availability ne renvoie jamais le ' +
+      'pourquoi d\'une indisponibilité (allocations actives, exposure ' +
+      'DISABLED...) — uniquement availability/exposable, jamais une vérité ' +
+      'métier détaillée',
+      test: 'tests/unit/local-stock-routes.test.js' },
   ],
 
   // ── Historique ───────────────────────────────────────────────────────────
@@ -181,5 +194,9 @@ module.exports = {
   // Micro-arbitrage validé : pas de qty_allocated matérialisé, pas de TTL,
   // pas de branchement unsold-resolution. Voir RECHALLENGE_DOCTRINE_
   // DISCOVERY_LOCALE_V2.md §I et migration 157 pour l'arbitrage complet.
+  // 2026-08-28 — Vague 2 D4 : routes/local-stock.js (GET /availability),
+  // read-only, jamais montée dans bootstrap/api-routes.js — "le frontend
+  // peut techniquement lire, mais rien n'est encore branché." Ne renvoie
+  // jamais le détail d'une indisponibilité.
 
 };

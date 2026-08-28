@@ -85,8 +85,12 @@ module.exports = {
     services: [
       'services/providers-service.js',
     ],
+    routes: [
+      'routes/providers-services.js',
+    ],
     tests: [
       'tests/unit/providers-service.test.js',
+      'tests/unit/providers-services-routes.test.js',
     ],
   },
 
@@ -102,15 +106,24 @@ module.exports = {
   },
 
   security: {
-    status: 'NO_ROUTE_YET',
-    note: 'Shadow — aucune route HTTP exposée dans cette PR. Le service est ' +
-      'appelé directement (scripts/tests). Une route sera un lot séparé, ' +
-      'avec sa propre revue d\'autorisation.',
+    status: 'ROUTE_SHADOW',
+    note: 'Vague 2 D4 : routes/providers-services.js existe ' +
+      '(GET /services/:id, GET /physical-offers/:id), testable, mais ' +
+      'JAMAIS montée dans bootstrap/api-routes.js — vérifié par ' +
+      'tests/unit/shadow-domains-boundary.test.js. Champs publics ' +
+      'minimaux uniquement (id/title/description/zone/market_id) — ' +
+      'JAMAIS le téléphone provider, jamais provider_id : le contact réel ' +
+      'se fait via une Inquiry (écriture), pas par lecture directe ici. ' +
+      'Objet non exposable -> 404, jamais le pourquoi (statut, exposure, ' +
+      'marché). Montage réel + auth + rate-limit seront un lot séparé ' +
+      '(D6/D7), avec sa propre revue.',
   },
 
   contract: {
     exposes: [
-      // Aucune route HTTP dans cette PR — appel direct du service.
+      'GET /api/providers-services/services/:id?market_id=X — jamais monté ' +
+        'dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)',
+      'GET /api/providers-services/physical-offers/:id?market_id=X — idem',
     ],
     consumes: [
       'market (référentiel markets — lecture seule)',
@@ -147,6 +160,10 @@ module.exports = {
     { statement: 'le cycle inquiry est strictement linéaire : sent -> answered ' +
       '-> accepted|declined, jamais de saut d\'état',
       test: 'tests/unit/providers-service.test.js' },
+    { statement: 'GET /services/:id et GET /physical-offers/:id ne renvoient ' +
+      'jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi ' +
+      'd\'une non-exposabilité (404 pur, jamais un détail de statut/marché)',
+      test: 'tests/unit/providers-services-routes.test.js' },
   ],
 
   // ── Historique ───────────────────────────────────────────────────────────
@@ -166,5 +183,8 @@ module.exports = {
   // shadow-domains-boundary.test.js). Vérifié réellement contre Postgres :
   // un samboussas actif+exposé dans un marché n'est jamais exposable
   // depuis un autre marché.
+  // 2026-08-28 — Vague 2 D4 : routes/providers-services.js (GET /services/:id,
+  // GET /physical-offers/:id), read-only, jamais montée dans bootstrap/
+  // api-routes.js. Champs publics minimaux, jamais téléphone/provider_id.
 
 };
