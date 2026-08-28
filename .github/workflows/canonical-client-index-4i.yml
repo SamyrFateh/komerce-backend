@@ -1,0 +1,102 @@
+name: Canonical Client Index 4I
+
+on:
+  push:
+    branches:
+      - ci/canonical-client-index-4i
+
+permissions:
+  contents: write
+
+jobs:
+  build-prove-push:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Preserve implementation script
+        run: cp scripts/ci-client-index-4i.py /tmp/ci-client-index-4i.py
+
+      - name: Build product slice from certified main
+        run: |
+          git config user.name "SamyrFateh"
+          git config user.email "fatehsamyr@gmail.com"
+          git fetch origin main
+          git checkout -B feat/canonical-client-index-4i 550728912a1710e68b359e6dcf939c7cadd5b395
+          python3 /tmp/ci-client-index-4i.py
+          git status --short
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Targeted client index and boundary tests
+        run: |
+          npx jest \
+            tests/unit/client-index-service.test.js \
+            tests/unit/admin-client-index-route.test.js \
+            tests/unit/canonical-client-index.test.js \
+            tests/unit/admin-client-360-route.test.js \
+            tests/unit/canonical-client-360-app.test.js \
+            tests/unit/canonical-dashboard-boundary.test.js \
+            tests/unit/bootstrap-html-routes.test.js \
+            --runInBand
+
+      - name: Quality and card-first pre-generation gates
+        run: |
+          npm run quality:gate
+          npm run feature:registry
+          npm run gate:schema
+          npm run gate:docs-lint
+
+      - name: Regenerate canonical derived artifacts
+        run: |
+          npm run contract:generate
+          npm run dashboards:360:save
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run gate:findings:gen
+          npm run feature:360:gen
+          npm run security:360:save
+
+      - name: Full governance proof
+        run: |
+          npm run gate:touched-files
+          npm run gate:touched-tests
+          npm run gate:feature-audit
+          npm run dashboards:360:check
+          npm run business-graph:check
+          npm run business-graph:ratchet-check
+          npm run business-graph:disposition-check
+          npm run feature:360:check
+          npm run security:360:check
+          npm run map:check
+
+      - name: Ensure no helper files enter product branch
+        run: |
+          test ! -e scripts/ci-client-index-4i.py
+          test ! -e .github/workflows/canonical-client-index-4i.yml
+
+      - name: Commit and push product branch
+        run: |
+          git add \
+            bootstrap/api-routes.js \
+            bootstrap/html-routes.js \
+            features/dashboard.feature.js \
+            routes/admin-client-index.js \
+            services/client-index.js \
+            public/dashboards/canonical/index.html \
+            public/dashboards/canonical/js/app.js \
+            public/dashboards/canonical/js/client-index.js \
+            docs/contract/CLIENT_INDEX_4I.md \
+            tests/unit/client-index-service.test.js \
+            tests/unit/admin-client-index-route.test.js \
+            tests/unit/canonical-client-index.test.js \
+            docs
+          git commit -m "feat(canonical): add scoped client index"
+          git push --force-with-lease origin HEAD:refs/heads/feat/canonical-client-index-4i
