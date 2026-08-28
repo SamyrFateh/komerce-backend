@@ -11387,7 +11387,7 @@
               {
                 "declared": "routes/local-stock.js",
                 "resolvedPath": "routes/local-stock.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -17068,7 +17068,7 @@
               {
                 "declared": "routes/providers-services.js",
                 "resolvedPath": "routes/providers-services.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },

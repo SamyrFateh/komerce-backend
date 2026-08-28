@@ -7026,7 +7026,7 @@
         "category": "routes",
         "declared": "routes/local-stock.js",
         "resolvedPath": "routes/local-stock.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "local-stock",
@@ -9119,7 +9119,7 @@
         "category": "routes",
         "declared": "routes/providers-services.js",
         "resolvedPath": "routes/providers-services.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "providers-services",
@@ -30897,8 +30897,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 362,
-        "technicalNodesOwned": 362,
+        "technicalNodesTotal": 364,
+        "technicalNodesOwned": 364,
         "technicalOrphans": 0
       },
       "dash": {
