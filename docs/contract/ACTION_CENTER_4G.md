@@ -177,9 +177,11 @@ Aucune suppression hard n’est exposée dans Canonical.
 - utilise uniquement les drill-down fournis par le serveur ;
 - ne possède aucun sélecteur marché.
 
-## Legacy
+## Legacy / cutover 4N
 
-`/admin/alerts` et `/api/admin/signals` restent disponibles pendant la preuve.
+LOT 4N ferme le point d’entrée UI `/admin/alerts` après preuve : sans query de rollback, il redirige vers `/admin/action-center`. `/admin/alerts?legacy=1` sert encore Legacy 1 pendant la fenêtre de rollback.
+
+L’API historique `/api/admin/signals` reste disponible pour les consommateurs Legacy ; le cutover 4N est un changement de surface UI, pas une suppression d’API.
 
 Le refactor du routeur Legacy corrige également son bug d’erreur historique : les handlers déclarent désormais `next`, donc une erreur DB atteint bien le middleware d’erreur au lieu de laisser la requête pendante.
 

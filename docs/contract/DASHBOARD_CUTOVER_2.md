@@ -91,6 +91,19 @@ Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant l
 
 `/admin/suppliers` reste Legacy : la vue historique couvre des familles de partenaires au-delà du seul `partner_type = sourcing` possédé par le Workspace 4E.
 
+## Extension LOT 4N — convergence Action Center
+
+Les deux anciennes surfaces de constats ne conservent plus deux runtimes produit parallèles :
+
+| Ancien point d’entrée | Destination Canonical |
+|---|---|
+| `/admin/alerts` | `/admin/action-center` |
+| `/admin/problems` | `/admin/action-center` |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback. Cette query ne modifie aucune autorité backend.
+
+`ProblemsView` n’est pas recopié : LOT 4H a audité ses règles une par une. Les prédicats faux ou non prouvables restent volontairement absents du moteur `decision-signals`.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -102,7 +115,6 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Partenaires multi-familles / Suppliers
 - Clients / Entity 360
 - Factures / Comptabilité
-- Action Center
 - Paramètres
 
 Ces URLs continuent de servir Legacy 1 jusqu'à preuve de remplacement par un Workspace, un Entity 360, l'Action Center ou une autre surface Canonical autorisée par la doctrine.
