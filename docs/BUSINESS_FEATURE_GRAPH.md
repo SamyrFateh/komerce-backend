@@ -341,16 +341,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### local-stock _(business-feature)_
 
-> Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.
+> Porter le stock physique vendable détenu par Komerce dans un marché donné, projeter une disponibilité calculée — jamais stockée — à partir de ce stock déduction faite des allocations actives, et engager/consommer/libérer ce stock au fil du cycle de vie d'une commande (Vague 2 D2). Toujours shadow côté FRONTEND (IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md, RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I) : commercial_exposure reste DISABLED par défaut, aucune route HTTP publique, aucun composant Boutique — mais depuis D2, deux points d'intégration backend délibérés et revus (routes/orders/create.js, order-status-machine.js) protègent déjà le stock réel dès la première commande, sans qu'aucune exposition ne soit visible côté client.
 
 - services: 1
 - tests: 1
-- tables owned (lifecycle): 1 — `local_stock`
-- tables written: 1
+- tables owned (lifecycle): 2 — `local_stock`, `local_stock_allocations`
+- tables written: 2
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, market, infrastructure
-- consumers: 0
+- consumers: 1 — orders
 
 ### logistics _(business-feature)_
 
@@ -429,7 +429,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 9
 - interfaces exposed: 27
 - internal APIs: 29
-- dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
+- dependencies (consumes): 19 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
 - consumers: 21 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
 
 ### payments _(business-feature)_
@@ -649,6 +649,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `inventory_items` | `inventory` | single-writer | inventory | — |
 | `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
 | `local_stock` | `local-stock` | single-writer | local-stock | — |
+| `local_stock_allocations` | `local-stock` | single-writer | local-stock | — |
 | `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
 | `loyalty_tiers` | `loyalty` | single-writer | loyalty | auth-identity |
 | `markets` | `market` | declared-table-owner | market | local-stock, providers-services |
@@ -1481,6 +1482,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
 | orders | logistics (`logistics (rattachement colis)`) | ✔ |
 | orders | catalog (`catalog (lecture produit)`) | ✔ |
+| orders | local-stock (`local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; services/order-status-machine.js -> services/local-stock-service.js)`) | ✔ |
 | orders | market (`market (P3 — resolveDisplaySnapshot() résout le contexte marché du client via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)`) | ✔ |
 | orders | purchasing (`purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)`) | ✔ |
 | orders | loyalty (`loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)`) | ✔ |
@@ -1812,6 +1814,7 @@ Meta Graph monté : oui.
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 55 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |

@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 227,
+    "businessDependencies": 228,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -11289,20 +11289,24 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
+      "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, projeter une disponibilité calculée — jamais stockée — à partir de ce stock déduction faite des allocations actives, et engager/consommer/libérer ce stock au fil du cycle de vie d'une commande (Vague 2 D2). Toujours shadow côté FRONTEND (IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md, RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I) : commercial_exposure reste DISABLED par défaut, aucune route HTTP publique, aucun composant Boutique — mais depuis D2, deux points d'intégration backend délibérés et revus (routes/orders/create.js, order-status-machine.js) protègent déjà le stock réel dès la première commande, sans qu'aucune exposition ne soit visible côté client.",
       "perimeter": {
         "in": [
-          "table local_stock (product_id, market_id, location texte, qty_physical)",
-          "projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée",
-          "ajustement du stock local par un opérateur (mutation directe, tracée updated_by)"
+          "table local_stock (product_id, market_id, location texte, qty_physical, commercial_exposure DISABLED par défaut — Vague 2 D2)",
+          "table local_stock_allocations (engagement d'une commande sur un stock local, avant tout paiement — Vague 2 D2)",
+          "projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée, déduit les allocations actives (qty_physical - SUM(actives))",
+          "isStockExposable() — exposure ENABLED ET quantité réellement disponible (allocations actives déduites), jamais l'un sans l'autre",
+          "ajustement du stock local par un opérateur (mutation directe, tracée updated_by)",
+          "cycle allocate (création commande) -> consume (paiement confirmé) | release (annulation/échec/abandon) — idempotent par construction (WHERE consumed_at IS NULL AND released_at IS NULL), pas de qty_allocated matérialisé (calculé à la volée, micro-arbitrage validé)"
         ],
         "out": [
           "stock hub/transit (feature inventory — inventory_items, invariant propre)",
           "stock import/national (feature catalog — products.stock, product_skus.stock)",
-          "réservation de stock (L4, différé — aucun consommateur checkout aujourd'hui)",
+          "réservation panier avec TTL / expiration automatique / cron dédié (le release se déclenche uniquement sur un événement réel déjà émis par orders — annulation, échec paiement, abandon cash — jamais une horloge inventée par ce domaine)",
+          "branchement sur unsold-resolution (étage différent : stock déjà CONSOMMÉ, commande jamais retirée — pas un échec avant consommation)",
           "référentiel de lieux multiples (un seul entrepôt KM_MAIN au lancement — location est un texte, jamais une FK, tant qu'un deuxième lieu réel n'existe pas)",
           "granularité variant_combo (scope product_id uniquement à ce stade — limitation explicite, pas un oubli)",
-          "toute exposition Boutique/checkout (Vague 2, hors périmètre de cette feature)",
+          "toute exposition Boutique/checkout (Vague 2, lots D3+, hors périmètre de cette feature)",
           "ETA / délai (appartient au domaine transport rail — DOCTRINE_TRANSPORT_RAILS.md — jamais un concept produit par local-stock)"
         ]
       },
@@ -11317,8 +11321,28 @@
           "test": "tests/unit/local-stock-service.test.js"
         },
         {
-          "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (Vague 1 = shadow strict)",
+          "statement": "availability/isStockExposable déduisent toujours les allocations actives (consumed_at IS NULL AND released_at IS NULL) — jamais qty_physical brut seul, sinon le badge mentirait sur une unité déjà engagée par une autre commande en cours de paiement",
           "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "allocateForOrderItem/consumeAllocationsForOrder/releaseAllocationsForOrder exigent un client de transaction explicite (jamais le pool global) — reste atomique avec la mutation orders qui les entoure",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "consume et release sont idempotents par construction (WHERE consumed_at IS NULL AND released_at IS NULL dans la requête elle-même) — un webhook rejoué ou une double annulation sont des no-op, jamais un double décrément ni une double libération",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "allocateForOrderItem verrouille la ligne local_stock (FOR UPDATE) avant de calculer la disponibilité — deux allocations concurrentes sur le même produit sont sérialisées, jamais une survente",
+          "test": "tests/unit/local-stock-service.test.js (mock) + vérifié réellement contre Postgres, verrou bloquant confirmé par timeout"
+        },
+        {
+          "statement": "release ne touche jamais qty_physical (l'unité n'a jamais été réellement prélevée avant consume)",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (shadow frontend strict, y compris après D2)",
+          "test": "tests/unit/shadow-domains-boundary.test.js"
         }
       ],
       "implementation": {
@@ -11356,11 +11380,21 @@
           {
             "table": "local_stock",
             "resolution": "single-writer"
+          },
+          {
+            "table": "local_stock_allocations",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
           {
             "table": "local_stock",
+            "mode": "RW",
+            "lifecycleOwner": "local-stock",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_allocations",
             "mode": "RW",
             "lifecycleOwner": "local-stock",
             "ownershipStatus": "owner"
@@ -11382,11 +11416,21 @@
           {
             "table": "local_stock",
             "resolution": "single-writer"
+          },
+          {
+            "table": "local_stock_allocations",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
           {
             "table": "local_stock",
+            "mode": "RW",
+            "lifecycleOwner": "local-stock",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_allocations",
             "mode": "RW",
             "lifecycleOwner": "local-stock",
             "ownershipStatus": "owner"
@@ -11432,7 +11476,15 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
@@ -14983,6 +15035,13 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
