@@ -48,12 +48,12 @@ jobs:
           cp scripts/ci-client-index-4i.py /tmp/ci-client-index-4i.py
           cp scripts/ci-client-index-4i-fix.py /tmp/ci-client-index-4i-fix.py
 
-      - name: Build product slice from certified main
+      - name: Build product slice from current main
         run: |
           git config user.name "SamyrFateh"
           git config user.email "fatehsamyr@gmail.com"
           git fetch origin main
-          git checkout -B feat/canonical-client-index-4i 550728912a1710e68b359e6dcf939c7cadd5b395
+          git checkout -B feat/canonical-client-index-4i origin/main
           python3 /tmp/ci-client-index-4i.py
           python3 /tmp/ci-client-index-4i-fix.py
           git status --short
@@ -79,6 +79,7 @@ jobs:
           npm run feature:registry
           npm run gate:schema
           npm run gate:docs-lint
+          node scripts/feature-classification-check.js --strict
 
       - name: Regenerate canonical derived artifacts
         run: |
@@ -103,6 +104,7 @@ jobs:
           npm run feature:360:check
           npm run security:360:check
           npm run map:check
+          node -e "const g=require('./docs/GATE_FINDINGS.json'); if((g.findings||[]).length) { console.error(JSON.stringify(g.findings,null,2)); process.exit(1); }"
 
       - name: Ensure no helper files enter product branch
         run: |
@@ -115,6 +117,7 @@ jobs:
           git add \
             bootstrap/api-routes.js \
             bootstrap/html-routes.js \
+            features/auth-passkey.feature.js \
             features/dashboard.feature.js \
             routes/admin-client-index.js \
             services/client-index.js \
