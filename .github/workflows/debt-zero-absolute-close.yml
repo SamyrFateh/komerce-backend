@@ -30,7 +30,7 @@ jobs:
             while IFS= read -r f; do
               [ -z "$f" ] && continue
               case "$f" in
-                docs/FEATURE_360.json|docs/FEATURE_360.md|docs/BUSINESS_FEATURE_GRAPH.json|docs/BUSINESS_FEATURE_GRAPH.md|docs/O6_INVENTORY.md|docs/DASHBOARDS_360.json|docs/DASHBOARDS_360.md|docs/BOUTIQUE_360.json|docs/BOUTIQUE_360.md)
+                docs/FEATURE_360.json|docs/FEATURE_360.md|docs/BUSINESS_FEATURE_GRAPH.json|docs/BUSINESS_FEATURE_GRAPH.md|docs/O6_INVENTORY.md|docs/DASHBOARDS_360.json|docs/DASHBOARDS_360.md|docs/BOUTIQUE_360.json|docs/BOUTIQUE_360.md|docs/KOMERCE_ARCH_HEADER_GRAPH.md|docs/komerce-arch-header-graph.json)
                   echo "Resolving generated artifact from current-main side: $f"
                   git checkout --ours -- "$f"
                   git add "$f"
@@ -86,6 +86,7 @@ jobs:
           console.log('BACKEND_ACTIONABLE_DEBT_ZERO');
           NODE
           npm audit --omit=dev --audit-level=high
+          node scripts/generate-komerce-arch-graph.js
           npm run dashboards:360
           npm run boutique:360
           npm run business-graph:gen
