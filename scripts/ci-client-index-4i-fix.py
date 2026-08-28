@@ -33,4 +33,15 @@ replace_once(
     "      'DELETE /api/auth/passkey/credentials/:id',"
 )
 
-print('CLIENT_INDEX_4I_TEST_AND_CONTRACT_TRUTH_FIXED')
+# providers-services already carries two independent business boundaries in its
+# perimeter/invariants: (1) exclusive lifecycle ownership, (2) exposure is
+# provider-gated and inquiries are not reservations. The classification had
+# compressed both into a single rationale entry, which made the fresh gate
+# report a warning despite the boundary already being explicit elsewhere.
+replace_once(
+    'features/providers-services.feature.js',
+    "      'de ce lot, voir RECHALLENGE_DISCOVERY_LOCALE_COMPLET).',\n    ],",
+    "      'de ce lot, voir RECHALLENGE_DISCOVERY_LOCALE_COMPLET).',\n      'Frontière métier autonome d’exposition et de demande : un service ou une offre ' +\n      'physique n’est exposable que sous l’autorité d’un provider actif, et une inquiry ' +\n      'reste un cycle sent -> answered -> accepted|declined — jamais une réservation, ' +\n      'un paiement ou un calendrier. Ces invariants sont testés dans providers-service.test.js.',\n    ],"
+)
+
+print('CLIENT_INDEX_4I_TEST_AND_GOVERNANCE_TRUTH_FIXED')
