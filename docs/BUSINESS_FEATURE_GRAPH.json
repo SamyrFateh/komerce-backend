@@ -22,6 +22,7 @@
       "features/orders.feature.js",
       "features/payments.feature.js",
       "features/platform-ops.feature.js",
+      "features/providers-services.feature.js",
       "features/purchasing.feature.js",
       "features/recommendations.feature.js",
       "features/refunds.feature.js",
@@ -41,7 +42,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 32,
+    "businessManifestsResolved": 33,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -386,6 +387,22 @@
         "since": "2025-08",
         "service": "Exposer la sante applicative, la configuration et les modules actifs — infrastructure d'exploitation, pas de service metier.",
         "businessKind": "technical-transversal",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:providers-services",
+        "name": "providers-services",
+        "file": "features/providers-services.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-08",
+        "service": "Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.",
+        "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
@@ -9035,6 +9052,20 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "providers-services",
+        "category": "services",
+        "declared": "services/providers-service.js",
+        "resolvedPath": "services/providers-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/providers-service.test.js",
+        "resolvedPath": "tests/unit/providers-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/purchasing-trigger-service.js",
@@ -16165,6 +16196,18 @@
         "from": "platform-ops",
         "to": "orders",
         "raw": "orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
+        "to": "market",
+        "raw": "market (référentiel markets — lecture seule)",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale : db.js)",
         "resolved": true
       },
       {
@@ -27017,6 +27060,38 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
+        "from": "providers-services",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/providers-service.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "providers-services",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "purchasing",
         "to": "auth",
         "channels": [
@@ -28541,7 +28616,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 958
+        "filesObserved": 960
       },
       "boutique": {
         "filesObserved": 173,
@@ -30197,7 +30272,8 @@
         }
       ],
       "readers": [
-        "local-stock"
+        "local-stock",
+        "providers-services"
       ],
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
@@ -30441,6 +30517,45 @@
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
     },
+    "providers": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
+    "services": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
+    "inquiries": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
     "suppliers": {
       "writers": [
         {
@@ -30610,8 +30725,8 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 28,
-        "manifestsConnected": 28,
+        "manifestsDiscovered": 29,
+        "manifestsConnected": 29,
         "technicalNodesTotal": 359,
         "technicalNodesOwned": 359,
         "technicalOrphans": 0
@@ -30663,6 +30778,7 @@
         "loyalty",
         "market",
         "platform",
+        "providers-services",
         "purchasing",
         "refunds",
         "sourcing",

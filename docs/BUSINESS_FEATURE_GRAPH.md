@@ -20,6 +20,7 @@
 - `market`
 - `orders`
 - `payments`
+- `providers-services`
 - `purchasing`
 - `recommendations`
 - `shared-cart`
@@ -75,7 +76,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 28 | 28 | 359 | 359 | 0 |
+| backend | 29 | 29 | 359 | 359 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -84,7 +85,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 ### Identités canoniques
 
 - **Cross-repo features** (10) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (22) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Single-repo features** (23) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `platform`, `providers-services`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -309,7 +310,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 4
 - internal APIs: 11
 - dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
-- consumers: 27 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+- consumers: 28 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### inventory _(business-feature)_
 
@@ -397,7 +398,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 1 — infrastructure
-- consumers: 3 — dashboard, local-stock, orders
+- consumers: 4 — dashboard, local-stock, orders, providers-services
 
 ### notifications _(business-transversal)_
 
@@ -474,6 +475,19 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - internal APIs: 0
 - dependencies (consumes): 11 — documents, incident-management, purchasing, catalog, auth-identity, infrastructure, business-rules, auth, economic-engine, logistics, orders
 - consumers: 11 — auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, recommendations, shared-cart, wallet
+
+### providers-services _(business-feature)_
+
+> Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.
+
+- services: 1
+- tests: 1
+- tables owned (lifecycle): 3 — `providers`, `services`, `inquiries`
+- tables written: 3
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 2 — market, infrastructure
+- consumers: 0
 
 ### purchasing _(business-feature)_
 
@@ -631,12 +645,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `finance_config` | `economic-engine` | single-writer | economic-engine | loyalty |
 | `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
 | `incidents` | `incident-management` | declared-table-owner | incident-management | dashboard, logistics, notifications, payments, platform-ops |
+| `inquiries` | `providers-services` | single-writer | providers-services | — |
 | `inventory_items` | `inventory` | single-writer | inventory | — |
 | `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
 | `local_stock` | `local-stock` | single-writer | local-stock | — |
 | `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
 | `loyalty_tiers` | `loyalty` | single-writer | loyalty | auth-identity |
-| `markets` | `market` | declared-table-owner | market | local-stock |
+| `markets` | `market` | declared-table-owner | market | local-stock, providers-services |
 | `notification_log` | `notifications` | declared-table-owner | notifications, platform-ops | — |
 | `operator_market_scopes` | `market` | declared-table-owner | market | — |
 | `order_comments` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
@@ -672,6 +687,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
 | `product_variants` | `catalog` | declared-table-owner | catalog | economic-engine, logistics, orders, sourcing |
 | `products` | `catalog` | declared-table-owner | catalog, dashboard | auth-identity, customs, documents, economic-engine, inventory, local-stock, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
+| `providers` | `providers-services` | single-writer | providers-services | — |
 | `purchase_orders` | `purchasing` | declared-table-owner | purchasing | logistics |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
@@ -681,6 +697,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `scan_events` | `logistics` | declared-table-owner | dashboard, logistics | incident-management, notifications, payments, platform-ops |
 | `scans` | `logistics` | declared-table-owner | logistics, platform-ops | dashboard |
 | `schema_migrations` | `infrastructure` | single-writer | infrastructure | — |
+| `services` | `providers-services` | single-writer | providers-services | — |
 | `shared_cart_events` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_cart_items` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_cart_saved_access` | `shared-cart` | single-writer | shared-cart | — |
@@ -1498,6 +1515,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | orders (`orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
+| providers-services | market (`market (référentiel markets — lecture seule)`) | ✔ |
+| providers-services | infrastructure (`infrastructure (dépendance technique transversale : db.js)`) | ✔ |
 | purchasing | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)`) | ✔ |
@@ -1617,7 +1636,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 958 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 960 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 173 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1831,6 +1850,8 @@ Meta Graph monté : oui.
 | platform-ops | purchasing | static-code, interface | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
+| providers-services | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
