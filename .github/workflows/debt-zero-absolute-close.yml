@@ -1,4 +1,4 @@
-name: Debt Zero rebase proof
+name: Debt Zero rebase and final proof
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - ci/debt-zero-absolute-close
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   rebase-proof:
@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
       - name: Rebuild Debt Zero on current main
         run: |
           git config user.name "SamyrFateh"
@@ -63,35 +64,154 @@ jobs:
             fi
           done
           echo "DEBT_ZERO_REPLAY_OK"
-          git log --oneline --decorate -8
+
+      - name: Close current-main governance residuals
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # 1) local-stock: classification gate requires >=2 objective reasons.
+          p = Path('features/local-stock.feature.js')
+          text = p.read_text()
+          anchor = "      'de catalog (products.stock/product_skus.stock, stock import/national).',\n"
+          addition = (
+              anchor +
+              "      'Frontière market-scoped dédiée : local_stock porte une quantité physique ' +\n"
+              "      'par marché et peut évoluer indépendamment du cycle logistique hub/transit ' +\n"
+              "      'et du stock catalogue import/national.',\n"
+          )
+          if addition not in text:
+              if anchor not in text:
+                  raise SystemExit('local-stock rationale anchor not found')
+              p.write_text(text.replace(anchor, addition, 1))
+
+          # 2) Two current-main code files are genuinely scanned but had no arch header.
+          headers = {
+              'services/notifications/relay-location.js': '''/**
+           * @komerce-arch
+           * @role          notification-relay-location-formatting
+           * @domain        notification
+           * @layer         util
+           * @criticality   medium
+           * @inputs        relay_location_data, notification_message
+           * @outputs       canonical_relay_map_url, localized_notification_text
+           * @db-write      none
+           * @db-read       none
+           * @used-by       services/notifications/notification-service.js, services/notifications/order.js
+           * @doctrine      relay_location_single_formatter
+           * @impact-areas  notification, logistics, pickup
+           * @version       2026-08
+           */
+          '''.replace('           ', ''),
+              'utils/auth-cookie.js': '''/**
+           * @komerce-arch
+           * @role          auth-cookie-policy
+           * @domain        auth
+           * @layer         util
+           * @criticality   high
+           * @inputs        runtime_environment, jwt_token, http_request
+           * @outputs       auth_cookie_options, auth_token
+           * @depends       utils/auth-session-policy.js
+           * @db-write      none
+           * @db-read       none
+           * @used-by       middleware/auth.js, middleware/auth-guest.js, middleware/soft-auth.js, middleware/csrf-origin.js, routes/auth.js, routes/auth-passkey.js, routes/client-auth.js, routes/otp.js
+           * @doctrine      auth_cookie_single_source_of_truth
+           * @impact-areas  auth, security, session
+           * @version       2026-08
+           */
+          '''.replace('           ', ''),
+          }
+          for filename, header in headers.items():
+              f = Path(filename)
+              src = f.read_text()
+              if '@komerce-arch' not in src[:1500]:
+                  f.write_text(header + src)
+          PY
+
       - name: Install dependencies
         run: |
           npm ci --ignore-scripts
           npm ci --prefix public/boutique --ignore-scripts
+
       - name: Core regression proof
         run: |
           npx --no-install jest --config jest.unit.config.js \
             tests/unit/require-non-production.test.js \
             tests/unit/simulator-route.test.js \
             tests/unit/admin-system.test.js \
+            tests/unit/auth-cookie.test.js \
+            tests/unit/relay-location.test.js \
             --runInBand --forceExit
           (cd public/boutique && npx --no-install jest tests/unit/b-modal-social-proof.test.js tests/unit/b-modal-core.test.js --runInBand)
-      - name: Governance and security proof
+
+      - name: Absolute governance and security proof
         run: |
           npm run quality:gate
+
           node scripts/debt-audit.js --json > /tmp/debt-zero.json
           node - <<'NODE'
           const r = require('/tmp/debt-zero.json');
           if (r.openDebtsCount !== 0) throw new Error(`openDebtsCount=${r.openDebtsCount}`);
           console.log('BACKEND_ACTIONABLE_DEBT_ZERO');
           NODE
+
           npm audit --omit=dev --audit-level=high
+
+          node scripts/feature-classification-check.js --json > /tmp/classification.json
+          node - <<'NODE'
+          const r = require('/tmp/classification.json');
+          const s = r.summary || {};
+          if ((s.errors || 0) !== 0 || (s.warnings || 0) !== 0) {
+            throw new Error(`Feature classification not zero: ${JSON.stringify({summary:s,warnings:r.warnings,errors:r.errors})}`);
+          }
+          console.log('FEATURE_CLASSIFICATION_ZERO');
+          NODE
+
           node scripts/generate-komerce-arch-graph.js
+          node - <<'NODE'
+          const g = require('./docs/komerce-arch-header-graph.json');
+          if (g.totals.filesWithoutHeaders !== 0 || g.totals.filesWithMisplacedHeaders !== 0 || g.totals.liteWithoutOwner !== 0) {
+            throw new Error(`Architecture header coverage not zero: ${JSON.stringify(g.totals)}`);
+          }
+          console.log('ARCH_HEADER_COVERAGE_ZERO');
+          NODE
+
           npm run dashboards:360
           npm run boutique:360
+          npm run dashboards:360:check
+          npm run boutique:360:check
+          npm --prefix public/boutique run check:css-guard
+
           npm run business-graph:gen
           npm run business-graph:check
+          npm run business-graph:ratchet-check
           npm run business-graph:disposition-check
+
           npm run feature:360:refresh-global
+          node - <<'NODE'
+          const gf = require('./docs/GATE_FINDINGS.json');
+          const f = require('./docs/FEATURE_360.json');
+          if ((gf.findings || []).length !== 0) throw new Error(`Gate findings remain: ${JSON.stringify(gf.findings)}`);
+          if (f.summary.attention !== 0 || f.summary.blocked !== 0 || f.summary.healthy !== f.summary.features || f.summary.debtItemsTotal !== 0) {
+            throw new Error(`Feature360 not absolute zero: ${JSON.stringify(f.summary)}`);
+          }
+          console.log('FEATURE360_ABSOLUTE_ZERO', f.summary);
+          NODE
           npm run feature:360:check
           git diff --check
+
+      - name: Commit reconciliation artifacts
+        run: |
+          git add -A
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(governance): reconcile Debt Zero with current main"
+          fi
+          echo "REBASed_HEAD=$(git rev-parse HEAD)"
+          git log --oneline -8
+
+      - name: Update Debt Zero PR branch with lease
+        run: |
+          git push \
+            --force-with-lease=refs/heads/chore/debt-zero-absolute:a02be6c9a7e6497a51787e4ebcbed6caceab3405 \
+            origin HEAD:chore/debt-zero-absolute
