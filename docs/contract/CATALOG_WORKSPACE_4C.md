@@ -20,13 +20,15 @@ La doctrine reste :
 - alias build : `/admin-next/workspaces/catalog`
 - API : `/api/admin/workspaces/catalog`
 
-Legacy reste disponible pendant la preuve :
+LOT 4K ferme uniquement les anciens **points d’entrée** dont les besoins sont déjà prouvés couverts par 4C :
 
-- `/admin/products`
-- `/admin/categories`
-- `/admin/catalog-approval`
+- `/admin/products` ;
+- `/admin/categories` ;
+- `/admin/catalog-approval`.
 
-Aucun cutover destructif dans LOT 4C.
+Sans query de rollback, ils redirigent vers `/admin/workspaces/catalog`. `?legacy=1` sert encore Legacy 1 au même pathname pendant la fenêtre de cutover.
+
+`/admin/products/:productRef` reste Product 360 pour l’explication détaillée. Les variantes avancées et l’upload média restent hors de cette bascule conformément au périmètre 4C.
 
 ## Catalogue global, pas market-scoped
 

@@ -145,7 +145,7 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // LOT 3C — Product 360 Canonical. product_ref est l'identité métier stable ;
-  // `/admin/products` reste Legacy 1 jusqu'au Catalogue Workspace Canonical.
+  // LOT 4K fait converger l'index `/admin/products` vers le Catalog Workspace.
   app.get('/admin/products/:productRef', (req, res) => {
     sendCanonicalAdmin(res);
   });
@@ -194,20 +194,46 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 4K — ProductsView, CategoriesView et CatalogApprovalView sont
+  // prouvés absorbés par le Catalog Workspace Canonical. Les anciens pathnames
+  // deviennent des points d'entrée de compatibilité ; ?legacy=1 garde Legacy 1.
+  const CATALOG_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/products',
+    '/admin/categories',
+    '/admin/catalog-approval',
+  ]);
+
+  CATALOG_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/catalog');
+    });
+  });
+
+  // LOT 4L — SourcingView et SourcingScannerView sont prouvés absorbés
+  // par le Sourcing Workspace Canonical. SuppliersView reste Legacy car il
+  // administre aussi des familles de partenaires hors partner_type=sourcing.
+  const SOURCING_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/sourcing',
+    '/admin/sourcing-scanner',
+  ]);
+
+  SOURCING_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/sourcing');
+    });
+  });
+
   // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
   // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
     '/admin/orders-logistics',
-    '/admin/sourcing',
-    '/admin/sourcing-scanner',
     '/admin/customs',
     '/admin/suppliers',
     '/admin/alerts',
-    '/admin/categories',
-    '/admin/products',
-    '/admin/catalog-approval',
     '/admin/sales',
     '/admin/problems',
     '/admin/hub-relais',
