@@ -19,13 +19,14 @@ Le Workspace orchestre deux autorités historiques homonymes sans les fusionner 
 - alias build : `/admin-next/workspaces/sourcing`
 - API : `/api/admin/workspaces/sourcing`
 
-Legacy reste disponible pendant la preuve :
+LOT 4L ferme uniquement les deux anciens **points d’entrée Sourcing** dont les besoins sont prouvés couverts par 4E :
 
-- `/admin/sourcing`
-- `/admin/sourcing-scanner`
-- `/admin/suppliers`
+- `/admin/sourcing` ;
+- `/admin/sourcing-scanner`.
 
-Aucun cutover destructif dans LOT 4E.
+Sans query de rollback, ils redirigent vers `/admin/workspaces/sourcing`. `?legacy=1` sert encore Legacy 1 au même pathname pendant la fenêtre de cutover.
+
+`/admin/suppliers` reste volontairement Legacy : `SuppliersView` administre plusieurs familles de partenaires, alors que le Sourcing Workspace ne possède que `partner_type = sourcing`. Transitaires, relais, partenaires personnalisés et équipes Hub ne doivent pas disparaître par une redirection trop large.
 
 ## Sourcing global, pas market-scoped
 
