@@ -9,19 +9,13 @@
  * @version       2026-08
  */
 
-.k-library-item-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 0;
-}
-
-.k-library-item-row .k-library-item {
-  min-width: 0;
-}
-
+/*
+ * La géométrie de .k-library-item-row appartient à shared-list-lists-tab.css.
+ * Ce fichier ne possède que l'action ajoutée par group-library-remove.js :
+ * aucun breakpoint ni second modèle de layout parallèle.
+ */
 .k-library-item-remove {
+  justify-self: end;
   align-self: center;
   min-height: 40px;
   padding: 0 10px;
@@ -44,16 +38,4 @@
 .k-library-item-remove:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-@media (max-width: 430px) {
-  .k-library-item-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .k-library-item-remove {
-    justify-self: end;
-    min-height: 36px;
-  }
 }

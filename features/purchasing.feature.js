@@ -159,6 +159,7 @@ module.exports = {
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
     'aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d\'annulation passe par purchasing-cancel-service.js',
+    "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut",
   ],
 
   // ── Classification (manifest créé au Lot O1.4) ──────────────────────────

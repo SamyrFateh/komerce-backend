@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 442,
-    "filesWithFullHeaders": 412,
+    "scannedCodeFiles": 445,
+    "filesWithFullHeaders": 415,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 440,
+    "filesWithAnyHeaders": 443,
     "filesWithoutHeaders": 2,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 986,
-    "edges": 5118,
+    "graphNodes": 999,
+    "edges": 5155,
     "dbTables": 122,
-    "doctrines": 263,
+    "doctrines": 273,
     "impactAreas": 161,
-    "unresolvedCodeEdges": 528,
+    "unresolvedCodeEdges": 526,
     "dbWriteViaOverlapWarnings": 1,
     "multiWriterTables": 62
   },
@@ -36,6 +36,7 @@
     "auth": 13,
     "catalog": 73,
     "admin-dashboard": 19,
+    "decision-signals": 7,
     "market": 2,
     "economic-engine": 46,
     "sourcing": 6,
@@ -60,10 +61,8 @@
     "inventory": 2,
     "loyalty": 2,
     "purchasing": 8,
-    "decision-signals": 3,
     "unsold-resolution": 1,
     "incident-management": 2,
-    "local-stock": 1,
     "refunds": 2,
     "shared": 1
   },
@@ -73,7 +72,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 18,
+    "middleware": 19,
     "ui-bootstrap": 4,
     "ui-component": 38,
     "ui-enhancer": 3,
@@ -96,9 +95,9 @@
     "ui-boundary": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 110,
+    "route": 111,
     "entrypoint": 1,
-    "service": 178,
+    "service": 179,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -107,7 +106,7 @@
   "byCriticality": {
     "critical": 61,
     "medium": 111,
-    "high": 231,
+    "high": 234,
     "low": 37
   },
   "nodes": [
@@ -145,7 +144,8 @@
         "routes/admin-catalog-workspace.js",
         "routes/admin-finance-accounting-workspace.js",
         "routes/admin-sourcing-workspace.js",
-        "routes/admin-pricing-workspace.js"
+        "routes/admin-pricing-workspace.js",
+        "routes/admin-action-center.js"
       ],
       "usedBy": [
         "server.js"
@@ -931,6 +931,48 @@
       "impactAreas": [
         "admin-dashboard",
         "market-authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-decision-signal-global-authority.js",
+      "file": "middleware/require-decision-signal-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "decision-signal-global-authorization-guard",
+      "domain": "decision-signals",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "decision_signal_global_access_grants"
+      ],
+      "outputs": [
+        "req.decisionSignalGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-action-center.js"
+      ],
+      "dbRead": [
+        "decision_signal_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "decision_signal_global_authority_explicit",
+        "admin_role_never_implies_action_center_authority"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard",
+        "authorization"
       ],
       "version": "2026-08"
     },
@@ -4882,6 +4924,51 @@
         "product-content"
       ],
       "version": "2026-07 — Lot Content, commit 4 (rendu partagé)"
+    },
+    {
+      "id": "routes/admin-action-center.js",
+      "file": "routes/admin-action-center.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-action-center-route",
+      "domain": "decision-signals",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin",
+        "decision_signal_global_grant",
+        "signal_ref",
+        "action_payload"
+      ],
+      "outputs": [
+        "canonical_action_center_projection",
+        "signal_lifecycle_action_results"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "middleware/require-decision-signal-global-authority.js",
+        "services/action-center-workspace.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "global_action_center_authority",
+        "signal_ref_only",
+        "no_market_authority",
+        "action_center_never_mutates_source_entities"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "routes/admin-boutique-categories.js",
@@ -9803,45 +9890,41 @@
       "file": "routes/signals.js",
       "type": "file",
       "headerType": "full",
-      "role": "signals",
+      "role": "signals-legacy-facade",
       "domain": "decision-signals",
       "layer": "route",
       "criticality": "medium",
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "authenticated_admin",
+        "legacy_signal_filters",
+        "legacy_signal_uuid"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "legacy_signal_http_contract"
       ],
       "depends": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [
-        "signals"
-      ],
-      "dbWrite": [
-        "signals"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "legacy_http_isomorphic",
+        "signal_lifecycle_owned_by_service"
       ],
       "impactAreas": [
-        "unknown"
+        "decision-signals",
+        "admin-dashboard"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "routes/simulator.js",
@@ -10320,6 +10403,57 @@
         "auth"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/action-center-workspace.js",
+      "file": "services/action-center-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-action-center-workspace-service",
+      "domain": "decision-signals",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "signal_ref",
+        "signal_filters",
+        "authenticated_actor"
+      ],
+      "outputs": [
+        "canonical_action_center_projection",
+        "signal_lifecycle_results"
+      ],
+      "depends": [
+        "db.js",
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-action-center.js"
+      ],
+      "dbRead": [
+        "orders",
+        "products",
+        "parcels",
+        "cash_collections"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "action_center_manages_derived_signals_only",
+        "browser_business_refs_only",
+        "global_until_signals_have_market_authority"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard",
+        "orders",
+        "catalog",
+        "logistics"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "services/admin-order-refund.js",
@@ -13841,56 +13975,6 @@
         "checkout"
       ],
       "version": "2026-06"
-    },
-    {
-      "id": "services/local-stock-service.js",
-      "file": "services/local-stock-service.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "local-stock-local-stock-service",
-      "domain": "local-stock",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "product_id",
-        "market_id",
-        "location",
-        "qty_physical",
-        "actor_user_id"
-      ],
-      "outputs": [
-        "local_stock_row",
-        "availability_projection"
-      ],
-      "depends": [
-        "db"
-      ],
-      "usedBy": [
-        "(aucun — shadow",
-        "appel direct scripts/tests dans cette PR)"
-      ],
-      "dbRead": [
-        "local_stock",
-        "products",
-        "markets"
-      ],
-      "dbWrite": [
-        "local_stock"
-      ],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "single_statement_sufficient"
-      ],
-      "doctrine": [
-        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "§4 (capacité"
-      ],
-      "impactAreas": [
-        "local-stock"
-      ],
-      "version": "2026-08"
     },
     {
       "id": "services/loyalty-service.js",
@@ -17943,6 +18027,53 @@
       "version": "2026-08"
     },
     {
+      "id": "services/signal-admin-service.js",
+      "file": "services/signal-admin-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "decision-signal-admin-service",
+      "domain": "decision-signals",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "signal_filters",
+        "signal_internal_id_or_ref",
+        "authenticated_actor"
+      ],
+      "outputs": [
+        "signal_projection_rows",
+        "lifecycle_transition_results"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/signals.js",
+        "services/action-center-workspace.js",
+        "services/signal-service.js"
+      ],
+      "dbRead": [
+        "signals"
+      ],
+      "dbWrite": [
+        "signals"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "signal_is_derived_fact",
+        "active_signal_states_are_open_acknowledged_snoozed",
+        "browser_uses_signal_ref_only"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/signal-service.js",
       "file": "services/signal-service.js",
       "type": "file",
@@ -17967,7 +18098,8 @@
       ],
       "usedBy": [
         "routes/signals.js",
-        "bootstrap/feature-wiring.js"
+        "bootstrap/feature-wiring.js",
+        "services/action-center-workspace.js"
       ],
       "dbRead": [
         "cash_collections",
@@ -20846,6 +20978,11 @@
       "table": "dashboard_global_access_grants"
     },
     {
+      "id": "db:decision_signal_global_access_grants",
+      "type": "db-table",
+      "table": "decision_signal_global_access_grants"
+    },
+    {
       "id": "db:pricing_global_access_grants",
       "type": "db-table",
       "table": "pricing_global_access_grants"
@@ -21321,11 +21458,6 @@
       "table": "inventory_items"
     },
     {
-      "id": "db:local_stock",
-      "type": "db-table",
-      "table": "local_stock"
-    },
-    {
       "id": "db:markets (via utils/currency.js)",
       "type": "db-table",
       "table": "markets (via utils/currency.js)"
@@ -21479,6 +21611,16 @@
       "id": "doctrine:admin_role_never_implies_global",
       "type": "doctrine",
       "doctrine": "admin_role_never_implies_global"
+    },
+    {
+      "id": "doctrine:decision_signal_global_authority_explicit",
+      "type": "doctrine",
+      "doctrine": "decision_signal_global_authority_explicit"
+    },
+    {
+      "id": "doctrine:admin_role_never_implies_action_center_authority",
+      "type": "doctrine",
+      "doctrine": "admin_role_never_implies_action_center_authority"
     },
     {
       "id": "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
@@ -21941,6 +22083,26 @@
       "doctrine": "legacy_entry_redirect_only"
     },
     {
+      "id": "doctrine:global_action_center_authority",
+      "type": "doctrine",
+      "doctrine": "global_action_center_authority"
+    },
+    {
+      "id": "doctrine:signal_ref_only",
+      "type": "doctrine",
+      "doctrine": "signal_ref_only"
+    },
+    {
+      "id": "doctrine:no_market_authority",
+      "type": "doctrine",
+      "doctrine": "no_market_authority"
+    },
+    {
+      "id": "doctrine:action_center_never_mutates_source_entities",
+      "type": "doctrine",
+      "doctrine": "action_center_never_mutates_source_entities"
+    },
+    {
       "id": "doctrine:categories_maj_sans_code",
       "type": "doctrine",
       "doctrine": "categories_maj_sans_code"
@@ -22029,11 +22191,6 @@
       "id": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "doctrine": "browser_business_refs_only"
-    },
-    {
-      "id": "doctrine:no_market_authority",
-      "type": "doctrine",
-      "doctrine": "no_market_authority"
     },
     {
       "id": "doctrine:product_ref_is_business_identity",
@@ -22186,6 +22343,16 @@
       "doctrine": "participant_achete_individuellement"
     },
     {
+      "id": "doctrine:legacy_http_isomorphic",
+      "type": "doctrine",
+      "doctrine": "legacy_http_isomorphic"
+    },
+    {
+      "id": "doctrine:signal_lifecycle_owned_by_service",
+      "type": "doctrine",
+      "doctrine": "signal_lifecycle_owned_by_service"
+    },
+    {
       "id": "doctrine:single_sourcing_candidate_mutation_authority",
       "type": "doctrine",
       "doctrine": "single_sourcing_candidate_mutation_authority"
@@ -22214,6 +22381,16 @@
       "id": "doctrine:static_boutique_served",
       "type": "doctrine",
       "doctrine": "static_boutique_served"
+    },
+    {
+      "id": "doctrine:action_center_manages_derived_signals_only",
+      "type": "doctrine",
+      "doctrine": "action_center_manages_derived_signals_only"
+    },
+    {
+      "id": "doctrine:global_until_signals_have_market_authority",
+      "type": "doctrine",
+      "doctrine": "global_until_signals_have_market_authority"
     },
     {
       "id": "doctrine:writer_not_owner_campaign_2026_08",
@@ -22391,16 +22568,6 @@
       "doctrine": "preserve_caller_transaction"
     },
     {
-      "id": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-      "type": "doctrine",
-      "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1"
-    },
-    {
-      "id": "doctrine:§4 (capacité",
-      "type": "doctrine",
-      "doctrine": "§4 (capacité"
-    },
-    {
       "id": "doctrine:notification_non_bloquante",
       "type": "doctrine",
       "doctrine": "notification_non_bloquante"
@@ -22569,6 +22736,21 @@
       "id": "doctrine:lecture_derivee",
       "type": "doctrine",
       "doctrine": "lecture_derivee"
+    },
+    {
+      "id": "doctrine:signal_is_derived_fact",
+      "type": "doctrine",
+      "doctrine": "signal_is_derived_fact"
+    },
+    {
+      "id": "doctrine:active_signal_states_are_open_acknowledged_snoozed",
+      "type": "doctrine",
+      "doctrine": "active_signal_states_are_open_acknowledged_snoozed"
+    },
+    {
+      "id": "doctrine:browser_uses_signal_ref_only",
+      "type": "doctrine",
+      "doctrine": "browser_uses_signal_ref_only"
     },
     {
       "id": "doctrine:catalog_promotion_owner_respected",
@@ -22804,6 +22986,11 @@
       "id": "impact:market-authorization",
       "type": "impact-area",
       "area": "market-authorization"
+    },
+    {
+      "id": "impact:decision-signals",
+      "type": "impact-area",
+      "area": "decision-signals"
     },
     {
       "id": "impact:market",
@@ -23451,11 +23638,6 @@
       "area": "platform-ops"
     },
     {
-      "id": "impact:local-stock",
-      "type": "impact-area",
-      "area": "local-stock"
-    },
-    {
       "id": "impact:dashboards",
       "type": "impact-area",
       "area": "dashboards"
@@ -23613,6 +23795,12 @@
       "to": "routes/admin-pricing-workspace.js",
       "type": "depends",
       "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-action-center.js",
+      "type": "depends",
+      "label": "routes/admin-action-center.js"
     },
     {
       "from": "server.js",
@@ -24879,6 +25067,54 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "middleware/require-decision-signal-global-authority.js",
+      "type": "uses",
+      "label": "routes/admin-action-center.js"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "db:decision_signal_global_access_grants",
+      "type": "db-read",
+      "label": "decision_signal_global_access_grants"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "doctrine:decision_signal_global_authority_explicit",
+      "type": "doctrine",
+      "label": "decision_signal_global_authority_explicit"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "doctrine:admin_role_never_implies_action_center_authority",
+      "type": "doctrine",
+      "label": "admin_role_never_implies_action_center_authority"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
     },
     {
       "from": "middleware/require-market-scope.js",
@@ -30243,6 +30479,66 @@
       "to": "impact:product-content",
       "type": "impact",
       "label": "product-content"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "middleware/require-decision-signal-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-decision-signal-global-authority.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "services/action-center-workspace.js",
+      "type": "depends",
+      "label": "services/action-center-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-action-center.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "doctrine:global_action_center_authority",
+      "type": "doctrine",
+      "label": "global_action_center_authority"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "doctrine:signal_ref_only",
+      "type": "doctrine",
+      "label": "signal_ref_only"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "doctrine:no_market_authority",
+      "type": "doctrine",
+      "label": "no_market_authority"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "doctrine:action_center_never_mutates_source_entities",
+      "type": "doctrine",
+      "label": "action_center_never_mutates_source_entities"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "routes/admin-boutique-categories.js",
@@ -37388,21 +37684,21 @@
     },
     {
       "from": "routes/signals.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/signals.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
     },
     {
       "from": "routes/signals.js",
-      "to": "services/*",
+      "to": "services/signal-admin-service.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/signal-admin-service.js"
+    },
+    {
+      "from": "routes/signals.js",
+      "to": "services/signal-service.js",
+      "type": "depends",
+      "label": "services/signal-service.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -37412,27 +37708,27 @@
     },
     {
       "from": "routes/signals.js",
-      "to": "db:signals",
-      "type": "db-read",
-      "label": "signals"
-    },
-    {
-      "from": "routes/signals.js",
-      "to": "db:signals",
-      "type": "db-write",
-      "label": "signals"
-    },
-    {
-      "from": "routes/signals.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:legacy_http_isomorphic",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "legacy_http_isomorphic"
     },
     {
       "from": "routes/signals.js",
-      "to": "impact:unknown",
+      "to": "doctrine:signal_lifecycle_owned_by_service",
+      "type": "doctrine",
+      "label": "signal_lifecycle_owned_by_service"
+    },
+    {
+      "from": "routes/signals.js",
+      "to": "impact:decision-signals",
       "type": "impact",
-      "label": "unknown"
+      "label": "decision-signals"
+    },
+    {
+      "from": "routes/signals.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "routes/simulator.js",
@@ -38199,6 +38495,102 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "services/signal-admin-service.js",
+      "type": "depends",
+      "label": "services/signal-admin-service.js"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "services/signal-service.js",
+      "type": "depends",
+      "label": "services/signal-service.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "services/action-center-workspace.js",
+      "type": "uses",
+      "label": "routes/admin-action-center.js"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "doctrine:action_center_manages_derived_signals_only",
+      "type": "doctrine",
+      "label": "action_center_manages_derived_signals_only"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "label": "browser_business_refs_only"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "doctrine:global_until_signals_have_market_authority",
+      "type": "doctrine",
+      "label": "global_until_signals_have_market_authority"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
     },
     {
       "from": "services/admin-order-refund.js",
@@ -43493,66 +43885,6 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
-      "from": "(aucun — shadow",
-      "to": "services/local-stock-service.js",
-      "type": "uses",
-      "label": "(aucun — shadow"
-    },
-    {
-      "from": "appel direct scripts/tests dans cette PR)",
-      "to": "services/local-stock-service.js",
-      "type": "uses",
-      "label": "appel direct scripts/tests dans cette PR)"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "db:local_stock",
-      "type": "db-read",
-      "label": "local_stock"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "db:markets",
-      "type": "db-read",
-      "label": "markets"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "db:local_stock",
-      "type": "db-write",
-      "label": "local_stock"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-      "type": "doctrine",
-      "label": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "doctrine:§4 (capacité",
-      "type": "doctrine",
-      "label": "§4 (capacité"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "impact:local-stock",
-      "type": "impact",
-      "label": "local-stock"
     },
     {
       "from": "services/loyalty-service.js",
@@ -50049,6 +50381,72 @@
       "label": "market-authorization"
     },
     {
+      "from": "services/signal-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/signals.js",
+      "to": "services/signal-admin-service.js",
+      "type": "uses",
+      "label": "routes/signals.js"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "services/signal-admin-service.js",
+      "type": "uses",
+      "label": "services/action-center-workspace.js"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "services/signal-admin-service.js",
+      "type": "uses",
+      "label": "services/signal-service.js"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "db:signals",
+      "type": "db-read",
+      "label": "signals"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "db:signals",
+      "type": "db-write",
+      "label": "signals"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "doctrine:signal_is_derived_fact",
+      "type": "doctrine",
+      "label": "signal_is_derived_fact"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "doctrine:active_signal_states_are_open_acknowledged_snoozed",
+      "type": "doctrine",
+      "label": "active_signal_states_are_open_acknowledged_snoozed"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "doctrine:browser_uses_signal_ref_only",
+      "type": "doctrine",
+      "label": "browser_uses_signal_ref_only"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/signal-service.js",
       "to": "db",
       "type": "depends",
@@ -50071,6 +50469,12 @@
       "to": "services/signal-service.js",
       "type": "uses",
       "label": "bootstrap/feature-wiring.js"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "services/signal-service.js",
+      "type": "uses",
+      "label": "services/action-center-workspace.js"
     },
     {
       "from": "services/signal-service.js",
@@ -54350,7 +54754,8 @@
         "routes/admin-catalog-workspace.js",
         "routes/admin-finance-accounting-workspace.js",
         "routes/admin-sourcing-workspace.js",
-        "routes/admin-pricing-workspace.js"
+        "routes/admin-pricing-workspace.js",
+        "routes/admin-action-center.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -54386,6 +54791,7 @@
         "impact:payment",
         "impact:product-detail",
         "impact:shared-cart",
+        "routes/admin-action-center.js",
         "routes/admin-boutique-categories.js",
         "routes/admin-catalog-workspace.js",
         "routes/admin-client-360.js",
@@ -54977,6 +55383,7 @@
         "doctrine:canonical_session_claims_only",
         "doctrine:scoped_tokens_never_upgrade",
         "impact:auth",
+        "routes/admin-action-center.js",
         "routes/admin-boutique-categories.js",
         "routes/admin-catalog-workspace.js",
         "routes/admin-cost-components.js",
@@ -55277,6 +55684,44 @@
         "impact:market-authorization",
         "routes/admin-dashboard-market.js",
         "services/dashboard-admin-context.js"
+      ]
+    },
+    "middleware/require-decision-signal-global-authority.js": {
+      "role": "decision-signal-global-authorization-guard",
+      "domain": "decision-signals",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-action-center.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "decision_signal_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "decision_signal_global_authority_explicit",
+        "admin_role_never_implies_action_center_authority"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "mustCheck": [
+        "db:decision_signal_global_access_grants",
+        "doctrine:admin_role_never_implies_action_center_authority",
+        "doctrine:decision_signal_global_authority_explicit",
+        "impact:admin-dashboard",
+        "impact:authorization",
+        "impact:decision-signals",
+        "routes/admin-action-center.js"
       ]
     },
     "middleware/require-market-scope.js": {
@@ -59300,6 +59745,48 @@
         "impact:product-modal",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js"
+      ]
+    },
+    "routes/admin-action-center.js": {
+      "role": "canonical-action-center-route",
+      "domain": "decision-signals",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "middleware/require-decision-signal-global-authority.js",
+        "services/action-center-workspace.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "global_action_center_authority",
+        "signal_ref_only",
+        "no_market_authority",
+        "action_center_never_mutates_source_entities"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:action_center_never_mutates_source_entities",
+        "doctrine:global_action_center_authority",
+        "doctrine:no_market_authority",
+        "doctrine:signal_ref_only",
+        "impact:admin-dashboard",
+        "impact:decision-signals",
+        "middleware/auth.js",
+        "middleware/require-decision-signal-global-authority.js",
+        "services/action-center-workspace.js"
       ]
     },
     "routes/admin-boutique-categories.js": {
@@ -64026,40 +64513,40 @@
       ]
     },
     "routes/signals.js": {
-      "role": "signals",
+      "role": "signals-legacy-facade",
       "domain": "decision-signals",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "signals"
-      ],
-      "dbWrite": [
-        "signals"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "legacy_http_isomorphic",
+        "signal_lifecycle_owned_by_service"
       ],
       "impactAreas": [
-        "unknown"
+        "decision-signals",
+        "admin-dashboard"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:signals",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "doctrine:legacy_http_isomorphic",
+        "doctrine:signal_lifecycle_owned_by_service",
+        "impact:admin-dashboard",
+        "impact:decision-signals",
         "middleware/auth.js",
+        "services/signal-admin-service.js",
         "services/signal-service.js",
         "utils/logger.js"
       ]
@@ -64545,6 +65032,60 @@
         "services/parcel-security.js",
         "services/routing.js",
         "utils/logger.js"
+      ]
+    },
+    "services/action-center-workspace.js": {
+      "role": "canonical-action-center-workspace-service",
+      "domain": "decision-signals",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-action-center.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "products",
+        "parcels",
+        "cash_collections"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "action_center_manages_derived_signals_only",
+        "browser_business_refs_only",
+        "global_until_signals_have_market_authority"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard",
+        "orders",
+        "catalog",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:cash_collections",
+        "db:orders",
+        "db:parcels",
+        "db:products",
+        "doctrine:action_center_manages_derived_signals_only",
+        "doctrine:browser_business_refs_only",
+        "doctrine:global_until_signals_have_market_authority",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "impact:decision-signals",
+        "impact:logistics",
+        "impact:orders",
+        "routes/admin-action-center.js",
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ]
     },
     "services/admin-order-refund.js": {
@@ -67961,46 +68502,6 @@
         "services/documents/pdf-renderer.js",
         "services/order-payment-confirmation.js",
         "utils/documents/logo-base64.js"
-      ]
-    },
-    "services/local-stock-service.js": {
-      "role": "local-stock-local-stock-service",
-      "domain": "local-stock",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db"
-      ],
-      "directUsedBy": [
-        "(aucun — shadow",
-        "appel direct scripts/tests dans cette PR)"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "local_stock",
-        "products",
-        "markets"
-      ],
-      "dbWrite": [
-        "local_stock"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "§4 (capacité"
-      ],
-      "impactAreas": [
-        "local-stock"
-      ],
-      "mustCheck": [
-        "db:local_stock",
-        "db:markets",
-        "db:products",
-        "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "doctrine:§4 (capacité",
-        "impact:local-stock"
       ]
     },
     "services/loyalty-service.js": {
@@ -72003,6 +72504,50 @@
         "services/scan-engine.js"
       ]
     },
+    "services/signal-admin-service.js": {
+      "role": "decision-signal-admin-service",
+      "domain": "decision-signals",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/signals.js",
+        "services/action-center-workspace.js",
+        "services/signal-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "signals"
+      ],
+      "dbWrite": [
+        "signals"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "signal_is_derived_fact",
+        "active_signal_states_are_open_acknowledged_snoozed",
+        "browser_uses_signal_ref_only"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:signals",
+        "doctrine:active_signal_states_are_open_acknowledged_snoozed",
+        "doctrine:browser_uses_signal_ref_only",
+        "doctrine:signal_is_derived_fact",
+        "impact:admin-dashboard",
+        "impact:decision-signals",
+        "routes/signals.js",
+        "services/action-center-workspace.js",
+        "services/signal-service.js"
+      ]
+    },
     "services/signal-service.js": {
       "role": "signal-service",
       "domain": "decision-signals",
@@ -72016,7 +72561,8 @@
       ],
       "directUsedBy": [
         "routes/signals.js",
-        "bootstrap/feature-wiring.js"
+        "bootstrap/feature-wiring.js",
+        "services/action-center-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -72049,6 +72595,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
         "routes/signals.js",
+        "services/action-center-workspace.js",
+        "services/signal-admin-service.js",
         "utils/logger.js"
       ]
     },
@@ -75397,7 +75945,7 @@
       "table": "signals",
       "writerCount": 2,
       "writers": [
-        "routes/signals.js",
+        "services/signal-admin-service.js",
         "services/signal-service.js"
       ]
     },
@@ -75519,6 +76067,12 @@
     },
     {
       "from": "middleware/require-dashboard-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "middleware/require-decision-signal-global-authority.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -77024,18 +77578,6 @@
       "label": "services/*"
     },
     {
-      "from": "routes/signals.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/signals.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
       "from": "routes/simulator.js",
       "to": "db.js",
       "type": "depends",
@@ -77130,6 +77672,12 @@
       "to": "server.js",
       "type": "uses",
       "label": "railway-runtime"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/admin-order-refund.js",
@@ -77762,24 +78310,6 @@
       "label": "payment confirmation flows"
     },
     {
-      "from": "services/local-stock-service.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
-      "from": "(aucun — shadow",
-      "to": "services/local-stock-service.js",
-      "type": "uses",
-      "label": "(aucun — shadow"
-    },
-    {
-      "from": "appel direct scripts/tests dans cette PR)",
-      "to": "services/local-stock-service.js",
-      "type": "uses",
-      "label": "appel direct scripts/tests dans cette PR)"
-    },
-    {
       "from": "services/loyalty-service.js",
       "to": "db",
       "type": "depends",
@@ -78216,6 +78746,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/signal-service.js",

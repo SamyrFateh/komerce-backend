@@ -28,6 +28,7 @@ module.exports = {
     kind:     'business-feature',
     rationale: [
       'Propriétaire de `users` et `otp_codes` (arbitrage A, 2026-07-29). Cycle de vie propre : OTP, magic-link, guest-checkout. Expose revokeSessions() comme protocole de mutation.',
+      "possède les mutations de profil, révocation de session et autorisation nominative de retrait ; auth fournit les gardes techniques mais ne reprend jamais cette vérité d identité",
     ],
   },
   since:    '2025-08',

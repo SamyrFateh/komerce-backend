@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-08-17T04:16:10.078Z — 482 endpoints
+> 2026-08-27T14:48:18.132Z — 554 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 435 |
-| ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 40 |
+| 🟢 PROTECTED | 507 |
+| ⚪ PUBLIC (légitime) | 7 |
+| 🟠 UNPROTECTED | 38 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -19,8 +19,6 @@
 - 🟠 `POST /api/auth/otp/request` — UNPROTECTED
 - 🟠 `POST /api/auth/otp/test-reset` — UNPROTECTED
 - 🟠 `POST /api/auth/otp/verify` — UNPROTECTED
-- 🟠 `POST /api/auth/passkey/login/options` — UNPROTECTED
-- 🟠 `POST /api/auth/passkey/login/verify` — UNPROTECTED
 - 🟠 `GET /api/boutique/suggestions` — UNPROTECTED
 - 🟠 `GET /api/categories` — UNPROTECTED
 - 🟠 `GET /api/client/magic-link/validate` — UNPROTECTED

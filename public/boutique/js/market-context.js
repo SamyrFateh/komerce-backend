@@ -20,7 +20,7 @@
 
 // ── Registre des marchés ────────────────────────────────────────────────
 // Ajouter un marché = ajouter un enregistrement. Zéro fichier touché ailleurs.
-var MARKETS = {
+const MARKETS = {
   KM: {
     code:            'KM',
     name:            'Comores',
@@ -99,7 +99,7 @@ var MARKETS = {
 // ── Marché par défaut ───────────────────────────────────────────────────
 // KM reste le marché par défaut de la boutique réelle — inchangé.
 // Demain (M2 branché), résolu depuis le relais choisi > préférence stockée > défaut.
-var DEFAULT_MARKET = 'KM';
+const DEFAULT_MARKET = 'KM';
 
 // ── Override de PRÉVISUALISATION (?market=) ─────────────────────────────
 // Paramètre d'URL exclusivement — jamais une résolution stockée ni serveur.
@@ -113,8 +113,8 @@ var DEFAULT_MARKET = 'KM';
 // quand M2 sera branché en H3 — voir marché par défaut ci-dessus.
 function getPreviewMarketOverride() {
   try {
-    var params = new URLSearchParams(window.location.search);
-    var code = params.get('market');
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('market');
     return (code && MARKETS[code]) ? code : null;
   } catch (e) {
     return null; // jamais casser le rendu pour un paramètre malformé

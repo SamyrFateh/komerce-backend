@@ -16,7 +16,6 @@
         "features/incident-management.feature.js",
         "features/infrastructure.feature.js",
         "features/inventory.feature.js",
-        "features/local-stock.feature.js",
         "features/logistics.feature.js",
         "features/loyalty.feature.js",
         "features/market.feature.js",
@@ -44,25 +43,25 @@
     }
   },
   "summary": {
-    "features": 32,
+    "features": 31,
     "healthy": 16,
-    "attention": 16,
+    "attention": 15,
     "blocked": 0,
-    "businessDependencies": 186,
+    "businessDependencies": 187,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 43,
-    "gateHealthy": 16,
+    "debtItemsTotal": 40,
+    "gateHealthy": 31,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 54,
-    "attributedFindings": 54,
+    "totalFindings": 0,
+    "attributedFindings": 0,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -522,21 +521,6 @@
               }
             ]
           },
-          "migrations": {
-            "count": 2,
-            "files": [
-              {
-                "declared": "migrations/072_jwt_revocation.sql",
-                "resolvedPath": "migrations/072_jwt_revocation.sql",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "migrations/084_jwt_revocation.sql",
-                "resolvedPath": "migrations/084_jwt_revocation.sql",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              }
-            ]
-          },
           "tests": {
             "count": 13,
             "files": [
@@ -633,7 +617,7 @@
             ]
           }
         },
-        "totalFiles": 26,
+        "totalFiles": 24,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -1507,55 +1491,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 5,
-        "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -1917,47 +1857,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 4,
-        "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-login.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -2879,7 +2783,7 @@
             ]
           },
           "tests": {
-            "count": 46,
+            "count": 48,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -2899,6 +2803,11 @@
               {
                 "declared": "tests/unit/api-connector-base.test.js",
                 "resolvedPath": "tests/unit/api-connector-base.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/boutique-taxonomy-admin.test.js",
+                "resolvedPath": "tests/unit/boutique-taxonomy-admin.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3107,6 +3016,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-import-dispatch.test.js",
+                "resolvedPath": "tests/unit/sourcing-import-dispatch.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/supplier-catalog-scanner.test.js",
                 "resolvedPath": "tests/unit/supplier-catalog-scanner.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3124,10 +3038,10 @@
             ]
           }
         },
-        "totalFiles": 152,
+        "totalFiles": 154,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 32,
+          "count": 33,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -3139,6 +3053,13 @@
             {
               "declared": "../css/modal-cart-sku-guard.css",
               "resolvedPath": "public/boutique/css/modal-cart-sku-guard.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-desktop-density.css",
+              "resolvedPath": "public/boutique/css/modal-desktop-density.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -3883,87 +3804,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 9,
-        "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -4368,22 +4213,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -4444,7 +4278,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 96,
+            "count": 97,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4827,6 +4661,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/action-center.js",
+                "resolvedPath": "public/dashboards/canonical/js/action-center.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/admin-context.js",
                 "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4928,6 +4767,16 @@
               }
             ]
           },
+          "middleware": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-dashboard-global-authority.js",
+                "resolvedPath": "middleware/require-dashboard-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "migrations": {
             "count": 2,
             "files": [
@@ -4944,8 +4793,18 @@
             ]
           },
           "routes": {
-            "count": 18,
+            "count": 24,
             "files": [
+              {
+                "declared": "routes/admin-client-360.js",
+                "resolvedPath": "routes/admin-client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-dashboard-market.js",
+                "resolvedPath": "routes/admin-dashboard-market.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/admin-dashboard.js",
                 "resolvedPath": "routes/admin-dashboard.js",
@@ -4962,8 +4821,28 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "routes/admin-operations-workspace.js",
+                "resolvedPath": "routes/admin-operations-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-order-360.js",
+                "resolvedPath": "routes/admin-order-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-product-360.js",
+                "resolvedPath": "routes/admin-product-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "routes/admin-radar.js",
                 "resolvedPath": "routes/admin-radar.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-shipping-customs-workspace.js",
+                "resolvedPath": "routes/admin-shipping-customs-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5039,8 +4918,18 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 22,
             "files": [
+              {
+                "declared": "services/client-360.js",
+                "resolvedPath": "services/client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-admin-context.js",
+                "resolvedPath": "services/dashboard-admin-context.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/dashboard-cache.js",
                 "resolvedPath": "services/dashboard-cache.js",
@@ -5049,6 +4938,16 @@
               {
                 "declared": "services/dashboard-clients-queries.js",
                 "resolvedPath": "services/dashboard-clients-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-commerce.js",
+                "resolvedPath": "services/dashboard-commerce.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-finance-canonical.js",
+                "resolvedPath": "services/dashboard-finance-canonical.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5077,8 +4976,18 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/dashboard-operations.js",
+                "resolvedPath": "services/dashboard-operations.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/dashboard-ops-queries.js",
                 "resolvedPath": "services/dashboard-ops-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-pilotage-market.js",
+                "resolvedPath": "services/dashboard-pilotage-market.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5092,19 +5001,39 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/operations-workspace.js",
+                "resolvedPath": "services/operations-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-360.js",
+                "resolvedPath": "services/order-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/partner-admin-service.js",
                 "resolvedPath": "services/partner-admin-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/product-360.js",
+                "resolvedPath": "services/product-360.js",
                 "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/relay-dashboard-queries.js",
                 "resolvedPath": "services/relay-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/shipping-customs-workspace.js",
+                "resolvedPath": "services/shipping-customs-workspace.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 42,
+            "count": 61,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5112,8 +5041,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-client-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-costing-full.test.js",
                 "resolvedPath": "tests/unit/admin-costing-full.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-dashboard-market.test.js",
+                "resolvedPath": "tests/unit/admin-dashboard-market.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5147,8 +5086,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-operations-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-operations-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-order-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-order-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-orders-route.test.js",
                 "resolvedPath": "tests/unit/admin-orders-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-product-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-product-360-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5157,8 +5111,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-shipping-customs-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-shipping-customs-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-system.test.js",
                 "resolvedPath": "tests/unit/admin-system.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-action-center-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-action-center-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5202,6 +5166,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/client-360-service.test.js",
+                "resolvedPath": "tests/unit/client-360-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-admin-context.test.js",
+                "resolvedPath": "tests/unit/dashboard-admin-context.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-cache.test.js",
                 "resolvedPath": "tests/unit/dashboard-cache.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5217,6 +5191,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/dashboard-commerce.test.js",
+                "resolvedPath": "tests/unit/dashboard-commerce.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-control-tower.test.js",
                 "resolvedPath": "tests/unit/dashboard-control-tower.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5224,6 +5203,11 @@
               {
                 "declared": "tests/unit/dashboard-costing.test.js",
                 "resolvedPath": "tests/unit/dashboard-costing.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-finance-canonical.test.js",
+                "resolvedPath": "tests/unit/dashboard-finance-canonical.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5257,6 +5241,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/dashboard-operations.test.js",
+                "resolvedPath": "tests/unit/dashboard-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-ops-queries.test.js",
                 "resolvedPath": "tests/unit/dashboard-ops-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5264,6 +5253,11 @@
               {
                 "declared": "tests/unit/dashboard-ops-route.test.js",
                 "resolvedPath": "tests/unit/dashboard-ops-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-pilotage-market.test.js",
+                "resolvedPath": "tests/unit/dashboard-pilotage-market.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5292,8 +5286,28 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/operations-workspace-service.test.js",
+                "resolvedPath": "tests/unit/operations-workspace-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-360-service.test.js",
+                "resolvedPath": "tests/unit/order-360-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/partner-admin-service.test.js",
+                "resolvedPath": "tests/unit/partner-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/partners.test.js",
                 "resolvedPath": "tests/unit/partners.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/product-360-service.test.js",
+                "resolvedPath": "tests/unit/product-360-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5304,6 +5318,16 @@
               {
                 "declared": "tests/unit/relay-dashboard-route.test.js",
                 "resolvedPath": "tests/unit/relay-dashboard-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-dashboard-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/shipping-customs-workspace.test.js",
+                "resolvedPath": "tests/unit/shipping-customs-workspace.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5319,7 +5343,7 @@
             ]
           }
         },
-        "totalFiles": 170,
+        "totalFiles": 207,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5761,6 +5785,13 @@
           ]
         },
         {
+          "provider": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5847,9 +5878,8 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 3,
+        "declaredNotObserved": 2,
         "declaredNotObservedEvidence": [
-          "inventory",
           "recommendations",
           "wallet"
         ]
@@ -5872,13 +5902,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 2,
         "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"inventory\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -5912,24 +5937,52 @@
         "in": [
           "generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)",
           "cycle de vie du signal : acknowledge / resolve / snooze",
-          "consultation admin des signaux (routes/signals.js)"
+          "consultation admin des signaux (routes/signals.js)",
+          "Action Center Canonical : projection globale + lifecycle par signal_ref"
         ],
         "out": [
           "aucune decision metier engageante : la capability detecte, elle ne tranche aucun statut de commande, colis ou wallet",
-          "aucune UI propre : la restitution visuelle passe par dashboard (routes/admin-radar.js), qui reste une projection",
+          "aucune UI ne devient propriétaire de la donnée source : Action Center reste une projection dashboard de cette capability",
           "classement produit boutique (feature recommendations, qui reste seule proprietaire du ranking)"
         ]
       },
       "authority": null,
       "invariants": [
         "un signal est un constat derive, jamais une mutation d'une table possedee par une autre feature",
-        "acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source"
+        "acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source",
+        "open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution",
+        "aucune autorite market n'est inventee tant que signals ne porte pas un market_id canonique"
       ],
       "implementation": {
         "byCategory": {
-          "routes": {
+          "middleware": {
             "count": 1,
             "files": [
+              {
+                "declared": "middleware/require-decision-signal-global-authority.js",
+                "resolvedPath": "middleware/require-decision-signal-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/153_action_center_signal_authority.sql",
+                "resolvedPath": "migrations/153_action_center_signal_authority.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "routes/admin-action-center.js",
+                "resolvedPath": "routes/admin-action-center.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/signals.js",
                 "resolvedPath": "routes/signals.js",
@@ -5938,11 +5991,21 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "services/action-center-workspace.js",
+                "resolvedPath": "services/action-center-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/radar-queries.js",
                 "resolvedPath": "services/radar-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/signal-admin-service.js",
+                "resolvedPath": "services/signal-admin-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5953,16 +6016,46 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 9,
             "files": [
+              {
+                "declared": "tests/unit/action-center-migration-contract.test.js",
+                "resolvedPath": "tests/unit/action-center-migration-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/action-center-workspace.test.js",
+                "resolvedPath": "tests/unit/action-center-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-action-center-route.test.js",
+                "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/radar-queries.test.js",
                 "resolvedPath": "tests/unit/radar-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/require-decision-signal-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-decision-signal-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/signal-admin-service.test.js",
+                "resolvedPath": "tests/unit/signal-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/signal-service.test.js",
                 "resolvedPath": "tests/unit/signal-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/signals-error-propagation.test.js",
+                "resolvedPath": "tests/unit/signals-error-propagation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5973,7 +6066,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6017,7 +6110,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 0
+          "count": 5
         }
       },
       "businessDependencies": [
@@ -8061,22 +8154,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -9254,7 +9336,7 @@
             ]
           },
           "migrations": {
-            "count": 6,
+            "count": 8,
             "files": [
               {
                 "declared": "migrations/016_add_missing_indexes.sql",
@@ -9269,6 +9351,16 @@
               {
                 "declared": "migrations/069_analytical_indexes.sql",
                 "resolvedPath": "migrations/069_analytical_indexes.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/072_jwt_revocation.sql",
+                "resolvedPath": "migrations/072_jwt_revocation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/084_jwt_revocation.sql",
+                "resolvedPath": "migrations/084_jwt_revocation.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9869,7 +9961,7 @@
             ]
           }
         },
-        "totalFiles": 272,
+        "totalFiles": 274,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -10656,6 +10748,13 @@
           ]
         },
         {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -10698,22 +10797,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -11009,201 +11097,6 @@
       "architecturalDebt": {
         "debtCount": 0,
         "debtItems": []
-      },
-      "evidence": {
-        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
-        "businessFeatureGraphVersion": "O6-1.0"
-      }
-    },
-    {
-      "id": "local-stock",
-      "kind": "business-feature",
-      "status": "staging",
-      "manifestFile": "features/local-stock.feature.js",
-      "repo": "backend",
-      "identity": {
-        "id": "local-stock",
-        "kind": "business-feature",
-        "status": "staging"
-      },
-      "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
-      "perimeter": {
-        "in": [
-          "table local_stock (product_id, market_id, location texte, qty_physical)",
-          "projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée",
-          "ajustement du stock local par un opérateur (mutation directe, tracée updated_by)"
-        ],
-        "out": [
-          "stock hub/transit (feature inventory — inventory_items, invariant propre)",
-          "stock import/national (feature catalog — products.stock, product_skus.stock)",
-          "réservation de stock (L4, différé — aucun consommateur checkout aujourd'hui)",
-          "référentiel de lieux multiples (un seul entrepôt KM_MAIN au lancement — location est un texte, jamais une FK, tant qu'un deuxième lieu réel n'existe pas)",
-          "granularité variant_combo (scope product_id uniquement à ce stade — limitation explicite, pas un oubli)",
-          "toute exposition Boutique/checkout (Vague 2, hors périmètre de cette feature)",
-          "ETA / délai (appartient au domaine transport rail — DOCTRINE_TRANSPORT_RAILS.md — jamais un concept produit par local-stock)"
-        ]
-      },
-      "authority": "backend-core — tout changement du calcul de disponibilité locale doit être validé par le propriétaire de local-stock-service.js",
-      "invariants": [
-        {
-          "statement": "qty_physical ne descend jamais sous zéro",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "la disponibilité n'est jamais lue depuis products.stock ou product_skus.stock — uniquement depuis local_stock",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (Vague 1 = shadow strict)",
-          "test": "tests/unit/local-stock-service.test.js"
-        }
-      ],
-      "implementation": {
-        "byCategory": {
-          "services": {
-            "count": 1,
-            "files": [
-              {
-                "declared": "services/local-stock-service.js",
-                "resolvedPath": "services/local-stock-service.js",
-                "status": "resolved-in-technical-graph"
-              }
-            ]
-          },
-          "tests": {
-            "count": 1,
-            "files": [
-              {
-                "declared": "tests/unit/local-stock-service.test.js",
-                "resolvedPath": "tests/unit/local-stock-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              }
-            ]
-          }
-        },
-        "totalFiles": 2,
-        "boutiqueManifest": null,
-        "boutiqueFiles": {
-          "count": 0,
-          "files": []
-        }
-      },
-      "ownership": {
-        "ownsTables": [
-          {
-            "table": "local_stock",
-            "resolution": "single-writer"
-          }
-        ],
-        "writesTables": [
-          {
-            "table": "local_stock",
-            "mode": "RW",
-            "lifecycleOwner": "local-stock",
-            "ownershipStatus": "owner"
-          }
-        ],
-        "readsTables": [
-          {
-            "table": "markets",
-            "lifecycleOwner": null
-          },
-          {
-            "table": "products",
-            "lifecycleOwner": "catalog"
-          }
-        ]
-      },
-      "data": {
-        "ownsTables": [
-          {
-            "table": "local_stock",
-            "resolution": "single-writer"
-          }
-        ],
-        "writesTables": [
-          {
-            "table": "local_stock",
-            "mode": "RW",
-            "lifecycleOwner": "local-stock",
-            "ownershipStatus": "owner"
-          }
-        ],
-        "readsTables": [
-          {
-            "table": "markets",
-            "lifecycleOwner": null
-          },
-          {
-            "table": "products",
-            "lifecycleOwner": "catalog"
-          }
-        ]
-      },
-      "interfaces": {
-        "internalApis": [],
-        "httpInterfaces": {
-          "count": 0
-        }
-      },
-      "businessDependencies": [],
-      "consumedBy": [],
-      "projections": {
-        "projectedBy": []
-      },
-      "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 0,
-        "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
-      },
-      "boundaryHealth": {
-        "status": "ATTENTION",
-        "directCrossFeatureImports": 0,
-        "runtimeCycles": 0,
-        "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
-        "declaredNotObservedEvidence": [
-          "catalog",
-          "market"
-        ]
-      },
-      "governanceHealth": {
-        "status": "HEALTHY",
-        "manifestPresent": true,
-        "registryPresent": true,
-        "orphanFiles": 0,
-        "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 0,
-        "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 0
-      },
-      "gateHealth": {
-        "status": "HEALTHY",
-        "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
-      },
-      "architecturalDebt": {
-        "debtCount": 2,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -12340,22 +12233,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 3,
@@ -13584,22 +13466,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -14000,11 +13871,18 @@
         "totalFiles": 61,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 15,
+          "count": 17,
           "files": [
             {
               "declared": "../css/cart.css",
               "resolvedPath": "public/boutique/css/cart.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/mobile-cart-convergence.css",
+              "resolvedPath": "public/boutique/css/mobile-cart-convergence.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"
@@ -14103,6 +13981,13 @@
             {
               "declared": "../tests/unit/cart-public-api-boundary.test.js",
               "resolvedPath": "public/boutique/tests/unit/cart-public-api-boundary.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/mobile-cart-convergence.test.js",
+              "resolvedPath": "public/boutique/tests/unit/mobile-cart-convergence.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -14786,87 +14671,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 9,
-        "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-tracking.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -14922,7 +14731,8 @@
         {
           "statement": "un paiement confirme ne peut etre confirme deux fois",
           "test": "tests/invariants/payments.no-double-confirm.test.js"
-        }
+        },
+        "tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande"
       ],
       "implementation": {
         "byCategory": {
@@ -15492,22 +15302,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -15895,7 +15694,7 @@
         "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 23,
+          "count": 25,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -15914,6 +15713,13 @@
             {
               "declared": "../css/layout.css",
               "resolvedPath": "public/boutique/css/layout.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/mobile-shell-convergence.css",
+              "resolvedPath": "public/boutique/css/mobile-shell-convergence.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"
@@ -16054,6 +15860,13 @@
             {
               "declared": "../tests/unit/layout.test.js",
               "resolvedPath": "public/boutique/tests/unit/layout.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/mobile-shell-convergence.test.js",
+              "resolvedPath": "public/boutique/tests/unit/mobile-shell-convergence.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -16458,111 +16271,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 12,
-        "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "ck-is-me                     0     0     0     ✔      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "k-order-body--recap          0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "k-view-komerce               0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-nav.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-utils.js — 2 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -16610,7 +16323,8 @@
         },
         "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
         "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent",
-        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js"
+        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js",
+        "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut"
       ],
       "implementation": {
         "byCategory": {
@@ -16960,22 +16674,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "SIDEEFFECT-NO-INVARIANT",
-            "verdict": "warn",
-            "file": null,
-            "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -17053,11 +16756,25 @@
         "totalFiles": 4,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 5,
           "files": [
             {
               "declared": "../css/modal-product-polish.css",
               "resolvedPath": "public/boutique/css/modal-product-polish.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-suggestion-card-polish.css",
+              "resolvedPath": "public/boutique/css/modal-suggestion-card-polish.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-suggestion-filter.css",
+              "resolvedPath": "public/boutique/css/modal-suggestion-filter.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"
@@ -17256,7 +16973,8 @@
       },
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
-        "un remboursement n'est jamais applique deux fois pour le meme evenement source"
+        "un remboursement n'est jamais applique deux fois pour le meme evenement source",
+        "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
       ],
       "implementation": {
         "byCategory": {
@@ -17469,22 +17187,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -18289,47 +17996,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 4,
-        "gatesReporting": [
-          "check:breakpoints",
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:breakpoints",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "Total : 2 violations dans 2 fichiers."
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal.js — 7 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -18455,7 +18126,7 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
@@ -18465,6 +18136,11 @@
               {
                 "declared": "tests/unit/require-sourcing-global-authority.test.js",
                 "resolvedPath": "tests/unit/require-sourcing-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-candidate-actions.test.js",
+                "resolvedPath": "tests/unit/sourcing-candidate-actions.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18485,7 +18161,7 @@
             ]
           }
         },
-        "totalFiles": 16,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18686,22 +18362,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -19287,30 +18952,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 2,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-wallet.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,

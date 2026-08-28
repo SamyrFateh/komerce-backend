@@ -350,9 +350,9 @@ Client 360, Order 360, Product 360, Workspaces, Action Center et sécurité cont
 
 Les décisions économiques bloquantes sont tranchées : frontière Finance et fret DEDICATED/W/M/coût-vs-prix.
 
-Restent des arbitrages de produit non bloquants pour le reset :
+Arbitrages produit résiduels :
 
-1. règles légitimes de `ProblemsView` à conserver dans `signals` ;
+1. ~~règles légitimes de `ProblemsView` à conserver dans `signals`~~ — **tranché par LOT 4H** : seules les anomalies prouvables depuis une SSOT backend sont absorbées ; aucune reconstruction de `ProblemsView` ;
 2. richesse exacte de Hub/Relais à conserver dans les workspaces ;
 3. priorisation des Entity 360 après le cutover dashboard.
 

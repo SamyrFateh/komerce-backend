@@ -21,6 +21,25 @@ module.exports = {
   since:    '2026-07',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": true,
+      "externalSideEffect": "none",
+      "surface": "api+service"
+    },
+    "rationale": [
+      "possède sourcing_candidates, leur journal et le lifecycle raw_imported vers décision/import catalogue ; la fiche produit finale reste à catalog",
+      "porte ses migrations et invariants de qualification/rejouabilité tout en consommant catalog et pricing sans reprendre leur ownership"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Identifier, qualifier et arbitrer des opportunités fournisseur ou produit ' +
            '(scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.',
@@ -95,6 +114,7 @@ module.exports = {
       'tests/unit/sourcing-candidate-import-service.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
+      'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
     ],
   },

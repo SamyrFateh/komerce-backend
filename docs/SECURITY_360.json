@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-08-17T04:16:10.078Z",
+  "generatedAt": "2026-08-27T14:48:18.132Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 482,
-    "protected": 435,
-    "public": 5,
-    "unprotected": 40,
+    "total": 554,
+    "protected": 507,
+    "public": 7,
+    "unprotected": 38,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -48,18 +48,6 @@
     },
     {
       "key": "POST /api/auth/otp/verify",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/auth/passkey/login/options",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/auth/passkey/login/verify",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -264,6 +252,41 @@
     }
   ],
   "routes": [
+    {
+      "key": "POST /api/admin/action-center/generate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/action-center",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
     {
       "key": "GET /api/admin/alerts",
       "level": "PROTECTED",
@@ -636,6 +659,30 @@
       ]
     },
     {
+      "key": "GET /api/admin/dashboard/commerce/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/commerce",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/context",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais",
+        "agent_transitaire"
+      ]
+    },
+    {
       "key": "GET /api/admin/dashboard/control-tower",
       "level": "PROTECTED",
       "roles": [
@@ -650,7 +697,42 @@
       ]
     },
     {
+      "key": "GET /api/admin/dashboard/finance/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/finance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/dashboard/logistics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/operations/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/operations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/unified/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -665,6 +747,13 @@
     },
     {
       "key": "GET /api/admin/dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/demo/orders/{orderId}/timeline",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -763,6 +852,27 @@
     },
     {
       "key": "GET /api/admin/economic/variables",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/clients/{clientPhone}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/orders/{orderReference}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/products/{productRef}",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -1413,6 +1523,441 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/accounting/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/override",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/reject",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories/{key}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories/{key}/subcategories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories/{key}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/catalog",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/distribution/run",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/competitors",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/flow",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/products/{productRef}/apply-price",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/simulate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/strategy/apply",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/strategy",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/shipping-customs/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/scan",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/imports",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/products/{productRef}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/suppliers/{partnerRef}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/suppliers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "POST /api/auth/admin-reset",
       "level": "UNPROTECTED",
       "roles": []
@@ -1529,12 +2074,12 @@
     },
     {
       "key": "POST /api/auth/passkey/login/options",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/auth/passkey/login/verify",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {

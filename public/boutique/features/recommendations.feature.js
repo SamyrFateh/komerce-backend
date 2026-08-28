@@ -46,6 +46,8 @@ module.exports = {
     ],
     css: [
       '../css/modal-product-polish.css',
+      '../css/modal-suggestion-card-polish.css',
+      '../css/modal-suggestion-filter.css',
     ],
   },
 

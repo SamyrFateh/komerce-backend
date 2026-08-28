@@ -1,12 +1,5 @@
 {
-  "total": 2,
-  "perFile": {
-    "checkout-vertical-rail.css": [
-      "max:380"
-    ],
-    "shared-list-library-remove.css": [
-      "max:430"
-    ]
-  },
-  "savedAt": "2026-08-05T19:49:18.609Z"
+  "total": 0,
+  "perFile": {},
+  "savedAt": "2026-08-27T16:18:27.997Z"
 }

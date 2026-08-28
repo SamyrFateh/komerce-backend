@@ -61,6 +61,7 @@ const VIEW_CLASSES = new Set([
   'k-view-fav',
   'k-view-track',
   'k-view-group',
+  'k-view-komerce',
 ]);
 
 /**
@@ -132,9 +133,10 @@ function extractBodyClassOps(filepath) {
   const lines = src.split('\n');
   const ops   = [];
 
-  // Deux formes : document.body.classList.X et (rarement) body.classList.X
-  // On cherche les deux.
-  const bodyRe = /(?:document\.body|(?<![a-zA-Z0-9_$])body)\.classList\.(add|remove|toggle|contains)\s*\(([^)]+)\)/g;
+  // Uniquement les propriétaires explicites du vrai <body>.
+  // Ne jamais matcher une variable locale nommée `body` (ex. const body = dom.orderBody),
+  // sinon une mutation d'un composant est faussement classée comme état global.
+  const bodyRe = /(?:document\.body|dom\.body)\.classList\.(add|remove|toggle|contains)\s*\(([^)]+)\)/g;
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line    = lines[lineIdx];
@@ -310,6 +312,10 @@ function extractCssBodyClasses(filepath) {
     }
   }
 
+  const hasDynamicViewAdd = dynamicOps.some(op =>
+    op.op === 'add' && /k-view-/.test(op.rawExpr || '')
+  );
+
   // ────────────────────────────────────────────────────────────────
   // VÉRIFICATIONS
   // ────────────────────────────────────────────────────────────────
@@ -338,7 +344,7 @@ function extractCssBodyClasses(filepath) {
     }
 
     // B-2 : remove sans add (remove orphelin)
-    if (hasRemove && !hasAdd && !hasToggle && !HTML_INIT_CLASSES.has(cls)) {
+    if (hasRemove && !hasAdd && !hasToggle && !HTML_INIT_CLASSES.has(cls) && !(isViewClass && hasDynamicViewAdd)) {
       warn('B-2', cls,
         `Classe body '${cls}' retirée mais jamais ajoutée dans le JS ou HTML inline`,
         `remove(s) : ${entry.removes.map(r => `${relPath(r.file)}:${r.line}`).join(', ')} — vérifiez index.html`);

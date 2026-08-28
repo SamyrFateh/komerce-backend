@@ -28,6 +28,7 @@ module.exports = {
       'Propriétaire exclusif de `webauthn_credentials` et `webauthn_challenges` (AUTH-2, ' +
         '2026-08). Créée pour éviter un WRITER-NOT-OWNER sur auth-identity : cycle de vie ' +
         'propre (enregistrement/vérification de passkeys), distinct de OTP/magic-link/guest.',
+      "porte une frontière cryptographique WebAuthn autonome avec challenges à usage unique, anti-rejeu, step-up et révocation de credentials, sans réutiliser le lifecycle OTP de auth-identity",
     ],
   },
   since:    '2026-08',
