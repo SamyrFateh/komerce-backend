@@ -1,12 +1,15 @@
 name: Refresh Railway schema → SCHEMA.md
 
 # Déclenché automatiquement quand une migration est mergée sur main,
-# ou manuellement depuis l'UI GitHub.
+# quand la logique de promotion évolue, ou manuellement depuis l'UI GitHub.
 on:
   push:
     branches: [main, master]
     paths:
       - 'migrations/**.sql'
+      - 'scripts/schema-promote.js'
+      - 'scripts/schema-promote-columns.js'
+      - 'scripts/schema-promote-all.js'
   workflow_dispatch:
     inputs:
       reason:
@@ -115,17 +118,19 @@ jobs:
           exit 1
 
       # Une fois Railway effectivement à jour, fermer toute la boucle de
-      # gouvernance. schema-promote ne découvre rien arbitrairement : il ne
-      # promeut que les objets déjà déclarés schema-pending et confirmés live.
+      # gouvernance. Le promoteur objet ne convertit que les schema-pending
+      # confirmés live ; le promoteur colonne ne convertit que les marqueurs
+      # intended_migration_schema dont la paire table+colonne est prouvée par
+      # la migration ET le dump live. Aucun des deux ne découvre une intention.
       # arch-reconcile puis arch-gate remettent ensuite les projections et
       # invariants d'architecture en cohérence avec la vérité DB fraîche.
       - name: Promote SCHEMA.md + reconcile architecture
         if: steps.snapshot.outputs.success == 'true'
         run: |
-          npm run schema:promote:write
+          node scripts/schema-promote-all.js --write
           npm run arch:reconcile:write
           npm run arch:gate
-          npm run schema:promote:check
+          node scripts/schema-promote-all.js --check
           git diff --check
 
       # ── Alerte visible si toutes les tentatives ont échoué ─────────────
@@ -260,11 +265,11 @@ jobs:
             Synchronisation automatique post-migration depuis Railway prod.
 
             Chaîne exécutée :
-            `Railway → pg_dump → railway-live-schema.sql → schema-promote → arch-reconcile → arch-gate`.
+            `Railway → pg_dump → railway-live-schema.sql → schema-promote objets+colonnes → arch-reconcile → arch-gate`.
 
-            `schema-promote` ne promeut que les objets préalablement déclarés
-            `schema-pending` et effectivement observés dans le dump live : la
-            documentation ne peut donc pas devancer la base.
+            La promotion ne peut jamais faire devancer la documentation :
+            - les nouveaux objets doivent avoir été déclarés `schema-pending` puis observés live ;
+            - les colonnes `intended_migration_schema` doivent être prouvées sur la paire exacte table+colonne par la migration et le dump Railway.
 
             Vérifié en mode strict `node scripts/check-schema-freshness.js --all` :
             toutes les migrations courantes doivent être présentes dans le dump,
