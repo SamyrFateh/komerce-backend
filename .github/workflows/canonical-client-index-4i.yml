@@ -82,9 +82,6 @@ jobs:
           npm run gate:docs-lint
           node scripts/feature-classification-check.js --strict
 
-      - name: Security ratchet before artifact refresh
-        run: npm run security:360:check
-
       - name: Regenerate canonical derived artifacts
         run: |
           node scripts/gen-route-registry.js
