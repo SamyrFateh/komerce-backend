@@ -16555,7 +16555,7 @@
               {
                 "declared": "services/providers-service.js",
                 "resolvedPath": "services/providers-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },

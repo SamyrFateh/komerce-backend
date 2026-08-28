@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 446,
-    "filesWithFullHeaders": 416,
+    "scannedCodeFiles": 447,
+    "filesWithFullHeaders": 417,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 444,
+    "filesWithAnyHeaders": 445,
     "filesWithoutHeaders": 2,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1004,
-    "edges": 5166,
-    "dbTables": 123,
-    "doctrines": 275,
-    "impactAreas": 162,
-    "unresolvedCodeEdges": 529,
+    "graphNodes": 1010,
+    "edges": 5178,
+    "dbTables": 126,
+    "doctrines": 276,
+    "impactAreas": 163,
+    "unresolvedCodeEdges": 532,
     "dbWriteViaOverlapWarnings": 1,
     "multiWriterTables": 62
   },
@@ -64,6 +64,7 @@
     "unsold-resolution": 1,
     "incident-management": 2,
     "local-stock": 1,
+    "providers-services": 1,
     "refunds": 2,
     "shared": 1
   },
@@ -98,7 +99,7 @@
     "schema": 1,
     "route": 111,
     "entrypoint": 1,
-    "service": 180,
+    "service": 181,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -107,7 +108,7 @@
   "byCriticality": {
     "critical": 61,
     "medium": 111,
-    "high": 235,
+    "high": 236,
     "low": 37
   },
   "nodes": [
@@ -16806,6 +16807,59 @@
       "version": "2026-08"
     },
     {
+      "id": "services/providers-service.js",
+      "file": "services/providers-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "providers-services-providers-service",
+      "domain": "providers-services",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "provider_id",
+        "service_id",
+        "inquiry_id",
+        "market_id",
+        "texte libre"
+      ],
+      "outputs": [
+        "provider_row",
+        "service_row",
+        "inquiry_row"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "(aucun — shadow",
+        "appel direct scripts/tests dans cette PR)"
+      ],
+      "dbRead": [
+        "providers",
+        "services",
+        "inquiries",
+        "markets"
+      ],
+      "dbWrite": [
+        "providers",
+        "services",
+        "inquiries"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "single_statement_sufficient"
+      ],
+      "doctrine": [
+        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
+      ],
+      "impactAreas": [
+        "providers-services"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/purchasing-admin-service.js",
       "file": "services/purchasing-admin-service.js",
       "type": "file",
@@ -21555,6 +21609,21 @@
       "table": "pricing_strategy_history"
     },
     {
+      "id": "db:providers",
+      "type": "db-table",
+      "table": "providers"
+    },
+    {
+      "id": "db:services",
+      "type": "db-table",
+      "table": "services"
+    },
+    {
+      "id": "db:inquiries",
+      "type": "db-table",
+      "table": "inquiries"
+    },
+    {
       "id": "db:shared_cart_events",
       "type": "db-table",
       "table": "shared_cart_events"
@@ -22775,6 +22844,11 @@
       "doctrine": "§7"
     },
     {
+      "id": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services",
+      "type": "doctrine",
+      "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
+    },
+    {
       "id": "doctrine:qr_pickup_single_validation (P5-L5)",
       "type": "doctrine",
       "doctrine": "qr_pickup_single_validation (P5-L5)"
@@ -23723,6 +23797,11 @@
       "id": "impact:auth-identity",
       "type": "impact-area",
       "area": "auth-identity"
+    },
+    {
+      "id": "impact:providers-services",
+      "type": "impact-area",
+      "area": "providers-services"
     },
     {
       "id": "impact:admin-debug",
@@ -48473,6 +48552,78 @@
       "label": "catalog"
     },
     {
+      "from": "services/providers-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "(aucun — shadow",
+      "to": "services/providers-service.js",
+      "type": "uses",
+      "label": "(aucun — shadow"
+    },
+    {
+      "from": "appel direct scripts/tests dans cette PR)",
+      "to": "services/providers-service.js",
+      "type": "uses",
+      "label": "appel direct scripts/tests dans cette PR)"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:providers",
+      "type": "db-read",
+      "label": "providers"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:services",
+      "type": "db-read",
+      "label": "services"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:inquiries",
+      "type": "db-read",
+      "label": "inquiries"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:providers",
+      "type": "db-write",
+      "label": "providers"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:services",
+      "type": "db-write",
+      "label": "services"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:inquiries",
+      "type": "db-write",
+      "label": "inquiries"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services",
+      "type": "doctrine",
+      "label": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "impact:providers-services",
+      "type": "impact",
+      "label": "providers-services"
+    },
+    {
       "from": "services/purchasing-admin-service.js",
       "to": "db",
       "type": "depends",
@@ -71445,6 +71596,48 @@
         "services/catalog-enrichment.js"
       ]
     },
+    "services/providers-service.js": {
+      "role": "providers-services-providers-service",
+      "domain": "providers-services",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "(aucun — shadow",
+        "appel direct scripts/tests dans cette PR)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "providers",
+        "services",
+        "inquiries",
+        "markets"
+      ],
+      "dbWrite": [
+        "providers",
+        "services",
+        "inquiries"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
+      ],
+      "impactAreas": [
+        "providers-services"
+      ],
+      "mustCheck": [
+        "db:inquiries",
+        "db:markets",
+        "db:providers",
+        "db:services",
+        "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services",
+        "impact:providers-services"
+      ]
+    },
     "services/purchasing-admin-service.js": {
       "role": "dashboard-purchasing-admin-service",
       "domain": "purchasing",
@@ -78794,6 +78987,24 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "(aucun — shadow",
+      "to": "services/providers-service.js",
+      "type": "uses",
+      "label": "(aucun — shadow"
+    },
+    {
+      "from": "appel direct scripts/tests dans cette PR)",
+      "to": "services/providers-service.js",
+      "type": "uses",
+      "label": "appel direct scripts/tests dans cette PR)"
     },
     {
       "from": "services/purchasing-admin-service.js",
