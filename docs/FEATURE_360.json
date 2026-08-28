@@ -4451,7 +4451,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 97,
+            "count": 98,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4849,6 +4849,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/client-index.js",
+                "resolvedPath": "public/dashboards/canonical/js/client-index.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/dashboard-renderer.js",
                 "resolvedPath": "public/dashboards/canonical/js/dashboard-renderer.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4966,11 +4971,16 @@
             ]
           },
           "routes": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "routes/admin-client-360.js",
                 "resolvedPath": "routes/admin-client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-client-index.js",
+                "resolvedPath": "routes/admin-client-index.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5086,11 +5096,16 @@
             ]
           },
           "services": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": "services/client-360.js",
                 "resolvedPath": "services/client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/client-index.js",
+                "resolvedPath": "services/client-index.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5201,7 +5216,7 @@
             ]
           },
           "tests": {
-            "count": 61,
+            "count": 64,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5211,6 +5226,11 @@
               {
                 "declared": "tests/unit/admin-client-360-route.test.js",
                 "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-client-index-route.test.js",
+                "resolvedPath": "tests/unit/admin-client-index-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5294,6 +5314,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/canonical-client-index.test.js",
+                "resolvedPath": "tests/unit/canonical-client-index.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/canonical-dashboard-admin-context.test.js",
                 "resolvedPath": "tests/unit/canonical-dashboard-admin-context.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5336,6 +5361,11 @@
               {
                 "declared": "tests/unit/client-360-service.test.js",
                 "resolvedPath": "tests/unit/client-360-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/client-index-service.test.js",
+                "resolvedPath": "tests/unit/client-index-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5511,7 +5541,7 @@
             ]
           }
         },
-        "totalFiles": 206,
+        "totalFiles": 212,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5849,7 +5879,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 61
+          "count": 63
         }
       },
       "businessDependencies": [

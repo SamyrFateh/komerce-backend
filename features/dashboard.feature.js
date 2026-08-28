@@ -61,6 +61,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
       'docs/contract/ACTION_CENTER_4G.md',
+      'docs/contract/CLIENT_INDEX_4I.md',
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
@@ -118,6 +119,8 @@ module.exports = {
       'GET /api/admin/dashboard',
       'GET /api/admin/demo/orders/:orderId/timeline',
       'GET /api/dashboard/clients',
+      'GET /api/admin/entities/clients',
+      'GET /api/admin/entities/clients/market/:marketCode',
       'GET /api/dashboard/ops',
       'GET /api/dashboard/hub',
       // dashboard-shared n'est pas une route HTTP : c'est un module utilitaire
@@ -309,6 +312,7 @@ module.exports = {
       'services/finance-accounting-workspace.js',
       'services/partner-admin-service.js',
       'services/client-360.js',
+      'services/client-index.js',
       'services/dashboard-admin-context.js',
       'services/dashboard-commerce.js',
       'services/dashboard-finance-canonical.js',
@@ -328,6 +332,7 @@ module.exports = {
       'routes/admin/users.js',
       'routes/admin-dashboard.js',
       'routes/admin-client-360.js',
+      'routes/admin-client-index.js',
       'routes/admin-dashboard-market.js',
       'routes/admin-operations-workspace.js',
       'routes/admin-order-360.js',
@@ -366,6 +371,7 @@ module.exports = {
       'dashboards/canonical/js/sourcing-workspace.js',
       'dashboards/canonical/js/pricing-workspace.js',
       'dashboards/canonical/js/action-center.js',
+      'dashboards/canonical/js/client-index.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -486,6 +492,9 @@ module.exports = {
       'tests/unit/partner-admin-service.test.js',
       'tests/unit/require-dashboard-global-authority.test.js',
       'tests/unit/admin-client-360-route.test.js',
+      'tests/unit/admin-client-index-route.test.js',
+      'tests/unit/client-index-service.test.js',
+      'tests/unit/canonical-client-index.test.js',
       'tests/unit/admin-dashboard-market.test.js',
       'tests/unit/admin-operations-workspace-route.test.js',
       'tests/unit/admin-order-360-route.test.js',

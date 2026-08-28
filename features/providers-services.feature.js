@@ -30,6 +30,10 @@ module.exports = {
       'distinct de catalog (products, canonical Komerce) et de shared-cart ' +
       '(aucun couplage — la prescription artisan V0/V1 reste hors périmètre ' +
       'de ce lot, voir RECHALLENGE_DISCOVERY_LOCALE_COMPLET).',
+      'Frontière métier autonome d’exposition et de demande : un service ou une offre ' +
+      'physique n’est exposable que sous l’autorité d’un provider actif, et une inquiry ' +
+      'reste un cycle sent -> answered -> accepted|declined — jamais une réservation, ' +
+      'un paiement ou un calendrier. Ces invariants sont testés dans providers-service.test.js.',
     ],
   },
 

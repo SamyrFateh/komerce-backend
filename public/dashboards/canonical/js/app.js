@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -35,6 +35,7 @@
     PRICING_WORKSPACE: 'pricing-workspace',
     ACTION_CENTER: 'action-center',
     ORDER_360: 'order-360',
+    CLIENT_INDEX: 'client-index',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
     DEMO: 'demo',
@@ -93,6 +94,7 @@
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
+    if (path === '/admin/clients' || path === '/admin-next/clients') return SURFACES.CLIENT_INDEX;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
     if (path === '/admin/workspaces/operations' || path === '/admin-next/workspaces/operations') {
@@ -388,6 +390,20 @@
     });
   }
 
+  function renderClientIndex(root, user, adminContext, requestedMarket) {
+    if (!global.KomerceCanonicalClientIndex) throw new Error('canonical_client_index_module_missing');
+    return global.KomerceCanonicalClientIndex.mount({
+      root,
+      user,
+      adminContext,
+      requestedMarket,
+      contextContract: global.KomerceAdminContext,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderClient360(root, user) {
     if (!global.KomerceCanonicalClient360) throw new Error('canonical_client_360_module_missing');
     return global.KomerceCanonicalClient360.mount({
@@ -456,6 +472,14 @@
     });
   }
 
+  function renderClientIndexShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'client-index',
+      title: 'Clients visibles',
+      render: renderClientIndex,
+    });
+  }
+
   function renderOperationsShell(root, user, adminContext) {
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'operations',
@@ -511,6 +535,7 @@
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
+    if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
@@ -564,11 +589,13 @@
     renderActionCenter,
     renderFinanceAccountingWorkspace,
     renderOrder360,
+    renderClientIndex,
     renderClient360,
     renderProduct360,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,
+    renderClientIndexShell,
     renderOperationsShell,
     renderFinanceShell,
     renderOperationsWorkspaceShell,

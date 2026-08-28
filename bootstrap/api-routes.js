@@ -123,6 +123,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const signalsRouter         = require('../routes/signals');
   const adminRiskProvisionsRouter = require('../routes/admin-risk-provisions');
   const adminOrder360Router = require('../routes/admin-order-360');
+  const adminClientIndexRouter = require('../routes/admin-client-index');
   const adminClient360Router = require('../routes/admin-client-360');
   const adminProduct360Router = require('../routes/admin-product-360');
   const adminOperationsWorkspaceRouter = require('../routes/admin-operations-workspace');
@@ -140,6 +141,8 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard-market'));
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
   app.use('/api/admin/entities',    adminOrder360Router);
+  // LOT 4I — l'index doit précéder /clients/:clientPhone pour que /clients/market/:code ne soit jamais capturé comme téléphone.
+  app.use('/api/admin/entities',    adminClientIndexRouter);
   app.use('/api/admin/entities',    adminClient360Router);
   app.use('/api/admin/entities',    adminProduct360Router);
   app.use('/api/admin/workspaces/operations', adminOperationsWorkspaceRouter);

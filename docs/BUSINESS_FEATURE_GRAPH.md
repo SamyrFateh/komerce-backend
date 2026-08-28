@@ -76,7 +76,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 360 | 360 | 0 |
+| backend | 29 | 29 | 362 | 362 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -213,14 +213,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 22
-- routes: 23
+- services: 23
+- routes: 24
 - migrations: 2
-- dash: 97
-- tests: 61
+- dash: 98
+- tests: 64
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 14
-- interfaces exposed: 61
+- interfaces exposed: 63
 - internal APIs: 0
 - dependencies (consumes): 18 — shared-cart, incident-management, orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, auth-identity, customs, documents, notifications, purchasing, business-rules, decision-signals, market
 - consumers: 4 — economic-engine, infrastructure, sourcing, admin-dashboard
@@ -822,6 +822,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/admin/dashboard` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
 | `GET /api/admin/demo/orders/{id}/timeline` | dashboard | `routes/admin/demo-order-flow.js` (resolved-owned) |
 | `GET /api/dashboard/clients` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/admin/entities/clients` | dashboard | `routes/admin-client-index.js` (resolved-owned) |
+| `GET /api/admin/entities/clients/market/{id}` | dashboard | `routes/admin-client-index.js` (resolved-owned) |
 | `GET /api/dashboard/ops` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
 | `GET /api/dashboard/hub` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
 | `GET /api/hub-dash/dashboard` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
@@ -1639,7 +1641,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 960 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 966 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 173 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1700,7 +1702,7 @@ Meta Graph monté : oui.
 | customs | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | customs | logistics | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | auth | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | customs | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
@@ -1708,11 +1710,11 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code, data-write, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 80 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 85 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code, data-read, data-write | 21 | **DECLARED_AND_OBSERVED** |
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
-| dashboard | market | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | market | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code, data-write, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1753,7 +1755,7 @@ Meta Graph monté : oui.
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | catalog | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| infrastructure | dashboard | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |

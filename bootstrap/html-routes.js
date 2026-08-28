@@ -132,9 +132,14 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
-  // LOT 3B — Client 360 Canonical. L'URL détaillée est canonique, tandis que
-  // `/admin/clients` sans identifiant reste Legacy 1 jusqu'à reconstruction
-  // d'une vraie surface de recherche/navigation clients.
+  // LOT 4I — Client Index Canonical : recherche/navigation légère vers Client 360.
+  // Legacy 1 reste disponible par query explicite pour rollback immédiat.
+  app.get('/admin/clients', (req, res) => {
+    if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    sendCanonicalAdmin(res);
+  });
+
+  // LOT 3B — Client 360 Canonical détaillé.
   app.get('/admin/clients/:clientPhone', (req, res) => {
     sendCanonicalAdmin(res);
   });
@@ -160,6 +165,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin-next/workspaces/sourcing': '/admin/workspaces/sourcing',
     '/admin-next/workspaces/pricing': '/admin/workspaces/pricing',
     '/admin-next/action-center': '/admin/action-center',
+    '/admin-next/clients': '/admin/clients',
     '/admin-next/demo': '/admin/demo',
     '/admin/pilotage-v2': '/admin/pilotage',
   });
@@ -167,6 +173,24 @@ function mountHtmlRoutes(app, rootDir) {
   Object.entries(CANONICAL_BUILD_ALIASES).forEach(([routePath, stablePath]) => {
     app.get(routePath, (req, res) => {
       res.redirect(302, stablePath);
+    });
+  });
+
+  // LOT 4J — les besoins de PricingView, PricingWorkshopView,
+  // PricingStrategyView et EconomicFlowView sont prouvés absorbés par le seul
+  // Pricing Workspace Canonical. Les anciens pathnames deviennent donc des
+  // points d'entrée de compatibilité ; ?legacy=1 conserve le témoin Legacy 1.
+  const PRICING_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/pricing',
+    '/admin/pricing-workshop',
+    '/admin/pricing-strategy',
+    '/admin/economic-flow',
+  ]);
+
+  PRICING_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/pricing');
     });
   });
 
@@ -178,9 +202,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/orders-logistics',
     '/admin/sourcing',
     '/admin/sourcing-scanner',
-    '/admin/pricing',
-    '/admin/pricing-workshop',
-    '/admin/pricing-strategy',
     '/admin/customs',
     '/admin/suppliers',
     '/admin/alerts',
@@ -188,7 +209,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/products',
     '/admin/catalog-approval',
     '/admin/sales',
-    '/admin/clients',
     '/admin/problems',
     '/admin/hub-relais',
     '/admin/transitaire',
@@ -198,7 +218,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/invoices',
     '/admin/sante',
     '/admin/shared-carts',
-    '/admin/economic-flow',
     '/admin/accounting',
     '/admin/settings',
     '/admin/simulator',
