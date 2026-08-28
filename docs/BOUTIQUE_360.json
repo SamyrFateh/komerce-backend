@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-14T22:27:16.342Z",
+  "generatedAt": "2026-08-28T08:45:01.180Z",
   "summary": {
-    "modules": 77,
-    "withHeader": 77,
-    "events": 23,
-    "declaredActive": 37,
+    "modules": 88,
+    "withHeader": 88,
+    "events": 22,
+    "declaredActive": 39,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 47,
+    "endpoints": 57,
     "orphanEmit": 0,
-    "orphanListen": 1,
-    "undeclared": 4,
+    "orphanListen": 0,
+    "undeclared": 0,
     "notFoundEndpoints": 0,
-    "unprovenEndpoints": 34,
-    "dynamicEndpoints": 15,
+    "unprovenEndpoints": 42,
+    "dynamicEndpoints": 18,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -83,9 +83,9 @@
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-nav.js",
         "public/boutique/js/b-modal-product.js",
-        "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-pdp-curation-suggestions.js",
         "public/boutique/js/b-product-open-contract.js",
@@ -257,7 +257,7 @@
         "b-catalog.js",
         "b-scroll-owner.js",
         "shop-schema.js",
-        "group/group-side-cart.js",
+        "group/shared-cart-surface-api.js",
         "routes/shared-cart.js"
       ],
       "usedBy": [
@@ -290,7 +290,7 @@
         "shop-schema",
         "render-product-card",
         "cart-product-summary",
-        "group-side-cart"
+        "shared-cart-surface-api"
       ],
       "bodyClasses": [
         "cart-open",
@@ -488,6 +488,7 @@
         "b-share-cart.js"
       ],
       "emits": [
+        "modal:open",
         "modal:close",
         "nav:goto-komerce-wallet",
         "checkout:order-failed",
@@ -512,6 +513,10 @@
         "k-order-body--checkout"
       ],
       "emitCalls": [
+        {
+          "name": "modal:open",
+          "hasArg": true
+        },
         {
           "name": "modal:close",
           "hasArg": false
@@ -725,11 +730,38 @@
       "imports": [
         "b-store",
         "b-utils",
-        "b-phone"
+        "b-phone",
+        "b-passkey-login"
       ],
       "bodyClasses": [
         "k-id-scroll-lock"
       ],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-komerce-nav-identity.js",
+      "id": "b-komerce-nav-identity",
+      "hasHeader": true,
+      "role": "komerce-nav-authenticated-identity",
+      "domain": "account",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "authenticated_session_only",
+        "no_gender_inference"
+      ],
+      "depends": [
+        "b-identity.js"
+      ],
+      "usedBy": [
+        "main.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-identity"
+      ],
+      "bodyClasses": [],
       "emitCalls": []
     },
     {
@@ -763,7 +795,9 @@
       "imports": [
         "b-utils",
         "b-identity",
-        "b-bus"
+        "b-bus",
+        "b-passkey-security",
+        "b-passkey-step-up"
       ],
       "bodyClasses": [],
       "emitCalls": [
@@ -905,7 +939,8 @@
       "emits": [
         "modal:opened",
         "modal:closed",
-        "side-cart:render"
+        "side-cart:render",
+        "checkout:open"
       ],
       "listens": [
         "modal:close",
@@ -946,7 +981,7 @@
           "hasArg": false
         },
         {
-          "name": "side-cart:render",
+          "name": "checkout:open",
           "hasArg": false
         }
       ]
@@ -1260,11 +1295,8 @@
       "depends": [],
       "usedBy": [],
       "emits": [],
-      "listens": [
-        "modal:product-changed"
-      ],
+      "listens": [],
       "imports": [
-        "b-bus",
         "b-store"
       ],
       "bodyClasses": [],
@@ -1307,8 +1339,7 @@
         "b-store",
         "b-utils",
         "b-scroll-owner",
-        "b-cart",
-        "cart-product-summary",
+        "cart-public-api",
         "render-product-card"
       ],
       "bodyClasses": [],
@@ -1337,10 +1368,7 @@
       "emits": [],
       "listens": [],
       "imports": [
-        "b-modal-core",
-        "b-modal-product",
-        "b-modal-suggestions",
-        "b-modal-nav"
+        "b-modal-core"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -1411,6 +1439,40 @@
       ]
     },
     {
+      "file": "public/boutique/js/b-notifications.js",
+      "id": "b-notifications",
+      "hasHeader": true,
+      "role": "client-notification-banner",
+      "domain": "notification",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "main.js"
+      ],
+      "emits": [
+        "nav:goto-track"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-utils"
+      ],
+      "bodyClasses": [],
+      "emitCalls": [
+        {
+          "name": "nav:goto-track",
+          "hasArg": true
+        }
+      ]
+    },
+    {
       "file": "public/boutique/js/b-pager.js",
       "id": "b-pager",
       "hasHeader": true,
@@ -1452,6 +1514,125 @@
           "hasArg": true
         }
       ]
+    },
+    {
+      "file": "public/boutique/js/b-passkey-enrollment.js",
+      "id": "b-passkey-enrollment",
+      "hasHeader": true,
+      "role": "boutique-passkey-enrollment",
+      "domain": "auth-passkey",
+      "layer": "ui-service",
+      "criticality": "high",
+      "doctrine": [
+        "post_sensitive_otp_enrollment",
+        "no_secret_in_js_storage",
+        "user_opt_in"
+      ],
+      "depends": [
+        "routes/auth-passkey.js",
+        "browser WebAuthn API"
+      ],
+      "usedBy": [
+        "public/boutique/js/main.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [
+        "k-id-scroll-lock"
+      ],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-passkey-login.js",
+      "id": "b-passkey-login",
+      "hasHeader": true,
+      "role": "boutique-passkey-login",
+      "domain": "auth-passkey",
+      "layer": "ui-service",
+      "criticality": "high",
+      "doctrine": [
+        "auth4_passkey_nominal",
+        "otp_fallback_only",
+        "no_secret_in_js_storage"
+      ],
+      "depends": [
+        "routes/auth-passkey.js",
+        "browser WebAuthn API",
+        "b-passkey-enrollment.js"
+      ],
+      "usedBy": [
+        "b-identity.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-passkey-enrollment"
+      ],
+      "bodyClasses": [
+        "k-id-scroll-lock"
+      ],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-passkey-security.js",
+      "id": "b-passkey-security",
+      "hasHeader": true,
+      "role": "boutique-passkey-security",
+      "domain": "auth-passkey",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "auth6_authenticator_management",
+        "safe_metadata_only"
+      ],
+      "depends": [
+        "b-utils.js",
+        "routes/auth-passkey.js"
+      ],
+      "usedBy": [
+        "b-komerce.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "b-passkey-step-up"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-passkey-step-up.js",
+      "id": "b-passkey-step-up",
+      "hasHeader": true,
+      "role": "boutique-passkey-step-up",
+      "domain": "auth-passkey",
+      "layer": "ui-service",
+      "criticality": "high",
+      "doctrine": [
+        "auth7_step_up",
+        "same_account_only",
+        "otp_fallback_then_optional_enrollment",
+        "no_secret_in_js_storage"
+      ],
+      "depends": [
+        "b-passkey-login.js",
+        "b-identity.js",
+        "browser WebAuthn API"
+      ],
+      "usedBy": [
+        "b-passkey-security.js",
+        "b-komerce.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-passkey-login",
+        "b-identity"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
     },
     {
       "file": "public/boutique/js/b-paypal.js",
@@ -1737,7 +1918,8 @@
         "b-catalog",
         "b-modal",
         "b-cart",
-        "b-scroll-owner"
+        "b-scroll-owner",
+        "category-shelf-visuals"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -1762,7 +1944,8 @@
         "b-utils.js",
         "b-cart-core.js",
         "b-identity.js",
-        "group/group-api.js",
+        "group/shared-cart-library-api.js",
+        "group/shared-cart-surface-api.js",
         "routes/otp.js",
         "routes/orders.js",
         "routes/documents.js",
@@ -1781,8 +1964,7 @@
         "b-cart-core",
         "b-store",
         "b-phone",
-        "group-api",
-        "group-list-labels",
+        "shared-cart-library-api",
         "b-identity"
       ],
       "bodyClasses": [],
@@ -1935,6 +2117,33 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/cart-public-api.js",
+      "id": "cart-public-api",
+      "hasHeader": true,
+      "role": "orders-cart-public-api",
+      "domain": "boutique",
+      "layer": "adapter",
+      "criticality": "high",
+      "doctrine": [
+        "feature_first_public_boundary"
+      ],
+      "depends": [
+        "b-cart.js",
+        "cart-product-summary.js"
+      ],
+      "usedBy": [
+        "b-modal-suggestions.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-cart",
+        "cart-product-summary"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/controllers/home-controller.js",
       "id": "home-controller",
       "hasHeader": true,
@@ -1960,6 +2169,7 @@
       "imports": [
         "b-store",
         "render-categories",
+        "category-shelf-visuals",
         "shop-schema",
         "b-catalog",
         "b-scroll-owner"
@@ -2228,6 +2438,59 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/group/shared-cart-library-api.js",
+      "id": "shared-cart-library-api",
+      "hasHeader": true,
+      "role": "shared-cart-library-public-api",
+      "domain": "shared-cart",
+      "layer": "adapter",
+      "criticality": "high",
+      "doctrine": [
+        "feature_first_public_boundary"
+      ],
+      "depends": [
+        "group-api.js",
+        "group-list-labels.js"
+      ],
+      "usedBy": [
+        "../b-tracking.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "group-api",
+        "group-list-labels"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/group/shared-cart-surface-api.js",
+      "id": "shared-cart-surface-api",
+      "hasHeader": true,
+      "role": "shared-cart-surface-public-api",
+      "domain": "shared-cart",
+      "layer": "adapter",
+      "criticality": "critical",
+      "doctrine": [
+        "feature_first_public_boundary"
+      ],
+      "depends": [
+        "group-side-cart.js"
+      ],
+      "usedBy": [
+        "../b-cart.js",
+        "../b-tracking.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "group-side-cart"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/hero-bootstrap.js",
       "id": "hero-bootstrap",
       "hasHeader": true,
@@ -2295,8 +2558,28 @@
         "b-pdp-curation-suggestions",
         "b-home-premium-v1",
         "b-modal-product-detail-bootstrap",
-        "b-greeting"
+        "b-greeting",
+        "b-notifications",
+        "b-komerce-nav-identity",
+        "b-passkey-enrollment"
       ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/market-context.js",
+      "id": "market-context",
+      "hasHeader": true,
+      "role": "boutique-market-context",
+      "domain": "catalog",
+      "layer": "ui-boundary",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
       "bodyClasses": [],
       "emitCalls": []
     },
@@ -2331,6 +2614,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/render/category-shelf-visuals.js",
+      "id": "category-shelf-visuals",
+      "hasHeader": true,
+      "role": "category-shelf-visual-registry",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/render/render-categories.js",
       "id": "render-categories",
       "hasHeader": true,
@@ -2345,7 +2645,8 @@
       "listens": [],
       "imports": [
         "b-utils",
-        "shop-schema"
+        "shop-schema",
+        "category-shelf-visuals"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2376,7 +2677,8 @@
         "shop-schema",
         "product-store",
         "b-utils",
-        "b-store"
+        "b-store",
+        "category-shelf-visuals"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2635,6 +2937,7 @@
     "modal:open": {
       "emitters": [
         "b-cart",
+        "b-checkout",
         "b-modal-nav",
         "b-modal-suggestions",
         "group-side-cart"
@@ -2647,7 +2950,8 @@
     "checkout:open": {
       "emitters": [
         "b-cart",
-        "b-modal-buybox-shared"
+        "b-modal-buybox-shared",
+        "b-modal-core"
       ],
       "listeners": [
         "boutique"
@@ -2730,7 +3034,8 @@
     },
     "nav:goto-track": {
       "emitters": [
-        "b-checkout"
+        "b-checkout",
+        "b-notifications"
       ],
       "listeners": [
         "b-nav"
@@ -2793,12 +3098,6 @@
         "b-modal-image-ux"
       ]
     },
-    "modal:product-changed": {
-      "emitters": [],
-      "listeners": [
-        "b-modal-social-proof"
-      ]
-    },
     "modal:suggestions-rendered": {
       "emitters": [
         "b-modal-suggestions"
@@ -2815,18 +3114,22 @@
         "tokens",
         "reset",
         "layout",
-        "hero"
+        "hero",
+        "hero-ultra-mobile",
+        "mobile-shell-convergence"
       ]
     },
     {
       "out": "components.css",
       "files": [
         "categories",
+        "category-cutout-navigation",
         "products",
         "modal-shell",
         "modal-media",
         "modal-product",
         "modal-product-lot4-hybrid",
+        "modal-desktop-density",
         "modal-mobile-canonical",
         "modal-enriched-content",
         "modal-cart-sku-guard",
@@ -2834,6 +3137,8 @@
         "interactions",
         "modal-mobile-suggestion-actions",
         "modal-product-polish",
+        "modal-suggestion-filter",
+        "modal-suggestion-card-polish",
         "hero-cart-proxy",
         "shared-list-side-cart",
         "shared-list-side-cart-responsive",
@@ -2844,13 +3149,18 @@
         "paypal",
         "wallet",
         "komerce",
-        "checkout-vertical-rail"
+        "notifications",
+        "checkout-vertical-rail",
+        "mobile-catalog-convergence",
+        "mobile-cart-convergence"
       ]
     },
     {
       "out": "desktop.css",
       "files": [
-        "boutique-desktop"
+        "boutique-desktop",
+        "side-cart-desktop-polish",
+        "category-cutout-navigation-desktop"
       ]
     }
   ],
@@ -2859,6 +3169,13 @@
       "module": "b-cart",
       "route": "/api/shares",
       "raw": "/api/shares/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/boutique/suggestions",
+      "raw": "/api/boutique/suggestions?cart_product_ids=${productIds.join(",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3017,6 +3334,76 @@
       "contractStatus": "UNKNOWN"
     },
     {
+      "module": "b-notifications",
+      "route": "/api/auth/me/notifications/{id}/ack",
+      "raw": "/api/auth/me/notifications/${encodeURIComponent(notification.id)}/ack",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-notifications",
+      "route": "/api/auth/me/notifications",
+      "raw": "/api/auth/me/notifications",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-enrollment",
+      "route": "/api/auth/passkey/register/options",
+      "raw": "/api/auth/passkey/register/options",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-enrollment",
+      "route": "/api/auth/passkey/register/verify",
+      "raw": "/api/auth/passkey/register/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-login",
+      "route": "/api/auth/passkey/login/options",
+      "raw": "/api/auth/passkey/login/options",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-login",
+      "route": "/api/auth/passkey/login/verify",
+      "raw": "/api/auth/passkey/login/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-security",
+      "route": "/api/auth/passkey/credentials/{id}",
+      "raw": "/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-passkey-security",
+      "route": "/api/auth/passkey/credentials",
+      "raw": "/api/auth/passkey/credentials",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-step-up",
+      "route": "/api/auth/passkey/step-up/options",
+      "raw": "/api/auth/passkey/step-up/options",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-passkey-step-up",
+      "route": "/api/auth/passkey/step-up/verify",
+      "raw": "/api/auth/passkey/step-up/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
       "module": "b-paypal",
       "route": "/api/public/config",
       "raw": "/api/public/config",
@@ -3111,6 +3498,13 @@
       "module": "b-tracking",
       "route": "/api/auth/otp/request",
       "raw": "/api/auth/otp/request",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-utils",
+      "route": "/api/public/config",
+      "raw": "/api/public/config",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
     },
@@ -3404,10 +3798,12 @@
       "couvre",
       "amendement",
       "checkout:open",
-      "view:switch",
+      "view:changed",
       "chip:center",
       "catalog:cat-changed",
+      "favorites:view-refresh",
       "modal:suggestions-rendered",
+      "carousel:changed",
       "modal:detail-ready",
       "nav:goto-track",
       "checkout:order-failed",
@@ -3485,15 +3881,8 @@
   },
   "diagnostics": {
     "orphanEmit": [],
-    "orphanListen": [
-      "modal:product-changed"
-    ],
-    "undeclared": [
-      "carousel:changed",
-      "favorites:view-refresh",
-      "modal:product-changed",
-      "view:changed"
-    ],
+    "orphanListen": [],
+    "undeclared": [],
     "declaredUnused": [
       "amendement",
       "backend",
@@ -3511,8 +3900,7 @@
       "rappelle",
       "rapport",
       "surface",
-      "surfaces",
-      "view:switch"
+      "surfaces"
     ],
     "notFoundEndpoints": [],
     "unprovenEndpoints": [
@@ -3520,9 +3908,17 @@
       "/api/auth/logout",
       "/api/auth/me",
       "/api/auth/me/documents",
+      "/api/auth/me/notifications",
       "/api/auth/me/pickup-authorization",
       "/api/auth/otp/request",
       "/api/auth/otp/verify",
+      "/api/auth/passkey/credentials",
+      "/api/auth/passkey/login/options",
+      "/api/auth/passkey/login/verify",
+      "/api/auth/passkey/register/options",
+      "/api/auth/passkey/register/verify",
+      "/api/auth/passkey/step-up/options",
+      "/api/auth/passkey/step-up/verify",
       "/api/boutique/suggestions",
       "/api/carriers",
       "/api/categories",
@@ -3552,6 +3948,9 @@
       "/api/wallet/transactions"
     ],
     "dynamicEndpoints": [
+      "/api/auth/me/notifications/{id}/ack",
+      "/api/auth/passkey/credentials/{id}",
+      "/api/boutique/suggestions",
       "/api/carriers/{id}",
       "/api/logistics/shipments/{id}",
       "/api/orders",
@@ -3685,7 +4084,9 @@
         "b-checkout"
       ],
       "k-id-scroll-lock": [
-        "b-identity"
+        "b-identity",
+        "b-passkey-enrollment",
+        "b-passkey-login"
       ],
       "modal-open": [
         "b-modal-core"
@@ -3710,9 +4111,19 @@
     "/api/auth/logout",
     "/api/auth/me",
     "/api/auth/me/documents",
+    "/api/auth/me/notifications",
+    "/api/auth/me/notifications/{id}/ack",
     "/api/auth/me/pickup-authorization",
     "/api/auth/otp/request",
     "/api/auth/otp/verify",
+    "/api/auth/passkey/credentials",
+    "/api/auth/passkey/credentials/{id}",
+    "/api/auth/passkey/login/options",
+    "/api/auth/passkey/login/verify",
+    "/api/auth/passkey/register/options",
+    "/api/auth/passkey/register/verify",
+    "/api/auth/passkey/step-up/options",
+    "/api/auth/passkey/step-up/verify",
     "/api/boutique/suggestions",
     "/api/carriers",
     "/api/carriers/{id}",

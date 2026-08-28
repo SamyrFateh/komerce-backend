@@ -41,7 +41,7 @@ module.exports = {
   },
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.',
+  service: 'Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -109,7 +109,6 @@ module.exports = {
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (commande source)',
-      'shared-cart (panier source)',
       'wallet (credit)',
       'documents (reçu)',
     ],

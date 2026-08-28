@@ -168,12 +168,14 @@ module.exports = {
       { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
     ],
     consumes: [
+      'orders (dépendance data cross-feature observée et gouvernée par O5)',
+      'logistics (dépendance data cross-feature observée et gouvernée par O5)',
+      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
 
-      'toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement',
     ],
   },
 

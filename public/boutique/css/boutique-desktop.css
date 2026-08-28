@@ -891,7 +891,7 @@
     min-height: 0;
     padding: 6px 12px;
     background: transparent;
-    border-bottom: 1px solid var(--border);
+    /* border-bottom final: side-cart-desktop-polish.css */
   }
   /* .k-sc-title-badge retiré (audit 2026-07) : bulle "Mon panier (N)"
      redondante avec la liste d'articles et le CTA Commander(N). */
@@ -1207,7 +1207,6 @@
     flex-shrink: 0;
   }
   .k-sc-item:hover {
-    background: var(--sand);
     border-color: var(--border-text-08);
   }
   .k-sc-item-img {
@@ -1215,8 +1214,7 @@
     border-radius: 7px;
     object-fit: cover;
     flex-shrink: 0;
-    background: var(--sand);
-    border: 1px solid var(--border-text-06);
+    /* background/border desktop finals: side-cart-desktop-polish.css */
   }
   .k-sc-item-info {
     flex: 1; min-width: 0;

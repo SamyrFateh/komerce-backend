@@ -60,6 +60,7 @@ module.exports = {
       // d'un SQL direct dans cette table. Voir features/orders.feature.js
       // contract.consumes.
       'services/cart-share-service.js',
+      'services/shared-cart-user-cleanup.js', // lifecycle-owned cleanup appelé par l'admin users
     ],
     routes: [
       'routes/shared-cart.js',
@@ -195,6 +196,9 @@ module.exports = {
       'GET    /api/admin/shared-carts/:id',
       'POST   /api/admin/shared-carts/:id/expire',
       'POST   /api/admin/shared-carts/:id/note',
+    ],
+    internalApi: [
+      { fn: 'deleteUserBasketData', file: 'services/shared-cart-user-cleanup.js' },
     ],
     consumes: [
       'recommendations (modal partagé consomme suggestions via interface /api/boutique/suggestions)',

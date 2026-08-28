@@ -978,7 +978,7 @@ function build() {
 
   const o5 = featureDependencyConformance.computeDependencyConformance({
     implementedByEdges, boutiqueManifestImplementedBy: boutiqueImplementedByEdges,
-    boutiqueManifestNodes, consumesEdges, ontologyGaps, metaGraph,
+    boutiqueManifestNodes, consumesEdges, ontologyGaps, metaGraph, tableOwnership,
     ROOT, DASH_ROOT, BOUTIQUE_ROOT,
   });
 
@@ -1100,7 +1100,7 @@ function build() {
       boutiqueRepoMounted: fs.existsSync(BOUTIQUE_ROOT),
     },
     nodeTypes: ['business-feature', 'business-transversal', 'technical-transversal', 'piloting-capability', 'projection', 'frontend-transversal', 'deprecated'],
-    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN', 'BOUTIQUE_MANIFEST_IMPLEMENTED_BY', 'OBSERVED_CODE_DEPENDENCY', 'OBSERVED_INTERFACE_DEPENDENCY'],
+    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN', 'BOUTIQUE_MANIFEST_IMPLEMENTED_BY', 'OBSERVED_CODE_DEPENDENCY', 'OBSERVED_INTERFACE_DEPENDENCY', 'OBSERVED_DATA_DEPENDENCY'],
     nodes: { features: featureNodes, boutiqueManifests: boutiqueManifestNodes },
     edges: {
       implementedBy: implementedByEdges,

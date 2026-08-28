@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
- * @role          dashboard-admin-loyalty
- * @domain        dashboard
+ * @role          loyalty-admin-rewards
+ * @domain        loyalty
  * @layer         route
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
@@ -12,7 +12,7 @@
  * @db-write      loyalty_rewards
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
+ * @impact-areas  loyalty, dashboard, admin-dashboard
  * @version       2026-06
  */
 

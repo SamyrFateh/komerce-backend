@@ -645,7 +645,7 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
       return res.status(400).json({ error: 'Aucun champ valide a appliquer' });
     }
 
-    await db.query(`UPDATE finance_config SET ${updates.join(', ')} WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)`, params); // quality-disable N2-SQL-INJECTION — updates[] contains hardcoded column names, values in params
+    await db.query(`UPDATE finance_config SET ${updates.join(', ')} WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)`, params); // AUD-07: updates[] contains allowlisted column names; values remain bound in params
 
     const r = await db.query(`SELECT
       avg_articles_per_order, avg_articles_per_parcel,

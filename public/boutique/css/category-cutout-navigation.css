@@ -209,7 +209,7 @@
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
     background: var(--white);
-    box-shadow: inset 0 -1px 0 var(--border-text-08);
+    /* Surface/ombre finale possédée par mobile-catalog-convergence.css. */
   }
 
   .k-shelf-rail::-webkit-scrollbar {

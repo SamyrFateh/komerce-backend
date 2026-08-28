@@ -29,6 +29,9 @@ module.exports = {
       '(déclaration/ajustement d\'un opérateur), distinct de celui ' +
       'd\'inventory (réception/dispatch hub, invariant "jamais négatif") et ' +
       'de catalog (products.stock/product_skus.stock, stock import/national).',
+      'Frontière market-scoped dédiée : local_stock porte une quantité physique ' +
+      'par marché et peut évoluer indépendamment du cycle logistique hub/transit ' +
+      'et du stock catalogue import/national.',
     ],
   },
 

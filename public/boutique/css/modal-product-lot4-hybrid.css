@@ -25,39 +25,9 @@
     background: var(--page-bg);
   }
 
-  /* ── Composition 2 régions ≥1200px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
-     ProductMedia (rail vignettes + galerie) | ProductBuyBox (identité + configuration + actions).
-     grid-template-columns/gap/padding de .k-modal-product-zone : seul
-     propriétaire ce fichier.
-     RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails",
-     T-020/D8) : .k-modal-img-wrap portait déjà le rail de vignettes en overlay
-     absolu (.k-modal-thumbs, cf. modal-shell.css) à l'intérieur d'un seul item
-     de grille couvrant les deux premières pistes — il constituait donc déjà
-     ProductMedia comme région unique. Les deux pistes 64px + minmax(280,420)
-     sont fusionnées en une seule colonne média équivalente ; le rail reste un
-     overlay interne à .k-modal-img-wrap, aucun changement de DOM/JS requis
-     (cf. arbitrage : « refactor CSS, sans déplacement runtime JavaScript »).
-     Normalisé 1024px → 1200px et 1440px → 1200px (doctrine 2026-07) :
-     les deux breakpoints fusionnés en un seul, valeurs ex-1440 retenues
-     (pistes plus généreuses, adaptées dès 1200px avec .k-modal-cart-slot).
-     ─────────────────────────────────────────────────────────────────── */
-@media (min-width: 1200px) {
-    #k-modal .k-modal-product-zone {
-      /* P1-fix : 340px → 420px.
-         REFONTE COQUE — même raison qu'au breakpoint 1024px ci-dessus : piste fixe →
-         minmax(300px, 420px) pour absorber la largeur prise par .k-modal-cart-slot. */
-      /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
-      /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
-         l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(0, 1fr) minmax(390px, 420px);
-      gap: 16px;
-      padding: 16px;
-    }
-
-    /* Même allocation pour tous les produits :
-       l'absence de variantes libère de la hauteur dans la BuyBox,
-       pas une géométrie horizontale concurrente. */
-  }
+  /* ≥1200px : la géométrie finale est désormais possédée par
+     modal-desktop-density.css (pass de densité 2026-08). La règle 900px
+     ci-dessus reste le fallback canonique ; aucun override mort ici. */
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,

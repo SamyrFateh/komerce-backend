@@ -152,7 +152,7 @@ router.get('/', ...adminAgentRelais, validate({ query: parcels.list }), async (r
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params); // quality-disable N2-SQL-INJECTION — AUD-07: where = parameterized condition templates
+    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params); // AUD-07: where = parameterized condition templates; values remain bound in params
     const total = parseInt(countResult.rows[0].count);
 
     const { rows } = await db.query(`

@@ -1,3 +1,19 @@
+/**
+ * @komerce-arch
+ * @role          auth-cookie-policy
+ * @domain        auth
+ * @layer         util
+ * @criticality   high
+ * @inputs        runtime_environment, jwt_token, http_request
+ * @outputs       auth_cookie_options, auth_token
+ * @depends       utils/auth-session-policy.js
+ * @db-write      none
+ * @db-read       none
+ * @used-by       middleware/auth.js, middleware/auth-guest.js, middleware/soft-auth.js, middleware/csrf-origin.js, routes/auth.js, routes/auth-passkey.js, routes/client-auth.js, routes/otp.js
+ * @doctrine      auth_cookie_single_source_of_truth
+ * @impact-areas  auth, security, session
+ * @version       2026-08
+ */
 'use strict';
 
 /**

@@ -74,8 +74,6 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
-      'basket_items: W',
-      'baskets: W',
       'business_rules: R',
       'business_rules_history: R',
       'client_notifications: R',
@@ -84,7 +82,6 @@ module.exports = {
       'exchange_rates: R',
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'invoices: RW',
-      'loyalty_rewards: RW',
       'order_comments: RW',
       'order_incidents: RW',
       'order_item_cost_imputations: R',
@@ -131,7 +128,6 @@ module.exports = {
       'GET /api/admin/radar',
       // 'GET /api/admin/rules' — retiré (B2, 2026-07-29) : endpoint réel de
       // routes/admin-rules.js, propriété de business-rules.
-      'GET /api/admin/loyalty/pending',
       'GET /api/admin/partners',
       'GET /api/admin/users',
       'GET /api/admin/counts',
@@ -141,10 +137,6 @@ module.exports = {
       // Rapatriées depuis le route-registry (audit 2026-07-06 §3) — routes
       // réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/alerts',
-      'GET /api/admin/loyalty/history',
-      'POST /api/admin/loyalty/reward/:id',
-      'POST /api/admin/loyalty/skip/:id',
-      'GET /api/admin/loyalty/stats',
       'GET /api/admin/margins',
       'POST /api/admin/partners',
       'DELETE /api/admin/partners/:id',
@@ -196,6 +188,7 @@ module.exports = {
       'POST /api/relay/orders/:id/incident',
     ],
     consumes: [
+      'shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)',
       'incident-management (incident persistence via incident-write-service)','orders (lecture commandes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'payments (lecture paiements)',
@@ -208,7 +201,6 @@ module.exports = {
       'customs',
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
-      'recommendations',
       'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
@@ -342,7 +334,6 @@ module.exports = {
       'routes/admin-product-360.js',
       'routes/admin-shipping-customs-workspace.js',
       'routes/admin-finance-accounting-workspace.js',
-      'routes/admin-loyalty.js',
       'routes/admin-radar.js',
       // routes/admin-rules.js — retiré (B2, 2026-07-29) : vérité mutée
       // appartient à business-rules, pas à dashboard qui ne fait qu'agréger.

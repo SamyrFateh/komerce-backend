@@ -291,6 +291,34 @@ function scanInterfaceChannel({ metaGraph, boutiqueManifestImplementedBy, implem
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// 4b. CANAL DATA — projection du tableOwnership déjà gouverné par O4
+// ─────────────────────────────────────────────────────────────────────────
+// Une lecture cross-feature et une écriture métier cross-feature sont des
+// dépendances observables. Les writers explicitement marqués technical (~)
+// restent exclus : reset/seed/simulation ne deviennent jamais des dépendances
+// métier par simple effet de bord d'outillage.
+function scanDataChannel(tableOwnership) {
+  const records = [];
+  for (const [table, info] of Object.entries(tableOwnership || {})) {
+    const providerFeature = info && info.lifecycleOwner;
+    if (!providerFeature) continue;
+
+    for (const consumerFeature of info.readers || []) {
+      if (!consumerFeature || consumerFeature === providerFeature) continue;
+      records.push({ consumerFeature, providerFeature, channel: 'data-read', table, mode: 'R' });
+    }
+
+    for (const writer of info.writers || []) {
+      if (!writer || writer.technical) continue;
+      const consumerFeature = writer.feature;
+      if (!consumerFeature || consumerFeature === providerFeature) continue;
+      records.push({ consumerFeature, providerFeature, channel: 'data-write', table, mode: writer.mode || 'W' });
+    }
+  }
+  return records;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // 5. AGRÉGATION EN PAIRES + CLASSIFICATION DE CONFORMANCE
 // ─────────────────────────────────────────────────────────────────────────
 function pairKey(fromKey, toFeature) { return `${fromKey}\u0000${toFeature}`; }
@@ -305,7 +333,7 @@ function pairKey(fromKey, toFeature) { return `${fromKey}\u0000${toFeature}`; }
  *   interfaceConsumerUnresolved: [...],
  * }}
  */
-function aggregate({ codeByFile, interfaceRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId }) {
+function aggregate({ codeByFile, interfaceRecords, dataRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId }) {
   const pairs = new Map(); // key -> record
   const ambiguousOwnerRecords = [];
   const localManifestGapRecords = []; // consumer=local-manifest(canonicalFeature null), provider resolved
@@ -406,6 +434,12 @@ function aggregate({ codeByFile, interfaceRecords, index, ontologyGapManifests, 
     }
   }
 
+  // ── Canal DATA : ownership/read-write déjà résolu par O4 ───────────────
+  for (const rec of dataRecords || []) {
+    const consumerIdn = { kind: 'canonical-feature', id: rec.consumerFeature, scope: 'backend' };
+    recordEvidence(consumerIdn, rec.providerFeature, rec.channel, { table: rec.table, mode: rec.mode });
+  }
+
   // ── Classification de conformance par paire canonique ───────────────────
   const declaredSet = new Set(declaredPairs.map(p => `${p.from}\u0000${p.to}`));
   const finalPairs = [];
@@ -453,10 +487,12 @@ function computeDependencyConformance(ctx) {
     implementedByEdges: ctx.implementedByEdges,
   });
 
+  const dataRecords = scanDataChannel(ctx.tableOwnership || {});
+
   const declaredPairs = (ctx.consumesEdges || []).filter(e => e.resolved).map(e => ({ from: e.from, to: e.to }));
 
   const result = aggregate({
-    codeByFile, interfaceRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId,
+    codeByFile, interfaceRecords, dataRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId,
   });
 
   // Coverage par scope (mission §14 point 2)
@@ -488,6 +524,7 @@ module.exports = {
   identityKey,
   scanCodeChannel,
   scanInterfaceChannel,
+  scanDataChannel,
   buildBoutiqueModuleToFileId,
   buildDashViewToFileId,
   aggregate,

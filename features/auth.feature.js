@@ -124,7 +124,6 @@ module.exports = {
       'auth-identity',
       'infrastructure',
       'notifications',
-      'orders',
     ],
   },
 

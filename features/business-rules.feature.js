@@ -122,6 +122,7 @@ module.exports = {
       { fn: 'setRule',     file: 'utils/rules.js' },
     ],
     consumes: [
+      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'auth (garde de route admin)',
       'infrastructure (journalisation, acces base)',
     ],

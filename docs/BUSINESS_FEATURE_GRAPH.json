@@ -67,7 +67,8 @@
     "IMPLEMENTED_IN",
     "BOUTIQUE_MANIFEST_IMPLEMENTED_BY",
     "OBSERVED_CODE_DEPENDENCY",
-    "OBSERVED_INTERFACE_DEPENDENCY"
+    "OBSERVED_INTERFACE_DEPENDENCY",
+    "OBSERVED_DATA_DEPENDENCY"
   ],
   "nodes": {
     "features": [
@@ -431,7 +432,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-11",
-        "service": "Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.",
+        "service": "Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -778,7 +779,7 @@
         "category": "utils",
         "declared": "utils/auth-cookie.js",
         "resolvedPath": "utils/auth-cookie.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth",
@@ -2626,13 +2627,6 @@
         "category": "routes",
         "declared": "routes/admin-finance-accounting-workspace.js",
         "resolvedPath": "routes/admin-finance-accounting-workspace.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "routes",
-        "declared": "routes/admin-loyalty.js",
-        "resolvedPath": "routes/admin-loyalty.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -5006,6 +5000,13 @@
         "category": "middleware",
         "declared": "middleware/request-id.js",
         "resolvedPath": "middleware/request-id.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "middleware",
+        "declared": "middleware/require-non-production.js",
+        "resolvedPath": "middleware/require-non-production.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -7572,6 +7573,13 @@
       },
       {
         "feature": "loyalty",
+        "category": "routes",
+        "declared": "routes/admin-loyalty.js",
+        "resolvedPath": "routes/admin-loyalty.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "loyalty",
         "category": "tests",
         "declared": "tests/unit/loyalty-notification.test.js",
         "resolvedPath": "tests/unit/loyalty-notification.test.js",
@@ -7995,7 +8003,7 @@
         "category": "services",
         "declared": "services/notifications/relay-location.js",
         "resolvedPath": "services/notifications/relay-location.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "notifications",
@@ -9276,6 +9284,13 @@
         "category": "services",
         "declared": "services/cart-share-service.js",
         "resolvedPath": "services/cart-share-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "services",
+        "declared": "services/shared-cart-user-cleanup.js",
+        "resolvedPath": "services/shared-cart-user-cleanup.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -11280,14 +11295,6 @@
       },
       {
         "feature": "dashboard",
-        "entry": "GET /api/admin/loyalty/pending",
-        "method": "GET",
-        "path": "/api/admin/loyalty/pending",
-        "routeFile": "routes/admin-loyalty.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
         "entry": "GET /api/admin/partners",
         "method": "GET",
         "path": "/api/admin/partners",
@@ -11340,38 +11347,6 @@
         "method": "GET",
         "path": "/api/admin/alerts",
         "routeFile": "routes/admin/dashboard.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "GET /api/admin/loyalty/history",
-        "method": "GET",
-        "path": "/api/admin/loyalty/history",
-        "routeFile": "routes/admin-loyalty.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "POST /api/admin/loyalty/reward/:id",
-        "method": "POST",
-        "path": "/api/admin/loyalty/reward/{id}",
-        "routeFile": "routes/admin-loyalty.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "POST /api/admin/loyalty/skip/:id",
-        "method": "POST",
-        "path": "/api/admin/loyalty/skip/{id}",
-        "routeFile": "routes/admin-loyalty.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "GET /api/admin/loyalty/stats",
-        "method": "GET",
-        "path": "/api/admin/loyalty/stats",
-        "routeFile": "routes/admin-loyalty.js",
         "status": "resolved-owned"
       },
       {
@@ -13148,6 +13123,46 @@
         "method": "GET",
         "path": "/api/loyalty/tiers",
         "routeFile": "routes/loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "loyalty",
+        "entry": "GET /api/admin/loyalty/pending",
+        "method": "GET",
+        "path": "/api/admin/loyalty/pending",
+        "routeFile": "routes/admin-loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "loyalty",
+        "entry": "GET /api/admin/loyalty/history",
+        "method": "GET",
+        "path": "/api/admin/loyalty/history",
+        "routeFile": "routes/admin-loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "loyalty",
+        "entry": "POST /api/admin/loyalty/reward/:id",
+        "method": "POST",
+        "path": "/api/admin/loyalty/reward/{id}",
+        "routeFile": "routes/admin-loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "loyalty",
+        "entry": "POST /api/admin/loyalty/skip/:id",
+        "method": "POST",
+        "path": "/api/admin/loyalty/skip/{id}",
+        "routeFile": "routes/admin-loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "loyalty",
+        "entry": "GET /api/admin/loyalty/stats",
+        "method": "GET",
+        "path": "/api/admin/loyalty/stats",
+        "routeFile": "routes/admin-loyalty.js",
         "status": "resolved-owned"
       },
       {
@@ -15101,6 +15116,12 @@
         "status": "documented-signature-no-file"
       },
       {
+        "feature": "shared-cart",
+        "fn": "deleteUserBasketData",
+        "file": "services/shared-cart-user-cleanup.js",
+        "status": "resolved"
+      },
+      {
         "feature": "sourcing",
         "fn": "upsertCandidateFromCatalogImport",
         "file": "services/sourcing-candidate-import-service.js",
@@ -15133,9 +15154,27 @@
         "resolved": true
       },
       {
-        "from": "auth",
+        "from": "auth-identity",
         "to": "orders",
-        "raw": "orders",
+        "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "loyalty",
+        "raw": "loyalty (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "logistics",
+        "raw": "logistics (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "catalog",
+        "raw": "catalog (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15202,6 +15241,12 @@
         "from": "auth-passkey",
         "to": "platform-ops",
         "raw": "platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)",
+        "resolved": true
+      },
+      {
+        "from": "business-rules",
+        "to": "auth-identity",
+        "raw": "auth-identity (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15284,6 +15329,12 @@
       },
       {
         "from": "customs",
+        "to": "catalog",
+        "raw": "catalog (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "customs",
         "to": "orders",
         "raw": "orders (persistence via order-mutation-service ? LOT11)",
         "resolved": true
@@ -15316,6 +15367,12 @@
         "from": "customs",
         "to": "economic-engine",
         "raw": "economic-engine",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "shared-cart",
+        "raw": "shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)",
         "resolved": true
       },
       {
@@ -15398,12 +15455,6 @@
       },
       {
         "from": "dashboard",
-        "to": "recommendations",
-        "raw": "recommendations",
-        "resolved": true
-      },
-      {
-        "from": "dashboard",
         "to": "purchasing",
         "raw": "purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)",
         "resolved": true
@@ -15424,6 +15475,18 @@
         "from": "dashboard",
         "to": "market",
         "raw": "market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)",
+        "resolved": true
+      },
+      {
+        "from": "documents",
+        "to": "logistics",
+        "raw": "logistics (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "documents",
+        "to": "catalog",
+        "raw": "catalog (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15470,6 +15533,36 @@
       },
       {
         "from": "economic-engine",
+        "to": "refunds",
+        "raw": "refunds (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "platform-ops",
+        "raw": "platform-ops (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "customs",
+        "raw": "customs (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "business-rules",
+        "raw": "business-rules (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "auth-identity",
+        "raw": "auth-identity (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -15506,14 +15599,14 @@
       },
       {
         "from": "economic-engine",
-        "to": "wallet",
-        "raw": "wallet",
+        "to": "loyalty",
+        "raw": "loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)",
         "resolved": true
       },
       {
-        "from": "economic-engine",
-        "to": "loyalty",
-        "raw": "loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)",
+        "from": "incident-management",
+        "to": "orders",
+        "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15527,30 +15620,6 @@
         "to": "logistics",
         "raw": "logistics (scan-engine écrit incidents — SQL inline)",
         "resolved": true
-      },
-      {
-        "from": "incident-management",
-        "to": "payments",
-        "raw": "payments (reconciliation-service écrit incidents — SQL inline)",
-        "resolved": true
-      },
-      {
-        "from": "incident-management",
-        "to": "notifications",
-        "raw": "notifications (alert-engine écrit incidents — SQL inline)",
-        "resolved": true
-      },
-      {
-        "from": "incident-management",
-        "to": "dashboard",
-        "raw": "dashboard / ops-api legacy (écrit incidents — SQL inline)",
-        "resolved": true
-      },
-      {
-        "from": "incident-management",
-        "to": "ops-api legacy",
-        "raw": "dashboard / ops-api legacy (écrit incidents — SQL inline)",
-        "resolved": false
       },
       {
         "from": "infrastructure",
@@ -15686,6 +15755,12 @@
       },
       {
         "from": "logistics",
+        "to": "documents",
+        "raw": "documents (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
         "resolved": true
@@ -15710,12 +15785,6 @@
       },
       {
         "from": "logistics",
-        "to": "customs",
-        "raw": "customs (statut declaration)",
-        "resolved": true
-      },
-      {
-        "from": "logistics",
         "to": "auth",
         "raw": "auth",
         "resolved": true
@@ -15730,12 +15799,6 @@
         "from": "logistics",
         "to": "catalog",
         "raw": "catalog",
-        "resolved": true
-      },
-      {
-        "from": "logistics",
-        "to": "economic-engine",
-        "raw": "economic-engine",
         "resolved": true
       },
       {
@@ -15758,12 +15821,6 @@
       },
       {
         "from": "logistics",
-        "to": "wallet",
-        "raw": "wallet",
-        "resolved": true
-      },
-      {
-        "from": "logistics",
         "to": "purchasing",
         "raw": "purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)",
         "resolved": true
@@ -15772,6 +15829,18 @@
         "from": "logistics",
         "to": "loyalty",
         "raw": "loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)",
+        "resolved": true
+      },
+      {
+        "from": "loyalty",
+        "to": "orders",
+        "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "loyalty",
+        "to": "economic-engine",
+        "raw": "economic-engine (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15799,15 +15868,27 @@
         "resolved": true
       },
       {
-        "from": "loyalty",
-        "to": "wallet",
-        "raw": "wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)",
-        "resolved": true
-      },
-      {
         "from": "market",
         "to": "infrastructure",
         "raw": "infrastructure (db.js — pool de connexion Postgres, seule dépendance de middleware/require-market-scope.js)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "orders",
+        "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "logistics",
+        "raw": "logistics (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "auth-identity",
+        "raw": "auth-identity (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -15833,12 +15914,6 @@
         "to": "auth",
         "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
         "resolved": true
-      },
-      {
-        "from": "notifications",
-        "to": "toutes les features emettrices",
-        "raw": "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement",
-        "resolved": false
       },
       {
         "from": "orders",
@@ -15926,12 +16001,6 @@
       },
       {
         "from": "orders",
-        "to": "dashboard",
-        "raw": "dashboard",
-        "resolved": true
-      },
-      {
-        "from": "orders",
         "to": "documents",
         "raw": "documents",
         "resolved": true
@@ -15952,6 +16021,12 @@
         "from": "orders",
         "to": "shared-cart",
         "raw": "shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/* ; côté backend, appelle services/cart-share-service.js markShareConvertedToOrder pour lier une commande à un lien de partage — campagne WRITER-NOT-OWNER 2026-08, plus de SQL direct sur cart_shares)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "auth-identity",
+        "raw": "auth-identity (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
       },
       {
@@ -16028,6 +16103,12 @@
       },
       {
         "from": "platform-ops",
+        "to": "documents",
+        "raw": "documents (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
         "resolved": true
@@ -16088,6 +16169,12 @@
       },
       {
         "from": "purchasing",
+        "to": "catalog",
+        "raw": "catalog (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -16136,12 +16223,6 @@
       },
       {
         "from": "recommendations",
-        "to": "auth",
-        "raw": "auth",
-        "resolved": true
-      },
-      {
-        "from": "recommendations",
         "to": "logistics",
         "raw": "logistics",
         "resolved": true
@@ -16162,12 +16243,6 @@
         "from": "refunds",
         "to": "orders",
         "raw": "orders (commande source)",
-        "resolved": true
-      },
-      {
-        "from": "refunds",
-        "to": "shared-cart",
-        "raw": "shared-cart (panier source)",
         "resolved": true
       },
       {
@@ -16318,12 +16393,6 @@
         "from": "wallet",
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
-        "resolved": true
-      },
-      {
-        "from": "wallet",
-        "to": "payments",
-        "raw": "payments (finalise le paiement — payment-service.js markPaid, transactionnel, quand le debit wallet couvre integralement la commande ; invariant D-02, payment-service reste seul proprietaire de payment_status — O7.2 Cycle D)",
         "resolved": true
       },
       {
@@ -18797,6 +18866,19 @@
                 "targetFile": "routes/otp.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "revoked_tokens",
+                "mode": "R"
+              },
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -18963,6 +19045,22 @@
       },
       {
         "from": "auth-identity",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-identity",
         "to": "documents",
         "channels": [
           {
@@ -18972,6 +19070,15 @@
                 "endpoint": "/api/auth/me/documents",
                 "routeFile": "routes/documents.js",
                 "consumerFileId": "public/boutique/js/b-komerce.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "invoices",
+                "mode": "R"
               }
             ]
           }
@@ -19074,9 +19181,38 @@
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "relais",
+                "mode": "R"
+              }
+            ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-identity",
+        "to": "loyalty",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "loyalty_tiers",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -19096,6 +19232,26 @@
               {
                 "sourceFileId": "routes/otp.js",
                 "targetFile": "services/notification-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-identity",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -19207,6 +19363,15 @@
                 "targetFile": "public/boutique/js/b-identity.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -19273,6 +19438,22 @@
               {
                 "sourceFileId": "routes/admin-rules.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "business-rules",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
               }
             ]
           }
@@ -19700,6 +19881,19 @@
                 "targetFile": "public/boutique/js/b-cart.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20038,6 +20232,15 @@
                 "targetFile": "services/sourcing-candidate-import-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "sourcing_candidates",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20060,6 +20263,22 @@
               {
                 "sourceFileId": "routes/admin-customs-categories.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "customs",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
               }
             ]
           }
@@ -20146,6 +20365,19 @@
                 "targetFile": "services/parcel-mutation-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20160,6 +20392,19 @@
               {
                 "sourceFileId": "services/customs-shipment-service.js",
                 "targetFile": "services/order-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -20226,10 +20471,6 @@
                 "targetFile": "middleware/auth.js"
               },
               {
-                "sourceFileId": "routes/admin-loyalty.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
                 "sourceFileId": "routes/admin-radar.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -20266,6 +20507,15 @@
                 "targetFile": "services/user-mutation-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20280,6 +20530,19 @@
               {
                 "sourceFileId": "routes/dashboard-shared.js",
                 "targetFile": "utils/rules.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "business_rules",
+                "mode": "R"
+              },
+              {
+                "table": "business_rules_history",
+                "mode": "R"
               }
             ]
           }
@@ -20306,6 +20569,15 @@
                 "targetFile": "services/customs-classification.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "customs_shipments",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20326,6 +20598,15 @@
                 "targetFile": "services/radar-queries.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "signals",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20344,6 +20625,24 @@
               {
                 "sourceFileId": "routes/admin/index.js",
                 "targetFile": "routes/admin/documents.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "invoices",
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "transaction_documents",
+                "mode": "R"
               }
             ]
           }
@@ -20374,6 +20673,19 @@
                 "targetFile": "services/economic-config.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "exchange_rates",
+                "mode": "R"
+              },
+              {
+                "table": "order_item_real_cost_allocations",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20392,6 +20704,15 @@
               {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -20531,6 +20852,10 @@
               },
               {
                 "sourceFileId": "routes/admin/system.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "routes/admin/system.js",
                 "targetFile": "middleware/validate.js"
               },
               {
@@ -20599,14 +20924,6 @@
               },
               {
                 "sourceFileId": "routes/admin-finance-accounting-workspace.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "routes/admin-loyalty.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/admin-loyalty.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -20822,9 +21139,55 @@
                 "targetFile": "utils/parcelSync.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              },
+              {
+                "table": "scans",
+                "mode": "R"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "relais",
+                "mode": "RW"
+              },
+              {
+                "table": "scan_events",
+                "mode": "RW"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "loyalty",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/admin-loyalty.test.js",
+                "targetFile": "routes/admin-loyalty.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "dashboard",
@@ -20882,6 +21245,15 @@
                 "targetFile": "services/client-notification-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "client_notifications",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20922,6 +21294,36 @@
                 "targetFile": "services/order-status-machine.js"
               }
             ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "order_comments",
+                "mode": "RW"
+              },
+              {
+                "table": "order_status_history",
+                "mode": "RW"
+              },
+              {
+                "table": "recipients",
+                "mode": "RW"
+              },
+              {
+                "table": "sms_log",
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_item_cost_imputations",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20956,6 +21358,42 @@
               {
                 "sourceFileId": "tests/unit/system.test.js",
                 "targetFile": "services/repair-ordered-without-purchase-orders.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "shared-cart",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/shared-cart-user-cleanup.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "wallet",
+        "channels": [
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "wallet_transactions",
+                "mode": "W"
+              },
+              {
+                "table": "wallets",
+                "mode": "W"
               }
             ]
           }
@@ -21084,6 +21522,58 @@
       },
       {
         "from": "documents",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "customs_shipment_parcels",
+                "mode": "R"
+              },
+              {
+                "table": "customs_shipments",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
         "to": "infrastructure",
         "channels": [
           {
@@ -21179,6 +21669,90 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "documents",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "relais",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              },
+              {
+                "table": "recipients",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
+        "to": "refunds",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "refunds",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "documents",
+        "to": "wallet",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "wallet_transactions",
+                "mode": "R"
+              },
+              {
+                "table": "wallets",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "economic-engine",
         "to": "auth",
         "channels": [
@@ -21240,6 +21814,38 @@
       },
       {
         "from": "economic-engine",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "business_rules",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
         "to": "catalog",
         "channels": [
           {
@@ -21260,6 +21866,43 @@
               {
                 "sourceFileId": "services/sourcing-mutations.js",
                 "targetFile": "services/catalog-product-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              },
+              {
+                "table": "product_variants",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "customs_categories",
+                "mode": "R"
+              },
+              {
+                "table": "customs_shipment_parcels",
+                "mode": "R"
+              },
+              {
+                "table": "customs_shipments",
+                "mode": "R"
               }
             ]
           }
@@ -21654,6 +22297,23 @@
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "relais",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -21690,6 +22350,67 @@
                 "targetFile": "services/order-cost-snapshot.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              },
+              {
+                "table": "order_item_cost_imputations",
+                "mode": "R"
+              },
+              {
+                "table": "recipients",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "platform-ops",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "fabrics",
+                "mode": "R"
+              },
+              {
+                "table": "garment_models",
+                "mode": "R"
+              },
+              {
+                "table": "store_credits",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "refunds",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "refunds",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -21712,6 +22433,42 @@
               {
                 "sourceFileId": "tests/unit/incident-service.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "incident-management",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "scan_events",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "incident-management",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -21884,10 +22641,6 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-radar.js"
-              },
-              {
-                "sourceFileId": "bootstrap/api-routes.js",
-                "targetFile": "routes/admin-loyalty.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -22156,6 +22909,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/loyalty.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-loyalty.js"
               }
             ]
           }
@@ -22428,6 +23185,22 @@
       },
       {
         "from": "inventory",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "inventory",
         "to": "infrastructure",
         "channels": [
           {
@@ -22462,6 +23235,19 @@
                 "targetFile": "services/parcel-auto-create-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -22480,6 +23266,19 @@
               {
                 "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
                 "targetFile": "routes/orders.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -22504,6 +23303,22 @@
       },
       {
         "from": "local-stock",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "local-stock",
         "to": "infrastructure",
         "channels": [
           {
@@ -22512,6 +23327,22 @@
               {
                 "sourceFileId": "services/local-stock-service.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "local-stock",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
               }
             ]
           }
@@ -22602,6 +23433,15 @@
                 "targetFile": "services/pickup-authorization-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -22626,6 +23466,15 @@
                 "targetFile": "utils/rules.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "business_rules",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -22642,6 +23491,35 @@
                 "targetFile": "services/product-admin-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              },
+              {
+                "table": "product_variants",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "invoices",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -22656,6 +23534,15 @@
               {
                 "sourceFileId": "services/scan-engine.js",
                 "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -23138,6 +24025,23 @@
                 "targetFile": "utils/orderParcelLinkRules.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              },
+              {
+                "table": "recipients",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -23170,6 +24074,19 @@
                 "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "product_suppliers",
+                "mode": "R"
+              },
+              {
+                "table": "purchase_orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -23200,6 +24117,10 @@
               {
                 "sourceFileId": "routes/loyalty.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-loyalty.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -23220,6 +24141,31 @@
               {
                 "sourceFileId": "routes/loyalty.js",
                 "targetFile": "services/user-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "loyalty",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "finance_config",
+                "mode": "R"
               }
             ]
           }
@@ -23250,6 +24196,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin-loyalty.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-loyalty.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "tests/unit/loyalty-service.test.js",
                 "targetFile": "db.js"
               }
@@ -23276,6 +24230,22 @@
               {
                 "sourceFileId": "tests/unit/loyalty-service.test.js",
                 "targetFile": "services/notification-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "loyalty",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -23352,6 +24322,22 @@
       },
       {
         "from": "notifications",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "notifications",
         "to": "incident-management",
         "channels": [
           {
@@ -23360,6 +24346,15 @@
               {
                 "sourceFileId": "services/alert-engine.js",
                 "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -23424,6 +24419,50 @@
               {
                 "sourceFileId": "routes/meta-whatsapp.js",
                 "targetFile": "utils/logger.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "notifications",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "relais",
+                "mode": "R"
+              },
+              {
+                "table": "scan_events",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "notifications",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
+              },
+              {
+                "table": "recipients",
+                "mode": "R"
               }
             ]
           }
@@ -23577,6 +24616,15 @@
                 "consumerFileId": "public/boutique/js/b-tracking.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -23655,6 +24703,19 @@
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
                 "targetFile": "public/boutique/js/render/render-product-card.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              },
+              {
+                "table": "product_variants",
+                "mode": "R"
               }
             ]
           }
@@ -24092,6 +25153,23 @@
                 "consumerFileId": "public/boutique/js/b-tracking.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "relais",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -24454,6 +25532,15 @@
                 "targetFile": "services/refund-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "refunds",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -24587,6 +25674,22 @@
       },
       {
         "from": "payments",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "payments",
         "to": "business-rules",
         "channels": [
           {
@@ -24655,6 +25758,15 @@
               {
                 "sourceFileId": "services/reconciliation-service.js",
                 "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -24899,6 +26011,23 @@
                 "targetFile": "utils/parcels.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              },
+              {
+                "table": "scan_events",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25087,6 +26216,19 @@
                 "targetFile": "public/boutique/js/b-cart-core.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25239,6 +26381,15 @@
                 "consumerFileId": "public/boutique/js/komerce-api.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25369,6 +26520,31 @@
                 "consumerFileId": "public/boutique/js/komerce-api.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "platform-ops",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "invoices",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25399,6 +26575,15 @@
               {
                 "sourceFileId": "routes/ops-api.js",
                 "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -25475,6 +26660,10 @@
               {
                 "sourceFileId": "routes/config.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/simulator.js",
+                "targetFile": "middleware/require-non-production.js"
               },
               {
                 "sourceFileId": "tests/integration/api.test.js",
@@ -25609,6 +26798,19 @@
                 "consumerFileId": "public/boutique/js/komerce-api.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "relais",
+                "mode": "R"
+              },
+              {
+                "table": "scan_events",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25705,6 +26907,15 @@
                 "endpoint": "/api/orders",
                 "routeFile": "routes/orders/create.js",
                 "consumerFileId": "public/boutique/js/komerce-api.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
               }
             ]
           }
@@ -25823,6 +27034,22 @@
       },
       {
         "from": "purchasing",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
         "to": "infrastructure",
         "channels": [
           {
@@ -25929,6 +27156,15 @@
                 "targetFile": "services/scan-operations.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "relais",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -25993,6 +27229,19 @@
                 "targetFile": "services/order-status-machine.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -26007,6 +27256,15 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
                 "targetFile": "public/boutique/js/render/render-product-card.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
               }
             ]
           }
@@ -26031,6 +27289,22 @@
       },
       {
         "from": "recommendations",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
         "to": "orders",
         "channels": [
           {
@@ -26039,6 +27313,19 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
                 "targetFile": "public/boutique/js/cart-public-api.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -26165,6 +27452,15 @@
                 "targetFile": "routes/admin/orders.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -26203,6 +27499,15 @@
               {
                 "sourceFileId": "tests/unit/refund-service.test.js",
                 "targetFile": "services/wallet-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "wallets",
+                "mode": "R"
               }
             ]
           }
@@ -26249,6 +27554,15 @@
                 "targetFile": "public/boutique/js/b-identity.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -26275,6 +27589,15 @@
               {
                 "sourceFileId": "services/shared-cart-creation.js",
                 "targetFile": "services/product-admin-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
               }
             ]
           }
@@ -26429,6 +27752,19 @@
                 "targetFile": "public/boutique/js/b-cart-core.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -26475,10 +27811,6 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-image-ux.js",
                 "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-social-proof.js",
-                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-social-proof.js",
@@ -26607,10 +27939,6 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-modal-social-proof.test.js",
-                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-social-proof.test.js",
@@ -26755,6 +28083,31 @@
                 "targetFile": "services/suppliers/connectors/manual-connector.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "catalog_media",
+                "mode": "R"
+              },
+              {
+                "table": "product_skus",
+                "mode": "R"
+              },
+              {
+                "table": "product_sku_media",
+                "mode": "R"
+              },
+              {
+                "table": "product_variants",
+                "mode": "R"
+              },
+              {
+                "table": "supplier_catalog_imports",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -26853,6 +28206,22 @@
       },
       {
         "from": "unsold-resolution",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "unsold-resolution",
         "to": "infrastructure",
         "channels": [
           {
@@ -26861,6 +28230,22 @@
               {
                 "sourceFileId": "routes/unsold.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "unsold-resolution",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -26897,6 +28282,15 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-wallet.test.js",
                 "targetFile": "public/boutique/js/b-identity.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
               }
             ]
           }
@@ -26989,6 +28383,15 @@
               {
                 "sourceFileId": "services/wallet-service.js",
                 "targetFile": "services/order-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
               }
             ]
           }
@@ -27138,7 +28541,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 956
+        "filesObserved": 958
       },
       "boutique": {
         "filesObserved": 173,
@@ -27184,11 +28587,11 @@
     },
     "pairClassifications": [
       {
-        "from": "auth-identity",
-        "to": "logistics",
+        "from": "dashboard",
+        "to": "loyalty",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
+        "consumerKind": "business-transversal",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -27456,65 +28859,21 @@
     ],
     "unclassified": [],
     "matrix": {
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1
     },
     "runtimeCycles": [],
-    "exceptions": [
-      {
-        "from": "shared-cart",
-        "to": "catalog",
-        "decision": "accepted-dependency",
-        "rationale": "Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié."
-      },
-      {
-        "from": "catalog",
-        "to": "orders",
-        "decision": "accepted-dependency",
-        "rationale": "Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue."
-      },
-      {
-        "from": "auth-identity",
-        "to": "platform-ops",
-        "decision": "accepted-dependency",
-        "rationale": "La surface d'identité consomme les primitives techniques du shell — bus, store et utilitaires UI. Cette direction ne transfère aucune autorité métier à platform-ops et ne constitue pas un cycle de modules."
-      },
-      {
-        "from": "platform-ops",
-        "to": "auth-identity",
-        "decision": "accepted-dependency",
-        "rationale": "Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité."
-      },
-      {
-        "from": "catalog",
-        "to": "platform-ops",
-        "decision": "accepted-dependency",
-        "rationale": "Le catalogue consomme le bus, le store, les utilitaires et l'ownership de scroll fournis par le socle. Ces primitives restent techniques et ne possèdent aucune règle catalogue."
-      },
-      {
-        "from": "platform-ops",
-        "to": "catalog",
-        "decision": "accepted-dependency",
-        "rationale": "Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock."
-      }
-    ],
-    "staleExceptions": [
-      "auth-identity->platform-ops",
-      "catalog->orders",
-      "catalog->platform-ops",
-      "platform-ops->auth-identity",
-      "platform-ops->catalog",
-      "shared-cart->catalog"
-    ],
+    "exceptions": [],
+    "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
     "missingExceptions": [],
@@ -28149,44 +29508,6 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
-    "basket_items": {
-      "writers": [
-        {
-          "feature": "dashboard",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
-    },
-    "baskets": {
-      "writers": [
-        {
-          "feature": "dashboard",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
-    },
     "client_notifications": {
       "writers": [
         {
@@ -28235,25 +29556,6 @@
       ],
       "lifecycleOwner": "incident-management",
       "resolution": "declared-table-owner"
-    },
-    "loyalty_rewards": {
-      "writers": [
-        {
-          "feature": "dashboard",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "loyalty",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "loyalty",
-      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "order_comments": {
       "writers": [
@@ -28886,12 +30188,19 @@
       "resolution": "single-writer"
     },
     "markets": {
-      "writers": [],
+      "writers": [
+        {
+          "feature": "market",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
       "readers": [
         "local-stock"
       ],
-      "lifecycleOwner": null,
-      "resolution": "no-declared-writer"
+      "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
     },
     "carriers": {
       "writers": [
@@ -28975,6 +30284,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "single-writer"
     },
+    "loyalty_rewards": {
+      "writers": [
+        {
+          "feature": "loyalty",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "loyalty",
+      "resolution": "single-writer"
+    },
     "v_loyalty_summary": {
       "writers": [],
       "readers": [
@@ -28982,6 +30304,32 @@
       ],
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
+    },
+    "operator_market_scopes": {
+      "writers": [
+        {
+          "feature": "market",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
+    },
+    "currency_parities": {
+      "writers": [
+        {
+          "feature": "market",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
     },
     "alerts": {
       "writers": [
@@ -29104,6 +30452,32 @@
       ],
       "readers": [],
       "lifecycleOwner": "purchasing",
+      "resolution": "single-writer"
+    },
+    "basket_items": {
+      "writers": [
+        {
+          "feature": "shared-cart",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
+      "resolution": "single-writer"
+    },
+    "baskets": {
+      "writers": [
+        {
+          "feature": "shared-cart",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
       "resolution": "single-writer"
     },
     "cart_shares": {
@@ -29238,8 +30612,8 @@
       "backend": {
         "manifestsDiscovered": 28,
         "manifestsConnected": 28,
-        "technicalNodesTotal": 355,
-        "technicalNodesOwned": 355,
+        "technicalNodesTotal": 359,
+        "technicalNodesOwned": 359,
         "technicalOrphans": 0
       },
       "dash": {
@@ -29345,8 +30719,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
+        "ref": "dashboard -> loyalty",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"loyalty\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -29376,7 +30750,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> loyalty",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -29435,23 +30809,8 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "basket_items",
-        "msg": "table \"basket_items\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "baskets",
-        "msg": "table \"baskets\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "invoices",
         "msg": "table \"invoices\" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "loyalty_rewards",
-        "msg": "table \"loyalty_rewards\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -29496,16 +30855,6 @@
     ],
     "generatorLimitations": [
       {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "incident-management -> \"ops-api legacy\" (entrée: \"dashboard / ops-api legacy (écrit incidents — SQL inline)\")",
-        "msg": "contract.consumes de incident-management référence \"ops-api legacy\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
-        "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
-      },
-      {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
         "msg": "15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
@@ -29539,9 +30888,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 32,
-      "generatorLimitations": 8,
-      "classifiedCandidates": 40
+      "expectedTopology": 29,
+      "generatorLimitations": 6,
+      "classifiedCandidates": 35
     }
   }
 }

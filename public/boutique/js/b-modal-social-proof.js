@@ -25,13 +25,10 @@
  *
  * Mobile + desktop : pas de garde isDesktop().
  *
- * Point d'entrée : setupSocialProof().
- * Câblé sur bus.on('modal:product-changed') (pas modal:opened — le social proof
- * doit se rejouer à chaque changement de produit affiché, y compris navigation
- * précédent/suivant sans fermeture de la modal).
+ * Point d'entrée : setupSocialProof(). openModal() le rappelle après chaque
+ * changement de state.modalProduct, y compris la navigation précédent/suivant.
  */
 
-import { bus }       from './b-bus.js';
 import { state }     from './b-store.js';
 import { modalZone } from './b-store.js';           // S5 — hook DOM centralisé
 
@@ -123,14 +120,6 @@ function injectSocialProof() {
 //  ENTRY POINT
 // ═══════════════════════════════════════════════════════════════
 
-let _installed = false;
-
 export function setupSocialProof() {
   requestAnimationFrame(injectSocialProof);
-
-  if (!_installed) {
-    _installed = true;
-    // Réinjecter si le produit change sans fermer la modal (navigation nav-btn)
-    bus.on('modal:product-changed', injectSocialProof);
-  }
 }

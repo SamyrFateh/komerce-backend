@@ -1,4 +1,23 @@
 /**
+ * @komerce-arch
+ * @role          admin-settings-lot1a-retired-editors-guard
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        SettingsView, settings_dom_mutations
+ * @outputs       settings_view_without_retired_tax_dimension_editors
+ * @depends       SettingsView.js
+ * @used-by       admin dashboard bootstrap
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only, retired_settings_fail_closed
+ * @impact-areas  settings, admin-dashboard
+ * @version       2026-08
+ */
+'use strict';
+
+/**
  * LOT 1A — guard additif de migration Settings
  *
  * `SettingsView` garde temporairement son code legacy jusqu'à la purge LOT 11,

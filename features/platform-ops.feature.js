@@ -173,6 +173,7 @@ module.exports = {
       'GET /health/version',
     ],
     consumes: [
+      'documents (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'purchasing (client API transversal appelle le référentiel fournisseurs /api/purchasing/suppliers)',
       'catalog (shell/client API transversal monte et appelle les surfaces catalogue sans en posséder l’état)',
