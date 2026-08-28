@@ -176,6 +176,24 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 4J — les besoins de PricingView, PricingWorkshopView,
+  // PricingStrategyView et EconomicFlowView sont prouvés absorbés par le seul
+  // Pricing Workspace Canonical. Les anciens pathnames deviennent donc des
+  // points d'entrée de compatibilité ; ?legacy=1 conserve le témoin Legacy 1.
+  const PRICING_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/pricing',
+    '/admin/pricing-workshop',
+    '/admin/pricing-strategy',
+    '/admin/economic-flow',
+  ]);
+
+  PRICING_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/pricing');
+    });
+  });
+
   // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
   // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
@@ -184,9 +202,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/orders-logistics',
     '/admin/sourcing',
     '/admin/sourcing-scanner',
-    '/admin/pricing',
-    '/admin/pricing-workshop',
-    '/admin/pricing-strategy',
     '/admin/customs',
     '/admin/suppliers',
     '/admin/alerts',
@@ -203,7 +218,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/invoices',
     '/admin/sante',
     '/admin/shared-carts',
-    '/admin/economic-flow',
     '/admin/accounting',
     '/admin/settings',
     '/admin/simulator',

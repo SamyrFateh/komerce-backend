@@ -22,6 +22,10 @@ Les quatre dashboards prouvés sont désormais servis par les URLs admin stables
 - `/admin/finance` → Finance Canonical ;
 - `/admin/demo` → cockpit commande staging.
 
+LOT 4J réduit aussi quatre anciens points d’entrée Pricing à une seule surface :
+`/admin/pricing`, `/admin/pricing-workshop`, `/admin/pricing-strategy` et `/admin/economic-flow`
+redirigent vers `/admin/workspaces/pricing`. `?legacy=1` conserve temporairement le témoin Legacy 1.
+
 Les aliases `/admin-next/**` et `/admin/pilotage-v2` restent disponibles pendant la fenêtre de cutover.
 
 Le cutover est **additif** : les anciennes capacités qui n'ont pas encore d'équivalent Workspace / Entity 360 / Action Center continuent d'être servies par Legacy 1 sur leurs URLs historiques. Elles ne sont ni supprimées ni masquées.

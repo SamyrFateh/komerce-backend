@@ -49,6 +49,21 @@ Les autres témoins historiques restent accessibles via leurs URLs existantes, p
 - Opérations historique : `/admin/orders-logistics`
 - Finance historique : `/admin/economic`, `/admin/pilotage-fin`
 
+## Extension LOT 4J — convergence Pricing
+
+Les quatre besoins historiques explicitement absorbés par le Pricing Workspace ne conservent plus quatre runtimes produit distincts :
+
+| Ancien point d’entrée | Destination Canonical |
+|---|---|
+| `/admin/pricing` | `/admin/workspaces/pricing` |
+| `/admin/pricing-workshop` | `/admin/workspaces/pricing` |
+| `/admin/pricing-strategy` | `/admin/workspaces/pricing` |
+| `/admin/economic-flow` | `/admin/workspaces/pricing` |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback. Cette query ne modifie aucune autorité backend.
+
+`/admin/costing`, `/admin/economic`, `/admin/settings` et `/admin/simulator` ne font pas partie de LOT 4J.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -59,7 +74,6 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Douane
 - Catalogue
 - Sourcing
-- Pricing
 - Clients / Entity 360
 - Factures / Comptabilité
 - Action Center
