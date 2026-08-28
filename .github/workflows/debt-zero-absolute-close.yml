@@ -1,4 +1,4 @@
-name: Debt Zero rebase and final proof
+name: Debt Zero Boutique test truth closure
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  rebase-proof:
+  boutique-test-truth:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -17,239 +17,92 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
 
-      - name: Rebuild Debt Zero on current main
+      - name: Checkout certified PR head
         run: |
           git config user.name "SamyrFateh"
           git config user.email "fatehsamyr@gmail.com"
-          git checkout -B debt-zero-rebase-proof origin/main
+          git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
+          test "$(git rev-parse HEAD)" = "af14c27edf0379ceecda8680b931c9f4700b7df8"
 
-          resolve_generated_conflicts() {
-            local unsafe=0
-            while IFS= read -r f; do
-              [ -z "$f" ] && continue
-              case "$f" in
-                docs/FEATURE_360.json|docs/FEATURE_360.md|docs/BUSINESS_FEATURE_GRAPH.json|docs/BUSINESS_FEATURE_GRAPH.md|docs/O6_INVENTORY.md|docs/DASHBOARDS_360.json|docs/DASHBOARDS_360.md|docs/BOUTIQUE_360.json|docs/BOUTIQUE_360.md|docs/KOMERCE_ARCH_HEADER_GRAPH.md|docs/komerce-arch-header-graph.json)
-                  echo "Resolving generated artifact from current-main side: $f"
-                  git checkout --ours -- "$f"
-                  git add "$f"
-                  ;;
-                *)
-                  echo "SOURCE_CONFLICT=$f"
-                  unsafe=1
-                  ;;
-              esac
-            done < <(git diff --name-only --diff-filter=U)
-            if [ "$unsafe" -ne 0 ]; then
-              git status --short
-              return 1
-            fi
-            git cherry-pick --continue
-          }
-
-          for sha in \
-            48b5de4b66f2aa3829aa827b78d714feba1c97ad \
-            75675a5c7a2e54ac73d79aef96d84ba21a31b320 \
-            482224bbe6d8affe2a10b1e4b57de64c9b52b692 \
-            d0d3b87c72d395380f926172c74a8a5ad95e8209 \
-            a02be6c9a7e6497a51787e4ebcbed6caceab3405
-          do
-            echo "=== cherry-pick $sha ==="
-            if ! git cherry-pick "$sha"; then
-              echo "CHERRY_PICK_CONFLICT=$sha"
-              git diff --name-only --diff-filter=U
-              resolve_generated_conflicts
-            fi
-          done
-          echo "DEBT_ZERO_REPLAY_OK"
-
-      - name: Close current-main governance residuals
+      - name: Align stale tests with canonical current sources
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json
 
-          # 1) local-stock classification: >=2 objective boundary reasons.
-          p = Path('features/local-stock.feature.js')
-          text = p.read_text()
-          anchor = "      'de catalog (products.stock/product_skus.stock, stock import/national).',\n"
-          addition = (
-              anchor +
-              "      'Frontière market-scoped dédiée : local_stock porte une quantité physique ' +\n"
-              "      'par marché et peut évoluer indépendamment du cycle logistique hub/transit ' +\n"
-              "      'et du stock catalogue import/national.',\n"
-          )
-          if addition not in text:
-              if anchor not in text:
-                  raise SystemExit('local-stock rationale anchor not found')
-              p.write_text(text.replace(anchor, addition, 1))
+          # Header: final desktop polish deliberately removed the permanent rule/shadow.
+          p = Path('public/boutique/tests/unit/visual-geometry-css-invariants.test.js')
+          s = p.read_text()
+          old = """      expect(desktop).toMatch(\n        /border-bottom\\s*:\\s*1px solid rgba\\(42,33,23,\\.08\\)/\n      );\n      expect(desktop).toMatch(\n        /box-shadow\\s*:\\s*0 4px 16px rgba\\(42,33,23,\\.06\\)/\n      );"""
+          new = """      expect(desktop).toMatch(/border-bottom\\s*:\\s*0/);\n      expect(desktop).toMatch(/box-shadow\\s*:\\s*none/);"""
+          if old not in s:
+              raise SystemExit('visual header invariant target not found')
+          p.write_text(s.replace(old, new, 1))
 
-          # 2) Current-main files scanned by the architecture graph but missing headers.
-          headers = {
-              'services/notifications/relay-location.js': '''/**
-           * @komerce-arch
-           * @role          notification-relay-location-formatting
-           * @domain        notification
-           * @layer         util
-           * @criticality   medium
-           * @inputs        relay_location_data, notification_message
-           * @outputs       canonical_relay_map_url, localized_notification_text
-           * @db-write      none
-           * @db-read       none
-           * @used-by       services/notifications/notification-service.js, services/notifications/order.js
-           * @doctrine      relay_location_single_formatter
-           * @impact-areas  notification, logistics, pickup
-           * @version       2026-08
-           */
-          '''.replace('           ', ''),
-              'utils/auth-cookie.js': '''/**
-           * @komerce-arch
-           * @role          auth-cookie-policy
-           * @domain        auth
-           * @layer         util
-           * @criticality   high
-           * @inputs        runtime_environment, jwt_token, http_request
-           * @outputs       auth_cookie_options, auth_token
-           * @depends       utils/auth-session-policy.js
-           * @db-write      none
-           * @db-read       none
-           * @used-by       middleware/auth.js, middleware/auth-guest.js, middleware/soft-auth.js, middleware/csrf-origin.js, routes/auth.js, routes/auth-passkey.js, routes/client-auth.js, routes/otp.js
-           * @doctrine      auth_cookie_single_source_of_truth
-           * @impact-areas  auth, security, session
-           * @version       2026-08
-           */
-          '''.replace('           ', ''),
-          }
-          for filename, header in headers.items():
-              f = Path(filename)
-              src = f.read_text()
-              if '@komerce-arch' not in src[:1500]:
-                  f.write_text(header + src)
+          # Taxonomy schema: Tech rail asset has moved to the v2 WebP campaign.
+          p = Path('public/boutique/tests/unit/shop-schema-active-flows.test.js')
+          s = p.read_text()
+          old = "expect(schema.getCategoryImage('Tech')).toContain('/boutique/categories/tech.jpg');"
+          new = "expect(schema.getCategoryImage('Tech')).toContain('/boutique/categories/tech-v2.webp');"
+          if old not in s:
+              raise SystemExit('Tech category image expectation not found')
+          p.write_text(s.replace(old, new, 1))
 
-          # 3) Market already declares itself lifecycle owner of these reference tables
-          #    in perimeter/classification and owns their migrations. Make that existing
-          #    authority machine-readable so O5 can observe local-stock -> market via
-          #    the direct read of markets. RW! means lifecycle ownership across the
-          #    feature boundary (migration writes + runtime reads), not a new runtime write.
-          m = Path('features/market.feature.js')
-          src = m.read_text()
-          db_block = """  // ── Tables DB — autorité lifecycle Market ───────────────────────────────\n  // Les écritures de référentiel sont portées par les migrations de cette feature ;\n  // les services runtime sont en lecture. Le marqueur ! rend l'owner de lifecycle\n  // déjà affirmé par perimeter/classification observable par O5.\n  db: {\n    tables: [\n      'markets: RW!',\n      'operator_market_scopes: RW!',\n      'currency_parities: RW!',\n    ],\n  },\n\n"""
-          if 'markets: RW!' not in src:
-              marker = '  // ── Securite ─────────────────────────────────────────────────────────────\n'
-              if marker not in src:
-                  raise SystemExit('market security anchor not found')
-              m.write_text(src.replace(marker, db_block + marker, 1))
-
-          # 4) Current observed debt is already 0. Tighten the stale ratchet budget to 0
-          #    rather than carrying a historical allowance for a debt that no longer exists.
-          baseline_path = Path('governance/business-graph-drift-baseline.json')
-          baseline = json.loads(baseline_path.read_text())
-          key = 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT'
-          if baseline.get('baseline', {}).get(key) == 1:
-              del baseline['baseline'][key]
-              baseline['_comment_debt_zero_20260828'] = (
-                  'Debt Zero absolute : OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT '
-                  'est certifié à 0 et la dernière allowance historique 1 est retirée. Toute réapparition '
-                  'devient une nouvelle clé non budgétisée et échoue.'
-              )
-              baseline_path.write_text(json.dumps(baseline, ensure_ascii=False, indent=2) + '\n')
+          # PDP geometry: 900px fallback lives in the hybrid sheet; >=1200px final
+          # geometry is owned by modal-desktop-density.css. Assert both owners.
+          p = Path('public/boutique/tests/unit/modal-desktop-premium-polish.test.js')
+          s = p.read_text()
+          old_decl = "const hybrid = source('css/modal-product-lot4-hybrid.css');"
+          new_decl = old_decl + "\nconst density = source('css/modal-desktop-density.css');"
+          if "const density = source('css/modal-desktop-density.css');" not in s:
+              if old_decl not in s:
+                  raise SystemExit('hybrid source declaration not found')
+              s = s.replace(old_decl, new_decl, 1)
+          old_expect = "expect(hybrid).toMatch(/grid-template-columns:\\s*minmax\\(0,\\s*1fr\\)\\s*minmax\\(390px,\\s*420px\\)/);"
+          new_expect = """expect(hybrid).toMatch(/grid-template-columns:\\s*minmax\\(0,\\s*48%\\)\\s*minmax\\(0,\\s*52%\\)/);\n    expect(density).toMatch(/grid-template-columns:\\s*minmax\\(0,\\s*1fr\\)\\s*minmax\\(460px,\\s*520px\\)/);"""
+          if old_expect not in s:
+              raise SystemExit('old hybrid geometry expectation not found')
+          p.write_text(s.replace(old_expect, new_expect, 1))
           PY
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-          npm ci --prefix public/boutique --ignore-scripts
-
-      - name: Core regression proof
-        run: |
-          npx --no-install jest --config jest.unit.config.js \
-            tests/unit/require-non-production.test.js \
-            tests/unit/simulator-route.test.js \
-            tests/unit/admin-system.test.js \
-            tests/unit/auth-cookie.test.js \
-            tests/unit/relay-location.test.js \
-            tests/unit/local-stock-service.test.js \
-            tests/unit/currency.test.js \
-            --runInBand --forceExit
-          (cd public/boutique && npx --no-install jest tests/unit/b-modal-social-proof.test.js tests/unit/b-modal-core.test.js --runInBand)
-
-      - name: Absolute governance and security proof
-        run: |
-          npm run quality:gate
-
-          node scripts/debt-audit.js --json > /tmp/debt-zero.json
-          node - <<'NODE'
-          const r = require('/tmp/debt-zero.json');
-          if (r.openDebtsCount !== 0) throw new Error(`openDebtsCount=${r.openDebtsCount}`);
-          console.log('BACKEND_ACTIONABLE_DEBT_ZERO');
-          NODE
-
-          npm audit --omit=dev --audit-level=high
-
-          node scripts/feature-classification-check.js --json > /tmp/classification.json
-          node - <<'NODE'
-          const r = require('/tmp/classification.json');
-          const s = r.summary || {};
-          if ((s.errors || 0) !== 0 || (s.warnings || 0) !== 0) {
-            throw new Error(`Feature classification not zero: ${JSON.stringify({summary:s,warnings:r.warnings,errors:r.errors})}`);
-          }
-          console.log('FEATURE_CLASSIFICATION_ZERO');
-          NODE
-
-          node scripts/generate-komerce-arch-graph.js
-          node - <<'NODE'
-          const g = require('./docs/komerce-arch-header-graph.json');
-          if (g.totals.filesWithoutHeaders !== 0 || g.totals.filesWithMisplacedHeaders !== 0 || g.totals.liteWithoutOwner !== 0) {
-            throw new Error(`Architecture header coverage not zero: ${JSON.stringify(g.totals)}`);
-          }
-          console.log('ARCH_HEADER_COVERAGE_ZERO');
-          NODE
-
-          npm run dashboards:360
-          npm run boutique:360
-          npm run dashboards:360:check
-          npm run boutique:360:check
-          npm --prefix public/boutique run check:css-guard
-
-          npm run business-graph:gen
-          npm run business-graph:check
-          npm run business-graph:ratchet-check
-          node - <<'NODE'
-          const b = require('./governance/business-graph-drift-baseline.json');
-          const nonZero = Object.entries(b.baseline || {}).filter(([,v]) => v !== 0);
-          if (nonZero.length) throw new Error(`Non-zero Business Graph ratchet allowance remains: ${JSON.stringify(nonZero)}`);
-          console.log('BUSINESS_GRAPH_RATCHET_ALLOWANCE_ZERO');
-          NODE
-          npm run business-graph:disposition-check
-
-          npm run feature:360:refresh-global
-          node - <<'NODE'
-          const gf = require('./docs/GATE_FINDINGS.json');
-          const f = require('./docs/FEATURE_360.json');
-          if ((gf.findings || []).length !== 0) throw new Error(`Gate findings remain: ${JSON.stringify(gf.findings)}`);
-          if (f.summary.attention !== 0 || f.summary.blocked !== 0 || f.summary.healthy !== f.summary.features || f.summary.debtItemsTotal !== 0) {
-            const attention = (f.features || []).filter(x => x.status !== 'HEALTHY' || (x.architecturalDebt && x.architecturalDebt.items && x.architecturalDebt.items.length));
-            throw new Error(`Feature360 not absolute zero: ${JSON.stringify({summary:f.summary,attention}, null, 2)}`);
-          }
-          console.log('FEATURE360_ABSOLUTE_ZERO', f.summary);
-          NODE
-          npm run feature:360:check
           git diff --check
+          git diff -- public/boutique/tests/unit/visual-geometry-css-invariants.test.js \
+            public/boutique/tests/unit/shop-schema-active-flows.test.js \
+            public/boutique/tests/unit/modal-desktop-premium-polish.test.js
 
-      - name: Commit reconciliation artifacts
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+
+      - name: Prove the three corrected invariants
         run: |
-          git add -A
-          git diff --cached --check
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(governance): reconcile Debt Zero with current main"
+          cd public/boutique
+          npx --no-install jest \
+            tests/unit/visual-geometry-css-invariants.test.js \
+            tests/unit/shop-schema-active-flows.test.js \
+            tests/unit/modal-desktop-premium-polish.test.js \
+            --runInBand
+
+      - name: Full Boutique unit suite
+        run: npm --prefix public/boutique run test:unit -- --forceExit
+
+      - name: Commit and push tests only with lease
+        run: |
+          changed="$(git status --short)"
+          echo "$changed"
+          test -n "$changed"
+          non_tests="$(git status --short | awk '{print $2}' | grep -v '^public/boutique/tests/unit/' || true)"
+          if [ -n "$non_tests" ]; then
+            echo "Unexpected non-test changes:"
+            echo "$non_tests"
+            exit 1
           fi
-          echo "REBASED_HEAD=$(git rev-parse HEAD)"
-          git log --oneline -8
-
-      - name: Update Debt Zero PR branch with lease
-        run: |
+          git add public/boutique/tests/unit/visual-geometry-css-invariants.test.js \
+            public/boutique/tests/unit/shop-schema-active-flows.test.js \
+            public/boutique/tests/unit/modal-desktop-premium-polish.test.js
+          git diff --cached --check
+          git commit -m "test(boutique): align invariants with canonical CSS and assets"
           git push \
-            --force-with-lease=refs/heads/chore/debt-zero-absolute:a02be6c9a7e6497a51787e4ebcbed6caceab3405 \
+            --force-with-lease=refs/heads/chore/debt-zero-absolute:af14c27edf0379ceecda8680b931c9f4700b7df8 \
             origin HEAD:chore/debt-zero-absolute
