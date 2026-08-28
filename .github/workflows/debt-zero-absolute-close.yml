@@ -23,16 +23,18 @@ jobs:
         run: |
           cp scripts/debt-zero-close-specialized-360.js /tmp/debt-zero-close-specialized-360.js
           cp scripts/debt-zero-close-golive.js /tmp/debt-zero-close-golive.js
+          cp scripts/debt-zero-close-css-and-counter.js /tmp/debt-zero-close-css-and-counter.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Install repository dependencies
         run: |
           npm ci --ignore-scripts
           npm ci --prefix public/boutique --ignore-scripts
-      - name: Apply specialized and GoLive closure
+      - name: Apply all final closure patches
         run: |
           cp /tmp/debt-zero-close-specialized-360.js scripts/debt-zero-close-specialized-360.js
           cp /tmp/debt-zero-close-golive.js scripts/debt-zero-close-golive.js
+          cp /tmp/debt-zero-close-css-and-counter.js scripts/debt-zero-close-css-and-counter.js
           python - <<'PY'
           from pathlib import Path
           p = Path('scripts/debt-zero-close-golive.js')
@@ -42,7 +44,6 @@ jobs:
           PY
           node scripts/debt-zero-close-specialized-360.js
           node scripts/debt-zero-close-golive.js
-          rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js
           python - <<'PY'
           from pathlib import Path
 
@@ -63,12 +64,15 @@ jobs:
                   raise SystemExit('infrastructure middleware anchor not found')
               manifest.write_text(text.replace(anchor, anchor + entry, 1))
           PY
-      - name: Refresh security lockfiles
+          node scripts/debt-zero-close-css-and-counter.js
+          rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js scripts/debt-zero-close-css-and-counter.js
+      - name: Refresh dependency lockfiles and CSS bundles
         run: |
           npm install --package-lock-only --ignore-scripts
           npm install --prefix public/boutique --package-lock-only --ignore-scripts
           npm ci --ignore-scripts
           npm ci --prefix public/boutique --ignore-scripts
+          npm --prefix public/boutique run bundle:css
       - name: Targeted backend regression
         run: |
           npx --no-install jest --config jest.unit.config.js \
@@ -83,7 +87,7 @@ jobs:
             tests/unit/b-modal-social-proof.test.js \
             tests/unit/b-modal-core.test.js \
             --runInBand
-      - name: Backend and quality gates
+      - name: Backend actionable debt and quality proof
         run: |
           npm run backend:audit
           npm run quality:gate
@@ -91,23 +95,40 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const report = JSON.parse(fs.readFileSync('/tmp/debt-zero.json', 'utf8'));
+          if (report.openDebtsCount !== 0) {
+            const open = (report.debts || []).filter(d =>
+              d.count > 0 &&
+              !String(d.note || '').startsWith('✅') &&
+              !String(d.lot || '').includes('légitime') &&
+              !String(d.lot || '').startsWith('Exception documentée') &&
+              d.lot !== 'Revue individuelle requise'
+            );
+            throw new Error(`Actionable backend debt remains: ${JSON.stringify(open)}`);
+          }
           const baseline = (report.debts || []).find(d => d.rule === 'N2 (baseline)');
           if (baseline && baseline.count > 0) throw new Error(`N2 baseline still counted: ${JSON.stringify(baseline)}`);
-          const large = (report.debts || []).find(d => d.rule === 'I-BACK-2');
-          const entries = (large && large.entries) || [];
-          if (entries.length !== 1 || entries[0] !== 'services/scan-engine.js') {
-            throw new Error(`Unexpected large-file exceptions: ${JSON.stringify(entries)}`);
+          const inline = (report.debts || []).find(d => d.rule === 'N2 (inline disables)');
+          if (inline && inline.count > 0) throw new Error(`Inline quality suppressions remain: ${JSON.stringify(inline)}`);
+          const reviewedLarge = (report.debts || []).find(d => d.rule === 'I-BACK-2 (reviewed)');
+          if (!reviewedLarge || reviewedLarge.entries.length !== 1 || reviewedLarge.entries[0] !== 'services/scan-engine.js') {
+            throw new Error(`Reviewed large-file status missing: ${JSON.stringify(reviewedLarge)}`);
           }
-          console.log('BACKEND_DEBT_HYGIENE_OK', {
-            totalDebtItems: report.totalDebtItems,
+          console.log('BACKEND_ACTIONABLE_DEBT_ZERO', {
+            totalContextItems: report.totalDebtItems,
             openDebtsCount: report.openDebtsCount,
-            remainingLargeFileException: entries[0],
+            reviewedLargeFile: reviewedLarge.entries[0],
           });
           NODE
       - name: Production dependency security proof
         run: |
           npm ls fast-uri
           npm audit --omit=dev --audit-level=high
+      - name: Boutique CSS cascade proof and ratchet lowering
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-guard:save
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:cache
       - name: Regenerate specialized 360s
         run: |
           npm run dashboards:360
@@ -144,13 +165,6 @@ jobs:
           npm run boutique:360:save
           npm run dashboards:360:check
           npm run boutique:360:check
-      - name: Diagnose Boutique CSS guard
-        run: |
-          set +e
-          npm --prefix public/boutique run check:css-guard
-          code=$?
-          echo "CSS_GUARD_DIAGNOSTIC_EXIT=$code"
-          exit 0
       - name: Canonical architecture proof
         run: |
           npm run business-graph:gen
