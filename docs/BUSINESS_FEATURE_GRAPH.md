@@ -344,7 +344,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Porter le stock physique vendable détenu par Komerce dans un marché donné, projeter une disponibilité calculée — jamais stockée — à partir de ce stock déduction faite des allocations actives, et engager/consommer/libérer ce stock au fil du cycle de vie d'une commande (Vague 2 D2). Toujours shadow côté FRONTEND (IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md, RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I) : commercial_exposure reste DISABLED par défaut, aucune route HTTP publique, aucun composant Boutique — mais depuis D2, deux points d'intégration backend délibérés et revus (routes/orders/create.js, order-status-machine.js) protègent déjà le stock réel dès la première commande, sans qu'aucune exposition ne soit visible côté client.
 
 - services: 1
-- tests: 1
+- routes: 1
+- tests: 2
 - tables owned (lifecycle): 2 — `local_stock`, `local_stock_allocations`
 - tables written: 2
 - interfaces exposed: 0
@@ -481,7 +482,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.
 
 - services: 1
-- tests: 1
+- routes: 1
+- tests: 2
 - tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
 - tables written: 4
 - interfaces exposed: 0
@@ -1620,12 +1622,15 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
 
-### LIMITES DU GÉNÉRATEUR — hors dette (6)
+### LIMITES DU GÉNÉRATEUR — hors dette (9)
 
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
+- **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market_id=Y — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market_id=X — idem — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market_id=X — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 
@@ -1641,7 +1646,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 966 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 970 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 173 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

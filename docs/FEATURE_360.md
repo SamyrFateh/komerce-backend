@@ -915,6 +915,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 
 **Owns** : `local_stock`, `local_stock_allocations`
 
@@ -933,9 +934,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 2 fichier(s) déclaré(s)
+**Implementation** : 4 fichier(s) déclaré(s)
+  - routes : 1
   - services : 1
-  - tests : 1
+  - tests : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="local-stock"]_
 
@@ -1451,6 +1453,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 
 **Owns** : `inquiries`, `physical_offers`, `providers`, `services`
 
@@ -1469,9 +1472,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 2 fichier(s) déclaré(s)
+**Implementation** : 4 fichier(s) déclaré(s)
+  - routes : 1
   - services : 1
-  - tests : 1
+  - tests : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="providers-services"]_
 

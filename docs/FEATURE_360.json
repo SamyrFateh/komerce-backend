@@ -11373,10 +11373,24 @@
         {
           "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (shadow frontend strict, y compris après D2)",
           "test": "tests/unit/shadow-domains-boundary.test.js"
+        },
+        {
+          "statement": "GET /api/local-stock/availability ne renvoie jamais le pourquoi d'une indisponibilité (allocations actives, exposure DISABLED...) — uniquement availability/exposable, jamais une vérité métier détaillée",
+          "test": "tests/unit/local-stock-routes.test.js"
         }
       ],
       "implementation": {
         "byCategory": {
+          "routes": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "routes/local-stock.js",
+                "resolvedPath": "routes/local-stock.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
           "services": {
             "count": 1,
             "files": [
@@ -11388,8 +11402,13 @@
             ]
           },
           "tests": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "tests/unit/local-stock-routes.test.js",
+                "resolvedPath": "tests/unit/local-stock-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/local-stock-service.test.js",
                 "resolvedPath": "tests/unit/local-stock-service.test.js",
@@ -11398,7 +11417,7 @@
             ]
           }
         },
-        "totalFiles": 2,
+        "totalFiles": 4,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -17035,10 +17054,24 @@
         {
           "statement": "le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined, jamais de saut d'état",
           "test": "tests/unit/providers-service.test.js"
+        },
+        {
+          "statement": "GET /services/:id et GET /physical-offers/:id ne renvoient jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi d'une non-exposabilité (404 pur, jamais un détail de statut/marché)",
+          "test": "tests/unit/providers-services-routes.test.js"
         }
       ],
       "implementation": {
         "byCategory": {
+          "routes": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "routes/providers-services.js",
+                "resolvedPath": "routes/providers-services.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
           "services": {
             "count": 1,
             "files": [
@@ -17050,17 +17083,22 @@
             ]
           },
           "tests": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "tests/unit/providers-service.test.js",
                 "resolvedPath": "tests/unit/providers-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/providers-services-routes.test.js",
+                "resolvedPath": "tests/unit/providers-services-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 2,
+        "totalFiles": 4,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
