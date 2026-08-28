@@ -1,0 +1,27 @@
+from pathlib import Path
+
+
+def replace_once(path, old, new):
+    p = Path(path)
+    text = p.read_text(encoding='utf-8')
+    if old not in text:
+        raise SystemExit(f'PATCH_ANCHOR_MISSING {path}: {old[:120]!r}')
+    p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+
+# Jest hoists mock factories. Variables intentionally read from mock factories
+# must use the mock* naming convention to prove lazy test state is deliberate.
+p = Path('tests/unit/admin-client-index-route.test.js')
+text = p.read_text(encoding='utf-8')
+text = text.replace('globalAllowed', 'mockGlobalAllowed').replace('allowedMarkets', 'mockAllowedMarkets')
+p.write_text(text, encoding='utf-8')
+
+# LOT 4I deliberately changes /admin/clients from the Legacy/Pilotage fallback
+# to the dedicated Canonical Client Index while preserving Client 360 detail.
+replace_once(
+    'tests/unit/canonical-client-360-app.test.js',
+    "test('surfaceForPath distingue le détail Client 360 de la liste clients Legacy 1', () => {\n  const env = loadApp('/admin/clients/%2B2691234567');\n  expect(env.api.surfaceForPath('/admin/clients/%2B2691234567')).toBe(env.api.SURFACES.CLIENT_360);\n  expect(env.api.surfaceForPath('/admin/clients')).toBe(env.api.SURFACES.PILOTAGE);\n});",
+    "test('surfaceForPath distingue Client Index du détail Client 360', () => {\n  const env = loadApp('/admin/clients/%2B2691234567');\n  expect(env.api.surfaceForPath('/admin/clients/%2B2691234567')).toBe(env.api.SURFACES.CLIENT_360);\n  expect(env.api.surfaceForPath('/admin/clients')).toBe(env.api.SURFACES.CLIENT_INDEX);\n  expect(env.api.surfaceForPath('/admin-next/clients')).toBe(env.api.SURFACES.CLIENT_INDEX);\n});"
+)
+
+print('CLIENT_INDEX_4I_TEST_TRUTH_FIXED')
