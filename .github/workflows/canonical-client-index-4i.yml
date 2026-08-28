@@ -71,6 +71,7 @@ jobs:
             tests/unit/canonical-client-360-app.test.js \
             tests/unit/canonical-dashboard-boundary.test.js \
             tests/unit/bootstrap-html-routes.test.js \
+            tests/unit/providers-service.test.js \
             --runInBand
 
       - name: Quality and card-first pre-generation gates
@@ -92,7 +93,27 @@ jobs:
           npm run feature:360:gen
           npm run security:360:save
 
-      - name: Full governance proof
+      - name: Stage product slice for touched-file gates
+        run: |
+          git add \
+            bootstrap/api-routes.js \
+            bootstrap/html-routes.js \
+            features/auth-passkey.feature.js \
+            features/dashboard.feature.js \
+            features/providers-services.feature.js \
+            routes/admin-client-index.js \
+            services/client-index.js \
+            public/dashboards/canonical/index.html \
+            public/dashboards/canonical/js/app.js \
+            public/dashboards/canonical/js/client-index.js \
+            docs/contract/CLIENT_INDEX_4I.md \
+            tests/unit/client-index-service.test.js \
+            tests/unit/admin-client-index-route.test.js \
+            tests/unit/canonical-client-index.test.js \
+            tests/unit/canonical-client-360-app.test.js \
+            docs
+
+      - name: Full scoped governance proof
         run: |
           npm run gate:touched-files
           npm run gate:touched-tests
@@ -103,7 +124,7 @@ jobs:
           npm run business-graph:disposition-check
           npm run feature:360:check
           npm run security:360:check
-          npm run map:check
+          node scripts/arch-db-check.js
           node -e "const g=require('./docs/GATE_FINDINGS.json'); if((g.findings||[]).length) { console.error(JSON.stringify(g.findings,null,2)); process.exit(1); }"
 
       - name: Ensure no helper files enter product branch
@@ -119,6 +140,7 @@ jobs:
             bootstrap/html-routes.js \
             features/auth-passkey.feature.js \
             features/dashboard.feature.js \
+            features/providers-services.feature.js \
             routes/admin-client-index.js \
             services/client-index.js \
             public/dashboards/canonical/index.html \
