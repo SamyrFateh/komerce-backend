@@ -45,14 +45,23 @@ jobs:
           rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js
           python - <<'PY'
           from pathlib import Path
-          p = Path('migrations/GAPS.md')
-          line = '- COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql'
-          text = p.read_text()
-          if line not in text:
+
+          gaps = Path('migrations/GAPS.md')
+          collision = '- COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql'
+          text = gaps.read_text()
+          if collision not in text:
               if not text.endswith('\n'):
                   text += '\n'
-              text += line + '\n'
-              p.write_text(text)
+              gaps.write_text(text + collision + '\n')
+
+          manifest = Path('features/infrastructure.feature.js')
+          text = manifest.read_text()
+          entry = "      'middleware/require-non-production.js',\n"
+          anchor = "      'middleware/request-id.js',\n"
+          if entry not in text:
+              if anchor not in text:
+                  raise SystemExit('infrastructure middleware anchor not found')
+              manifest.write_text(text.replace(anchor, anchor + entry, 1))
           PY
       - name: Refresh security lockfiles
         run: |
@@ -135,6 +144,13 @@ jobs:
           npm run boutique:360:save
           npm run dashboards:360:check
           npm run boutique:360:check
+      - name: Diagnose Boutique CSS guard
+        run: |
+          set +e
+          npm --prefix public/boutique run check:css-guard
+          code=$?
+          echo "CSS_GUARD_DIAGNOSTIC_EXIT=$code"
+          exit 0
       - name: Canonical architecture proof
         run: |
           npm run business-graph:gen
