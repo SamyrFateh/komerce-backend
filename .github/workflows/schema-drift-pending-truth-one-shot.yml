@@ -5,6 +5,7 @@ on:
     branches: [fix/schema-drift-pending-truth]
     paths:
       - '.github/workflows/schema-drift-pending-truth-one-shot.yml'
+      - 'scripts/schema-drift-pending-truth-patch.py'
 
 permissions:
   contents: write
@@ -58,7 +59,8 @@ jobs:
           git rm .github/workflows/schema-drift-pending-truth-one-shot.yml scripts/schema-drift-pending-truth-patch.py
           git add docs/SCHEMA.md scripts/lib/arch-drift-core.js scripts/arch-schema-drift-check.js scripts/arch-reconcile.js \
             services/shipping-customs-workspace.js routes/local-stock.js services/order-display-snapshot.js \
-            routes/providers-services.js routes/auth-passkey.js tests/unit/arch-drift-pending-migration.test.js \
+            routes/providers-services.js routes/auth-passkey.js middleware/require-market-scope.js routes/admin/orders.js server.js \
+            services/dashboard-metrics/_helpers.js services/operations-workspace.js tests/unit/arch-drift-pending-migration.test.js \
             docs/KOMERCE_ARCH_HEADER_GRAPH.md docs/komerce-arch-header-graph.json scripts/arch-debt-budget.json
           git commit -m 'fix(schema): reconcile live and pending database truth'
           git push origin HEAD:fix/schema-drift-pending-truth
