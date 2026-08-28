@@ -43,6 +43,17 @@ jobs:
           node scripts/debt-zero-close-specialized-360.js
           node scripts/debt-zero-close-golive.js
           rm scripts/debt-zero-close-specialized-360.js scripts/debt-zero-close-golive.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('migrations/GAPS.md')
+          line = '- COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql'
+          text = p.read_text()
+          if line not in text:
+              if not text.endswith('\n'):
+                  text += '\n'
+              text += line + '\n'
+              p.write_text(text)
+          PY
       - name: Refresh security lockfiles
         run: |
           npm install --package-lock-only --ignore-scripts
