@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 105 | Vérifié sur le dump live Railway. |
+| Tables | 112 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 12 | Types métier présents dans le dump live Railway. |
 | Index | 264 | Performance + contraintes uniques |
@@ -85,7 +85,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). |
-| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. |
+| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
@@ -152,7 +152,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `intended_migration_schema` — non vérifié live)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `intended_migration_schema` — non vérifié live)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw \| ai_enriched \| manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema` — vérifié live Railway)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw \| ai_enriched \| manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. |
 | `baskets` | Paniers (différents `basket_type`). |
@@ -162,6 +162,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `catalog_glossary` | Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Migration 098, confirmée live. |
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
 | `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
+| `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |
 | `product_skus` | Unités vendables canoniques en Mode SKU : une combinaison exacte d’options = un SKU, stock unique par SKU, prix SKU optionnel, SKU par défaut si variant_combo est NULL. Source de vérité stock cible selon DECISION_MODELE_STOCK_SKU. **Migration 104 — promue le 2026-07-14 (schema-promote, dump live verifie).** |
 | `catalog_media` | Média canonique catalogue (PDC-8 Lot 2). Cible de promotion depuis `normalized_source_contract.media[]`. Identité stable : `product_id` + `source_media_id` lorsque connu (NULL = source pauvre, aucune identité fournisseur fabriquée, pas d'unicité applicable, ré-promotion peut dupliquer honnêtement). Legacy (`products.images` / `product_variants.images`) reste le fallback pour les produits non promus. Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 | `product_sku_media` | Association explicite SKU ↔ média canonique (PDC-8 Lot 5), source : `sellable_units[].media_refs` (V2). Les références explicites gagnent toujours sur un matching `option_values` heuristique. Table neuve au 2026-07-14, aucun writer avant le service de promotion (Lot 6). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
@@ -211,8 +212,8 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | Table | Rôle |
 |---|---|
 | `customs_categories` | Catégories douane. |
-| `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
-| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — snapshot volume au rattachement, miroir de `parcel_weight_kg`). Ventilation fret maritime au m³ dans `services/cost-allocation/allocate.js` : `by_volume` si snapshoté, répartition égale `confidence low` sinon — jamais le poids en maritime. |
+| `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
+| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — snapshot volume au rattachement, miroir de `parcel_weight_kg`). Ventilation fret maritime au m³ dans `services/cost-allocation/allocate.js` : `by_volume` si snapshoté, répartition égale `confidence low` sinon — jamais le poids en maritime. |
 | `customs_history` | Historique taux effectifs. |
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
@@ -224,7 +225,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `suppliers` | Fournisseurs. |
 | `partners` | Partenaires (élargi vs suppliers, voir ADR-005). |
 | `purchase_orders` | Bons de commande fournisseur. |
-| `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
+| `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |
 | `supplier_catalog_imports` | Imports catalogues et audit de batch JSON : profil, hash source, version connecteur, statut, compteurs et findings. Migration 110, vérifiée lors du pilote production ING-6 du 2026-07-16. |
 | `supplier_catalog_import_rejections` | Rejets de lignes ou contrats non représentables, séparés des candidats promouvables. Conserve le payload brut, les findings et la cause automatisable ; unicité `(import_id, source_index)`. Migration 110. |
@@ -237,7 +238,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `scans` | Scans terrain (legacy/compat). |
-| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
+| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
 | `relais` | Points relais. |
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
@@ -254,6 +255,17 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
 
+### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
+
+| Table | Rôle |
+|---|---|
+| `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |
+| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. |
+| `currency_parities` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |
+| `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
+| `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |
+| `webauthn_challenges` | Challenges WebAuthn éphémères persistés pour garantir single-use et séparation des cérémonies. Vérifiée live Railway. |
+
 ### 4.13 Monitoring et alertes (10 tables)
 
 | Table | Rôle |
@@ -269,16 +281,55 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `business_rules_history` | Historique règles. |
 | `economic_snapshots` | Snapshots économiques. |
 
-### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2, 6 tables)
+### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+
+> **État Railway** : migrations 154–157 présentes dans le repo mais pas encore observées dans le dump live. Les objets restent volontairement en `schema-pending` jusqu’à confirmation Railway ; le code shadow ne transforme jamais cette intention en vérité live.
 
 | Table | Rôle |
 |---|---|
-| `local_stock` | Stock physique vendable détenu par Komerce dans un marché donné (`product_id` + `market_id` + `location`). Distinct de `products.stock`/`product_skus.stock` (import/national) et de `inventory_items` (transit hub). `commercial_exposure` (DISABLED par défaut) gouverne l'affichage du badge "Disponible maintenant" — jamais exposé sans que le cycle allocate/consume/release (ci-dessous) garantisse la promesse. Migration 154 (PR A), `commercial_exposure` ajoutée migration 157 (D2), toutes deux confirmées live. |
-| `local_stock_allocations` | Engagement d'une commande sur un `local_stock`, avant tout paiement — empêche la survente. Cycle `allocated_at` → `consumed_at` (paiement confirmé, décrémente réellement `qty_physical`) XOR `released_at` (annulation/échec, ne touche jamais `qty_physical`). Idempotent par construction (`WHERE consumed_at IS NULL AND released_at IS NULL`). Aucun `qty_allocated` matérialisé : la disponibilité active se calcule à la volée. Migration 157 (D2), confirmée live. |
-| `providers` | Le second principal payable — un tiers local (ex. artisan, prestataire) qui prépare/détient sa propre marchandise ou porte l'exécution d'un service, fixe son prix, porte le risque d'exécution. PAS une ligne `users` / PAS un `user_role` : identité vérifiée par téléphone, aucune authentification app à ce stade. Statut `pending` \| `active` \| `suspended` — seul levier de sanction disponible dans l'informel (visibilité, jamais une pénalité financière). Migration 155 (PR B), confirmée live. |
-| `services` | Prestation (travail) proposée par un `provider`. `commercial_exposure` (DISABLED par défaut) — même patron que `local_stock`. Migration 155 (PR B), confirmée live. |
-| `physical_offers` | Produit physique réellement proposé par un tiers local (ex. samboussas pour mariage) — table SŒUR de `services`, jamais la même table : le tiers prépare/détient la marchandise, fixe le prix, porte le risque d'exécution ; distinct d'une prestation de travail par le nom, pas seulement par convention. Enum de statut propre (`physical_offer_status`), jamais partagé avec `services`. Migration 156 (D1), confirmée live. |
-| `inquiries` | Une DEMANDE adressée à un provider, jamais une réservation — aucune ressource engagée avant la décision finale. Porte sur EXACTEMENT une cible (`service_id` XOR `physical_offer_id`, contrainte `inquiries_exactly_one_target` via `num_nonnulls()`) — jamais une association polymorphe `offer_type`/`offer_id` (rejetée : aucune FK Postgres réelle possible sur une cible conditionnelle). Cycle linéaire `sent` → `answered` → `accepted`\|`declined`. Migration 155 (PR B), `physical_offer_id` + contrainte ajoutés migration 156 (D1), toutes deux confirmées live. |
+
+<!-- schema-pending
+object: local_stock
+kind: table
+migration: 154
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Stock physique vendable détenu par Komerce par marché et localisation ; distinct du stock import/SKU et de l’inventaire de transit. Migration 157 ajoute commercial_exposure et le cycle d’allocation.
+-->
+<!-- schema-pending
+object: providers
+kind: table
+migration: 155
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Tiers local payable portant l’exécution d’un service ou d’une offre physique ; identité distincte de users.
+-->
+<!-- schema-pending
+object: services
+kind: table
+migration: 155
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Prestations de travail proposées par un provider ; exposition commerciale désactivée par défaut.
+-->
+<!-- schema-pending
+object: inquiries
+kind: table
+migration: 155
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Demandes adressées à un provider, sans réservation de ressource ; migration 156 ajoute la cible physical_offer.
+-->
+<!-- schema-pending
+object: physical_offers
+kind: table
+migration: 156
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Produits physiques proposés par un tiers local, séparés des prestations de service.
+-->
+<!-- schema-pending
+object: local_stock_allocations
+kind: table
+migration: 157
+section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
+role: Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente.
+-->
 
 ---
 

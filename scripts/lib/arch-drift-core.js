@@ -64,7 +64,7 @@ function findLocalMigrationFor(token, root) {
     path.join(root, 'migrations', 'scheduled')
   ];
   const re = new RegExp(
-    `create\\s+(table|view)\\s+(if\\s+not\\s+exists\\s+)?"?${token}"?\\b`,
+    `create\\s+(table|view)\\s+(if\\s+not\\s+exists\\s+)?(?:"?public"?\\.)?"?${token}"?\\b`,
     'i'
   );
   for (const dir of dirs) {
@@ -273,13 +273,21 @@ function analyze(root = REPO_ROOT) {
     }
   }
   const fictionTokens = new Set(fiction.map(f => f.token));
-  const fictionUnlisted = fiction.filter(f => !f.allowed);
-  // Meme diagnostic que les fantomes, cote header cette fois : une fiction
-  // hors liste correspond-elle a une migration locale pas encore en live ?
+  // Une reference header vers une table creee par une migration locale mais
+  // absente du dump live est une intention de deploiement (Mode B), pas une
+  // fiction a masquer dans une allowlist. Elle reste visible dans le rapport
+  // et schema-refresh alerte si le deploy tarde.
   const fictionMigrationHints = new Map();
-  for (const f of fictionUnlisted) {
+  const fictionPendingMigration = [];
+  const fictionUnlisted = [];
+  for (const f of fiction.filter(f => !f.allowed)) {
     const hit = findLocalMigrationFor(f.token, root);
-    if (hit) fictionMigrationHints.set(f.token, hit);
+    if (hit) {
+      fictionMigrationHints.set(f.token, hit);
+      fictionPendingMigration.push(f);
+    } else {
+      fictionUnlisted.push(f);
+    }
   }
   // Entrees d'allowlist qui ne correspondent plus a aucune fiction = RESOLUES.
   const allowlistResolved = Object.keys(allowlist).filter(tok => !fictionTokens.has(tok));
@@ -306,7 +314,7 @@ function analyze(root = REPO_ROOT) {
     paths: P,
     live, documented, headerTokens,
     budgetRaw, allowlist, ratchetMax,
-    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,
+    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,
     ghosts, ghostMigrationHints, undocumented
   };
 }

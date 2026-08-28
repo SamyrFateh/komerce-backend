@@ -8,6 +8,9 @@
  * @outputs       req.authorizedMarkets (Set<uuid>), next_or_403
  * @depends       db.js, operator_market_scopes (M1), markets (M0)
  * @used-by       routes admin scoping un market_id (branchement futur, hors M2)
+ * @db-read       operator_market_scopes
+ * @db-write      none
+ * @db-txn        none
  * @doctrine      KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope,
  *                résolu SERVEUR, jamais depuis un market_id fourni par le client
  * @impact-areas  market, admin-authorization

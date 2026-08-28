@@ -8,7 +8,7 @@
  * @outputs       availability_projection, exposable_flag
  * @depends       services/local-stock-service.js
  * @used-by       (aucun — Vague 2 D4, shadow : jamais monté dans bootstrap/api-routes.js)
- * @db-read       local_stock, local_stock_allocations (via le service)
+ * @db-read       none
  * @db-write      none
  * @db-txn        single_statement_sufficient
  * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de

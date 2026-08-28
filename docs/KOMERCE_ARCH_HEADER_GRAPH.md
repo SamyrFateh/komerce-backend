@@ -13,14 +13,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1029
-- Edges: 5258
-- DB tables: 130
+- Graph nodes: 1023
+- Edges: 5256
+- DB tables: 124
 - Doctrines: 281
 - Impact areas: 165
 - Unresolved code edges: 541
 - Tables multi-écrivains directs (>=2): 62
-- Avertissements db-write / db-write-via en chevauchement: 1
+- Avertissements db-write / db-write-via en chevauchement: 2
 
 ## Domains
 
@@ -493,9 +493,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/status.js -> customs_history
 - WRITE routes/admin-customs-shipments.js -> customs_shipment_parcels
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
-- WRITE services/shipping-customs-workspace.js -> customs_shipments.market_id
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE services/shipping-customs-workspace.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
@@ -691,6 +691,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
+- customs_shipments: 3 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js, services/shipping-customs-workspace.js
 - order_item_real_cost_allocations: 3 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - pickup_print_tokens: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
 - pickup_reveal_codes: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
@@ -699,7 +700,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
-- webauthn_credentials: 3 écrivains directs — routes/auth-passkey.js, services/webauthn-management-service.js, services/webauthn-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
@@ -709,7 +709,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
-- customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
 - exchange_rates: 2 écrivains directs — routes/admin-finance-config.js, services/pricing-rates.js
 - incidents: 2 écrivains directs — services/incident-service.js, services/incident-write-service.js
@@ -728,10 +727,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
 - signals: 2 écrivains directs — services/signal-admin-service.js, services/signal-service.js
 - sourcing_candidate_events: 2 écrivains directs — services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js
+- supplier_catalog_imports: 2 écrivains directs — services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
 
 ## DB Write / Write-Via Overlap Warnings
 
 - routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates
+- services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments
 
 ## Unresolved Code Edges
 
