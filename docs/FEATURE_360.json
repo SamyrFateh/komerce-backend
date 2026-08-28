@@ -17767,7 +17767,7 @@
               {
                 "declared": "services/discovery-rail-composer.js",
                 "resolvedPath": "services/discovery-rail-composer.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },

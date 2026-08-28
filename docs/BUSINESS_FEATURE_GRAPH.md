@@ -76,7 +76,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 364 | 364 | 0 |
+| backend | 29 | 29 | 365 | 365 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
