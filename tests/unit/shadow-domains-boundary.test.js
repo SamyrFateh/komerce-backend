@@ -30,12 +30,12 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SHADOW_SERVICES = ['local-stock-service', 'providers-service'];
-const SHADOW_TABLES = ['local_stock', 'providers', 'services', 'inquiries'];
+const SHADOW_TABLES = ['local_stock', 'providers', 'services', 'physical_offers', 'inquiries'];
 // Conventions kebab-case réellement utilisées pour TOUTES les routes REST de
 // ce dépôt (/api/admin-costing, /api/auto-distribute, etc.) — distinct des
 // noms de table snake_case. Une fuite réelle via fetch()/apiPost() prendrait
 // cette forme, jamais le nom de table brut.
-const SHADOW_URL_SEGMENTS = ['local-stock', 'providers', 'inquiries'];
+const SHADOW_URL_SEGMENTS = ['local-stock', 'providers', 'physical-offers', 'inquiries'];
 
 function walk(dir, exts, out = []) {
   if (!fs.existsSync(dir)) return out;
@@ -147,6 +147,26 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1)', () =>
       path.join(ROOT, 'migrations', '155_providers_services_shadow.sql'), 'utf8'
     );
     expect(migration).toMatch(/commercial_exposure\s+text\s+NOT\s+NULL\s+DEFAULT\s+'DISABLED'/i);
+  });
+
+  test('migration 156 — physical_offers.commercial_exposure reste DISABLED par défaut, même patron que services', () => {
+    const migration = fs.readFileSync(
+      path.join(ROOT, 'migrations', '156_physical_offers_and_neutral_inquiries.sql'), 'utf8'
+    );
+    expect(migration).toMatch(/commercial_exposure\s+text\s+NOT\s+NULL\s+DEFAULT\s+'DISABLED'/i);
+  });
+
+  test('migration 156 — inquiries porte bien la contrainte exactement-une-cible (num_nonnulls)', () => {
+    const migration = fs.readFileSync(
+      path.join(ROOT, 'migrations', '156_physical_offers_and_neutral_inquiries.sql'), 'utf8'
+    );
+    expect(migration).toMatch(/CHECK\s*\(\s*num_nonnulls\(service_id,\s*physical_offer_id\)\s*=\s*1\s*\)/i);
+    // offer_type / offer_id (association polymorphe rejetée) ne doit jamais
+    // apparaître comme une VRAIE colonne SQL — seulement en commentaire
+    // explicatif (pourquoi ce modèle a été écarté). On cible une déclaration
+    // réelle (nom de colonne suivi d'un type), pas n'importe quelle occurrence
+    // du mot dans un commentaire.
+    expect(migration).not.toMatch(/\boffer_type\s+(text|uuid|varchar)/i);
   });
 
   test('les deux manifests déclarent explicitement status=staging (pas production) tant que la Vague 2 n\'a pas eu lieu', () => {

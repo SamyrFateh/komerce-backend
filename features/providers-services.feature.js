@@ -47,9 +47,16 @@ module.exports = {
   perimeter: {
     in: [
       'table providers (identité, contact, market, statut pending|active|suspended)',
-      'table services (proposition d\'un provider, exposition DISABLED par défaut)',
-      'table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation)',
-      'isServiceExposable() — le statut provider gouverne toujours l\'exposition d\'un service',
+      'table services (prestation d\'un provider, exposition DISABLED par défaut)',
+      'table physical_offers (produit physique réellement proposé par un ' +
+        'provider — ex. samboussas — table SŒUR de services, jamais la même ' +
+        'table, même patron d\'exposition — Vague 2 D1)',
+      'table inquiries (cycle sent -> answered -> accepted|declined, jamais ' +
+        'une réservation ; porte sur EXACTEMENT une cible, service_id XOR ' +
+        'physical_offer_id, contrainte DB inquiries_exactly_one_target — ' +
+        'jamais offer_type/offer_id, association polymorphe rejetée)',
+      'isServiceExposable() / isPhysicalOfferExposable() — le statut ' +
+        'provider gouverne toujours l\'exposition, quelle que soit la cible',
     ],
     out: [
       'authentification provider (pas de users / user_role — identité par ' +
@@ -61,8 +68,11 @@ module.exports = {
         'vers quelqu\'un qui n\'est pas Komerce)',
       'market_offer / multi-offres / ranking (aucune deuxième origine ' +
         'commerciale à ce stade)',
+      'god-table Listing/Offer unifiée (physical_offers reste une table ' +
+        'distincte de services, jamais un champ discriminant kind — ' +
+        'RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D)',
       'prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)',
-      'toute exposition Boutique/Discovery (Vague 2)',
+      'toute exposition Boutique/Discovery (Vague 2, lots D3+)',
     ],
   },
 
@@ -81,6 +91,7 @@ module.exports = {
     tables: [
       'providers: RW',
       'services: RW',
+      'physical_offers: RW',
       'inquiries: RW',
       'markets: R',
     ],
@@ -114,6 +125,15 @@ module.exports = {
     { statement: 'un service n\'est exposable que si lui-même actif, exposition ' +
       'activée, ET son provider actif — le statut provider prime toujours',
       test: 'tests/unit/providers-service.test.js' },
+    { statement: 'une offre physique (physical_offers) suit exactement les mêmes ' +
+      'garanties qu\'un service : créée seulement pour un provider actif, ' +
+      'exposable seulement si elle-même active, exposition activée, ET son ' +
+      'provider actif',
+      test: 'tests/unit/providers-service.test.js' },
+    { statement: 'une inquiry porte sur EXACTEMENT une cible — service_id XOR ' +
+      'physical_offer_id, jamais les deux, jamais aucune (contrainte DB ' +
+      'inquiries_exactly_one_target, doublée en validation applicative)',
+      test: 'tests/unit/providers-service.test.js' },
     { statement: 'une inquiry ne représente jamais une ressource engagée avant ' +
       'la décision finale (accepted|declined) — jamais un objet réservation',
       test: 'tests/unit/providers-service.test.js' },
@@ -126,5 +146,10 @@ module.exports = {
   // 2026-08-28 — création (PR B, Vague 1 Shadow). Second nouveau domaine
   // après local-stock (PR A) — voir IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md
   // §Providers-services pour l'arbitrage complet.
+  // 2026-08-28 — Vague 2 D1 : ajout physical_offers (table sœur de services)
+  // et adaptation de inquiries (double FK nullable + CHECK exactement-une-
+  // non-nulle) — voir RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D pour
+  // l'arbitrage owner (4 signaux sur 5 de FEATURE_DOCTRINE.md pointent vers
+  // un rattachement à cette feature, pas une nouvelle feature).
 
 };

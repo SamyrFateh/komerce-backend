@@ -42,6 +42,7 @@ const MARKET_ID   = '11111111-1111-1111-1111-111111111111';
 const PROVIDER_ID = '22222222-2222-2222-2222-222222222222';
 const SERVICE_ID  = '33333333-3333-3333-3333-333333333333';
 const INQUIRY_ID  = '44444444-4444-4444-4444-444444444444';
+const PHYSICAL_OFFER_ID = '55555555-5555-5555-5555-555555555555';
 
 // ─── createProvider ────────────────────────────────────────────────────────
 
@@ -194,6 +195,83 @@ describe('isServiceExposable — les 3 conditions doivent TOUTES tenir', () => {
   });
 });
 
+// ─── createPhysicalOffer ─────────────────────────────────────────────────────
+
+describe('createPhysicalOffer — table sœur de createService, mêmes garanties', () => {
+  it('lève si le provider est introuvable', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // getProvider
+    await expect(
+      svc.createPhysicalOffer({ providerId: PROVIDER_ID, title: 'Samboussas mariage', marketId: MARKET_ID })
+    ).rejects.toThrow(/provider introuvable/);
+  });
+
+  it('lève si le provider n\'est pas actif — même garde que createService', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'pending' }] });
+    await expect(
+      svc.createPhysicalOffer({ providerId: PROVIDER_ID, title: 'Samboussas mariage', marketId: MARKET_ID })
+    ).rejects.toThrow(/provider non actif/);
+  });
+
+  it('lève si le marché est introuvable ou inactif', async () => {
+    const svc = loadService();
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] })
+      .mockResolvedValueOnce({ rows: [] });
+    await expect(
+      svc.createPhysicalOffer({ providerId: PROVIDER_ID, title: 'Samboussas mariage', marketId: MARKET_ID })
+    ).rejects.toThrow(/marché introuvable/);
+  });
+
+  it('nominal : commercial_exposure toujours DISABLED à la création (cas samboussas de référence)', async () => {
+    const svc = loadService();
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] })
+      .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: PHYSICAL_OFFER_ID, provider_id: PROVIDER_ID, title: 'Samboussas mariage',
+        description: 'Plateau de 50, préparation sur commande', market_id: MARKET_ID,
+        status: 'draft', commercial_exposure: 'DISABLED',
+      }] });
+
+    const result = await svc.createPhysicalOffer({
+      providerId: PROVIDER_ID, title: 'Samboussas mariage',
+      description: 'Plateau de 50, préparation sur commande', marketId: MARKET_ID,
+    });
+    expect(result.commercial_exposure).toBe('DISABLED');
+    const [sql] = mockQuery.mock.calls[2];
+    expect(sql).toMatch(/INSERT INTO physical_offers/);
+    expect(sql).toMatch(/'DISABLED'/);
+  });
+});
+
+// ─── isPhysicalOfferExposable ─────────────────────────────────────────────────
+
+describe('isPhysicalOfferExposable — les 3 conditions doivent TOUTES tenir', () => {
+  it('offre inconnue -> false', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(false);
+  });
+
+  it('offre active + exposure ENABLED + provider actif -> true', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active' }],
+    });
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(true);
+  });
+
+  it('offre active + exposure ENABLED mais provider suspendu -> false (le provider prime, même invariant que pour un service)', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'suspended' }],
+    });
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).toBe(false);
+  });
+});
+
 // ─── createInquiry ───────────────────────────────────────────────────────────
 
 describe('createInquiry — une demande, jamais une réservation', () => {
@@ -219,6 +297,64 @@ describe('createInquiry — une demande, jamais une réservation', () => {
     });
     expect(result.status).toBe('sent');
     expect(result.requested_window).toBe('demain matin');
+  });
+
+  // Demande produit 2026-08-28 (micro-arbitrage, double FK + CHECK plutôt
+  // qu'offer_type/offer_id) — même invariant que la contrainte DB
+  // inquiries_exactly_one_target, vérifié ici en validation applicative
+  // (échoue tôt, message clair) avant même d'atteindre Postgres.
+  describe('exactement une cible — miroir applicatif de inquiries_exactly_one_target', () => {
+    it('lève si aucune cible n\'est fournie', async () => {
+      const svc = loadService();
+      await expect(
+        svc.createInquiry({ requesterPhone: '+269...' })
+      ).rejects.toThrow(/exactement une cible/);
+    });
+
+    it('lève si les deux cibles sont fournies', async () => {
+      const svc = loadService();
+      await expect(
+        svc.createInquiry({ serviceId: SERVICE_ID, physicalOfferId: PHYSICAL_OFFER_ID, requesterPhone: '+269...' })
+      ).rejects.toThrow(/exactement une cible/);
+    });
+
+    it('lève si requester_phone manque, même avec une cible valide', async () => {
+      const svc = loadService();
+      await expect(
+        svc.createInquiry({ physicalOfferId: PHYSICAL_OFFER_ID })
+      ).rejects.toThrow(/requester_phone/);
+    });
+
+    it('lève si l\'offre physique est introuvable', async () => {
+      const svc = loadService();
+      mockQuery.mockResolvedValueOnce({ rows: [] }); // getPhysicalOffer
+      await expect(
+        svc.createInquiry({ physicalOfferId: PHYSICAL_OFFER_ID, requesterPhone: '+269...' })
+      ).rejects.toThrow(/offre physique introuvable/);
+    });
+
+    it('nominal : cas samboussas — physicalOfferId seul, service_id reste null', async () => {
+      const svc = loadService();
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: PHYSICAL_OFFER_ID }] }) // getPhysicalOffer
+        .mockResolvedValueOnce({ rows: [{
+          id: INQUIRY_ID, service_id: null, physical_offer_id: PHYSICAL_OFFER_ID,
+          requester_phone: '+269 111 22 33', requested_window: 'pour le 14 septembre, plateau x2',
+          status: 'sent',
+        }] });
+
+      const result = await svc.createInquiry({
+        physicalOfferId: PHYSICAL_OFFER_ID, requesterPhone: '+269 111 22 33',
+        requestedWindow: 'pour le 14 septembre, plateau x2',
+      });
+      expect(result.service_id).toBeNull();
+      expect(result.physical_offer_id).toBe(PHYSICAL_OFFER_ID);
+      expect(result.status).toBe('sent');
+      const [sql, params] = mockQuery.mock.calls[1];
+      expect(sql).toMatch(/INSERT INTO inquiries/);
+      expect(params[0]).toBeNull(); // service_id
+      expect(params[1]).toBe(PHYSICAL_OFFER_ID);
+    });
   });
 });
 
