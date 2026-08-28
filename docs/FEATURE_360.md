@@ -52,7 +52,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, auth-identity, business-rules, documents, incident-management, infrastructure, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, dashboard, infrastructure, logistics, orders | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models, store_credits | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, recommendations, shared-cart, wallet | 0 |
-| providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, providers, services | infrastructure, market | _aucune_ | 0 |
+| providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | infrastructure, market | _aucune_ | 0 |
 | purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | product_suppliers, purchase_orders, suppliers | auth, catalog, infrastructure, logistics, notifications, orders | dashboard, logistics, orders, payments, platform-ops | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, logistics, orders, platform-ops | infrastructure, shared-cart | 0 |
 | refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | refunds | documents, infrastructure, orders, wallet | documents, economic-engine, logistics, orders, payments | 0 |
@@ -1420,16 +1420,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - table providers (identité, contact, market, statut pending|active|suspended)
-  - table services (proposition d'un provider, exposition DISABLED par défaut)
-  - table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation)
-  - isServiceExposable() — le statut provider gouverne toujours l'exposition d'un service
+  - table services (prestation d'un provider, exposition DISABLED par défaut)
+  - table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table SŒUR de services, jamais la même table, même patron d'exposition — Vague 2 D1)
+  - table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation ; porte sur EXACTEMENT une cible, service_id XOR physical_offer_id, contrainte DB inquiries_exactly_one_target — jamais offer_type/offer_id, association polymorphe rejetée)
+  - isServiceExposable() / isPhysicalOfferExposable() — le statut provider gouverne toujours l'exposition, quelle que soit la cible
 - _out_ :
   - authentification provider (pas de users / user_role — identité par téléphone, contact réel hors app à ce stade)
   - scheduler / créneaux structurés (requested_window/proposed_window sont du texte libre, jamais un slot — RECHALLENGE_MODELE_MINIMAL §5/§7)
   - paiement, commission, settlement, provider wallet (le vrai chantier — ARBITRAGE_RECHALLENGE_SONNET.md : le jour où de l'argent doit sortir vers quelqu'un qui n'est pas Komerce)
   - market_offer / multi-offres / ranking (aucune deuxième origine commerciale à ce stade)
+  - god-table Listing/Offer unifiée (physical_offers reste une table distincte de services, jamais un champ discriminant kind — RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D)
   - prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)
-  - toute exposition Boutique/Discovery (Vague 2)
+  - toute exposition Boutique/Discovery (Vague 2, lots D3+)
 
 **Authority** : backend-core — tout changement du cycle demande/confirmation doit être validé par le propriétaire de providers-service.js
 
@@ -1438,8 +1440,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
 
-**Owns** : `inquiries`, `providers`, `services`
+**Owns** : `inquiries`, `physical_offers`, `providers`, `services`
 
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 

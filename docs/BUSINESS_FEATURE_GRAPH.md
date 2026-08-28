@@ -482,8 +482,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 1
 - tests: 1
-- tables owned (lifecycle): 3 — `providers`, `services`, `inquiries`
-- tables written: 3
+- tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
+- tables written: 4
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — market, infrastructure
@@ -667,6 +667,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `parcels` | `logistics` | declared-table-owner | logistics, platform-ops | auth-identity, customs, dashboard, documents, economic-engine, incident-management, inventory, notifications, orders, payments, recommendations |
 | `partners` | `dashboard` | single-writer | dashboard | — |
 | `paypal_events_processed` | `payments` | single-writer | payments | — |
+| `physical_offers` | `providers-services` | single-writer | providers-services | — |
 | `pickup_print_tokens` | `logistics` | declared-table-owner | infrastructure, logistics | — |
 | `pickup_reveal_codes` | `logistics` | declared-table-owner | infrastructure, logistics | — |
 | `pickup_verify_attempts` | `logistics` | single-writer | logistics | — |
