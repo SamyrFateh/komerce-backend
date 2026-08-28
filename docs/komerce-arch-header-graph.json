@@ -20,13 +20,13 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1029,
-    "edges": 5258,
-    "dbTables": 130,
+    "graphNodes": 1023,
+    "edges": 5256,
+    "dbTables": 124,
     "doctrines": 281,
     "impactAreas": 165,
     "unresolvedCodeEdges": 541,
-    "dbWriteViaOverlapWarnings": 1,
+    "dbWriteViaOverlapWarnings": 2,
     "multiWriterTables": 62
   },
   "byDomain": {
@@ -1006,7 +1006,9 @@
         "routes admin scoping un market_id (branchement futur",
         "hors M2)"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "operator_market_scopes"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -6563,6 +6565,7 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
+        "markets",
         "order_items",
         "orders",
         "products",
@@ -6855,14 +6858,9 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "webauthn_credentials",
-        "webauthn_challenges",
-        "users (via services)"
+        "users"
       ],
-      "dbWrite": [
-        "webauthn_credentials",
-        "webauthn_challenges (via services)"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
         "challenge_single_use",
@@ -8167,10 +8165,7 @@
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
-      "dbRead": [
-        "local_stock",
-        "local_stock_allocations (via le service)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -9721,11 +9716,7 @@
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
-      "dbRead": [
-        "services",
-        "physical_offers",
-        "providers (via le service)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -10564,7 +10555,9 @@
       "usedBy": [
         "railway-runtime"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "currency_parities"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -12797,7 +12790,11 @@
         "logistics.js",
         "workspaces.js (services/dashboard-metrics/*)"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "cash_collections",
+        "orders",
+        "parcels"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -14859,6 +14856,7 @@
         "order_items",
         "parcels",
         "parcel_items",
+        "products",
         "relais",
         "users",
         "inventory_items"
@@ -15062,9 +15060,7 @@
         "utils/currency.js"
       ],
       "usedBy": [],
-      "dbRead": [
-        "markets (via utils/currency.js)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -18395,6 +18391,7 @@
       "dbRead": [
         "orders",
         "parcels",
+        "parcel_items",
         "users",
         "relais",
         "scan_events",
@@ -18402,7 +18399,7 @@
         "customs_shipment_parcels"
       ],
       "dbWrite": [
-        "customs_shipments.market_id"
+        "customs_shipments"
       ],
       "dbWriteVia": [
         {
@@ -18440,7 +18437,8 @@
         "customs",
         "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-08",
+      "dbWriteViaOverlapWarning": "services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments"
     },
     {
       "id": "services/signal-admin-service.js",
@@ -21447,6 +21445,11 @@
       "table": "decision_signal_global_access_grants"
     },
     {
+      "id": "db:operator_market_scopes",
+      "type": "db-table",
+      "table": "operator_market_scopes"
+    },
+    {
       "id": "db:pricing_global_access_grants",
       "type": "db-table",
       "table": "pricing_global_access_grants"
@@ -21460,11 +21463,6 @@
       "id": "db:orders",
       "type": "db-table",
       "table": "orders"
-    },
-    {
-      "id": "db:operator_market_scopes",
-      "type": "db-table",
-      "table": "operator_market_scopes"
     },
     {
       "id": "db:markets",
@@ -21652,26 +21650,6 @@
       "table": "incidents"
     },
     {
-      "id": "db:webauthn_credentials",
-      "type": "db-table",
-      "table": "webauthn_credentials"
-    },
-    {
-      "id": "db:webauthn_challenges",
-      "type": "db-table",
-      "table": "webauthn_challenges"
-    },
-    {
-      "id": "db:users (via services)",
-      "type": "db-table",
-      "table": "users (via services)"
-    },
-    {
-      "id": "db:webauthn_challenges (via services)",
-      "type": "db-table",
-      "table": "webauthn_challenges (via services)"
-    },
-    {
       "id": "db:loyalty_tiers",
       "type": "db-table",
       "table": "loyalty_tiers"
@@ -21720,16 +21698,6 @@
       "id": "db:order_incidents",
       "type": "db-table",
       "table": "order_incidents"
-    },
-    {
-      "id": "db:local_stock",
-      "type": "db-table",
-      "table": "local_stock"
-    },
-    {
-      "id": "db:local_stock_allocations (via le service)",
-      "type": "db-table",
-      "table": "local_stock_allocations (via le service)"
     },
     {
       "id": "db:shipments",
@@ -21802,21 +21770,6 @@
       "table": "cost_benchmarks"
     },
     {
-      "id": "db:services",
-      "type": "db-table",
-      "table": "services"
-    },
-    {
-      "id": "db:physical_offers",
-      "type": "db-table",
-      "table": "physical_offers"
-    },
-    {
-      "id": "db:providers (via le service)",
-      "type": "db-table",
-      "table": "providers (via le service)"
-    },
-    {
       "id": "db:product_suppliers",
       "type": "db-table",
       "table": "product_suppliers"
@@ -21860,6 +21813,11 @@
       "id": "db:v_unsold_pipeline",
       "type": "db-table",
       "table": "v_unsold_pipeline"
+    },
+    {
+      "id": "db:currency_parities",
+      "type": "db-table",
+      "table": "currency_parities"
     },
     {
       "id": "db:alerts",
@@ -21917,6 +21875,11 @@
       "table": "product_sku_media"
     },
     {
+      "id": "db:webauthn_credentials",
+      "type": "db-table",
+      "table": "webauthn_credentials"
+    },
+    {
       "id": "db:cost_components",
       "type": "db-table",
       "table": "cost_components"
@@ -21947,14 +21910,14 @@
       "table": "inventory_items"
     },
     {
+      "id": "db:local_stock",
+      "type": "db-table",
+      "table": "local_stock"
+    },
+    {
       "id": "db:local_stock_allocations",
       "type": "db-table",
       "table": "local_stock_allocations"
-    },
-    {
-      "id": "db:markets (via utils/currency.js)",
-      "type": "db-table",
-      "table": "markets (via utils/currency.js)"
     },
     {
       "id": "db:suppliers_stats",
@@ -21997,6 +21960,16 @@
       "table": "providers"
     },
     {
+      "id": "db:services",
+      "type": "db-table",
+      "table": "services"
+    },
+    {
+      "id": "db:physical_offers",
+      "type": "db-table",
+      "table": "physical_offers"
+    },
+    {
       "id": "db:inquiries",
       "type": "db-table",
       "table": "inquiries"
@@ -22012,19 +21985,14 @@
       "table": "shared_cart_saved_access"
     },
     {
-      "id": "db:customs_shipments.market_id",
-      "type": "db-table",
-      "table": "customs_shipments.market_id"
-    },
-    {
       "id": "db:supplier_catalog_import_rejections",
       "type": "db-table",
       "table": "supplier_catalog_import_rejections"
     },
     {
-      "id": "db:currency_parities",
+      "id": "db:webauthn_challenges",
       "type": "db-table",
-      "table": "currency_parities"
+      "table": "webauthn_challenges"
     },
     {
       "id": "doctrine:routes_canoniques",
@@ -25709,6 +25677,12 @@
       "to": "middleware/require-market-scope.js",
       "type": "uses",
       "label": "hors M2)"
+    },
+    {
+      "from": "middleware/require-market-scope.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
     },
     {
       "from": "middleware/require-market-scope.js",
@@ -33447,6 +33421,12 @@
     },
     {
       "from": "routes/admin/orders.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin/orders.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -33938,33 +33918,9 @@
     },
     {
       "from": "routes/auth-passkey.js",
-      "to": "db:webauthn_credentials",
+      "to": "db:users",
       "type": "db-read",
-      "label": "webauthn_credentials"
-    },
-    {
-      "from": "routes/auth-passkey.js",
-      "to": "db:webauthn_challenges",
-      "type": "db-read",
-      "label": "webauthn_challenges"
-    },
-    {
-      "from": "routes/auth-passkey.js",
-      "to": "db:users (via services)",
-      "type": "db-read",
-      "label": "users (via services)"
-    },
-    {
-      "from": "routes/auth-passkey.js",
-      "to": "db:webauthn_credentials",
-      "type": "db-write",
-      "label": "webauthn_credentials"
-    },
-    {
-      "from": "routes/auth-passkey.js",
-      "to": "db:webauthn_challenges (via services)",
-      "type": "db-write",
-      "label": "webauthn_challenges (via services)"
+      "label": "users"
     },
     {
       "from": "routes/auth-passkey.js",
@@ -35654,18 +35610,6 @@
       "to": "routes/local-stock.js",
       "type": "uses",
       "label": "shadow : jamais monté dans bootstrap/api-routes.js)"
-    },
-    {
-      "from": "routes/local-stock.js",
-      "to": "db:local_stock",
-      "type": "db-read",
-      "label": "local_stock"
-    },
-    {
-      "from": "routes/local-stock.js",
-      "to": "db:local_stock_allocations (via le service)",
-      "type": "db-read",
-      "label": "local_stock_allocations (via le service)"
     },
     {
       "from": "routes/local-stock.js",
@@ -37996,24 +37940,6 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db:services",
-      "type": "db-read",
-      "label": "services"
-    },
-    {
-      "from": "routes/providers-services.js",
-      "to": "db:physical_offers",
-      "type": "db-read",
-      "label": "physical_offers"
-    },
-    {
-      "from": "routes/providers-services.js",
-      "to": "db:providers (via le service)",
-      "type": "db-read",
-      "label": "providers (via le service)"
-    },
-    {
-      "from": "routes/providers-services.js",
       "to": "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
       "type": "doctrine",
       "label": "RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de"
@@ -39227,6 +39153,12 @@
       "to": "server.js",
       "type": "uses",
       "label": "railway-runtime"
+    },
+    {
+      "from": "server.js",
+      "to": "db:currency_parities",
+      "type": "db-read",
+      "label": "currency_parities"
     },
     {
       "from": "server.js",
@@ -42443,6 +42375,24 @@
       "to": "services/dashboard-metrics/_helpers.js",
       "type": "uses",
       "label": "workspaces.js (services/dashboard-metrics/*)"
+    },
+    {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
     },
     {
       "from": "services/dashboard-metrics/_helpers.js",
@@ -45767,6 +45717,12 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "db:relais",
       "type": "db-read",
       "label": "relais"
@@ -46207,12 +46163,6 @@
       "to": "utils/currency.js",
       "type": "depends",
       "label": "utils/currency.js"
-    },
-    {
-      "from": "services/order-display-snapshot.js",
-      "to": "db:markets (via utils/currency.js)",
-      "type": "db-read",
-      "label": "markets (via utils/currency.js)"
     },
     {
       "from": "services/order-display-snapshot.js",
@@ -51333,6 +51283,12 @@
     },
     {
       "from": "services/shipping-customs-workspace.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -51363,9 +51319,9 @@
     },
     {
       "from": "services/shipping-customs-workspace.js",
-      "to": "db:customs_shipments.market_id",
+      "to": "db:customs_shipments",
       "type": "db-write",
-      "label": "customs_shipments.market_id"
+      "label": "customs_shipments"
     },
     {
       "from": "services/shipping-customs-workspace.js",
@@ -56927,7 +56883,9 @@
         "hors M2)"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "operator_market_scopes"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -56938,6 +56896,7 @@
         "admin-authorization"
       ],
       "mustCheck": [
+        "db:operator_market_scopes",
         "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
         "impact:admin-authorization",
         "impact:market"
@@ -62473,6 +62432,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "order_items",
         "orders",
         "products",
@@ -62492,6 +62452,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
         "db:order_items",
         "db:orders",
         "db:products",
@@ -62771,14 +62732,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "webauthn_credentials",
-        "webauthn_challenges",
-        "users (via services)"
+        "users"
       ],
-      "dbWrite": [
-        "webauthn_credentials",
-        "webauthn_challenges (via services)"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "no_homemade_crypto",
@@ -62791,10 +62747,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:users (via services)",
-        "db:webauthn_challenges",
-        "db:webauthn_challenges (via services)",
-        "db:webauthn_credentials",
+        "db:users",
         "doctrine:auth6_authenticator_management",
         "doctrine:no_homemade_crypto",
         "doctrine:session_via_auth8_helper",
@@ -63993,10 +63946,7 @@
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "local_stock",
-        "local_stock_allocations (via le service)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -64006,8 +63956,6 @@
         "local-stock"
       ],
       "mustCheck": [
-        "db:local_stock",
-        "db:local_stock_allocations (via le service)",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:local-stock",
         "services/local-stock-service.js"
@@ -65520,11 +65468,7 @@
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "services",
-        "physical_offers",
-        "providers (via le service)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -65534,9 +65478,6 @@
         "providers-services"
       ],
       "mustCheck": [
-        "db:physical_offers",
-        "db:providers (via le service)",
-        "db:services",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:providers-services",
         "services/providers-service.js"
@@ -66336,7 +66277,9 @@
         "railway-runtime"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "currency_parities"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -66361,6 +66304,7 @@
         "bootstrap/security.js",
         "bootstrap/server-lifecycle.js",
         "bootstrap/startup-migrations.js",
+        "db:currency_parities",
         "doctrine:raw_body_webhook_intact",
         "doctrine:routes_canoniques",
         "doctrine:static_boutique_served",
@@ -68486,7 +68430,11 @@
         "workspaces.js (services/dashboard-metrics/*)"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "cash_collections",
+        "orders",
+        "parcels"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -68497,6 +68445,9 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:cash_collections",
+        "db:orders",
+        "db:parcels",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -70531,6 +70482,7 @@
         "order_items",
         "parcels",
         "parcel_items",
+        "products",
         "relais",
         "users",
         "inventory_items"
@@ -70762,9 +70714,7 @@
       ],
       "directUsedBy": [],
       "ownedFiles": [],
-      "dbRead": [
-        "markets (via utils/currency.js)"
-      ],
+      "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -70776,7 +70726,6 @@
         "checkout"
       ],
       "mustCheck": [
-        "db:markets (via utils/currency.js)",
         "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026",
         "doctrine:P3",
         "impact:checkout",
@@ -73994,6 +73943,7 @@
       "dbRead": [
         "orders",
         "parcels",
+        "parcel_items",
         "users",
         "relais",
         "scan_events",
@@ -74001,7 +73951,7 @@
         "customs_shipment_parcels"
       ],
       "dbWrite": [
-        "customs_shipments.market_id"
+        "customs_shipments"
       ],
       "dbWriteVia": [
         {
@@ -74039,10 +73989,10 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
-        "db:customs_shipments.market_id",
         "db:incidents",
         "db:order_item_real_cost_allocations",
         "db:orders",
+        "db:parcel_items",
         "db:parcels",
         "db:relais",
         "db:scan_events",
@@ -76940,7 +76890,8 @@
     }
   },
   "dbWriteViaOverlapWarnings": [
-    "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates"
+    "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates",
+    "services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments"
   ],
   "multiWriterTables": [
     {
@@ -77260,6 +77211,15 @@
       ]
     },
     {
+      "table": "customs_shipments",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/customs-shipment-service.js",
+        "services/shipping-customs-workspace.js"
+      ]
+    },
+    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 3,
       "writers": [
@@ -77332,15 +77292,6 @@
       ]
     },
     {
-      "table": "webauthn_credentials",
-      "writerCount": 3,
-      "writers": [
-        "routes/auth-passkey.js",
-        "services/webauthn-management-service.js",
-        "services/webauthn-service.js"
-      ]
-    },
-    {
       "table": "business_rules",
       "writerCount": 2,
       "writers": [
@@ -77406,14 +77357,6 @@
     },
     {
       "table": "customs_shipment_parcels",
-      "writerCount": 2,
-      "writers": [
-        "routes/admin-customs-shipments.js",
-        "services/customs-shipment-service.js"
-      ]
-    },
-    {
-      "table": "customs_shipments",
       "writerCount": 2,
       "writers": [
         "routes/admin-customs-shipments.js",
@@ -77578,6 +77521,14 @@
       "writers": [
         "routes/purchasing.js",
         "services/purchasing-admin-service.js"
+      ]
+    },
+    {
+      "table": "webauthn_credentials",
+      "writerCount": 2,
+      "writers": [
+        "services/webauthn-management-service.js",
+        "services/webauthn-service.js"
       ]
     }
   ],

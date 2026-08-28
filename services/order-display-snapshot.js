@@ -7,7 +7,7 @@
  * @inputs        totalKmf, displayMarketCode, relaisMarketId
  * @outputs       { amount, currency, meta }
  * @depends       utils/currency.js
- * @db-read       markets (via utils/currency.js)
+ * @db-read       none
  * @db-write      none
  * @doctrine      GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026, P3
  * @impact-areas  orders, checkout

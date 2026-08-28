@@ -8,7 +8,7 @@
  * @outputs       market_scoped_operations_work_queue, delegated_domain_mutations
  * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       orders, order_items, parcels, parcel_items, relais, users, inventory_items
+ * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items
  * @db-write      order_comments
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-write-via:auto-parcel parcel_items, parcels
