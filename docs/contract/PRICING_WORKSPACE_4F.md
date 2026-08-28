@@ -23,7 +23,14 @@ Il absorbe les besoins légitimes de :
 - alias build : `/admin-next/workspaces/pricing`
 - API : `/api/admin/workspaces/pricing`
 
-Les vues Legacy restent disponibles pendant la preuve. Aucun cutover destructif dans LOT 4F.
+LOT 4J ferme uniquement les anciens **points d’entrée** déjà prouvés couverts par 4F :
+
+- `/admin/pricing` ;
+- `/admin/pricing-workshop` ;
+- `/admin/pricing-strategy` ;
+- `/admin/economic-flow`.
+
+Sans query de rollback, ils redirigent vers `/admin/workspaces/pricing`. `?legacy=1` sert encore Legacy 1 au même pathname pendant la fenêtre de cutover. `CostingView`, `EconomicView`, `SettingsView` et `SimulatorView` restent hors de cette bascule tant que leur absorption n’est pas prouvée.
 
 ## Pricing global, pas market-scoped
 
