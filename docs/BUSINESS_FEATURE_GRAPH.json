@@ -9056,7 +9056,7 @@
         "category": "services",
         "declared": "services/providers-service.js",
         "resolvedPath": "services/providers-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "providers-services",
@@ -30727,8 +30727,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 359,
-        "technicalNodesOwned": 359,
+        "technicalNodesTotal": 360,
+        "technicalNodesOwned": 360,
         "technicalOrphans": 0
       },
       "dash": {
