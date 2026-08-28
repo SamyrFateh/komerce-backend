@@ -78,6 +78,19 @@ Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant l
 
 Le détail produit reste `/admin/products/:productRef` → Product 360 Canonical.
 
+## Extension LOT 4L — convergence Sourcing
+
+Les deux points d’entrée strictement Sourcing ne conservent plus deux runtimes produit distincts :
+
+| Ancien point d’entrée | Destination Canonical |
+|---|---|
+| `/admin/sourcing` | `/admin/workspaces/sourcing` |
+| `/admin/sourcing-scanner` | `/admin/workspaces/sourcing` |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback. Cette query ne modifie aucune autorité backend.
+
+`/admin/suppliers` reste Legacy : la vue historique couvre des familles de partenaires au-delà du seul `partner_type = sourcing` possédé par le Workspace 4E.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -86,7 +99,7 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Inventaire
 - Expéditions / Transitaire
 - Douane
-- Sourcing
+- Partenaires multi-familles / Suppliers
 - Clients / Entity 360
 - Factures / Comptabilité
 - Action Center
