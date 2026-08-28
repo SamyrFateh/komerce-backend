@@ -52,6 +52,7 @@ const log = require('../utils/logger').child({ module: 'order-status-machine' })
 const { adjustStock } = require('./product-admin-service');
 const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
 const clientNotifications = require('./client-notification-service');
+const { consumeAllocationsForOrder, releaseAllocationsForOrder } = require('./local-stock-service');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -308,6 +309,12 @@ async function transitionOrderStatus({
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND ${paidGuard}`,
       [orderId]
     );
+
+    // Vague 2 D2 — stock local (local-stock-service.js), totalement
+    // indépendant de products.stock/product_skus.stock (§5b plus bas).
+    // Idempotent par construction (WHERE consumed_at IS NULL) — un webhook
+    // rejoué ne trouve plus rien à consommer la deuxième fois.
+    await consumeAllocationsForOrder(q, orderId);
   }
 
   // ── 5b. Auto-effects: cancelled → wallet reversal + stock restore ────────
@@ -320,6 +327,18 @@ async function transitionOrderStatus({
       stockItemsRestored: 0,
       purchaseOrders: null,
     };
+
+    // Vague 2 D2 — stock local (local-stock-service.js), totalement
+    // indépendant du "Stock restore" ci-dessous (products.stock/
+    // product_skus.stock). Jamais conditionné par stockWasDecremented :
+    // ce flag concerne un système de stock différent. Idempotent par
+    // construction — une double annulation (ou un état déjà consommé)
+    // ne libère rien de plus la deuxième fois. Couvre les 3 sources
+    // d'annulation existantes (utilisateur/admin via routes/orders/
+    // cancel.js, chaos simulateur, abandon cash automatique via
+    // cash-reminder-service.js) sans aucun code nouveau dans ces
+    // appelants — les trois passent déjà par transitionOrderStatus.
+    await releaseAllocationsForOrder(q, orderId);
 
     // Wallet reversal (idempotent via idempotency_key)
     const { rows: [orderInfo] } = await q.query(

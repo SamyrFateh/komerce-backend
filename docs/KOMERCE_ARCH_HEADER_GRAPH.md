@@ -13,9 +13,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1019
-- Edges: 5207
-- DB tables: 126
+- Graph nodes: 1021
+- Edges: 5212
+- DB tables: 128
 - Doctrines: 279
 - Impact areas: 165
 - Unresolved code edges: 531
@@ -516,6 +516,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/invoices.js -> invoices
 - WRITE services/invoice-service.js -> invoices
 - WRITE services/order-payment-confirmation.js -> invoices
+- WRITE services/local-stock-service.js -> local_stock_allocations
 - WRITE services/local-stock-service.js -> local_stock
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
@@ -555,7 +556,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
-- WRITE routes/orders/create.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -733,7 +733,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Unresolved Code Edges
 
-- uses: (aucun — shadow -> services/local-stock-service.js ((aucun — shadow)
 - uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
@@ -741,7 +740,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
-- uses: appel direct scripts/tests dans cette PR) -> services/local-stock-service.js (appel direct scripts/tests dans cette PR))
 - uses: appel direct scripts/tests dans cette PR) -> services/providers-service.js (appel direct scripts/tests dans cette PR))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
@@ -796,6 +794,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: ne migrent pas les affichages *_kmf existants (P2) -> utils/currency.js (ne migrent pas les affichages *_kmf existants (P2))
 - uses: non câblé — M5/P1 livrent l'outil -> utils/currency.js (non câblé — M5/P1 livrent l'outil)
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
+- uses: order-status-machine.js (consume à confirmed -> services/local-stock-service.js (order-status-machine.js (consume à confirmed)
 - uses: OTP routes -> utils/auth-session.js (OTP routes)
 - uses: passkey management/enrollment -> middleware/require-recent-auth.js (passkey management/enrollment)
 - uses: passkey routes -> utils/auth-session.js (passkey routes)
@@ -828,6 +827,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: public/boutique/test-modal-view-model.html -> public/boutique/js/test-modal-view-model-redirect.js (public/boutique/test-modal-view-model.html)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
+- uses: release à -> services/local-stock-service.js (release à)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - uses: routes admin scoping un market_id (branchement futur -> middleware/require-market-scope.js (routes admin scoping un market_id (branchement futur)

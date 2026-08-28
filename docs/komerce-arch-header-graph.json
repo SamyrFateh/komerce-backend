@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1019,
-    "edges": 5207,
-    "dbTables": 126,
+    "graphNodes": 1021,
+    "edges": 5212,
+    "dbTables": 128,
     "doctrines": 279,
     "impactAreas": 165,
     "unresolvedCodeEdges": 531,
@@ -14034,33 +14034,37 @@
       ],
       "outputs": [
         "local_stock_row",
-        "availability_projection"
+        "availability_projection",
+        "allocation_row"
       ],
       "depends": [
         "db"
       ],
       "usedBy": [
-        "(aucun — shadow",
-        "appel direct scripts/tests dans cette PR)"
+        "order-status-machine.js (consume à confirmed",
+        "release à"
       ],
       "dbRead": [
         "local_stock",
+        "local_stock_allocations",
         "products",
         "markets"
       ],
       "dbWrite": [
-        "local_stock"
+        "local_stock",
+        "local_stock_allocations"
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "single_statement_sufficient"
+        "multi_statement — allocateForOrderItem/consumeAllocationsForOrder/"
       ],
       "doctrine": [
         "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
         "§4 (capacité"
       ],
       "impactAreas": [
-        "local-stock"
+        "local-stock",
+        "orders"
       ],
       "version": "2026-08"
     },
@@ -16894,6 +16898,7 @@
       "inputs": [
         "provider_id",
         "service_id",
+        "physical_offer_id",
         "inquiry_id",
         "market_id",
         "texte libre"
@@ -16901,6 +16906,7 @@
       "outputs": [
         "provider_row",
         "service_row",
+        "physical_offer_row",
         "inquiry_row"
       ],
       "depends": [
@@ -16913,12 +16919,14 @@
       "dbRead": [
         "providers",
         "services",
+        "physical_offers",
         "inquiries",
         "markets"
       ],
       "dbWrite": [
         "providers",
         "services",
+        "physical_offers",
         "inquiries"
       ],
       "dbWriteVia": [],
@@ -21730,6 +21738,11 @@
       "table": "local_stock"
     },
     {
+      "id": "db:local_stock_allocations",
+      "type": "db-table",
+      "table": "local_stock_allocations"
+    },
+    {
       "id": "db:markets (via utils/currency.js)",
       "type": "db-table",
       "table": "markets (via utils/currency.js)"
@@ -21778,6 +21791,11 @@
       "id": "db:services",
       "type": "db-table",
       "table": "services"
+    },
+    {
+      "id": "db:physical_offers",
+      "type": "db-table",
+      "table": "physical_offers"
     },
     {
       "id": "db:inquiries",
@@ -44254,22 +44272,28 @@
       "label": "db"
     },
     {
-      "from": "(aucun — shadow",
+      "from": "order-status-machine.js (consume à confirmed",
       "to": "services/local-stock-service.js",
       "type": "uses",
-      "label": "(aucun — shadow"
+      "label": "order-status-machine.js (consume à confirmed"
     },
     {
-      "from": "appel direct scripts/tests dans cette PR)",
+      "from": "release à",
       "to": "services/local-stock-service.js",
       "type": "uses",
-      "label": "appel direct scripts/tests dans cette PR)"
+      "label": "release à"
     },
     {
       "from": "services/local-stock-service.js",
       "to": "db:local_stock",
       "type": "db-read",
       "label": "local_stock"
+    },
+    {
+      "from": "services/local-stock-service.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-read",
+      "label": "local_stock_allocations"
     },
     {
       "from": "services/local-stock-service.js",
@@ -44291,6 +44315,12 @@
     },
     {
       "from": "services/local-stock-service.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-write",
+      "label": "local_stock_allocations"
+    },
+    {
+      "from": "services/local-stock-service.js",
       "to": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
       "type": "doctrine",
       "label": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1"
@@ -44306,6 +44336,12 @@
       "to": "impact:local-stock",
       "type": "impact",
       "label": "local-stock"
+    },
+    {
+      "from": "services/local-stock-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
     },
     {
       "from": "services/loyalty-service.js",
@@ -48829,6 +48865,12 @@
     },
     {
       "from": "services/providers-service.js",
+      "to": "db:physical_offers",
+      "type": "db-read",
+      "label": "physical_offers"
+    },
+    {
+      "from": "services/providers-service.js",
       "to": "db:inquiries",
       "type": "db-read",
       "label": "inquiries"
@@ -48850,6 +48892,12 @@
       "to": "db:services",
       "type": "db-write",
       "label": "services"
+    },
+    {
+      "from": "services/providers-service.js",
+      "to": "db:physical_offers",
+      "type": "db-write",
+      "label": "physical_offers"
     },
     {
       "from": "services/providers-service.js",
@@ -69202,17 +69250,19 @@
         "db"
       ],
       "directUsedBy": [
-        "(aucun — shadow",
-        "appel direct scripts/tests dans cette PR)"
+        "order-status-machine.js (consume à confirmed",
+        "release à"
       ],
       "ownedFiles": [],
       "dbRead": [
         "local_stock",
+        "local_stock_allocations",
         "products",
         "markets"
       ],
       "dbWrite": [
-        "local_stock"
+        "local_stock",
+        "local_stock_allocations"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -69220,15 +69270,18 @@
         "§4 (capacité"
       ],
       "impactAreas": [
-        "local-stock"
+        "local-stock",
+        "orders"
       ],
       "mustCheck": [
         "db:local_stock",
+        "db:local_stock_allocations",
         "db:markets",
         "db:products",
         "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
         "doctrine:§4 (capacité",
-        "impact:local-stock"
+        "impact:local-stock",
+        "impact:orders"
       ]
     },
     "services/loyalty-service.js": {
@@ -72047,12 +72100,14 @@
       "dbRead": [
         "providers",
         "services",
+        "physical_offers",
         "inquiries",
         "markets"
       ],
       "dbWrite": [
         "providers",
         "services",
+        "physical_offers",
         "inquiries"
       ],
       "dbWriteVia": [],
@@ -72065,6 +72120,7 @@
       "mustCheck": [
         "db:inquiries",
         "db:markets",
+        "db:physical_offers",
         "db:providers",
         "db:services",
         "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services",
@@ -79192,16 +79248,16 @@
       "label": "db"
     },
     {
-      "from": "(aucun — shadow",
+      "from": "order-status-machine.js (consume à confirmed",
       "to": "services/local-stock-service.js",
       "type": "uses",
-      "label": "(aucun — shadow"
+      "label": "order-status-machine.js (consume à confirmed"
     },
     {
-      "from": "appel direct scripts/tests dans cette PR)",
+      "from": "release à",
       "to": "services/local-stock-service.js",
       "type": "uses",
-      "label": "appel direct scripts/tests dans cette PR)"
+      "label": "release à"
     },
     {
       "from": "services/loyalty-service.js",

@@ -273,7 +273,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
+        "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, projeter une disponibilité calculée — jamais stockée — à partir de ce stock déduction faite des allocations actives, et engager/consommer/libérer ce stock au fil du cycle de vie d'une commande (Vague 2 D2). Toujours shadow côté FRONTEND (IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md, RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I) : commercial_exposure reste DISABLED par défaut, aucune route HTTP publique, aucun composant Boutique — mais depuis D2, deux points d'intégration backend délibérés et revus (routes/orders/create.js, order-status-machine.js) protègent déjà le stock réel dès la première commande, sans qu'aucune exposition ne soit visible côté client.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -15990,6 +15990,12 @@
       },
       {
         "from": "orders",
+        "to": "local-stock",
+        "raw": "local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; services/order-status-machine.js -> services/local-stock-service.js)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
         "to": "market",
         "raw": "market (P3 — resolveDisplaySnapshot() résout le contexte marché du client via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)",
         "resolved": true
@@ -25111,6 +25117,26 @@
       },
       {
         "from": "orders",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/order-status-machine.js",
+                "targetFile": "services/local-stock-service.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/local-stock-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
         "to": "logistics",
         "channels": [
           {
@@ -30250,6 +30276,19 @@
       "resolution": "single-writer"
     },
     "local_stock": {
+      "writers": [
+        {
+          "feature": "local-stock",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "local-stock",
+      "resolution": "single-writer"
+    },
+    "local_stock_allocations": {
       "writers": [
         {
           "feature": "local-stock",

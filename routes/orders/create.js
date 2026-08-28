@@ -48,6 +48,7 @@ const { notifyOrderCreated }             = require('../../services/notification-
 const productAdminService                = require('../../services/product-admin-service');
 const { quoteTransportPriceForOrder, TransportPricingError } = require('../../services/transport-pricing');
 const { resolveDisplaySnapshot } = require('../../services/order-display-snapshot');
+const { allocateForOrderItem } = require('../../services/local-stock-service');
 const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -696,6 +697,21 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           item.shared_cart_item_id || null,
         ]
       );
+
+      // Vague 2 D2 — engage ce stock local AVANT tout paiement, dans la
+      // MÊME transaction que la commande (client, pas db global) : le
+      // verrou FOR UPDATE posé par allocateForOrderItem tient jusqu'au
+      // COMMIT/ROLLBACK de cette requête, sérialisant deux checkouts
+      // concurrents sur le même produit. No-op silencieux (retourne null)
+      // pour l'immense majorité des produits, qui n'ont pas de ligne
+      // local_stock — la logique d'allocation reste entièrement dans
+      // local-stock-service.js, cette route n'en est que l'appelante.
+      await allocateForOrderItem(client, {
+        productId: item.product_id,
+        marketId:  relais?.market_id || null,
+        orderId:   order.id,
+        quantity:  qty,
+      });
     }
 
     // ── Wallet couvre 100% → cycle paiement complet (state machine + stock) ──
@@ -857,6 +873,16 @@ if (creditApplied > 0 && total_kmf === 0 && order.id) {
       return res.status(409).json({
         error: 'Cet article de la liste vient déjà d\'être pris par quelqu\'un d\'autre.',
         code: 'shared_cart_item_already_claimed',
+      });
+    }
+    // Vague 2 D2 — stock local insuffisant au moment de l'allocation
+    // (concurrence entre checkouts, ou stock déjà épuisé). Même patron que
+    // le conflit shared_cart_item_already_claimed juste au-dessus : erreur
+    // claire, jamais un état intermédiaire.
+    if (err.code === 'local_stock_insufficient') {
+      return res.status(409).json({
+        error: 'Ce produit n\'est plus disponible en quantité suffisante localement.',
+        code: 'local_stock_insufficient',
       });
     }
     next(err);
