@@ -24,6 +24,30 @@ jobs:
           git config user.name "SamyrFateh"
           git config user.email "fatehsamyr@gmail.com"
           git checkout -B debt-zero-rebase-proof origin/main
+
+          resolve_generated_conflicts() {
+            local unsafe=0
+            while IFS= read -r f; do
+              [ -z "$f" ] && continue
+              case "$f" in
+                docs/FEATURE_360.json|docs/FEATURE_360.md|docs/BUSINESS_FEATURE_GRAPH.json|docs/BUSINESS_FEATURE_GRAPH.md|docs/O6_INVENTORY.md|docs/DASHBOARDS_360.json|docs/DASHBOARDS_360.md|docs/BOUTIQUE_360.json|docs/BOUTIQUE_360.md)
+                  echo "Resolving generated artifact from current-main side: $f"
+                  git checkout --ours -- "$f"
+                  git add "$f"
+                  ;;
+                *)
+                  echo "SOURCE_CONFLICT=$f"
+                  unsafe=1
+                  ;;
+              esac
+            done < <(git diff --name-only --diff-filter=U)
+            if [ "$unsafe" -ne 0 ]; then
+              git status --short
+              return 1
+            fi
+            git cherry-pick --continue
+          }
+
           for sha in \
             48b5de4b66f2aa3829aa827b78d714feba1c97ad \
             75675a5c7a2e54ac73d79aef96d84ba21a31b320 \
@@ -34,10 +58,8 @@ jobs:
             echo "=== cherry-pick $sha ==="
             if ! git cherry-pick "$sha"; then
               echo "CHERRY_PICK_CONFLICT=$sha"
-              git status --short
-              echo "UNMERGED_FILES"
               git diff --name-only --diff-filter=U
-              exit 1
+              resolve_generated_conflicts
             fi
           done
           echo "DEBT_ZERO_REPLAY_OK"
