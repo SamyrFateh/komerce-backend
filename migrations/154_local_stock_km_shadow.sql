@@ -1,4 +1,4 @@
--- @migration 153_local_stock_km_shadow.sql
+-- @migration 154_local_stock_km_shadow.sql
 -- @domain    local-stock
 -- @purpose   Vague 1 Shadow (PR A) — stock physique vendable détenu par
 --            Komerce dans un marché donné, distinct du stock hub/transit
