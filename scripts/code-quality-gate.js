@@ -249,8 +249,16 @@ const RULES = [
       // Cherche des query() / db.query() avec concaténation de req./params./body. dans la string SQL
       lines.forEach((line, i) => {
         if (/db\.query\s*\(/.test(line) || /pool\.query\s*\(/.test(line)) {
-          // La concaténation dangereuse : + req. | + params. | + body. dans le même contexte
-          if (/\+\s*(req|params|body|query)\b/.test(line) || /\$\{.*?(req|params|body|query)/.test(line)) {
+          // La concaténation dangereuse est une donnée de requête utilisée
+          // DIRECTEMENT comme fragment SQL. Inspecter chaque interpolation
+          // séparément évite le faux positif historique où une interpolation
+          // serveur était suivie du second argument params de db.query.
+          const interpolations = [...line.matchAll(/\$\{([^}]*)\}/g)].map(m => m[1]);
+          const hasDirectRequestInterpolation = interpolations.some(expr =>
+            /\b(req|params|body|query)(?:\.|\[|\b)/.test(expr)
+          );
+          const hasDirectRequestConcat = /\+\s*(req|params|body|query)(?:\.|\[|\b)/.test(line);
+          if (hasDirectRequestConcat || hasDirectRequestInterpolation) {
             hits.push({ line: i + 1, col: 1, message: 'SQL avec concaténation directe de req/params/body — utiliser $1, $2, ...' });
           }
         }

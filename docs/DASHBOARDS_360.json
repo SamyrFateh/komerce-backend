@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-14T14:37:38.955Z",
+  "generatedAt": "2026-08-28T08:05:43.165Z",
   "summary": {
-    "modules": 40,
+    "modules": 41,
     "routes": 30,
     "apiMethodsExported": 100,
     "apiMethodsCalled": 98,
@@ -921,6 +921,29 @@
         "getSettingsDims",
         "getSettingsAudit"
       ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SettingsViewLot1aGuard.js",
+      "id": "SettingsViewLot1aGuard",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-settings-lot1a-retired-editors-guard",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "owner": null,
+      "doctrine": [
+        "kmc_api_only",
+        "retired_settings_fail_closed"
+      ],
+      "depends": [
+        "SettingsView.js"
+      ],
+      "usedBy": [
+        "admin dashboard bootstrap"
+      ],
+      "apiCalls": [],
       "rawFetchCount": 0
     },
     {
@@ -2346,8 +2369,8 @@
     }
   ],
   "headerCoverage": {
-    "total": 40,
-    "full": 40,
+    "total": 41,
+    "full": 41,
     "lite": 0,
     "missing": 0
   },
@@ -2499,6 +2522,7 @@
       "views/SalesView.js",
       "views/SanteView.js",
       "views/SettingsView.js",
+      "views/SettingsViewLot1aGuard.js",
       "views/SharedCartsView.js",
       "views/SimulatorView.js",
       "views/SourcingScannerView.js",

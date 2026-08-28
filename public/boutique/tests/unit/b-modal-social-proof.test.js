@@ -17,12 +17,11 @@
  * de vrai nulle part.
  *
  * b-bus.js et b-store.js réels (state.modalProduct, modalZone via dom.modal).
- * jest.resetModules() par test : `_installed` est un flag module-level qui
- * doit repartir à zéro pour tester l'idempotence de l'abonnement bus.
+ * jest.resetModules() par test garde l'isolation d'état des modules Boutique.
  */
 
 describe('b-modal-social-proof', () => {
-  let bus, state, dom, setupSocialProof;
+  let state, dom, setupSocialProof;
 
   function buildModalDom() {
     dom.modal = document.createElement('div');
@@ -34,7 +33,6 @@ describe('b-modal-social-proof', () => {
     jest.resetModules();
     document.body.innerHTML = '';
 
-    ({ bus } = require('../../js/b-bus.js'));
     ({ state, dom } = require('../../js/b-store.js'));
     ({ setupSocialProof } = require('../../js/b-modal-social-proof.js'));
 
@@ -115,25 +113,21 @@ describe('b-modal-social-proof', () => {
     expect(meta.children[0].className).toBe('k-modal-meta-rank');
   });
 
-  test('ré-injecte au bus "modal:product-changed" (navigation nav-btn sans fermer la modal)', () => {
+  test('ré-injecte quand openModal rappelle setupSocialProof après changement de produit', () => {
     state.modalProduct = { rank: 1 };
     setupSocialProof();
     state.modalProduct = { sold_count: 20 };
-    bus.emit('modal:product-changed');
+    setupSocialProof();
     const meta = document.querySelector('.k-modal-meta');
     expect(meta.querySelector('.k-modal-meta-rank')).toBeNull();
     expect(meta.textContent).toContain('vendus');
   });
 
-  test('setupSocialProof() appelé deux fois -> un seul abonnement bus (pas de double injection)', () => {
+  test('setupSocialProof() appelé deux fois ne duplique pas ses nœuds', () => {
     state.modalProduct = { rank: 1 };
     setupSocialProof();
     setupSocialProof();
-    const metaBefore = document.querySelector('.k-modal-meta').children.length;
-    bus.emit('modal:product-changed');
-    // Toujours une seule injection à la fois (innerHTML vidé avant réinjection),
-    // pas d'accumulation même si setupSocialProof a été appelé 2x.
-    expect(document.querySelector('.k-modal-meta').children.length).toBe(metaBefore);
+    expect(document.querySelectorAll('[data-social-proof]').length).toBe(1);
   });
 
   // Régression — audit desktop finition P1 "stock près du prix" :
@@ -164,7 +158,7 @@ describe('b-modal-social-proof', () => {
     expect(document.getElementById('k-modal-stock').textContent).toBe('● Plus que 4');
   });
 
-  test('ne détruit jamais #k-modal-cat / #k-modal-stock sur un changement de produit (modal:product-changed)', () => {
+  test('ne détruit jamais #k-modal-cat / #k-modal-stock sur un changement de produit', () => {
     const meta = document.querySelector('.k-modal-meta');
     const cat = document.createElement('span');
     cat.id = 'k-modal-cat';
@@ -183,7 +177,7 @@ describe('b-modal-social-proof', () => {
     document.getElementById('k-modal-stock').textContent = '● Plus que 2';
 
     state.modalProduct = { sold_count: 8 };
-    bus.emit('modal:product-changed');
+    setupSocialProof();
 
     expect(document.getElementById('k-modal-cat')).not.toBeNull();
     expect(document.getElementById('k-modal-cat').textContent).toBe('Mobilier');
@@ -201,7 +195,7 @@ describe('b-modal-social-proof', () => {
     expect(meta.querySelectorAll('[data-social-proof]').length).toBe(3);
 
     state.modalProduct = { rank: 1, sold_count: 5, rating: 4.2 };
-    bus.emit('modal:product-changed');
+    setupSocialProof();
 
     // Toujours 3 nœuds marqués, pas 6 : les anciens ont bien été nettoyés,
     // pas juste laissés en place avec de nouveaux ajoutés par-dessus.

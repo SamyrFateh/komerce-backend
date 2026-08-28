@@ -1,28 +1,7 @@
 {
   "orphanRoutes": [],
-  "deadApiMethods": [
-    "createEconomicCharge",
-    "createLoyaltyReward",
-    "createLoyaltySkip",
-    "deleteCostBenchmark",
-    "getCostBenchmarks",
-    "getLoyaltyHistory",
-    "getLoyaltyPending",
-    "getParcelAlerts",
-    "getParcelCritical",
-    "getParcelKpis",
-    "getPricingCompetitors",
-    "redistributeEconomic",
-    "sourcingBulkRail",
-    "updateCustomsShipment",
-    "updateEconomicCharge",
-    "updateEconomicVariable",
-    "updateFinanceConfig",
-    "upsertCostBenchmark"
-  ],
+  "deadApiMethods": [],
   "missingApiMethods": [],
-  "doctrineViolations": [
-    "views/SourcingScannerView.js (1 fetch() brut)"
-  ],
-  "savedAt": "2026-07-08T08:15:08.705Z"
+  "doctrineViolations": [],
+  "savedAt": "2026-08-28T08:05:43.166Z"
 }

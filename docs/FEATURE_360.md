@@ -804,14 +804,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/reference.js — génération de références commande/colis (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 274 fichier(s) déclaré(s)
+**Implementation** : 275 fichier(s) déclaré(s)
   - assets : 29
   - bootstrap : 9
   - ci : 24
   - config : 12
   - db : 16
   - docs : 60
-  - middleware : 5
+  - middleware : 6
   - migrations : 8
   - routes : 1
   - scripts : 88

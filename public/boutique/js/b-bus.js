@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       none
- * @used-by       public/boutique/js/b-cart-core.js, public/boutique/js/b-cart-pill.js, public/boutique/js/b-cart.js, public/boutique/js/b-catalog-desktop-enhancers.js, public/boutique/js/b-catalog.js, public/boutique/js/b-checkout.js, public/boutique/js/b-desktop-sidebar.js, public/boutique/js/group/group-side-cart.js, public/boutique/js/b-home-premium-v1.js, public/boutique/js/b-mini-cart.js, public/boutique/js/b-modal-core.js, public/boutique/js/b-modal-desktop-enhancers.js, public/boutique/js/b-modal-image-ux.js, public/boutique/js/b-modal-nav.js, public/boutique/js/b-modal-product.js, public/boutique/js/b-modal-social-proof.js, public/boutique/js/b-modal-suggestions.js, public/boutique/js/b-nav.js, public/boutique/js/b-notifications.js, public/boutique/js/b-pager.js, public/boutique/js/b-pdp-curation-suggestions.js, public/boutique/js/b-product-open-contract.js, public/boutique/js/b-store.js, public/boutique/js/b-subcat.js, public/boutique/js/boutique.js, public/boutique/js/main.js
+ * @used-by       public/boutique/js/b-cart-core.js, public/boutique/js/b-cart-pill.js, public/boutique/js/b-cart.js, public/boutique/js/b-catalog-desktop-enhancers.js, public/boutique/js/b-catalog.js, public/boutique/js/b-checkout.js, public/boutique/js/b-desktop-sidebar.js, public/boutique/js/group/group-side-cart.js, public/boutique/js/b-home-premium-v1.js, public/boutique/js/b-mini-cart.js, public/boutique/js/b-modal-core.js, public/boutique/js/b-modal-desktop-enhancers.js, public/boutique/js/b-modal-image-ux.js, public/boutique/js/b-modal-nav.js, public/boutique/js/b-modal-product.js, public/boutique/js/b-modal-suggestions.js, public/boutique/js/b-nav.js, public/boutique/js/b-notifications.js, public/boutique/js/b-pager.js, public/boutique/js/b-pdp-curation-suggestions.js, public/boutique/js/b-product-open-contract.js, public/boutique/js/b-store.js, public/boutique/js/b-subcat.js, public/boutique/js/boutique.js, public/boutique/js/main.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  boutique
  * @version       2026-06
@@ -31,10 +31,12 @@
  *     couvre aussi la bascule desktop [Panier]/[Liste] (group-side-cart.js::setCartSurface(),
  *     amendement V2 §A), seule surface où ce sélecteur est atteignable (isDesktop())
  *   checkout:open    —                  — ouvrir la modale de commande [ARCH-1]
- *   view:switch      { view }           — changer d'onglet (home/favs/suivi)
+ *   view:changed     { view }           — notifier le changement effectif de vue aux enrichissements desktop
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
+ *   favorites:view-refresh —               — rafraîchir la vue Favoris après mutation du catalogue
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
+ *   carousel:changed { index }             — slide produit actif changé ; synchroniser l'UX image
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
  *   checkout:order-failed { code, status } — fait : la commande vient d'échouer côté

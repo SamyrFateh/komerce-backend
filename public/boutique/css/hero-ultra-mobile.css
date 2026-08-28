@@ -13,21 +13,15 @@
 /*
  * HERO ULTRA MOBILE — CANONIQUE COMPACT
  * Cible : 102–110 px de hauteur utile.
- * On conserve uniquement le fond chaud et le détourage canonique commun
- * aux trois marchés. Le K du téléphone remplace tout symbole additionnel.
+ * Ce fichier possède uniquement la géométrie et le cadrage du détourage.
+ * La surface visuelle (fond, rayon, ombre) est possédée par
+ * mobile-catalog-convergence.css afin d'éviter deux sources de cascade.
  */
 @media (max-width: 899px) {
-  #k-hero-fixed-wrap > .k-hero {
-    background: var(--page-bg);
-  }
-
   .k-hero .k-hero-inner .k-hero-media {
     height: clamp(102px, 27.5vw, 110px);
     margin-top: 0;
     margin-bottom: 0;
-    border-radius: 16px;
-    background: var(--hero-bg);
-    box-shadow: 0 6px 18px var(--border-text-06);
   }
 
   .k-hero-media .k-hero-figures {

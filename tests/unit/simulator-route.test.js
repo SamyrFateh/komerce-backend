@@ -57,6 +57,7 @@ let app;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  delete process.env.KOMERCE_ENV;
   app = express();
   app.use(express.json());
   jest.isolateModules(() => {
@@ -199,6 +200,23 @@ describe('routes/simulator — POST /cleanup', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('cleanup failed');
+  });
+});
+
+describe('routes/simulator — runtime environment', () => {
+  it('403 en production métier même pour un admin', async () => {
+    process.env.KOMERCE_ENV = 'production';
+    const res = await request(app).post('/api/simulator/start').send({});
+    expect(res.status).toBe(403);
+    expect(mockStart).not.toHaveBeenCalled();
+  });
+
+  it('reste disponible en staging même si NODE_ENV=production', async () => {
+    process.env.KOMERCE_ENV = 'staging';
+    process.env.NODE_ENV = 'production';
+    mockStart.mockResolvedValueOnce({ running: true });
+    const res = await request(app).post('/api/simulator/start').send({});
+    expect(res.status).toBe(200);
   });
 });
 

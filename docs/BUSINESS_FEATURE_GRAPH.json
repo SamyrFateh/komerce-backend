@@ -5012,6 +5012,13 @@
       {
         "feature": "infrastructure",
         "category": "middleware",
+        "declared": "middleware/require-non-production.js",
+        "resolvedPath": "middleware/require-non-production.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "middleware",
         "declared": "middleware/upload.js",
         "resolvedPath": "middleware/upload.js",
         "status": "resolved-in-technical-graph"
@@ -20788,6 +20795,10 @@
               },
               {
                 "sourceFileId": "routes/admin/system.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "routes/admin/system.js",
                 "targetFile": "middleware/validate.js"
               },
               {
@@ -26562,6 +26573,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/simulator.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
                 "sourceFileId": "tests/integration/api.test.js",
                 "targetFile": "server.js"
               },
@@ -27710,10 +27725,6 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-social-proof.js",
-                "targetFile": "public/boutique/js/b-bus.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-social-proof.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
@@ -27839,10 +27850,6 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-modal-social-proof.test.js",
-                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-social-proof.test.js",

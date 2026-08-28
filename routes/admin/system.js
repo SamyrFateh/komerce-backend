@@ -28,6 +28,7 @@ const { appendOrderHistoryNote } = require('../../services/order-status-machine'
 const { seedIncident } = require('../../services/incident-write-service');
 const { deleteNonAdminUsers } = require('../../services/user-mutation-service');
 const { authenticate, requireRole } = require('../../middleware/auth');
+const { requireNonProduction } = require('../../middleware/require-non-production');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
 const log = require('../../utils/logger').child({ module: 'admin/system' });
@@ -35,6 +36,8 @@ const { deleteOrderCascade } = require('./delete-order-cascade');
 const { repairOrderedWithoutPurchaseOrders } = require('../../services/repair-ordered-without-purchase-orders');
 
 const guard = [authenticate, requireRole(['admin'])];
+const allowFlushOutsideProd = requireNonProduction('ALLOW_FLUSH');
+const allowSeedOutsideProd = requireNonProduction('ALLOW_SEED');
 
 // ─── GET /api/admin/counts ─────────────────────────────────────────
 router.get('/counts', ...guard, async (req, res, next) => {
@@ -56,18 +59,9 @@ router.get('/counts', ...guard, async (req, res, next) => {
 
 // ─── POST /api/admin/reset ─────────────────────────────────────────
 // CRIT-04 FIX: Disabled in production to prevent accidental data destruction.
-router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) => {
-  // ══════════════════════════════════════════════════════════════════
-  // CRIT-04 FIX: Block in production — this endpoint is dev/staging only.
-  // R4 FIX: ALLOW_FLUSH distinct de ALLOW_SEED — activer ALLOW_SEED en prod
-  //         pour un seed de démo ne doit pas débloquer le flush destructif.
-  // ══════════════════════════════════════════════════════════════════
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_FLUSH !== 'true') {
-    return res.status(403).json({
-      error: 'Endpoint désactivé en production',
-      hint: 'Ajoutez ALLOW_FLUSH=true (distinct de ALLOW_SEED) dans les variables Railway pour activer',
-    });
-  }
+router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, async (req, res, next) => {
+  // Production guard centralisé : KOMERCE_ENV est prioritaire sur NODE_ENV.
+  // ALLOW_FLUSH reste un bypass explicite distinct de ALLOW_SEED.
 
   const mode = req.body.mode || 'orders';
   const validModes = ['orders', 'users', 'factory'];
@@ -201,16 +195,8 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
 
 // ─── POST /api/admin/seed-test ─────────────────────────────────────
 // Rich seed v2: populates entire Control Tower dashboard with realistic data
-router.post('/seed-test', ...guard, async (req, res, next) => {
-  // ══════════════════════════════════════════════════════════════════
-  // CRIT-04 FIX: Block in production — seed-test is dev/staging only.
-  // ══════════════════════════════════════════════════════════════════
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
-    return res.status(403).json({
-      error: 'Endpoint désactivé en production',
-      hint: 'Ajoutez ALLOW_SEED=true dans les variables Railway pour activer',
-    });
-  }
+router.post('/seed-test', ...guard, allowSeedOutsideProd, async (req, res, next) => {
+  // Production guard centralisé : KOMERCE_ENV est prioritaire sur NODE_ENV.
 
   const client = await db.getClient();
 

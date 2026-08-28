@@ -1,12 +1,12 @@
 # Dashboards 360 — carte d'architecture admin (générée)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-14T14:37:38.955Z.
+> Régénéré le 2026-08-28T08:05:43.165Z.
 > Pendant front du graphe backend : les dashboards se couplent par la chaîne **route → vue → KmcApi → endpoint → contrat**, pas par un bus ni par les imports.
 
 ## Synthèse
 
-- Modules JS : **40** (40 header complet, 0 lite, **0 sans header**)
+- Modules JS : **41** (41 header complet, 0 lite, **0 sans header**)
 - Routes SPA : **30**
 - Méthodes `KmcApi` : **100** exportées, 98 appelées par au moins une vue
 - Santé chaîne : 0 route(s) orpheline(s), 0 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 0 violation(s) de doctrine
@@ -298,7 +298,7 @@ graph LR
 
 ## 5. Couverture des headers
 
-Complet : **40** · Lite : **0** · Sans header : **0**
+Complet : **41** · Lite : **0** · Sans header : **0**
 
 ## 6. Modules par domaine
 
@@ -340,6 +340,7 @@ Complet : **40** · Lite : **0** · Sans header : **0**
 | `views/SalesView.js` | admin-sales-view | ui-page | medium | kmc_api_only |
 | `views/SanteView.js` | admin-sante-view | ui-page | high | kmc_api_only |
 | `views/SettingsView.js` | admin-settings-view | ui-page | medium | kmc_api_only |
+| `views/SettingsViewLot1aGuard.js` | admin-settings-lot1a-retired-editors-guard | ui-page | medium | kmc_api_only, retired_settings_fail_closed |
 | `views/SharedCartsView.js` | admin-shared-carts-view | ui-page | high | kmc_api_only |
 | `views/SimulatorView.js` | admin-simulator-view | ui-page | low | kmc_api_only |
 | `views/SourcingScannerView.js` | admin-sourcing-scanner-view | ui-page | medium | kmc_api_only |

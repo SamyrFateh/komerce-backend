@@ -135,6 +135,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...ORIGINAL_ENV };
   delete process.env.NODE_ENV;
+  delete process.env.KOMERCE_ENV;
   delete process.env.ALLOW_FLUSH;
   delete process.env.ALLOW_SEED;
   currentUser = { id: 'admin-1', role: 'admin', email: 'admin@komerce.test' };
@@ -194,14 +195,16 @@ describe('admin/system — GET /counts', () => {
 // ═══════════════════════════════════════════════════════════════════════
 describe('admin/system — POST /reset', () => {
   it('403 en production sans ALLOW_FLUSH', async () => {
-    process.env.NODE_ENV = 'production';
+    process.env.KOMERCE_ENV = 'production';
+    process.env.NODE_ENV = 'development';
     const res = await request(app).post('/api/admin/reset').send({ mode: 'orders', confirm: true });
     expect(res.status).toBe(403);
     expect(mockGetClient).not.toHaveBeenCalled();
   });
 
   it('autorisé en production si ALLOW_FLUSH=true', async () => {
-    process.env.NODE_ENV = 'production';
+    process.env.KOMERCE_ENV = 'production';
+    process.env.NODE_ENV = 'development';
     process.env.ALLOW_FLUSH = 'true';
     const client = makeClient([
       ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '3' }] }],

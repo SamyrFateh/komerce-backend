@@ -9307,7 +9307,7 @@
             ]
           },
           "middleware": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "middleware/error-handler.js",
@@ -9323,6 +9323,11 @@
                 "declared": "middleware/request-id.js",
                 "resolvedPath": "middleware/request-id.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/require-non-production.js",
+                "resolvedPath": "middleware/require-non-production.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "middleware/upload.js",
@@ -9962,7 +9967,7 @@
             ]
           }
         },
-        "totalFiles": 274,
+        "totalFiles": 275,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

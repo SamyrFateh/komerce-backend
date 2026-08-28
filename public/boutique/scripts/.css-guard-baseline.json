@@ -1,5 +1,5 @@
 {
-  "total": 214,
+  "total": 211,
   "keys": [
     "#k-cart-surface-switch.k-cart-tabs|||@media (min-width: 900px) {|||background",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
@@ -102,7 +102,6 @@
     ".k-chip.active .k-chip-label|||global|||font-weight",
     ".k-chip:active|||global|||transform",
     ".k-ck-guest-ic|||global|||font-size",
-    ".k-ck-id-sep|||global|||color",
     ".k-ck-phone-input|||global|||font-size",
     ".k-ck-phone-input|||global|||height",
     ".k-ck-phone-select|||global|||flex",
@@ -158,8 +157,6 @@
     ".k-sc-item-name|||@media (min-width: 900px) {|||font-weight",
     ".k-sc-item-price|||@media (min-width: 900px) {|||font-weight",
     ".k-sc-item-price|||@media (min-width: 900px) {|||letter-spacing",
-    ".k-sc-item:hover|||@media (min-width: 900px) {|||border-color",
-    ".k-sc-items|||@media (min-width: 900px) {|||gap",
     ".k-sc-items|||@media (min-width: 900px) {|||padding",
     ".k-sc-item|||@media (min-width: 900px) {|||background",
     ".k-sc-item|||@media (min-width: 900px) {|||border",
@@ -216,5 +213,5 @@
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size"
   ],
-  "savedAt": "2026-08-22T16:17:26.483Z"
+  "savedAt": "2026-08-28T08:05:42.034Z"
 }
