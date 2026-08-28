@@ -156,9 +156,9 @@ module.exports = {
       test: 'tests/unit/local-stock-service.test.js' },
     { statement: 'allocateForOrderItem verrouille la ligne local_stock ' +
       '(FOR UPDATE) avant de calculer la disponibilité — deux allocations ' +
-      'concurrentes sur le même produit sont sérialisées, jamais une survente',
-      test: 'tests/unit/local-stock-service.test.js (mock) + vérifié réellement ' +
-        'contre Postgres, verrou bloquant confirmé par timeout' },
+      'concurrentes sur le même produit sont sérialisées, jamais une survente ' +
+      '(vérifié en mock ET réellement contre Postgres — verrou bloquant confirmé par timeout)',
+      test: 'tests/unit/local-stock-service.test.js' },
     { statement: 'release ne touche jamais qty_physical (l\'unité n\'a ' +
       'jamais été réellement prélevée avant consume)',
       test: 'tests/unit/local-stock-service.test.js' },
