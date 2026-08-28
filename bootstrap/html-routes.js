@@ -210,14 +210,27 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 4L — SourcingView et SourcingScannerView sont prouvés absorbés
+  // par le Sourcing Workspace Canonical. SuppliersView reste Legacy car il
+  // administre aussi des familles de partenaires hors partner_type=sourcing.
+  const SOURCING_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/sourcing',
+    '/admin/sourcing-scanner',
+  ]);
+
+  SOURCING_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/sourcing');
+    });
+  });
+
   // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
   // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
     '/admin/orders-logistics',
-    '/admin/sourcing',
-    '/admin/sourcing-scanner',
     '/admin/customs',
     '/admin/suppliers',
     '/admin/alerts',
