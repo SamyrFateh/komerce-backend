@@ -69,8 +69,9 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import json
 
-          # 1) local-stock: classification gate requires >=2 objective reasons.
+          # 1) local-stock classification: >=2 objective boundary reasons.
           p = Path('features/local-stock.feature.js')
           text = p.read_text()
           anchor = "      'de catalog (products.stock/product_skus.stock, stock import/national).',\n"
@@ -85,7 +86,7 @@ jobs:
                   raise SystemExit('local-stock rationale anchor not found')
               p.write_text(text.replace(anchor, addition, 1))
 
-          # 2) Two current-main code files are genuinely scanned but had no arch header.
+          # 2) Current-main files scanned by the architecture graph but missing headers.
           headers = {
               'services/notifications/relay-location.js': '''/**
            * @komerce-arch
@@ -126,6 +127,34 @@ jobs:
               src = f.read_text()
               if '@komerce-arch' not in src[:1500]:
                   f.write_text(header + src)
+
+          # 3) Market already declares itself lifecycle owner of these reference tables
+          #    in perimeter/classification and owns their migrations. Make that existing
+          #    authority machine-readable so O5 can observe local-stock -> market via
+          #    the direct read of markets. RW! means lifecycle ownership across the
+          #    feature boundary (migration writes + runtime reads), not a new runtime write.
+          m = Path('features/market.feature.js')
+          src = m.read_text()
+          db_block = """  // ── Tables DB — autorité lifecycle Market ───────────────────────────────\n  // Les écritures de référentiel sont portées par les migrations de cette feature ;\n  // les services runtime sont en lecture. Le marqueur ! rend l'owner de lifecycle\n  // déjà affirmé par perimeter/classification observable par O5.\n  db: {\n    tables: [\n      'markets: RW!',\n      'operator_market_scopes: RW!',\n      'currency_parities: RW!',\n    ],\n  },\n\n"""
+          if 'markets: RW!' not in src:
+              marker = '  // ── Securite ─────────────────────────────────────────────────────────────\n'
+              if marker not in src:
+                  raise SystemExit('market security anchor not found')
+              m.write_text(src.replace(marker, db_block + marker, 1))
+
+          # 4) Current observed debt is already 0. Tighten the stale ratchet budget to 0
+          #    rather than carrying a historical allowance for a debt that no longer exists.
+          baseline_path = Path('governance/business-graph-drift-baseline.json')
+          baseline = json.loads(baseline_path.read_text())
+          key = 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT'
+          if baseline.get('baseline', {}).get(key) == 1:
+              del baseline['baseline'][key]
+              baseline['_comment_debt_zero_20260828'] = (
+                  'Debt Zero absolute : OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT '
+                  'est certifié à 0 et la dernière allowance historique 1 est retirée. Toute réapparition '
+                  'devient une nouvelle clé non budgétisée et échoue.'
+              )
+              baseline_path.write_text(json.dumps(baseline, ensure_ascii=False, indent=2) + '\n')
           PY
 
       - name: Install dependencies
@@ -141,6 +170,8 @@ jobs:
             tests/unit/admin-system.test.js \
             tests/unit/auth-cookie.test.js \
             tests/unit/relay-location.test.js \
+            tests/unit/local-stock-service.test.js \
+            tests/unit/currency.test.js \
             --runInBand --forceExit
           (cd public/boutique && npx --no-install jest tests/unit/b-modal-social-proof.test.js tests/unit/b-modal-core.test.js --runInBand)
 
@@ -185,6 +216,12 @@ jobs:
           npm run business-graph:gen
           npm run business-graph:check
           npm run business-graph:ratchet-check
+          node - <<'NODE'
+          const b = require('./governance/business-graph-drift-baseline.json');
+          const nonZero = Object.entries(b.baseline || {}).filter(([,v]) => v !== 0);
+          if (nonZero.length) throw new Error(`Non-zero Business Graph ratchet allowance remains: ${JSON.stringify(nonZero)}`);
+          console.log('BUSINESS_GRAPH_RATCHET_ALLOWANCE_ZERO');
+          NODE
           npm run business-graph:disposition-check
 
           npm run feature:360:refresh-global
@@ -193,7 +230,8 @@ jobs:
           const f = require('./docs/FEATURE_360.json');
           if ((gf.findings || []).length !== 0) throw new Error(`Gate findings remain: ${JSON.stringify(gf.findings)}`);
           if (f.summary.attention !== 0 || f.summary.blocked !== 0 || f.summary.healthy !== f.summary.features || f.summary.debtItemsTotal !== 0) {
-            throw new Error(`Feature360 not absolute zero: ${JSON.stringify(f.summary)}`);
+            const attention = (f.features || []).filter(x => x.status !== 'HEALTHY' || (x.architecturalDebt && x.architecturalDebt.items && x.architecturalDebt.items.length));
+            throw new Error(`Feature360 not absolute zero: ${JSON.stringify({summary:f.summary,attention}, null, 2)}`);
           }
           console.log('FEATURE360_ABSOLUTE_ZERO', f.summary);
           NODE
@@ -207,7 +245,7 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "chore(governance): reconcile Debt Zero with current main"
           fi
-          echo "REBASed_HEAD=$(git rev-parse HEAD)"
+          echo "REBASED_HEAD=$(git rev-parse HEAD)"
           git log --oneline -8
 
       - name: Update Debt Zero PR branch with lease
