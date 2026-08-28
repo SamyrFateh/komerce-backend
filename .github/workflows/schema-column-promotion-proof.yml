@@ -1,0 +1,60 @@
+name: Schema column promotion proof
+
+on:
+  push:
+    branches: [fix/schema-column-promotion]
+    paths:
+      - 'scripts/schema-promote.js'
+      - 'tests/unit/schema-promote.test.js'
+      - '.github/workflows/schema-column-promotion-proof.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  prove-and-materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/schema-column-promotion
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prove table-scoped column promotion
+        run: npx --no-install jest tests/unit/schema-promote.test.js --runInBand
+
+      - name: Materialize current Railway-backed promotions
+        run: |
+          npm run schema:promote:write
+          npm run schema:promote:check
+          if grep -q '`intended_migration_schema` — non vérifié live' docs/SCHEMA.md; then
+            echo '::error::SCHEMA.md contient encore au moins un marqueur de colonne intended vérifiable/non traité.'
+            grep -n '`intended_migration_schema` — non vérifié live' docs/SCHEMA.md || true
+            exit 1
+          fi
+
+      - name: Reconcile and prove architecture
+        run: |
+          npm run arch:reconcile:write
+          npm run arch:gate
+          git diff --check
+
+      - name: Remove one-shot helper and commit generated truth
+        run: |
+          git rm .github/workflows/schema-column-promotion-proof.yml
+          git add -A
+          if git diff --cached --quiet; then
+            echo '::error::Aucune modification générée à publier.'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(schema): promote verified live column markers'
+          git push origin HEAD:fix/schema-column-promotion
