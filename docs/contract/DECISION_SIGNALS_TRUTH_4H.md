@@ -90,15 +90,16 @@ Ces types rejoignent la famille `ops`. L'Action Center reste la seule nouvelle s
 
 Les drill-down restent exclusivement résolus côté serveur depuis l'entité interne vers une référence métier publique. Aucun UUID supplémentaire n'est exposé au navigateur.
 
-## Frontière 4H
+## Frontière 4H / cutover 4N
 
 4H ne :
 
 - crée aucune nouvelle table ;
 - modifie aucune commande, PO, notification ou donnée de paiement ;
 - n'ajoute aucune mutation métier à l'Action Center ;
-- ne fabrique pas de scope marché sur `signals` ;
-- ne supprime pas encore la route Legacy `/admin/problems` avant preuve de couverture.
+- ne fabrique pas de scope marché sur `signals`.
+
+Après la preuve 4H, LOT 4N ferme le point d’entrée produit `/admin/problems` : il redirige vers `/admin/action-center`, avec `/admin/problems?legacy=1` comme témoin de rollback. Les règles Legacy rejetées par 4H (`double_payment`, `no_hub_scan`, etc.) ne sont pas réintroduites : leur absence est une correction de vérité, pas une perte de couverture canonique.
 
 ## Preuve attendue
 

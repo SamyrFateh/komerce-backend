@@ -361,6 +361,30 @@ describe('bootstrap/html-routes', () => {
       expect(res.redirect).not.toHaveBeenCalled();
     });
 
+    test.each([
+      '/admin/alerts',
+      '/admin/problems',
+    ])('%s converge vers l’Action Center Canonical', (routePath) => {
+      const res = fakeRes();
+      app._routes[routePath]({ query: {} }, res);
+      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/action-center');
+      expect(res.sendFile).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      '/admin/alerts',
+      '/admin/problems',
+    ])('%s?legacy=1 conserve le rollback Legacy 1', (routePath) => {
+      const res = fakeRes();
+      app._routes[routePath]({ query: { legacy: '1' } }, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+      expect(res.sendFile).toHaveBeenCalledWith(
+        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
+        expect.any(Function)
+      );
+      expect(res.redirect).not.toHaveBeenCalled();
+    });
+
     test('un second chemin admin au hasard sert bien le même index.html (pas de copier-coller cassé)', () => {
       const res = fakeRes();
       app._routes['/admin/simulator']({}, res);

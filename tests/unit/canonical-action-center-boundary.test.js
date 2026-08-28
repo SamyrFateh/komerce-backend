@@ -32,7 +32,7 @@ function fakeRes() {
   };
 }
 
-test('stable Action Center route is Canonical while /admin/alerts remains Legacy during proof', () => {
+test('stable Action Center et anciens points d’entrée Alerts/Problems convergent avec rollback Legacy', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
 
@@ -41,9 +41,20 @@ test('stable Action Center route is Canonical while /admin/alerts remains Legacy
   expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
   expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
-  const legacyRes = fakeRes();
-  app._routes['/admin/alerts']({}, legacyRes);
-  expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  for (const routePath of ['/admin/alerts', '/admin/problems']) {
+    const cutoverRes = fakeRes();
+    app._routes[routePath]({ query: {} }, cutoverRes);
+    expect(cutoverRes.redirect).toHaveBeenCalledWith(302, '/admin/action-center');
+    expect(cutoverRes.sendFile).not.toHaveBeenCalled();
+
+    const legacyRes = fakeRes();
+    app._routes[routePath]({ query: { legacy: '1' } }, legacyRes);
+    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(legacyRes.sendFile).toHaveBeenCalledWith(
+      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
+      expect.any(Function)
+    );
+  }
 });
 
 test('Canonical runtime loads only the Action Center API and no Legacy UI client', () => {

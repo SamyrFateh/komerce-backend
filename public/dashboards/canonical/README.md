@@ -34,6 +34,10 @@ LOT 4L réduit les deux anciens points d’entrée strictement Sourcing :
 `/admin/sourcing` et `/admin/sourcing-scanner` redirigent vers `/admin/workspaces/sourcing`.
 `?legacy=1` conserve temporairement le témoin Legacy 1. `/admin/suppliers` reste Legacy car il couvre aussi des familles de partenaires hors sourcing.
 
+LOT 4N réduit les deux anciennes surfaces de constats :
+`/admin/alerts` et `/admin/problems` redirigent vers `/admin/action-center`.
+`?legacy=1` conserve temporairement les témoins Legacy ; aucun moteur Problems parallèle n’est recréé.
+
 Les aliases `/admin-next/**` et `/admin/pilotage-v2` restent disponibles pendant la fenêtre de cutover.
 
 Le cutover est **additif** : les anciennes capacités qui n'ont pas encore d'équivalent Workspace / Entity 360 / Action Center continuent d'être servies par Legacy 1 sur leurs URLs historiques. Elles ne sont ni supprimées ni masquées.
