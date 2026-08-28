@@ -4,17 +4,17 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 ## Global scorecard
 
-- Features : **31**
+- Features : **32**
 - Healthy : **16**
-- Attention : **15**
+- Attention : **16**
 - Blocked : **0**
-- Business dependencies : **187**
+- Business dependencies : **188**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **40**
-- Gate health — healthy : **31** · blocked : **0**
+- Debt items (total) : **42**
+- Gate health — healthy : **32** · blocked : **0**
 
 ## Gate findings — intégrité de projection
 
@@ -40,9 +40,10 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | auth, infrastructure | admin-dashboard, auth-identity, customs, dashboard, orders, payments, refunds, wallet | 5 |
 | economic-engine | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_snapshots, exchange_rates, finance_config, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, infrastructure, logistics, loyalty, orders | admin-dashboard, catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 1 |
 | incident-management | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | incidents | infrastructure | dashboard, logistics, notifications, payments, platform-ops | 5 |
-| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, logistics, loyalty, market, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet | 11 |
+| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet | 11 |
 | inventory | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | inventory_items | auth, infrastructure, logistics, orders | admin-dashboard, dashboard, infrastructure | 1 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
+| local-stock | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | local_stock | infrastructure | _aucune_ | 2 |
 | logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, incident-management, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, orders, payments, platform-ops, purchasing | 3 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, infrastructure, notifications | economic-engine, logistics, orders, payments | 1 |
 | market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | infrastructure | dashboard, orders | 0 |
@@ -780,7 +781,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - _...1 de plus, voir FEATURE_360.json_
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
-**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -901,6 +902,58 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - js : 37
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="legacy-control-tower"]_
+
+## local-stock
+
+**Kind** : business-feature  ·  **Status** : staging
+
+**Service** : Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.
+
+**Perimeter** :
+- _in_ :
+  - table local_stock (product_id, market_id, location texte, qty_physical)
+  - projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée
+  - ajustement du stock local par un opérateur (mutation directe, tracée updated_by)
+- _out_ :
+  - stock hub/transit (feature inventory — inventory_items, invariant propre)
+  - stock import/national (feature catalog — products.stock, product_skus.stock)
+  - réservation de stock (L4, différé — aucun consommateur checkout aujourd'hui)
+  - référentiel de lieux multiples (un seul entrepôt KM_MAIN au lancement — location est un texte, jamais une FK, tant qu'un deuxième lieu réel n'existe pas)
+  - granularité variant_combo (scope product_id uniquement à ce stade — limitation explicite, pas un oubli)
+  - toute exposition Boutique/checkout (Vague 2, hors périmètre de cette feature)
+  - ETA / délai (appartient au domaine transport rail — DOCTRINE_TRANSPORT_RAILS.md — jamais un concept produit par local-stock)
+
+**Authority** : backend-core — tout changement du calcul de disponibilité locale doit être validé par le propriétaire de local-stock-service.js
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : `local_stock`
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : infrastructure (DECLARED_AND_OBSERVED)
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
+**Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** (2) :
+- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "catalog" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+
+**Implementation** : 2 fichier(s) déclaré(s)
+  - services : 1
+  - tests : 1
+
+_Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="local-stock"]_
 
 ## logistics
 

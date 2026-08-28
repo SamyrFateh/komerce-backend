@@ -14,6 +14,7 @@
       "features/incident-management.feature.js",
       "features/infrastructure.feature.js",
       "features/inventory.feature.js",
+      "features/local-stock.feature.js",
       "features/logistics.feature.js",
       "features/loyalty.feature.js",
       "features/market.feature.js",
@@ -40,7 +41,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 31,
+    "businessManifestsResolved": 32,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -255,6 +256,22 @@
         "owner": "backend-core",
         "since": "2026-01",
         "service": "Réceptionner, affecter et dispatcher les articles au hub.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:local-stock",
+        "name": "local-stock",
+        "file": "features/local-stock.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-08",
+        "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -6935,6 +6952,20 @@
         "category": "tests",
         "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
         "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "local-stock",
+        "category": "services",
+        "declared": "services/local-stock-service.js",
+        "resolvedPath": "services/local-stock-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "local-stock",
+        "category": "tests",
+        "declared": "tests/unit/local-stock-service.test.js",
+        "resolvedPath": "tests/unit/local-stock-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15636,6 +15667,24 @@
         "resolved": true
       },
       {
+        "from": "local-stock",
+        "to": "catalog",
+        "raw": "catalog (produit concerné — lecture seule, jamais products.stock)",
+        "resolved": true
+      },
+      {
+        "from": "local-stock",
+        "to": "market",
+        "raw": "market (référentiel markets — lecture seule)",
+        "resolved": true
+      },
+      {
+        "from": "local-stock",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale : db.js)",
+        "resolved": true
+      },
+      {
         "from": "logistics",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
@@ -22454,6 +22503,22 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
+        "from": "local-stock",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/local-stock-service.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "logistics",
         "to": "auth",
         "channels": [
@@ -27073,7 +27138,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 954
+        "filesObserved": 956
       },
       "boutique": {
         "filesObserved": 173,
@@ -27690,6 +27755,7 @@
         "documents",
         "economic-engine",
         "inventory",
+        "local-stock",
         "logistics",
         "orders",
         "platform-ops",
@@ -28806,6 +28872,27 @@
       "lifecycleOwner": "inventory",
       "resolution": "single-writer"
     },
+    "local_stock": {
+      "writers": [
+        {
+          "feature": "local-stock",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "local-stock",
+      "resolution": "single-writer"
+    },
+    "markets": {
+      "writers": [],
+      "readers": [
+        "local-stock"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
     "carriers": {
       "writers": [
         {
@@ -29149,10 +29236,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 27,
-        "manifestsConnected": 27,
-        "technicalNodesTotal": 354,
-        "technicalNodesOwned": 354,
+        "manifestsDiscovered": 28,
+        "manifestsConnected": 28,
+        "technicalNodesTotal": 355,
+        "technicalNodesOwned": 355,
         "technicalOrphans": 0
       },
       "dash": {
@@ -29197,6 +29284,7 @@
         "infrastructure",
         "inventory",
         "legacy-control-tower",
+        "local-stock",
         "logistics",
         "loyalty",
         "market",
