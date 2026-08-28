@@ -59,6 +59,8 @@ jobs:
           git add \
             bootstrap/html-routes.js \
             tests/unit/bootstrap-html-routes.test.js \
+            tests/unit/canonical-catalog-workspace-boundary.test.js \
+            tests/unit/canonical-catalog-authority-boundary.test.js \
             docs/contract/CATALOG_WORKSPACE_4C.md \
             docs/contract/CATALOG_CUTOVER_4K.md \
             docs/contract/DASHBOARD_CUTOVER_2.md \
@@ -86,6 +88,8 @@ jobs:
           git add \
             bootstrap/html-routes.js \
             tests/unit/bootstrap-html-routes.test.js \
+            tests/unit/canonical-catalog-workspace-boundary.test.js \
+            tests/unit/canonical-catalog-authority-boundary.test.js \
             docs/contract/CATALOG_WORKSPACE_4C.md \
             docs/contract/CATALOG_CUTOVER_4K.md \
             docs/contract/DASHBOARD_CUTOVER_2.md \
