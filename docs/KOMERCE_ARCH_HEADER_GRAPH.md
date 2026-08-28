@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 449
-- Files with full headers: 421
+- Scanned code files: 451
+- Files with full headers: 423
 - Files with lite headers: 28
-- Files with any headers: 449
+- Files with any headers: 451
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1021
-- Edges: 5212
+- Graph nodes: 1024
+- Edges: 5243
 - DB tables: 128
-- Doctrines: 279
+- Doctrines: 280
 - Impact areas: 165
-- Unresolved code edges: 531
+- Unresolved code edges: 537
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 19
+- admin-dashboard: 21
 - auth: 14
 - auth-identity: 6
 - auth-passkey: 7
@@ -79,10 +79,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 20
 - presenter: 1
-- route: 111
+- route: 112
 - route-manifest: 1
 - schema: 1
-- service: 182
+- service: 183
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -218,6 +218,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-catalog-workspace.js — canonical-catalog-workspace-route (catalog, high, full)
 - routes/admin-client-360.js — canonical-client-360-route (admin-dashboard, high, full)
+- routes/admin-client-index.js — canonical-client-index-route (admin-dashboard, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
 - routes/admin-customs-categories.js — dashboard-admin-customs-categories (customs, high, full)
@@ -300,6 +301,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/catalog-workspace.js — canonical-catalog-workspace-service (catalog, high, full)
 - services/client-360.js — canonical-client-360-service (admin-dashboard, high, full)
+- services/client-index.js — canonical-client-index-service (admin-dashboard, high, full)
 - services/client-notification-service.js — client-notification-service (notification, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
@@ -836,6 +838,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-client-360.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-client-360.js -> middleware/require-market-scope (middleware/require-market-scope)
 - depends: routes/admin-client-360.js -> services/client-360 (services/client-360)
+- depends: routes/admin-client-index.js -> db (db)
+- depends: routes/admin-client-index.js -> middleware/auth (middleware/auth)
+- depends: routes/admin-client-index.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
+- depends: routes/admin-client-index.js -> middleware/require-market-scope (middleware/require-market-scope)
+- depends: routes/admin-client-index.js -> services/client-index (services/client-index)
 - depends: routes/admin-costing.js -> db.js (db.js)
 - depends: routes/admin-costing.js -> services/* (services/*)
 - depends: routes/admin-customs-categories.js -> db.js (db.js)
@@ -848,11 +855,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
 - depends: routes/admin-dashboard-market.js -> services/dashboard-admin-context (services/dashboard-admin-context)
 - depends: routes/admin-dashboard-market.js -> services/dashboard-commerce (services/dashboard-commerce)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-finance-canonical (services/dashboard-finance-canonical)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-operations (services/dashboard-operations)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-pilotage-market (services/dashboard-pilotage-market)
-- depends: routes/admin-dashboard.js -> db.js (db.js)
-- depends: routes/admin-dashboard.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

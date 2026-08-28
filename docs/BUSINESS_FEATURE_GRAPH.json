@@ -2488,6 +2488,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/client-index.js",
+        "resolvedPath": "services/client-index.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/dashboard-admin-context.js",
         "resolvedPath": "services/dashboard-admin-context.js",
         "status": "resolved-in-technical-graph"
@@ -2602,6 +2609,13 @@
         "category": "routes",
         "declared": "routes/admin-client-360.js",
         "resolvedPath": "routes/admin-client-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-client-index.js",
+        "resolvedPath": "routes/admin-client-index.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2819,6 +2833,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/action-center.js",
         "resolvedPath": "public/dashboards/canonical/js/action-center.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/client-index.js",
+        "resolvedPath": "public/dashboards/canonical/js/client-index.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3547,6 +3568,27 @@
         "category": "tests",
         "declared": "tests/unit/admin-client-360-route.test.js",
         "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-client-index-route.test.js",
+        "resolvedPath": "tests/unit/admin-client-index-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/client-index-service.test.js",
+        "resolvedPath": "tests/unit/client-index-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-client-index.test.js",
+        "resolvedPath": "tests/unit/canonical-client-index.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10790,7 +10832,7 @@
       },
       {
         "feature": "auth-passkey",
-        "entry": "DELETE /api/auth/passkey/credentials/{id}",
+        "entry": "DELETE /api/auth/passkey/credentials/:id",
         "method": "DELETE",
         "path": "/api/auth/passkey/credentials/{id}",
         "routeFile": "routes/auth-passkey.js",
@@ -11282,6 +11324,22 @@
         "method": "GET",
         "path": "/api/dashboard/clients",
         "routeFile": "routes/dashboard-clients.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/entities/clients",
+        "method": "GET",
+        "path": "/api/admin/entities/clients",
+        "routeFile": "routes/admin-client-index.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/entities/clients/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/entities/clients/market/{id}",
+        "routeFile": "routes/admin-client-index.js",
         "status": "resolved-owned"
       },
       {
@@ -20496,6 +20554,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin-client-index.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin-dashboard-market.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -20836,6 +20898,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/client-index.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-admin-context.js",
                 "targetFile": "db.js"
               },
@@ -20936,6 +21002,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin-client-index.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-client-index.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/admin-dashboard-market.js",
                 "targetFile": "db.js"
               },
@@ -21030,6 +21104,14 @@
               {
                 "sourceFileId": "tests/unit/canonical-action-center-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-client-index-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/client-index-service.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/client-360-service.test.js",
@@ -21247,6 +21329,10 @@
             "evidence": [
               {
                 "sourceFileId": "routes/admin-client-360.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-client-index.js",
                 "targetFile": "middleware/require-market-scope.js"
               },
               {
@@ -22694,6 +22780,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-order-360.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-client-index.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -28642,7 +28732,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 960
+        "filesObserved": 966
       },
       "boutique": {
         "filesObserved": 173,
@@ -30779,8 +30869,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 360,
-        "technicalNodesOwned": 360,
+        "technicalNodesTotal": 362,
+        "technicalNodesOwned": 362,
         "technicalOrphans": 0
       },
       "dash": {
