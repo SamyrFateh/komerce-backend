@@ -1,0 +1,193 @@
+name: One-shot schema drift pending truth
+
+on:
+  push:
+    branches: [fix/schema-drift-pending-truth]
+    paths:
+      - '.github/workflows/schema-drift-pending-truth-one-shot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --ignore-scripts
+
+      - name: Apply schema truth corrections
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function replaceOnce(path, before, after) {
+            const src = fs.readFileSync(path, 'utf8');
+            const count = src.split(before).length - 1;
+            if (count !== 1) throw new Error(`${path}: expected exactly one occurrence, got ${count}: ${before}`);
+            fs.writeFileSync(path, src.replace(before, after));
+          }
+
+          // 1) Headers: only DIRECT DB access belongs in @db-read/@db-write.
+          replaceOnce('services/shipping-customs-workspace.js',
+            ' * @db-write      customs_shipments.market_id',
+            ' * @db-write      customs_shipments');
+          replaceOnce('routes/local-stock.js',
+            ' * @db-read       local_stock, local_stock_allocations (via le service)',
+            ' * @db-read       none');
+          replaceOnce('services/order-display-snapshot.js',
+            ' * @db-read       markets (via utils/currency.js)',
+            ' * @db-read       none');
+          replaceOnce('routes/providers-services.js',
+            ' * @db-read       services, physical_offers, providers (via le service)',
+            ' * @db-read       none');
+          replaceOnce('routes/auth-passkey.js',
+            ' * @db-read       webauthn_credentials, webauthn_challenges, users (via services)\n * @db-write      webauthn_credentials, webauthn_challenges (via services)',
+            ' * @db-read       users\n * @db-write      none');
+
+          // 2) Drift core: a table explicitly created by a local migration but not
+          // live yet is intended/pending, not an allowlist-worthy fiction.
+          {
+            const path = 'scripts/lib/arch-drift-core.js';
+            let src = fs.readFileSync(path, 'utf8');
+            const before = `  const fictionTokens = new Set(fiction.map(f => f.token));\n  const fictionUnlisted = fiction.filter(f => !f.allowed);\n  // Meme diagnostic que les fantomes, cote header cette fois : une fiction\n  // hors liste correspond-elle a une migration locale pas encore en live ?\n  const fictionMigrationHints = new Map();\n  for (const f of fictionUnlisted) {\n    const hit = findLocalMigrationFor(f.token, root);\n    if (hit) fictionMigrationHints.set(f.token, hit);\n  }`;
+            const after = `  const fictionTokens = new Set(fiction.map(f => f.token));\n  // Une reference header vers une table creee par une migration locale mais\n  // absente du dump live est une intention de deploiement (Mode B), pas une\n  // fiction a masquer dans une allowlist. Elle reste visible dans le rapport\n  // et schema-refresh alerte si le deploy tarde, mais elle ne bloque pas la\n  // documentation de la verite live actuelle.\n  const fictionMigrationHints = new Map();\n  const fictionPendingMigration = [];\n  const fictionUnlisted = [];\n  for (const f of fiction.filter(f => !f.allowed)) {\n    const hit = findLocalMigrationFor(f.token, root);\n    if (hit) {\n      fictionMigrationHints.set(f.token, hit);\n      fictionPendingMigration.push(f);\n    } else {\n      fictionUnlisted.push(f);\n    }\n  }`;
+            const count = src.split(before).length - 1;
+            if (count !== 1) throw new Error(`arch-drift-core classification block count=${count}`);
+            src = src.replace(before, after);
+            src = src.replace(
+              '    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,',
+              '    fiction, fictionTokens, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved,'
+            );
+            fs.writeFileSync(path, src);
+          }
+
+          // 3) Gate: pending migration is visible/informative, never silently ignored.
+          {
+            const path = 'scripts/arch-schema-drift-check.js';
+            let src = fs.readFileSync(path, 'utf8');
+            src = src.replace(
+              '  const { fiction, fictionUnlisted, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;',
+              '  const { fiction, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;'
+            );
+            src = src.replace(
+              "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);",
+              "  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length - fictionPendingMigration.length}`);\n  console.log(`Intention migration     : ${fictionPendingMigration.length}`);\n  console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);"
+            );
+            const marker = "  if (fiction.length) {\n    console.log('--- FICTION (header -> table inexistante en base) ---');";
+            const insert = `  if (fictionPendingMigration.length) {\n    console.log('--- INTENTIONS MIGRATION (header -> objet pas encore live, non bloquant) ---');\n    for (const f of fictionPendingMigration) {\n      console.log(\`  [PENDING] \\${f.token}\`);\n      console.log(\`            <- \\${f.files.slice(0, 6).join(', ')}\\${f.files.length > 6 ? ', ...' : ''}\`);\n      console.log(\`            migration : \\${fictionMigrationHints.get(f.token)}\`);\n    }\n    console.log('');\n  }\n`;
+            if (!src.includes(marker)) throw new Error('arch-schema-drift-check marker missing');
+            src = src.replace(marker, insert + marker);
+            fs.writeFileSync(path, src);
+          }
+
+          // 4) Reconcile report: pending migration stays visible, but is not manual debt.
+          {
+            const path = 'scripts/arch-reconcile.js';
+            let src = fs.readFileSync(path, 'utf8');
+            const marker = "  const stillManual = [];\n";
+            if (!src.includes(marker)) throw new Error('arch-reconcile marker missing');
+            src = src.replace(marker,
+              marker + "  if (a.fictionPendingMigration && a.fictionPendingMigration.length) {\n    console.log(`ℹ️  Intentions migration non live : ${a.fictionPendingMigration.map(f => f.token).join(', ')}`);\n  }\n"
+            );
+            fs.writeFileSync(path, src);
+          }
+
+          // 5) SCHEMA.md: truth live now = 112 tables. Six Vague-2 tables are
+          // NOT live on Railway yet, so restore them to schema-pending blocks.
+          {
+            const path = 'docs/SCHEMA.md';
+            let md = fs.readFileSync(path, 'utf8');
+            md = md.replace('| Tables | 105 | Vérifié sur le dump live Railway. |', '| Tables | 112 | Vérifié sur le dump live Railway. |');
+
+            // Catalog grant is already live but was never catalogued.
+            const catalogAnchor = '| `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |';
+            if (!md.includes('`catalog_global_access_grants`')) {
+              if (!md.includes(catalogAnchor)) throw new Error('catalog anchor missing');
+              md = md.replace(catalogAnchor, catalogAnchor + '\n| `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |');
+            }
+
+            // Live tables that pre-date this sync but were missing from the catalogue.
+            const marketSection = `### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)\n\n| Table | Rôle |\n|---|---|\n| \`markets\` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |\n| \`operator_market_scopes\` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. |\n| \`currency_parities\` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |\n| \`dashboard_global_access_grants\` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |\n| \`webauthn_credentials\` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |\n| \`webauthn_challenges\` | Challenges WebAuthn éphémères persistés pour garantir single-use et séparation des cérémonies. Vérifiée live Railway. |\n\n`;
+            if (!md.includes('`operator_market_scopes`')) {
+              const anchor = '### 4.13 Monitoring et alertes (10 tables)';
+              if (!md.includes(anchor)) throw new Error('4.13 anchor missing');
+              md = md.replace(anchor, marketSection + anchor);
+            }
+
+            const start = md.indexOf('### 4.14 Discovery locale — stock Komerce local & offres tierces');
+            const end = md.indexOf('\n---\n\n## 5. Vues critiques', start);
+            if (start < 0 || end < 0) throw new Error('4.14 boundaries missing');
+            const pendingSection = `### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\n\n> **État Railway** : migrations 154–157 présentes dans le repo mais pas encore observées dans le dump live. Les objets restent volontairement en \`schema-pending\` jusqu’à confirmation Railway ; le code shadow ne transforme jamais cette intention en vérité live.\n\n| Table | Rôle |\n|---|---|\n\n<!-- schema-pending\nobject: local_stock\nkind: table\nmigration: 154\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Stock physique vendable détenu par Komerce par marché et localisation ; distinct du stock import/SKU et de l’inventaire de transit. Migration 157 ajoute commercial_exposure et le cycle d’allocation.\n-->\n<!-- schema-pending\nobject: providers\nkind: table\nmigration: 155\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Tiers local payable portant l’exécution d’un service ou d’une offre physique ; identité distincte de users.\n-->\n<!-- schema-pending\nobject: services\nkind: table\nmigration: 155\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Prestations de travail proposées par un provider ; exposition commerciale désactivée par défaut.\n-->\n<!-- schema-pending\nobject: inquiries\nkind: table\nmigration: 155\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Demandes adressées à un provider, sans réservation de ressource ; migration 156 ajoute la cible physical_offer.\n-->\n<!-- schema-pending\nobject: physical_offers\nkind: table\nmigration: 156\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Produits physiques proposés par un tiers local, séparés des prestations de service.\n-->\n<!-- schema-pending\nobject: local_stock_allocations\nkind: table\nmigration: 157\nsection: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)\nrole: Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente.\n-->\n`;
+            md = md.slice(0, start) + pendingSection + md.slice(end);
+            fs.writeFileSync(path, md);
+          }
+
+          // 6) Regression test for migration-backed fiction classification.
+          fs.writeFileSync('tests/unit/arch-drift-pending-migration.test.js', `
+          'use strict';
+          const fs = require('fs');
+          const os = require('os');
+          const path = require('path');
+          const core = require('../../scripts/lib/arch-drift-core');
+
+          describe('arch drift pending migration classification', () => {
+            test('migration-backed missing table is pending, unrelated missing table remains blocking', () => {
+              const root = fs.mkdtempSync(path.join(os.tmpdir(), 'komerce-arch-drift-'));
+              fs.mkdirSync(path.join(root, 'docs', 'db'), { recursive: true });
+              fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
+              fs.mkdirSync(path.join(root, 'migrations'), { recursive: true });
+              fs.writeFileSync(path.join(root, 'docs', 'db', 'railway-live-schema.sql'), 'CREATE TABLE public.live_table (id uuid);\\n');
+              fs.writeFileSync(path.join(root, 'docs', 'SCHEMA.md'), '| Table | Rôle |\\n|---|---|\\n| \\`live_table\\` | live |\\n');
+              fs.writeFileSync(path.join(root, 'docs', 'komerce-arch-header-graph.json'), JSON.stringify({ nodes: [
+                { type: 'file', file: 'services/a.js', dbRead: ['pending_table', 'missing_table'], dbWrite: [] }
+              ] }));
+              fs.writeFileSync(path.join(root, 'scripts', 'arch-debt-budget.json'), JSON.stringify({ knownDriftAllowlist: {}, ratchet: { liveTablesUndocumented: 0 } }));
+              fs.writeFileSync(path.join(root, 'migrations', '200_pending.sql'), 'CREATE TABLE pending_table (id uuid);\\n');
+
+              const result = core.analyze(root);
+              expect(result.fictionPendingMigration.map(f => f.token)).toEqual(['pending_table']);
+              expect(result.fictionUnlisted.map(f => f.token)).toEqual(['missing_table']);
+            });
+          });
+          `.replace(/^          /gm, '').trimStart());
+          NODE
+
+      - name: Generate architecture and prove schema gates
+        run: |
+          npm run arch:gen
+          npm run arch:reconcile:write
+          npm run arch:gate
+          node scripts/schema-promote-all.js --check
+          npx --no-install jest tests/unit/arch-drift-pending-migration.test.js tests/unit/schema-promote-columns.test.js --runInBand
+          git diff --check
+
+      - name: Assert absolute drift state
+        run: |
+          node <<'NODE'
+          const core = require('./scripts/lib/arch-drift-core');
+          const a = core.analyze();
+          if (a.fictionUnlisted.length) throw new Error(`blocking fiction: ${a.fictionUnlisted.map(x => x.token).join(', ')}`);
+          if (a.ghosts.length) throw new Error(`ghosts: ${a.ghosts.join(', ')}`);
+          if (a.undocumented.length) throw new Error(`undocumented live: ${a.undocumented.join(', ')}`);
+          console.log('✅ drift strict: 0 blocking fiction, 0 ghosts, 0 undocumented live');
+          console.log(`ℹ️ pending migrations: ${a.fictionPendingMigration.map(x => x.token).join(', ') || 'none'}`);
+          NODE
+
+      - name: Commit product changes and remove helper
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/schema-drift-pending-truth-one-shot.yml
+          git add docs/SCHEMA.md scripts/lib/arch-drift-core.js scripts/arch-schema-drift-check.js scripts/arch-reconcile.js \
+            services/shipping-customs-workspace.js routes/local-stock.js services/order-display-snapshot.js \
+            routes/providers-services.js routes/auth-passkey.js tests/unit/arch-drift-pending-migration.test.js \
+            docs/KOMERCE_ARCH_HEADER_GRAPH.md docs/komerce-arch-header-graph.json scripts/arch-debt-budget.json
+          git commit -m 'fix(schema): reconcile live and pending database truth'
+          git push origin HEAD:fix/schema-drift-pending-truth
