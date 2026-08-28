@@ -20,8 +20,10 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Preserve implementation script
-        run: cp scripts/ci-pricing-cutover-4j.py /tmp/ci-pricing-cutover-4j.py
+      - name: Preserve implementation scripts
+        run: |
+          cp scripts/ci-pricing-cutover-4j.py /tmp/ci-pricing-cutover-4j.py
+          cp scripts/ci-pricing-cutover-4j-fix.py /tmp/ci-pricing-cutover-4j-fix.py
 
       - name: Build route-only cutover from current main
         run: |
@@ -30,6 +32,7 @@ jobs:
           git fetch origin main
           git checkout -B feat/canonical-pricing-cutover-4j origin/main
           python3 /tmp/ci-pricing-cutover-4j.py
+          python3 /tmp/ci-pricing-cutover-4j-fix.py
           git status --short
 
       - name: Install dependencies
@@ -77,6 +80,7 @@ jobs:
       - name: Ensure helper files stay out of product branch
         run: |
           test ! -e scripts/ci-pricing-cutover-4j.py
+          test ! -e scripts/ci-pricing-cutover-4j-fix.py
           test ! -e .github/workflows/canonical-pricing-cutover-4j.yml
 
       - name: Commit and push product branch
