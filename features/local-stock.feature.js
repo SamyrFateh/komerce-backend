@@ -97,6 +97,7 @@ module.exports = {
     consumes: [
       'catalog (produit concerné — lecture seule, jamais products.stock)',
       'market (référentiel markets — lecture seule)',
+      'infrastructure (dépendance technique transversale : db.js)',
     ],
   },
 

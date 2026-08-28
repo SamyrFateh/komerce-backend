@@ -48,7 +48,7 @@
     "healthy": 16,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 187,
+    "businessDependencies": 188,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -10299,6 +10299,13 @@
           ]
         },
         {
+          "consumer": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11155,7 +11162,7 @@
               {
                 "declared": "services/local-stock-service.js",
                 "resolvedPath": "services/local-stock-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -11235,21 +11242,24 @@
           "count": 0
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [],
       "projections": {
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",

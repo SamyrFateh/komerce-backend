@@ -6959,7 +6959,7 @@
         "category": "services",
         "declared": "services/local-stock-service.js",
         "resolvedPath": "services/local-stock-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "local-stock",
@@ -15679,6 +15679,12 @@
         "resolved": true
       },
       {
+        "from": "local-stock",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale : db.js)",
+        "resolved": true
+      },
+      {
         "from": "logistics",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
@@ -22510,7 +22516,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "logistics",
@@ -27169,7 +27175,7 @@
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 5,
-      "TECHNICAL_PRIMITIVE": 1,
+      "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
       "BUSINESS_FEATURE_INTERFACE": 0,
@@ -27343,21 +27349,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "local-stock",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "platform-ops",
         "to": "auth-passkey",
         "family": "COMPOSITION_ROOT_WIRING",
@@ -27470,7 +27461,6 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
@@ -29248,8 +29238,8 @@
       "backend": {
         "manifestsDiscovered": 28,
         "manifestsConnected": 28,
-        "technicalNodesTotal": 354,
-        "technicalNodesOwned": 354,
+        "technicalNodesTotal": 355,
+        "technicalNodesOwned": 355,
         "technicalOrphans": 0
       },
       "dash": {
@@ -29340,20 +29330,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "local-stock -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"local-stock\" vers \"infrastructure\""
-      }
-    ],
-    "debt": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "local-stock -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"local-stock\" vers \"infrastructure\""
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -29559,11 +29537,11 @@
       }
     ],
     "summary": {
-      "signals": 1,
-      "debt": 1,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 41
+      "classifiedCandidates": 40
     }
   }
 }
