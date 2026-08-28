@@ -44,4 +44,19 @@ replace_once(
     "      'de ce lot, voir RECHALLENGE_DISCOVERY_LOCALE_COMPLET).',\n      'Frontière métier autonome d’exposition et de demande : un service ou une offre ' +\n      'physique n’est exposable que sous l’autorité d’un provider actif, et une inquiry ' +\n      'reste un cycle sent -> answered -> accepted|declined — jamais une réservation, ' +\n      'un paiement ou un calendrier. Ces invariants sont testés dans providers-service.test.js.',\n    ],"
 )
 
-print('CLIENT_INDEX_4I_TEST_AND_GOVERNANCE_TRUTH_FIXED')
+# Security360 deliberately fail-closes when a runtime route cannot be matched to
+# a static guard chain. Its named-handler parser is line-bounded; keeping these
+# declarations on one line makes authenticate + requireAdmin statically visible
+# without changing a single runtime middleware or authorization rule.
+replace_once(
+    'routes/admin-client-index.js',
+    "router.get(\n  '/clients/market/:marketCode',\n  authenticate,\n  requireAdmin,\n  rejectClientMarketIdentity,\n  resolveRequestedMarket,\n  attachAuthorizedMarkets,\n  requireClientIndexMarketRead,\n  marketHandler\n);",
+    "router.get('/clients/market/:marketCode', authenticate, requireAdmin, rejectClientMarketIdentity, resolveRequestedMarket, attachAuthorizedMarkets, requireClientIndexMarketRead, marketHandler);"
+)
+replace_once(
+    'routes/admin-client-index.js',
+    "router.get(\n  '/clients',\n  authenticate,\n  requireAdmin,\n  rejectClientMarketIdentity,\n  requireDashboardGlobalAuthority,\n  globalHandler\n);",
+    "router.get('/clients', authenticate, requireAdmin, rejectClientMarketIdentity, requireDashboardGlobalAuthority, globalHandler);"
+)
+
+print('CLIENT_INDEX_4I_TEST_GOVERNANCE_SECURITY_TRUTH_FIXED')
