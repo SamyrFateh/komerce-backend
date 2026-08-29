@@ -8,8 +8,8 @@
  * @outputs       webauthn_options, kmrc_jwt_cookie, credential_state, safe_credential_metadata
  * @depends       services/webauthn-service.js, services/webauthn-management-service.js, utils/auth-cookie.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       webauthn_credentials, webauthn_challenges, users (via services)
- * @db-write      webauthn_credentials, webauthn_challenges (via services)
+ * @db-read       users
+ * @db-write      none
  * @db-txn        challenge_single_use, ceremony_separation, no_client_trusted_origin, revoke_only_own_credential
  * @doctrine      no_homemade_crypto, session_via_auth8_helper, auth6_authenticator_management
  * @impact-areas  auth, account-security

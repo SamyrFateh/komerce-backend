@@ -86,6 +86,9 @@ function main() {
 
   // 3. Ce que reconcile NE touche PAS (reste a la main).
   const stillManual = [];
+  if (a.fictionPendingMigration && a.fictionPendingMigration.length) {
+    console.log(`ℹ️  Intentions migration non live : ${a.fictionPendingMigration.map(f => f.token).join(', ')}`);
+  }
   if (a.fictionUnlisted.length) {
     stillManual.push(`Fiction hors liste (vrai bug a corriger, ou a inscrire volontairement dans l'allowlist) : ${a.fictionUnlisted.map(f => f.token).join(', ')}`);
   }

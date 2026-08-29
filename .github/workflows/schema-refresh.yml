@@ -1,12 +1,17 @@
-name: Refresh docs/db/railway-live-schema.sql
+name: Refresh Railway schema → SCHEMA.md
 
-# Déclenché automatiquement quand une migration est mergée sur main,
-# ou manuellement depuis l'UI GitHub.
 on:
   push:
     branches: [main, master]
     paths:
       - 'migrations/**.sql'
+      - 'scripts/schema-promote.js'
+      - 'scripts/schema-promote-columns.js'
+      - 'scripts/schema-promote-all.js'
+      - 'scripts/lib/arch-drift-core.js'
+      - 'scripts/arch-schema-drift-check.js'
+      - 'scripts/arch-reconcile.js'
+      - '.github/workflows/schema-refresh.yml'
   workflow_dispatch:
     inputs:
       reason:
@@ -14,7 +19,6 @@ on:
         required: false
         default: 'refresh ponctuel'
 
-# Un seul run à la fois — les pushes rapides successifs annulent le précédent
 concurrency:
   group: schema-refresh
   cancel-in-progress: true
@@ -26,7 +30,7 @@ permissions:
 
 jobs:
   refresh:
-    name: Dump schema Railway → docs/db/ → PR
+    name: Railway → dump → SCHEMA.md → architecture → PR
     runs-on: ubuntu-latest
 
     steps:
@@ -34,20 +38,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── pg_dump via Docker plutôt que via apt ──────────────────────────
-      # Après 3 échecs différents avec le paquet apt (DNS interne Railway,
-      # puis version 16 par défaut d'Ubuntu, puis update-alternatives qui
-      # ne bascule pas vers 18 malgré le paquet PGDG installé), on abandonne
-      # l'approche "installer le bon pg_dump sur le runner" — trop fragile,
-      # dépendante de l'image ubuntu-latest et de sa config alternatives.
-      #
-      # À la place : l'image Docker officielle postgres:18 (déjà buildée
-      # avec le bon pg_dump, aucune ambiguïté de version possible) tourne
-      # directement sur le runner (Docker est natif sur ubuntu-latest).
-      # On l'expose comme un shim /usr/local/bin/pg_dump pour que
-      # scripts/db-snapshot.js (qui appelle spawnSync('pg_dump', args))
-      # n'ait besoin d'aucune modification.
-      - name: Set up pg_dump 18 via Docker (avoids all apt/alternatives version drift)
+      - name: Set up pg_dump 18 via Docker
         run: |
           docker pull postgres:18
           printf '#!/bin/sh\nexec docker run --rm --network host postgres:18 pg_dump "$@"\n' | sudo tee /usr/local/bin/pg_dump > /dev/null
@@ -61,22 +52,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── Retry avec backoff ────────────────────────────────────────────
-      # PROBLÈME RÉSOLU ICI (constaté 2026-07-14) : ce job est déclenché par
-      # le même push que celui qui déclenche le déploiement Railway
-      # (railway.toml → releaseCommand = "node scripts/migrate.js"). Les deux
-      # tournent en PARALLÈLE, pas en séquence. GitHub Actions termine son
-      # install + pg_dump largement avant que Railway ait fini de builder,
-      # déployer, et exécuter la migration sur la base live. Résultat observé
-      # depuis le durcissement du 2026-07-12 (--all) : le check échoue
-      # systématiquement car la migration n'est simplement "pas encore là" —
-      # jamais un vrai problème de dump, juste une course perdue à chaque
-      # fois. Le job échouait alors silencieusement (aucune PR, aucune alerte
-      # visible), et le dump committé prenait du retard indéfiniment.
+      # Deux vérités distinctes sont mesurées ici :
+      #   1. snapshot_ok : Railway est joignable et le dump live est valide ;
+      #   2. deploy_lag  : toutes les migrations du repo ne sont pas encore live.
       #
-      # Fix : retenter avec un backoff assez long pour couvrir un déploiement
-      # Railway normal, plutôt que d'abandonner après un seul essai.
-      - name: Dump + verify with retry (waits for Railway release to finish)
+      # Un retard de déploiement reste une alerte rouge, mais ne doit jamais
+      # empêcher de versionner la vérité live effectivement observée. Sinon
+      # SCHEMA.md reste mécaniquement faux précisément lorsque Railway dérive.
+      - name: Dump Railway + wait for deployment convergence
         id: snapshot
         env:
           DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
@@ -85,58 +68,76 @@ jobs:
           MAX_ATTEMPTS=6
           SLEEP_SECONDS=60
           attempt=1
+          snapshot_ok=false
+          fully_converged=false
+
           until [ "$attempt" -gt "$MAX_ATTEMPTS" ]; do
             echo "::group::Tentative ${attempt}/${MAX_ATTEMPTS}"
             node scripts/db-snapshot.js
             snapshot_status=$?
-            if [ $snapshot_status -eq 0 ]; then
+
+            if [ "$snapshot_status" -eq 0 ]; then
+              snapshot_ok=true
               node scripts/check-schema-freshness.js --all
               freshness_status=$?
+              if [ "$freshness_status" -eq 0 ]; then
+                fully_converged=true
+                echo "::endgroup::"
+                break
+              fi
             else
-              freshness_status=1
+              echo "Snapshot Railway impossible à cette tentative."
             fi
             echo "::endgroup::"
 
-            if [ $freshness_status -eq 0 ]; then
-              echo "success=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-
-            echo "⏳ Tentative ${attempt} échouée — migration probablement pas encore déployée sur Railway."
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
-              echo "   Nouvelle tentative dans ${SLEEP_SECONDS}s..."
-              sleep $SLEEP_SECONDS
+              echo "⏳ Railway n'est pas encore convergé — nouvel essai dans ${SLEEP_SECONDS}s."
+              sleep "$SLEEP_SECONDS"
             fi
             attempt=$((attempt + 1))
           done
 
-          echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "❌ Toutes les tentatives ont échoué (${MAX_ATTEMPTS} x ${SLEEP_SECONDS}s)."
-          exit 1
+          if [ "$snapshot_ok" != "true" ]; then
+            echo "success=false" >> "$GITHUB_OUTPUT"
+            echo "deploy_lag=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Impossible d'extraire un snapshot Railway valide après ${MAX_ATTEMPTS} tentatives."
+            exit 1
+          fi
 
-      # ── Alerte visible si toutes les tentatives ont échoué ─────────────
-      # Remplace le silence précédent : plutôt qu'un job rouge que personne
-      # ne regarde, on ouvre (ou met à jour) une issue explicite. Recherche
-      # une issue ouverte existante avec le label pour éviter le spam à
-      # chaque nouveau push pendant que le souci persiste.
-      - name: Open/update alert issue if all retries failed
-        if: failure() && steps.snapshot.outputs.success == 'false'
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          if [ "$fully_converged" = "true" ]; then
+            echo "deploy_lag=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Railway est joignable et toutes les migrations courantes sont live."
+          else
+            echo "deploy_lag=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Snapshot Railway valide, mais certaines migrations du repo ne sont toujours pas live après ${MAX_ATTEMPTS} tentatives. La vérité live sera synchronisée quand même."
+          fi
+          exit 0
+
+      - name: Promote SCHEMA.md + reconcile architecture
+        if: steps.snapshot.outputs.success == 'true'
+        run: |
+          node scripts/schema-promote-all.js --write
+          npm run arch:reconcile:write
+          npm run arch:gate
+          node scripts/schema-promote-all.js --check
+          git diff --check
+
+      - name: Open/update Railway deployment lag alert
+        if: steps.snapshot.outputs.deploy_lag == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const label = 'schema-drift-alert';
-            const title = '🔴 schema-refresh: dump Railway toujours pas à jour après retries';
-
-            // Le label peut ne pas exister encore sur ce repo — le créer
-            // plutôt que de laisser issues.create échouer sur un label inconnu.
+            const title = '🔴 Railway: migrations du repo non encore live';
             try {
               await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: label });
             } catch {
               await github.rest.issues.createLabel({
                 owner: context.repo.owner, repo: context.repo.repo,
                 name: label, color: 'B60205',
-                description: 'schema-refresh.yml a épuisé ses retries — dump Railway potentiellement périmé',
-              }).catch(() => {}); // course possible entre deux runs concurrents, sans conséquence
+                description: 'Le schéma Railway live ne couvre pas encore toutes les migrations du repo',
+              }).catch(() => {});
             }
 
             const { data: existing } = await github.rest.issues.listForRepo({
@@ -145,20 +146,15 @@ jobs:
               state: 'open',
               labels: label,
             });
-            // listForRepo renvoie aussi les PR portant ce label — on ne garde que les vraies issues.
             const openIssue = existing.find(i => !i.pull_request);
-
             const body = [
-              `Le workflow \`schema-refresh.yml\` a épuisé ses tentatives (retry + backoff) `,
-              `sans obtenir un dump Railway cohérent avec toutes les migrations de \`migrations/**.sql\`.`,
+              `Le snapshot Railway est **valide**, mais \`check-schema-freshness --all\` reste rouge après les retries.`,
+              `La synchronisation du dump et de \`SCHEMA.md\` continue volontairement : elle documente la vérité live observée au lieu de la masquer.`,
               ``,
               `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               `Commit : ${context.sha}`,
               ``,
-              `Causes probables :`,
-              `- le déploiement Railway a pris plus longtemps que prévu (build lourd, queue de déploiement) — relancer manuellement ce workflow (workflow_dispatch) une fois le déploiement Railway confirmé terminé ;`,
-              `- \`RAILWAY_DATABASE_URL\` a expiré/changé ;`,
-              `- une migration a été ajoutée à \`migrations/**.sql\` sans être réellement appliquée (vérifier \`node scripts/migrate.js\` côté Railway).`,
+              `Action : vérifier le déploiement Railway / \`node scripts/migrate.js\`, puis relancer ce workflow.`,
             ].join('\n');
 
             if (openIssue) {
@@ -170,99 +166,86 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner, repo: context.repo.repo,
                 title, body, labels: [label],
-              }).catch(async (e) => {
-                // Filet ultime : si la création avec label échoue encore pour
-                // une raison quelconque, ne pas perdre l'alerte silencieusement.
-                core.warning(`Création avec label échouée (${e.message}), retry sans label.`);
-                await github.rest.issues.create({
-                  owner: context.repo.owner, repo: context.repo.repo, title, body,
-                });
               });
             }
 
+      - name: Open/update hard snapshot failure alert
+        if: failure() && steps.snapshot.outputs.success == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'schema-drift-alert';
+            const title = '🔴 schema-refresh: snapshot Railway impossible';
+            try {
+              await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: label });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: label, color: 'B60205',
+                description: 'Le refresh du schéma Railway nécessite une intervention',
+              }).catch(() => {});
+            }
+            const body = [
+              `Impossible d'extraire un snapshot Railway valide après tous les retries.`,
+              ``,
+              `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Commit : ${context.sha}`,
+              ``,
+              `Vérifier \`RAILWAY_DATABASE_URL\`, la disponibilité PostgreSQL et le réseau du runner.`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title, body, labels: [label],
+            });
 
       - name: Check for changes
+        if: steps.snapshot.outputs.success == 'true'
         id: diff
         run: |
-          git diff --quiet docs/db/railway-live-schema.sql \
-            && echo "changed=false" >> $GITHUB_OUTPUT \
-            || echo "changed=true" >> $GITHUB_OUTPUT
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Fichiers synchronisés :"
+            git status --short
+          fi
 
-      # ── Token dédié pour la création de PR (jamais GITHUB_TOKEN ici) ────
-      # PROBLÈME : une PR ouverte avec le GITHUB_TOKEN automatique d'un run
-      # NE DÉCLENCHE PAS les autres workflows sur événement `pull_request`
-      # (protection anti-boucle native de GitHub Actions, documentée). Or
-      # pr-enforcement.yml (le "Required verdict" qui protège main) se
-      # déclenche uniquement sur `pull_request: [opened, synchronize, ...]`.
-      # Avec GITHUB_TOKEN, la PR auto-créée par ce workflow ne recevrait
-      # JAMAIS ses checks obligatoires — soit bloquée indéfiniment si la
-      # protection de branche les exige strictement, soit pire, mergeable
-      # sans aucune vérification si elle ne les exige pas nommément.
-      #
-      # Fix : un PAT dédié (secrets.SCHEMA_REFRESH_PR_TOKEN, scope `repo`,
-      # idéalement compte de service — jamais un token personnel éphémère)
-      # est traité par GitHub comme une PR humaine normale, déclenche
-      # pull_request normalement. Seule cette étape l'utilise ; le checkout
-      # et la création d'issue d'alerte restent sur GITHUB_TOKEN (suffisant,
-      # pas concernés par cette limite).
-      #
-      # Prérequis manuels (hors CI, à faire une fois côté repo) :
-      #   1. Créer un PAT classic ou fine-grained, scope `repo`
-      #   2. Settings → Secrets and variables → Actions → New repository
-      #      secret → SCHEMA_REFRESH_PR_TOKEN
-      #   3. Settings → Actions → General → Workflow permissions → cocher
-      #      "Allow GitHub Actions to create and approve pull requests"
-      #      (réglage distinct de permissions.pull-requests: write ci-dessus
-      #      — les deux sont nécessaires, ni l'un ni l'autre ne suffit seul)
-
-      # Échec clair et actionnable plutôt qu'une erreur d'auth cryptique de
-      # peter-evans/create-pull-request si le secret n'a pas encore été
-      # configuré (prérequis manuel #2 ci-dessus).
       - name: Verify PR token secret is configured
         if: steps.diff.outputs.changed == 'true'
         run: |
           if [ -z "${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}" ]; then
-            echo "::error::secrets.SCHEMA_REFRESH_PR_TOKEN absent — une PR créée avec GITHUB_TOKEN ne déclencherait pas pr-enforcement.yml. Configurer ce secret avant de relancer (voir commentaire ci-dessus)."
+            echo "::error::secrets.SCHEMA_REFRESH_PR_TOKEN absent — impossible de créer une PR qui déclenche les checks pull_request."
             exit 1
           fi
 
-      - name: Create PR if schema changed
+      - name: Create PR if live truth changed
         id: cpr
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
-          commit-message: 'chore(schema): refresh docs/db/railway-live-schema.sql depuis Railway prod'
+          commit-message: 'chore(schema): sync Railway live schema into canonical docs'
           branch: chore/schema-refresh-auto
           delete-branch: true
-          title: '🗄️ Refresh railway-live-schema.sql (post-migration)'
+          title: '🗄️ Sync Railway schema → SCHEMA.md'
           body: |
-            Refresh automatique de `docs/db/railway-live-schema.sql` après merge d'une migration.
+            Synchronisation automatique depuis la vérité Railway effectivement observée.
 
-            Généré par `node scripts/db-snapshot.js` (pg_dump --schema-only sur Railway prod,
-            artefacts PG18 neutralisés — `\restrict`, `transaction_timeout`).
+            Chaîne :
+            `Railway → pg_dump → schema-promote objets+colonnes → arch-reconcile → arch-gate`.
 
-            Vérifié en mode strict `node scripts/check-schema-freshness.js --all` :
-            toutes les migrations courantes doivent être présentes dans le dump.
+            La promotion est fail-closed :
+            - objet : uniquement `schema-pending` confirmé live ;
+            - colonne : paire exacte table+colonne prouvée par la migration et le dump live.
 
-            Auto-merge activé — se fusionne seul dès que les checks obligatoires
-            (dont `Required verdict`) passent au vert. Aucun check n'est court-circuité :
-            l'auto-merge de GitHub n'agit qu'une fois la CI verte, il automatise
-            uniquement le clic, jamais la vérification elle-même.
+            Si des migrations du repo ne sont pas encore déployées, elles restent
+            volontairement en `intended_migration_schema` et une issue
+            `schema-drift-alert` signale le retard. La documentation ne prétend
+            jamais qu'elles sont live avant Railway.
+
+            Auto-merge activé uniquement après les checks obligatoires.
           labels: schema,automated
 
-      # Un dump de schéma généré n'a pas de décision humaine à porter — les
-      # checks obligatoires (schema-freshness, resurrection, Required verdict)
-      # sont la seule barrière, comme pour toute PR. L'auto-merge GitHub
-      # respecte ces checks à la lettre : il attend qu'ils soient tous verts,
-      # ne fusionne jamais avant, jamais en les court-circuitant. Sans ce
-      # step, chaque refresh reste une PR ouverte à fusionner à la main —
-      # exactement le point de friction identifié le 22 août (PR #872).
-      #
-      # Prérequis manuel (repo settings, une fois) :
-      #   Settings → General → Pull Requests → "Allow auto-merge"
-      # Sans ce réglage, `gh pr merge --auto` échoue avec un message clair
-      # plutôt qu'un échec silencieux.
       - name: Enable auto-merge on the PR
         if: steps.diff.outputs.changed == 'true' && steps.cpr.outputs.pull-request-number
         env:
@@ -272,5 +255,5 @@ jobs:
             --auto --merge --repo "${{ github.repository }}"
 
       - name: No changes
-        if: steps.diff.outputs.changed == 'false'
-        run: echo "ℹ️ railway-live-schema.sql déjà à jour — aucune PR créée."
+        if: steps.snapshot.outputs.success == 'true' && steps.diff.outputs.changed == 'false'
+        run: echo "ℹ️ Railway, SCHEMA.md et projections d'architecture sont déjà synchronisés."

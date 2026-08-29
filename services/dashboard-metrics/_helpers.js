@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @none
  * @used-by       control-tower.js, costing.js, logistics.js, workspaces.js (services/dashboard-metrics/*)
- * @db-read       (none)
+ * @db-read       cash_collections, orders, parcels
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      resolve_before_behavior_change

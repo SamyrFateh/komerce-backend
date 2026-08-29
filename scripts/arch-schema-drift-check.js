@@ -51,7 +51,7 @@ function main() {
   }
 
   const { live, headerTokens, allowlist, ratchetMax } = a;
-  const { fiction, fictionUnlisted, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;
+  const { fiction, fictionUnlisted, fictionPendingMigration, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;
   const ratchetOver = undocumented.length > ratchetMax;
 
   console.log('============================================================');
@@ -64,7 +64,8 @@ function main() {
   console.log('');
   console.log('--- TIER BLOQUANT ---');
   console.log(`Fiction (hors liste)    : ${fictionUnlisted.length}`);
-  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length}`);
+  console.log(`Fiction (figee/connue)  : ${fiction.length - fictionUnlisted.length - fictionPendingMigration.length}`);
+  console.log(`Intention migration     : ${fictionPendingMigration.length}`);
   console.log(`Fantomes SCHEMA.md      : ${ghosts.length}`);
   console.log('');
   console.log('--- CLIQUET ---');
@@ -74,9 +75,20 @@ function main() {
 
   const blockers = [];
 
-  if (fiction.length) {
+  if (fictionPendingMigration.length) {
+    console.log('--- INTENTIONS MIGRATION (header -> objet pas encore live, non bloquant) ---');
+    for (const f of fictionPendingMigration) {
+      console.log(`  [PENDING] ${f.token}`);
+      console.log(`            <- ${f.files.slice(0, 6).join(', ')}${f.files.length > 6 ? ', ...' : ''}`);
+      console.log(`            migration : ${fictionMigrationHints.get(f.token)}`);
+    }
+    console.log('');
+  }
+
+  const blockingFiction = fiction.filter(f => f.allowed || fictionUnlisted.some(u => u.token === f.token));
+  if (blockingFiction.length) {
     console.log('--- FICTION (header -> table inexistante en base) ---');
-    for (const f of fiction) {
+    for (const f of blockingFiction) {
       const flag = f.allowed ? 'FIGEE ' : 'HORS-LISTE ';
       console.log(`  [${flag}] ${f.token}`);
       console.log(`            <- ${f.files.slice(0, 6).join(', ')}${f.files.length > 6 ? ', ...' : ''}`);

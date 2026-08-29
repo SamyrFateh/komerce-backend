@@ -8,8 +8,8 @@
  * @outputs       market_scoped_shipping_customs_queue, delegated_domain_mutations
  * @depends       db, services/scan-engine.js, services/customs-shipment-service.js
  * @used-by       routes/admin-shipping-customs-workspace.js
- * @db-read       orders, parcels, users, relais, scan_events, customs_shipments, customs_shipment_parcels
- * @db-write      customs_shipments.market_id
+ * @db-read       orders, parcels, parcel_items, users, relais, scan_events, customs_shipments, customs_shipment_parcels
+ * @db-write      customs_shipments
  * @db-write-via:scan-engine parcels, scan_events, incidents, orders
  * @db-write-via:customs-shipment-service customs_shipments, customs_shipment_parcels, orders, parcels, order_item_real_cost_allocations
  * @db-txn        delegated_to_domain_authority

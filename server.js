@@ -8,7 +8,7 @@
  * @outputs       mounted_api, boutique_static, crons, server_lifecycle
  * @depends       bootstrap/env.js, bootstrap/security.js, bootstrap/api-routes.js, bootstrap/html-routes.js, bootstrap/crons.js, bootstrap/feature-wiring.js, routes/shared-cart.js, middleware/csrf-origin.js
  * @db-write      none
- * @db-read      none
+ * @db-read      currency_parities
  * @used-by       railway-runtime
  * @doctrine      raw_body_webhook_intact, routes_canoniques, static_boutique_served
  * @impact-areas  all-api, shared-cart, payments, boutique, crons, auth
