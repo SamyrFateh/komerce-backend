@@ -747,7 +747,7 @@
 
   /* ── Texte superposé dans la réserve claire de l'asset ── */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 0;
@@ -766,7 +766,7 @@
   }
 
   /* Masquer le bubble & logo-glow sur desktop */
-  html.k-home-premium-v1 .k-hero-bubble { display: none !important; }
+  html.k-home-premium-v1 .k-hero-bubble { display: none; }
 
   /* Badge eyebrow */
   html.k-home-premium-v1 .k-hero-badge {
@@ -875,7 +875,7 @@
 
   /* Trust bar */
   html.k-home-premium-v1 .k-hero-trust {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: 5px;
     font-size: 10.5px;
