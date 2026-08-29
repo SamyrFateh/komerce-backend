@@ -18330,16 +18330,11 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 11,
+            "count": 10,
             "files": [
               {
                 "declared": "css/hero-cart-proxy.css",
                 "resolvedPath": "public/boutique/css/hero-cart-proxy.css",
-                "status": "resolved-on-disk-no-header"
-              },
-              {
-                "declared": "css/share-cart.css",
-                "resolvedPath": "public/boutique/css/share-cart.css",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -18645,7 +18640,7 @@
             ]
           }
         },
-        "totalFiles": 57,
+        "totalFiles": 56,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,
