@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 453
-- Files with full headers: 425
+- Scanned code files: 454
+- Files with full headers: 426
 - Files with lite headers: 28
-- Files with any headers: 453
+- Files with any headers: 454
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1023
-- Edges: 5256
-- DB tables: 124
-- Doctrines: 281
+- Graph nodes: 1027
+- Edges: 5266
+- DB tables: 126
+- Doctrines: 282
 - Impact areas: 165
-- Unresolved code edges: 541
+- Unresolved code edges: 545
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 2
 
@@ -52,7 +52,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payment: 17
 - providers-services: 2
 - purchasing: 8
-- recommendations: 4
+- recommendations: 5
 - refunds: 2
 - shared: 1
 - shared-cart: 25
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 183
+- service: 184
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -739,6 +739,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
 - uses: (aucun — Vague 2 D4 -> routes/local-stock.js ((aucun — Vague 2 D4)
 - uses: (aucun — Vague 2 D4 -> routes/providers-services.js ((aucun — Vague 2 D4)
+- uses: (aucun — Vague 2 D5 -> services/discovery-rail-composer.js ((aucun — Vague 2 D5)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -776,6 +777,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: hors M2) -> middleware/require-market-scope.js (hors M2))
 - uses: inventory -> services/order-mutation-service.js (inventory)
+- uses: jamais branchée -> services/discovery-rail-composer.js (jamais branchée)
 - uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
 - uses: logistics -> services/order-mutation-service.js (logistics)
 - uses: magic-link validation -> utils/auth-session.js (magic-link validation)
@@ -854,8 +856,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-customs-shipments.js -> services/* (services/*)
 - depends: routes/admin-dashboard-market.js -> db (db)
 - depends: routes/admin-dashboard-market.js -> middleware/auth (middleware/auth)
-- depends: routes/admin-dashboard-market.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
-- depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
 
 ## Files Still Without Headers Or Aggregation
 

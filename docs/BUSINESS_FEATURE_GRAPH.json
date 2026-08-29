@@ -9273,7 +9273,7 @@
         "category": "services",
         "declared": "services/discovery-rail-composer.js",
         "resolvedPath": "services/discovery-rail-composer.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "recommendations",
@@ -30959,8 +30959,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 364,
-        "technicalNodesOwned": 364,
+        "technicalNodesTotal": 365,
+        "technicalNodesOwned": 365,
         "technicalOrphans": 0
       },
       "dash": {
