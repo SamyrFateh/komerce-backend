@@ -1,26 +1,6 @@
 {
-  "total": 43,
+  "total": 16,
   "keys": [
-    "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
-    "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
-    "#k-modal .k-modal-cart-icon|||@media (max-width: 899px) {|||height",
-    "#k-modal .k-modal-cart-icon|||@media (max-width: 899px) {|||width",
-    "#k-modal .k-modal-name-row|||@media (min-width: 900px) {|||margin-top",
-    "#k-modal .k-modal-price-row|||@media (min-width: 900px) {|||gap",
-    "#k-modal .k-modal-price-row|||@media (min-width: 900px) {|||margin-top",
-    "#k-modal .k-modal-promo-badge|||@media (min-width: 900px) {|||font-size",
-    "#k-modal .k-modal-promo-badge|||@media (min-width: 900px) {|||padding",
-    "#k-modal .k-modal-share-row|||@media (min-width: 900px) {|||display",
-    "#k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list)|||@media (min-width: 900px) {|||padding",
-    "#k-modal .k-modal-trust|||@media (min-width: 900px) {|||padding",
-    "#k-modal .k-sug-card-actions.is-filled .k-sug-qty|||@media (max-width: 899px) {|||min-width",
-    "#k-modal .k-sug-card-actions.is-filled .k-sug-step|||@media (max-width: 899px) {|||width",
-    "#k-modal .k-sug-card-actions.is-filled|||@media (max-width: 899px) {|||grid-template-columns",
-    "#k-modal .k-sug-grid|||@media (max-width: 899px) {|||gap",
-    "#k-modal .k-sug-promo-badge|||global|||max-width",
-    "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section|||@media (min-width: 900px) {|||margin-top",
-    "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||border-bottom",
-    "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||margin-bottom",
     ".k-bnav-badge|||global|||border",
     ".k-bnav-badge|||global|||height",
     ".k-bnav-badge|||global|||padding",
@@ -31,13 +11,6 @@
     ".k-hero-img|||global|||height",
     ".k-hero-mini-slogan|||global|||display",
     ".k-skeleton-price|||global|||border-radius",
-    ".k-sug-card-actions|||global|||justify-content",
-    ".k-sug-card-bottom|||global|||padding",
-    ".k-sug-promo-badge|||global|||font-size",
-    ".k-sug-promo-badge|||global|||left",
-    ".k-sug-promo-badge|||global|||top",
-    ".k-sug-qty|||global|||color",
-    ".k-sug-qty|||global|||font-size",
     ".k-wallet-balance|||global|||font-size",
     ".k-wallet-section|||global|||border",
     ".k-wallet-section|||global|||border-radius",
@@ -45,5 +18,5 @@
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size"
   ],
-  "savedAt": "2026-08-29T20:34:08.102Z"
+  "savedAt": "2026-08-29T20:40:13.637Z"
 }

@@ -36,7 +36,6 @@
 
   #k-modal .k-sug-card-actions.is-filled {
     display: grid;
-    grid-template-columns: 24px 22px 24px;
     align-items: center;
     padding: 0;
     border: 1px solid var(--cta-green);
@@ -46,7 +45,6 @@
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-step {
-    width: 24px;
     height: 26px;
     padding: 0;
     border: 0;
@@ -57,7 +55,6 @@
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
-    min-width: 22px;
     text-align: center;
     color: var(--white);
   }

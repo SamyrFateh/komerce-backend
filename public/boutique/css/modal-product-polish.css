@@ -37,12 +37,15 @@
 #k-modal .k-modal-promo-badge,
 #k-modal .k-sug-promo-badge {
   box-sizing: border-box;
-  max-width: calc(100% - 16px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.15;
   pointer-events: none;
+}
+
+#k-modal .k-modal-promo-badge {
+  max-width: calc(100% - 16px);
 }
 
 #k-modal .k-modal-promo-badge {
