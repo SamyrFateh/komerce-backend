@@ -1,4 +1,4 @@
-name: Map B2 Side Cart Cross Owner
+name: Apply B2 Side Cart Cross Owner
 
 on:
   push:
@@ -6,42 +6,102 @@ on:
       - refactor/boutique-debt-zero-b2-side-cart-cross-owner
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  map:
+  patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: refactor/boutique-debt-zero-b2-side-cart-cross-owner
-      - name: Locate exact selector owners
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - name: Remove three losing cross-owner declarations
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const { BUNDLES } = require('./public/boutique/scripts/css-bundles.js');
-          const selectors = [
-            '#k-cart-surface-switch.k-cart-tabs',
-            '#k-modal .k-modal-cart-slot',
-          ];
-          for (const bundle of BUNDLES) {
-            for (const name of bundle.files) {
-              const file = path.join('public/boutique/css', `${name}.css`);
-              const css = fs.readFileSync(file, 'utf8');
-              for (const selector of selectors) {
-                const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const re = new RegExp(`(?:^|\\n)\\s*${esc}\\s*\\{([\\s\\S]*?)\\}`, 'g');
-                let m;
-                while ((m = re.exec(css))) {
-                  console.log(`SOURCE=${name}.css BUNDLE=${bundle.out} SELECTOR=${selector}`);
-                  console.log(m[1].trim());
-                  console.log('---');
-                }
-              }
-            }
-          }
-          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-# one-shot source map; removed before PR
+          changes = [
+              ('public/boutique/css/shared-list-side-cart.css', '#k-cart-surface-switch.k-cart-tabs', ['background']),
+              ('public/boutique/css/modal-shell.css', '#k-modal .k-modal-cart-slot', ['justify-content', 'padding-block']),
+          ]
+
+          removed = []
+          for filename, selector, props in changes:
+              path = Path(filename)
+              css = path.read_text(encoding='utf-8')
+              rule_re = re.compile(r'(^\s*' + re.escape(selector) + r'\s*\{)([\s\S]*?)(^\s*\})', re.M)
+              matches = list(rule_re.finditer(css))
+              edited = False
+              for match in matches:
+                  body = match.group(2)
+                  new_body = body
+                  local_removed = []
+                  for prop in props:
+                      decl_re = re.compile(r'(?m)(^|;)([ \t\r\n]*)' + re.escape(prop) + r'\s*:\s*[^;{}]*;')
+                      new_body, count = decl_re.subn(lambda m: m.group(1) + m.group(2), new_body, count=1)
+                      if count:
+                          local_removed.append(prop)
+                  if local_removed:
+                      if set(local_removed) != set(props):
+                          raise SystemExit(f'partial removal for {selector} in {filename}: {local_removed}')
+                      css = css[:match.start()] + match.group(1) + new_body + match.group(3) + css[match.end():]
+                      removed.extend((filename, selector, prop) for prop in local_removed)
+                      edited = True
+                      break
+              if not edited:
+                  raise SystemExit(f'no matching losing declarations for {selector} in {filename}')
+              path.write_text(css, encoding='utf-8')
+
+          if len(removed) != 3:
+              raise SystemExit(f'expected exactly 3 removals, got {len(removed)}')
+          print('Removed exactly 3 losing cross-owner declarations')
+          PY
+      - name: Rebuild canonical CSS bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove ownership and no new debt
+        run: |
+          npm --prefix public/boutique test -- --runInBand tests/unit/side-cart-cross-owner-css.test.js
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower ratchet by exactly three keys
+        run: |
+          OLD_CASCADE=$(node -p "require('./public/boutique/scripts/.css-guard-baseline.json').total")
+          OLD_SPEC=$(node -p "require('./public/boutique/scripts/.css-specificity-guard-baseline.json').total")
+          npm --prefix public/boutique run check:css-guard:save
+          npm --prefix public/boutique run check:css-specificity-guard:save
+          NEW_CASCADE=$(node -p "require('./public/boutique/scripts/.css-guard-baseline.json').total")
+          NEW_SPEC=$(node -p "require('./public/boutique/scripts/.css-specificity-guard-baseline.json').total")
+          if [ $((OLD_CASCADE - NEW_CASCADE)) -ne 3 ]; then
+            echo "Expected cascade decrease of 3, got ${OLD_CASCADE} -> ${NEW_CASCADE}"
+            exit 1
+          fi
+          cat > public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_SIDE_CART_CROSS_OWNER.md <<EOF
+          # Boutique CSS Debt — B2-1b side-cart cross-owner closure
+
+          The three remaining side-cart cascade conflicts were removed without changing the winning desktop values.
+
+          - shared-list-side-cart.css: removed the losing desktop tab background.
+          - modal-shell.css: removed losing modal cart-slot justify-content and padding-block.
+          - Winning desktop values remain in side-cart-desktop-polish.css.
+          - Cascade baseline: **${OLD_CASCADE} → ${NEW_CASCADE}**
+          - Specificity baseline: **${OLD_SPEC} → ${NEW_SPEC}**
+          - Side-cart cascade conflicts after this patch: **0**
+          - New CSS debt keys: **0** (strict guards passed before ratchet save)
+          EOF
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/shared-list-side-cart.css public/boutique/css/modal-shell.css public/boutique/css/dist public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_SIDE_CART_CROSS_OWNER.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "refactor(boutique): close side-cart cross-owner cascade debt"
+          git push origin HEAD:refactor/boutique-debt-zero-b2-side-cart-cross-owner
