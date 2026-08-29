@@ -266,6 +266,29 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |
 | `webauthn_challenges` | Challenges WebAuthn éphémères persistés pour garantir single-use et séparation des cérémonies. Vérifiée live Railway. |
 
+
+<!-- schema-pending
+object: sourcing_global_access_grants
+kind: table
+migration: 149
+section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
+role: Grants persistés autorisant explicitement les surfaces Sourcing globales ; aucune autorité globale implicite.
+-->
+<!-- schema-pending
+object: pricing_global_access_grants
+kind: table
+migration: 152
+section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
+role: Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur.
+-->
+<!-- schema-pending
+object: decision_signal_global_access_grants
+kind: table
+migration: 153
+section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
+role: Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses.
+-->
+
 ### 4.13 Monitoring et alertes (10 tables)
 
 | Table | Rôle |

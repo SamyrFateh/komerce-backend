@@ -11,6 +11,7 @@ on:
       - 'scripts/lib/arch-drift-core.js'
       - 'scripts/arch-schema-drift-check.js'
       - 'scripts/arch-reconcile.js'
+      - 'docs/SCHEMA.md'
       - '.github/workflows/schema-refresh.yml'
   workflow_dispatch:
     inputs:
