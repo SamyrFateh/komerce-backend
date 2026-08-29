@@ -348,6 +348,7 @@
 
   /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
   /* .k-subcats-rail desktop max-width → boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
+  .k-sec-header { scroll-margin-top: var(--nav-stack-h, calc(var(--header-h, 72px) + 64px)); }
 
 }
 
@@ -536,18 +537,16 @@
   /* Sticky wrapper */
   .k-hero-cats-sticky {
     top: var(--header-h, 72px);
-    z-index: 180;
-    margin-top: 0;
     /* Opaque (pas de rgba) : la barre doit masquer totalement les cartes
        qui défilent dessous au scroll, pas laisser transparaître leurs
        couleurs/images à travers un fond semi-transparent + blur. */
-    background: rgb(248, 246, 241);
     border-radius: 0 0 20px 20px;
     /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
-    box-shadow:
-      0 8px 32px rgba(100,175,90,.10),
-      0 1px 0 rgba(198,168,93,.12);
     padding-bottom: 8px;
+    z-index: 110;
+    margin-top: 8px;
+    background: var(--page-bg);
+    box-shadow: 0 1px 0 var(--border-text-07);
   }
 
   /* ── Lot 2 / :has() — raccord sticky↔sous-cats ──────────────────

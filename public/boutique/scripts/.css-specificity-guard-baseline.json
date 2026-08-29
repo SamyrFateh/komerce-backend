@@ -1,14 +1,5 @@
 {
-  "total": 8,
-  "keys": [
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-header|||.k-header|||backdrop-filter",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||background",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||box-shadow",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||margin-top",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||z-index",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-search|||.k-search|||box-shadow",
-    "k-home-premium-v1|||html.k-home-premium-v1 .k-sec-header|||.k-sec-header|||scroll-margin-top",
-    "modal-open|||body.modal-open|||body|||position"
-  ],
-  "savedAt": "2026-08-29T21:08:20.692Z"
+  "total": 0,
+  "keys": [],
+  "savedAt": "2026-08-29T21:24:11.219Z"
 }
