@@ -9637,7 +9637,7 @@
             ]
           },
           "scripts": {
-            "count": 88,
+            "count": 89,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -10045,6 +10045,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/schema-sync-summary.js",
+                "resolvedPath": "scripts/schema-sync-summary.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/seed.js",
                 "resolvedPath": "scripts/seed.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10082,7 +10087,7 @@
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
@@ -10165,6 +10170,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/schema-sync-summary.test.js",
+                "resolvedPath": "tests/unit/schema-sync-summary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/upload.test.js",
                 "resolvedPath": "tests/unit/upload.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10207,7 +10217,7 @@
             ]
           }
         },
-        "totalFiles": 275,
+        "totalFiles": 277,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -114,6 +114,7 @@ module.exports = {
       'scripts/check-boutique.mjs',
       'scripts/check-no-market-id-mutation.js',
       'scripts/check-schema-freshness.js',
+      'scripts/schema-sync-summary.js',
       'scripts/ci-migrate.js',
       'scripts/ci-probe-token.js',
       'scripts/code-quality-gate.js',
@@ -358,6 +359,7 @@ module.exports = {
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
       'tests/unit/request-id.test.js',
+      'tests/unit/schema-sync-summary.test.js',
       // tests/unit/rules-engine.test.js — transféré à business-rules (arbitrage B)
       'tests/unit/upload.test.js',
     ],

@@ -5428,6 +5428,13 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/schema-sync-summary.js",
+        "resolvedPath": "scripts/schema-sync-summary.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/ci-migrate.js",
         "resolvedPath": "scripts/ci-migrate.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6956,6 +6963,13 @@
         "category": "tests",
         "declared": "tests/unit/request-id.test.js",
         "resolvedPath": "tests/unit/request-id.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/schema-sync-summary.test.js",
+        "resolvedPath": "tests/unit/schema-sync-summary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28907,7 +28921,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 972
+        "filesObserved": 974
       },
       "boutique": {
         "filesObserved": 176,
