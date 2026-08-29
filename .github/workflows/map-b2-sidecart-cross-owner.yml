@@ -1,0 +1,45 @@
+name: Map B2 Side Cart Cross Owner
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b2-side-cart-cross-owner
+
+permissions:
+  contents: read
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b2-side-cart-cross-owner
+      - name: Locate exact selector owners
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { BUNDLES } = require('./public/boutique/scripts/css-bundles.js');
+          const selectors = [
+            '#k-cart-surface-switch.k-cart-tabs',
+            '#k-modal .k-modal-cart-slot',
+          ];
+          for (const bundle of BUNDLES) {
+            for (const name of bundle.files) {
+              const file = path.join('public/boutique/css', `${name}.css`);
+              const css = fs.readFileSync(file, 'utf8');
+              for (const selector of selectors) {
+                const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const re = new RegExp(`(?:^|\\n)\\s*${esc}\\s*\\{([\\s\\S]*?)\\}`, 'g');
+                let m;
+                while ((m = re.exec(css))) {
+                  console.log(`SOURCE=${name}.css BUNDLE=${bundle.out} SELECTOR=${selector}`);
+                  console.log(m[1].trim());
+                  console.log('---');
+                }
+              }
+            }
+          }
+          NODE
