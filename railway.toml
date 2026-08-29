@@ -7,12 +7,10 @@
 [build]
 installCommand = "npm ci --omit=dev"
 
-[deploy]
-releaseCommand = "node scripts/migrate.js"
-startCommand = "node server.js"
-
 # Railway ne déploiera QUE si un fichier matchant ces patterns change.
-# Les commits qui ne touchent que docs/, .github/, scripts/ seront ignorés.
+# Les commits qui ne touchent que docs/, .github/ ou autres surfaces hors
+# runtime peuvent ainsi être ignorés. `watchPatterns` appartient au bloc
+# build dans le schéma Railway actuel.
 watchPatterns = [
   "routes/**",
   "middleware/**",
@@ -32,3 +30,9 @@ watchPatterns = [
   "package-lock.json",
   "railway.toml"
 ]
+
+[deploy]
+# Migration authority : exécuter le runner APRÈS le build et AVANT que la
+# nouvelle version commence à servir. Un exit != 0 doit bloquer le déploiement.
+preDeployCommand = ["node scripts/migrate.js"]
+startCommand = "node server.js"
