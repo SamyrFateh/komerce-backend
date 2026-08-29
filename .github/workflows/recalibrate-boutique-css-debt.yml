@@ -24,8 +24,8 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
-      - name: Prove dist bundles are fresh
-        run: npm --prefix public/boutique run check:cache
+      - name: Rebuild canonical dist bundles
+        run: npm --prefix public/boutique run deploy:css
       - name: Prove no new cascade or specificity debt
         run: |
           npm --prefix public/boutique run check:css-guard
@@ -41,23 +41,23 @@ jobs:
           cat > public/boutique/docs/BOUTIQUE_CSS_DEBT_REBASE.md <<EOF
           # Boutique CSS Debt — B2-0 recalibration
 
-          Recalibration performed only after both strict ratchets passed against the previous baselines.
+          Recalibration performed only after rebuilding the canonical dist bundles and passing both strict ratchets against the previous baselines.
 
           - Cascade conflicts: **${OLD_CASCADE} → ${NEW_CASCADE}**
           - Global-state specificity overrides: **${OLD_SPEC} → ${NEW_SPEC}**
           - New keys versus previous baselines: **0** (strict gates passed before save)
-          - `css/dist` freshness: **verified before scan**
+          - `css/dist`: **rebuilt from canonical sources before scan**
 
           This is a downward ratchet only. It does not classify the remaining entries as legitimate; B2/B3 must still reduce them by functional family.
           EOF
-      - name: Commit recalibrated baselines
+      - name: Commit rebuilt dist and recalibrated baselines
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/boutique/scripts/.css-guard-baseline.json public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_REBASE.md
+          git add public/boutique/css/dist public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_REBASE.md
           if git diff --cached --quiet; then
-            echo "No baseline reduction to commit"
+            echo "No bundle or baseline change to commit"
             exit 0
           fi
-          git commit -m "test(boutique): recalibrate CSS debt ratchets downward"
+          git commit -m "test(boutique): rebuild dist and recalibrate CSS debt"
           git push origin HEAD:refactor/boutique-debt-zero-b2-recalibrate
