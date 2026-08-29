@@ -75,7 +75,8 @@
 - [x] B2-4 modale/PDP/suggestions : consolider 27 clés cross-owner sur l'ordre canonique du bundle `components.css`, avec 28 suppressions/splits physiques et vérification explicite des winners ; cascade **43 → 16**, famille modale/suggestions **27 → 0 conflit**, 0 nouvelle clé ;
 - [x] B2-final cascade : rembourser les 16 dernières clés (wallet 6, hero 4, bottom-nav 4, cart 1, skeleton 1), avec 17 suppressions/splits physiques, suppression du fragment d'ombre hero invalide déjà ignoré par les navigateurs, et vérification de chaque winner ; cascade **16 → 0**, baseline cascade vide, 0 nouvelle clé ;
 - [x] B3-1 spécificité same-media : classifier les 86 clés et consolider les **43** dont toutes les occurrences physiques sont dans le même contexte media ; transférer la valeur premium gagnante vers le dernier owner de base du même media, supprimer la propriété premium et les perdantes redondantes ; spécificité **86 → 43**, cascade **0 → 0**, 0 nouvelle clé ;
-- [ ] B3-2 : reclassifier les **43** clés de spécificité restantes (premium cross-media + état `modal-open`) et rembourser uniquement après preuve d'ownership par breakpoint ;
+- [x] B3-2 spécificité cross-media sûre : consolider **35** clés premium restantes (23 mixed-media + 12 all-different-media) en retirant le préfixe premium au media gagnant et toutes les déclarations base du même sélecteur/propriété/media, y compris celles masquées par le rapport de spécificité ; spécificité **43 → 8**, cascade **0 → 0**, 0 nouvelle clé ;
+- [ ] B3-3 : re-home explicite des **7** clés premium restantes, puis traitement séparé de l'état transitoire `body.modal-open` ;
 - [ ] figer chaque baisse par le cliquet existant ;
 - [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.
 
