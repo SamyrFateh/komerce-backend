@@ -20,8 +20,9 @@
  *                         samboussas mixé avec un produit et un service dans un même rail
  *
  * DB et services propriétaires mockés — aucune connexion Postgres, aucun SQL direct sur
- * local_stock/services/physical_offers (vérifié : composeDiscoveryRail ne passe jamais par
- * mockDbQuery pour ces domaines, uniquement via les fonctions isXExposable/getX importées).
+ * les tables local_stock, services ou physical_offers (vérifié : composeDiscoveryRail ne
+ * passe jamais par mockDbQuery pour ces domaines, uniquement via les fonctions
+ * isXExposable/getX importées).
  */
 
 let mockDbQuery;

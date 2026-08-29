@@ -18608,7 +18608,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/control-tower",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ControlTowerView.js"
               },
               {
@@ -18623,7 +18623,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/costing",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/CostingView.js"
               },
               {
@@ -18643,12 +18643,12 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/logistics",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/OrdersLogisticsView.js"
               },
               {
                 "endpoint": "/api/admin/dashboard/unified",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/PilotageView.js"
               },
               {
@@ -26927,6 +26927,11 @@
           {
             "channel": "interface",
             "evidence": [
+              {
+                "endpoint": "/api/public/config",
+                "routeFile": "server.js",
+                "consumerFileId": "public/boutique/js/b-utils.js"
+              },
               {
                 "endpoint": "/api/health",
                 "routeFile": "server.js",

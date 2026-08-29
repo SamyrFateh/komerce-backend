@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1027,
-    "edges": 5266,
-    "dbTables": 126,
+    "graphNodes": 1025,
+    "edges": 5265,
+    "dbTables": 124,
     "doctrines": 282,
     "impactAreas": 165,
     "unresolvedCodeEdges": 545,
@@ -13186,8 +13186,7 @@
         "jamais branchée"
       ],
       "dbRead": [
-        "products (via db.js)",
-        "local_stock/services/physical_offers (via les"
+        "products"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -21944,16 +21943,6 @@
       "id": "db:store_credits",
       "type": "db-table",
       "table": "store_credits"
-    },
-    {
-      "id": "db:products (via db.js)",
-      "type": "db-table",
-      "table": "products (via db.js)"
-    },
-    {
-      "id": "db:local_stock/services/physical_offers (via les",
-      "type": "db-table",
-      "table": "local_stock/services/physical_offers (via les"
     },
     {
       "id": "db:economic_variables",
@@ -43123,15 +43112,9 @@
     },
     {
       "from": "services/discovery-rail-composer.js",
-      "to": "db:products (via db.js)",
+      "to": "db:products",
       "type": "db-read",
-      "label": "products (via db.js)"
-    },
-    {
-      "from": "services/discovery-rail-composer.js",
-      "to": "db:local_stock/services/physical_offers (via les",
-      "type": "db-read",
-      "label": "local_stock/services/physical_offers (via les"
+      "label": "products"
     },
     {
       "from": "services/discovery-rail-composer.js",
@@ -68945,8 +68928,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "products (via db.js)",
-        "local_stock/services/physical_offers (via les"
+        "products"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -68957,8 +68939,7 @@
         "recommendations"
       ],
       "mustCheck": [
-        "db:local_stock/services/physical_offers (via les",
-        "db:products (via db.js)",
+        "db:products",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de lecture",
         "impact:recommendations",
         "services/local-stock-service.js",

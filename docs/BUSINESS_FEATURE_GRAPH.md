@@ -1855,7 +1855,7 @@ Meta Graph monté : oui.
 | platform-ops | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| platform-ops | infrastructure | static-code, interface | 29 | **DECLARED_AND_OBSERVED** |
+| platform-ops | infrastructure | static-code, interface | 30 | **DECLARED_AND_OBSERVED** |
 | platform-ops | logistics | static-code, interface, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | platform-ops | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | orders | static-code, interface, data-read | 17 | **DECLARED_AND_OBSERVED** |

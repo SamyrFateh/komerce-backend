@@ -1,39 +1,42 @@
 {
-  "generatedAt": "2026-08-14T22:29:27.488Z",
+  "generatedAt": "2026-08-29T07:58:40.049Z",
   "sources": {
     "backend": {
-      "nodes": 773
+      "nodes": 1025
     },
     "boutique": {
-      "modules": 77,
-      "endpoints": 47
+      "modules": 88,
+      "endpoints": 57
     },
     "dashboards": {
-      "modules": 40,
+      "modules": 41,
       "callEdges": 111
     },
     "contract": {
-      "endpoints": 423
+      "endpoints": 506
     }
   },
   "summary": {
-    "endpointsConsumed": 88,
+    "endpointsConsumed": 96,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
-    "sharedTables": 16
+    "sharedTables": 15
   },
   "endpoints": {
     "/api/public/config": {
       "boutique": [
         "b-checkout",
-        "b-paypal"
+        "b-paypal",
+        "b-utils"
       ],
       "dashboards": [],
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "server.js",
       "services": [],
-      "tables": []
+      "tables": [
+        "currency_parities"
+      ]
     },
     "/api/relais": {
       "boutique": [
@@ -88,7 +91,8 @@
       "routeFile": "routes/orders/create.js",
       "services": [
         "services/*",
-        "services/product-admin-service.js"
+        "services/product-admin-service.js",
+        "services/cart-share-service.js"
       ],
       "tables": [
         "orders",
@@ -99,7 +103,6 @@
         "relais",
         "shared_cart_items",
         "shared_carts",
-        "cart_shares",
         "order_items",
         "order_status_history"
       ]
@@ -256,6 +259,135 @@
         "relais"
       ]
     },
+    "/api/auth/me/notifications": {
+      "boutique": [
+        "b-notifications"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/client-notifications.js",
+      "services": [
+        "services/client-notification-service.js"
+      ],
+      "tables": [
+        "client_notifications",
+        "orders",
+        "relais"
+      ]
+    },
+    "/api/auth/passkey/register/options": {
+      "boutique": [
+        "b-passkey-enrollment"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/register/verify": {
+      "boutique": [
+        "b-passkey-enrollment"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/login/options": {
+      "boutique": [
+        "b-passkey-login"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/login/verify": {
+      "boutique": [
+        "b-passkey-login"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/credentials": {
+      "boutique": [
+        "b-passkey-security"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/step-up/options": {
+      "boutique": [
+        "b-passkey-step-up"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
+    "/api/auth/passkey/step-up/verify": {
+      "boutique": [
+        "b-passkey-step-up"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth-passkey.js",
+      "services": [
+        "services/webauthn-service.js",
+        "services/webauthn-management-service.js"
+      ],
+      "tables": [
+        "users"
+      ]
+    },
     "/api/payments/paypal/create-order": {
       "boutique": [
         "b-paypal"
@@ -379,7 +511,9 @@
       "status": "UNKNOWN",
       "routeFile": "server.js",
       "services": [],
-      "tables": []
+      "tables": [
+        "currency_parities"
+      ]
     },
     "/api/auth/login": {
       "boutique": [
@@ -663,6 +797,8 @@
       "status": "UNKNOWN",
       "routeFile": "routes/cash.js",
       "services": [
+        "services/cash-operations.js",
+        "services/cash-deposit-service.js",
         "services/*"
       ],
       "tables": [
@@ -683,6 +819,8 @@
       "status": "UNKNOWN",
       "routeFile": "routes/cash.js",
       "services": [
+        "services/cash-operations.js",
+        "services/cash-deposit-service.js",
         "services/*"
       ],
       "tables": [
@@ -701,11 +839,10 @@
       "status": "UNKNOWN",
       "routeFile": "routes/signals.js",
       "services": [
-        "services/*"
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ],
-      "tables": [
-        "signals"
-      ]
+      "tables": []
     },
     "/api/admin/signals": {
       "boutique": [],
@@ -716,11 +853,10 @@
       "status": "UNKNOWN",
       "routeFile": "routes/signals.js",
       "services": [
-        "services/*"
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ],
-      "tables": [
-        "signals"
-      ]
+      "tables": []
     },
     "/api/admin/signals/generate": {
       "boutique": [],
@@ -731,11 +867,10 @@
       "status": "UNKNOWN",
       "routeFile": "routes/signals.js",
       "services": [
-        "services/*"
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
       ],
-      "tables": [
-        "signals"
-      ]
+      "tables": []
     },
     "/api/dashboard/clients": {
       "boutique": [],
@@ -784,18 +919,18 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard.js",
+      "routeFile": "routes/admin-dashboard-market.js",
       "services": [
-        "services/*"
+        "services/dashboard-pilotage-market",
+        "services/dashboard-commerce",
+        "services/dashboard-operations",
+        "services/dashboard-finance-canonical",
+        "services/dashboard-admin-context"
       ],
       "tables": [
-        "customs_shipments",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "orders",
-        "parcels",
-        "relais",
-        "signals"
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
       ]
     },
     "/api/dashboard/ops": {
@@ -819,18 +954,18 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard.js",
+      "routeFile": "routes/admin-dashboard-market.js",
       "services": [
-        "services/*"
+        "services/dashboard-pilotage-market",
+        "services/dashboard-commerce",
+        "services/dashboard-operations",
+        "services/dashboard-finance-canonical",
+        "services/dashboard-admin-context"
       ],
       "tables": [
-        "customs_shipments",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "orders",
-        "parcels",
-        "relais",
-        "signals"
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
       ]
     },
     "/api/admin/costing/orders": {
@@ -916,7 +1051,6 @@
       "tables": [
         "customs_shipment_parcels",
         "customs_shipments",
-        "order_item_real_cost_allocations",
         "orders",
         "parcels"
       ]
@@ -936,7 +1070,6 @@
       "tables": [
         "customs_shipment_parcels",
         "customs_shipments",
-        "order_item_real_cost_allocations",
         "orders",
         "parcels"
       ]
@@ -951,14 +1084,9 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin/partners.js",
       "services": [
-        "services/*"
+        "services/partner-admin-service.js"
       ],
-      "tables": [
-        "customs_shipments",
-        "orders",
-        "partners",
-        "suppliers_stats"
-      ]
+      "tables": []
     },
     "/api/pricing/flow": {
       "boutique": [],
@@ -1175,18 +1303,18 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard.js",
+      "routeFile": "routes/admin-dashboard-market.js",
       "services": [
-        "services/*"
+        "services/dashboard-pilotage-market",
+        "services/dashboard-commerce",
+        "services/dashboard-operations",
+        "services/dashboard-finance-canonical",
+        "services/dashboard-admin-context"
       ],
       "tables": [
-        "customs_shipments",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "orders",
-        "parcels",
-        "relais",
-        "signals"
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
       ]
     },
     "/api/admin/economic/history": {
@@ -1222,18 +1350,18 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard.js",
+      "routeFile": "routes/admin-dashboard-market.js",
       "services": [
-        "services/*"
+        "services/dashboard-pilotage-market",
+        "services/dashboard-commerce",
+        "services/dashboard-operations",
+        "services/dashboard-finance-canonical",
+        "services/dashboard-admin-context"
       ],
       "tables": [
-        "customs_shipments",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "orders",
-        "parcels",
-        "relais",
-        "signals"
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
       ]
     },
     "/api/pricing/strategy": {
@@ -1337,19 +1465,16 @@
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
         "services/suppliers/catalog-import-orchestrator.js",
-        "services/catalog-promotion.js"
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "tables": [
-        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
-        "supplier_catalog_imports",
-        "catalog_media",
-        "product_sku_media",
-        "product_variants",
-        "products"
+        "supplier_catalog_imports"
       ]
     },
     "/api/admin/sourcing/candidates": {
@@ -1361,19 +1486,16 @@
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
         "services/suppliers/catalog-import-orchestrator.js",
-        "services/catalog-promotion.js"
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "tables": [
-        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
-        "supplier_catalog_imports",
-        "catalog_media",
-        "product_sku_media",
-        "product_variants",
-        "products"
+        "supplier_catalog_imports"
       ]
     },
     "/api/admin/customs-categories": {
@@ -1400,19 +1522,16 @@
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
         "services/suppliers/catalog-import-orchestrator.js",
-        "services/catalog-promotion.js"
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "tables": [
-        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
-        "supplier_catalog_imports",
-        "catalog_media",
-        "product_sku_media",
-        "product_variants",
-        "products"
+        "supplier_catalog_imports"
       ]
     },
     "/api/admin/sourcing/synthesis": {
@@ -1456,14 +1575,9 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin/partners.js",
       "services": [
-        "services/*"
+        "services/partner-admin-service.js"
       ],
-      "tables": [
-        "customs_shipments",
-        "orders",
-        "partners",
-        "suppliers_stats"
-      ]
+      "tables": []
     },
     "/api/transitaire/ship": {
       "boutique": [],
@@ -1553,7 +1667,6 @@
     ],
     "phantomSeams": [],
     "sharedTables": [
-      "cart_shares",
       "invoices",
       "order_items",
       "order_status_history",
@@ -1572,10 +1685,22 @@
     ]
   },
   "tableBlast": {
+    "currency_parities": {
+      "routes": [
+        "server.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-paypal",
+        "b-utils",
+        "komerce-api"
+      ],
+      "dashboards": []
+    },
     "relais": {
       "routes": [
         "routes/admin-costing.js",
-        "routes/admin-dashboard.js",
+        "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/logistics.js",
         "routes/orders/create.js",
@@ -1587,15 +1712,14 @@
       "boutique": [
         "b-checkout",
         "b-nav",
+        "b-notifications",
         "b-tracking",
         "komerce-api"
       ],
       "dashboards": [
-        "ControlTowerView",
         "CostingView",
         "HubRelaisView",
         "OrdersLogisticsView",
-        "PilotageView",
         "ProblemsView",
         "TransitaireView"
       ]
@@ -1604,9 +1728,8 @@
       "routes": [
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
-        "routes/admin-dashboard.js",
-        "routes/admin/partners.js",
         "routes/cash.js",
+        "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/documents.js",
         "routes/hub-mark-ordered.js",
@@ -1626,6 +1749,7 @@
       "boutique": [
         "b-checkout",
         "b-komerce",
+        "b-notifications",
         "b-paypal",
         "b-tracking",
         "b-wallet",
@@ -1633,21 +1757,19 @@
       ],
       "dashboards": [
         "AccountingView",
-        "ControlTowerView",
         "CostingView",
         "CustomsView",
         "HubRelaisView",
         "InvoicesView",
         "OrdersLogisticsView",
-        "PilotageView",
         "ProblemsView",
         "SanteView",
-        "SuppliersView",
         "TransitaireView"
       ]
     },
     "users": {
       "routes": [
+        "routes/auth-passkey.js",
         "routes/auth.js",
         "routes/cash.js",
         "routes/hub.js",
@@ -1664,6 +1786,10 @@
         "b-greeting",
         "b-identity",
         "b-komerce",
+        "b-passkey-enrollment",
+        "b-passkey-login",
+        "b-passkey-security",
+        "b-passkey-step-up",
         "b-tracking",
         "b-wallet",
         "komerce-api"
@@ -1728,8 +1854,7 @@
     "product_skus": {
       "routes": [
         "routes/orders/create.js",
-        "routes/products.js",
-        "routes/sourcing-scanner.js"
+        "routes/products.js"
       ],
       "boutique": [
         "b-checkout",
@@ -1740,15 +1865,13 @@
         "EconomicFlowView",
         "OrdersLogisticsView",
         "PricingStrategyView",
-        "ProblemsView",
-        "SourcingScannerView"
+        "ProblemsView"
       ]
     },
     "product_variants": {
       "routes": [
         "routes/orders/create.js",
         "routes/products.js",
-        "routes/sourcing-scanner.js",
         "routes/sourcing.js"
       ],
       "boutique": [
@@ -1761,7 +1884,6 @@
         "OrdersLogisticsView",
         "PricingStrategyView",
         "ProblemsView",
-        "SourcingScannerView",
         "SourcingView"
       ]
     },
@@ -1776,7 +1898,6 @@
         "routes/products.js",
         "routes/scans.js",
         "routes/shares.js",
-        "routes/sourcing-scanner.js",
         "routes/sourcing.js"
       ],
       "boutique": [
@@ -1793,7 +1914,6 @@
         "OrdersLogisticsView",
         "PricingStrategyView",
         "ProblemsView",
-        "SourcingScannerView",
         "SourcingView"
       ]
     },
@@ -1831,22 +1951,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "cart_shares": {
-      "routes": [
-        "routes/orders/create.js",
-        "routes/shares.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-favs",
         "b-tracking",
         "komerce-api"
       ],
@@ -1896,6 +2000,15 @@
       ],
       "boutique": [
         "b-checkout"
+      ],
+      "dashboards": []
+    },
+    "cart_shares": {
+      "routes": [
+        "routes/shares.js"
+      ],
+      "boutique": [
+        "b-favs"
       ],
       "dashboards": []
     },
@@ -1955,11 +2068,19 @@
       ],
       "dashboards": []
     },
+    "client_notifications": {
+      "routes": [
+        "routes/client-notifications.js"
+      ],
+      "boutique": [
+        "b-notifications"
+      ],
+      "dashboards": []
+    },
     "parcels": {
       "routes": [
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
-        "routes/admin-dashboard.js",
         "routes/carriers.js",
         "routes/client-tracking.js",
         "routes/hub.js",
@@ -1973,12 +2094,9 @@
         "komerce-api"
       ],
       "dashboards": [
-        "ControlTowerView",
         "CostingView",
         "CustomsView",
         "HubRelaisView",
-        "OrdersLogisticsView",
-        "PilotageView",
         "ProblemsView",
         "SanteView",
         "TransitaireView"
@@ -2129,14 +2247,36 @@
         "SanteView"
       ]
     },
-    "signals": {
+    "markets": {
       "routes": [
-        "routes/admin-dashboard.js",
-        "routes/signals.js"
+        "routes/admin-dashboard-market.js"
       ],
       "boutique": [],
       "dashboards": [
-        "ActionCenterView",
+        "ControlTowerView",
+        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView"
+      ]
+    },
+    "operator_market_scopes": {
+      "routes": [
+        "routes/admin-dashboard-market.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "ControlTowerView",
+        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView"
+      ]
+    },
+    "dashboard_global_access_grants": {
+      "routes": [
+        "routes/admin-dashboard-market.js"
+      ],
+      "boutique": [],
+      "dashboards": [
         "ControlTowerView",
         "CostingView",
         "OrdersLogisticsView",
@@ -2146,47 +2286,12 @@
     "customs_shipments": {
       "routes": [
         "routes/admin-costing.js",
-        "routes/admin-customs-shipments.js",
-        "routes/admin-dashboard.js",
-        "routes/admin/partners.js"
+        "routes/admin-customs-shipments.js"
       ],
       "boutique": [],
       "dashboards": [
-        "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "OrdersLogisticsView",
-        "PilotageView",
-        "SanteView",
-        "SuppliersView"
-      ]
-    },
-    "order_item_cost_imputations": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/admin-dashboard.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "ControlTowerView",
-        "CostingView",
-        "OrdersLogisticsView",
-        "PilotageView"
-      ]
-    },
-    "order_item_real_cost_allocations": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/admin-customs-shipments.js",
-        "routes/admin-dashboard.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "ControlTowerView",
-        "CostingView",
-        "CustomsView",
-        "OrdersLogisticsView",
-        "PilotageView",
         "SanteView"
       ]
     },
@@ -2201,6 +2306,24 @@
         "SanteView"
       ]
     },
+    "order_item_cost_imputations": {
+      "routes": [
+        "routes/admin-costing.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CostingView"
+      ]
+    },
+    "order_item_real_cost_allocations": {
+      "routes": [
+        "routes/admin-costing.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CostingView"
+      ]
+    },
     "customs_shipment_parcels": {
       "routes": [
         "routes/admin-customs-shipments.js"
@@ -2209,26 +2332,6 @@
       "dashboards": [
         "CustomsView",
         "SanteView"
-      ]
-    },
-    "partners": {
-      "routes": [
-        "routes/admin/partners.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "CustomsView",
-        "SuppliersView"
-      ]
-    },
-    "suppliers_stats": {
-      "routes": [
-        "routes/admin/partners.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "CustomsView",
-        "SuppliersView"
       ]
     },
     "cost_benchmarks": {
@@ -2308,24 +2411,6 @@
       ]
     },
     "supplier_catalog_imports": {
-      "routes": [
-        "routes/sourcing-scanner.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "SourcingScannerView"
-      ]
-    },
-    "catalog_media": {
-      "routes": [
-        "routes/sourcing-scanner.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "SourcingScannerView"
-      ]
-    },
-    "product_sku_media": {
       "routes": [
         "routes/sourcing-scanner.js"
       ],

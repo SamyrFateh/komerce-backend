@@ -141,8 +141,8 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'le ranking ne modifie jamais les donnees produit, lecture seule sur catalog',
-    { statement: 'discovery-rail-composer.js ne fait jamais de SQL direct sur ' +
-      'local_stock/services/physical_offers — uniquement via les fonctions ' +
+    { statement: 'discovery-rail-composer.js ne fait jamais de SQL direct sur les ' +
+      'tables local_stock, services ou physical_offers — uniquement via les fonctions ' +
       'propriétaires (isStockExposable, isServiceExposable, isPhysicalOfferExposable, ' +
       'getService, getPhysicalOffer) — Discovery ne possède aucune vérité, il la compose',
       test: 'tests/unit/discovery-rail-composer.test.js' },

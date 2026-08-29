@@ -9,8 +9,9 @@
  * @depends       db, services/local-stock-service.js, services/providers-service.js
  * @used-by       (aucun — Vague 2 D5, shadow : composition disponible, jamais branchée
  *                à une route ou à un composant frontend dans ce lot)
- * @db-read       products (via db.js), local_stock/services/physical_offers (via les
- *                services propriétaires — jamais de SQL direct sur leurs tables)
+ * @db-read       products
+ * @db-read-via:local-stock-service local_stock, local_stock_allocations
+ * @db-read-via:providers-service services, physical_offers, providers
  * @db-write      none
  * @db-txn        single_statement_sufficient
  * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de lecture
@@ -26,7 +27,7 @@
  * DISCOVERY RAIL COMPOSER — Vague 2 D5
  *
  * "Discovery ne possède aucune vérité, il la compose." recommendations
- * n'écrit jamais dans local_stock/services/physical_offers, ne clone jamais
+ * n'écrit jamais dans local_stock, services ou physical_offers, ne clone jamais
  * leurs données en base, ne lit même jamais leurs tables en SQL direct —
  * uniquement via les fonctions déjà propriétaires (isStockExposable,
  * isServiceExposable, isPhysicalOfferExposable, getService,
