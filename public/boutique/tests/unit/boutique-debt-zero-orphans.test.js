@@ -40,4 +40,15 @@ describe('Boutique Debt Zero — orphan shared-cart desktop selectors', () => {
     expect(css).toContain('.k-sc-btn-group { display: none; }');
     expect(contract).toContain("'.k-sc-btn-group'");
   });
+
+  test('le logo-glow hero mort et les !important inline ne reviennent pas', () => {
+    const html = read('index.html');
+    const hero = read('css/hero.css');
+
+    expect(html).not.toContain('k-hero-logo-glow');
+    expect(html).not.toContain('klg-');
+    expect(html).not.toMatch(/style=["'][^"']*!important[^"']*["']/i);
+    expect(hero).not.toContain('.k-hero-logo-glow');
+    expect(hero).not.toContain('klg-');
+  });
 });

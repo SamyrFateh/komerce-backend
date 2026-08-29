@@ -57,7 +57,7 @@
 - [x] sortir la hauteur inline de `#k-header-spacer` vers son owner `layout.css`, puis retirer son dernier `!important` hero — B1b-2, dette ouverte CSS 3 → 2 (`share-cart.css` uniquement) ;
 - [x] supprimer le source mort `share-cart.css` et ses déclarations bundle + manifests — B1b-3, dette CSS ouverte 2 → 0 ;
 - [x] retirer le sous-arbre desktop orphelin (`k-sc-shared-badge`, `k-sc-shared-*`, `k-sc-reshare-btn`, `k-sc-group-view-btn`, `kSharedPulse`) de `boutique-desktop.css` — B1b-4 ; `.k-sc-btn-group` est conservé comme garde de compatibilité car encore référencé par `b-product-open-contract.js` ;
-- [ ] traiter le `style="display:none!important"` historique de `.k-hero-logo-glow` dans `index.html`, actuellement hors du scan CSS `check-important` ;
+- [x] supprimer le vestige complet `.k-hero-logo-glow` (SVG caché + CSS/animations `klg-*`) et interdire les `!important` inline dans `index.html` — B1b-5 ;
 - [ ] corriger `og-cover.jpg` avec un asset réel/cohérent ;
 - [ ] exécuter l'audit npm complet et fermer toute vulnérabilité éventuelle ;
 - [ ] recalculer ensuite les 211 conflits cascade et 87 conflits spécificité sur la vérité corrigée.
