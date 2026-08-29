@@ -1,0 +1,120 @@
+name: Consolidate Boutique B3 Cross-Media Safe Specificity
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b3-specificity-cross-media
+
+permissions:
+  contents: write
+
+jobs:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b3-specificity-cross-media
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - name: Consolidate 35 safe cross-media keys
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),cp=require('child_process');
+          const postcss=require('./public/boutique/node_modules/postcss');
+          const {BUNDLES}=require('./public/boutique/scripts/css-bundles');
+          const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==43)throw new Error(`Expected specificity 43, got ${spec.total}`);
+          if(cascade.total!==0)throw new Error(`Expected cascade 0, got ${cascade.total}`);
+
+          const raw=cp.execFileSync('node',['scripts/css-specificity-guard.js'],{cwd:root,encoding:'utf8',maxBuffer:20*1024*1024});
+          const lines=raw.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/),physical=[];
+          for(let i=0;i<lines.length;i++){
+            const m=lines[i].match(/^🔴 \.([^ ]+) — propriété (.+)$/);if(!m)continue;
+            const w=(lines[i+1]||'').match(/^\s*gagnant\s+([^:]+):L(\d+)\s+(.+)$/);
+            const l=(lines[i+3]||'').match(/^\s*perdant\s+([^:]+):L(\d+)\s+(.+)$/);
+            if(!w||!l)throw new Error('guard parse');
+            physical.push({gc:m[1],prop:m[2],wf:w[1],wl:+w[2],ws:w[3],lf:l[1],ll:+l[2],ls:l[3]});
+          }
+          if(new Set(physical.map(f=>[f.gc,f.ws,f.ls,f.prop].join('|||'))).size!==43)throw new Error('Expected 43 semantic findings');
+
+          const rank=new Map();
+          ['base.css','components.css','desktop.css'].forEach((out,di)=>{const b=BUNDLES.find(x=>x.out===out);b.files.forEach((name,si)=>rank.set(`public/boutique/css/${name}.css`,di*1000+si))});
+          const cache=new Map(),norm=s=>s.replace(/\s+/g,' ').trim(),members=r=>(r.selectors||[r.selector]).map(norm);
+          function load(file){if(!cache.has(file)){const fp=path.resolve(file);cache.set(file,{fp,ast:postcss.parse(fs.readFileSync(fp,'utf8'),{from:file})})}return cache.get(file).ast}
+          function media(r){const a=[];let n=r.parent;while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media')a.unshift(`@media ${n.params}`);n=n.parent}return a.length?a.join(' && '):'global'}
+          function findDecl(file,line,selector,prop){
+            const target=norm(selector),cs=[];load(file).walkRules(r=>{if(!members(r).includes(target))return;(r.nodes||[]).forEach(d=>{if(d.type==='decl'&&d.prop===prop){const dl=d.source?.start?.line||r.source?.start?.line||0,rl=r.source?.start?.line||0;cs.push({r,d,dist:Math.min(Math.abs(dl-line),Math.abs(rl-line))})}})});
+            if(!cs.length)throw new Error(`missing ${file}:${line} ${selector} ${prop}`);cs.sort((a,b)=>a.dist-b.dist);return cs[0];
+          }
+          function resolve(file,line,selector,prop){const x=findDecl(file,line,selector,prop);return{file,line:x.d.source?.start?.line||x.r.source?.start?.line||line,selector,prop,value:x.d.value,important:!!x.d.important,media:media(x.r),rank:rank.get(file)??-1}}
+          const groups=new Map();
+          for(const f of physical){const key=[f.gc,f.ws,f.ls,f.prop].join('|||');if(!groups.has(key))groups.set(key,[]);groups.get(key).push({...f,w:resolve(f.wf,f.wl,f.ws,f.prop),l:resolve(f.lf,f.ll,f.ls,f.prop)})}
+          function strip(sel,gc){return norm(sel.split('.'+gc).join('').replace(/^(html|body)\s+/,''))}
+          const selected=[];
+          for(const [key,rows] of groups){
+            if(rows[0].gc==='modal-open')continue;
+            if(rows.some(r=>strip(r.ws,r.gc)!==norm(r.ls)))throw new Error(`strip mismatch ${key}`);
+            const same=rows.filter(r=>r.w.media===r.l.media),diff=rows.filter(r=>r.w.media!==r.l.media);
+            const earlier=rows.filter(r=>r.w.rank<r.l.rank||(r.w.rank===r.l.rank&&r.w.line<=r.l.line));
+            if(!earlier.length)selected.push({key,rows,bucket:same.length&&diff.length?'mixed':'different'});
+          }
+          if(selected.length!==35)throw new Error(`Expected 35 safe keys, got ${selected.length}`);
+
+          function preserveOthers(rule,decl,target){const sels=members(rule),others=sels.filter(s=>s!==norm(target));if(!others.length)return;const keep=postcss.rule({selector:others.join(', ')});keep.append({prop:decl.prop,value:decl.value,important:!!decl.important});rule.after(keep)}
+          function removeTarget(ref){const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop);preserveOthers(r,d,ref.selector);d.remove();if((r.nodes||[]).filter(n=>n.type!=='comment').length===0)r.remove()}
+          function stripWinner(ref,baseSelector){const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop);const value=d.value,important=!!d.important;preserveOthers(r,d,ref.selector);d.remove();const nr=postcss.rule({selector:baseSelector});nr.append({prop:ref.prop,value,important});r.after(nr);if((r.nodes||[]).filter(n=>n.type!=='comment').length===0)r.remove()}
+          const id=r=>[r.file,r.line,norm(r.selector),r.prop].join('|');
+          let sameMediaLosersRemoved=0,winnerPropertiesStripped=0;
+          for(const {key,rows} of selected){
+            const base=strip(rows[0].ws,rows[0].gc);
+            const winnerValues=[...new Set(rows.map(r=>`${r.w.value}|||${r.w.important}`))];
+            if(winnerValues.length!==1)throw new Error(`Multiple winner values ${key}`);
+            const sameLosers=[...new Map(rows.filter(r=>r.w.media===r.l.media).map(r=>[id(r.l),r.l])).values()];
+            for(const loser of sameLosers){removeTarget(loser);sameMediaLosersRemoved++}
+            const winners=[...new Map(rows.map(r=>[id(r.w),r.w])).values()];
+            for(const winner of winners){stripWinner(winner,base);winnerPropertiesStripped++}
+          }
+          for(const {fp,ast} of cache.values())fs.writeFileSync(fp,ast.toString(),'utf8');
+          console.log(JSON.stringify({safeSemanticKeys:selected.length,sameMediaLosersRemoved,winnerPropertiesStripped,files:[...cache.keys()].sort()},null,2));
+          NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove cascade zero and no new specificity debt
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower specificity ratchet and report
+        run: |
+          npm --prefix public/boutique run check:css-specificity-guard:save
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==8)throw new Error(`Expected specificity 8, got ${spec.total}`);if(cascade.total!==0)throw new Error(`Cascade moved to ${cascade.total}`);
+          const report=[
+            '# Boutique CSS Debt — B3-2 cross-media safe specificity','',
+            '- Specificity baseline: **43 → 8**',
+            '- Safe premium keys consolidated: **35** (23 mixed-media + 12 all-different-media)',
+            '- Cascade baseline: **0 → 0**',
+            '- Strategy: remove the permanent premium prefix at the winner media; delete only same-media base losers; preserve different-media base behavior',
+            '- Remaining: **7 explicit re-home keys + 1 transient `modal-open` state**','',
+            'No winning value changes and no mobile/global declarations outside overlapping same-media conflicts are removed.'
+          ].join('\n')+'\n';fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B3_CROSS_MEDIA.md'),report);console.log(report);
+          NODE
+      - name: Commit B3-2
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css public/boutique/index.html public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B3_CROSS_MEDIA.md
+          git commit -m "refactor(boutique): reduce cross-media specificity debt"
+          git push origin HEAD:refactor/boutique-debt-zero-b3-specificity-cross-media
