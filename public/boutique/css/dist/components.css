@@ -12002,37 +12002,6 @@ body.is-shared-list-context #k-cart-recap-word {
 }
 
 
-/* ── share-cart.css ──────────────────────────────────────── */
-/**
- * @komerce-arch-lite
- * @role          shared-cart-legacy-indicator-styles
- * @domain        shared-cart
- * @layer         ui-style
- * @owner         public/boutique/js/b-share-cart.js
- * @purpose       Conserve uniquement les indicateurs historiques masqués du side cart.
- * @impact-areas  shared-cart, side-cart
- * @version       2026-08
- */
-
-/*
- * Le formulaire historique « Créer une liste » a été supprimé du runtime
- * par la PR #671. Ses sélecteurs `.k-share-modal-*` et `.k-sm-*` ne doivent
- * plus être livrés dans le bundle : le partage actif est désormais direct
- * (identité → création → feuille de partage native).
- *
- * Ces deux indicateurs HTML restent présents pour compatibilité du shell,
- * mais sont volontairement masqués tant que leur parcours n'est pas remis
- * en service par une décision produit explicite.
- */
-.k-sc-shared-badge {
-  display: none !important;
-}
-
-.k-sc-reshare-btn {
-  display: none !important;
-}
-
-
 /* ── identity.css ────────────────────────────────────────── */
 /**
  * identity.css — Komerce OTP / Identity gate styles
