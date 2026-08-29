@@ -124,13 +124,10 @@ jobs:
                 (SELECT COUNT(*)::int FROM signals) AS signal_rows
             `);
             console.log('149-153 prerequisite row counts:', prerequisites.rows[0]);
-
-            const pool = db.pool || db._pool || null;
-            if (pool && typeof pool.end === 'function') await pool.end();
-          })().catch(async (err) => {
+            console.log('READ-ONLY DIAGNOSTIC COMPLETE');
+            process.exit(0);
+          })().catch((err) => {
             console.error(err.stack || err.message);
-            const pool = db.pool || db._pool || null;
-            try { if (pool && typeof pool.end === 'function') await pool.end(); } catch (_) {}
             process.exit(1);
           });
           NODE
