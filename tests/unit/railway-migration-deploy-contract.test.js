@@ -8,9 +8,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { listMigrationFiles } = require('../../scripts/run-migrations');
 
 const root = path.join(__dirname, '..', '..');
 const railway = fs.readFileSync(path.join(root, 'railway.toml'), 'utf8');
+const migration148a = fs.readFileSync(
+  path.join(root, 'migrations', '148a_sourcing_user_role.sql'),
+  'utf8'
+);
 const migration149 = fs.readFileSync(
   path.join(root, 'migrations', '149_sourcing_workspace_business_refs.sql'),
   'utf8'
@@ -31,8 +36,12 @@ test('Railway watchPatterns stay in the build section', () => {
   expect(deployPos).toBeGreaterThan(watchPos);
 });
 
-test('migration 149 introduces sourcing role without unsafe same-transaction enum use', () => {
-  expect(migration149).toContain("ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'sourcing';");
-  expect(migration149).toContain("WHERE role::text = 'sourcing'");
-  expect(migration149).not.toMatch(/WHERE\s+role\s*=\s*'sourcing'/);
+test('sourcing enum preparation is a separate migration ordered before immutable 149', () => {
+  expect(migration148a).toContain("ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'sourcing';");
+  expect(migration149).toContain("WHERE role = 'sourcing'");
+  expect(migration149).not.toContain('ALTER TYPE public.user_role');
+
+  const files = listMigrationFiles();
+  expect(files.indexOf('148a_sourcing_user_role.sql')).toBeGreaterThan(files.indexOf('148_cash_deposit_business_reference.sql'));
+  expect(files.indexOf('148a_sourcing_user_role.sql')).toBeLessThan(files.indexOf('149_sourcing_workspace_business_refs.sql'));
 });
