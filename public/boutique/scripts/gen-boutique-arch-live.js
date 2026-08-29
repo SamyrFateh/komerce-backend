@@ -1,25 +1,23 @@
 #!/usr/bin/env node
 /**
- * gen-arch-live.js — Génère docs/ARCHITECTURE_LIVE.md
+ * gen-boutique-arch-live.js — photographie exécutable de l'architecture Boutique.
  *
- * Photographie l'état RÉEL du code à un instant T.
- * Jamais édité à la main. Régénéré par : npm run docs:arch
- *
- * Diffère de docs/ARCHITECTURE.md (normatif, édité à la main).
+ * Source de vérité bundle : scripts/css-bundles.js.
+ * Le wrapper historique bundle-css.js ne contient plus de configuration et ne doit
+ * jamais être parsé pour reconstruire l'ownership des sources CSS.
  */
 'use strict';
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
+const { BUNDLES } = require('./css-bundles.js');
 
-const ROOT     = path.resolve(__dirname, '..');
-const CSS_DIR  = path.join(ROOT, 'css');
-const JS_DIR   = path.join(ROOT, 'js');
-const INDEX    = path.join(ROOT, 'index.html');
-const BUNDLER  = path.join(__dirname, 'bundle-css.js');
-const OUT      = path.join(ROOT, 'docs', 'BOUTIQUE_ARCHITECTURE_LIVE.md');
+const ROOT = path.resolve(__dirname, '..');
+const CSS_DIR = path.join(ROOT, 'css');
+const JS_DIR = path.join(ROOT, 'js');
+const INDEX = path.join(ROOT, 'index.html');
+const OUT = path.join(ROOT, 'docs', 'BOUTIQUE_ARCHITECTURE_LIVE.md');
 
-// Sélecteurs surveillés (miroir de docs/ARCHITECTURE.md §3)
 const TRACKED_SELECTORS = [
   '.k-chip', '.k-cats-shell', '.k-hero-cats-sticky',
   '#k-subcats-wrap', '.k-subchip',
@@ -30,309 +28,308 @@ const TRACKED_SELECTORS = [
 
 const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];
 
-// ════════════════════════════════════════════════════════════════
 function listCss() {
-  return fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).map(f => f.replace(/\.css$/, ''));
+  return fs.readdirSync(CSS_DIR)
+    .filter(file => file.endsWith('.css'))
+    .map(file => file.replace(/\.css$/, ''))
+    .sort();
 }
-function readCss(name) { return fs.readFileSync(path.join(CSS_DIR, `${name}.css`), 'utf8'); }
-function stripComments(css) { return css.replace(/\/\*[\s\S]*?\*\//g, ''); }
 
-function selectorOccurrences(css, selector) {
-  const cleaned = stripComments(css);
-  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`(^|[,}\\s])${esc}(?![a-zA-Z0-9_-])[^{};]*\\{`, 'gm');
-  const positions = [];
-  let m;
-  while ((m = re.exec(cleaned)) !== null) positions.push(m.index);
-  // Pour chaque pos, déterminer si dans @media desktop
-  return positions.map(pos => ({
-    desktop: isInsideDesktopMQ(cleaned, pos),
-  }));
+function readCss(name) {
+  return fs.readFileSync(path.join(CSS_DIR, `${name}.css`), 'utf8');
+}
+
+function stripComments(css) {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+function bundleIndex() {
+  if (!Array.isArray(BUNDLES) || BUNDLES.length === 0) {
+    throw new Error('css-bundles.js ne fournit aucun bundle canonique');
+  }
+
+  const sourceToBundles = new Map();
+  const bundleConfig = {};
+
+  for (const bundle of BUNDLES) {
+    if (!bundle || typeof bundle.out !== 'string' || !Array.isArray(bundle.files)) {
+      throw new Error('Entrée BUNDLES invalide dans css-bundles.js');
+    }
+    bundleConfig[bundle.out] = [...bundle.files];
+    for (const source of bundle.files) {
+      if (!sourceToBundles.has(source)) sourceToBundles.set(source, []);
+      sourceToBundles.get(source).push(bundle.out);
+    }
+  }
+
+  return { sourceToBundles, bundleConfig };
+}
+
+function inventoryCss() {
+  const onDisk = listCss();
+  const onDiskSet = new Set(onDisk);
+  const { sourceToBundles, bundleConfig } = bundleIndex();
+
+  const rows = onDisk.map(source => {
+    const bundles = sourceToBundles.get(source) || [];
+    return {
+      file: `${source}.css`,
+      lines: readCss(source).split('\n').length,
+      bundles,
+      bundle: bundles.join(', ') || '— ORPHELIN —',
+      orphan: bundles.length === 0,
+    };
+  });
+
+  const missingSources = [...sourceToBundles.keys()]
+    .filter(source => !onDiskSet.has(source))
+    .map(source => `${source}.css`)
+    .sort();
+
+  return { rows, bundleConfig, missingSources };
 }
 
 function isInsideDesktopMQ(css, pos) {
-  let stack = [];
+  const stack = [];
   let i = 0;
   while (i < pos) {
     if (css[i] === '@') {
-      const slice = css.slice(i, i + 80);
+      const slice = css.slice(i, i + 100);
       const mq = slice.match(/^@media[^{]+\{/);
       if (mq) {
-        const desktop = /min-width\s*:\s*(\d+)/.test(mq[0]) &&
-          parseInt(mq[0].match(/min-width\s*:\s*(\d+)/)[1], 10) >= 900;
+        const width = mq[0].match(/min-width\s*:\s*(\d+)/);
+        stack.push(Boolean(width && Number.parseInt(width[1], 10) >= 900));
         i += mq[0].length;
-        stack.push(desktop);
         continue;
       }
     }
     if (css[i] === '{') stack.push(false);
     else if (css[i] === '}') stack.pop();
-    i++;
+    i += 1;
   }
-  return stack.some(x => x === true);
+  return stack.some(Boolean);
 }
 
-// ════════════════════════════════════════════════════════════════
-// 1. Inventaire CSS — disque vs bundle
-// ════════════════════════════════════════════════════════════════
-function inventoryCss() {
-  const onDisk = listCss();
-  const bundlerSrc = fs.readFileSync(BUNDLER, 'utf8');
-  const bundleConfig = {};
-  // Parse simple : "out: 'X', ... files: [...]"
-  const re = /out:\s*'([^']+)'[^}]+files:\s*\[([^\]]+)\]/g;
-  let m;
-  while ((m = re.exec(bundlerSrc)) !== null) {
-    const files = m[2].match(/'([^']+)'/g).map(s => s.slice(1, -1));
-    bundleConfig[m[1]] = files;
-  }
-  const inBundle = {};
-  for (const [bundle, files] of Object.entries(bundleConfig)) {
-    // FIX BUG-C1 : first-write-wins — évite que tokens.css (présent dans base
-    // ET event) soit rapporté comme appartenant au dernier bundle itéré.
-    files.forEach(f => { if (!inBundle[f]) inBundle[f] = bundle; });
-  }
-
-  const rows = onDisk.map(f => {
-    const lines = readCss(f).split('\n').length;
-    return {
-      file: `${f}.css`,
-      lines,
-      bundle: inBundle[f] || '— ORPHELIN —',
-      orphan: !inBundle[f],
-    };
-  });
-  return { rows, bundleConfig };
+function selectorOccurrences(css, selector) {
+  const cleaned = stripComments(css);
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(^|[,}\\s])${escaped}(?![a-zA-Z0-9_-])[^{};]*\\{`, 'gm');
+  const positions = [];
+  let match;
+  while ((match = re.exec(cleaned)) !== null) positions.push(match.index);
+  return positions.map(pos => ({ desktop: isInsideDesktopMQ(cleaned, pos) }));
 }
 
-// ════════════════════════════════════════════════════════════════
-// 2. Pour chaque sélecteur tracké : où est-il défini ?
-// ════════════════════════════════════════════════════════════════
 function selectorMap() {
-  const onDisk = listCss();
   const map = {};
-  for (const sel of TRACKED_SELECTORS) {
-    map[sel] = [];
-    for (const file of onDisk) {
-      const css = readCss(file);
-      const occs = selectorOccurrences(css, sel);
-      if (occs.length === 0) continue;
-      const baseCount = occs.filter(o => !o.desktop).length;
-      const dtCount   = occs.filter(o => o.desktop).length;
-      map[sel].push({ file: `${file}.css`, base: baseCount, desktop: dtCount });
+  for (const selector of TRACKED_SELECTORS) {
+    map[selector] = [];
+    for (const source of listCss()) {
+      const occurrences = selectorOccurrences(readCss(source), selector);
+      if (occurrences.length === 0) continue;
+      map[selector].push({
+        file: `${source}.css`,
+        base: occurrences.filter(item => !item.desktop).length,
+        desktop: occurrences.filter(item => item.desktop).length,
+      });
     }
   }
   return map;
 }
 
-// ════════════════════════════════════════════════════════════════
-// 3. Cascade : ordre de chargement réel dans index.html
-// ════════════════════════════════════════════════════════════════
 function loadOrder() {
   const html = fs.readFileSync(INDEX, 'utf8');
   const re = /<link[^>]+href=["']([^"']+\.css[^"']*)["']/g;
   const links = [];
-  let m;
-  while ((m = re.exec(html)) !== null) links.push(m[1]);
+  let match;
+  while ((match = re.exec(html)) !== null) links.push(match[1]);
   return links;
 }
 
-// ════════════════════════════════════════════════════════════════
-// 4. Tokens cassés détectés
-// ════════════════════════════════════════════════════════════════
 function findBrokenTokens() {
-  const onDisk = listCss();
-  const re = /var\(--[a-z-]+\)[0-9a-fA-F]{2,}/g;
   const out = [];
-  for (const file of onDisk) {
-    const css = readCss(file);
-    // Strip comments en préservant les numéros de ligne (espaces de même taille)
-    const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
-    const lines = cssNoComments.split('\n');
-    lines.forEach((line, idx) => {
-      const matches = line.match(re);
-      if (matches) matches.forEach(b => out.push({ file: `${file}.css`, line: idx + 1, broken: b }));
+  const re = /var\(--[a-z-]+\)[0-9a-fA-F]{2,}/g;
+  for (const source of listCss()) {
+    const css = readCss(source).replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, ' '));
+    css.split('\n').forEach((line, index) => {
+      const matches = line.match(re) || [];
+      for (const broken of matches) out.push({ file: `${source}.css`, line: index + 1, broken });
     });
   }
   return out;
 }
 
-// ════════════════════════════════════════════════════════════════
-// 5. Hex hardcodés (résumé par fichier)
-// ════════════════════════════════════════════════════════════════
 function hexSummary() {
-  const onDisk = listCss();
   const out = [];
-  for (const file of onDisk) {
-    if (file === 'tokens') continue;
-    const css = stripComments(readCss(file));
-    const matches = css.match(/#[0-9a-fA-F]{3,8}\b/g) || [];
-    if (matches.length > 0) out.push({ file: `${file}.css`, count: matches.length });
+  for (const source of listCss()) {
+    if (source === 'tokens') continue;
+    const matches = stripComments(readCss(source)).match(/#[0-9a-fA-F]{3,8}\b/g) || [];
+    if (matches.length > 0) out.push({ file: `${source}.css`, count: matches.length });
   }
   return out.sort((a, b) => b.count - a.count);
 }
 
-// ════════════════════════════════════════════════════════════════
-// 6. !important par fichier
-// ════════════════════════════════════════════════════════════════
 function importantSummary() {
-  const onDisk = listCss();
   const out = [];
-  for (const file of onDisk) {
-    const css = stripComments(readCss(file));
-    const count = (css.match(/!important/g) || []).length;
-    if (count > 0) out.push({ file: `${file}.css`, count });
+  for (const source of listCss()) {
+    const count = (stripComments(readCss(source)).match(/!important/g) || []).length;
+    if (count > 0) out.push({ file: `${source}.css`, count });
   }
   return out.sort((a, b) => b.count - a.count);
 }
 
-// ════════════════════════════════════════════════════════════════
-// 7. JS — qui pose les variables JS-owned ?
-// ════════════════════════════════════════════════════════════════
 function jsVarOwners() {
   const out = {};
-  if (!fs.existsSync(JS_DIR)) {
-    console.warn(`  ⚠  Dossier js/ introuvable (${JS_DIR}) — section variables JS-owned ignorée.`);
-    return out;
-  }
+  if (!fs.existsSync(JS_DIR)) return out;
+
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, entry.name);
-      if (entry.isDirectory()) { walk(p); continue; }
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
       if (!entry.name.endsWith('.js')) continue;
-      const src = fs.readFileSync(p, 'utf8');
-      for (const v of JS_OWNED_VARS) {
-        const re = new RegExp(`setProperty\\s*\\(\\s*['"]${v}['"]`, 'g');
+      const src = fs.readFileSync(full, 'utf8');
+      for (const variable of JS_OWNED_VARS) {
+        const re = new RegExp(`setProperty\\s*\\(\\s*['"]${variable}['"]`, 'g');
         const matches = src.match(re);
-        if (matches) {
-          const rel = path.relative(ROOT, p);
-          (out[v] = out[v] || []).push({ file: rel, count: matches.length });
-        }
+        if (!matches) continue;
+        (out[variable] = out[variable] || []).push({
+          file: path.relative(ROOT, full).split(path.sep).join('/'),
+          count: matches.length,
+        });
       }
     }
   }
+
   walk(JS_DIR);
   return out;
 }
 
-// ════════════════════════════════════════════════════════════════
-// RENDU MARKDOWN
-// ════════════════════════════════════════════════════════════════
-function render() {
-  const inv   = inventoryCss();
-  const map   = selectorMap();
-  const links = loadOrder();
-  const broken = findBrokenTokens();
-  const hex   = hexSummary();
-  const imp   = importantSummary();
-  const jsv   = jsVarOwners();
+function buildSnapshot() {
+  return {
+    inventory: inventoryCss(),
+    selectors: selectorMap(),
+    loadOrder: loadOrder(),
+    brokenTokens: findBrokenTokens(),
+    hex: hexSummary(),
+    important: importantSummary(),
+    jsOwnedVars: jsVarOwners(),
+  };
+}
 
-  let md = '';
-  md += `# Komerce Boutique — Architecture LIVE\n\n`;
-  md += `> **Document généré automatiquement.** Ne pas éditer à la main.\n`;
-  md += `> Régénération : \`npm run boutique:arch\`.\n>\n`;
-  md += `> Le pendant normatif est \`BOUTIQUE_ARCHITECTURE.md\` — édité à la main.\n`;
-  md += `> Comparer les deux montre l'écart entre l'état souhaité et l'état réel.\n\n`;
-  md += `---\n\n`;
+function render(snapshot = buildSnapshot()) {
+  const inv = snapshot.inventory;
+  const map = snapshot.selectors;
+  const broken = snapshot.brokenTokens;
+  const hex = snapshot.hex;
+  const imp = snapshot.important;
+  const jsv = snapshot.jsOwnedVars;
+  const orphanCount = inv.rows.filter(row => row.orphan).length;
+  const hexCount = hex.reduce((sum, item) => sum + item.count, 0);
+  const importantCount = imp.reduce((sum, item) => sum + item.count, 0);
+  const multiOwnerCount = Object.values(map).filter(rows => rows.length > 1).length;
 
-  // ── 1. CSS sur disque
-  md += `## 1. Inventaire CSS\n\n`;
-  md += `${inv.rows.length} fichier(s) sur disque, ${inv.rows.filter(r => r.orphan).length} orphelin(s).\n\n`;
-  md += `| Fichier | Lignes | Bundle |\n|---|---:|---|\n`;
-  for (const r of inv.rows.sort((a, b) => a.file.localeCompare(b.file))) {
-    md += `| \`${r.file}\` | ${r.lines} | ${r.orphan ? '🔴 **ORPHELIN**' : r.bundle} |\n`;
+  let md = '# Komerce Boutique — Architecture LIVE\n\n';
+  md += '> **Document généré automatiquement.** Ne pas éditer à la main.\n';
+  md += '> Régénération : `npm run boutique:arch`.\n>\n';
+  md += '> Source canonique des bundles : `scripts/css-bundles.js`.\n';
+  md += '> Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md`.\n\n---\n\n';
+
+  md += '## 1. Inventaire CSS\n\n';
+  md += `${inv.rows.length} fichier(s) source sur disque, ${orphanCount} orphelin(s), ${inv.missingSources.length} source(s) bundle manquante(s).\n\n`;
+  md += '| Fichier | Lignes | Bundle(s) |\n|---|---:|---|\n';
+  for (const row of inv.rows) {
+    md += `| \`${row.file}\` | ${row.lines} | ${row.orphan ? '🔴 **ORPHELIN**' : row.bundle} |\n`;
   }
-  md += `\n`;
+  if (inv.missingSources.length > 0) {
+    md += `\nSources déclarées mais absentes : ${inv.missingSources.map(file => `\`${file}\``).join(', ')}.\n`;
+  }
 
-  // ── 2. Ordre de chargement réel
-  md += `## 2. Ordre de chargement CSS (index.html)\n\n`;
-  md += `Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.\n\n`;
-  md += '```\n';
-  links.forEach((l, i) => { md += `${(i + 1).toString().padStart(2)}. ${l}\n`; });
+  md += '\n## 2. Ordre de chargement CSS (index.html)\n\n';
+  md += 'Cascade réelle des bundles livrés :\n\n```\n';
+  snapshot.loadOrder.forEach((link, index) => { md += `${String(index + 1).padStart(2)}. ${link}\n`; });
   md += '```\n\n';
 
-  // ── 3. Cartographie des sélecteurs trackés
-  md += `## 3. Cartographie des sélecteurs critiques\n\n`;
-  md += `Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop = @media ≥900px).\n\n`;
-  md += `| Sélecteur | Owners trouvés (base / desktop) |\n|---|---|\n`;
-  for (const sel of TRACKED_SELECTORS) {
-    const rows = map[sel];
-    if (rows.length === 0) { md += `| \`${sel}\` | _(non trouvé)_ |\n`; continue; }
-    const cells = rows.map(r => `\`${r.file}\` (${r.base}/${r.desktop})`).join('<br>');
-    const conflict = rows.length > 1 ? ' ⚠️' : '';
-    md += `| \`${sel}\`${conflict} | ${cells} |\n`;
-  }
-  md += `\n`;
-  md += `> ⚠️ = sélecteur défini dans plus d'un fichier. Vérifier que c'est conforme à \`BOUTIQUE_ARCHITECTURE.md\` §3.\n\n`;
-
-  // ── 4. Tokens cassés
-  md += `## 4. Tokens cassés (\`var(--x)nnn\`)\n\n`;
-  if (broken.length === 0) md += `Aucun. ✅\n\n`;
-  else {
-    md += `${broken.length} occurrence(s) — violations I-4.\n\n`;
-    md += `| Fichier | Ligne | Pattern |\n|---|---:|---|\n`;
-    broken.forEach(b => { md += `| \`${b.file}\` | ${b.line} | \`${b.broken}\` |\n`; });
-    md += `\n`;
-  }
-
-  // ── 5. Hex hardcodés par fichier
-  md += `## 5. Hex hardcodés hors tokens.css\n\n`;
-  if (hex.length === 0) md += `Aucun. ✅\n\n`;
-  else {
-    const total = hex.reduce((s, x) => s + x.count, 0);
-    md += `${total} occurrence(s) au total, répartition :\n\n`;
-    md += `| Fichier | Nombre |\n|---|---:|\n`;
-    hex.forEach(h => { md += `| \`${h.file}\` | ${h.count} |\n`; });
-    md += `\n`;
-  }
-
-  // ── 6. !important
-  md += `## 6. \`!important\` par fichier\n\n`;
-  if (imp.length === 0) md += `Aucun. ✅\n\n`;
-  else {
-    const total = imp.reduce((s, x) => s + x.count, 0);
-    md += `${total} déclaration(s) au total.\n\n`;
-    md += `| Fichier | Nombre |\n|---|---:|\n`;
-    imp.forEach(i => { md += `| \`${i.file}\` | ${i.count} |\n`; });
-    md += `\n`;
-  }
-
-  // ── 7. Variables JS-owned
-  md += `## 7. Variables CSS posées par JS\n\n`;
-  md += `| Variable | Owner(s) JS trouvé(s) |\n|---|---|\n`;
-  for (const v of JS_OWNED_VARS) {
-    const owners = jsv[v];
-    if (!owners || owners.length === 0) {
-      md += `| \`${v}\` | _(non posée — variable inutilisée ?)_ |\n`;
-    } else {
-      const cells = owners.map(o => `\`${o.file}\` (×${o.count})`).join('<br>');
-      const warn = owners.length > 1 ? ' ⚠️ multi-owner' : '';
-      md += `| \`${v}\` | ${cells}${warn} |\n`;
+  md += '## 3. Cartographie des sélecteurs critiques\n\n';
+  md += '| Sélecteur | Owners trouvés (base / desktop) |\n|---|---|\n';
+  for (const selector of TRACKED_SELECTORS) {
+    const rows = map[selector];
+    if (rows.length === 0) {
+      md += `| \`${selector}\` | _(non trouvé)_ |\n`;
+      continue;
     }
+    const cells = rows.map(row => `\`${row.file}\` (${row.base}/${row.desktop})`).join('<br>');
+    md += `| \`${selector}\`${rows.length > 1 ? ' ⚠️' : ''} | ${cells} |\n`;
   }
-  md += `\n`;
-  md += `> ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.\n\n`;
+  md += '\n> ⚠️ = plusieurs fichiers touchent le sélecteur ; confronter au contrat d’ownership avant modification.\n\n';
 
-  // ── 8. Résumé exécutif
-  const violationsCount =
-    inv.rows.filter(r => r.orphan).length +
-    broken.length +
-    (hex.reduce((s, x) => s + x.count, 0)) +
-    [...Object.values(map)].filter(rows => rows.length > 1).length;
+  md += '## 4. Tokens cassés (`var(--x)nnn`)\n\n';
+  md += broken.length === 0 ? 'Aucun. ✅\n\n' : `${broken.length} occurrence(s). ❌\n\n`;
 
-  md += `## 8. Score architecture\n\n`;
-  md += `- **CSS orphelins** : ${inv.rows.filter(r => r.orphan).length} (cible : 0)\n`;
+  md += '## 5. Hex hardcodés hors tokens.css\n\n';
+  if (hex.length === 0) md += 'Aucun. ✅\n\n';
+  else {
+    md += `${hexCount} occurrence(s) au total.\n\n| Fichier | Nombre |\n|---|---:|\n`;
+    for (const item of hex) md += `| \`${item.file}\` | ${item.count} |\n`;
+    md += '\n';
+  }
+
+  md += '## 6. `!important` par fichier\n\n';
+  if (imp.length === 0) md += 'Aucun. ✅\n\n';
+  else {
+    md += `${importantCount} déclaration(s) au total.\n\n| Fichier | Nombre |\n|---|---:|\n`;
+    for (const item of imp) md += `| \`${item.file}\` | ${item.count} |\n`;
+    md += '\n';
+  }
+
+  md += '## 7. Variables CSS posées par JS\n\n';
+  md += '| Variable | Owner(s) JS trouvé(s) |\n|---|---|\n';
+  for (const variable of JS_OWNED_VARS) {
+    const owners = jsv[variable] || [];
+    if (owners.length === 0) {
+      md += `| \`${variable}\` | _(non posée — à vérifier)_ |\n`;
+      continue;
+    }
+    const cells = owners.map(owner => `\`${owner.file}\` (×${owner.count})`).join('<br>');
+    md += `| \`${variable}\` | ${cells}${owners.length > 1 ? ' ⚠️ multi-owner' : ''} |\n`;
+  }
+
+  md += '\n## 8. Score architecture\n\n';
+  md += `- **CSS orphelins** : ${orphanCount} (cible : 0)\n`;
+  md += `- **Sources bundle manquantes** : ${inv.missingSources.length} (cible : 0)\n`;
   md += `- **Tokens cassés** : ${broken.length} (cible : 0)\n`;
-  md += `- **Hex hardcodés** : ${hex.reduce((s, x) => s + x.count, 0)} (cible : 0 ou allowlist)\n`;
-  md += `- **\`!important\`** : ${imp.reduce((s, x) => s + x.count, 0)} (cible : <10, idéal 0)\n`;
-  md += `- **Sélecteurs multi-owner** : ${Object.entries(map).filter(([, rows]) => rows.length > 1).length} (vérifier vs \`BOUTIQUE_ARCHITECTURE.md\` §3)\n\n`;
-  md += `---\n\n*Généré par \`boutique/scripts/gen-boutique-arch-live.js\`.*\n`;
+  md += `- **Hex hardcodés** : ${hexCount} (cible : 0 ou exceptions documentées)\n`;
+  md += `- **\`!important\`** : ${importantCount} (cible : 0 ou exceptions indispensables)\n`;
+  md += `- **Sélecteurs multi-owner observés** : ${multiOwnerCount} (à classifier par ownership)\n`;
+  md += '\n---\n\n*Généré par `scripts/gen-boutique-arch-live.js` depuis les sources réelles.*\n';
 
   return md;
 }
 
-// ════════════════════════════════════════════════════════════════
-const outDir = path.dirname(OUT);
-if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(OUT, render(), 'utf8');
-console.log(`  ✓  ${path.relative(ROOT, OUT)} généré (${(fs.statSync(OUT).size / 1024).toFixed(1)} KB)`);
+function writeLiveDoc() {
+  const outDir = path.dirname(OUT);
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(OUT, render(), 'utf8');
+  console.log(`  ✓  ${path.relative(ROOT, OUT)} généré (${(fs.statSync(OUT).size / 1024).toFixed(1)} KB)`);
+}
+
+if (require.main === module) writeLiveDoc();
+
+module.exports = {
+  ROOT,
+  TRACKED_SELECTORS,
+  JS_OWNED_VARS,
+  bundleIndex,
+  inventoryCss,
+  selectorMap,
+  loadOrder,
+  findBrokenTokens,
+  hexSummary,
+  importantSummary,
+  jsVarOwners,
+  buildSnapshot,
+  render,
+  writeLiveDoc,
+};
