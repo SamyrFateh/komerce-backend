@@ -17,6 +17,9 @@ const CSS_DIR = path.join(ROOT, 'css');
 const JS_DIR = path.join(ROOT, 'js');
 const INDEX = path.join(ROOT, 'index.html');
 const OUT = path.join(ROOT, 'docs', 'BOUTIQUE_ARCHITECTURE_LIVE.md');
+const CASCADE_BASELINE = path.join(__dirname, '.css-guard-baseline.json');
+const SPECIFICITY_BASELINE = path.join(__dirname, '.css-specificity-guard-baseline.json');
+const IMPORTANT_BASELINE = path.join(__dirname, '.important-baseline.json');
 
 const TRACKED_SELECTORS = [
   '.k-chip', '.k-cats-shell', '.k-hero-cats-sticky',
@@ -207,6 +210,19 @@ function jsVarOwners() {
   return out;
 }
 
+function readBaseline(file, defaults = {}) {
+  if (!fs.existsSync(file)) return { ...defaults, missing: true };
+  try { return { ...defaults, ...JSON.parse(fs.readFileSync(file, 'utf8')), missing: false }; }
+  catch { return { ...defaults, missing: true }; }
+}
+
+function debtSummary() {
+  return {
+    cascade: readBaseline(CASCADE_BASELINE, { total: 0, keys: [] }),
+    specificity: readBaseline(SPECIFICITY_BASELINE, { total: 0, keys: [] }),
+    important: readBaseline(IMPORTANT_BASELINE, { total: 0, perFile: {}, reviewedGuardIds: [] }),
+  };
+}
 function buildSnapshot() {
   return {
     inventory: inventoryCss(),
@@ -215,6 +231,7 @@ function buildSnapshot() {
     brokenTokens: findBrokenTokens(),
     hex: hexSummary(),
     important: importantSummary(),
+    debts: debtSummary(),
     jsOwnedVars: jsVarOwners(),
   };
 }
@@ -225,6 +242,7 @@ function render(snapshot = buildSnapshot()) {
   const broken = snapshot.brokenTokens;
   const hex = snapshot.hex;
   const imp = snapshot.important;
+  const debts = snapshot.debts || debtSummary();
   const jsv = snapshot.jsOwnedVars;
   const orphanCount = inv.rows.filter(row => row.orphan).length;
   const hexCount = hex.reduce((sum, item) => sum + item.count, 0);
@@ -303,6 +321,13 @@ function render(snapshot = buildSnapshot()) {
   md += `- **Hex hardcodés** : ${hexCount} (cible : 0 ou exceptions documentées)\n`;
   md += `- **\`!important\`** : ${importantCount} (cible : 0 ou exceptions indispensables)\n`;
   md += `- **Sélecteurs multi-owner observés** : ${multiOwnerCount} (à classifier par ownership)\n`;
+  md += '\n## 9. Dette structurelle exécutable\n\n';
+  md += `- **Conflits de cascade suivis** : ${debts.cascade.total} (cible : 0)\n`;
+  md += `- **Overrides de spécificité suivis** : ${debts.specificity.total} (cible : 0)\n`;
+  md += `- **Dette \`!important\` ouverte** : ${debts.important.total} (cible : 0)\n`;
+  md += `- **\`!important\` physiques** : ${importantCount} (guards revus inclus)\n`;
+  md += `- **Guards \`!important\` revus** : ${(debts.important.reviewedGuardIds || []).length} registre(s)\n`;
+  md += '\n> Les compteurs cascade/spécificité/!important ouvert proviennent des baselines exécutables, pas d’un recompte documentaire.\n';
   md += '\n---\n\n*Généré par `scripts/gen-boutique-arch-live.js` depuis les sources réelles.*\n';
 
   return md;
@@ -328,6 +353,7 @@ module.exports = {
   findBrokenTokens,
   hexSummary,
   importantSummary,
+  debtSummary,
   jsVarOwners,
   buildSnapshot,
   render,
