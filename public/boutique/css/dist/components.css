@@ -7788,9 +7788,9 @@ body.cart-open .k-hero { pointer-events: none; }
 /* .k-order-overlay.open � source de v�rit� : voir L606 (structure flex compl�te + z-index) */
 /* BUG 4 FIX : overflow:clip au lieu de overflow:hidden � clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
-.k-order-modal { width: 100%; height: 100vh; height: 100dvh; background: var(--white); border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
-.k-order-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; font-weight: 700; font-size: .96rem; }
-.k-order-body   { flex: 1; overflow-y: auto; padding: 0 10px 4px; }
+.k-order-modal { width: 100%; height: 100vh; height: 100dvh; border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
+.k-order-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; font-weight: 700; }
+.k-order-body   { flex: 1; overflow-y: auto; }
 .k-of-group { margin-bottom: 5px; }
 .k-of-group label { display: block; font-size: .78rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
@@ -8137,8 +8137,7 @@ body.cart-open .k-wa-fab {
 
 /* -- PHONE INPUT COMPACT -------------------------------------- */
 .k-ck-phone-wrap { max-width: 100%; height: 34px; align-items: stretch; }
-.k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
-.k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
+.k-ck-phone-input  { min-width: 0; }
 
 /* Drawer plein �cran sous 768px � mobile �troit.
    Migr� depuis interactions.css (�tait isol� du reste des r�gles .k-cart-drawer). */
@@ -8202,11 +8201,9 @@ body.cart-open .k-wa-fab {
 
 /* Toggle fulfillment : coral uniquement sur actif */
 .ck-fulfillment-btn {
-  color: var(--checkout-seg-text);
   font-family: var(--font-checkout);
 }
 .ck-fulfillment-btn.active {
-  background: var(--checkout-sel-bg);
   color: var(--coral-dark);
   box-shadow: 0 0 0 1px var(--coral-focus-08);
 }
@@ -8217,12 +8214,9 @@ body.cart-open .k-wa-fab {
   border-radius: 14px;
 }
 .ck-relais-summary-change {
-  color: var(--coral);
   border: 1.5px solid var(--coral);
   border-radius: 20px;
   padding: 4px 11px;
-  font-size: .74rem;
-  font-weight: 800;
   background: transparent;
 }
 
@@ -8232,12 +8226,10 @@ body.cart-open .k-wa-fab {
 }
 .ck-pay-chip--active {
   border: 2px solid var(--coral);
-  color: var(--checkout-chip-active-text);
 }
 
 /* Bouton confirmer fond vert marché */
 .ck-confirm-btn {
-  border-top: none;
   font-family: var(--font-checkout);
 }
 
@@ -8255,12 +8247,10 @@ body.cart-open .k-wa-fab {
   content:''; display:block; width:3px; height:14px;
   background:var(--coral); border-radius:2px; flex-shrink:0;
 }
-.ck-fulfillment-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:0 0 10px; }
-.ck-fulfillment-btn {
-  min-height:32px; padding:0 6px;
+.ck-fulfillment-switch { display:grid; grid-template-columns:1fr 1fr; }
+.ck-fulfillment-btn { padding:0 6px;
   border:1.5px solid rgba(31,48,36,.10); border-radius:13px;
-  background:var(--white); color:var(--text-muted-md);
-  font-size:.79rem; font-weight:700; line-height:1.15;
+  background:var(--white); color:var(--text-muted-md); font-weight:700; line-height:1.15;
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 4px 12px rgba(31,48,36,.04);
 }
@@ -8338,7 +8328,7 @@ body.cart-open .k-wa-fab {
 .k-pay-helper    { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:var(--cream-peach); color:var(--coral-text); font-size:.73rem; line-height:1.3; }
 
 /* Chips paiement */
-.ck-pay-grid  { display:grid; margin-bottom:5px; }
+.ck-pay-grid  { display:grid; }
 .ck-pay-chip  { display:flex; align-items:center; cursor:pointer; transition:border-color .15s, background .15s; user-select:none; }
 .ck-pay-chip input[type=radio] { display:none; }
 .ck-pay-chip--active { border: 2px solid var(--coral); color: var(--coral); }
@@ -8356,27 +8346,27 @@ body.cart-open .k-wa-fab {
 .ck-track-toggle { display:flex; align-items:center; gap:7px; font-size:.8rem; font-weight:600; cursor:pointer; padding:5px 0; color:var(--text); }
 .ck-track-toggle input[type=checkbox] { width:16px; height:16px; flex-shrink:0; accent-color:var(--coral); }
 .ck-track-details { margin-top:4px; border:1px solid rgba(31,48,36,.08); border-radius:11px; background:var(--sand); }
-.ck-track-details summary { list-style:none; cursor:pointer; padding:9px 11px; font-size:.8rem; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
+.ck-track-details summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
 .ck-track-details summary::-webkit-details-marker { display:none; }
 .ck-track-details summary::after { content:"+"; font-size:.94rem; color:var(--text-muted); }
 .ck-track-details[open] summary::after { content:"-"; }
 .ck-track-details-body { padding:0 11px 10px; }
 .ck-track-extra { margin-top:6px; padding:10px; background:var(--sand); border-radius:8px; }
-.ck-track-hint  { font-size:.71rem; color:var(--text-muted); margin-top:3px; }
+.ck-track-hint  { color:var(--text-muted); }
 
 /* Relais */
 .ck-relais-section   { margin-bottom:10px; }
 .ck-relais-section-title { font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
 .ck-relais-ile-label { font-size:.76rem; color:var(--text-muted); margin-bottom:5px; }
-.ck-relais-ile-grid  { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
-.ck-relais-ile-btn   { min-height:36px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
+.ck-relais-ile-grid  { display:grid; }
+.ck-relais-ile-btn   { padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); color:var(--text); font-weight:700; text-align:center; }
 .ck-relais-ile-btn.active { border-color:var(--coral); background:var(--sage-bg-pale); color:var(--sage-dark); }
-.ck-relais-item      { position:relative; padding:5px 8px 5px 30px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
+.ck-relais-item      { position:relative; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-relais-item--compact { padding-top:9px; padding-bottom:9px; }
 .ck-relais-item.selected { border-color:var(--coral); background:var(--sage-bg); box-shadow:0 0 0 1px var(--border-coral-09), 0 6px 14px rgba(62,94,69,.07); }
 .ck-relais-item.selected::before { content:"\2713"; position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%; background:var(--coral); color:var(--white); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.ck-relais-name { display:block; font-size:.9rem; font-weight:700; color:var(--text); }
-.ck-relais-addr { display:block; margin-top:2px; font-size:.72rem; line-height:1.25; color:var(--text-muted); }
+.ck-relais-name { display:block; font-weight:700; color:var(--text); }
+.ck-relais-addr { display:block; margin-top:2px; line-height:1.25; color:var(--text-muted); }
 
 /* SMS sender */
 .ck-sms-body { padding:6px 0 4px; gap:4px; }
@@ -8391,12 +8381,12 @@ body.cart-open .k-wa-fab {
   color: var(--checkout-accent-light); font-weight:800; font-size:1rem;
   border:none; border-top:2.5px solid var(--checkout-accent-hover); cursor:pointer;
   box-shadow: 0 -2px 12px rgba(99,56,6,.18);
-  transition: filter .2s, transform .15s; z-index:5; min-height:64px;
+  transition: filter .2s, transform .15s; z-index:5;
 }
 .ck-confirm-btn:active   { transform:scale(.97); filter:brightness(.95); }
 .ck-confirm-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
 .ck-confirm-main    { line-height:1.15; }
-.ck-confirm-amount  { font-size:1.1rem; font-weight:900; line-height:1.1; }
+.ck-confirm-amount  { font-weight:900; line-height:1.1; }
 .ck-confirm-subtext { font-weight:600; line-height:1.15; }
 
 /* Bouton retour panier */
@@ -9151,7 +9141,7 @@ body.cart-open .k-wa-fab {
  * gate check-css-guard), même raison que .ck-section-title ci-dessus :
  * seul js/b-checkout.js crée cet élément, et css/checkout-vertical-rail.css
  * (chargé après dans le bundle) porte désormais la seule styling active. */
-.k-ck-guest-ic { font-size: 1rem; flex: 0 0 auto; }
+.k-ck-guest-ic { flex: 0 0 auto; }
 
 /* Recap identité compact */
 .k-ck-identity-recap {
