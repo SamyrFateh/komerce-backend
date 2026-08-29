@@ -1069,74 +1069,7 @@
   .k-sc-btn-share:active { transform: scale(.95); }
   .k-sc-btn-share[hidden] { display: none; }
 
-  /* ── Badge panier partagé actif ── */
-  .k-sc-shared-badge {
-    width: 100%;
-    background: var(--green-bg-leaf);
-    border: 1px solid var(--cta-green);
-    border-radius: 12px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .k-sc-shared-badge[hidden] { display: none; }
-  .k-sc-shared-badge-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .k-sc-shared-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--cta-green);
-    flex-shrink: 0;
-    animation: kSharedPulse 2s ease-in-out infinite;
-  }
-  @keyframes kSharedPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .4; }
-  }
-  .k-sc-shared-label {
-    flex: 1;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--green-text-strong);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .k-sc-reshare-btn {
-    flex-shrink: 0;
-    padding: 3px 8px;
-    border: 1px solid var(--cta-green);
-    border-radius: 999px;
-    background: var(--white);
-    color: var(--green-text-strong);
-    font-size: 10px;
-    font-weight: 700;
-    font-family: var(--font);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background .12s;
-  }
-  .k-sc-reshare-btn:hover { background: var(--cta-green); color: var(--white); }
-  .k-sc-group-view-btn {
-    width: 100%;
-    padding: 7px 10px;
-    border: none;
-    border-radius: 8px;
-    background: var(--cta-green);
-    color: var(--white);
-    font-size: 11px;
-    font-weight: 700;
-    font-family: var(--font);
-    cursor: pointer;
-    text-align: center;
-    transition: background .15s, transform .12s;
-  }
-  .k-sc-group-view-btn:hover { background: var(--green-text-strong); transform: translateY(-1px); }
+
   /* Legacy — conservé pour compat si utilisé ailleurs, ne s'affiche plus dans le HTML */
   .k-sc-btn-group { display: none; }
 
