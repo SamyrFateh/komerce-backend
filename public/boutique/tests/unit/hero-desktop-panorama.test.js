@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const hero = fs.readFileSync(path.resolve(__dirname, '../../css/hero.css'), 'utf8');
+const layout = fs.readFileSync(path.resolve(__dirname, '../../css/layout.css'), 'utf8');
 const categories = fs.readFileSync(path.resolve(__dirname, '../../css/categories.css'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
 
@@ -80,9 +81,12 @@ describe('hero composition en calques (H1)', () => {
   });
 
   test('ne double pas la reserve du header sticky sur desktop', () => {
-    expect(hero).toMatch(
-      /body\.k-view-shop #k-header-spacer\s*\{[^}]*height:\s*0 !important/s
+    expect(layout).toContain(
+      '#k-header-spacer {\n  height: calc(var(--header-h, 56px) + env(safe-area-inset-top, 0px));\n  flex-shrink: 0;\n}',
     );
+    expect(layout).toContain('#k-header-spacer { height: 0; }');
+    expect(hero).not.toContain('#k-header-spacer');
+    expect(hero).not.toMatch(/height:\s*0\s*!important/);
   });
 
   test('garde le rail categories compact immediatement sous le hero', () => {
