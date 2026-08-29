@@ -62,6 +62,8 @@ module.exports = {
       '../js/taxonomy-no-hardcode.test.js',
       '../js/view-models/product-card-model.js',
       '../js/view-models/product-card-view-model.js',
+      '../js/discovery-api.js',
+      '../js/local-stock-badge.js',
     ],
     css: [
       '../css/hero.css',

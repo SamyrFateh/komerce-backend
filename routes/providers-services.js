@@ -4,11 +4,11 @@
  * @domain        providers-services
  * @layer         route
  * @criticality   medium
- * @inputs        id (params), market_id (query)
+ * @inputs        id (params), market (query — code KM|YT|CM|CG, résolu serveur)
  * @outputs       service_public_fields, physical_offer_public_fields
- * @depends       services/providers-service.js
+ * @depends       services/providers-service.js, db (résolution code marché)
  * @used-by       (aucun — Vague 2 D4, shadow : jamais monté dans bootstrap/api-routes.js)
- * @db-read       none
+ * @db-read       markets (résolution code -> id, jamais un UUID brut du client)
  * @db-write      none
  * @db-txn        single_statement_sufficient
  * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de
@@ -28,24 +28,50 @@
  * (écriture, hors périmètre de ce lot GET-only), pas par lecture directe
  * ici. Un objet non exposable renvoie 404, jamais le pourquoi (statut,
  * exposure, marché) — même discipline que local-stock/availability.
+ *
+ * market est un CODE (KM/YT/CM/CG), jamais un UUID — voir routes/local-
+ * stock.js pour la justification complète (window.KomerceMarket,
+ * KOMERCE_MARKET_LAYER_FREEZE.md §3, resolveMarketId()).
  */
 
 const express = require('express');
 const router  = express.Router();
+const db = require('../db');
 const {
   getService, isServiceExposable,
   getPhysicalOffer, isPhysicalOfferExposable,
 } = require('../services/providers-service');
 
-// ── GET /api/providers-services/services/:id?market_id=X ────────────────
+/**
+ * Résout un code marché (KM/YT/CM/CG — window.KomerceMarket.get().code côté
+ * client, KOMERCE_MARKET_LAYER_FREEZE.md §3 : "navigation — contextuel,
+ * client, commutable, NON autorisant") vers l'UUID markets.id réel. Ne fait
+ * JAMAIS confiance à un UUID brut fourni par le client.
+ * @param {string} marketCode
+ * @returns {Promise<string|null>}
+ */
+async function resolveMarketId(marketCode) {
+  if (!marketCode) return null;
+  const { rows } = await db.query(
+    'SELECT id FROM markets WHERE code = $1 AND is_active = true',
+    [String(marketCode).toUpperCase()]
+  );
+  return rows[0]?.id || null;
+}
+
+// ── GET /api/providers-services/services/:id?market=KM ───────────────────
 router.get('/services/:id', async (req, res, next) => {
   try {
-    const { market_id } = req.query;
-    if (!market_id) {
-      return res.status(400).json({ error: 'market_id est requis' });
+    const { market } = req.query;
+    if (!market) {
+      return res.status(400).json({ error: 'market est requis' });
+    }
+    const marketId = await resolveMarketId(market);
+    if (!marketId) {
+      return res.status(400).json({ error: 'market inconnu ou inactif' });
     }
 
-    const exposable = await isServiceExposable(req.params.id, market_id);
+    const exposable = await isServiceExposable(req.params.id, marketId);
     if (!exposable) {
       return res.status(404).json({ error: 'Service introuvable' });
     }
@@ -63,15 +89,19 @@ router.get('/services/:id', async (req, res, next) => {
   }
 });
 
-// ── GET /api/providers-services/physical-offers/:id?market_id=X ─────────
+// ── GET /api/providers-services/physical-offers/:id?market=KM ────────────
 router.get('/physical-offers/:id', async (req, res, next) => {
   try {
-    const { market_id } = req.query;
-    if (!market_id) {
-      return res.status(400).json({ error: 'market_id est requis' });
+    const { market } = req.query;
+    if (!market) {
+      return res.status(400).json({ error: 'market est requis' });
+    }
+    const marketId = await resolveMarketId(market);
+    if (!marketId) {
+      return res.status(400).json({ error: 'market inconnu ou inactif' });
     }
 
-    const exposable = await isPhysicalOfferExposable(req.params.id, market_id);
+    const exposable = await isPhysicalOfferExposable(req.params.id, marketId);
     if (!exposable) {
       return res.status(404).json({ error: 'Offre introuvable' });
     }

@@ -121,12 +121,13 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/providers-services/services/:id?market_id=X — jamais monté ' +
-        'dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)',
-      'GET /api/providers-services/physical-offers/:id?market_id=X — idem',
+      'GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais ' +
+        'monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market ' +
+        'est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6.',
+      'GET /api/providers-services/physical-offers/:id?market=CODE — idem',
     ],
     consumes: [
-      'market (référentiel markets — lecture seule)',
+      'market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)',
       'infrastructure (dépendance technique transversale : db.js)',
     ],
   },
@@ -164,6 +165,11 @@ module.exports = {
       'jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi ' +
       'd\'une non-exposabilité (404 pur, jamais un détail de statut/marché)',
       test: 'tests/unit/providers-services-routes.test.js' },
+    { statement: 'les deux routes ne font jamais confiance à un market_id brut ' +
+      'fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé ' +
+      'serveur (resolveMarketId, markets.is_active=true) avant tout appel à ' +
+      'isServiceExposable/isPhysicalOfferExposable',
+      test: 'tests/unit/providers-services-routes.test.js' },
   ],
 
   // ── Historique ───────────────────────────────────────────────────────────
@@ -186,5 +192,11 @@ module.exports = {
   // 2026-08-28 — Vague 2 D4 : routes/providers-services.js (GET /services/:id,
   // GET /physical-offers/:id), read-only, jamais montée dans bootstrap/
   // api-routes.js. Champs publics minimaux, jamais téléphone/provider_id.
+  // 2026-08-28 — Vague 2 D6 : bug réel corrigé — les deux routes faisaient
+  // confiance à un market_id brut du client. window.KomerceMarket
+  // (public/boutique/js/market-context.js) porte un CODE de navigation
+  // (freeze §3 : "NON autorisant"), jamais un UUID — resolveMarketId()
+  // traduit désormais ce code en UUID réel côté serveur. Voir
+  // features/local-stock.feature.js pour la trouvaille complète.
 
 };
