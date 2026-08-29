@@ -64,7 +64,6 @@ jobs:
           console.log(`PHYSICAL_FINDINGS=${physical.length}`);
           console.log(`SEMANTIC_FINDINGS=${semantic.size}`);
 
-          // Proof that the home premium class is permanent for the current Boutique.
           let addHits=0, removeToggleHits=0;
           const jsDir=path.join(root,'js');
           for (const file of fs.readdirSync(jsDir).filter(f=>f.endsWith('.js'))) {
@@ -85,6 +84,7 @@ jobs:
 
           const astCache=new Map();
           function normalizeSelector(s){ return s.replace(/\s+/g,' ').trim(); }
+          function selectorMembers(rule){ return (rule.selectors || [rule.selector]).map(normalizeSelector); }
           function loadAst(file){
             if (!astCache.has(file)) {
               const abs=path.resolve(file);
@@ -104,18 +104,12 @@ jobs:
           function ruleMeta(file,line,selector){
             const ast=loadAst(file);
             const target=normalizeSelector(selector);
-            let exact=[];
-            ast.walkRules(rule=>{
-              if (normalizeSelector(rule.selector)!==target) return;
-              if (rule.source?.start?.line===line) exact.push(rule);
-            });
-            if(exact.length===1) return {media:mediaOf(exact[0]),line:exact[0].source.start.line};
-            let candidates=[];
-            ast.walkRules(rule=>{ if(normalizeSelector(rule.selector)===target) candidates.push(rule); });
-            if(candidates.length===1) return {media:mediaOf(candidates[0]),line:candidates[0].source.start.line};
-            const nearest=candidates.sort((a,b)=>Math.abs((a.source?.start?.line||0)-line)-Math.abs((b.source?.start?.line||0)-line))[0];
-            if(!nearest) throw new Error(`Rule not found: ${file}:${line} ${selector}`);
-            return {media:mediaOf(nearest),line:nearest.source.start.line};
+            const candidates=[];
+            ast.walkRules(rule=>{ if(selectorMembers(rule).includes(target)) candidates.push(rule); });
+            if(!candidates.length) throw new Error(`Rule not found: ${file}:${line} ${selector}`);
+            const exact=candidates.filter(rule=>rule.source?.start?.line===line);
+            const chosen=exact.length===1 ? exact[0] : candidates.sort((a,b)=>Math.abs((a.source?.start?.line||0)-line)-Math.abs((b.source?.start?.line||0)-line))[0];
+            return {media:mediaOf(chosen),line:chosen.source.start.line,grouped:selectorMembers(chosen).length>1};
           }
 
           function stripGlobal(selector,className){
@@ -165,7 +159,7 @@ jobs:
             else if(later) plan='strip-only-different-media';
             else plan='needs-rehome';
             plans.set(plan,(plans.get(plan)||0)+1);
-            if(plan==='needs-rehome') needs.push({...f,wMedia:wMeta.media,lMedia:lMeta.media,wResolvedLine:wMeta.line,lResolvedLine:lMeta.line});
+            if(plan==='needs-rehome') needs.push({...f,wMedia:wMeta.media,lMedia:lMeta.media,wResolvedLine:wMeta.line,lResolvedLine:lMeta.line,wGrouped:wMeta.grouped,lGrouped:lMeta.grouped});
           }
 
           console.log('\n=== MEDIA PAIRS ===');
