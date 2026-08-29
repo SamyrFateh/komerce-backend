@@ -117,7 +117,7 @@ module.exports = {
       // Résidus retirés (introuvables sur disque, FILE-DECLARED-INEXISTANT) :
       // js/b-group-cart-flow.js, js/group/group-render-list.js (remplacé
       // par group-side-cart.js), css/group-cart-flow.css,
-      // css/shared-followup.css.
+      // css/shared-followup.css, css/share-cart.css.
       'js/b-share-cart.js',
       'js/b-group-banner.js',
       'js/b-share-phone-guard.js',
@@ -126,7 +126,6 @@ module.exports = {
       'js/group/group-list-labels.js',
       'js/group/group-side-cart.js',
       'js/group/group-state.js',
-      'css/share-cart.css',
       'css/hero-cart-proxy.css',
       'css/shared-list-side-cart.css',
     ],
