@@ -49,11 +49,11 @@
 ### Preuves
 
 - [x] Draft #989 : PR enforcement vert sur le SHA de mesure B1a.
-- [ ] PR normale #990 : Required verdict à rattacher au nouveau SHA de ce ledger.
+- [x] PR #990 mergée — B1a est la baseline courante de départ de B1b.
 
 ## B1b — Remboursement à poursuivre
 
-- [ ] retirer les 3 `!important` hero inutiles par spécificité naturelle ;
+- [x] retirer les 3 `!important` hero inutiles par spécificité naturelle — B1b-1, dette ouverte 6 → 3 (`hero.css` 1 + `share-cart.css` 2) ;
 - [ ] sortir la hauteur inline de `#k-header-spacer` vers son owner CSS, puis retirer son dernier `!important` ;
 - [ ] supprimer proprement le sous-arbre CSS historique `k-sc-shared-badge` / `k-sc-reshare-btn` avec bundles + manifests ;
 - [ ] corriger `og-cover.jpg` avec un asset réel/cohérent ;
