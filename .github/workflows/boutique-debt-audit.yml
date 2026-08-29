@@ -6,7 +6,7 @@ on:
       - refactor/boutique-debt-zero-b1c-audit
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -23,7 +23,20 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependency tree
         run: npm --prefix public/boutique ci
-      - name: Full npm advisory report
-        run: npm --prefix public/boutique audit --json || true
-      - name: Komerce high-critical audit gate
+      - name: Apply safe npm advisory fixes
+        run: npm --prefix public/boutique audit fix
+      - name: Prove full npm audit is clean
+        run: npm --prefix public/boutique audit --audit-level=low
+      - name: Prove Komerce high-critical gate is clean
         run: node public/boutique/scripts/audit-gate.js --strict
+      - name: Commit lockfile-only security remediation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/package-lock.json public/boutique/package.json
+          if git diff --cached --quiet; then
+            echo "No dependency metadata changes required"
+            exit 0
+          fi
+          git commit -m "fix(boutique): remediate npm audit findings"
+          git push origin HEAD:refactor/boutique-debt-zero-b1c-audit
