@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-28T08:45:01.180Z.
+> Régénéré le 2026-08-29T08:51:32.340Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **88** (88 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **57** — 🔴 0 hors contrat · ⚪ 42 non prouvés · 🔵 18 dynamiques
+- Modules JS : **91** (91 headés) · Événements bus : **22** · Bundles CSS : **3**
+- Endpoints appelés : **60** — 🔴 0 hors contrat · ⚪ 42 non prouvés · 🔵 21 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 0 écouteur(s) orphelin(s), 0 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -40,6 +40,7 @@
 | `/api/hub/pack` | komerce-api | ⚪ non prouvé |
 | `/api/hub/scan` | komerce-api | ⚪ non prouvé |
 | `/api/hub/seal` | komerce-api | ⚪ non prouvé |
+| `/api/local-stock/availability` | discovery-api | 🔵 dynamique |
 | `/api/logistics/shipments` | komerce-api | ⚪ non prouvé |
 | `/api/logistics/shipments/{id}` | komerce-api | 🔵 dynamique |
 | `/api/orders` | b-checkout, b-tracking, komerce-api | ⚪ non prouvé |
@@ -55,6 +56,8 @@
 | `/api/products` | komerce-api | ⚪ non prouvé |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
 | `/api/products/{id}/detail` | b-modal-product-detail-bootstrap | 🔵 dynamique |
+| `/api/providers-services/physical-offers/{id}` | discovery-api | 🔵 dynamique |
+| `/api/providers-services/services/{id}` | discovery-api | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal, b-utils | ⚪ non prouvé |
 | `/api/purchasing/suppliers` | komerce-api | ⚪ non prouvé |
 | `/api/purchasing/suppliers/{id}` | komerce-api | 🔵 dynamique |
@@ -88,9 +91,9 @@
 | `favorites:view-refresh` | b-catalog | b-favs | 🟢 sain |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart | 🟢 sain (propriétaire: modal-product) |
+| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart, local-stock-badge-mount | 🟠 consommateur non déclaré : local-stock-badge-mount |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | 🟢 sain (propriétaire: modal-product) |
-| `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart, b-modal-suggestions | 🟢 sain |
+| `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart, b-modal-suggestions, local-stock-badge-mount | 🟢 sain |
 | `modal:open` | b-cart, b-checkout, b-modal-nav, b-modal-suggestions, group-side-cart | b-modal-core, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
@@ -149,6 +152,7 @@ graph LR
   b_komerce["b-komerce"] -->|komerce:show| b_nav["b-nav"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_cart["b-modal-cart"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_suggestions["b-modal-suggestions"]
+  b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| local_stock_badge_mount["local-stock-badge-mount"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pager["b-pager"]
@@ -157,6 +161,7 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
   b_modal_core["b-modal-core"] -->|modal:closed| group_side_cart["group-side-cart"]
+  b_modal_core["b-modal-core"] -->|modal:closed| local_stock_badge_mount["local-stock-badge-mount"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_core["b-modal-core"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_suggestions["b-modal-suggestions"]
@@ -174,7 +179,7 @@ graph LR
 | Événement | Propriétaire | Producteur(s) | Consommateurs | Payload | Verdict |
 |---|---|---|---|---|---|
 | `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
-| `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart | none | 🟢 propriété saine |
+| `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart, local-stock-badge-mount | none | 🟠 consommateur non déclaré : local-stock-badge-mount |
 | `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | none | 🟢 propriété saine |
 
 ## 3. Bundles CSS
