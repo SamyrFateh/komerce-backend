@@ -1,0 +1,47 @@
+name: Classify Boutique CSS B2 Side Cart
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b2-side-cart
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b2-side-cart
+      - name: Classify cascade baseline
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const p = 'public/boutique/scripts/.css-guard-baseline.json';
+          const b = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const parse = k => { const [selector, media, prop] = k.split('|||'); return {k, selector, media, prop}; };
+          const rows = b.keys.map(parse);
+          const groups = [
+            ['side-cart', r => /(^|\s)(#k-side-cart|\.k-side-cart|\.k-sc-|#k-cart-surface-switch|#k-modal\s+\.k-modal-cart-slot)/.test(r.selector)],
+            ['checkout', r => /(^|\s)(\.ck-|\.k-order-|\.k-ck-)/.test(r.selector)],
+            ['modal-pdp', r => /#k-modal|\.k-modal/.test(r.selector)],
+            ['catalog-rails', r => /\.k-(cat|cats|chip|sec-|shelf|sub)/.test(r.selector)],
+            ['navigation', r => /\.k-(bnav|header|search)/.test(r.selector)],
+          ];
+          console.log(`TOTAL=${rows.length}`);
+          for (const [name, fn] of groups) {
+            const matches = rows.filter(fn);
+            console.log(`${name.toUpperCase()}=${matches.length}`);
+          }
+          const side = rows.filter(groups[0][1]);
+          console.log('\n--- SIDE CART KEYS ---');
+          side.forEach(r => console.log(`${r.selector} | ${r.media} | ${r.prop}`));
+
+          const selectorCounts = new Map();
+          for (const r of side) selectorCounts.set(r.selector, (selectorCounts.get(r.selector)||0)+1);
+          console.log('\n--- SIDE CART SELECTORS BY COUNT ---');
+          [...selectorCounts.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).forEach(([s,c])=>console.log(`${c}\t${s}`));
+          NODE
