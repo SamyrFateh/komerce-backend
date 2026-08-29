@@ -265,29 +265,11 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
 | `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |
 | `webauthn_challenges` | Challenges WebAuthn éphémères persistés pour garantir single-use et séparation des cérémonies. Vérifiée live Railway. |
+| `sourcing_global_access_grants` | Grants persistés autorisant explicitement les surfaces Sourcing globales ; aucune autorité globale implicite. **Migration 149 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `pricing_global_access_grants` | Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur. **Migration 152 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `decision_signal_global_access_grants` | Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses. **Migration 153 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
 
-<!-- schema-pending
-object: sourcing_global_access_grants
-kind: table
-migration: 149
-section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
-role: Grants persistés autorisant explicitement les surfaces Sourcing globales ; aucune autorité globale implicite.
--->
-<!-- schema-pending
-object: pricing_global_access_grants
-kind: table
-migration: 152
-section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
-role: Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur.
--->
-<!-- schema-pending
-object: decision_signal_global_access_grants
-kind: table
-migration: 153
-section: ### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
-role: Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses.
--->
 
 ### 4.13 Monitoring et alertes (10 tables)
 
@@ -310,49 +292,13 @@ role: Grants persistés autorisant explicitement l’Action Center global et les
 
 | Table | Rôle |
 |---|---|
+| `local_stock` | Stock physique vendable détenu par Komerce par marché et localisation ; distinct du stock import/SKU et de l’inventaire de transit. Migration 157 ajoute commercial_exposure et le cycle d’allocation. **Migration 154 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `providers` | Tiers local payable portant l’exécution d’un service ou d’une offre physique ; identité distincte de users. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `services` | Prestations de travail proposées par un provider ; exposition commerciale désactivée par défaut. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `inquiries` | Demandes adressées à un provider, sans réservation de ressource ; migration 156 ajoute la cible physical_offer. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `physical_offers` | Produits physiques proposés par un tiers local, séparés des prestations de service. **Migration 156 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `local_stock_allocations` | Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente. **Migration 157 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: local_stock
-kind: table
-migration: 154
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Stock physique vendable détenu par Komerce par marché et localisation ; distinct du stock import/SKU et de l’inventaire de transit. Migration 157 ajoute commercial_exposure et le cycle d’allocation.
--->
-<!-- schema-pending
-object: providers
-kind: table
-migration: 155
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Tiers local payable portant l’exécution d’un service ou d’une offre physique ; identité distincte de users.
--->
-<!-- schema-pending
-object: services
-kind: table
-migration: 155
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Prestations de travail proposées par un provider ; exposition commerciale désactivée par défaut.
--->
-<!-- schema-pending
-object: inquiries
-kind: table
-migration: 155
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Demandes adressées à un provider, sans réservation de ressource ; migration 156 ajoute la cible physical_offer.
--->
-<!-- schema-pending
-object: physical_offers
-kind: table
-migration: 156
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Produits physiques proposés par un tiers local, séparés des prestations de service.
--->
-<!-- schema-pending
-object: local_stock_allocations
-kind: table
-migration: 157
-section: ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
-role: Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente.
--->
 
 ---
 
