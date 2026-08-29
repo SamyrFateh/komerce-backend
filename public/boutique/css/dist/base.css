@@ -656,9 +656,11 @@ ul, ol  { list-style: none; }
 @media (min-width: 900px) {
   body.modal-open {
     overflow: hidden;
-    position: fixed;
     width: 100%;
     top: var(--modal-scroll-y, 0);
+  }
+  body:where(.modal-open) {
+    position: fixed;
   }
   body.cart-open { overflow: hidden; }
 }

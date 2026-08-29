@@ -281,6 +281,11 @@ const findings = scan(globalClasses);
 
 if (findings.length === 0) {
   console.log(`${GRN}${BLD}✔ Aucun override de spécificité via classe globale détecté.${R}`);
+  if (save) {
+    const keys = [];
+    fs.writeFileSync(BASELINE, JSON.stringify({ total: 0, keys, savedAt: new Date().toISOString() }, null, 2));
+    console.log(`${GRN}${BLD}✔ Baseline figée à 0 override(s).${R}`);
+  }
   process.exitCode = 0;
   return;
 }

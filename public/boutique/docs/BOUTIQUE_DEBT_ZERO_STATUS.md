@@ -76,8 +76,8 @@
 - [x] B2-final cascade : rembourser les 16 dernières clés (wallet 6, hero 4, bottom-nav 4, cart 1, skeleton 1), avec 17 suppressions/splits physiques, suppression du fragment d'ombre hero invalide déjà ignoré par les navigateurs, et vérification de chaque winner ; cascade **16 → 0**, baseline cascade vide, 0 nouvelle clé ;
 - [x] B3-1 spécificité same-media : classifier les 86 clés et consolider les **43** dont toutes les occurrences physiques sont dans le même contexte media ; transférer la valeur premium gagnante vers le dernier owner de base du même media, supprimer la propriété premium et les perdantes redondantes ; spécificité **86 → 43**, cascade **0 → 0**, 0 nouvelle clé ;
 - [x] B3-2 spécificité cross-media sûre : consolider **35** clés premium restantes (23 mixed-media + 12 all-different-media) en retirant le préfixe premium au media gagnant et toutes les déclarations base du même sélecteur/propriété/media, y compris celles masquées par le rapport de spécificité ; spécificité **43 → 8**, cascade **0 → 0**, 0 nouvelle clé ;
-- [ ] B3-3 : re-home explicite des **7** clés premium restantes, puis traitement séparé de l'état transitoire `body.modal-open` ;
-- [ ] figer chaque baisse par le cliquet existant ;
-- [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.
+- [x] B3-3 final : re-home explicite des **7** clés premium restantes vers leurs owners canoniques (`layout.css` / `categories.css`), puis neutraliser la sur-spécificité du dernier état transitoire avec `body:where(.modal-open)` ; spécificité **8 → 0**, cascade **0 → 0** ;
+- [x] figer chaque baisse par le cliquet existant, y compris la baseline vide **0** ;
+- [x] zéro atteint après preuve d’ownership et test de non-régression du `--save` vide, sans acceptation en masse.
 
 Ce fichier est un ledger de chantier, pas une nouvelle baseline. Les cliquets existants restent les guards exécutables jusqu'à leur remboursement explicite.
