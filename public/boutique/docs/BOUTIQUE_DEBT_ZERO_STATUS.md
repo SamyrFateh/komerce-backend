@@ -61,6 +61,13 @@
 - [x] supprimer le vestige complet `.k-hero-logo-glow` (SVG caché + CSS/animations `klg-*`) et interdire les `!important` inline dans `index.html` — B1b-5 ;
 - [x] remplacer la référence morte `og-cover.jpg` par le hero canonique vivant `komerce_hero_catalog_canonical_v4.webp` et abaisser la baseline assets manquants 1 → 0 — B1b-6 ;
 - [x] exécuter l'audit npm complet et fermer les vulnérabilités détectées sans `--force` — B1c, 4 → 0 vulnérabilité ;
-- [ ] recalculer ensuite les 211 conflits cascade et 87 conflits spécificité sur la vérité corrigée.
+- [x] reconstruire les trois bundles canoniques puis recalculer les cliquets sur la vérité corrigée — B2-0 : cascade **211 → 211**, spécificité **87 → 86**, **0 nouvelle clé** avant abaissement de baseline.
+
+## B2 / B3 — Dette structurelle restante
+
+- [ ] classifier les 211 conflits de cascade par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
+- [ ] classifier les 86 overrides de spécificité par classe globale / famille fonctionnelle et supprimer les couches premium ou d'état qui ne sont plus nécessaires ;
+- [ ] figer chaque baisse par le cliquet existant ;
+- [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.
 
 Ce fichier est un ledger de chantier, pas une nouvelle baseline. Les cliquets existants restent les guards exécutables jusqu'à leur remboursement explicite.
