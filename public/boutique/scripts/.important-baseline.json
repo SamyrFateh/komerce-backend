@@ -1,12 +1,12 @@
 {
-  "total": 6,
+  "total": 3,
   "perFile": {
-    "hero.css": 4,
+    "hero.css": 1,
     "share-cart.css": 2
   },
   "semantics": "open-debt-only",
   "reviewedGuardIds": [
     "desktop-mobile-drawer-neutralization"
   ],
-  "savedAt": "2026-08-29T12:30:00.000Z"
+  "savedAt": "2026-08-29T14:40:00.000Z"
 }
