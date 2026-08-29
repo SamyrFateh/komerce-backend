@@ -2,55 +2,177 @@
 'use strict';
 
 /**
- * check-important.js — Garde-fou à cliquet sur `!important`.
+ * check-important.js — dette ouverte vs exceptions `!important` revues.
  *
- *   Doctrine : `!important` ne doit pas proliférer hors des guards desktop.
- *   Cette règle était purement documentaire (README §3) → elle a dérivé.
- *   Ce script la rend exécutable, en mode CLIQUET (jamais big-bang) :
- *     • on gèle le compte actuel par fichier comme référence (`--save`) ;
- *     • toute HAUSSE (nouveau `!important`, ou nouveau fichier qui en introduit)
- *       bloque le commit ;
- *     • une BAISSE est toujours acceptée — et peut être figée au nouvel étiage
- *       avec `--save` (le cliquet ne remonte jamais tout seul).
+ * Un `!important` n'est pas automatiquement une dette : certains guards de
+ * frontière responsive doivent neutraliser un état JS commun sur un breakpoint
+ * où la surface ne doit jamais apparaître. Ces exceptions sont rares, exactes,
+ * documentées et vérifiées structurellement.
  *
- * Le dossier `css/dist/` n'est pas scanné (bundles générés).
- *
- * Usage :
- *   node scripts/check-important.js --strict   ← bloque toute hausse (pre-commit / CI)
- *   node scripts/check-important.js --save      ← fige l'état courant comme baseline
- *   node scripts/check-important.js             ← rapport simple
+ * Tout le reste reste de la dette ouverte sous cliquet :
+ *   - toute nouvelle occurrence non revue bloque `--strict` ;
+ *   - toute baisse est acceptée et doit être refigée avec `--save` ;
+ *   - une exception revue qui change de sélecteur, valeur ou contexte @media
+ *     cesse immédiatement d'être revue et redevient de la dette ouverte.
  */
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
-const ROOT     = path.resolve(__dirname, '..');
-const CSS_DIR  = path.join(ROOT, 'css');
+const ROOT = path.resolve(__dirname, '..');
+const CSS_DIR = path.join(ROOT, 'css');
 const BASELINE = path.join(__dirname, '.important-baseline.json');
 
-const args   = process.argv.slice(2);
+const args = process.argv.slice(2);
 const strict = args.includes('--strict');
-const save   = args.includes('--save');
+const save = args.includes('--save');
+const json = args.includes('--json');
 
-const RED = '\x1b[31m', GRN = '\x1b[32m', YLW = '\x1b[33m', BLD = '\x1b[1m', DIM = '\x1b[2m', R = '\x1b[0m';
+const RED = '\x1b[31m';
+const GRN = '\x1b[32m';
+const YLW = '\x1b[33m';
+const BLD = '\x1b[1m';
+const DIM = '\x1b[2m';
+const R = '\x1b[0m';
+
+const REVIEWED_GUARDS = Object.freeze([
+  {
+    id: 'desktop-mobile-drawer-neutralization',
+    file: 'boutique-desktop.css',
+    media: /@media\s*\(\s*min-width\s*:\s*900px\s*\)/,
+    selector: /\.k-cart-drawer\.open\s*,\s*\.k-cart-overlay\.open\s*\{/g,
+    declarations: Object.freeze({
+      display: 'none',
+      transform: 'translateX(100%)',
+      'pointer-events': 'none',
+    }),
+    rationale: 'À ≥900px, neutralise le drawer/overlay mobile quand la classe JS .open subsiste.',
+  },
+]);
 
 function cssFiles() {
-  // readdirSync ne descend pas dans css/dist/ → les bundles générés sont ignorés.
   return fs.readdirSync(CSS_DIR)
-    .filter(f => f.endsWith('.css'))
+    .filter(file => file.endsWith('.css'))
     .sort();
 }
 
-function scan() {
-  const perFile = {};
-  let total = 0;
-  for (const f of cssFiles()) {
-    const raw = fs.readFileSync(path.join(CSS_DIR, f), 'utf8');
-    const src = raw.replace(/\/\*[\s\S]*?\*\//g, ''); // hors commentaires
-    const n = (src.match(/!important/g) || []).length;
-    if (n > 0) { perFile[f] = n; total += n; }
+function stripCommentsPreserveLength(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' '));
+}
+
+function matchingBrace(source, openIndex) {
+  let depth = 0;
+  let quote = null;
+  for (let i = openIndex; i < source.length; i += 1) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === '\\') { i += 1; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
   }
-  return { perFile, total };
+  return -1;
+}
+
+function insideExpectedMedia(source, blockStart, mediaRegex) {
+  const media = new RegExp(mediaRegex.source, mediaRegex.flags.includes('g') ? mediaRegex.flags : `${mediaRegex.flags}g`);
+  let match;
+  while ((match = media.exec(source)) !== null) {
+    if (match.index > blockStart) break;
+    const open = source.indexOf('{', match.index + match[0].length);
+    if (open < 0) continue;
+    const close = matchingBrace(source, open);
+    if (close >= blockStart) return true;
+  }
+  return false;
+}
+
+function parseImportantDeclarations(blockBody) {
+  const out = [];
+  const re = /([a-zA-Z-]+)\s*:\s*([^;{}]+?)\s*!important\s*;/g;
+  let match;
+  while ((match = re.exec(blockBody)) !== null) {
+    out.push({ property: match[1].trim(), value: match[2].trim() });
+  }
+  return out;
+}
+
+function findReviewedOccurrences(file, source) {
+  const reviewed = [];
+  const clean = stripCommentsPreserveLength(source);
+
+  for (const guard of REVIEWED_GUARDS) {
+    if (guard.file !== file) continue;
+    const selectorRe = new RegExp(guard.selector.source, guard.selector.flags);
+    let match;
+    while ((match = selectorRe.exec(clean)) !== null) {
+      const open = clean.indexOf('{', match.index);
+      const close = matchingBrace(clean, open);
+      if (open < 0 || close < 0) continue;
+      if (!insideExpectedMedia(clean, match.index, guard.media)) continue;
+
+      const declarations = parseImportantDeclarations(clean.slice(open + 1, close));
+      const expectedEntries = Object.entries(guard.declarations);
+      const exact = declarations.length === expectedEntries.length
+        && expectedEntries.every(([property, value]) =>
+          declarations.some(item => item.property === property && item.value === value)
+        );
+      if (!exact) continue;
+
+      for (const [property, value] of expectedEntries) {
+        reviewed.push({
+          id: guard.id,
+          file,
+          property,
+          value,
+          rationale: guard.rationale,
+        });
+      }
+    }
+  }
+
+  return reviewed;
+}
+
+function scan() {
+  const totalPerFile = {};
+  const reviewedPerFile = {};
+  const openPerFile = {};
+  const reviewed = [];
+  let total = 0;
+  let reviewedTotal = 0;
+
+  for (const file of cssFiles()) {
+    const source = fs.readFileSync(path.join(CSS_DIR, file), 'utf8');
+    const clean = stripCommentsPreserveLength(source);
+    const count = (clean.match(/!important\b/g) || []).length;
+    const fileReviewed = findReviewedOccurrences(file, source);
+    const open = Math.max(0, count - fileReviewed.length);
+
+    if (count > 0) totalPerFile[file] = count;
+    if (fileReviewed.length > 0) reviewedPerFile[file] = fileReviewed.length;
+    if (open > 0) openPerFile[file] = open;
+
+    total += count;
+    reviewedTotal += fileReviewed.length;
+    reviewed.push(...fileReviewed);
+  }
+
+  return {
+    total,
+    totalPerFile,
+    reviewedTotal,
+    reviewedPerFile,
+    reviewed,
+    openTotal: total - reviewedTotal,
+    openPerFile,
+  };
 }
 
 function loadBaseline() {
@@ -58,51 +180,98 @@ function loadBaseline() {
   catch { return null; }
 }
 
-const result   = scan();
-const perFile   = result.perFile;
-const total     = result.total;
-
-if (save) {
-  fs.writeFileSync(BASELINE, JSON.stringify({ total, perFile, savedAt: new Date().toISOString() }, null, 2));
-  console.log(`${GRN}${BLD}✔ Baseline !important figée à ${total} occurrence(s) sur ${Object.keys(perFile).length} fichier(s).${R}`);
-  process.exit(0);
+function saveBaseline(result) {
+  const baseline = {
+    total: result.openTotal,
+    perFile: result.openPerFile,
+    semantics: 'open-debt-only',
+    reviewedGuardIds: REVIEWED_GUARDS.map(guard => guard.id),
+    savedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(BASELINE, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8');
+  return baseline;
 }
 
-const baseline = loadBaseline();
-if (!baseline) {
-  console.error(`${RED}${BLD}✖ Aucune baseline !important.${R} Lance d'abord : node scripts/check-important.js --save`);
-  process.exit(strict ? 1 : 0);
+function diffAgainstBaseline(result, baseline) {
+  const regressions = [];
+  const drops = [];
+  const current = result.openPerFile;
+  const reference = baseline.perFile || {};
+
+  for (const [file, count] of Object.entries(current)) {
+    const ref = reference[file] || 0;
+    if (count > ref) regressions.push({ file, ref, now: count });
+  }
+  for (const [file, ref] of Object.entries(reference)) {
+    const now = current[file] || 0;
+    if (now < ref) drops.push({ file, ref, now });
+  }
+
+  return { regressions, drops };
 }
 
-// Détection des hausses : fichier dont le compte dépasse sa référence, ou nouveau
-// fichier introduisant des !important absent de la baseline.
-const regressions = [];
-for (const [file, n] of Object.entries(perFile)) {
-  const ref = baseline.perFile[file] || 0;
-  if (n > ref) regressions.push({ file, ref, now: n });
+function run() {
+  const result = scan();
+
+  if (save) {
+    const baseline = saveBaseline(result);
+    console.log(`${GRN}${BLD}✔ Baseline dette !important ouverte figée à ${baseline.total} occurrence(s).${R}`);
+    console.log(`${DIM}  ${result.reviewedTotal} occurrence(s) revue(s) restent suivies séparément.${R}`);
+    return 0;
+  }
+
+  const baseline = loadBaseline();
+  if (!baseline) {
+    console.error(`${RED}${BLD}✖ Aucune baseline !important.${R}`);
+    return strict ? 1 : 0;
+  }
+
+  const { regressions, drops } = diffAgainstBaseline(result, baseline);
+
+  if (json) {
+    console.log(JSON.stringify({ result, baseline, regressions, drops }, null, 2));
+    return strict && regressions.length > 0 ? 1 : 0;
+  }
+
+  console.log(`${BLD}!important — ${result.total} occurrence(s) physiques${R}`);
+  console.log(`  Dette ouverte : ${result.openTotal} (baseline : ${baseline.total})`);
+  console.log(`  Revues        : ${result.reviewedTotal}`);
+
+  if (result.reviewed.length > 0) {
+    console.log(`${DIM}  Exceptions revues exactes :${R}`);
+    const ids = [...new Set(result.reviewed.map(item => item.id))];
+    for (const id of ids) {
+      const items = result.reviewed.filter(item => item.id === id);
+      console.log(`${GRN}   ✓ ${id} — ${items.length} déclaration(s)${R}`);
+      console.log(`${DIM}     ${items[0].rationale}${R}`);
+    }
+  }
+
+  if (drops.length > 0) {
+    console.log(`${DIM}  Baisses de dette ouverte depuis la baseline :${R}`);
+    drops.forEach(item => console.log(`${GRN}   ↓ ${item.file} : ${item.ref} → ${item.now}${R}`));
+  }
+
+  if (regressions.length === 0) {
+    console.log(`${GRN}${BLD}✔ Aucune hausse de dette !important ouverte.${R}`);
+    return 0;
+  }
+
+  console.log(`${RED}${BLD}✖ ${regressions.length} hausse(s) de dette !important ouverte :${R}`);
+  regressions.forEach(item => console.log(`${RED}   ↑ ${item.file} : ${item.ref} → ${item.now} (+${item.now - item.ref})${R}`));
+  console.log(`${YLW}  Ne pas gonfler la baseline pour faire passer le gate : supprimer la cause ou documenter une exception exacte et revue.${R}`);
+  return strict ? 1 : 0;
 }
 
-// Baisses (info) : utile pour savoir qu'on peut re-figer plus bas.
-const drops = [];
-for (const [file, ref] of Object.entries(baseline.perFile)) {
-  const now = perFile[file] || 0;
-  if (now < ref) drops.push({ file, ref, now });
-}
+if (require.main === module) process.exit(run());
 
-console.log(`${BLD}!important — ${total} occurrence(s) (baseline : ${baseline.total})${R}`);
-
-if (drops.length) {
-  console.log(`${DIM}  Baisses depuis la baseline (fige-les avec --save) :${R}`);
-  drops.forEach(d => console.log(`${GRN}   ↓ ${d.file} : ${d.ref} → ${d.now}${R}`));
-}
-
-if (regressions.length === 0) {
-  console.log(`${GRN}${BLD}✔ Aucune hausse de !important hors baseline.${R}`);
-  process.exit(0);
-}
-
-console.log(`${RED}${BLD}✖ ${regressions.length} hausse(s) de !important hors baseline :${R}`);
-regressions.forEach(v => console.log(`${RED}   ↑ ${v.file} : ${v.ref} → ${v.now} (+${v.now - v.ref})${R}`));
-console.log(`${DIM}  Retire le(s) !important ajouté(s), ou — si la hausse est légitime (guard desktop)${R}`);
-console.log(`${DIM}  — fige le nouvel état : npm run check:important:save${R}`);
-process.exit(strict ? 1 : 0);
+module.exports = {
+  REVIEWED_GUARDS,
+  matchingBrace,
+  insideExpectedMedia,
+  parseImportantDeclarations,
+  findReviewedOccurrences,
+  scan,
+  diffAgainstBaseline,
+  run,
+};
