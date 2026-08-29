@@ -39,34 +39,83 @@ jobs:
           src = src.replace(anchor1, insert1);
 
           const anchor2 = "function buildSnapshot() {\n";
-          const helper = `function readBaseline(file, defaults = {}) {\n  if (!fs.existsSync(file)) return { ...defaults, missing: true };\n  try { return { ...defaults, ...JSON.parse(fs.readFileSync(file, 'utf8')), missing: false }; }\n  catch { return { ...defaults, missing: true }; }\n}\n\nfunction debtSummary() {\n  return {\n    cascade: readBaseline(CASCADE_BASELINE, { total: 0, keys: [] }),\n    specificity: readBaseline(SPECIFICITY_BASELINE, { total: 0, keys: [] }),\n    important: readBaseline(IMPORTANT_BASELINE, { total: 0, perFile: {}, reviewedGuardIds: [] }),\n  };\n}\n\n`;
+          const helper = [
+            'function readBaseline(file, defaults = {}) {',
+            '  if (!fs.existsSync(file)) return { ...defaults, missing: true };',
+            "  try { return { ...defaults, ...JSON.parse(fs.readFileSync(file, 'utf8')), missing: false }; }",
+            '  catch { return { ...defaults, missing: true }; }',
+            '}',
+            '',
+            'function debtSummary() {',
+            '  return {',
+            '    cascade: readBaseline(CASCADE_BASELINE, { total: 0, keys: [] }),',
+            '    specificity: readBaseline(SPECIFICITY_BASELINE, { total: 0, keys: [] }),',
+            '    important: readBaseline(IMPORTANT_BASELINE, { total: 0, perFile: {}, reviewedGuardIds: [] }),',
+            '  };',
+            '}',
+            '',
+          ].join('\n');
           if (!src.includes(anchor2)) throw new Error('buildSnapshot anchor not found');
           src = src.replace(anchor2, helper + anchor2);
 
-          const beforeBuild = `    important: importantSummary(),\n    jsOwnedVars: jsVarOwners(),\n`;
-          const afterBuild = `    important: importantSummary(),\n    debts: debtSummary(),\n    jsOwnedVars: jsVarOwners(),\n`;
+          const beforeBuild = "    important: importantSummary(),\n    jsOwnedVars: jsVarOwners(),\n";
+          const afterBuild = "    important: importantSummary(),\n    debts: debtSummary(),\n    jsOwnedVars: jsVarOwners(),\n";
           if (!src.includes(beforeBuild)) throw new Error('buildSnapshot payload anchor not found');
           src = src.replace(beforeBuild, afterBuild);
 
-          const beforeRender = `  const imp = snapshot.important;\n  const jsv = snapshot.jsOwnedVars;\n`;
-          const afterRender = `  const imp = snapshot.important;\n  const debts = snapshot.debts || debtSummary();\n  const jsv = snapshot.jsOwnedVars;\n`;
+          const beforeRender = "  const imp = snapshot.important;\n  const jsv = snapshot.jsOwnedVars;\n";
+          const afterRender = "  const imp = snapshot.important;\n  const debts = snapshot.debts || debtSummary();\n  const jsv = snapshot.jsOwnedVars;\n";
           if (!src.includes(beforeRender)) throw new Error('render anchor not found');
           src = src.replace(beforeRender, afterRender);
 
-          const oldScore = `  md += '- **CSS orphelins** : ${'${orphanCount}'} (cible : 0)\\n';\n  md += '- **Sources bundle manquantes** : ${'${inv.missingSources.length}'} (cible : 0)\\n';\n  md += '- **Tokens cassés** : ${'${broken.length}'} (cible : 0)\\n';\n  md += '- **Hex hardcodés** : ${'${hexCount}'} (cible : 0 ou exceptions documentées)\\n';\n  md += '- **\\`!important\\`** : ${'${importantCount}'} (cible : 0 ou exceptions indispensables)\\n';\n  md += '- **Sélecteurs multi-owner observés** : ${'${multiOwnerCount}'} (à classifier par ownership)\\n';\n`;
-          const newScore = `  md += '- **CSS orphelins** : ${'${orphanCount}'} (cible : 0)\\n';\n  md += '- **Sources bundle manquantes** : ${'${inv.missingSources.length}'} (cible : 0)\\n';\n  md += '- **Tokens cassés** : ${'${broken.length}'} (cible : 0)\\n';\n  md += '- **Conflits de cascade suivis** : ${'${debts.cascade.total}'} (cible : 0)\\n';\n  md += '- **Overrides de spécificité suivis** : ${'${debts.specificity.total}'} (cible : 0)\\n';\n  md += '- **Dette \\`!important\\` ouverte** : ${'${debts.important.total}'} (cible : 0)\\n';\n  md += '- **\\`!important\\` physiques** : ${'${importantCount}'} (guards revus inclus)\\n';\n  md += '- **Guards \\`!important\\` revus** : ${'${(debts.important.reviewedGuardIds || []).length}'} registre(s)\\n';\n  md += '- **Hex hardcodés** : ${'${hexCount}'} (cible : 0 ou exceptions documentées)\\n';\n  md += '- **Sélecteurs multi-owner observés** : ${'${multiOwnerCount}'} (à classifier par ownership)\\n';\n`;
-          if (!src.includes(oldScore)) throw new Error('score block not found');
-          src = src.replace(oldScore, newScore);
+          const lines = src.split('\n');
+          const scoreStart = lines.findIndex(line => line.includes("md += '- **CSS orphelins**"));
+          const scoreEnd = lines.findIndex((line, i) => i >= scoreStart && line.includes("md += '- **Sélecteurs multi-owner observés**"));
+          if (scoreStart < 0 || scoreEnd < scoreStart) throw new Error('score block not found');
+          const scoreLines = [
+            "  md += '- **CSS orphelins** : ${orphanCount} (cible : 0)\\n';",
+            "  md += '- **Sources bundle manquantes** : ${inv.missingSources.length} (cible : 0)\\n';",
+            "  md += '- **Tokens cassés** : ${broken.length} (cible : 0)\\n';",
+            "  md += '- **Conflits de cascade suivis** : ${debts.cascade.total} (cible : 0)\\n';",
+            "  md += '- **Overrides de spécificité suivis** : ${debts.specificity.total} (cible : 0)\\n';",
+            "  md += '- **Dette `!important` ouverte** : ${debts.important.total} (cible : 0)\\n';",
+            "  md += '- **`!important` physiques** : ${importantCount} (guards revus inclus)\\n';",
+            "  md += '- **Guards `!important` revus** : ${(debts.important.reviewedGuardIds || []).length} registre(s)\\n';",
+            "  md += '- **Hex hardcodés** : ${hexCount} (cible : 0 ou exceptions documentées)\\n';",
+            "  md += '- **Sélecteurs multi-owner observés** : ${multiOwnerCount} (à classifier par ownership)\\n';",
+          ];
+          lines.splice(scoreStart, scoreEnd - scoreStart + 1, ...scoreLines);
+          src = lines.join('\n');
 
-          const exportAnchor = `  importantSummary,\n  jsVarOwners,\n`;
-          const exportNew = `  importantSummary,\n  debtSummary,\n  jsVarOwners,\n`;
+          const exportAnchor = "  importantSummary,\n  jsVarOwners,\n";
+          const exportNew = "  importantSummary,\n  debtSummary,\n  jsVarOwners,\n";
           if (!src.includes(exportAnchor)) throw new Error('export anchor not found');
           src = src.replace(exportAnchor, exportNew);
-
           fs.writeFileSync(file, src, 'utf8');
 
-          const test = `'use strict';\n\nconst { buildSnapshot, render } = require('../../scripts/gen-boutique-arch-live.js');\n\ndescribe('Architecture LIVE structural debt metrics', () => {\n  test('reports the executable zero ratchets without confusing reviewed physical important guards with open debt', () => {\n    const snapshot = buildSnapshot();\n    expect(snapshot.debts.cascade.total).toBe(0);\n    expect(snapshot.debts.specificity.total).toBe(0);\n    expect(snapshot.debts.important.total).toBe(0);\n    expect(snapshot.debts.important.reviewedGuardIds).toContain('desktop-mobile-drawer-neutralization');\n\n    const md = render(snapshot);\n    expect(md).toContain('Conflits de cascade suivis** : 0');\n    expect(md).toContain('Overrides de spécificité suivis** : 0');\n    expect(md).toContain('Dette \\`!important\\` ouverte** : 0');\n    expect(md).toContain('\\`!important\\` physiques** : 3');\n  });\n});\n`;
-          fs.writeFileSync(path.resolve('public/boutique/tests/unit/gen-boutique-arch-live-debt-metrics.test.js'), test, 'utf8');
+          const testLines = [
+            "'use strict';",
+            '',
+            "const { buildSnapshot, render } = require('../../scripts/gen-boutique-arch-live.js');",
+            '',
+            "describe('Architecture LIVE structural debt metrics', () => {",
+            "  test('reports executable zero ratchets and separates reviewed physical important guards from open debt', () => {",
+            '    const snapshot = buildSnapshot();',
+            '    expect(snapshot.debts.cascade.total).toBe(0);',
+            '    expect(snapshot.debts.specificity.total).toBe(0);',
+            '    expect(snapshot.debts.important.total).toBe(0);',
+            "    expect(snapshot.debts.important.reviewedGuardIds).toContain('desktop-mobile-drawer-neutralization');",
+            '',
+            '    const md = render(snapshot);',
+            "    expect(md).toContain('Conflits de cascade suivis** : 0');",
+            "    expect(md).toContain('Overrides de spécificité suivis** : 0');",
+            "    expect(md).toContain('Dette `!important` ouverte** : 0');",
+            "    expect(md).toContain('`!important` physiques** : 3');",
+            '  });',
+            '});',
+            '',
+          ];
+          fs.writeFileSync(path.resolve('public/boutique/tests/unit/gen-boutique-arch-live-debt-metrics.test.js'), testLines.join('\n'), 'utf8');
           NODE
 
       - name: Prove generator debt metrics
