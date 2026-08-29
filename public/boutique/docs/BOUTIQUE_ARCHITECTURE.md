@@ -1,273 +1,179 @@
 # Komerce Boutique — Architecture
 
-> **Document normatif.** Décrit ce qui doit être vrai. Court par discipline.
-> Si tu trouves une contradiction entre ce document et le code, **le code a tort** —
-> ouvre une PR pour le corriger. Si la règle elle-même est mauvaise, **change-la ici**
-> dans la même PR.
->
-> L'état réel du code à un instant T est dans `BOUTIQUE_ARCHITECTURE_LIVE.md`,
-> régénéré par `npm run boutique:arch`. Ce fichier-ci, jamais.
->
-> Le garde-fou : `npm run boutique:audit` plante le build si le code diverge.
+> **Document normatif.** Il décrit les règles qui doivent rester vraies.
+> La photographie du code réel est générée dans `BOUTIQUE_ARCHITECTURE_LIVE.md` par `npm run boutique:arch`.
+> La composition CSS canonique est définie uniquement dans `scripts/css-bundles.js`.
+> Les gardes exécutables priment toujours sur un chiffre copié dans la documentation.
 
 ---
 
-## 1. Invariants (le build casse si violés)
+## 1. Sources de vérité
 
-### I-1. Aucun CSS orphelin
-Tout fichier `css/*.css` est soit listé dans `scripts/bundle-css.js`, soit supprimé du disque.
-Pas de troisième option. Pas de "fichier conservé pour cache résiduel" ; le cache se règle
-avec un `?v=N`, pas avec un fichier vide.
+| Sujet | Source canonique |
+|---|---|
+| Composition des bundles CSS | `scripts/css-bundles.js` |
+| Bundles livrés | `css/dist/base.css`, `components.css`, `desktop.css` |
+| Snapshot architecture | `docs/BOUTIQUE_ARCHITECTURE_LIVE.md` |
+| Audit architecture | `scripts/audit-boutique-arch.js` / `npm run boutique:audit` |
+| Conflits de cascade | `scripts/css-guard.js` + `.css-guard-baseline.json` |
+| Overrides de spécificité | `scripts/css-specificity-guard.js` + `.css-specificity-guard-baseline.json` |
+| Dette `!important` ouverte | `scripts/check-important.js` + `.important-baseline.json` |
+| Cache-busters CSS | `scripts/deploy-css.js` + `index.html` |
 
-### I-2. Un sélecteur, un owner
-Voir tableau §3. Un sélecteur listé est défini **uniquement** dans son owner déclaré.
-Si tu as besoin d'override desktop d'une règle mobile, l'override va dans l'owner desktop,
-pas dans un troisième fichier.
+**Interdit** : reconstruire l’architecture en parsant un ancien wrapper comme `bundle-css.js`, ou maintenir manuellement une seconde liste de fichiers censée remplacer `css-bundles.js`.
 
-### I-3. Aucun hex hors `tokens.css`
-Sauf exception listée dans `scripts/audit-arch.js` (allowlist explicite, justifiée).
-Toute couleur passe par une variable CSS sémantique.
+---
 
-### I-4. Aucune valeur `var(--token)xxx`
-Le pattern `var\(--[a-z-]+\)[0-9a-f]{2,}` est interdit. C'est le résidu d'une migration
-find-replace qui a transformé des hex 6 chiffres en charabia (`#fff8e7` → `var(--white)8e7`),
-silencieusement invalide côté navigateur.
+## 2. Invariants exécutables
 
-### I-5. Toute modif desktop est sous `@media (min-width: 900px)`
-Sauf si la règle vit dans un fichier listé `desktop-only` au §2 (chargé sans MQ mais
-servant uniquement le desktop par convention). Aucune règle globale ne touche un sélecteur
-mobile-critique (voir §4).
+### I-1 — Aucun CSS orphelin, aucune source bundle manquante
 
-### I-6. Les variables CSS owned par JS ne sont jamais posées par CSS
-Liste verrouillée : `--pager-top`, `--pager-h`, `--pager-w`, `--bnav-h`, `--modal-scroll-y`.
-Posées exclusivement via `element.style.setProperty()` depuis le JS owner déclaré au §5.
+Tout `css/*.css` doit être déclaré dans `BUNDLES`, et toute entrée `BUNDLES` doit exister sur disque.
+Le LIVE doit rester à :
 
-### I-7. La dette structurelle ne peut que décroître (cliquet)
-Deux compteurs sont gelés dans une baseline et ne peuvent **jamais augmenter** :
+- CSS orphelins = **0** ;
+- sources bundle manquantes = **0**.
 
-1. **Breakpoints hors charte** — tout `@media` doit cibler `900px` (desktop) ou `1200px` (large).
-   Tout autre breakpoint (`480`, `600`, `768`…) est une violation. Baseline :
-   `scripts/.breakpoints-baseline.json`. Vérifié par `npm run check:breakpoints`.
+### I-2 — Dette de cascade = zéro
 
-   Le cliquet compare **par fichier et par valeur** (pas uniquement le total) : un swap
-   silencieux (suppression d'une violation + ajout d'une autre dans un fichier différent)
-   est détecté comme régression. Corrigé le 13/06/2026 suite au cas `categories.css:max:360`
-   → `group-cart-flow.css:min:381` qui passait inaperçu sous l'ancien check total-only.
+`css-guard` est un cliquet à **0**. Une nouvelle paire sélecteur / contexte media / propriété avec deux valeurs concurrentes est une régression, même si le rendu semble correct par ordre de chargement.
 
-   **Baseline actuelle (13/06/2026) — 2 violations légitimées :**
-   - `modal-shell.css` `max:1120` — range desktop étroit (900–1120px) pour la grille modale pleine page ; non reproductible avec 900/1200 seuls.
-   - `group-cart-flow.css` `min:381` — rewrite mobile-first des anciens `max:380` (LOT6 actions-row + condensation stats) ; 381 est le complément naturel de 380, pas un breakpoint arbitraire.
-2. **Exceptions multi-owner** — la liste `allowedAlso` / scopes multiples de
-   `scripts/audit-boutique-arch.js` (I-2) est une **dette à rembourser**, pas un débarras.
-   On ne peut pas y ajouter une entrée pour faire taire `audit:arch` : il faut résoudre
-   le conflit (rapatrier le sélecteur chez son owner unique).
+Une correction doit supprimer ou re-héberger la déclaration perdante ; on ne remonte jamais la baseline pour accepter une nouvelle collision.
 
-**Pourquoi cet invariant existe** : sans lui, I-2 et I-5 se contournent en ajoutant des
-exceptions. Le build reste vert pendant que le contrôle réel se dégrade (cas observé au
-30/05/2026 : 29 exceptions multi-owner, 35 breakpoints hors charte, alors qu'`audit:arch`
-était vert). I-7 transforme ces listes en cliquet : elles ne tournent que vers 0.
+### I-3 — Dette de spécificité = zéro
 
-**Quand on résout une violation** : régénérer la baseline avec `npm run check:breakpoints:save`
-pour verrouiller le gain — on ne pourra plus jamais remonter au-dessus du nouveau compte.
-Le `--save` écrit `total` + `perFile` ; les deux sont vérifiés au `--strict`.
+`css-specificity-guard` est un cliquet à **0**. Une classe globale (`k-home-premium-v1`, `modal-open`, etc.) ne doit pas devenir un mécanisme caché pour écraser le selector canonique.
 
-### I-8. Le CSS vit dans les fichiers `.css`, jamais dans le JS
-
-Aucun module JS ne doit appeler `document.createElement('style')` pour injecter des règles
-structurelles. Le JS pose des **classes d'état** sur le DOM ; le CSS qui réagit à ces classes
-vit dans le fichier owner du composant concerné.
-
-```js
-// ✅ CONFORME
-documentElement.classList.add('k-mobile-premium-v1');
-element.classList.toggle('kpill--visible', hasItems);
-
-// ❌ VIOLATION — détectée par audit:arch
-const s = document.createElement('style');
-s.textContent = `.k-chip { width: 64px; }`;
-document.head.appendChild(s);
-```
-
-**Convention pour les états premium scopés :** les variantes visuelles premium s'ajoutent
-dans l'owner du composant, préfixées `html.k-*-premium-v1` :
+Pattern accepté pour un état qui doit rester sans bonus de spécificité :
 
 ```css
-/* Dans categories.css — owner des chips */
-html.k-mobile-premium-v1 .k-chip { width: 64px; height: 84px; }
+body:where(.modal-open) {
+  position: fixed;
+}
 ```
 
-La spécificité du sélecteur scopé (0-2-0) bat les règles de base (0-1-0) sans `!important`.
+Les classes premium peuvent rester des marqueurs d’état JS, mais les valeurs visuelles durables doivent vivre chez l’owner canonique et non dans une couche de sur-spécificité.
 
-**Exceptions `!important` légitimes** (registre exhaustif — tout ajout requiert une PR) :
+### I-4 — Dette `!important` ouverte = zéro
 
-| Fichier | Sélecteur | Motif |
+La métrique de dette est **open-debt-only**. Les trois occurrences physiques restantes sont un seul guard revu et verrouillé structurellement :
+
+- fichier : `boutique-desktop.css` ;
+- breakpoint : `@media (min-width: 900px)` ;
+- selectors : `.k-cart-drawer.open, .k-cart-overlay.open` ;
+- déclarations : `display:none`, `transform:translateX(100%)`, `pointer-events:none` ;
+- registre : `desktop-mobile-drawer-neutralization`.
+
+Ce guard neutralise le drawer/overlay mobile lorsque `.open` subsiste côté JS sur desktop. Tout changement de selector, valeur ou media le fait automatiquement redevenir dette ouverte.
+
+### I-5 — Pas de token CSS cassé
+
+Le pattern résiduel `var(--token)xxx` est interdit. Cible LIVE : **0**.
+
+### I-6 — Couleurs centralisées
+
+Les couleurs métier passent par `tokens.css`. Les hex hors tokens ne sont admis que comme exceptions explicitement justifiées par l’audit, notamment les couleurs de marque PayPal et les fallbacks de token documentés.
+
+Le LIVE sert à rendre leur nombre visible ; on n’ajoute jamais un hex simplement pour faire taire un conflit de cascade.
+
+### I-7 — Pas de CSS structurel injecté par JavaScript
+
+Le JS pose des classes d’état et des variables CSS runtime ; il n’injecte pas de `<style>` structurel pour contourner l’ownership CSS.
+
+### I-8 — Desktop explicite
+
+Le breakpoint desktop canonique est `900px`. Les exceptions de breakpoint existantes sont régies par le guard dédié ; aucune nouvelle valeur n’est ajoutée sans justification et sans mise à jour du contrat concerné.
+
+---
+
+## 3. Topologie CSS actuelle
+
+Ordre livré dans `index.html` :
+
+1. `base.css`
+2. `components.css`
+3. `desktop.css`
+
+La liste exacte des sources de chaque bundle est **uniquement** `scripts/css-bundles.js`. Au 29/08/2026, le LIVE observe **39 sources CSS**, toutes déclarées et présentes.
+
+Rôle des couches :
+
+- **base** : tokens, reset, layout, hero et convergences shell/mobile de fondation ;
+- **components** : catégories, produits, modale/PDP, panier/checkout, identité, paiements, listes partagées et convergences fonctionnelles ;
+- **desktop** : adaptations desktop explicites, polish side-cart et navigation catégories desktop.
+
+Un nouveau fichier CSS n’est réel que lorsqu’il est ajouté dans `css-bundles.js` et que le LIVE reste sans orphelin ni source manquante.
+
+---
+
+## 4. Ownership des sélecteurs critiques
+
+Le principe n’est plus « un selector littéral dans un seul fichier à tout prix ». Le contrat est : **un owner sémantique principal + uniquement des adaptations contextuelles explicites**. Le LIVE signale les selectors multi-owner pour revue ; ils ne constituent pas une dette lorsqu’ils correspondent au tableau ci-dessous et que cascade/spécificité restent à zéro.
+
+| Sélecteur | Owner principal | Adaptations autorisées |
 |---|---|---|
-| `boutique-desktop.css` | `.k-cart-drawer.open`, `.k-cart-overlay.open` @900px | Garde drawer desktop : doit écraser `.open` posé par JS (inversion de cascade réelle, spécificité identique) |
-| `hero.css` | `html.k-mobile-premium-v1 .k-hero-*` | `display:none` de masquage absolu — pratique légitime et conforme MDN |
+| `.k-chip` | `categories.css` | `interactions.css` pour états/transition |
+| `.k-cats-shell` | `categories.css` | `boutique-desktop.css` pour desktop |
+| `.k-hero-cats-sticky` | `hero.css` pour la base | `categories.css` pour l’état/skin desktop canonique |
+| `#k-subcats-wrap`, `.k-subchip` | `boutique-desktop.css` structure | `categories.css` pour theming catégorie |
+| `.k-grid` | `products.css` | `cart.css` contexte panier, `layout.css` contrainte structurelle desktop |
+| `.k-card` | `products.css` | `categories.css` état d’entrée, `boutique-desktop.css` interaction desktop |
+| `.k-card-add`, `.k-card-fav` | `products.css` | `cart.css` sizing/contexte panier desktop |
+| `.k-side-cart` | `layout.css` pour présence mobile | `boutique-desktop.css` pour coque desktop ; `side-cart-desktop-polish.css` pour descendants/polish |
+| `#k-desktop-catalog-wrap` | `layout.css` | aucune seconde coque concurrente |
+| `.k-header` | `layout.css` | `mobile-shell-convergence.css` pour convergence mobile ciblée |
+| `.k-hero-media` | `hero.css` | `hero-ultra-mobile.css`, `mobile-catalog-convergence.css` pour adaptations mobiles ciblées |
+| `.k-modal` | `modal-shell.css` | `modal-product.css` pour contexte PDP desktop ciblé |
+
+Toute nouvelle adaptation doit répondre aux trois conditions : contexte identifiable, propriété non concurrente avec une valeur différente, et owner/documentation explicites.
 
 ---
 
-## 2. Inventaire CSS — statut attendu
+## 5. Variables CSS runtime owned par JS
 
-| Fichier | Statut | Rôle |
-|---|---|---|
-| `tokens.css` | bundle `base` | Variables CSS — source unique pour couleurs/typo/radius/ombres |
-| `reset.css` | bundle `base` | Reset box-model, scroll-behavior |
-| `layout.css` | bundle `base` | Structure : `#k-hero-fixed-wrap`, `#k-page-scroll`, `.k-side-cart` **mobile uniquement** |
-| `hero.css` | bundle `base` | `.k-hero` base, `.k-hero-cats-sticky` base mobile |
-| `categories.css` | bundle `components` | `.k-chip` base mobile, couleurs par catégorie |
-| `products.css` | bundle `components` | `.k-grid`, `.k-card` base |
-| `modal.css` | bundle `components` | Cycle modal, overlay, drawer. **Co-owner avec `js/view-models/modal-view-model.js`** pour les 10 classes contractuelles `.k-modal--*` (cf. `BOUTIQUE_SOURCE_OF_TRUTH.md` §3B) |
-| `cart.css` | bundle `components` | Panier complet, `.k-card-add`, `.k-card-fav` |
-| `interactions.css` | bundle `components` | Animations, toasts, transitions chips |
-| `hero-cart-proxy.css` | bundle `components` | Proxy mobile uniquement, masque `.k-hero-bubble` |
-| `group-cart-flow.css` | bundle `components` | **Owner officiel** styles Groupe / panier partagé : cockpit créateur, vue participant, mobile compact. `b-group-view.js` ne doit plus injecter de CSS (injectStyles = no-op). |
-| `shared-followup.css` | bundle `components` | Followup partagé (résiduel) |
-| `boutique-desktop.css` | bundle `desktop` | **Owner desktop ≥900px** : chips, sticky bar, side-cart, k-card hover, mega-nav |
-| `desktop-commerce-skeleton.css` | bundle `desktop` | Layout desktop : header, hero shape, `#k-desktop-catalog-wrap` grid |
-| `event.css` | bundle `event` | Pages événement |
+Ces variables sont posées par le runtime et ne doivent pas recevoir une valeur métier concurrente depuis CSS :
 
-**Aucun autre `.css` ne doit exister dans `css/`.** Si présent, l'audit échoue.
+| Variable | Producteur(s) actuel(s) |
+|---|---|
+| `--pager-top` | `b-pager.js`, `hero-bootstrap.js` |
+| `--pager-h` | `b-pager.js`, `b-subcat.js`, `hero-bootstrap.js` |
+| `--pager-w` | `b-pager.js` |
+| `--bnav-h` | `b-pager.js` |
+| `--modal-scroll-y` | `b-modal-core.js` |
 
-### Statut actuel des fichiers — clos depuis le 20/05/2026
-
-La version v1.0 de cet inventaire listait 7 fichiers CSS "à supprimer ou intégrer".
-**Décision prise et appliquée** :
-
-- `boutique-wow.css` — supprimé
-- `desktop-horizontal-nav.css` — supprimé
-- `mini-cart.css`, `cart-groups.css`, `cart-product-open.css` — supprimés
-- `group-cart-flow.css` et `shared-followup.css` — **intégrés au bundle `components`** (cf. `scripts/bundle-css.js`)
-
-Le dossier `css/` ne contient plus aucun orphelin (vérifié `npm run audit:arch`).
+Les multi-producteurs de pager correspondent à la mesure/bootstrap du même contrat. Ajouter un nouveau producteur exige une justification d’ownership, pas seulement un `setProperty()` supplémentaire.
 
 ---
 
-## 3. Ownership CSS — table des sélecteurs critiques
+## 6. Discipline de modification
 
-Un sélecteur listé ici est défini **uniquement** dans son owner. Si tu en as besoin ailleurs,
-soit tu importes le fichier owner (cascade), soit tu changes l'owner ici dans la même PR.
+Pour toute modification CSS structurelle :
 
-| Sélecteur | Owner(s) autorisé(s) | Breakpoint | Justification |
-|---|---|---|---|
-| `.k-chip` (base skin) | `categories.css` | base | Owner composant |
-| `.k-chip` (overrides desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
-| `.k-chip.transitioning` (animation) | `interactions.css` | tous | Owner animations inter-composants |
-| `.k-cats-shell` (base) | `categories.css` | base | Owner composant |
-| `.k-cats-shell` (desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
-| `.k-cats-shell` (contexte hero mobile) | `hero.css` | base | Adaptation contextuelle enfant-hero uniquement |
-| `.k-cats-shell` (max-width ≥1500px) | `desktop-commerce-skeleton.css` | ≥1500px | Contrainte largeur max — rôle skeleton |
-| `.k-hero-cats-sticky` | `hero.css` | base | Owner composant |
-| `.k-hero-cats-sticky` (desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
-| `#k-subcats-wrap`, `.k-subchip` | `boutique-desktop.css` | ≥900px | Lot I-2-A |
-| `.k-grid` (base layout) | `products.css` | tous | Owner composant |
-| `.k-grid` (animations slide) | `interactions.css` | tous | Owner animations — rôle explicite du fichier |
-| `.k-grid` (overflow-x fix sticky) | `layout.css` | ≥900px | Fix structural global, commenté et justifié |
-| `.k-grid` (contexte flat-subcat panier) | `cart.css` | tous | Adaptation contextuelle panier uniquement |
-| `.k-sec-grid` (base layout) | `products.css` | tous | Owner composant |
-| `.k-sec-grid` (padding contextuel sections) | `categories.css` | tous | Padding spécifique au contexte section-catégorie |
-| `.k-card` (base) | `products.css` | tous | Owner composant |
-| `.k-card` (skin desktop : radius, shadow) | `desktop-commerce-skeleton.css` | ≥900px | Skin desktop global — rôle skeleton (§7) |
-| `.k-card` (hover overlay) | `boutique-desktop.css` | ≥900px | Owner desktop interactions |
-| `.k-card-add`, `.k-card-fav` (base + états) | `products.css` | tous | Owner composant — boutons sur la card |
-| `.k-card-add`, `.k-card-fav` (sizing desktop) | `cart.css` | ≥900px | Sizing dans contexte panier ouvert |
-| `.k-card-fav` (opacité hover desktop) | `boutique-desktop.css` | ≥900px | Comportement hover desktop |
-| `.k-side-cart` (mobile : display:none) | `layout.css` | <900px | Owner mobile |
-| `.k-side-cart` (desktop : tout) | `boutique-desktop.css` | ≥900px | Owner desktop |
-| `#k-desktop-catalog-wrap` (grid layout) | `desktop-commerce-skeleton.css` | ≥900px | Owner layout desktop |
-| `#k-desktop-catalog-wrap` (overflow/sticky fixes) | `layout.css` | ≥900px | Fix structurel sticky side-cart — ne peut pas vivre dans skeleton (commenté PATCH#227) |
-| `.k-header` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
-| `.k-hero-media`, `.k-hero-mini-slogan` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
-| `.k-modal` (desktop overrides) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
-| `.kpill*`, `.kpill-pop*` | `cart.css` | tous | Pastille panier mobile — rapatrié de b-cart-pill.js (L3-S6) |
-| `.k-gbanner*`, `.is-funded`, `.is-urgent`, `.is-compact` | `group-cart-flow.css` | tous | Bannière groupe — rapatrié de b-group-banner.js (L3-S8) |
-| `.k-pdp-curation*` @900px | `modal-product.css` | ≥900px | Suggestions curation desktop — rapatrié de b-pdp-curation-suggestions.js (L3-S9) |
-| `html.k-mobile-premium-v1 .k-chip*`, `.k-cats*` | `categories.css` | tous | État premium mobile scopé — rapatrié de b-mobile-premium-v1.js (L2-S2) |
-| `html.k-home-premium-v1 .k-hero-cta*`, `.k-hero-badge` | `hero.css` | tous | État premium accueil scopé — rapatrié de b-home-premium-v1.js (L2-S3) |
-
-**Note importante sur `.k-side-cart`** : l'état actuel a deux owners (layout.css + skeleton.css)
-avec des `top` incompatibles. C'est la **violation principale** à traiter en priorité.
-Décision : tout va dans `boutique-desktop.css`, layout.css garde uniquement `display:none` mobile.
-
-**Principe de légitimation** : un fichier peut toucher un sélecteur hors de son owner principal
-dans trois cas strictement définis — (1) animation/transition (owner : interactions.css),
-(2) adaptation contextuelle explicitement commentée (enfant d'un composant spécifique),
-(3) contrainte de layout global commentée et non reproductible dans l'owner principal.
+1. modifier la source owner, jamais `css/dist/*` directement ;
+2. reconstruire avec `deploy-css.js` ;
+3. exécuter `css-guard` et `css-specificity-guard` ;
+4. exécuter `check-important` si une occurrence `!important` est touchée ;
+5. exécuter `boutique:audit` ;
+6. régénérer `BOUTIQUE_ARCHITECTURE_LIVE.md` si l’inventaire, les owners, les variables runtime ou une métrique d’architecture changent ;
+7. ne baisser une baseline qu’après suppression prouvée de dette ; ne jamais la relever pour accepter une régression.
 
 ---
 
-## 4. Sélecteurs mobile-critiques — interdits aux règles globales
+## 7. État de référence Debt Zero — 29/08/2026
 
-Ces sélecteurs participent à la mécanique fragile mobile (hero fixed, pager, cage scroll).
-Toute règle qui les cible **sans `@media (min-width: 900px)`** doit vivre dans son owner mobile
-déclaré, jamais ailleurs.
+La référence attendue après B2/B3 est :
 
-- `#k-hero-fixed-wrap` (owner : `layout.css`)
-- `#k-page-scroll` (owner : `layout.css`)
-- `.k-hero` (owner : `hero.css`)
-- `.k-chip` (base) (owner : `categories.css`)
-- `.k-cats-shell` (base) (owner : `categories.css`)
-- `.k-bottom-nav` (owner : `layout.css`)
+- CSS orphelins : **0** ;
+- sources bundle manquantes : **0** ;
+- tokens cassés : **0** ;
+- conflits de cascade suivis : **0** ;
+- overrides de spécificité suivis : **0** ;
+- dette `!important` ouverte : **0** ;
+- `!important` physiques : **3**, tous appartenant au guard revu `desktop-mobile-drawer-neutralization` ;
+- audit Boutique : vert.
 
----
-
-## 5. Ownership JS — variables CSS posées au runtime
-
-| Variable CSS | Owner JS | Méthode |
-|---|---|---|
-| `--pager-top` | `b-pager.js` | `document.documentElement.style.setProperty` |
-| `--pager-h` | `b-pager.js` | idem |
-| `--pager-w` | `b-pager.js` | idem |
-| `--bnav-h` | `b-pager.js` | idem |
-| `--modal-scroll-y` | `b-modal.js` | idem |
-
-Aucun CSS ne définit ces variables. Aucun autre JS ne les pose.
+Les nombres d’inventaire, d’hex et de selectors multi-owner sont **observatoires** : ils viennent du LIVE et peuvent évoluer avec le produit. Les compteurs de dette structurelle, eux, sont des cliquets exécutables et restent à zéro.
 
 ---
 
-## 6. Fichiers verrouillés — review obligatoire
-
-Modifier ces fichiers sans review explicite est interdit. Ils portent la mécanique
-qui fait que le mobile marche. Si tu dois toucher, tu ouvres une PR isolée avec un
-seul de ces fichiers en diff.
-
-- `js/b-pager.js` — moteur cage mobile + ghost loop
-- `js/b-store.js` — refs DOM partagées, `initDom()`
-- `js/b-scroll-owner.js` — détection mobile/desktop, scroll owner
-- Script inline `<body>` dans `index.html` (lignes ~480-550) — proxy `window.scrollY`
-
----
-
-## 7. Séquence de chargement — règles
-
-1. CSS bundlés chargés dans l'ordre du `<head>` : `base` → `components` → `desktop` → `event`.
-   Cet ordre est la cascade. Skeleton charge après boutique-desktop ; donc skeleton gagne
-   sur les sélecteurs partagés — **c'est précisément pour ça que la table §3 verrouille
-   `desktop-commerce-skeleton.css` au layout, pas au skin des composants**.
-
-2. Script inline `<body>` exécuté avant tout module ES (setupMobile, setupDesktop, proxy scrollY).
-
-3. `komerce-api.js` synchrone bloquant.
-
-4. `main.js` type=module → import tree (voir `BOUTIQUE_ARCHITECTURE_LIVE.md` pour l'arbre généré).
-
-5. `DOMContentLoaded` → `init()` dans `boutique.js`, ordre strict :
-   `initDom` → `installScrollOwner` → `updateCartBadge` → `setupCats` → ... → `loadProducts`.
-
-6. Desktop uniquement (≥900px) : `setupDesktopUpgrade()` après DOMContentLoaded, idempotent
-   via flag `_desktopUpgradeDone`.
-
-L'ordre §5 n'est pas modifié sans review équivalente à §6.
-
----
-
-## 8. Process — toute PR doit passer
-
-```bash
-npm run boutique:audit   # plante si invariants §1 violés
-npm run boutique:arch    # régénère BOUTIQUE_ARCHITECTURE_LIVE.md
-git diff boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md   # diff de la photo réelle
-```
-
-Si `audit:arch` passe et que le diff de `LIVE` est cohérent avec l'intention de la PR,
-la PR est mergeable côté archi. Le visuel et le fonctionnel restent à valider à part.
+*Document normatif réaligné sur l’architecture Boutique 2026-08. Pour la photographie exacte du commit courant : `npm run boutique:arch`.*
