@@ -23,7 +23,6 @@ jobs:
           DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
         run: |
           node <<'NODE'
-          const fs = require('fs');
           const db = require('./db');
           const { listMigrationFiles } = require('./scripts/run-migrations');
 
@@ -62,6 +61,10 @@ jobs:
               SELECT
                 to_regclass('public.sourcing_candidates') IS NOT NULL AS sourcing_candidates,
                 to_regclass('public.catalog_global_access_grants') IS NOT NULL AS catalog_global_access_grants,
+                to_regclass('public.supplier_catalog_imports') IS NOT NULL AS supplier_catalog_imports,
+                to_regclass('public.partners') IS NOT NULL AS partners,
+                to_regclass('public.competitor_prices') IS NOT NULL AS competitor_prices,
+                to_regclass('public.signals') IS NOT NULL AS signals,
                 to_regclass('public.sourcing_global_access_grants') IS NOT NULL AS sourcing_global_access_grants,
                 to_regclass('public.pricing_global_access_grants') IS NOT NULL AS pricing_global_access_grants,
                 to_regclass('public.decision_signal_global_access_grants') IS NOT NULL AS decision_signal_global_access_grants,
@@ -96,15 +99,38 @@ jobs:
             `);
             console.log('users.role type:', role.rows[0] || null);
 
+            const enumLabels = await db.query(`
+              SELECT e.enumlabel
+              FROM pg_type t
+              JOIN pg_enum e ON e.enumtypid = t.oid
+              WHERE t.typname = 'user_role'
+              ORDER BY e.enumsortorder
+            `);
+            console.log('user_role labels:', enumLabels.rows.map(r => r.enumlabel));
+            console.log('user_role contains sourcing:', enumLabels.rows.some(r => r.enumlabel === 'sourcing'));
+
             const sourcingRole = await db.query(`
               SELECT COUNT(*)::int AS n FROM users WHERE role::text = 'sourcing'
             `);
             console.log('users with sourcing role:', sourcingRole.rows[0].n);
 
-            await db.end();
+            const prerequisites = await db.query(`
+              SELECT
+                (SELECT COUNT(*)::int FROM sourcing_candidates) AS sourcing_candidates_rows,
+                (SELECT COUNT(*)::int FROM catalog_global_access_grants WHERE revoked_at IS NULL) AS catalog_grants_active,
+                (SELECT COUNT(*)::int FROM supplier_catalog_imports) AS supplier_catalog_import_rows,
+                (SELECT COUNT(*)::int FROM partners) AS partner_rows,
+                (SELECT COUNT(*)::int FROM competitor_prices) AS competitor_price_rows,
+                (SELECT COUNT(*)::int FROM signals) AS signal_rows
+            `);
+            console.log('149-153 prerequisite row counts:', prerequisites.rows[0]);
+
+            const pool = db.pool || db._pool || null;
+            if (pool && typeof pool.end === 'function') await pool.end();
           })().catch(async (err) => {
             console.error(err.stack || err.message);
-            try { await db.end(); } catch (_) {}
+            const pool = db.pool || db._pool || null;
+            try { if (pool && typeof pool.end === 'function') await pool.end(); } catch (_) {}
             process.exit(1);
           });
           NODE
