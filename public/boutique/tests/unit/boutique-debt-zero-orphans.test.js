@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
+const PUBLIC_ROOT = path.resolve(ROOT, '..');
 
 function read(rel) {
   return fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -50,5 +51,17 @@ describe('Boutique Debt Zero — orphan shared-cart desktop selectors', () => {
     expect(html).not.toMatch(/style=["'][^"']*!important[^"']*["']/i);
     expect(hero).not.toContain('.k-hero-logo-glow');
     expect(hero).not.toContain('klg-');
+  });
+
+  test('la carte Open Graph utilise un asset local réel et la dette asset reste à zéro', () => {
+    const html = read('index.html');
+    const match = html.match(/<meta\s+property="og:image"\s+content="(\/images\/[^"]+)"\s*>/i);
+    const baseline = JSON.parse(read('scripts/.assets-baseline.json'));
+
+    expect(match).not.toBeNull();
+    expect(match[1]).toBe('/images/komerce_hero_catalog_canonical_v4.webp');
+    expect(fs.existsSync(path.join(PUBLIC_ROOT, match[1].replace(/^\//, '')))).toBe(true);
+    expect(baseline).toEqual([]);
+    expect(html).not.toContain('/images/og-cover.jpg');
   });
 });

@@ -58,7 +58,7 @@
 - [x] supprimer le source mort `share-cart.css` et ses déclarations bundle + manifests — B1b-3, dette CSS ouverte 2 → 0 ;
 - [x] retirer le sous-arbre desktop orphelin (`k-sc-shared-badge`, `k-sc-shared-*`, `k-sc-reshare-btn`, `k-sc-group-view-btn`, `kSharedPulse`) de `boutique-desktop.css` — B1b-4 ; `.k-sc-btn-group` est conservé comme garde de compatibilité car encore référencé par `b-product-open-contract.js` ;
 - [x] supprimer le vestige complet `.k-hero-logo-glow` (SVG caché + CSS/animations `klg-*`) et interdire les `!important` inline dans `index.html` — B1b-5 ;
-- [ ] corriger `og-cover.jpg` avec un asset réel/cohérent ;
+- [x] remplacer la référence morte `og-cover.jpg` par le hero canonique vivant `komerce_hero_catalog_canonical_v4.webp` et abaisser la baseline assets manquants 1 → 0 — B1b-6 ;
 - [ ] exécuter l'audit npm complet et fermer toute vulnérabilité éventuelle ;
 - [ ] recalculer ensuite les 211 conflits cascade et 87 conflits spécificité sur la vérité corrigée.
 
