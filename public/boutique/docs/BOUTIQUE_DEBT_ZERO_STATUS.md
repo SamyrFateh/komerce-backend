@@ -19,7 +19,8 @@
 - [x] `gen-boutique-arch-live.js` dépend directement de `css-bundles.js`.
 - [x] Le générateur est importable sans écrire implicitement le document LIVE.
 - [x] Test de non-régression : chaque source CSS sur disque doit être déclarée dans `BUNDLES` et aucune source déclarée ne doit manquer.
-- [ ] CI Boutique complète.
+- [x] Preuve CI draft #987 : Boutique source gates verts, tests ciblés verts, arbre non muté, Required verdict vert.
+- [ ] Required verdict de la PR mergeable #988.
 - [ ] Régénération puis commit du document LIVE fiable.
 - [ ] Alignement de `BOUTIQUE_ARCHITECTURE.md` sur l'état réel 2026-08.
 - [ ] Recalcul de la dette CSS réelle avant B1/B2/B3.
