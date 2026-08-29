@@ -2,14 +2,6 @@
 -- Feature owner: sourcing.
 -- Candidate business reference + explicit persisted global authority only.
 
--- La route Canonical admet explicitement le rôle `sourcing`, mais la DB live
--- historique ne possédait encore que client/admin/agent_* dans user_role.
--- Le runner exécute chaque fichier dans une transaction : une valeur enum
--- ajoutée ici ne doit pas être utilisée comme valeur enum typée avant COMMIT.
--- Le bootstrap plus bas compare donc role::text, ce qui reste sûr dans cette
--- même transaction et prépare les futurs comptes sourcing sans casser la prod.
-ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'sourcing';
-
 CREATE SEQUENCE IF NOT EXISTS sourcing_candidate_ref_seq START 1;
 
 ALTER TABLE sourcing_candidates
@@ -42,12 +34,10 @@ SELECT user_id, 'bootstrap_from_catalog_global_authority'
 ON CONFLICT (user_id) DO NOTHING;
 
 -- Le rôle dédié sourcing devient également un grant explicite persisté.
--- role::text évite l'utilisation typée de la nouvelle valeur enum avant le
--- COMMIT de cette migration (contrainte PostgreSQL sur ALTER TYPE ADD VALUE).
 INSERT INTO sourcing_global_access_grants (user_id, reason)
 SELECT id, 'bootstrap_from_sourcing_role'
   FROM users
- WHERE role::text = 'sourcing'
+ WHERE role = 'sourcing'
 ON CONFLICT (user_id) DO NOTHING;
 
 CREATE INDEX IF NOT EXISTS idx_sourcing_global_access_active
