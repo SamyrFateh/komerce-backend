@@ -56,3 +56,5 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "style(boutique): normalize side-cart owner after transfer"
           git push origin HEAD:refactor/boutique-debt-zero-b2-side-cart
+
+# one-shot cleanup harness; removed before PR
