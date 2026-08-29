@@ -1,5 +1,5 @@
 {
-  "total": 52,
+  "total": 43,
   "keys": [
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
@@ -26,19 +26,10 @@
     ".k-bnav-badge|||global|||padding",
     ".k-bnav-badge|||global|||top",
     ".k-cart-drawer|||global|||max-width",
-    ".k-cat-section|||global|||margin-bottom",
-    ".k-cats::after|||global|||flex",
-    ".k-chip-photo img|||global|||border-radius",
-    ".k-chip.active .k-chip-label|||global|||font-weight",
-    ".k-chip:active|||global|||transform",
     ".k-hero-bubble|||global|||display",
     ".k-hero-cats-sticky::after|||global|||height",
     ".k-hero-img|||global|||height",
     ".k-hero-mini-slogan|||global|||display",
-    ".k-sec-grid|||global|||padding",
-    ".k-sec-header-emoji|||global|||font-size",
-    ".k-sec-header-name|||global|||font-size",
-    ".k-sec-header|||@media (min-width: 900px) {|||display",
     ".k-skeleton-price|||global|||border-radius",
     ".k-sug-card-actions|||global|||justify-content",
     ".k-sug-card-bottom|||global|||padding",
@@ -54,5 +45,5 @@
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size"
   ],
-  "savedAt": "2026-08-29T20:23:39.240Z"
+  "savedAt": "2026-08-29T20:34:08.102Z"
 }
