@@ -65,8 +65,9 @@
 
 ## B2 / B3 — Dette structurelle restante
 
-- [x] B2-1 side-cart : supprimer 41 déclarations perdantes du layer `boutique-desktop.css` et transférer explicitement leur ownership visuel à `side-cart-desktop-polish.css` ; baseline cascade abaissée sans nouvelle clé ;
-- [ ] poursuivre la classification des conflits de cascade par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
+- [x] B2-1 side-cart : supprimer 41 déclarations perdantes du layer `boutique-desktop.css` et transférer explicitement leur ownership visuel à `side-cart-desktop-polish.css` ; cascade **211 → 170**, sans nouvelle clé ;
+- [x] B2-1b side-cart cross-owner : supprimer les 3 dernières collisions (`shared-list-side-cart.css` + `modal-shell.css`) tout en conservant les valeurs gagnantes du polish ; cascade **170 → 167**, side-cart **44 → 0 conflit** ;
+- [ ] poursuivre la classification des 167 conflits de cascade par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
 - [ ] classifier les 86 overrides de spécificité par classe globale / famille fonctionnelle et supprimer les couches premium ou d'état qui ne sont plus nécessaires ;
 - [ ] figer chaque baisse par le cliquet existant ;
 - [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.
