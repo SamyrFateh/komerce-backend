@@ -24,7 +24,6 @@
   display: block;
 }
 .k-hero-mini-slogan {
-  display: flex;
   position: absolute;
   inset: 0;
   flex-direction: column;
@@ -57,7 +56,6 @@
 /* Bulle hero mobile : conteneur neutre.
    L'avatar panier appartient à hero-cart-proxy.css quand JS ajoute .k-hero-cart-proxy. */
 .k-hero-bubble {
-  display: flex;
   position: absolute;
   right: 14px;
   top: 12px;
@@ -123,13 +121,7 @@
      .k-cats-shell @900px dans boutique-desktop.css (z-index:110). */
   z-index: 110;
 }
-.k-hero-cats-sticky::after { content: ''; display: block; height: 4px; }
-.k-cats-shell {
-  /* POLISH — fond lumineux au lieu de sand-warm, séparation visuelle du hero */
-  /* Ombre chaude ambre + légère touche ocean */
-    0 8px 20px rgba(198,168,93,.10),
-    0 2px 6px rgba(100,175,90,.06);
-}
+.k-hero-cats-sticky::after { content: ''; display: block; }
 
 /* ── EVENT BANNER ─────────────────────────────────────────────── */
 .k-event-banner {
@@ -163,7 +155,7 @@
 .k-hero-card, .k-hero-banner { overflow: hidden; border-radius: var(--radius-lg); }
 .k-hero img, .k-hero-card img, .k-hero-banner img { display: block; width: 100%; background: transparent; }
 /* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
-.k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
+.k-hero-img { object-fit: cover; }
 /* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
 /* @900px override final → boutique-desktop.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,160px) !important) */
 
@@ -205,8 +197,6 @@
 
 /* 4. Remonte le shell catégories dans le sticky (-4px).
       Base hero.css : margin: -14px 12px 0. Override : -18px. */
-.k-cats-shell {
-}
 
 /* 5. Slot réservé pour le futur rail de sous-catégories.
       Actuellement height:0 + overflow:hidden → aucun impact visuel.
@@ -813,9 +803,6 @@
   /* ── Sticky bar enfant de #k-hero-fixed-wrap ──
      #k-hero-fixed-wrap est overflow:visible → les chips ne sont plus clippées.
      top = header premium (72px) au lieu de 68px base. */
-  html.k-home-premium-v1 .k-hero-cats-sticky {
-    /* header premium h = 72px (règle ci-dessous dans CORRECTIONS) */
-  }
 }
 /* Le panneau latéral réserve sa largeur dans le body. On réduit seulement la
    hauteur du panorama et la taille display maximale : les personnages restent

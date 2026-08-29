@@ -1,22 +1,5 @@
 {
-  "total": 16,
-  "keys": [
-    ".k-bnav-badge|||global|||border",
-    ".k-bnav-badge|||global|||height",
-    ".k-bnav-badge|||global|||padding",
-    ".k-bnav-badge|||global|||top",
-    ".k-cart-drawer|||global|||max-width",
-    ".k-hero-bubble|||global|||display",
-    ".k-hero-cats-sticky::after|||global|||height",
-    ".k-hero-img|||global|||height",
-    ".k-hero-mini-slogan|||global|||display",
-    ".k-skeleton-price|||global|||border-radius",
-    ".k-wallet-balance|||global|||font-size",
-    ".k-wallet-section|||global|||border",
-    ".k-wallet-section|||global|||border-radius",
-    ".k-wallet-section|||global|||margin-top",
-    ".k-wallet-section|||global|||padding",
-    ".k-wallet-title|||global|||font-size"
-  ],
-  "savedAt": "2026-08-29T20:40:13.637Z"
+  "total": 0,
+  "keys": [],
+  "savedAt": "2026-08-29T20:44:49.981Z"
 }

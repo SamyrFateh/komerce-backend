@@ -7459,7 +7459,7 @@ body.cart-open .k-hero { pointer-events: none; }
    · mobile plein écran : profondeur par ombre, aucun contour métier */
 .k-cart-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
-  width: 100%; max-width: 400px; z-index: 1150;
+  width: 100%; z-index: 1150;
   background: var(--white);
   box-shadow: -1px 0 0 var(--border);
   display: grid;
@@ -8277,13 +8277,13 @@ body.cart-open .k-wa-fab {
 .k-stripe-eur.is-visible { display:block; }
 
 /* Wallet */
-.k-wallet-section       { margin-top:5px; padding:9px 12px; border:1.5px solid rgba(0,0,0,.08); border-radius:11px; background:var(--white); display:none; }
+.k-wallet-section       { background:var(--white); display:none; }
 .k-wallet-section.is-visible { display:block; }
 .k-wallet-label         { display:flex; align-items:center; gap:10px; cursor:pointer; }
 .k-wallet-cb            { width:18px; height:18px; accent-color:var(--ocean); flex-shrink:0; }
 .k-wallet-info          { flex:1; }
-.k-wallet-title         { font-weight:700; font-size:.85rem; color:var(--ocean); }
-.k-wallet-balance       { font-size:.72rem; color:var(--text-form-light); margin-top:1px; }
+.k-wallet-title         { font-weight:700; color:var(--ocean); }
+.k-wallet-balance       { color:var(--text-form-light); margin-top:1px; }
 .k-wallet-ded           { margin-top:6px; padding:6px 8px; background:var(--white); border-radius:6px; font-size:.82rem; display:none; }
 .k-wallet-ded.is-visible { display:block; }
 .k-wal-row              { display:flex; justify-content:space-between; }
@@ -9230,7 +9230,7 @@ body.cart-open .k-wa-fab {
 .ck-fulfillment-btn { min-height: 28px; font-size: .76rem; }
 
 /* Wallet section compact */
-.k-wallet-section { margin-top: 4px; padding: 6px 8px; }
+.k-wallet-section { margin-top: 4px; }
 .k-wallet-title { font-size: .8rem; }
 .k-wallet-balance { font-size: .68rem; }
 
