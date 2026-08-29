@@ -1,4 +1,4 @@
-name: Classify Boutique B2 Category Cascade
+name: Consolidate Boutique B2 Category Cascade
 
 on:
   push:
@@ -6,12 +6,13 @@ on:
       - refactor/boutique-debt-zero-b2-categories
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  classify:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,18 +25,18 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
-      - name: Classify category family by delivered owner order
+      - name: Remove superseded internal desktop category declarations
         run: |
           node <<'NODE'
           const fs = require('fs');
           const path = require('path');
           const postcss = require('./public/boutique/node_modules/postcss');
-          const { BUNDLES } = require('./public/boutique/scripts/css-bundles');
 
           const root = path.resolve('public/boutique');
           const cssDir = path.join(root, 'css');
           const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-guard-baseline.json'), 'utf8'));
-          if (baseline.total !== 75) throw new Error(`Expected baseline 75, got ${baseline.total}`);
+          if (baseline.total !== 75) throw new Error(`Expected cascade baseline 75, got ${baseline.total}`);
+          const baselineKeys = new Set(baseline.keys);
 
           function isCategorySelector(selector) {
             return selector.startsWith('.k-cat-cutout') ||
@@ -48,23 +49,8 @@ jobs:
               selector.startsWith('.k-shelf-') ||
               selector.startsWith('.k-subcutout');
           }
-          const keys = baseline.keys.filter(key => isCategorySelector(key.split('|||')[0]));
-          console.log(`CATEGORY_CONFLICTS=${keys.length}`);
-          keys.forEach(k => console.log(`KEY ${k}`));
-
-          const distOrder = ['base.css', 'components.css', 'desktop.css'];
-          const delivered = [];
-          for (let di = 0; di < distOrder.length; di++) {
-            const bundle = BUNDLES.find(b => b.out === distOrder[di]);
-            bundle.files.forEach((name, si) => delivered.push({
-              file: `${name}.css`,
-              dist: distOrder[di],
-              distIndex: di,
-              sourceIndex: si,
-              rank: di * 1000 + si,
-            }));
-          }
-          const rowsByKey = new Map(keys.map(k => [k, []]));
+          const categoryKeys = baseline.keys.filter(key => isCategorySelector(key.split('|||')[0]));
+          if (categoryKeys.length !== 32) throw new Error(`Expected 32 category-family conflicts, got ${categoryKeys.length}`);
 
           function contextOf(rule) {
             let node = rule.parent;
@@ -74,13 +60,19 @@ jobs:
             }
             return 'global';
           }
+          function normalizedSelector(rule) {
+            return (rule.selectors || [rule.selector]).map(s => s.trim()).join(',');
+          }
 
-          for (const meta of delivered) {
-            const fp = path.join(cssDir, meta.file);
-            if (!fs.existsSync(fp)) continue;
-            let ast;
-            try { ast = postcss.parse(fs.readFileSync(fp, 'utf8'), { from: meta.file }); }
-            catch { continue; }
+          const files = ['category-cutout-navigation-desktop.css', 'boutique-desktop.css'];
+          const fileData = new Map();
+          const occurrences = new Map(categoryKeys.map(k => [k, []]));
+
+          for (const file of files) {
+            const fp = path.join(cssDir, file);
+            const original = fs.readFileSync(fp, 'utf8');
+            const ast = postcss.parse(original, { from: file });
+            fileData.set(file, { fp, original, ast });
             ast.walkRules(rule => {
               const media = contextOf(rule);
               const selectors = rule.selectors || [rule.selector];
@@ -88,30 +80,116 @@ jobs:
                 selectors.forEach(raw => {
                   const selector = raw.trim();
                   const key = `${selector}|||${media}|||${decl.prop}`;
-                  if (!rowsByKey.has(key)) return;
-                  rowsByKey.get(key).push({
-                    file: meta.file, dist: meta.dist, rank: meta.rank,
-                    line: decl.source?.start?.line || null,
-                    selector, fullSelector: rule.selector,
-                    grouped: selectors.length > 1,
-                    media, prop: decl.prop, value: decl.value,
+                  if (!occurrences.has(key)) return;
+                  occurrences.get(key).push({
+                    file,
+                    rule,
+                    decl,
+                    value: decl.value,
+                    line: decl.source?.start?.line || 0,
+                    fullSelector: normalizedSelector(rule),
                   });
                 });
               });
             });
           }
 
-          const pairCounts = new Map();
-          console.log('\n=== DETAILS ===');
-          for (const key of keys) {
-            const rows = (rowsByKey.get(key) || []).sort((a,b) => a.rank - b.rank || (a.line||0)-(b.line||0));
-            console.log(`\n=== ${key} ===`);
-            rows.forEach(r => console.log(JSON.stringify(r)));
-            if (rows.length) console.log(`WINNER ${rows.at(-1).file}:${rows.at(-1).line} -> ${rows.at(-1).value}`);
-            const ownerSet = [...new Set(rows.map(r => r.file))];
-            const pair = ownerSet.join(' + ') || '<none>';
-            pairCounts.set(pair, (pairCounts.get(pair) || 0) + 1);
+          const removableKeys = [];
+          const nodesToRemove = new Set();
+          const summaryRows = [];
+          for (const key of categoryKeys) {
+            const rows = (occurrences.get(key) || []).sort((a,b) => a.line - b.line);
+            if (rows.length < 2) continue;
+            if (new Set(rows.map(r => r.file)).size !== 1) continue;
+            if (new Set(rows.map(r => r.value)).size < 2) continue;
+            if (new Set(rows.map(r => r.fullSelector)).size !== 1) {
+              throw new Error(`Refusing grouped-selector drift for ${key}`);
+            }
+            const winner = rows.at(-1);
+            rows.slice(0, -1).forEach(row => nodesToRemove.add(row.decl));
+            removableKeys.push(key);
+            summaryRows.push({ key, file: winner.file, winner: winner.value, losingValues: rows.slice(0,-1).map(r => r.value) });
           }
-          console.log('\n=== OWNER SET COUNTS ===');
-          [...pairCounts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([pair,count]) => console.log(`${count} ${pair}`));
+
+          if (removableKeys.length !== 23) {
+            console.error(JSON.stringify(summaryRows, null, 2));
+            throw new Error(`Expected 23 safe internal category conflicts, got ${removableKeys.length}`);
+          }
+          if (!removableKeys.every(key => baselineKeys.has(key))) throw new Error('Attempt to remove non-baseline category key');
+
+          nodesToRemove.forEach(node => node.remove());
+          for (const [file, data] of fileData) {
+            data.ast.walkRules(rule => {
+              if (rule.nodes && rule.nodes.filter(n => n.type !== 'comment').length === 0) rule.remove();
+            });
+            fs.writeFileSync(data.fp, data.ast.toString(), 'utf8');
+          }
+
+          // Reparse and prove each targeted key now has one effective value in its source file.
+          for (const row of summaryRows) {
+            const [selector, media, prop] = row.key.split('|||');
+            const ast = postcss.parse(fs.readFileSync(path.join(cssDir, row.file), 'utf8'), { from: row.file });
+            const values = [];
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== media) return;
+              if (!(rule.selectors || [rule.selector]).map(s => s.trim()).includes(selector)) return;
+              rule.walkDecls(prop, decl => values.push(decl.value));
+            });
+            if (new Set(values).size !== 1 || values.at(-1) !== row.winner) {
+              throw new Error(`Winner drift for ${row.key}: expected ${row.winner}, got ${values.join(' <> ')}`);
+            }
+          }
+
+          const byFile = summaryRows.reduce((acc, row) => ((acc[row.file] = (acc[row.file] || 0) + 1), acc), {});
+          fs.writeFileSync('/tmp/category-b2-summary.json', JSON.stringify({
+            oldCascade: baseline.total,
+            categoryBefore: categoryKeys.length,
+            removedConflictKeys: removableKeys.length,
+            removedPhysicalDeclarations: nodesToRemove.size,
+            byFile,
+            keys: removableKeys.sort(),
+          }, null, 2));
+          console.log(fs.readFileSync('/tmp/category-b2-summary.json', 'utf8'));
           NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove no new CSS debt before lowering ratchet
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower cascade ratchet and write B2-3 report
+        run: |
+          npm --prefix public/boutique run check:css-guard:save
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = path.resolve('public/boutique');
+          const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-guard-baseline.json'), 'utf8'));
+          const summary = JSON.parse(fs.readFileSync('/tmp/category-b2-summary.json', 'utf8'));
+          if (baseline.total !== 52) throw new Error(`Expected cascade baseline 52, got ${baseline.total}`);
+          const report = [
+            '# Boutique CSS Debt — B2-3 category desktop internal ownership',
+            '',
+            `- Cascade baseline: **75 → ${baseline.total}**`,
+            `- Category-family conflicts: **32 → 9**`,
+            `- Internal category conflicts removed: **${summary.removedConflictKeys}**`,
+            `- Superseded physical declarations removed: **${summary.removedPhysicalDeclarations}**`,
+            '- New cascade keys before ratchet save: **0**',
+            '- Specificity ratchet: **strict passed; not increased**',
+            '',
+            'Owners consolidated:',
+            `- \`category-cutout-navigation-desktop.css\`: ${summary.byFile['category-cutout-navigation-desktop.css'] || 0} semantic key(s);`,
+            `- \`boutique-desktop.css\`: ${summary.byFile['boutique-desktop.css'] || 0} semantic key(s).`,
+            '',
+            'Only earlier declarations with the exact same selector group, media context and property were removed; the existing last winning declarations remain unchanged.',
+          ].join('\n') + '\n';
+          fs.writeFileSync(path.join(root, 'docs/BOUTIQUE_CSS_DEBT_B2_CATEGORIES.md'), report);
+          console.log(report);
+          NODE
+      - name: Commit B2-3 category consolidation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/category-cutout-navigation-desktop.css public/boutique/css/boutique-desktop.css public/boutique/css/dist public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_CATEGORIES.md
+          git commit -m "refactor(boutique): consolidate desktop category cascade"
+          git push origin HEAD:refactor/boutique-debt-zero-b2-categories
