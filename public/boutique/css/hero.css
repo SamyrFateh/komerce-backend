@@ -337,9 +337,6 @@
   /* Retire le border-radius et marges mobiles sur desktop */
 
   /* Réinitialise les marges mobiles du sticky */
-  .k-hero-cats-sticky {
-    margin-top: 0;
-  }
 
   /* Mini-slogan masqué desktop (géré par boutique-desktop.css) */
   .k-hero-mini-slogan { display: none; }
@@ -911,12 +908,6 @@
      (Owner unique de position/top/z-index/background de la barre desktop
      premium — supersède le bloc CORRECTIONS plus haut, même specificity,
      déclaré après dans la cascade.) */
-  html.k-home-premium-v1 .k-hero-cats-sticky {
-    z-index: 110;                 /* > .k-header (z-index:100) */
-    margin-top: 8px;
-    background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
-    box-shadow: 0 1px 0 var(--border-text-07);
-  }
   .k-hero-cats-sticky { position: sticky; }
 }
 /* ══ FIN LOT NAV-STICKY-DESKTOP ════════════════════════════════════ */
