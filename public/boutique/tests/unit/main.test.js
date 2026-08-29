@@ -20,6 +20,7 @@ const mockSetupCartProductOpenStyle = jest.fn();
 const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
 const mockSetupProductDetailModal = jest.fn();
+const mockSetupLocalStockBadgeMount = jest.fn();
 const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 const mockSetupModalDesktopEnhancers = jest.fn();
@@ -59,6 +60,11 @@ jest.mock('../../js/b-home-premium-v1.js', () => ({
 jest.mock('../../js/b-modal-product-detail-bootstrap.js', () => ({
   setupProductDetailModal: mockSetupProductDetailModal,
 }));
+// Vague 2 D6 — écoute le même cycle de vie que setupProductDetailModal(),
+// mocké pour la même raison : ne pas tirer le vrai b-bus.js (mockBus vide).
+jest.mock('../../js/local-stock-badge-mount.js', () => ({
+  setupLocalStockBadgeMount: mockSetupLocalStockBadgeMount,
+}));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 jest.mock('../../js/b-notifications.js', () => ({ setupClientNotifications: mockSetupClientNotifications }));
 jest.mock('../../js/b-komerce-nav-identity.js', () => ({ setupKomerceNavIdentity: mockSetupKomerceNavIdentity }));
@@ -77,6 +83,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupModalDesktopEnhancers).toHaveBeenCalledTimes(1);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
+  expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);
   expect(mockSetupCartProductOpenStyle).toHaveBeenCalledTimes(1);
   expect(mockSetupKomerceNavIdentity).toHaveBeenCalledTimes(1);
@@ -94,6 +101,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   jest.advanceTimersByTime(150);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
+  expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
 });
 
