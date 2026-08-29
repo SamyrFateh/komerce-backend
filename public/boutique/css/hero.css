@@ -922,7 +922,6 @@
      déclaré après dans la cascade.) */
   html.k-home-premium-v1 .k-hero-cats-sticky {
     position: sticky;
-    top: var(--header-h, 72px);
     z-index: 110;                 /* > .k-header (z-index:100) */
     margin-top: 8px;
     background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
