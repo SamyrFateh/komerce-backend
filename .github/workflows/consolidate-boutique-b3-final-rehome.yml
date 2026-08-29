@@ -1,0 +1,125 @@
+name: Consolidate Boutique B3 Final Premium Rehome
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b3-specificity-final
+
+permissions:
+  contents: write
+
+jobs:
+  rehome:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b3-specificity-final
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - name: Re-home the 7 remaining premium keys
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const postcss=require('./public/boutique/node_modules/postcss');
+          const {BUNDLES}=require('./public/boutique/scripts/css-bundles');
+          const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==8)throw new Error(`Expected specificity 8, got ${spec.total}`);
+          if(cascade.total!==0)throw new Error(`Expected cascade 0, got ${cascade.total}`);
+          const expectedPremium=new Set([
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-header|||.k-header|||backdrop-filter',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-search|||.k-search|||box-shadow',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-sec-header|||.k-sec-header|||scroll-margin-top',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||z-index',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||margin-top',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||background',
+            'k-home-premium-v1|||html.k-home-premium-v1 .k-hero-cats-sticky|||.k-hero-cats-sticky|||box-shadow',
+          ]);
+          const actualPremium=new Set(spec.keys.filter(k=>k.startsWith('k-home-premium-v1|||')));
+          if(actualPremium.size!==7||[...expectedPremium].some(k=>!actualPremium.has(k)))throw new Error('Unexpected final premium baseline');
+          if(!spec.keys.includes('modal-open|||body.modal-open|||body|||position'))throw new Error('Expected modal-open transient key');
+
+          const delivered=[];
+          ['base.css','components.css','desktop.css'].forEach(out=>{const b=BUNDLES.find(x=>x.out===out);b.files.forEach(name=>delivered.push(`public/boutique/css/${name}.css`))});
+          const cache=new Map(),norm=s=>s.replace(/\s+/g,' ').trim(),members=r=>(r.selectors||[r.selector]).map(norm);
+          function load(file){if(!cache.has(file)){const fp=path.resolve(file);cache.set(file,{fp,ast:postcss.parse(fs.readFileSync(fp,'utf8'),{from:file})})}return cache.get(file).ast}
+          function media(r){const a=[];let n=r.parent;while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media')a.unshift(`@media ${n.params}`);n=n.parent}return a.length?a.join(' && '):'global'}
+          const DESKTOP='@media (min-width: 900px)';
+          function declarations(file,selector,prop,targetMedia=null){
+            const target=norm(selector),found=[];load(file).walkRules(r=>{if(!members(r).includes(target))return;if(targetMedia&&media(r)!==targetMedia)return;for(const d of r.nodes||[])if(d.type==='decl'&&d.prop===prop)found.push({file,r,d,media:media(r)})});return found;
+          }
+          function preserveOthers(r,d,target){const others=members(r).filter(s=>s!==norm(target));if(!others.length)return;const keep=postcss.rule({selector:others.join(', ')});keep.append({prop:d.prop,value:d.value,important:!!d.important});r.after(keep)}
+          function removeSpecific(entry,target){preserveOthers(entry.r,entry.d,target);entry.d.remove();if((entry.r.nodes||[]).filter(n=>n.type!=='comment').length===0)entry.r.remove()}
+          function takePremium(file,selector,prop){const found=declarations(file,selector,prop,DESKTOP);if(found.length!==1)throw new Error(`Expected one premium ${selector} ${prop}, got ${found.length}`);const e=found[0],v={value:e.d.value,important:!!e.d.important};removeSpecific(e,selector);return v}
+          function removeAllBaseSameMedia(selector,prop,targetMedia){let count=0;for(const file of delivered){const found=declarations(file,selector,prop,targetMedia);for(const e of found){removeSpecific(e,selector);count++}}return count}
+          function findDesktopAtRule(ast){let hit=null;ast.walkAtRules('media',a=>{if(`@media ${a.params}`===DESKTOP&&!hit)hit=a});if(!hit)throw new Error('No desktop media block');return hit}
+          function appendRule(file,selector,entries){const at=findDesktopAtRule(load(file));const r=postcss.rule({selector});for(const [prop,v] of Object.entries(entries))r.append({prop,value:v.value,important:v.important});at.append(r)}
+          function findDesktopRule(file,selector){const found=[];load(file).walkRules(r=>{if(media(r)===DESKTOP&&members(r).includes(norm(selector)))found.push(r)});if(!found.length)throw new Error(`No desktop rule ${file} ${selector}`);return found.at(-1)}
+
+          // 1) Header/search: canonical desktop owner remains layout.css.
+          const header=takePremium('public/boutique/css/layout.css','html.k-home-premium-v1 .k-header','backdrop-filter');
+          removeAllBaseSameMedia('.k-header','backdrop-filter',DESKTOP);
+          appendRule('public/boutique/css/layout.css','.k-header',{'backdrop-filter':header});
+
+          const search=takePremium('public/boutique/css/layout.css','html.k-home-premium-v1 .k-search','box-shadow');
+          removeAllBaseSameMedia('.k-search','box-shadow',DESKTOP);
+          appendRule('public/boutique/css/layout.css','.k-search',{'box-shadow':search});
+
+          // 2) Section anchor: categories.css is the semantic owner and loads after layout.
+          const sec=takePremium('public/boutique/css/layout.css','html.k-home-premium-v1 .k-sec-header','scroll-margin-top');
+          removeAllBaseSameMedia('.k-sec-header','scroll-margin-top',DESKTOP);
+          appendRule('public/boutique/css/categories.css','.k-sec-header',{'scroll-margin-top':sec});
+
+          // 3) Desktop category sticky: categories.css is already the unique desktop visual owner.
+          const sticky={};
+          for(const prop of ['z-index','margin-top','background','box-shadow']){
+            sticky[prop]=takePremium('public/boutique/css/hero.css','html.k-home-premium-v1 .k-hero-cats-sticky',prop);
+            removeAllBaseSameMedia('.k-hero-cats-sticky',prop,DESKTOP);
+          }
+          const catRule=findDesktopRule('public/boutique/css/categories.css','.k-hero-cats-sticky');
+          for(const [prop,v] of Object.entries(sticky))catRule.append({prop,value:v.value,important:v.important});
+
+          for(const {fp,ast} of cache.values())fs.writeFileSync(fp,ast.toString(),'utf8');
+          console.log(JSON.stringify({rehome:7,header:header.value,search:search.value,section:sec.value,sticky:Object.fromEntries(Object.entries(sticky).map(([k,v])=>[k,v.value]))},null,2));
+          NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove cascade zero and specificity only modal-open
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower specificity ratchet to one and report
+        run: |
+          npm --prefix public/boutique run check:css-specificity-guard:save
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==1||spec.keys.length!==1||spec.keys[0]!=='modal-open|||body.modal-open|||body|||position')throw new Error(`Expected only modal-open, got ${JSON.stringify(spec)}`);
+          if(cascade.total!==0)throw new Error(`Cascade moved to ${cascade.total}`);
+          const report=[
+            '# Boutique CSS Debt — B3-3 final premium re-home','',
+            '- Specificity baseline: **8 → 1**',
+            '- Premium specificity keys: **7 → 0**',
+            '- Cascade baseline: **0 → 0**',
+            '- Re-home owners: `layout.css` for desktop header/search, `categories.css` for section anchor + category sticky',
+            '- Remaining key: only transient `body.modal-open { position: fixed; }`','',
+            'All seven premium winning values were preserved exactly; only their owner and selector specificity changed.'
+          ].join('\n')+'\n';fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B3_FINAL_PREMIUM.md'),report);console.log(report);
+          NODE
+      - name: Commit B3-3 premium re-home
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css public/boutique/index.html public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B3_FINAL_PREMIUM.md
+          git commit -m "refactor(boutique): rehome final premium specificity debt"
+          git push origin HEAD:refactor/boutique-debt-zero-b3-specificity-final
