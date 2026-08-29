@@ -121,8 +121,9 @@ describe('P3b — intégration sur le dépôt réel : rendu et anomalies hors sc
     }
   });
 
-  test('anomalie hors scope documentée reste visible (non masquée par baseline) : modal:product-changed', () => {
-    expect(md).toMatch(/modal:product-changed/);
+  test('ancienne anomalie modal:product-changed reste absente une fois ferm?e', () => {
+    expect(model.events['modal:product-changed']).toBeUndefined();
+    expect(md).not.toMatch(/modal:product-changed/);
   });
 
   test('sidebar:built (comment-only depuis son retrait) n\'apparaît plus du tout : aucun emit ni listen réel restant', () => {

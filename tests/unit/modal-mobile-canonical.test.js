@@ -308,9 +308,9 @@ describe('Architecture: modal never invents data', () => {
     const actionsPos = body.indexOf('renderActions');
     const mediaPos = body.indexOf('renderMedia');
 
-    expect(stripPos).toBeLessThan(axisPos);
     expect(axisPos).toBeLessThan(msgPos);
-    expect(msgPos).toBeLessThan(foldPos);
+    expect(msgPos).toBeLessThan(stripPos);
+    expect(stripPos).toBeLessThan(foldPos);
     expect(foldPos).toBeLessThan(identityPos);
     expect(identityPos).toBeLessThan(actionsPos);
     expect(actionsPos).toBeLessThan(mediaPos);

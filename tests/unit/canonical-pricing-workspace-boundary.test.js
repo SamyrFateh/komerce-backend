@@ -24,18 +24,30 @@ function fakeRes() {
   };
 }
 
-test('URL Pricing est Canonical tandis que les quatre sources historiques restent Legacy', () => {
+test('URL Pricing et anciens points d?entr?e convergent vers Canonical avec rollback Legacy explicite', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
+
   const canonicalRes = fakeRes();
   app._routes['/admin/workspaces/pricing']({}, canonicalRes);
-  expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
-  expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
+  expect(canonicalRes.setHeader)
+    .toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
 
-  for (const legacyPath of ['/admin/pricing', '/admin/pricing-workshop', '/admin/pricing-strategy', '/admin/economic-flow']) {
+  for (const routePath of [
+    '/admin/pricing',
+    '/admin/pricing-workshop',
+    '/admin/pricing-strategy',
+    '/admin/economic-flow',
+  ]) {
+    const canonicalAliasRes = fakeRes();
+    app._routes[routePath]({ query: {} }, canonicalAliasRes);
+    expect(canonicalAliasRes.redirect)
+      .toHaveBeenCalledWith(302, '/admin/workspaces/pricing');
+
     const legacyRes = fakeRes();
-    app._routes[legacyPath]({}, legacyRes);
-    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    app._routes[routePath]({ query: { legacy: '1' } }, legacyRes);
+    expect(legacyRes.setHeader)
+      .toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
   }
 });
 

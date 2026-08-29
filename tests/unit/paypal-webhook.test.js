@@ -177,7 +177,7 @@ describe('POST /api/payments/paypal/webhook', () => {
   test('PAYMENT.CAPTURE.COMPLETED — order déjà paid → noop sans cycle', async () => {
     paypal.verifyWebhookSignature.mockResolvedValue(true);
     paypal.extractCaptureInfo.mockReturnValue({
-      paypal_capture_id: 'CAP-1', paypal_order_id: null, reference_id: 'K-1', amount_value: 100,
+      paypal_capture_id: 'CAP-1', paypal_order_id: null, reference_id: 'K-1', amount_value: 100, currency: 'EUR',
     });
     // Premier db.query (seen) → vide
     // Deuxième db.query (lookup capture) → vide
@@ -197,14 +197,14 @@ describe('POST /api/payments/paypal/webhook', () => {
     paypal.verifyWebhookSignature.mockResolvedValue(true);
     paypal.extractCaptureInfo.mockReturnValue({
       paypal_capture_id: 'CAP-1', paypal_order_id: 'PP-ORDER-1',
-      reference_id: 'K-1', amount_value: 149.90,
+      reference_id: 'K-1', amount_value: 149.90, currency: 'EUR',
     });
     confirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
 
     db.query
       .mockResolvedValueOnce({ rows: [] })                                  // seen
       .mockResolvedValueOnce({ rows: [] })                                  // lookup capture
-      .mockResolvedValueOnce({ rows: [{ id: 'ord-1', payment_status: 'pending', reference: 'K-1' }] }); // lookup order
+      .mockResolvedValueOnce({ rows: [{ id: 'ord-1', payment_status: 'pending', total_eur: 149.90, reference: 'K-1' }] }); // lookup order
 
     const res = await postWebhook(makeEvent());
     expect(res.status).toBe(200);
@@ -222,14 +222,14 @@ describe('POST /api/payments/paypal/webhook', () => {
     paypal.verifyWebhookSignature.mockResolvedValue(true);
     paypal.extractCaptureInfo.mockReturnValue({
       paypal_capture_id: 'CAP-1', paypal_order_id: 'PP-1',
-      reference_id: 'K-1', amount_value: 100,
+      reference_id: 'K-1', amount_value: 100, currency: 'EUR'
     });
     confirmPaymentCycle.mockResolvedValue({ success: false, error: 'transition impossible' });
 
     db.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: 'ord-1', payment_status: 'pending', reference: 'K-1' }] });
+      .mockResolvedValueOnce({ rows: [{ id: 'ord-1', payment_status: 'pending', total_eur: 100, reference: 'K-1' }] });
 
     const res = await postWebhook(makeEvent());
     expect(res.status).toBe(200);

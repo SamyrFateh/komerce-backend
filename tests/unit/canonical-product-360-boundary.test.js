@@ -51,8 +51,12 @@ test('la route détaillée Product 360 est Canonical mais /admin/products reste 
   expect(detailRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
   expect(app._routes['/admin/products']).toBeDefined();
-  app._routes['/admin/products']({}, listRes);
-  expect(listRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  app._routes['/admin/products']({ query: {} }, listRes);
+  expect(listRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/catalog');
+
+  const legacyRes = fakeRes();
+  app._routes['/admin/products']({ query: { legacy: '1' } }, legacyRes);
+  expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
 });
 
 test('le runtime charge Product 360 sans dépendance ProductsView ni endpoint CRUD legacy', () => {

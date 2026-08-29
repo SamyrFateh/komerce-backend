@@ -48,8 +48,12 @@ test('le détail /admin/clients/:clientPhone est Canonical sans détourner /admi
   expect(detailRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
   const listRes = fakeRes();
-  app._routes['/admin/clients']({}, listRes);
-  expect(listRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  app._routes['/admin/clients']({ query: {} }, listRes);
+  expect(listRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+
+  const legacyRes = fakeRes();
+  app._routes['/admin/clients']({ query: { legacy: '1' } }, legacyRes);
+  expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
 });
 
 test('Client 360 est physiquement Canonical et ne réutilise ni ClientsView ni son endpoint legacy', () => {

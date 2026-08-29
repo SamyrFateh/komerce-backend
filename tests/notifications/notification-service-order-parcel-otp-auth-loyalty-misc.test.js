@@ -52,6 +52,9 @@ describe('notification service barrel', () => {
 
     expect(Object.keys(service).sort()).toEqual([
       '_loadOrderFromParcel',
+      'appendRelayLocation',
+      'buildRelayMapUrl',
+      'formatRelayPoint',
       'notifyCancellation',
       'notifyLoyaltyEarned',
       'notifyOrderCreated',

@@ -96,7 +96,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const routeFiles = walk(path.join(ROOT, 'routes'), ['.js']);
     const offenders = [];
     for (const file of routeFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       const src = fs.readFileSync(file, 'utf8');
       for (const svc of SHADOW_SERVICES) {
         if (src.includes(svc) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
@@ -127,7 +127,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const featureFiles = walk(path.join(ROOT, 'public', 'boutique', 'features'), ['.js']);
     const offenders = [];
     for (const file of [...boutiqueFiles, ...featureFiles]) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_URL_MENTION_FILES.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const svc of SHADOW_SERVICES) {
@@ -156,7 +156,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
     for (const file of boutiqueFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_FRONTEND_URL_CONSUMERS.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const segment of SHADOW_URL_SEGMENTS) {
@@ -187,7 +187,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
     for (const file of boutiqueFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_URL_MENTION_FILES.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const table of SHADOW_TABLES) {
@@ -211,7 +211,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
 
     const offenders = [];
     for (const file of allJs) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       const src = fs.readFileSync(file, 'utf8');
       if (/require\(.*local-stock-service/.test(src) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
         offenders.push(`${rel} → local-stock-service`);
