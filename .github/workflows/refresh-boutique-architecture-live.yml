@@ -12,23 +12,86 @@ jobs:
   refresh-live:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: docs/boutique-debt-zero-b0-architecture
           fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+
+      - name: Add structural debt metrics to LIVE generator
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const file = path.resolve('public/boutique/scripts/gen-boutique-arch-live.js');
+          let src = fs.readFileSync(file, 'utf8');
+
+          const anchor1 = "const OUT = path.join(ROOT, 'docs', 'BOUTIQUE_ARCHITECTURE_LIVE.md');\n";
+          const insert1 = anchor1 + "const CASCADE_BASELINE = path.join(__dirname, '.css-guard-baseline.json');\nconst SPECIFICITY_BASELINE = path.join(__dirname, '.css-specificity-guard-baseline.json');\nconst IMPORTANT_BASELINE = path.join(__dirname, '.important-baseline.json');\n";
+          if (!src.includes(anchor1)) throw new Error('OUT anchor not found');
+          src = src.replace(anchor1, insert1);
+
+          const anchor2 = "function buildSnapshot() {\n";
+          const helper = `function readBaseline(file, defaults = {}) {\n  if (!fs.existsSync(file)) return { ...defaults, missing: true };\n  try { return { ...defaults, ...JSON.parse(fs.readFileSync(file, 'utf8')), missing: false }; }\n  catch { return { ...defaults, missing: true }; }\n}\n\nfunction debtSummary() {\n  return {\n    cascade: readBaseline(CASCADE_BASELINE, { total: 0, keys: [] }),\n    specificity: readBaseline(SPECIFICITY_BASELINE, { total: 0, keys: [] }),\n    important: readBaseline(IMPORTANT_BASELINE, { total: 0, perFile: {}, reviewedGuardIds: [] }),\n  };\n}\n\n`;
+          if (!src.includes(anchor2)) throw new Error('buildSnapshot anchor not found');
+          src = src.replace(anchor2, helper + anchor2);
+
+          const beforeBuild = `    important: importantSummary(),\n    jsOwnedVars: jsVarOwners(),\n`;
+          const afterBuild = `    important: importantSummary(),\n    debts: debtSummary(),\n    jsOwnedVars: jsVarOwners(),\n`;
+          if (!src.includes(beforeBuild)) throw new Error('buildSnapshot payload anchor not found');
+          src = src.replace(beforeBuild, afterBuild);
+
+          const beforeRender = `  const imp = snapshot.important;\n  const jsv = snapshot.jsOwnedVars;\n`;
+          const afterRender = `  const imp = snapshot.important;\n  const debts = snapshot.debts || debtSummary();\n  const jsv = snapshot.jsOwnedVars;\n`;
+          if (!src.includes(beforeRender)) throw new Error('render anchor not found');
+          src = src.replace(beforeRender, afterRender);
+
+          const oldScore = `  md += '- **CSS orphelins** : ${'${orphanCount}'} (cible : 0)\\n';\n  md += '- **Sources bundle manquantes** : ${'${inv.missingSources.length}'} (cible : 0)\\n';\n  md += '- **Tokens cassés** : ${'${broken.length}'} (cible : 0)\\n';\n  md += '- **Hex hardcodés** : ${'${hexCount}'} (cible : 0 ou exceptions documentées)\\n';\n  md += '- **\\`!important\\`** : ${'${importantCount}'} (cible : 0 ou exceptions indispensables)\\n';\n  md += '- **Sélecteurs multi-owner observés** : ${'${multiOwnerCount}'} (à classifier par ownership)\\n';\n`;
+          const newScore = `  md += '- **CSS orphelins** : ${'${orphanCount}'} (cible : 0)\\n';\n  md += '- **Sources bundle manquantes** : ${'${inv.missingSources.length}'} (cible : 0)\\n';\n  md += '- **Tokens cassés** : ${'${broken.length}'} (cible : 0)\\n';\n  md += '- **Conflits de cascade suivis** : ${'${debts.cascade.total}'} (cible : 0)\\n';\n  md += '- **Overrides de spécificité suivis** : ${'${debts.specificity.total}'} (cible : 0)\\n';\n  md += '- **Dette \\`!important\\` ouverte** : ${'${debts.important.total}'} (cible : 0)\\n';\n  md += '- **\\`!important\\` physiques** : ${'${importantCount}'} (guards revus inclus)\\n';\n  md += '- **Guards \\`!important\\` revus** : ${'${(debts.important.reviewedGuardIds || []).length}'} registre(s)\\n';\n  md += '- **Hex hardcodés** : ${'${hexCount}'} (cible : 0 ou exceptions documentées)\\n';\n  md += '- **Sélecteurs multi-owner observés** : ${'${multiOwnerCount}'} (à classifier par ownership)\\n';\n`;
+          if (!src.includes(oldScore)) throw new Error('score block not found');
+          src = src.replace(oldScore, newScore);
+
+          const exportAnchor = `  importantSummary,\n  jsVarOwners,\n`;
+          const exportNew = `  importantSummary,\n  debtSummary,\n  jsVarOwners,\n`;
+          if (!src.includes(exportAnchor)) throw new Error('export anchor not found');
+          src = src.replace(exportAnchor, exportNew);
+
+          fs.writeFileSync(file, src, 'utf8');
+
+          const test = `'use strict';\n\nconst { buildSnapshot, render } = require('../../scripts/gen-boutique-arch-live.js');\n\ndescribe('Architecture LIVE structural debt metrics', () => {\n  test('reports the executable zero ratchets without confusing reviewed physical important guards with open debt', () => {\n    const snapshot = buildSnapshot();\n    expect(snapshot.debts.cascade.total).toBe(0);\n    expect(snapshot.debts.specificity.total).toBe(0);\n    expect(snapshot.debts.important.total).toBe(0);\n    expect(snapshot.debts.important.reviewedGuardIds).toContain('desktop-mobile-drawer-neutralization');\n\n    const md = render(snapshot);\n    expect(md).toContain('Conflits de cascade suivis** : 0');\n    expect(md).toContain('Overrides de spécificité suivis** : 0');\n    expect(md).toContain('Dette \\`!important\\` ouverte** : 0');\n    expect(md).toContain('\\`!important\\` physiques** : 3');\n  });\n});\n`;
+          fs.writeFileSync(path.resolve('public/boutique/tests/unit/gen-boutique-arch-live-debt-metrics.test.js'), test, 'utf8');
+          NODE
+
+      - name: Prove generator debt metrics
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/gen-boutique-arch-live-debt-metrics.test.js
+
       - name: Generate LIVE architecture from canonical sources
         run: node public/boutique/scripts/gen-boutique-arch-live.js
-      - name: Prove generated doc has no stale orphan/missing-source claim
+
+      - name: Prove fresh LIVE architecture
         run: |
           grep -q '0 orphelin(s)' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
           grep -q '0 source(s) bundle manquante(s)' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
-      - name: Commit generated LIVE doc
+          grep -q 'Conflits de cascade suivis.*: 0' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          grep -q 'Overrides de spécificité suivis.*: 0' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          grep -q 'Dette `!important` ouverte.*: 0' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          grep -q '`!important` physiques.*: 3' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+
+      - name: Prove architecture gate remains green
+        run: npm run boutique:audit
+
+      - name: Commit generator, test and LIVE doc
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          git add public/boutique/scripts/gen-boutique-arch-live.js public/boutique/tests/unit/gen-boutique-arch-live-debt-metrics.test.js public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
           git diff --cached --quiet && exit 0
-          git commit -m "docs(boutique): refresh LIVE architecture snapshot"
+          git commit -m "docs(boutique): expose zero CSS debt in LIVE architecture"
           git push origin HEAD:docs/boutique-debt-zero-b0-architecture
