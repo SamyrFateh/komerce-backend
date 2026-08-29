@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1031,
-    "edges": 5278,
-    "dbTables": 126,
+    "graphNodes": 1029,
+    "edges": 5276,
+    "dbTables": 124,
     "doctrines": 282,
     "impactAreas": 167,
     "unresolvedCodeEdges": 547,
@@ -8221,8 +8221,7 @@
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "dbRead": [
-        "markets (résolution code -> id",
-        "jamais un UUID brut du client)"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -9777,8 +9776,7 @@
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "dbRead": [
-        "markets (résolution code -> id",
-        "jamais un UUID brut du client)"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -21806,16 +21804,6 @@
       "id": "db:order_incidents",
       "type": "db-table",
       "table": "order_incidents"
-    },
-    {
-      "id": "db:markets (résolution code -> id",
-      "type": "db-table",
-      "table": "markets (résolution code -> id"
-    },
-    {
-      "id": "db:jamais un UUID brut du client)",
-      "type": "db-table",
-      "table": "jamais un UUID brut du client)"
     },
     {
       "id": "db:shipments",
@@ -35794,15 +35782,9 @@
     },
     {
       "from": "routes/local-stock.js",
-      "to": "db:markets (résolution code -> id",
+      "to": "db:markets",
       "type": "db-read",
-      "label": "markets (résolution code -> id"
-    },
-    {
-      "from": "routes/local-stock.js",
-      "to": "db:jamais un UUID brut du client)",
-      "type": "db-read",
-      "label": "jamais un UUID brut du client)"
+      "label": "markets"
     },
     {
       "from": "routes/local-stock.js",
@@ -38139,15 +38121,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db:markets (résolution code -> id",
+      "to": "db:markets",
       "type": "db-read",
-      "label": "markets (résolution code -> id"
-    },
-    {
-      "from": "routes/providers-services.js",
-      "to": "db:jamais un UUID brut du client)",
-      "type": "db-read",
-      "label": "jamais un UUID brut du client)"
+      "label": "markets"
     },
     {
       "from": "routes/providers-services.js",
@@ -64267,8 +64243,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets (résolution code -> id",
-        "jamais un UUID brut du client)"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -64279,8 +64254,7 @@
         "local-stock"
       ],
       "mustCheck": [
-        "db:jamais un UUID brut du client)",
-        "db:markets (résolution code -> id",
+        "db:markets",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:local-stock",
         "services/local-stock-service.js"
@@ -65795,8 +65769,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets (résolution code -> id",
-        "jamais un UUID brut du client)"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -65807,8 +65780,7 @@
         "providers-services"
       ],
       "mustCheck": [
-        "db:jamais un UUID brut du client)",
-        "db:markets (résolution code -> id",
+        "db:markets",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:providers-services",
         "services/providers-service.js"

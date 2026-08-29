@@ -8,7 +8,7 @@
  * @outputs       availability_projection, exposable_flag
  * @depends       services/local-stock-service.js, db (résolution code marché)
  * @used-by       (aucun — Vague 2 D4, shadow : jamais monté dans bootstrap/api-routes.js)
- * @db-read       markets (résolution code -> id, jamais un UUID brut du client)
+ * @db-read       markets
  * @db-write      none
  * @db-txn        single_statement_sufficient
  * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de
