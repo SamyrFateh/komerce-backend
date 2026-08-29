@@ -1246,14 +1246,16 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   .k-header-inner {
-    height: 68px;
     margin: 0 auto;
     gap: 10px;
     padding-inline: clamp(24px, 3vw, 32px);
   }
 
   .k-logo { width: 148px; min-width: 148px; justify-content: center; }
-  .k-logo-img, .k-logo-svg { height: 44px; margin-inline: auto; }
+  .k-logo-img, .k-logo-svg { margin-inline: auto; }
+  .k-logo-img {
+    height: 44px;
+  }
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
 
@@ -1263,7 +1265,6 @@ body:has(#k-page-scroll.k-pager-active) {
     flex: 0 1 430px;
     max-width: 430px;
     height: 44px;
-    border-radius: 999px;
     border: 1px solid rgba(42,33,23,.10);
     background: var(--white);
     box-shadow: 0 2px 10px rgba(42,33,23,.05);
@@ -1836,8 +1837,11 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   html.k-home-premium-v1 .k-search {
-    border-radius: 999px;
     box-shadow: 0 2px 10px rgba(42,33,23,.05);
+  }
+
+  .k-search {
+    border-radius: 999px;
   }
 
   html.k-home-premium-v1 .k-search input::placeholder {
@@ -2190,10 +2194,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Image : 1600×525 (ratio ~3:1) — lune + têtes + logo Komerce visibles.
      Fallback pour pages sans .k-home-premium-v1 (le panorama premium gagne sinon). */
   .k-hero-img {
-    height: auto;
-    aspect-ratio: 1600 / 525;
     object-fit: cover;
-    object-position: 50% 35%;
   }
 
   /* ── FIX FLASH HERO 2026-07 (mesuré, Chromium réel) ─────────────────
@@ -2222,11 +2223,6 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */
-  .k-hero-media {
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
 
   /* Réinitialise les marges mobiles du sticky */
   .k-hero-cats-sticky {
@@ -2492,13 +2488,13 @@ body:has(#k-page-scroll.k-pager-active) {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     height: clamp(190px, 14vw, 208px);
-    margin: 0;
     border: 0;
-    border-radius: 0;
-    box-shadow: none;
     position: relative;
     background: transparent;
   }
+  .k-hero-media { box-shadow: none; }
+  .k-hero-media { border-radius: 0; }
+  .k-hero-media { margin: 0; }
 
   /* ── Image plein cadre ── */
   html.k-home-premium-v1 .k-hero-media picture {
@@ -2511,12 +2507,15 @@ body:has(#k-page-scroll.k-pager-active) {
 
   html.k-home-premium-v1 .k-hero-img {
     width: 100%;
-    height: 100%;
     object-fit: cover;
-    object-position: 50% 10%;
-    aspect-ratio: unset;
     display: block;
   }
+
+  .k-hero-img { aspect-ratio: unset; }
+
+  .k-hero-img { height: 100%; }
+
+  .k-hero-img { object-position: 50% 10%; }
 
   /* ── Texte superposé dans la réserve claire de l'asset ── */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium {
@@ -2719,15 +2718,11 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 900px) {
 
   /* ── 1. Logo agrandi dans la navbar ── */
-  html.k-home-premium-v1 .k-logo-svg {
-    height: 52px;
-  }
+  .k-logo-svg { height: 52px; }
   html.k-home-premium-v1 .k-logo {
     min-width: 172px;
   }
-  html.k-home-premium-v1 .k-header-inner {
-    height: 72px;
-  }
+  .k-header-inner { height: 72px; }
 
   /* ── 2. Gap navbar→hero : le spacer est désormais owned par layout.css.
      À partir de 900px, layout.css le remet naturellement à height:0 car
@@ -2805,12 +2800,12 @@ body:has(#k-page-scroll.k-pager-active) {
      premium — supersède le bloc CORRECTIONS plus haut, même specificity,
      déclaré après dans la cascade.) */
   html.k-home-premium-v1 .k-hero-cats-sticky {
-    position: sticky;
     z-index: 110;                 /* > .k-header (z-index:100) */
     margin-top: 8px;
     background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
     box-shadow: 0 1px 0 var(--border-text-07);
   }
+  .k-hero-cats-sticky { position: sticky; }
 }
 /* ══ FIN LOT NAV-STICKY-DESKTOP ════════════════════════════════════ */
 
