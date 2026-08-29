@@ -47,8 +47,11 @@ jobs:
           }
           if(new Set(physical.map(f=>[f.gc,f.ws,f.ls,f.prop].join('|||'))).size!==43)throw new Error('Expected 43 semantic findings');
 
-          const rank=new Map();
-          ['base.css','components.css','desktop.css'].forEach((out,di)=>{const b=BUNDLES.find(x=>x.out===out);b.files.forEach((name,si)=>rank.set(`public/boutique/css/${name}.css`,di*1000+si))});
+          const rank=new Map(),deliveredFiles=[];
+          ['base.css','components.css','desktop.css'].forEach((out,di)=>{
+            const b=BUNDLES.find(x=>x.out===out);
+            b.files.forEach((name,si)=>{const file=`public/boutique/css/${name}.css`;rank.set(file,di*1000+si);deliveredFiles.push(file)});
+          });
           const cache=new Map(),norm=s=>s.replace(/\s+/g,' ').trim(),members=r=>(r.selectors||[r.selector]).map(norm);
           function load(file){if(!cache.has(file)){const fp=path.resolve(file);cache.set(file,{fp,ast:postcss.parse(fs.readFileSync(fp,'utf8'),{from:file})})}return cache.get(file).ast}
           function media(r){const a=[];let n=r.parent;while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media')a.unshift(`@media ${n.params}`);n=n.parent}return a.length?a.join(' && '):'global'}
@@ -70,22 +73,52 @@ jobs:
           }
           if(selected.length!==35)throw new Error(`Expected 35 safe keys, got ${selected.length}`);
 
-          function preserveOthers(rule,decl,target){const sels=members(rule),others=sels.filter(s=>s!==norm(target));if(!others.length)return;const keep=postcss.rule({selector:others.join(', ')});keep.append({prop:decl.prop,value:decl.value,important:!!decl.important});rule.after(keep)}
-          function removeTarget(ref){const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop);preserveOthers(r,d,ref.selector);d.remove();if((r.nodes||[]).filter(n=>n.type!=='comment').length===0)r.remove()}
-          function stripWinner(ref,baseSelector){const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop);const value=d.value,important=!!d.important;preserveOthers(r,d,ref.selector);d.remove();const nr=postcss.rule({selector:baseSelector});nr.append({prop:ref.prop,value,important});r.after(nr);if((r.nodes||[]).filter(n=>n.type!=='comment').length===0)r.remove()}
+          function preserveOthers(rule,decl,target){
+            const others=members(rule).filter(s=>s!==norm(target));
+            if(!others.length)return;
+            const keep=postcss.rule({selector:others.join(', ')});
+            keep.append({prop:decl.prop,value:decl.value,important:!!decl.important});
+            rule.after(keep);
+          }
+          function removeFromRule(rule,decl,target){preserveOthers(rule,decl,target);decl.remove();if((rule.nodes||[]).filter(n=>n.type!=='comment').length===0)rule.remove()}
+          function removeTarget(ref){const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop);removeFromRule(r,d,ref.selector)}
+          function removeAllBaseSameMedia(baseSelector,prop,targetMedia){
+            let count=0;
+            for(const file of deliveredFiles){
+              const ast=load(file),matches=[];
+              ast.walkRules(r=>{
+                if(media(r)!==targetMedia||!members(r).includes(norm(baseSelector)))return;
+                for(const d of r.nodes||[])if(d.type==='decl'&&d.prop===prop)matches.push({r,d});
+              });
+              for(const {r,d} of matches){removeFromRule(r,d,baseSelector);count++}
+            }
+            return count;
+          }
+          function stripWinner(ref,baseSelector){
+            const {r,d}=findDecl(ref.file,ref.line,ref.selector,ref.prop),value=d.value,important=!!d.important;
+            preserveOthers(r,d,ref.selector);d.remove();
+            const nr=postcss.rule({selector:baseSelector});nr.append({prop:ref.prop,value,important});r.after(nr);
+            if((r.nodes||[]).filter(n=>n.type!=='comment').length===0)r.remove();
+          }
           const id=r=>[r.file,r.line,norm(r.selector),r.prop].join('|');
-          let sameMediaLosersRemoved=0,winnerPropertiesStripped=0;
+          let baseSameMediaRemoved=0,winnerPropertiesStripped=0;
           for(const {key,rows} of selected){
             const base=strip(rows[0].ws,rows[0].gc);
             const winnerValues=[...new Set(rows.map(r=>`${r.w.value}|||${r.w.important}`))];
             if(winnerValues.length!==1)throw new Error(`Multiple winner values ${key}`);
-            const sameLosers=[...new Map(rows.filter(r=>r.w.media===r.l.media).map(r=>[id(r.l),r.l])).values()];
-            for(const loser of sameLosers){removeTarget(loser);sameMediaLosersRemoved++}
             const winners=[...new Map(rows.map(r=>[id(r.w),r.w])).values()];
-            for(const winner of winners){stripWinner(winner,base);winnerPropertiesStripped++}
+            const byMedia=new Map();
+            for(const w of winners){if(!byMedia.has(w.media))byMedia.set(w.media,[]);byMedia.get(w.media).push(w)}
+            for(const [winnerMedia,mediaWinners] of byMedia){
+              baseSameMediaRemoved+=removeAllBaseSameMedia(base,rows[0].prop,winnerMedia);
+              mediaWinners.sort((a,b)=>b.rank-a.rank||b.line-a.line);
+              const finalWinner=mediaWinners[0];
+              for(const staleWinner of mediaWinners.slice(1))removeTarget(staleWinner);
+              stripWinner(finalWinner,base);winnerPropertiesStripped++;
+            }
           }
           for(const {fp,ast} of cache.values())fs.writeFileSync(fp,ast.toString(),'utf8');
-          console.log(JSON.stringify({safeSemanticKeys:selected.length,sameMediaLosersRemoved,winnerPropertiesStripped,files:[...cache.keys()].sort()},null,2));
+          console.log(JSON.stringify({safeSemanticKeys:selected.length,baseSameMediaRemoved,winnerPropertiesStripped,files:[...cache.keys()].sort()},null,2));
           NODE
       - name: Rebuild canonical bundles
         run: npm --prefix public/boutique run deploy:css
@@ -106,9 +139,9 @@ jobs:
             '- Specificity baseline: **43 → 8**',
             '- Safe premium keys consolidated: **35** (23 mixed-media + 12 all-different-media)',
             '- Cascade baseline: **0 → 0**',
-            '- Strategy: remove the permanent premium prefix at the winner media; delete only same-media base losers; preserve different-media base behavior',
+            '- Strategy: remove the permanent premium prefix at the winner media; delete every pre-existing base declaration for the same selector/property/media (including declarations hidden from the specificity report); preserve different-media base behavior',
             '- Remaining: **7 explicit re-home keys + 1 transient `modal-open` state**','',
-            'No winning value changes and no mobile/global declarations outside overlapping same-media conflicts are removed.'
+            'No winning value changes and no mobile/global declarations outside the winner media are removed.'
           ].join('\n')+'\n';fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B3_CROSS_MEDIA.md'),report);console.log(report);
           NODE
       - name: Commit B3-2
