@@ -54,8 +54,9 @@
 ## B1b — Remboursement à poursuivre
 
 - [x] retirer les 3 `!important` hero inutiles par spécificité naturelle — B1b-1, dette ouverte 6 → 3 (`hero.css` 1 + `share-cart.css` 2) ;
-- [ ] sortir la hauteur inline de `#k-header-spacer` vers son owner CSS, puis retirer son dernier `!important` ;
+- [x] sortir la hauteur inline de `#k-header-spacer` vers son owner `layout.css`, puis retirer son dernier `!important` hero — B1b-2, dette ouverte CSS 3 → 2 (`share-cart.css` uniquement) ;
 - [ ] supprimer proprement le sous-arbre CSS historique `k-sc-shared-badge` / `k-sc-reshare-btn` avec bundles + manifests ;
+- [ ] traiter le `style="display:none!important"` historique de `.k-hero-logo-glow` dans `index.html`, actuellement hors du scan CSS `check-important` ;
 - [ ] corriger `og-cover.jpg` avec un asset réel/cohérent ;
 - [ ] exécuter l'audit npm complet et fermer toute vulnérabilité éventuelle ;
 - [ ] recalculer ensuite les 211 conflits cascade et 87 conflits spécificité sur la vérité corrigée.
