@@ -69,13 +69,18 @@ jobs:
           for (const meta of delivered) {
             const fp = path.join(cssDir, meta.file);
             if (!fs.existsSync(fp)) continue;
-            const ast = postcss.parse(fs.readFileSync(fp, 'utf8'), { from: meta.file });
+            const raw = fs.readFileSync(fp, 'utf8');
+            // Only parse sources that can actually own a modal/suggestion selector.
+            // This deliberately excludes unrelated legacy sources (e.g. hero.css)
+            // from blocking a read-only modal classification with syntax debt of their own.
+            if (!raw.includes('#k-modal') && !raw.includes('.k-sug-')) continue;
+            const ast = postcss.parse(raw, { from: meta.file });
             ast.walkRules(rule => {
               const media = contextOf(rule);
               const selectors = rule.selectors || [rule.selector];
               rule.walkDecls(decl => {
-                selectors.forEach(raw => {
-                  const selector = raw.trim();
+                selectors.forEach(rawSelector => {
+                  const selector = rawSelector.trim();
                   const key = `${selector}|||${media}|||${decl.prop}`;
                   if (!rowsByKey.has(key)) return;
                   rowsByKey.get(key).push({
