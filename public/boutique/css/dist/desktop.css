@@ -344,7 +344,6 @@
 @media (min-width: 900px) {
 
   .k-sec-subcats {
-    display: flex;
     flex-wrap: nowrap;
     gap: 8px;
     padding: 4px 0 14px;
@@ -361,7 +360,6 @@
 
   .k-sec-subchip {
     flex: 0 0 auto;
-    display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 5px 11px;
@@ -1146,12 +1144,6 @@
   .k-side-cart--in-modal .k-sc-item {
     gap: 10px;
   }
-  .k-side-cart--in-modal .k-sc-item-img {
-  }
-  .k-side-cart--in-modal .k-sc-item-info {
-  }
-  .k-side-cart--in-modal .k-sc-item-name {
-  }
   .k-sc-item-variant {
     font-size: 9.5px; font-weight: 600; color: var(--text-muted);
     background: var(--sand);
@@ -1649,7 +1641,6 @@
     align-items: end;
     gap: 8px;
     width: 100%;
-    min-height: 100px;
     height: auto;
     padding: 7px 18px 9px;
     overflow: visible;
@@ -1735,13 +1726,6 @@
   .k-shelf-object--category {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 7px 7px var(--border-text-08));
-  }
-
-  .k-shelf-rail .k-cat-cutout:hover .k-shelf-object--category,
-  .k-shelf-rail .k-cat-cutout.active .k-shelf-object--category {
-    transform: translateY(-3px);
-    filter: drop-shadow(0 9px 9px var(--border-text-08));
   }
 
   .k-cat-cutout:hover .k-chip-photo {
@@ -1775,7 +1759,6 @@
     position: absolute;
     left: 50%;
     bottom: 0;
-    width: 26px;
     height: 2px;
     border-radius: 999px;
     background: var(--ocean-dark);
@@ -1878,8 +1861,6 @@
   .k-subcutout {
     position: relative;
     flex: 0 0 auto;
-    min-width: 62px;
-    min-height: 54px;
     padding: 2px 5px 5px;
     display: inline-flex;
     flex-direction: column;
@@ -1890,7 +1871,6 @@
     border-radius: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--text-muted);
     font-family: var(--font);
     cursor: pointer;
   }
@@ -1913,27 +1893,13 @@
   .k-subcutout-icon {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 35px;
     overflow: visible;
     border: 0;
     border-radius: 0;
     background: transparent;
-    font-size: 24px;
     line-height: 1;
     filter: none;
     transition: transform .15s var(--ease);
-  }
-
-  .k-shelf-object--subcategory {
-    width: 43px;
-    height: 39px;
-    filter: drop-shadow(0 4px 5px var(--border-text-08));
-  }
-
-  .k-subcutout:hover .k-subcutout-icon,
-  .k-subcutout.active .k-subcutout-icon {
-    transform: translateY(-2px);
   }
 
   .k-subcutout-icon--all {
@@ -1947,8 +1913,6 @@
 
   .k-shelf-emoji-fallback {
     display: block;
-    font-size: 23px;
-    line-height: 35px;
   }
 
   .k-subcutout-label {
@@ -1959,16 +1923,7 @@
     text-align: center;
     color: currentColor;
     font-size: 10.5px;
-    font-weight: 600;
     line-height: 1.15;
-  }
-
-  .k-subcutout.active {
-    color: var(--text);
-  }
-
-  .k-subcutout.active .k-subcutout-label {
-    font-weight: 800;
   }
 
   .k-subcutout.active::after {
@@ -1976,7 +1931,6 @@
     position: absolute;
     left: 50%;
     bottom: 0;
-    width: 24px;
     height: 2px;
     border-radius: 999px;
     background: var(--ocean-dark);

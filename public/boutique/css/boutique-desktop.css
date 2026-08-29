@@ -339,7 +339,6 @@
 @media (min-width: 900px) {
 
   .k-sec-subcats {
-    display: flex;
     flex-wrap: nowrap;
     gap: 8px;
     padding: 4px 0 14px;
@@ -356,7 +355,6 @@
 
   .k-sec-subchip {
     flex: 0 0 auto;
-    display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 5px 11px;
@@ -1140,12 +1138,6 @@
   }
   .k-side-cart--in-modal .k-sc-item {
     gap: 10px;
-  }
-  .k-side-cart--in-modal .k-sc-item-img {
-  }
-  .k-side-cart--in-modal .k-sc-item-info {
-  }
-  .k-side-cart--in-modal .k-sc-item-name {
   }
   .k-sc-item-variant {
     font-size: 9.5px; font-weight: 600; color: var(--text-muted);
