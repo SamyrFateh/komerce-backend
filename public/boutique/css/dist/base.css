@@ -1871,6 +1871,20 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   HEADER SPACER — owner unique : layout.css
+   Compense le header fixed sur mobile. Sur desktop, le header redevient
+   sticky et reste dans le flux : aucune réserve supplémentaire nécessaire.
+   ══════════════════════════════════════════════════════════════ */
+#k-header-spacer {
+  height: calc(var(--header-h, 56px) + env(safe-area-inset-top, 0px));
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  #k-header-spacer { height: 0; }
+}
+
 
 /* ── hero.css ────────────────────────────────────────────── */
 ﻿/* ═══════════════════════════════════════════════════════════════
@@ -2306,107 +2320,6 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
 }
 
-/* ════════ Logo électrisé en filigrane — hero mobile ════════
-   Filigrane fondu dans l'illustration : AUCUN calque/scrim sur le fond.
-   La lisibilité vient uniquement du glow + d'une ombre douce propres au logo.
-   Deux rythmes synchronisés sur --klg-bpm :
-     · connexion → un signal circule le long des liaisons (.klg-signal)
-     · cœur      → double toc-toc sur les points oranges (.klg-heart) + halo vert
-   Masqué ≥900px (le logo complet est déjà dans la topbar desktop).
-   Coupé si prefers-reduced-motion. Réglages : --klg-bpm / --klg-glow / --klg-opacity. */
-@media (max-width: 899px) {
-  .k-hero-media .k-hero-logo-glow {
-    --klg-bpm: 2.8s;       /* lent ≈ braise ; baisser pour accélérer */
-    --klg-glow: 8px;       /* intensité du halo — augmenté pour meilleure visibilité */
-    --klg-opacity: 0.82;   /* légèrement transparent pour effet filigrane */
-    position: absolute;
-    top: 50%;
-    right: 12px;           /* ancré à droite — slogan à gauche, logo à droite */
-    left: auto;
-    transform: translateY(-50%);
-    width: 42%;
-    max-width: 148px;
-    z-index: 6;
-    pointer-events: none;
-    opacity: var(--klg-opacity);
-    /* halo sombre propre au logo (technique sous-titre) → lisible sur fond clair OU foncé,
-       sans poser aucun calque sur l'illustration */
-    filter:
-      drop-shadow(0 0 2px rgba(10, 30, 16, .9))
-      drop-shadow(0 0 5px rgba(10, 30, 16, .6))
-      drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
-  }
-  .k-hero-media .k-hero-logo-glow svg {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  /* recolore le logo en blanc lumineux pour qu'il ressorte sur l'illustration */
-  .k-hero-logo-glow .klg-lines { stroke: var(--hero-glow-bright); }
-  .k-hero-logo-glow .klg-text path { fill: var(--hero-glow-bright); }
-
-  /* halo vert qui bat (double toc-toc puis repos) sur traits + nœuds + O + lettres */
-  .k-hero-logo-glow .klg-green {
-    animation: klgHeartGlow var(--klg-bpm) ease-in-out infinite;
-  }
-  @keyframes klgHeartGlow {
-    0%   { filter: drop-shadow(0 0 .5px rgba(150, 230, 170, .35)); }
-    6%   { filter: drop-shadow(0 0 var(--klg-glow) rgba(150, 230, 170, .95)); }
-    13%  { filter: drop-shadow(0 0 1px rgba(150, 230, 170, .4)); }
-    20%  { filter: drop-shadow(0 0 calc(var(--klg-glow) * .8) rgba(150, 230, 170, .85)); }
-    30%  { filter: drop-shadow(0 0 .5px rgba(150, 230, 170, .35)); }
-    100% { filter: drop-shadow(0 0 .5px rgba(150, 230, 170, .35)); }
-  }
-
-  /* cœur : les points oranges gonflent au double-battement */
-  .k-hero-logo-glow .klg-heart circle {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: klgHeartBeat var(--klg-bpm) ease-in-out infinite;
-  }
-  @keyframes klgHeartBeat {
-    0%   { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200, 92, 45, .5)); }
-    6%   { transform: scale(1.26); filter: drop-shadow(0 0 var(--klg-glow) rgba(255, 150, 80, 1)); }
-    13%  { transform: scale(1.02); filter: drop-shadow(0 0 1px rgba(200, 92, 45, .5)); }
-    20%  { transform: scale(1.18); filter: drop-shadow(0 0 calc(var(--klg-glow) * .8) rgba(255, 150, 80, .95)); }
-    30%  { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200, 92, 45, .5)); }
-    100% { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200, 92, 45, .5)); }
-  }
-
-  /* connexion : un éclat lumineux file le long de chaque liaison puis fait le tour du O */
-  .k-hero-logo-glow .klg-signal path,
-  .k-hero-logo-glow .klg-signal circle {
-    stroke: var(--hero-glow-mid);
-    stroke-width: 6;
-    stroke-dasharray: 18 82;
-    filter: drop-shadow(0 0 3px rgba(200, 255, 215, .9));
-    animation: klgSignal var(--klg-bpm) linear infinite;
-  }
-  .k-hero-logo-glow .klg-signal .klg-s2 { animation-delay: .09s; }
-  .k-hero-logo-glow .klg-signal .klg-s3 { animation-delay: .18s; }
-  .k-hero-logo-glow .klg-signal .klg-so { animation-delay: .26s; }
-  @keyframes klgSignal {
-    0%   { stroke-dashoffset: 100; opacity: 0; }
-    4%   { opacity: 1; }
-    34%  { stroke-dashoffset: 0; opacity: 1; }
-    42%  { opacity: 0; }
-    100% { stroke-dashoffset: 0; opacity: 0; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .k-hero-logo-glow .klg-green,
-    .k-hero-logo-glow .klg-heart circle,
-    .k-hero-logo-glow .klg-signal path,
-    .k-hero-logo-glow .klg-signal circle { animation: none; }
-    .k-hero-logo-glow .klg-signal { display: none; }
-  }
-}
-
-/* logo-glow masqué desktop : le logo complet vit déjà dans la topbar */
-@media (min-width: 900px) {
-  .k-hero-logo-glow { display: none; }
-}
-
 /* ── Premium desktop home — hero (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-hero-fixed-wrap {
@@ -2422,7 +2335,7 @@ body:has(#k-page-scroll.k-pager-active) {
 /* ═══════════════════════════════════════════════════════════════════════════
    LOGO HEADER MOBILE ÉLECTRISÉ — k-logo-mini (mobile max-width:899px)
    Classes : klm-green, klm-lines, klm-heart, klm-signal
-   Même rythme que klg-* mais scopé au header logo.
+   Rythme propre au logo du header mobile.
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
   .k-logo-mini {
@@ -2489,7 +2402,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LOGO HEADER DESKTOP ÉLECTRISÉ — k-logo-svg
-   Même signature que le K mobile ; aucun retour du logo-glow du hero.
+   Même signature que le K mobile.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes kldHeartGlow {
@@ -2622,7 +2535,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* ── Texte superposé dans la réserve claire de l'asset ── */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 0;
@@ -2640,8 +2553,8 @@ body:has(#k-page-scroll.k-pager-active) {
     content: none;
   }
 
-  /* Masquer le bubble & logo-glow sur desktop */
-  html.k-home-premium-v1 .k-hero-bubble { display: none !important; }
+  /* Masquer le bubble sur desktop */
+  html.k-home-premium-v1 .k-hero-bubble { display: none; }
 
   /* Badge eyebrow */
   html.k-home-premium-v1 .k-hero-badge {
@@ -2750,7 +2663,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* Trust bar */
   html.k-home-premium-v1 .k-hero-trust {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: 5px;
     font-size: 10.5px;
@@ -2834,13 +2747,9 @@ body:has(#k-page-scroll.k-pager-active) {
     height: 72px;
   }
 
-  /* ── 2. Gap navbar→hero : supprimer la double réserve desktop ──
-     Le header est sticky et occupe déjà sa place dans le flux à partir de
-     900px. Le spacer inline ne sert qu'au header fixed mobile : le conserver
-     ici ajoutait 72px avant le padding respirant du hero. */
-  html.k-home-premium-v1 body.k-view-shop #k-header-spacer {
-    height: 0 !important;
-  }
+  /* ── 2. Gap navbar→hero : le spacer est désormais owned par layout.css.
+     À partir de 900px, layout.css le remet naturellement à height:0 car
+     le header sticky reste dans le flux. Aucun override hero nécessaire. */
   html.k-home-premium-v1 .k-hero {
     margin-top: 0;
   }
