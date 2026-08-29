@@ -1,0 +1,111 @@
+name: Classify Boutique B2 Modal Cascade
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b2-modal
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b2-modal
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+      - name: Classify modal and suggestion cascade conflicts
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const postcss = require('./public/boutique/node_modules/postcss');
+          const { BUNDLES } = require('./public/boutique/scripts/css-bundles');
+
+          const root = path.resolve('public/boutique');
+          const cssDir = path.join(root, 'css');
+          const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-guard-baseline.json'), 'utf8'));
+          if (baseline.total !== 43) throw new Error(`Expected baseline 43, got ${baseline.total}`);
+
+          function isModalSelector(selector) {
+            return selector.startsWith('#k-modal') ||
+              selector.startsWith('#k-modal-suggestions') ||
+              selector.startsWith('.k-sug-');
+          }
+          const keys = baseline.keys.filter(key => isModalSelector(key.split('|||')[0]));
+          if (keys.length !== 27) throw new Error(`Expected 27 modal/suggestion conflicts, got ${keys.length}`);
+          console.log(`MODAL_CONFLICTS=${keys.length}`);
+          keys.forEach(k => console.log(`KEY ${k}`));
+
+          const distOrder = ['base.css', 'components.css', 'desktop.css'];
+          const delivered = [];
+          for (let di = 0; di < distOrder.length; di++) {
+            const bundle = BUNDLES.find(b => b.out === distOrder[di]);
+            bundle.files.forEach((name, si) => delivered.push({
+              file: `${name}.css`, dist: distOrder[di], rank: di * 1000 + si,
+            }));
+          }
+
+          function contextOf(rule) {
+            let node = rule.parent;
+            while (node && node.type !== 'root') {
+              if (node.type === 'atrule' && node.name === 'media') return `@media ${node.params} {`;
+              node = node.parent;
+            }
+            return 'global';
+          }
+
+          const rowsByKey = new Map(keys.map(k => [k, []]));
+          for (const meta of delivered) {
+            const fp = path.join(cssDir, meta.file);
+            if (!fs.existsSync(fp)) continue;
+            const ast = postcss.parse(fs.readFileSync(fp, 'utf8'), { from: meta.file });
+            ast.walkRules(rule => {
+              const media = contextOf(rule);
+              const selectors = rule.selectors || [rule.selector];
+              rule.walkDecls(decl => {
+                selectors.forEach(raw => {
+                  const selector = raw.trim();
+                  const key = `${selector}|||${media}|||${decl.prop}`;
+                  if (!rowsByKey.has(key)) return;
+                  rowsByKey.get(key).push({
+                    file: meta.file, dist: meta.dist, rank: meta.rank,
+                    line: decl.source?.start?.line || null,
+                    selector, fullSelector: rule.selector,
+                    grouped: selectors.length > 1,
+                    media, prop: decl.prop, value: decl.value,
+                  });
+                });
+              });
+            });
+          }
+
+          const ownerSets = new Map();
+          const internalSafe = [];
+          for (const key of keys) {
+            const rows = (rowsByKey.get(key) || []).sort((a,b) => a.rank - b.rank || (a.line||0)-(b.line||0));
+            console.log(`\n=== ${key} ===`);
+            rows.forEach(row => console.log(JSON.stringify(row)));
+            if (rows.length) console.log(`WINNER ${rows.at(-1).file}:${rows.at(-1).line} -> ${rows.at(-1).value}`);
+            const ownersArr = [...new Set(rows.map(r => r.file))];
+            const owners = ownersArr.join(' + ') || '<none>';
+            ownerSets.set(owners, (ownerSets.get(owners) || 0) + 1);
+            if (rows.length >= 2 && ownersArr.length === 1 && new Set(rows.map(r => r.fullSelector)).size === 1) {
+              internalSafe.push(key);
+            }
+          }
+          console.log('\n=== OWNER SET COUNTS ===');
+          [...ownerSets.entries()].sort((a,b)=>b[1]-a[1]).forEach(([owners,count]) => console.log(`${count} ${owners}`));
+          console.log(`INTERNAL_SAFE=${internalSafe.length}`);
+          internalSafe.forEach(k => console.log(`INTERNAL ${k}`));
+          NODE
