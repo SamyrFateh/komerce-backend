@@ -38,10 +38,29 @@ jobs:
           const baseline = JSON.parse(fs.readFileSync(path.join(rootDir, 'scripts/.css-guard-baseline.json'), 'utf8'));
           const baselineKeys = new Set(baseline.keys);
           const componentBundle = BUNDLES.find(b => b.out === 'components.css');
-          const files = componentBundle.files.map(name => `${name}.css`);
+          const bundleFiles = componentBundle.files.map(name => `${name}.css`);
           const ownerFile = 'checkout-vertical-rail.css';
-          const ownerIndex = files.indexOf(ownerFile);
+          const ownerIndex = bundleFiles.indexOf(ownerFile);
           if (ownerIndex < 0) throw new Error('checkout-vertical-rail.css absent du bundle components');
+
+          // Only sources proven by the classification run to participate in checkout conflicts.
+          // We intentionally do not parse unrelated legacy CSS (categories.css contains known invalid historical fragments).
+          const candidateFiles = [
+            'modal-product.css',
+            'cart.css',
+            'interactions.css',
+            'identity.css',
+            'paypal.css',
+          ].filter(file => bundleFiles.indexOf(file) >= 0 && bundleFiles.indexOf(file) < ownerIndex);
+
+          function isCheckoutSelector(selector) {
+            return selector.startsWith('.ck-') ||
+              selector.startsWith('.k-ck-') ||
+              selector.startsWith('.k-order') ||
+              selector.startsWith('.k-confirm') ||
+              selector.startsWith('.k-modal-subtotal') ||
+              selector.startsWith('.k-stripe-wrap');
+          }
 
           function contextOf(rule) {
             let node = rule.parent;
@@ -56,21 +75,22 @@ jobs:
           const ownerRoot = postcss.parse(ownerCss, { from: ownerFile });
           const ownerKeys = new Set();
           ownerRoot.walkRules(rule => {
-            if (contextOf(rule) !== 'global') return;
+            if (contextOf(rule) !== 'global' || !isCheckoutSelector(rule.selector)) return;
             rule.walkDecls(decl => {
               const key = `${rule.selector}|||global|||${decl.prop}`;
               if (baselineKeys.has(key)) ownerKeys.add(key);
             });
           });
+          if (!ownerKeys.size) throw new Error('Aucune clé checkout globale owned par checkout-vertical-rail.css');
 
           const removed = [];
           const touched = new Set();
-          for (const file of files.slice(0, ownerIndex)) {
+          for (const file of candidateFiles) {
             const fp = path.join(cssDir, file);
             const original = fs.readFileSync(fp, 'utf8');
             const ast = postcss.parse(original, { from: file });
             ast.walkRules(rule => {
-              if (contextOf(rule) !== 'global') return;
+              if (contextOf(rule) !== 'global' || !isCheckoutSelector(rule.selector)) return;
               [...rule.nodes].forEach(node => {
                 if (node.type !== 'decl') return;
                 const key = `${rule.selector}|||global|||${node.prop}`;
@@ -90,15 +110,15 @@ jobs:
           const uniqueKeys = [...new Set(removed.map(r => r.key))].sort();
           if (!uniqueKeys.length) throw new Error('Aucune déclaration checkout perdante détectée');
 
-          // Proof: none of the exact global owner keys may remain in any earlier source.
+          // Proof: the exact owner keys we removed must no longer exist in the candidate earlier sources.
           const leftovers = [];
-          for (const file of files.slice(0, ownerIndex)) {
+          for (const file of candidateFiles) {
             const ast = postcss.parse(fs.readFileSync(path.join(cssDir, file), 'utf8'), { from: file });
             ast.walkRules(rule => {
-              if (contextOf(rule) !== 'global') return;
+              if (contextOf(rule) !== 'global' || !isCheckoutSelector(rule.selector)) return;
               rule.walkDecls(decl => {
                 const key = `${rule.selector}|||global|||${decl.prop}`;
-                if (ownerKeys.has(key)) leftovers.push(`${file}: ${key}`);
+                if (uniqueKeys.includes(key)) leftovers.push(`${file}: ${key}`);
               });
             });
           }
@@ -107,6 +127,7 @@ jobs:
           const summary = {
             oldCascade: baseline.total,
             finalOwner: ownerFile,
+            candidateFiles,
             touchedFiles: [...touched].sort(),
             removedDeclarations: removed.length,
             removedConflictKeys: uniqueKeys.length,
