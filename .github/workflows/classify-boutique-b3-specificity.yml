@@ -1,0 +1,128 @@
+name: Classify Boutique B3 Specificity Debt
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b3-specificity
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b3-specificity
+          fetch-depth: 1
+      - name: Inspect global class lifecycle and classify specificity findings
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const cp = require('child_process');
+
+          const root = path.resolve('public/boutique');
+          const jsDir = path.join(root, 'js');
+          const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-specificity-guard-baseline.json'), 'utf8'));
+          if (baseline.total !== 86 || baseline.keys.length !== 86) {
+            throw new Error(`Expected specificity baseline 86, got ${baseline.total}/${baseline.keys.length}`);
+          }
+
+          console.log('=== GLOBAL CLASS LIFECYCLE: k-home-premium-v1 ===');
+          let lifecycleHits = 0;
+          for (const file of fs.readdirSync(jsDir).filter(f => f.endsWith('.js')).sort()) {
+            const lines = fs.readFileSync(path.join(jsDir, file), 'utf8').split(/\r?\n/);
+            lines.forEach((line, i) => {
+              if (line.includes('k-home-premium-v1')) {
+                lifecycleHits++;
+                console.log(`${file}:${i + 1}: ${line.trim()}`);
+              }
+            });
+          }
+          console.log(`LIFECYCLE_HITS=${lifecycleHits}`);
+
+          console.log('\n=== GLOBAL CLASS REMOVAL/TOGGLE SEARCH ===');
+          let removalHits = 0;
+          for (const file of fs.readdirSync(jsDir).filter(f => f.endsWith('.js')).sort()) {
+            const lines = fs.readFileSync(path.join(jsDir, file), 'utf8').split(/\r?\n/);
+            lines.forEach((line, i) => {
+              if ((line.includes('classList.remove') || line.includes('classList.toggle') || line.includes('className')) && line.includes('k-home-premium-v1')) {
+                removalHits++;
+                console.log(`${file}:${i + 1}: ${line.trim()}`);
+              }
+            });
+          }
+          console.log(`REMOVAL_OR_TOGGLE_HITS=${removalHits}`);
+
+          const raw = cp.execFileSync('node', ['scripts/css-specificity-guard.js'], {
+            cwd: root,
+            encoding: 'utf8',
+            maxBuffer: 20 * 1024 * 1024,
+          });
+          const clean = raw.replace(/\x1b\[[0-9;]*m/g, '');
+          const lines = clean.split(/\r?\n/);
+          const findings = [];
+          for (let i = 0; i < lines.length; i++) {
+            const m = lines[i].match(/^🔴 \.([^ ]+) — propriété (.+)$/);
+            if (!m) continue;
+            const win = (lines[i + 1] || '').match(/^\s*gagnant\s+([^:]+):L(\d+)\s+(.+)$/);
+            const winVal = (lines[i + 2] || '').match(/^\s*→\s+(.+?)\s+\(spécificité/);
+            const lose = (lines[i + 3] || '').match(/^\s*perdant\s+([^:]+):L(\d+)\s+(.+)$/);
+            const loseVal = (lines[i + 4] || '').match(/^\s*→\s+(.+?)\s+\(spécificité/);
+            if (!win || !lose || !winVal || !loseVal) {
+              throw new Error(`Unable to parse specificity finding near output line ${i + 1}: ${lines.slice(i, i + 6).join(' | ')}`);
+            }
+            findings.push({
+              globalClass: m[1], prop: m[2],
+              winnerFile: win[1], winnerLine: Number(win[2]), winnerSelector: win[3], winnerValue: winVal[1].trim(),
+              loserFile: lose[1], loserLine: Number(lose[2]), loserSelector: lose[3], loserValue: loseVal[1].trim(),
+            });
+          }
+          const semantic = new Map();
+          for (const f of findings) {
+            const key = [f.globalClass, f.winnerSelector, f.loserSelector, f.prop].join('|||');
+            if (!semantic.has(key)) semantic.set(key, f);
+          }
+          if (semantic.size !== 86) throw new Error(`Expected 86 semantic findings from guard, got ${semantic.size} (${findings.length} physical)`);
+
+          const pairs = new Map();
+          const classCounts = new Map();
+          const winnerFiles = new Map();
+          for (const f of semantic.values()) {
+            const pair = `${f.winnerFile} -> ${f.loserFile}`;
+            pairs.set(pair, (pairs.get(pair) || 0) + 1);
+            classCounts.set(f.globalClass, (classCounts.get(f.globalClass) || 0) + 1);
+            winnerFiles.set(f.winnerFile, (winnerFiles.get(f.winnerFile) || 0) + 1);
+          }
+          console.log('\n=== SEMANTIC CLASS COUNTS ===');
+          [...classCounts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>console.log(`${v} .${k}`));
+          console.log('\n=== WINNER -> LOSER SOURCE PAIRS ===');
+          [...pairs.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>console.log(`${v} ${k}`));
+          console.log('\n=== WINNER SOURCE COUNTS ===');
+          [...winnerFiles.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>console.log(`${v} ${k}`));
+
+          function family(selector) {
+            if (selector.includes('#k-subcats-wrap') || selector.includes('.k-subcutout-')) return 'subcats-navigation';
+            if (selector.includes('.k-chip') || selector.includes('.k-cats') || selector.includes('.k-cat')) return 'categories-chips';
+            if (selector.includes('.k-hero')) return 'hero';
+            if (selector.includes('.k-header') || selector.includes('.k-logo') || selector.includes('.k-search')) return 'header-search';
+            if (selector.includes('.k-sec-header')) return 'section-header';
+            if (selector === 'body' || selector.includes('modal-open')) return 'modal-state';
+            return 'other';
+          }
+          const families = new Map();
+          for (const f of semantic.values()) {
+            const fam = family(f.winnerSelector);
+            families.set(fam, (families.get(fam) || 0) + 1);
+          }
+          console.log('\n=== FUNCTIONAL FAMILIES ===');
+          [...families.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>console.log(`${v} ${k}`));
+
+          console.log('\n=== SAMPLE/ALL SEMANTIC FINDINGS ===');
+          [...semantic.values()].sort((a,b)=>a.globalClass.localeCompare(b.globalClass)||a.winnerFile.localeCompare(b.winnerFile)||a.winnerSelector.localeCompare(b.winnerSelector)||a.prop.localeCompare(b.prop)).forEach(f => {
+            console.log(JSON.stringify(f));
+          });
+          NODE
