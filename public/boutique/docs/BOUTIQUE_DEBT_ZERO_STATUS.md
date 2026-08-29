@@ -20,8 +20,9 @@
 - [x] Test de non-régression : chaque source CSS sur disque doit être déclarée dans `BUNDLES` et aucune source déclarée ne doit manquer.
 - [x] PR #988 : Boutique source gates verts, tests ciblés verts, arbre non muté, Required verdict vert.
 - [x] PR #988 mergée sur `main` — commit `182788870b744af9dfe050d21f0021f6c492c5b9`.
-- [ ] Régénération puis commit du document LIVE fiable.
-- [ ] Alignement de `BOUTIQUE_ARCHITECTURE.md` sur l'état réel 2026-08.
+- [x] Régénération puis commit du document LIVE fiable : **39 sources**, **0 orphelin**, **0 source bundle manquante** ; le LIVE expose désormais les cliquets exécutables **cascade 0 / spécificité 0 / dette `!important` ouverte 0**, séparément des **3 occurrences physiques revues**.
+- [x] Alignement de `BOUTIQUE_ARCHITECTURE.md` sur l'état réel 2026-08 : `css-bundles.js` est la source canonique, trois bundles livrés, owners/adaptations actuels documentés et doctrine premium de sur-spécificité retirée.
+- [x] B0 clos : test `gen-boutique-arch-live-debt-metrics.test.js` vert et `npm run boutique:audit` vert sur la photographie régénérée.
 
 ## B1a — Mesure fiable de la dette simple
 
