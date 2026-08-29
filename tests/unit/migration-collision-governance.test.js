@@ -40,7 +40,7 @@ describe('migration collision governance — immutable history', () => {
 
     expect(duplicateTokens).toEqual([]);
     expect(reviewed.size).toBe(7);
-    expect(content).toMatch(/migrations déjà versionnés sont \*\*immuables\*\*/i);
+    expect(content).toMatch(/fichiers SQL déjà versionnés sont \*\*immuables\*\*/i);
   });
 
   test('un troisième fichier sous un token réaudité redevient immédiatement bloquant', () => {
