@@ -1,0 +1,43 @@
+name: Patch Boutique Debt B1b6
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b1b-6
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b1b-6
+          fetch-depth: 1
+      - name: Replace missing OG image with live canonical hero
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('public/boutique/index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '<meta property="og:image" content="/images/og-cover.jpg">'
+          new = '<meta property="og:image" content="/images/komerce_hero_catalog_canonical_v4.webp">'
+          if old not in s:
+              raise SystemExit('Expected og-cover.jpg meta reference not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit OG metadata patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/index.html
+          if git diff --cached --quiet; then
+            echo "OG metadata already updated"
+            exit 0
+          fi
+          git commit -m "fix(boutique): use canonical hero for og image"
+          git push origin HEAD:refactor/boutique-debt-zero-b1b-6
