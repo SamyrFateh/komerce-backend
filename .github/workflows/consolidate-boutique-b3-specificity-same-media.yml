@@ -33,12 +33,12 @@ jobs:
           const postcss=require('./public/boutique/node_modules/postcss');
           const {BUNDLES}=require('./public/boutique/scripts/css-bundles');
           const root=path.resolve('public/boutique');
-          const cssRoot=path.join(root,'css');
           const specBase=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
           const cascadeBase=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
           if(specBase.total!==86) throw new Error(`Expected specificity 86, got ${specBase.total}`);
           if(cascadeBase.total!==0) throw new Error(`Expected cascade 0, got ${cascadeBase.total}`);
 
+          const cleanValue=s=>s.replace(/\s*\/\*.*?\*\/\s*$/,'').replace(/;\s*$/,'').trim();
           const raw=cp.execFileSync('node',['scripts/css-specificity-guard.js'],{cwd:root,encoding:'utf8',maxBuffer:20*1024*1024});
           const lines=raw.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/);
           const physical=[];
@@ -49,7 +49,7 @@ jobs:
             const lose=(lines[i+3]||'').match(/^\s*perdant\s+([^:]+):L(\d+)\s+(.+)$/);
             const lv=(lines[i+4]||'').match(/^\s*→\s+(.+?)\s+\(spécificité/);
             if(!win||!wv||!lose||!lv) throw new Error(`Guard parse failure near line ${i+1}`);
-            physical.push({gc:m[1],prop:m[2],wf:win[1],wl:+win[2],ws:win[3],wv:wv[1].trim(),lf:lose[1],ll:+lose[2],ls:lose[3],lv:lv[1].trim()});
+            physical.push({gc:m[1],prop:m[2],wf:win[1],wl:+win[2],ws:win[3],wv:cleanValue(wv[1]),lf:lose[1],ll:+lose[2],ls:lose[3],lv:cleanValue(lv[1])});
           }
           if(new Set(physical.map(f=>[f.gc,f.ws,f.ls,f.prop].join('|||'))).size!==86) throw new Error('Semantic specificity count moved');
 
@@ -59,8 +59,8 @@ jobs:
             b.files.forEach((name,si)=>rank.set(`public/boutique/css/${name}.css`,di*1000+si));
           });
           const cache=new Map();
-          function norm(s){return s.replace(/\s+/g,' ').trim()}
-          function members(r){return (r.selectors||[r.selector]).map(norm)}
+          const norm=s=>s.replace(/\s+/g,' ').trim();
+          const members=r=>(r.selectors||[r.selector]).map(norm);
           function load(file){
             if(!cache.has(file)){
               const fp=path.resolve(file);
@@ -68,12 +68,19 @@ jobs:
             }
             return cache.get(file).ast;
           }
-          function media(rule){const a=[];let n=rule.parent;while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media')a.unshift(`@media ${n.params}`);n=n.parent}return a.length?a.join(' && '):'global'}
+          function media(rule){
+            const a=[]; let n=rule.parent;
+            while(n&&n.type!=='root'){
+              if(n.type==='atrule'&&n.name==='media') a.unshift(`@media ${n.params}`);
+              n=n.parent;
+            }
+            return a.length?a.join(' && '):'global';
+          }
           function findRule(file,line,selector,prop,value){
-            const ast=load(file), target=norm(selector), candidates=[];
+            const ast=load(file),target=norm(selector),candidates=[];
             ast.walkRules(r=>{
               if(!members(r).includes(target)) return;
-              const ds=(r.nodes||[]).filter(n=>n.type==='decl'&&n.prop===prop&&n.value===value);
+              const ds=(r.nodes||[]).filter(n=>n.type==='decl'&&n.prop===prop&&cleanValue(n.value)===cleanValue(value));
               if(ds.length) candidates.push({r,d:ds[0]});
             });
             if(!candidates.length) throw new Error(`Rule/declaration not found ${file}:${line} ${selector} ${prop}:${value}`);
@@ -81,14 +88,15 @@ jobs:
             return candidates[0];
           }
           function meta(f,which){
-            const file=which==='w'?f.wf:f.lf, line=which==='w'?f.wl:f.ll, sel=which==='w'?f.ws:f.ls, val=which==='w'?f.wv:f.lv;
+            const file=which==='w'?f.wf:f.lf,line=which==='w'?f.wl:f.ll,sel=which==='w'?f.ws:f.ls,val=which==='w'?f.wv:f.lv;
             const {r}=findRule(file,line,sel,f.prop,val);
-            return {media:media(r),line:r.source?.start?.line||line,grouped:members(r).length>1};
+            return {media:media(r),line:r.source?.start?.line||line};
           }
+
           const groups=new Map();
           for(const f of physical){
             const key=[f.gc,f.ws,f.ls,f.prop].join('|||');
-            if(!groups.has(key))groups.set(key,[]);
+            if(!groups.has(key)) groups.set(key,[]);
             groups.get(key).push({...f,wm:meta(f,'w'),lm:meta(f,'l')});
           }
           const selected=[];
@@ -105,11 +113,10 @@ jobs:
           }
           function removePropForSelector(file,line,selector,prop,value){
             const {r,d}=findRule(file,line,selector,prop,value);
-            const sels=members(r), target=norm(selector), others=sels.filter(s=>s!==target);
-            if(!sels.includes(target)) throw new Error(`Selector missing in grouped rule: ${selector}`);
+            const sels=members(r),target=norm(selector),others=sels.filter(s=>s!==target);
             if(others.length){
               const keep=postcss.rule({selector:others.join(', ')});
-              keep.append({prop,value});
+              keep.append({prop,value:cleanValue(value)});
               r.after(keep);
             }
             d.remove();
@@ -117,43 +124,39 @@ jobs:
           }
           function setCanonicalBase(row,winnerValue){
             const {r,d}=findRule(row.lf,row.ll,row.ls,row.prop,row.lv);
-            const sels=members(r), target=norm(row.ls), others=sels.filter(s=>s!==target);
+            const sels=members(r),target=norm(row.ls),others=sels.filter(s=>s!==target);
             if(others.length){
-              const keep=postcss.rule({selector:others.join(', ')}); keep.append({prop:row.prop,value:row.lv}); r.after(keep);
+              const keep=postcss.rule({selector:others.join(', ')});
+              keep.append({prop:row.prop,value:cleanValue(row.lv)});
+              r.after(keep);
               d.remove();
-              const win=postcss.rule({selector:target}); win.append({prop:row.prop,value:winnerValue}); r.after(win);
+              const win=postcss.rule({selector:target});
+              win.append({prop:row.prop,value:cleanValue(winnerValue)});
+              r.after(win);
               if((r.nodes||[]).filter(n=>n.type!=='comment').length===0) r.remove();
-            }else{
-              d.value=winnerValue;
-            }
+            } else d.value=cleanValue(winnerValue);
           }
-          function locKey(r,kind){return [kind,kind==='w'?r.wf:r.lf,kind==='w'?r.wl:r.ll,kind==='w'?r.ws:r.ls,r.prop,kind==='w'?r.wv:r.lv].join('|')}
+          const locKey=(r,kind)=>[kind,kind==='w'?r.wf:r.lf,kind==='w'?r.wl:r.ll,kind==='w'?r.ws:r.ls,r.prop,kind==='w'?r.wv:r.lv].join('|');
 
-          const touchedKeys=[];
+          const touched=[];
           for(const {key,rows} of selected){
-            const winnerValues=[...new Set(rows.map(r=>r.wv))];
+            const winnerValues=[...new Set(rows.map(r=>cleanValue(r.wv)))];
             if(winnerValues.length!==1) throw new Error(`Multiple premium winner values for ${key}`);
             const winnerValue=winnerValues[0];
-            const loserSelector=norm(rows[0].ls);
-            if(stripGlobal(rows[0].ws,rows[0].gc)!==loserSelector) throw new Error(`Strip mismatch ${key}`);
+            if(stripGlobal(rows[0].ws,rows[0].gc)!==norm(rows[0].ls)) throw new Error(`Strip mismatch ${key}`);
 
-            const uniqueLosers=[...new Map(rows.map(r=>[locKey(r,'l'),r])).values()];
-            uniqueLosers.sort((a,b)=>{
-              const ar=rank.get(a.lf)??-1, br=rank.get(b.lf)??-1;
-              return br-ar || b.lm.line-a.lm.line;
-            });
-            const canonical=uniqueLosers[0];
-            setCanonicalBase(canonical,winnerValue);
-            for(const other of uniqueLosers.slice(1)) removePropForSelector(other.lf,other.ll,other.ls,other.prop,other.lv);
+            const losers=[...new Map(rows.map(r=>[locKey(r,'l'),r])).values()];
+            losers.sort((a,b)=>(rank.get(b.lf)??-1)-(rank.get(a.lf)??-1)||b.lm.line-a.lm.line);
+            setCanonicalBase(losers[0],winnerValue);
+            for(const r of losers.slice(1)) removePropForSelector(r.lf,r.ll,r.ls,r.prop,r.lv);
 
-            const uniqueWinners=[...new Map(rows.map(r=>[locKey(r,'w'),r])).values()];
-            for(const w of uniqueWinners) removePropForSelector(w.wf,w.wl,w.ws,w.prop,w.wv);
-            touchedKeys.push(key);
+            const winners=[...new Map(rows.map(r=>[locKey(r,'w'),r])).values()];
+            for(const r of winners) removePropForSelector(r.wf,r.wl,r.ws,r.prop,r.wv);
+            touched.push(key);
           }
-          if(touchedKeys.length!==43) throw new Error('Did not touch 43 keys');
+          if(touched.length!==43) throw new Error(`Expected 43 touched keys, got ${touched.length}`);
           for(const {fp,ast} of cache.values()) fs.writeFileSync(fp,ast.toString(),'utf8');
-          fs.writeFileSync('/tmp/b3-1.json',JSON.stringify({specificityBefore:86,keysConsolidated:43,sourceFiles:[...cache.keys()].sort()},null,2));
-          console.log(fs.readFileSync('/tmp/b3-1.json','utf8'));
+          console.log(JSON.stringify({specificityBefore:86,keysConsolidated:43,sourceFiles:[...cache.keys()].sort()},null,2));
           NODE
       - name: Rebuild canonical bundles
         run: npm --prefix public/boutique run deploy:css
@@ -172,16 +175,14 @@ jobs:
           if(spec.total!==43) throw new Error(`Expected specificity 43, got ${spec.total}`);
           if(cascade.total!==0) throw new Error(`Cascade moved from zero to ${cascade.total}`);
           const report=[
-            '# Boutique CSS Debt — B3-1 same-media specificity',
-            '',
+            '# Boutique CSS Debt — B3-1 same-media specificity','',
             '- Specificity baseline: **86 → 43**',
             '- All-physical-pairs same-media keys consolidated: **43**',
             '- Cascade baseline: **0 → 0**',
             '- Premium class lifecycle: additive/permanent; no remove/toggle path observed',
             '- Strategy: premium winning value moved into the latest normal-cascade base owner for the same media; premium property and redundant losing base declarations removed',
-            '- New specificity keys before ratchet save: **0**',
-            '',
-            'No winning value changes. Mobile/global rules outside the matching media are untouched.',
+            '- New specificity keys before ratchet save: **0**','',
+            'No winning value changes. Mobile/global rules outside the matching media are untouched.'
           ].join('\n')+'\n';
           fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B3_SPECIFICITY.md'),report);
           console.log(report);
