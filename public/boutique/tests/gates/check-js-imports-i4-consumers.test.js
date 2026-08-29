@@ -1,3 +1,8 @@
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 'use strict';
 // Debt Zero regression fixture: consumer detection must stay semantic, not regex-noisy.
 const fs = require('fs');

@@ -12,6 +12,7 @@ let mockGlobalAllowed = false;
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (req, res, next) => next(),
+  requireRole: () => (req, res, next) => next(),
 }));
 
 jest.mock('../../middleware/require-market-scope', () => ({

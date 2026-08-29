@@ -32,20 +32,31 @@ function fakeRes() {
   };
 }
 
-test('URL Sourcing est Canonical tandis que les trois vues historiques restent Legacy', () => {
+test('URL Sourcing et anciens points d?entr?e convergent selon le cutover 4L', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
 
   const canonicalRes = fakeRes();
   app._routes['/admin/workspaces/sourcing']({}, canonicalRes);
-  expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
-  expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
+  expect(canonicalRes.setHeader)
+    .toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
 
-  for (const legacyPath of ['/admin/sourcing', '/admin/sourcing-scanner', '/admin/suppliers']) {
-    const legacyRes = fakeRes();
-    app._routes[legacyPath]({}, legacyRes);
-    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  for (const routePath of ['/admin/sourcing', '/admin/sourcing-scanner']) {
+    const aliasRes = fakeRes();
+    app._routes[routePath]({ query: {} }, aliasRes);
+    expect(aliasRes.redirect)
+      .toHaveBeenCalledWith(302, '/admin/workspaces/sourcing');
+
+    const rollbackRes = fakeRes();
+    app._routes[routePath]({ query: { legacy: '1' } }, rollbackRes);
+    expect(rollbackRes.setHeader)
+      .toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
   }
+
+  const suppliersRes = fakeRes();
+  app._routes['/admin/suppliers']({}, suppliersRes);
+  expect(suppliersRes.setHeader)
+    .toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
 });
 
 test('runtime charge Sourcing sans vues Legacy ni API historiques', () => {

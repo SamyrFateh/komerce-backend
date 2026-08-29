@@ -1,3 +1,8 @@
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 'use strict';
 
 const { build } = require('../../scripts/lib/feature-360-builder');

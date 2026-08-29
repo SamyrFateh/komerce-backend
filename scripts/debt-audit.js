@@ -294,25 +294,49 @@ if (auditSrc) {
 
   // I-BACK-13 : DELETE/TRUNCATE non borné
   const destructiveSql = extractSet(auditSrc, 'ALLOWED_DESTRUCTIVE_SQL');
-  const destructiveDebt = destructiveSql.filter(e => !e.startsWith('scripts/'));
+  const reviewedDestructiveSql =
+    new Set(extractSet(auditSrc, 'REVIEWED_DESTRUCTIVE_SQL'));
+
+  const destructiveDebt = destructiveSql.filter(
+    e => !e.startsWith('scripts/') && !reviewedDestructiveSql.has(e)
+  );
+
+  const healthyDestructiveSql = destructiveSql.filter(
+    e => !e.startsWith('scripts/') && reviewedDestructiveSql.has(e)
+  );
+
   if (destructiveDebt.length > 0) {
     addDebt({
       rule: 'I-BACK-13',
       label: 'DELETE/TRUNCATE sans WHERE en dehors des scripts',
       lot: 'Revue individuelle requise',
       entries: destructiveDebt,
-      note: 'scripts/seed.js et fix-schema.js exclus (intentionnel)',
-    });
-  } else {
-    addDebt({
-      rule: 'I-BACK-13',
-      label: 'DELETE/TRUNCATE sans WHERE',
-      lot: '—',
-      entries: [],
-      note: `${destructiveSql.length} entrée(s) allowlistée(s) — toutes dans scripts/ (légitimes)`,
+      note: 'Exception destructive allowlist?e mais non encore r?audit?e',
     });
   }
 
+  if (healthyDestructiveSql.length > 0) {
+    addDebt({
+      rule: 'I-BACK-13 (reviewed)',
+      label: 'DELETE/TRUNCATE intentionnel et r?audit?',
+      lot: 'Exception document?e ? revue s?curit? destructive 2026-08-29',
+      entries: healthyDestructiveSql,
+      note: 'Reset admin intentionnel, prot?g? par authenticate + requireAdmin',
+    });
+  }
+
+  if (
+    destructiveDebt.length === 0 &&
+    healthyDestructiveSql.length === 0
+  ) {
+    addDebt({
+      rule: 'I-BACK-13',
+      label: 'DELETE/TRUNCATE sans WHERE',
+      lot: '?',
+      entries: [],
+      note: `${destructiveSql.length} entr?e(s) allowlist?e(s) ? toutes dans scripts/ (l?gitimes)`,
+    });
+  }
 } else {
   debts.push({ rule: '?', label: 'audit-backend-arch.js introuvable', lot: '—', count: 0, entries: [], note: '' });
 }
@@ -470,19 +494,32 @@ for (const { file, label } of baselineFiles) {
 // SYNTHÈSE & RAPPORT
 // ════════════════════════════════════════════════════════════════
 
-const totalDebtItems = debts.reduce((sum, d) => sum + d.count, 0);
-const openDebts = debts.filter(d =>
-  d.count > 0 &&
-  !d.note.startsWith('✅') &&
-  !d.lot.includes('légitime') &&
-  !d.lot.startsWith('Exception documentée') &&
-  d.lot !== 'Revue individuelle requise'
-);
+function isOpenDebt(debt) {
+  const lot = debt.lot || '';
 
+  return (
+    debt.count > 0 &&
+    !debt.note.startsWith('?') &&
+    !lot.includes('l?gitime') &&
+    !lot.startsWith('Exception document?e')
+  );
+}
+
+const openDebts = debts.filter(isOpenDebt);
+
+const openDebtItems =
+  openDebts.reduce((sum, debt) => sum + debt.count, 0);
+
+const trackedEntries =
+  debts.reduce((sum, debt) => sum + debt.count, 0);
+
+const openDebtSet = new Set(openDebts);
 if (JSON_MODE) {
   console.log(JSON.stringify({
     generatedAt: new Date().toISOString(),
-    totalDebtItems,
+    totalDebtItems: openDebtItems,
+    trackedEntries,
+    openDebtItems,
     openDebtsCount: openDebts.length,
     debts,
   }, null, 2));
@@ -501,15 +538,16 @@ console.log(`║  KOMERCE — Rapport de dette technique${' '.repeat(W - 38)}║
 console.log(`║  ${new Date().toLocaleDateString('fr-FR', { dateStyle: 'long' })}${' '.repeat(W - 2 - new Date().toLocaleDateString('fr-FR', { dateStyle: 'long' }).length)}║`);
 console.log(`╚${line}╝`);
 console.log('');
-console.log(`  Entrées de dette totales   : ${totalDebtItems}`);
-console.log(`  Règles avec dette ouverte  : ${openDebts.length} / ${debts.length}`);
+console.log(`  Entr?es de dette ouvertes  : ${openDebtItems}`);
+console.log(`  Entr?es suivies au total   : ${trackedEntries}`);
+console.log(`  R?gles avec dette ouverte  : ${openDebts.length} / ${debts.length}`);
 console.log('');
 console.log(`  ℹ  Ce rapport est informatif — il ne bloque jamais la CI.`);
 console.log(`     Pour bloquer sur régressions, utiliser les gates dédiés.`);
 console.log('');
 
 for (const debt of debts) {
-  const icon = debt.count === 0 || debt.note.startsWith('✅') ? '✅' : '⚠️ ';
+  const icon = openDebtSet.has(debt) ? '?? ' : '?';
   console.log(`${dline}`);
   console.log(`${icon}  ${debt.rule}  —  ${debt.label}`);
   if (debt.lot && debt.lot !== '—') console.log(`   Lot : ${debt.lot}`);

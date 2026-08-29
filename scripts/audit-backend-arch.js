@@ -231,6 +231,15 @@ const ALLOWED_DESTRUCTIVE_SQL = new Set([
 ]);
 
 
+// Sous-ensemble explicitement r?audit?.
+// Toute future entr?e ajout?e ? ALLOWED_DESTRUCTIVE_SQL sans ?tre ajout?e ici
+// reste une exception non revue et doit appara?tre comme dette ouverte.
+const REVIEWED_DESTRUCTIVE_SQL = new Set([
+  // Reset de donn?es de d?mo/cache depuis l'interface syst?me.
+// Prot?g? par authenticate + requireAdmin.
+  'routes/admin/system.js',
+]);
+
 const ALLOWED_RAW_SQL_PATTERNS = [
   /SAVEPOINT\s+\w+/i,
   /RELEASE\s+SAVEPOINT/i,
@@ -470,7 +479,7 @@ function checkI6_noEngineInRoutes() {
         `${relPath} — engine ou scanner dans routes/ (doit vivre dans services/)`,
         'Extraire la logique dans services/ et ne garder qu\'un thin router'
       );
-    } else {
+    } else if (!REVIEWED_ENGINE_ROUTE_EXCEPTIONS.has(relPath)) {
       warn('I-BACK-6',
         `${relPath} — engine en routes/ (nom de fichier seulement, façade déjà mince)`,
         'Acceptée en l\'état (STATUS.md §B1/B2) — pas de migration prévue, dette purement nominale'
