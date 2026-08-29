@@ -404,15 +404,11 @@ body {
   white-space: nowrap;
 }
 .k-bnav-badge {
-  top: 4px;
   right: calc(50% - 18px);
-  height: 16px;
   color: var(--white);
   font-weight: 800;
-  padding: 0 4px;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid var(--white);
 }
 
 /* ── LOADING + SKELETON ──────────────────────────────────────── */
@@ -437,8 +433,7 @@ body {
 .k-skel-img,
 .k-skeleton-img,
 .k-skel-line,
-.k-skeleton-title,
-.k-skeleton-price {
+.k-skeleton-title {
   background: linear-gradient(90deg, var(--sand-dark) 25%, var(--sand-warm) 50%, var(--sand-dark) 75%);
   background-size: 200% 100%;
   animation: k-shimmer 1.4s ease-in-out infinite;
