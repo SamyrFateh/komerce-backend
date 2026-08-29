@@ -1,13 +1,10 @@
 {
-  "total": 170,
+  "total": 167,
   "keys": [
-    "#k-cart-surface-switch.k-cart-tabs|||@media (min-width: 900px) {|||background",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
     "#k-modal .k-modal-cart-icon|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-icon|||@media (max-width: 899px) {|||width",
-    "#k-modal .k-modal-cart-slot|||@media (min-width: 900px) {|||justify-content",
-    "#k-modal .k-modal-cart-slot|||@media (min-width: 900px) {|||padding-block",
     "#k-modal .k-modal-name-row|||@media (min-width: 900px) {|||margin-top",
     "#k-modal .k-modal-price-row|||@media (min-width: 900px) {|||gap",
     "#k-modal .k-modal-price-row|||@media (min-width: 900px) {|||margin-top",
@@ -172,5 +169,5 @@
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size"
   ],
-  "savedAt": "2026-08-29T17:53:52.998Z"
+  "savedAt": "2026-08-29T18:02:16.882Z"
 }
