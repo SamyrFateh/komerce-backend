@@ -1,0 +1,110 @@
+name: Diagnostic Railway migrations 149-157
+
+on:
+  push:
+    branches: [diag/railway-migrations-149-157]
+    paths:
+      - '.github/workflows/diag-railway-migrations-149-157.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --ignore-scripts
+      - name: Inspect live Railway migration state (read-only)
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const db = require('./db');
+          const { listMigrationFiles } = require('./scripts/run-migrations');
+
+          (async () => {
+            const table = await db.query(`
+              SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema='public' AND table_name='schema_migrations'
+              ) AS exists
+            `);
+            console.log('schema_migrations exists:', table.rows[0].exists);
+            if (!table.rows[0].exists) throw new Error('schema_migrations absente');
+
+            const total = await db.query('SELECT COUNT(*)::int AS n FROM schema_migrations');
+            console.log('schema_migrations rows:', total.rows[0].n);
+
+            const recent = await db.query(`
+              SELECT filename, checksum, applied_at
+              FROM schema_migrations
+              WHERE filename ~ '^(14[5-9]|15[0-7])'
+              ORDER BY filename
+            `);
+            console.log('history 145-157:');
+            for (const row of recent.rows) {
+              console.log(`  ${row.filename} | ${row.checksum || 'no-checksum'} | ${row.applied_at.toISOString()}`);
+            }
+
+            const doneRows = await db.query('SELECT filename FROM schema_migrations');
+            const done = new Set(doneRows.rows.map(r => r.filename));
+            const files = listMigrationFiles();
+            const pending = files.filter(f => !done.has(f));
+            console.log('pending according to runner:');
+            for (const f of pending) console.log('  ' + f);
+
+            const objects = await db.query(`
+              SELECT
+                to_regclass('public.sourcing_candidates') IS NOT NULL AS sourcing_candidates,
+                to_regclass('public.catalog_global_access_grants') IS NOT NULL AS catalog_global_access_grants,
+                to_regclass('public.sourcing_global_access_grants') IS NOT NULL AS sourcing_global_access_grants,
+                to_regclass('public.pricing_global_access_grants') IS NOT NULL AS pricing_global_access_grants,
+                to_regclass('public.decision_signal_global_access_grants') IS NOT NULL AS decision_signal_global_access_grants,
+                to_regclass('public.local_stock') IS NOT NULL AS local_stock,
+                to_regclass('public.providers') IS NOT NULL AS providers,
+                to_regclass('public.services') IS NOT NULL AS services,
+                to_regclass('public.inquiries') IS NOT NULL AS inquiries,
+                to_regclass('public.physical_offers') IS NOT NULL AS physical_offers,
+                to_regclass('public.local_stock_allocations') IS NOT NULL AS local_stock_allocations
+            `);
+            console.log('object presence:', objects.rows[0]);
+
+            const cols = await db.query(`
+              SELECT table_name, column_name
+              FROM information_schema.columns
+              WHERE table_schema='public'
+                AND (
+                  (table_name='sourcing_candidates' AND column_name='candidate_ref') OR
+                  (table_name='supplier_catalog_imports' AND column_name='import_ref') OR
+                  (table_name='partners' AND column_name='partner_ref') OR
+                  (table_name='competitor_prices' AND column_name='competitor_ref') OR
+                  (table_name='signals' AND column_name='signal_ref')
+                )
+              ORDER BY table_name, column_name
+            `);
+            console.log('business-ref columns present:', cols.rows);
+
+            const role = await db.query(`
+              SELECT data_type, udt_name
+              FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='users' AND column_name='role'
+            `);
+            console.log('users.role type:', role.rows[0] || null);
+
+            const sourcingRole = await db.query(`
+              SELECT COUNT(*)::int AS n FROM users WHERE role::text = 'sourcing'
+            `);
+            console.log('users with sourcing role:', sourcingRole.rows[0].n);
+
+            await db.end();
+          })().catch(async (err) => {
+            console.error(err.stack || err.message);
+            try { await db.end(); } catch (_) {}
+            process.exit(1);
+          });
+          NODE
