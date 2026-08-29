@@ -90,6 +90,18 @@ CREATE TYPE public.customs_shipment_status AS ENUM (
 
 
 --
+-- Name: inquiry_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.inquiry_status AS ENUM (
+    'sent',
+    'answered',
+    'accepted',
+    'declined'
+);
+
+
+--
 -- Name: order_status; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -150,6 +162,28 @@ CREATE TYPE public.payment_status AS ENUM (
 
 
 --
+-- Name: physical_offer_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.physical_offer_status AS ENUM (
+    'draft',
+    'active',
+    'suspended'
+);
+
+
+--
+-- Name: provider_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.provider_status AS ENUM (
+    'pending',
+    'active',
+    'suspended'
+);
+
+
+--
 -- Name: scan_step; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -160,6 +194,17 @@ CREATE TYPE public.scan_step AS ENUM (
     'in_transit',
     'relais_received',
     'collected'
+);
+
+
+--
+-- Name: service_listing_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.service_listing_status AS ENUM (
+    'draft',
+    'active',
+    'suspended'
 );
 
 
@@ -197,7 +242,8 @@ CREATE TYPE public.user_role AS ENUM (
     'admin',
     'agent_relais',
     'agent_hub',
-    'agent_transitaire'
+    'agent_transitaire',
+    'sourcing'
 );
 
 
@@ -920,6 +966,18 @@ COMMENT ON TABLE public.catalog_glossary IS 'Glossaire EN→FR injecté dans l''
 
 
 --
+-- Name: catalog_import_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.catalog_import_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: catalog_media; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1011,6 +1069,18 @@ COMMENT ON TABLE public.client_notifications IS 'Notifications in-app essentiell
 
 
 --
+-- Name: pricing_competitor_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pricing_competitor_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: competitor_prices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1025,6 +1095,7 @@ CREATE TABLE public.competitor_prices (
     notes text,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    competitor_ref text DEFAULT ('KPC-'::text || lpad((nextval('public.pricing_competitor_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
     CONSTRAINT competitor_target_check CHECK (((product_id IS NOT NULL) OR (category IS NOT NULL)))
 );
 
@@ -1449,6 +1520,31 @@ COMMENT ON COLUMN public.dashboard_global_access_grants.revoked_at IS 'NULL = gr
 
 
 --
+-- Name: decision_signal_global_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.decision_signal_global_access_grants (
+    user_id uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    reason text,
+    revoked_at timestamp with time zone
+);
+
+
+--
+-- Name: decision_signal_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.decision_signal_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: disputes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1823,6 +1919,47 @@ CREATE TABLE public.incidents (
 
 
 --
+-- Name: inquiries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.inquiries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    service_id uuid,
+    requester_phone text NOT NULL,
+    requested_window text,
+    proposed_window text,
+    status public.inquiry_status DEFAULT 'sent'::public.inquiry_status NOT NULL,
+    sent_at timestamp with time zone DEFAULT now() NOT NULL,
+    answered_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    physical_offer_id uuid,
+    CONSTRAINT inquiries_exactly_one_target CHECK ((num_nonnulls(service_id, physical_offer_id) = 1))
+);
+
+
+--
+-- Name: TABLE inquiries; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.inquiries IS 'Demande, jamais une réservation (shadow, Vague 1) — RECHALLENGE_MODELE_MINIMAL §6/§7 : avant confirmation du provider, aucune ressource n''est réellement engagée. requested_window/proposed_window sont du texte libre ("demain matin"), jamais un créneau structuré — pas de scheduler tant qu''aucun test ne le justifie.';
+
+
+--
+-- Name: COLUMN inquiries.service_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.inquiries.service_id IS 'Nullable depuis la migration 156 — une inquiry porte sur EXACTEMENT une cible (service_id XOR physical_offer_id), jamais offer_type/offer_id (association polymorphe rejetée, aucune FK Postgres réelle possible) — voir contrainte inquiries_exactly_one_target.';
+
+
+--
+-- Name: COLUMN inquiries.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.inquiries.status IS 'Cycle linéaire : sent (demande envoyée) -> answered (le provider a réagi, éventuellement via proposed_window pour un autre créneau, sans encore trancher) -> accepted | declined (terminal). answered_at capture le délai de réponse, mesure clé du shadow test (temps moyen de confirmation, cf. CHALLENGE_SERVICES_TWO_TRACK §9-bis).';
+
+
+--
 -- Name: inventory_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1903,6 +2040,76 @@ COMMENT ON COLUMN public.invoices.public_token IS 'DEPRECATED 2026-08: aucune ro
 --
 
 COMMENT ON COLUMN public.invoices.total_eur IS 'Montant en EUR — snapshot de orders.total_eur au moment de l''émission. Affiché sur la facture UNIQUEMENT si payment_mode = stripe_eur ou paypal_eur (P4, freeze 22-08-2026) ; sinon total_kmf fait foi. NULL pour les factures antérieures à cette migration — aucun backfill fabriqué.';
+
+
+--
+-- Name: local_stock; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_stock (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    location text DEFAULT 'KM_MAIN'::text NOT NULL,
+    qty_physical integer DEFAULT 0 NOT NULL,
+    updated_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
+    CONSTRAINT local_stock_exposure_valid CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
+    CONSTRAINT local_stock_qty_non_negatif CHECK ((qty_physical >= 0))
+);
+
+
+--
+-- Name: TABLE local_stock; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.local_stock IS 'Stock physique vendable détenu par Komerce dans un marché (shadow, Vague 1 — aucune exposition frontend). Distinct de inventory_items (hub/transit) et de products.stock/product_skus.stock (import/national). location est un texte, pas une FK : un seul entrepôt (KM_MAIN) au lancement, table de lieux différée au deuxième lieu réel.';
+
+
+--
+-- Name: COLUMN local_stock.location; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.local_stock.location IS 'Identifiant texte du lieu physique (ex. KM_MAIN). Deviendra une FK vers un référentiel de lieux le jour où un deuxième lieu existe réellement — jamais avant, pour ne pas généraliser sur un seul cas.';
+
+
+--
+-- Name: COLUMN local_stock.commercial_exposure; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.local_stock.commercial_exposure IS 'Même patron que services/physical_offers.commercial_exposure. Badge "Disponible maintenant" affiché seulement si ENABLED — et seulement si le cycle allocate/consume/release (local_stock_allocations) garantit que la promesse est tenue (pas de survente).';
+
+
+--
+-- Name: local_stock_allocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_stock_allocations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    local_stock_id uuid NOT NULL,
+    order_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    allocated_at timestamp with time zone DEFAULT now() NOT NULL,
+    consumed_at timestamp with time zone,
+    released_at timestamp with time zone,
+    CONSTRAINT local_stock_allocations_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: TABLE local_stock_allocations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.local_stock_allocations IS 'Engagement d''une commande sur un stock local, avant confirmation du paiement. Cycle : allocate (création commande) -> consume (paiement confirmé, qty_physical réellement décrémenté) OU release (annulation, échec, abandon). Toute mutation consume/release est gardée par WHERE consumed_at IS NULL AND released_at IS NULL — idempotente par construction, un webhook rejoué ou une annulation en double sont des no-op, jamais une double consommation ou un double release.';
+
+
+--
+-- Name: COLUMN local_stock_allocations.quantity; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.local_stock_allocations.quantity IS 'Quantité allouée par cet order_id pour ce local_stock_id. Un même order_id peut porter plusieurs lignes (un produit local par item de commande), jamais fusionnées — chaque allocation garde sa propre issue.';
 
 
 --
@@ -2879,6 +3086,18 @@ CREATE TABLE public.parcels (
 
 
 --
+-- Name: partner_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.partner_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: partners; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2922,6 +3141,7 @@ CREATE TABLE public.partners (
     contact_email text,
     address text,
     zone text,
+    partner_ref text DEFAULT ('KPT-'::text || lpad((nextval('public.partner_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
     CONSTRAINT chk_partners_partner_type CHECK ((partner_type = ANY (ARRAY['relais_simple'::text, 'relais_showroom'::text, 'partenaire_avance'::text, 'atelier_couture'::text, 'artisan_retouche'::text, 'franchise_s5'::text]))),
     CONSTRAINT partners_rating_check CHECK (((rating IS NULL) OR ((rating >= 1) AND (rating <= 5))))
 );
@@ -2967,6 +3187,39 @@ CREATE TABLE public.paypal_events_processed (
 --
 
 COMMENT ON TABLE public.paypal_events_processed IS 'Idempotence I-07 pour les webhooks PayPal. Tout event_id traité est marqué ici DANS la même transaction que la confirmation paiement.';
+
+
+--
+-- Name: physical_offers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.physical_offers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider_id uuid NOT NULL,
+    title text NOT NULL,
+    description text,
+    market_id uuid NOT NULL,
+    zone text,
+    status public.physical_offer_status DEFAULT 'draft'::public.physical_offer_status NOT NULL,
+    commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT physical_offers_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text])))
+);
+
+
+--
+-- Name: TABLE physical_offers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.physical_offers IS 'Produit physique réellement proposé par un tiers local (ex. samboussas pour mariage) — le tiers prépare/détient la marchandise, fixe le prix, porte le risque d''exécution. Distinct de products (Komerce fixe le prix et porte le risque commercial) et de local_stock (stock détenu par Komerce). Distinct de services (prestation de travail) par le nom, pas seulement par convention — RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D.';
+
+
+--
+-- Name: COLUMN physical_offers.commercial_exposure; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.physical_offers.commercial_exposure IS 'Même patron que services.commercial_exposure et les rails transport (DOCTRINE_TRANSPORT_RAILS.md) : donnée vivante, valorisée, jamais exposée tant que ce champ reste DISABLED.';
 
 
 --
@@ -3158,6 +3411,19 @@ CREATE TABLE public.pricing_components (
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: pricing_global_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_global_access_grants (
+    user_id uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    reason text,
+    revoked_at timestamp with time zone
 );
 
 
@@ -3726,6 +3992,35 @@ COMMENT ON COLUMN public.products.air_exclusion_reason IS 'Raison de l''exclusio
 
 
 --
+-- Name: providers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.providers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    phone text NOT NULL,
+    market_id uuid NOT NULL,
+    status public.provider_status DEFAULT 'pending'::public.provider_status NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE providers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.providers IS 'Second principal payable (shadow, Vague 1 — aucune exposition frontend, aucun payout). PAS une ligne users / PAS un user_role : identité vérifiée par téléphone/WhatsApp, pas d''authentification app à ce stade. Validation identité, pas légalité (aucun formalisme administratif requis).';
+
+
+--
+-- Name: COLUMN providers.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.providers.status IS 'pending = jamais encore actif. active = peut porter des services exposables. suspended = coupure immédiate, réversible, sans validation centrale — le seul levier de sanction disponible dans l''informel est la visibilité, jamais une pénalité financière (cf. CHALLENGE_SERVICES_TWO_TRACK.md §T2).';
+
+
+--
 -- Name: purchase_orders; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4038,6 +4333,39 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: services; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.services (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider_id uuid NOT NULL,
+    title text NOT NULL,
+    description text,
+    market_id uuid NOT NULL,
+    zone text,
+    status public.service_listing_status DEFAULT 'draft'::public.service_listing_status NOT NULL,
+    commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT services_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text])))
+);
+
+
+--
+-- Name: TABLE services; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.services IS 'Proposition de service local d''un provider (shadow, Vague 1). zone réutilise la granularité déjà en place sur relais (island/zone), aucun nouveau découpage géographique inventé.';
+
+
+--
+-- Name: COLUMN services.commercial_exposure; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.services.commercial_exposure IS 'Patron déjà en production sur les rails transport (DOCTRINE_TRANSPORT_RAILS.md) : une donnée vivante, valorisée, mais non exposée tant que ce champ reste DISABLED. Attribut de donnée, jamais une branche de code frontend.';
+
+
+--
 -- Name: shared_cart_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4230,6 +4558,7 @@ CREATE TABLE public.signals (
     expires_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
+    signal_ref text DEFAULT ('KSG-'::text || lpad((nextval('public.decision_signal_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
     CONSTRAINT signals_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
     CONSTRAINT signals_severity_check CHECK ((severity = ANY (ARRAY['info'::text, 'warning'::text, 'critical'::text, 'urgent'::text]))),
     CONSTRAINT signals_status_check CHECK ((status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text, 'resolved'::text, 'expired'::text])))
@@ -4306,6 +4635,18 @@ CREATE TABLE public.sourcing_candidate_observations (
 
 
 --
+-- Name: sourcing_candidate_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sourcing_candidate_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: sourcing_candidates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4356,6 +4697,7 @@ CREATE TABLE public.sourcing_candidates (
     source_row_sha256 text,
     connector_version text,
     observed_at timestamp with time zone,
+    candidate_ref text DEFAULT ('KSC-'::text || lpad((nextval('public.sourcing_candidate_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
     CONSTRAINT chk_sourcing_candidates_normalized_source_contract_object CHECK (((normalized_source_contract IS NULL) OR (jsonb_typeof(normalized_source_contract) = 'object'::text))),
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
     CONSTRAINT sourcing_candidates_promotion_status_check CHECK (((promotion_status IS NULL) OR (promotion_status = ANY (ARRAY['READY_FOR_PROMOTION'::text, 'QUARANTINED_UNSUPPORTED_MEDIA'::text, 'QUARANTINED_LOSSY_MAPPING'::text, 'QUARANTINED_CURRENCY_POLICY'::text])))),
@@ -4375,6 +4717,19 @@ COMMENT ON COLUMN public.sourcing_candidates.raw_payload IS 'Payload fournisseur
 --
 
 COMMENT ON COLUMN public.sourcing_candidates.normalized_source_contract IS 'Snapshot du NormalizedSupplierProduct V2 validé, sans raw_payload. Préserve les mappings media/option_axes/sellable_units du connecteur. NULL pour les contrats V1. Ne constitue pas la vérité catalogue ni stock.';
+
+
+--
+-- Name: sourcing_global_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_global_access_grants (
+    user_id uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    reason text,
+    revoked_at timestamp with time zone
+);
 
 
 --
@@ -4459,6 +4814,7 @@ CREATE TABLE public.supplier_catalog_imports (
     error_code text,
     error_detail text,
     batch_findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    import_ref text DEFAULT ('KSI-'::text || lpad((nextval('public.catalog_import_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
     CONSTRAINT supplier_catalog_imports_source_type_check CHECK ((source_type = ANY (ARRAY['csv'::text, 'manual'::text, 'api'::text, 'json'::text]))),
     CONSTRAINT supplier_catalog_imports_status_check CHECK ((status = ANY (ARRAY['PROCESSING'::text, 'COMPLETED'::text, 'COMPLETED_WITH_QUARANTINE'::text, 'BLOCKED_QUARANTINE_THRESHOLD'::text, 'BLOCKED_INVALID_THRESHOLD'::text, 'FAILED'::text])))
 );
@@ -5614,6 +5970,14 @@ ALTER TABLE ONLY public.dashboard_global_access_grants
 
 
 --
+-- Name: decision_signal_global_access_grants decision_signal_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.decision_signal_global_access_grants
+    ADD CONSTRAINT decision_signal_global_access_grants_pkey PRIMARY KEY (user_id);
+
+
+--
 -- Name: disputes disputes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5686,6 +6050,14 @@ ALTER TABLE ONLY public.incidents
 
 
 --
+-- Name: inquiries inquiries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.inquiries
+    ADD CONSTRAINT inquiries_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: inventory_items inventory_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5715,6 +6087,22 @@ ALTER TABLE ONLY public.invoices
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_stock_allocations local_stock_allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_allocations
+    ADD CONSTRAINT local_stock_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_stock local_stock_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock
+    ADD CONSTRAINT local_stock_pkey PRIMARY KEY (id);
 
 
 --
@@ -5902,6 +6290,14 @@ ALTER TABLE ONLY public.paypal_events_processed
 
 
 --
+-- Name: physical_offers physical_offers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_offers
+    ADD CONSTRAINT physical_offers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: pickup_print_tokens pickup_print_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5979,6 +6375,14 @@ ALTER TABLE ONLY public.pricing_components
 
 ALTER TABLE ONLY public.pricing_components
     ADD CONSTRAINT pricing_components_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pricing_global_access_grants pricing_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_global_access_grants
+    ADD CONSTRAINT pricing_global_access_grants_pkey PRIMARY KEY (user_id);
 
 
 --
@@ -6102,6 +6506,14 @@ ALTER TABLE ONLY public.products
 
 
 --
+-- Name: providers providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.providers
+    ADD CONSTRAINT providers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: purchase_orders purchase_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6214,6 +6626,14 @@ ALTER TABLE ONLY public.sourcing_candidate_observations
 
 
 --
+-- Name: services services_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: shared_cart_events shared_cart_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6315,6 +6735,14 @@ ALTER TABLE ONLY public.sourcing_candidate_observations
 
 ALTER TABLE ONLY public.sourcing_candidates
     ADD CONSTRAINT sourcing_candidates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sourcing_global_access_grants sourcing_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_global_access_grants
+    ADD CONSTRAINT sourcing_global_access_grants_pkey PRIMARY KEY (user_id);
 
 
 --
@@ -6700,6 +7128,13 @@ CREATE INDEX idx_competitor_prices_category ON public.competitor_prices USING bt
 
 
 --
+-- Name: idx_competitor_prices_competitor_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_competitor_prices_competitor_ref ON public.competitor_prices USING btree (competitor_ref);
+
+
+--
 -- Name: idx_competitor_prices_product; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6875,6 +7310,13 @@ CREATE INDEX idx_dashboard_global_access_user ON public.dashboard_global_access_
 
 
 --
+-- Name: idx_decision_signal_global_access_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_decision_signal_global_access_active ON public.decision_signal_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: idx_disputes_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6959,6 +7401,20 @@ CREATE INDEX idx_incidents_type ON public.incidents USING btree (incident_type);
 
 
 --
+-- Name: idx_inquiries_physical_offer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_inquiries_physical_offer ON public.inquiries USING btree (physical_offer_id);
+
+
+--
+-- Name: idx_inquiries_service; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_inquiries_service ON public.inquiries USING btree (service_id);
+
+
+--
 -- Name: idx_inventory_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7012,6 +7468,27 @@ CREATE INDEX idx_invoices_owner_created ON public.invoices USING btree (owner_us
 --
 
 CREATE UNIQUE INDEX idx_invoices_public_token ON public.invoices USING btree (public_token) WHERE (public_token IS NOT NULL);
+
+
+--
+-- Name: idx_local_stock_allocations_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_stock_allocations_active ON public.local_stock_allocations USING btree (local_stock_id) WHERE ((consumed_at IS NULL) AND (released_at IS NULL));
+
+
+--
+-- Name: idx_local_stock_allocations_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_stock_allocations_order ON public.local_stock_allocations USING btree (order_id);
+
+
+--
+-- Name: idx_local_stock_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_stock_market ON public.local_stock USING btree (market_id);
 
 
 --
@@ -7715,6 +8192,13 @@ CREATE INDEX idx_partners_country ON public.partners USING btree (country_code) 
 
 
 --
+-- Name: idx_partners_partner_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_partners_partner_ref ON public.partners USING btree (partner_ref);
+
+
+--
 -- Name: idx_partners_type; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7726,6 +8210,20 @@ CREATE INDEX idx_partners_type ON public.partners USING btree (partner_type);
 --
 
 CREATE INDEX idx_paypal_events_type_time ON public.paypal_events_processed USING btree (event_type, processed_at DESC);
+
+
+--
+-- Name: idx_physical_offers_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_physical_offers_market ON public.physical_offers USING btree (market_id);
+
+
+--
+-- Name: idx_physical_offers_provider; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_physical_offers_provider ON public.physical_offers USING btree (provider_id);
 
 
 --
@@ -7810,6 +8308,13 @@ CREATE INDEX idx_price_history_source ON public.price_history USING btree (sourc
 --
 
 CREATE INDEX idx_pricing_components_active ON public.pricing_components USING btree (is_active, category, display_order);
+
+
+--
+-- Name: idx_pricing_global_access_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_global_access_active ON public.pricing_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
 
 
 --
@@ -8268,6 +8773,20 @@ CREATE INDEX idx_sep_processed_at ON public.stripe_events_processed USING btree 
 
 
 --
+-- Name: idx_services_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_services_market ON public.services USING btree (market_id);
+
+
+--
+-- Name: idx_services_provider; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_services_provider ON public.services USING btree (provider_id);
+
+
+--
 -- Name: idx_shared_cart_events_cart; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8331,6 +8850,13 @@ CREATE INDEX idx_shipments_reference ON public.shipments USING btree (reference)
 
 
 --
+-- Name: idx_signals_active_fact_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_signals_active_fact_unique ON public.signals USING btree (signal_type, entity_type, entity_id) NULLS NOT DISTINCT WHERE (status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text]));
+
+
+--
 -- Name: idx_signals_dedup; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8370,6 +8896,13 @@ CREATE INDEX idx_signals_severity_created ON public.signals USING btree (severit
 --
 
 CREATE INDEX idx_signals_severity_status ON public.signals USING btree (severity, status) WHERE (status = 'open'::text);
+
+
+--
+-- Name: idx_signals_signal_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_signals_signal_ref ON public.signals USING btree (signal_ref);
 
 
 --
@@ -8422,6 +8955,20 @@ CREATE INDEX idx_sms_log_recent ON public.sms_log USING btree (created_at DESC) 
 
 
 --
+-- Name: idx_sourcing_candidates_candidate_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_sourcing_candidates_candidate_ref ON public.sourcing_candidates USING btree (candidate_ref);
+
+
+--
+-- Name: idx_sourcing_global_access_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sourcing_global_access_active ON public.sourcing_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: idx_strategy_history_category; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8433,6 +8980,13 @@ CREATE INDEX idx_strategy_history_category ON public.pricing_strategy_history US
 --
 
 CREATE INDEX idx_strategy_history_product ON public.pricing_strategy_history USING btree (product_id, applied_at DESC);
+
+
+--
+-- Name: idx_supplier_catalog_imports_import_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_supplier_catalog_imports_import_ref ON public.supplier_catalog_imports USING btree (import_ref);
 
 
 --
@@ -8664,6 +9218,13 @@ CREATE UNIQUE INDEX uq_users_email ON public.users USING btree (email) WHERE (em
 --
 
 CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USING btree (product_id, source_media_id) WHERE (source_media_id IS NOT NULL);
+
+
+--
+-- Name: ux_local_stock_product_market_location; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_local_stock_product_market_location ON public.local_stock USING btree (product_id, market_id, location);
 
 
 --
@@ -9212,6 +9773,22 @@ ALTER TABLE ONLY public.dashboard_global_access_grants
 
 
 --
+-- Name: decision_signal_global_access_grants decision_signal_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.decision_signal_global_access_grants
+    ADD CONSTRAINT decision_signal_global_access_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: decision_signal_global_access_grants decision_signal_global_access_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.decision_signal_global_access_grants
+    ADD CONSTRAINT decision_signal_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: disputes disputes_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9284,6 +9861,22 @@ ALTER TABLE ONLY public.incidents
 
 
 --
+-- Name: inquiries inquiries_physical_offer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.inquiries
+    ADD CONSTRAINT inquiries_physical_offer_id_fkey FOREIGN KEY (physical_offer_id) REFERENCES public.physical_offers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: inquiries inquiries_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.inquiries
+    ADD CONSTRAINT inquiries_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id) ON DELETE CASCADE;
+
+
+--
 -- Name: invoices invoices_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9305,6 +9898,46 @@ ALTER TABLE ONLY public.invoices
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id);
+
+
+--
+-- Name: local_stock_allocations local_stock_allocations_local_stock_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_allocations
+    ADD CONSTRAINT local_stock_allocations_local_stock_id_fkey FOREIGN KEY (local_stock_id) REFERENCES public.local_stock(id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock_allocations local_stock_allocations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_allocations
+    ADD CONSTRAINT local_stock_allocations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock local_stock_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock
+    ADD CONSTRAINT local_stock_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: local_stock local_stock_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock
+    ADD CONSTRAINT local_stock_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock local_stock_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock
+    ADD CONSTRAINT local_stock_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id);
 
 
 --
@@ -9732,6 +10365,22 @@ ALTER TABLE ONLY public.partners
 
 
 --
+-- Name: physical_offers physical_offers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_offers
+    ADD CONSTRAINT physical_offers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: physical_offers physical_offers_provider_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_offers
+    ADD CONSTRAINT physical_offers_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES public.providers(id) ON DELETE CASCADE;
+
+
+--
 -- Name: pickup_print_tokens pickup_print_tokens_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9777,6 +10426,22 @@ ALTER TABLE ONLY public.pricing_category_dims
 
 ALTER TABLE ONLY public.pricing_category_taxes
     ADD CONSTRAINT pricing_category_taxes_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: pricing_global_access_grants pricing_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_global_access_grants
+    ADD CONSTRAINT pricing_global_access_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: pricing_global_access_grants pricing_global_access_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_global_access_grants
+    ADD CONSTRAINT pricing_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -9889,6 +10554,14 @@ ALTER TABLE ONLY public.product_suppliers
 
 ALTER TABLE ONLY public.product_variants
     ADD CONSTRAINT product_variants_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: providers providers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.providers
+    ADD CONSTRAINT providers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
 
 
 --
@@ -10025,6 +10698,22 @@ ALTER TABLE ONLY public.scans
 
 ALTER TABLE ONLY public.scans
     ADD CONSTRAINT scans_scanned_by_fkey FOREIGN KEY (scanned_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: services services_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: services services_provider_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES public.providers(id) ON DELETE CASCADE;
 
 
 --
@@ -10169,6 +10858,22 @@ ALTER TABLE ONLY public.sourcing_candidates
 
 ALTER TABLE ONLY public.sourcing_candidates
     ADD CONSTRAINT sourcing_candidates_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: sourcing_global_access_grants sourcing_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_global_access_grants
+    ADD CONSTRAINT sourcing_global_access_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: sourcing_global_access_grants sourcing_global_access_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_global_access_grants
+    ADD CONSTRAINT sourcing_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
