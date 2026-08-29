@@ -69,7 +69,15 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     'routes/providers-services.js',
   ];
 
-  const ALLOWED_LOCAL_STOCK_CONSUMERS = [...ALLOWED_WRITE_CONSUMERS, ...ALLOWED_ROUTE_FILE_CONSUMERS];
+  // Vague 2 D5 (28-08-2026) : composition en mémoire du rail Discovery local
+  // (DiscoveryCard) — recommendations lit l'exposabilité via les fonctions
+  // propriétaires, jamais de SQL direct sur local_stock/services/
+  // physical_offers. Jamais branché à une route ou à Boutique dans ce lot.
+  const ALLOWED_COMPOSITION_CONSUMERS = [
+    'services/discovery-rail-composer.js',
+  ];
+
+  const ALLOWED_LOCAL_STOCK_CONSUMERS = [...ALLOWED_WRITE_CONSUMERS, ...ALLOWED_ROUTE_FILE_CONSUMERS, ...ALLOWED_COMPOSITION_CONSUMERS];
 
   test('aucune route (routes/) ne require() les services shadow, sauf les points d\'intégration D2/D4 revus', () => {
     const routeFiles = walk(path.join(ROOT, 'routes'), ['.js']);

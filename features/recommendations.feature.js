@@ -22,17 +22,26 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Classer et suggerer des produits boutique selon un moteur de ranking dedie.',
+  service: 'Classer et suggerer des produits boutique selon un moteur de ranking dedie. ' +
+    'Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte ' +
+    '(DiscoveryCard — Product Komerce, produit physique tiers, service tiers), ' +
+    'sans jamais posséder ni cloner les données sources.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'moteur de classement boutique',
       'endpoint de suggestions',
+      'DiscoveryCard — projection de lecture mixte (product|physical_offer|service), ' +
+        'Vague 2 D5, jamais persistée, composée à partir de candidats explicites',
     ],
     out: [
       'donnees produit source (feature catalog)',
       'prix affiche (feature economic-engine)',
+      'sélection/recherche autonome de candidats (politique éditoriale = ' +
+        'problème d\'activation, D7-D9, pas de ce composeur)',
+      'toute exposition Boutique (aucune route/composant ne consomme encore ' +
+        'discovery-rail-composer.js dans ce lot)',
     ],
   },
 
@@ -40,6 +49,7 @@ module.exports = {
   files: {
     services: [
       'services/boutique-ranking-engine.js',
+      'services/discovery-rail-composer.js',
     ],
     routes: [
       'routes/boutique-suggestions.js',
@@ -47,6 +57,7 @@ module.exports = {
     tests: [
       'tests/unit/boutique-ranking-engine.test.js',
       'tests/unit/boutique-suggestions.test.js',
+      'tests/unit/discovery-rail-composer.test.js',
     ],
   },
   // ── decision-signals (Lot O1, 2026-07-12) ───────────────────────────────
@@ -93,6 +104,11 @@ module.exports = {
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'logistics',
       'orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)',
+      'local-stock (Vague 2 D5 — isStockExposable() pour la carte product du rail Discovery ; ' +
+        'preuve: services/discovery-rail-composer.js -> services/local-stock-service.js)',
+      'providers-services (Vague 2 D5 — isServiceExposable()/getService()/isPhysicalOfferExposable()/' +
+        'getPhysicalOffer() pour les cartes service et physical_offer ; jamais de SQL direct sur leurs ' +
+        'tables ; preuve: services/discovery-rail-composer.js -> services/providers-service.js)',
     ],
   },
 
@@ -125,6 +141,17 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'le ranking ne modifie jamais les donnees produit, lecture seule sur catalog',
+    { statement: 'discovery-rail-composer.js ne fait jamais de SQL direct sur les ' +
+      'tables local_stock, services ou physical_offers — uniquement via les fonctions ' +
+      'propriétaires (isStockExposable, isServiceExposable, isPhysicalOfferExposable, ' +
+      'getService, getPhysicalOffer) — Discovery ne possède aucune vérité, il la compose',
+      test: 'tests/unit/discovery-rail-composer.test.js' },
+    { statement: 'un objet non exposable est silencieusement omis du rail, jamais ' +
+      'un objet d\'erreur ni le pourquoi — même discipline que les routes D4',
+      test: 'tests/unit/discovery-rail-composer.test.js' },
+    { statement: 'composeDiscoveryRail ne sélectionne jamais ses propres candidats ' +
+      '— uniquement ceux fournis explicitement par l\'appelant, aucune recherche autonome',
+      test: 'tests/unit/discovery-rail-composer.test.js' },
   ],
 
   // ── Classification (ajoutée Lot O1, manifest modifié dans cette PR) ─────
@@ -144,7 +171,19 @@ module.exports = {
       'service actif identifiable (classer/suggérer), pas une projection d\'une autre feature',
       'moteur de ranking dédié (boutique-ranking-engine.js) avec sa propre formule, invariant lecture-seule sur catalog',
       'perimetre resserre au Lot O1 : le sous-ensemble decision-signals (radar/signals) en a ete extrait car il ne partage ni service ni cycle de vie avec le ranking',
+      'Vague 2 D5 : discovery-rail-composer.js reste ownsTables:false — DiscoveryCard ' +
+        'est une projection composée à la volée, jamais une table, jamais un clone.',
     ],
   },
+
+  // ── Historique ───────────────────────────────────────────────────────────
+  // 2026-08-28 — Vague 2 D5 : services/discovery-rail-composer.js —
+  // composition en mémoire du rail Discovery local (DiscoveryCard : product|
+  // physical_offer|service). Vrai bug trouvé et corrigé en marge de ce lot
+  // (test bout en bout réel contre Postgres, jamais détecté par les mocks
+  // D2) : services/local-stock-service.js#getLocalStock ne sélectionnait pas
+  // commercial_exposure dans son SQL, isStockExposable() retournait toujours
+  // false en silence depuis D2. Voir features/local-stock.feature.js pour le
+  // détail. Jamais branché à une route ni à Boutique dans ce lot.
 
 };

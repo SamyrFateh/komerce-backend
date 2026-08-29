@@ -433,7 +433,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-02",
-        "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie.",
+        "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -9270,6 +9270,13 @@
       },
       {
         "feature": "recommendations",
+        "category": "services",
+        "declared": "services/discovery-rail-composer.js",
+        "resolvedPath": "services/discovery-rail-composer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "recommendations",
         "category": "routes",
         "declared": "routes/boutique-suggestions.js",
         "resolvedPath": "routes/boutique-suggestions.js",
@@ -9287,6 +9294,13 @@
         "category": "tests",
         "declared": "tests/unit/boutique-suggestions.test.js",
         "resolvedPath": "tests/unit/boutique-suggestions.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "recommendations",
+        "category": "tests",
+        "declared": "tests/unit/discovery-rail-composer.test.js",
+        "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16369,6 +16383,18 @@
         "resolved": true
       },
       {
+        "from": "recommendations",
+        "to": "local-stock",
+        "raw": "local-stock (Vague 2 D5 — isStockExposable() pour la carte product du rail Discovery ; preuve: services/discovery-rail-composer.js -> services/local-stock-service.js)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "providers-services",
+        "raw": "providers-services (Vague 2 D5 — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes service et physical_offer ; jamais de SQL direct sur leurs tables ; preuve: services/discovery-rail-composer.js -> services/providers-service.js)",
+        "resolved": true
+      },
+      {
         "from": "refunds",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
@@ -18582,7 +18608,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/control-tower",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ControlTowerView.js"
               },
               {
@@ -18597,7 +18623,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/costing",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/CostingView.js"
               },
               {
@@ -18617,12 +18643,12 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/logistics",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/OrdersLogisticsView.js"
               },
               {
                 "endpoint": "/api/admin/dashboard/unified",
-                "routeFile": "routes/admin-dashboard.js",
+                "routeFile": "routes/admin-dashboard-market.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/PilotageView.js"
               },
               {
@@ -26902,6 +26928,11 @@
             "channel": "interface",
             "evidence": [
               {
+                "endpoint": "/api/public/config",
+                "routeFile": "server.js",
+                "consumerFileId": "public/boutique/js/b-utils.js"
+              },
+              {
                 "endpoint": "/api/health",
                 "routeFile": "server.js",
                 "consumerFileId": "public/boutique/js/komerce-api.js"
@@ -27500,6 +27531,26 @@
               {
                 "sourceFileId": "services/boutique-ranking-engine.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/discovery-rail-composer.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/discovery-rail-composer.js",
+                "targetFile": "services/local-stock-service.js"
               }
             ]
           }
@@ -27585,6 +27636,22 @@
               {
                 "sourceFileId": "public/boutique/js/b-pdp-curation-suggestions.js",
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
+        "to": "providers-services",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/discovery-rail-composer.js",
+                "targetFile": "services/providers-service.js"
               }
             ]
           }
@@ -28760,7 +28827,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 970
+        "filesObserved": 972
       },
       "boutique": {
         "filesObserved": 173,
@@ -30897,8 +30964,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 364,
-        "technicalNodesOwned": 364,
+        "technicalNodesTotal": 365,
+        "technicalNodesOwned": 365,
         "technicalOrphans": 0
       },
       "dash": {

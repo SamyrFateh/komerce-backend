@@ -76,7 +76,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 364 | 364 | 0 |
+| backend | 29 | 29 | 365 | 365 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -351,7 +351,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, market, infrastructure
-- consumers: 1 — orders
+- consumers: 2 — orders, recommendations
 
 ### logistics _(business-feature)_
 
@@ -489,7 +489,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — market, infrastructure
-- consumers: 0
+- consumers: 1 — recommendations
 
 ### purchasing _(business-feature)_
 
@@ -507,16 +507,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### recommendations _(business-feature)_
 
-> Classer et suggerer des produits boutique selon un moteur de ranking dedie.
+> Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.
 
-- services: 1
+- services: 2
 - routes: 1
-- tests: 2
+- tests: 3
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 1
 - internal APIs: 0
-- dependencies (consumes): 5 — catalog, platform-ops, infrastructure, logistics, orders
+- dependencies (consumes): 7 — catalog, platform-ops, infrastructure, logistics, orders, local-stock, providers-services
 - consumers: 2 — infrastructure, shared-cart
 
 ### refunds _(business-transversal)_
@@ -1535,6 +1535,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | recommendations | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | recommendations | logistics (`logistics`) | ✔ |
 | recommendations | orders (`orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)`) | ✔ |
+| recommendations | local-stock (`local-stock (Vague 2 D5 — isStockExposable() pour la carte product du rail Discovery ; preuve: services/discovery-rail-composer.js -> services/local-stock-service.js)`) | ✔ |
+| recommendations | providers-services (`providers-services (Vague 2 D5 — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes service et physical_offer ; jamais de SQL direct sur leurs tables ; preuve: services/discovery-rail-composer.js -> services/providers-service.js)`) | ✔ |
 | refunds | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | refunds | orders (`orders (commande source)`) | ✔ |
 | refunds | wallet (`wallet (credit)`) | ✔ |
@@ -1646,7 +1648,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 970 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 972 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 173 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1853,7 +1855,7 @@ Meta Graph monté : oui.
 | platform-ops | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| platform-ops | infrastructure | static-code, interface | 29 | **DECLARED_AND_OBSERVED** |
+| platform-ops | infrastructure | static-code, interface | 30 | **DECLARED_AND_OBSERVED** |
 | platform-ops | logistics | static-code, interface, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | platform-ops | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | orders | static-code, interface, data-read | 17 | **DECLARED_AND_OBSERVED** |
@@ -1870,10 +1872,12 @@ Meta Graph monté : oui.
 | purchasing | notifications | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| recommendations | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| recommendations | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | orders | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | recommendations | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |

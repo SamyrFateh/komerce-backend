@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 228,
+    "businessDependencies": 230,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -11532,6 +11532,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -17231,7 +17238,15 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
@@ -17699,20 +17714,35 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie.",
+      "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
       "perimeter": {
         "in": [
           "moteur de classement boutique",
-          "endpoint de suggestions"
+          "endpoint de suggestions",
+          "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), Vague 2 D5, jamais persistée, composée à partir de candidats explicites"
         ],
         "out": [
           "donnees produit source (feature catalog)",
-          "prix affiche (feature economic-engine)"
+          "prix affiche (feature economic-engine)",
+          "sélection/recherche autonome de candidats (politique éditoriale = problème d'activation, D7-D9, pas de ce composeur)",
+          "toute exposition Boutique (aucune route/composant ne consomme encore discovery-rail-composer.js dans ce lot)"
         ]
       },
       "authority": "backend-core — tout changement de formule de classement doit etre valide par le proprietaire de boutique-ranking-engine.js",
       "invariants": [
-        "le ranking ne modifie jamais les donnees produit, lecture seule sur catalog"
+        "le ranking ne modifie jamais les donnees produit, lecture seule sur catalog",
+        {
+          "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires (isStockExposable, isServiceExposable, isPhysicalOfferExposable, getService, getPhysicalOffer) — Discovery ne possède aucune vérité, il la compose",
+          "test": "tests/unit/discovery-rail-composer.test.js"
+        },
+        {
+          "statement": "un objet non exposable est silencieusement omis du rail, jamais un objet d'erreur ni le pourquoi — même discipline que les routes D4",
+          "test": "tests/unit/discovery-rail-composer.test.js"
+        },
+        {
+          "statement": "composeDiscoveryRail ne sélectionne jamais ses propres candidats — uniquement ceux fournis explicitement par l'appelant, aucune recherche autonome",
+          "test": "tests/unit/discovery-rail-composer.test.js"
+        }
       ],
       "implementation": {
         "byCategory": {
@@ -17727,17 +17757,22 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "services/boutique-ranking-engine.js",
                 "resolvedPath": "services/boutique-ranking-engine.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/discovery-rail-composer.js",
+                "resolvedPath": "services/discovery-rail-composer.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "tests/unit/boutique-ranking-engine.test.js",
@@ -17748,11 +17783,16 @@
                 "declared": "tests/unit/boutique-suggestions.test.js",
                 "resolvedPath": "tests/unit/boutique-suggestions.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/discovery-rail-composer.test.js",
+                "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 4,
+        "totalFiles": 6,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
           "count": 5,
@@ -17862,6 +17902,13 @@
           ]
         },
         {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17878,6 +17925,13 @@
         },
         {
           "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "providers-services",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

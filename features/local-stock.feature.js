@@ -198,5 +198,14 @@ module.exports = {
   // read-only, jamais montée dans bootstrap/api-routes.js — "le frontend
   // peut techniquement lire, mais rien n'est encore branché." Ne renvoie
   // jamais le détail d'une indisponibilité.
+  // 2026-08-28 — BUG RÉEL corrigé (trouvé en construisant D5, test bout en
+  // bout réel contre Postgres — jamais détecté par les mocks D2 qui
+  // incluaient artificiellement commercial_exposure dans leurs réponses) :
+  // getLocalStock() ne sélectionnait pas commercial_exposure dans son SQL
+  // depuis la migration 157 (D2) — isStockExposable() retournait toujours
+  // false en silence, quel que soit l'état réel de la colonne. Corrigé.
+  // Un test dédié (local-stock-service.test.js) vérifie désormais le TEXTE
+  // de la requête SQL, pas seulement le comportement sur une réponse
+  // mockée — seule façon pour un mock d'attraper cette classe de bug.
 
 };
