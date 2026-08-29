@@ -6,11 +6,11 @@
  * @domain       governance
  * @layer        tooling
  * @criticality  medium
- * @purpose      Executer en sequence les promotions d'objets puis de colonnes
+ * @purpose      Executer en sequence les promotions d'objets, de colonnes et la synthese live SCHEMA.md
  *               contre le meme dump Railway et avec les memes flags CLI.
- * @inputs       scripts/schema-promote.js, scripts/schema-promote-columns.js
+ * @inputs       scripts/schema-promote.js, scripts/schema-promote-columns.js, scripts/schema-sync-summary.js
  * @outputs      stdout combine, exit code du premier promoteur en echec
- * @depends      scripts/schema-promote.js, scripts/schema-promote-columns.js
+ * @depends      scripts/schema-promote.js, scripts/schema-promote-columns.js, scripts/schema-sync-summary.js
  * @used-by      package.json schema:promote*, .github/workflows/schema-refresh.yml
  * @db-read      none
  * @db-write     none
@@ -27,6 +27,7 @@ const forwardedArgs = process.argv.slice(2);
 const scripts = [
   path.join(__dirname, 'schema-promote.js'),
   path.join(__dirname, 'schema-promote-columns.js'),
+  path.join(__dirname, 'schema-sync-summary.js'),
 ];
 
 for (const script of scripts) {
