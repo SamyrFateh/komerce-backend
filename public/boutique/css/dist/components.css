@@ -2611,7 +2611,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--action-commerce-hover); }
 .k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--action-commerce); color: var(--action-commerce-text); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
-.k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
+.k-modal-subtotal { grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 /* Les actions produit peuvent être masquées par leurs propres états ;
    une liste active ne les remplace plus. */
@@ -3414,8 +3414,6 @@ html.k-mobile-premium-v1 .k-chip-label {
      hidden + overflow-y:auto, déclarés ENSEMBLE non-visibles — c'est pour ça
      que CET ancêtre n'a pas le problème). Cette règle vide reste comme
      marqueur d'ownership documenté — ne pas y réintroduire d'overflow. */
-  #k-modal .k-modal-product-zone .k-modal-details {
-  }
 
   /* ── Actions inline : padding géré par .k-modal-details, pas ici ── */
   #k-modal .k-modal-product-zone .k-modal-actions {
@@ -8336,7 +8334,7 @@ body.cart-open .k-wa-fab {
 .ck-chip-icon { line-height:1; }
 .ck-chip-lbl  { font-weight:700; color:var(--text); line-height:1.2; }
 .ck-chip-lbl em.ck-soon       { font-style:normal; font-size:.58rem; font-weight:600; background:var(--coral); color:var(--white); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
-.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
+.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); display:inline-block; }
 .ck-soon { font-size:.62rem; background:var(--coral); color:white; padding:1px 5px; border-radius:5px; font-weight:700; vertical-align:middle; }
 .ck-pay-mvola { display:flex; align-items:center; gap:8px; padding:8px 11px; border:2px solid rgba(0,0,0,.08); border-radius:8px; margin-bottom:4px; cursor:not-allowed; opacity:.5; font-size:.88rem; font-weight:600; background:var(--white); }
 .ck-pay-mvola input { width:15px; height:15px; flex-shrink:0; }
@@ -8465,7 +8463,6 @@ body.cart-open .k-wa-fab {
   /* Sur desktop le modal a une hauteur fixe (92vh) : on r�tablit overflow:hidden pour
      le border-radius, mais le bouton confirmer est le dernier enfant flex ?
      il reste toujours dans le flux et visible, pas clipp� par le scroll. */
-  .k-order-overlay.open .ck-confirm-btn { border-radius:0 0 var(--radius-lg) var(--radius-lg); }
 }
 
 
@@ -9250,11 +9247,6 @@ body.cart-open .k-wa-fab {
 .ck-confirm-amount { font-size: 1rem; }
 
 /* Helper cash compact */
-.ck-pay-helper {
-  margin: 3px 0 5px;
-  padding: 5px 8px;
-  font-size: .68rem;
-}
 
 /* Fulfillment switch compact */
 .ck-fulfillment-switch { gap: 5px; margin: 0 0 8px; }
@@ -9267,9 +9259,6 @@ body.cart-open .k-wa-fab {
 
 /* Sur desktop, restaurer les tailles normales (breakpoint canonique 900) */
 @media (min-width: 900px) {
-  .k-order-overlay.open .k-order-body--checkout {
-    padding: 16px 16px calc(90px + env(safe-area-inset-bottom));
-  }
   .ck-section-block { padding-top: 18px; }
   .ck-secure-pickup-notice { padding: 10px 12px; }
   .ck-confirm-btn { min-height: 64px; }
@@ -13329,10 +13318,14 @@ body.k-id-scroll-lock { overflow: hidden; }
   border: 1px solid rgba(31,48,36,.10);
   border-radius: 14px;
   background: var(--white);
-  color: var(--text-muted);
   box-shadow: 0 6px 18px rgba(31,48,36,.05);
   font-size: .8rem;
   font-weight: 700;
+}
+
+.ck-relais-loading,
+.ck-relais-empty {
+  color: var(--text-muted);
 }
 
 .ck-relais-error { flex-wrap: wrap; gap: 10px; color: var(--coral-dark); }

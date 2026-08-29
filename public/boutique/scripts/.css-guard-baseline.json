@@ -1,5 +1,5 @@
 {
-  "total": 86,
+  "total": 75,
   "keys": [
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
@@ -21,13 +21,6 @@
     "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section|||@media (min-width: 900px) {|||margin-top",
     "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||border-bottom",
     "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||margin-bottom",
-    ".ck-chip-lbl em.ck-stripe-tag|||global|||border-radius",
-    ".ck-chip-lbl em.ck-stripe-tag|||global|||margin-top",
-    ".ck-chip-lbl em.ck-stripe-tag|||global|||padding",
-    ".ck-pay-helper|||global|||font-size",
-    ".ck-pay-helper|||global|||margin",
-    ".ck-pay-helper|||global|||padding",
-    ".ck-relais-error|||global|||color",
     ".k-bnav-badge|||global|||border",
     ".k-bnav-badge|||global|||height",
     ".k-bnav-badge|||global|||padding",
@@ -43,10 +36,6 @@
     ".k-hero-cats-sticky::after|||global|||height",
     ".k-hero-img|||global|||height",
     ".k-hero-mini-slogan|||global|||display",
-    ".k-modal-subtotal|||global|||color",
-    ".k-modal-subtotal|||global|||font-size",
-    ".k-order-overlay.open .ck-confirm-btn|||@media (min-width: 900px) {|||border-radius",
-    ".k-order-overlay.open .k-order-body--checkout|||@media (min-width: 900px) {|||padding",
     ".k-sec-grid|||global|||padding",
     ".k-sec-header-emoji|||global|||font-size",
     ".k-sec-header-name|||global|||font-size",
@@ -88,5 +77,5 @@
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size"
   ],
-  "savedAt": "2026-08-29T20:08:37.169Z"
+  "savedAt": "2026-08-29T20:19:06.396Z"
 }

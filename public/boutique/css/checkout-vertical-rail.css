@@ -316,10 +316,14 @@
   border: 1px solid rgba(31,48,36,.10);
   border-radius: 14px;
   background: var(--white);
-  color: var(--text-muted);
   box-shadow: 0 6px 18px rgba(31,48,36,.05);
   font-size: .8rem;
   font-weight: 700;
+}
+
+.ck-relais-loading,
+.ck-relais-empty {
+  color: var(--text-muted);
 }
 
 .ck-relais-error { flex-wrap: wrap; gap: 10px; color: var(--coral-dark); }

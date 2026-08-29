@@ -878,7 +878,7 @@ body.cart-open .k-wa-fab {
 .ck-chip-icon { line-height:1; }
 .ck-chip-lbl  { font-weight:700; color:var(--text); line-height:1.2; }
 .ck-chip-lbl em.ck-soon       { font-style:normal; font-size:.58rem; font-weight:600; background:var(--coral); color:var(--white); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
-.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
+.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); display:inline-block; }
 .ck-soon { font-size:.62rem; background:var(--coral); color:white; padding:1px 5px; border-radius:5px; font-weight:700; vertical-align:middle; }
 .ck-pay-mvola { display:flex; align-items:center; gap:8px; padding:8px 11px; border:2px solid rgba(0,0,0,.08); border-radius:8px; margin-bottom:4px; cursor:not-allowed; opacity:.5; font-size:.88rem; font-weight:600; background:var(--white); }
 .ck-pay-mvola input { width:15px; height:15px; flex-shrink:0; }
@@ -1007,7 +1007,6 @@ body.cart-open .k-wa-fab {
   /* Sur desktop le modal a une hauteur fixe (92vh) : on r�tablit overflow:hidden pour
      le border-radius, mais le bouton confirmer est le dernier enfant flex ?
      il reste toujours dans le flux et visible, pas clipp� par le scroll. */
-  .k-order-overlay.open .ck-confirm-btn { border-radius:0 0 var(--radius-lg) var(--radius-lg); }
 }
 
 
@@ -1792,11 +1791,6 @@ body.cart-open .k-wa-fab {
 .ck-confirm-amount { font-size: 1rem; }
 
 /* Helper cash compact */
-.ck-pay-helper {
-  margin: 3px 0 5px;
-  padding: 5px 8px;
-  font-size: .68rem;
-}
 
 /* Fulfillment switch compact */
 .ck-fulfillment-switch { gap: 5px; margin: 0 0 8px; }
@@ -1809,9 +1803,6 @@ body.cart-open .k-wa-fab {
 
 /* Sur desktop, restaurer les tailles normales (breakpoint canonique 900) */
 @media (min-width: 900px) {
-  .k-order-overlay.open .k-order-body--checkout {
-    padding: 16px 16px calc(90px + env(safe-area-inset-bottom));
-  }
   .ck-section-block { padding-top: 18px; }
   .ck-secure-pickup-notice { padding: 10px 12px; }
   .ck-confirm-btn { min-height: 64px; }
