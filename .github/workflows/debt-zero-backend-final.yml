@@ -1,4 +1,4 @@
-name: Debt Zero backend final inventory
+name: Debt Zero backend final remediation
 
 on:
   push:
@@ -7,39 +7,72 @@ on:
       - '.github/workflows/debt-zero-backend-final.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inventory:
+  remediate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fix/debt-zero-backend-final
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci --ignore-scripts
-      - name: Exact npm security inventory
-        shell: bash
+      - name: Apply surgical transitive security overrides
         run: |
-          set +e
-          echo '=== npm audit json ==='
-          npm audit --json > /tmp/npm-audit.json
-          node - <<'NODE'
-          const a = require('/tmp/npm-audit.json');
-          console.log(JSON.stringify({metadata:a.metadata,vulnerabilities:a.vulnerabilities}, null, 2));
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          p.overrides = {
+            ...(p.overrides || {}),
+            'fast-uri': '^3.1.5',
+            'minimatch@3.1.5': {
+              'brace-expansion': '1.1.18'
+            },
+            'minimatch@10.2.5': {
+              'brace-expansion': '5.0.9'
+            },
+            '@istanbuljs/load-nyc-config': {
+              'js-yaml': '3.15.2'
+            }
+          };
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           NODE
-          echo '=== npm ls targeted packages ==='
-          npm ls brace-expansion fast-uri js-yaml --all || true
-          exit 0
-      - name: Exact backend debt inventory
-        shell: bash
+          npm install --package-lock-only --ignore-scripts
+      - name: Reinstall exact lock and prove audit zero high
         run: |
-          echo '=== debt-audit ==='
-          node scripts/debt-audit.js --json > /tmp/debt.json || true
-          cat /tmp/debt.json
-          echo '=== large-file allowlist references ==='
-          grep -RIn "ALLOWED_LARGE_FILES\|scan-engine.js\|sourcing-scanner.js" scripts tests governance . 2>/dev/null | head -n 240 || true
-          echo '=== quality disables ==='
-          grep -RIn "quality-disable.*N2-SQL-INJECTION" routes services middleware utils 2>/dev/null || true
-          echo '=== direct lifecycle exceptions ==='
-          grep -RIn "payment-paypal.js\|state-advancer.js\|admin/system.js" scripts governance docs 2>/dev/null | head -n 240 || true
+          rm -rf node_modules
+          npm ci --ignore-scripts
+          npm ls brace-expansion fast-uri js-yaml --all
+          node <<'NODE'
+          const { execFileSync } = require('child_process');
+          let out;
+          try {
+            out = execFileSync('npm', ['audit', '--json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+          } catch (err) {
+            out = err.stdout;
+          }
+          const a = JSON.parse(out);
+          console.log(JSON.stringify(a.metadata.vulnerabilities, null, 2));
+          if ((a.metadata?.vulnerabilities?.high || 0) !== 0 || (a.metadata?.vulnerabilities?.critical || 0) !== 0) {
+            console.error(JSON.stringify(a.vulnerabilities, null, 2));
+            process.exit(1);
+          }
+          NODE
+      - name: Backend and unit regression proof
+        run: |
+          npm run backend:audit
+          node scripts/debt-audit.js --json
+          npm test -- --runInBand
+      - name: Commit verified package security closure
+        run: |
+          git diff --check
+          git status --short
+          test -n "$(git status --porcelain package.json package-lock.json)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix(deps): close final high severity audit findings"
+          git push origin HEAD:fix/debt-zero-backend-final
