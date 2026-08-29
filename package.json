@@ -64,7 +64,7 @@
     "security:360": "node scripts/run-security-360.js",
     "security:360:check": "node scripts/run-security-360.js --check",
     "security:360:save": "node scripts/run-security-360.js --save",
-    "backend:audit": "node scripts/audit-backend-arch.js",
+    "backend:audit": "node scripts/backend-audit.js",
     "gate:catalog-contract": "node scripts/gates/catalog-contract-gate.js",
     "alerts:contract:check": "node scripts/alerts-contract-check.js",
     "sourcing:audit": "node scripts/audit-sourcing.js",
