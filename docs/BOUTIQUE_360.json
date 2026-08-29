@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-08-28T08:45:01.180Z",
+  "generatedAt": "2026-08-29T08:51:32.340Z",
   "summary": {
-    "modules": 88,
-    "withHeader": 88,
+    "modules": 91,
+    "withHeader": 91,
     "events": 22,
     "declaredActive": 39,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 57,
+    "endpoints": 60,
     "orphanEmit": 0,
     "orphanListen": 0,
     "undeclared": 0,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 42,
-    "dynamicEndpoints": 18,
+    "dynamicEndpoints": 21,
     "ownedEvents": 3,
     "ownershipRed": 0,
-    "ownershipOrange": 0
+    "ownershipOrange": 1
   },
   "modules": [
     {
@@ -2178,6 +2178,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/discovery-api.js",
+      "id": "discovery-api",
+      "hasHeader": true,
+      "role": "boutique-discovery-api",
+      "domain": "catalog",
+      "layer": "adapter",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/group/group-api.js",
       "id": "group-api",
       "hasHeader": true,
@@ -2535,6 +2552,50 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/local-stock-badge-mount.js",
+      "id": "local-stock-badge-mount",
+      "hasHeader": true,
+      "role": "boutique-local-stock-badge-mount",
+      "domain": "catalog",
+      "layer": "ui-controller",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:detail-ready",
+        "modal:closed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "local-stock-badge"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/local-stock-badge.js",
+      "id": "local-stock-badge",
+      "hasHeader": true,
+      "role": "boutique-local-stock-badge",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "discovery-api"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/main.js",
       "id": "main",
       "hasHeader": true,
@@ -2558,6 +2619,7 @@
         "b-pdp-curation-suggestions",
         "b-home-premium-v1",
         "b-modal-product-detail-bootstrap",
+        "local-stock-badge-mount",
         "b-greeting",
         "b-notifications",
         "b-komerce-nav-identity",
@@ -3055,7 +3117,8 @@
       ],
       "listeners": [
         "b-modal-cart",
-        "b-modal-suggestions"
+        "b-modal-suggestions",
+        "local-stock-badge-mount"
       ]
     },
     "modal:opened": {
@@ -3077,7 +3140,8 @@
       "listeners": [
         "b-modal-product-detail-bootstrap",
         "b-pager",
-        "group-side-cart"
+        "group-side-cart",
+        "local-stock-badge-mount"
       ]
     },
     "modal:composition-synced": {
@@ -3523,6 +3587,27 @@
       "contractStatus": "UNKNOWN"
     },
     {
+      "module": "discovery-api",
+      "route": "/api/local-stock/availability",
+      "raw": "/api/local-stock/availability?product_id=${encodeURIComponent(productId)}&market=${encodeURIComponent(market)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "discovery-api",
+      "route": "/api/providers-services/services/{id}",
+      "raw": "/api/providers-services/services/${encodeURIComponent(serviceId)}?market=${encodeURIComponent(market)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "discovery-api",
+      "route": "/api/providers-services/physical-offers/{id}",
+      "raw": "/api/providers-services/physical-offers/${encodeURIComponent(physicalOfferId)}?market=${encodeURIComponent(market)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
       "module": "group-api",
       "route": "/api/shared-carts/mine",
       "raw": "/api/shared-carts/mine",
@@ -3952,6 +4037,7 @@
       "/api/auth/passkey/credentials/{id}",
       "/api/boutique/suggestions",
       "/api/carriers/{id}",
+      "/api/local-stock/availability",
       "/api/logistics/shipments/{id}",
       "/api/orders",
       "/api/orders/{id}",
@@ -3961,6 +4047,8 @@
       "/api/payments/paypal/capture/{id}",
       "/api/products/{id}",
       "/api/products/{id}/detail",
+      "/api/providers-services/physical-offers/{id}",
+      "/api/providers-services/services/{id}",
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/saved/{id}",
@@ -3968,7 +4056,9 @@
       "/api/shares"
     ],
     "ownershipRed": [],
-    "ownershipOrange": []
+    "ownershipOrange": [
+      "modal:closed"
+    ]
   },
   "ownership": {
     "modal:opened": {
@@ -4013,9 +4103,12 @@
       "actualConsumers": [
         "b-modal-product-detail-bootstrap",
         "b-pager",
-        "group-side-cart"
+        "group-side-cart",
+        "local-stock-badge-mount"
       ],
-      "consumerUndeclared": [],
+      "consumerUndeclared": [
+        "local-stock-badge-mount"
+      ],
       "payload": "none",
       "payloadMismatches": []
     },
@@ -4048,8 +4141,8 @@
       "msg": "propriété saine"
     },
     "modal:closed": {
-      "level": "green",
-      "msg": "propriété saine"
+      "level": "orange",
+      "msg": "consommateur non déclaré : local-stock-badge-mount"
     },
     "modal:composition-synced": {
       "level": "green",
@@ -4133,6 +4226,7 @@
     "/api/hub/pack",
     "/api/hub/scan",
     "/api/hub/seal",
+    "/api/local-stock/availability",
     "/api/logistics/shipments",
     "/api/logistics/shipments/{id}",
     "/api/orders",
@@ -4148,6 +4242,8 @@
     "/api/products",
     "/api/products/{id}",
     "/api/products/{id}/detail",
+    "/api/providers-services/physical-offers/{id}",
+    "/api/providers-services/services/{id}",
     "/api/public/config",
     "/api/purchasing/suppliers",
     "/api/purchasing/suppliers/{id}",

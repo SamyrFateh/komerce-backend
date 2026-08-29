@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 456
+- Scanned code files: 457
 - Files with full headers: 426
-- Files with lite headers: 30
-- Files with any headers: 456
+- Files with lite headers: 31
+- Files with any headers: 457
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1029
-- Edges: 5276
+- Graph nodes: 1030
+- Edges: 5280
 - DB tables: 124
 - Doctrines: 282
 - Impact areas: 167
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 75
+- catalog: 76
 - checkout: 2
 - customs: 6
 - dashboard: 27
@@ -88,7 +88,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-bootstrap: 4
 - ui-boundary: 1
 - ui-component: 39
-- ui-controller: 1
+- ui-controller: 2
 - ui-enhancer: 3
 - ui-infrastructure: 1
 - ui-page: 5
@@ -428,6 +428,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-share-cart.js (shared-cart-group-state)
 - public/boutique/js/hero-bootstrap.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-hero-bootstrap)
+- public/boutique/js/local-stock-badge-mount.js -> owner public/boutique/js/local-stock-badge-mount.js (boutique-local-stock-badge-mount)
 - public/boutique/js/local-stock-badge.js -> owner public/boutique/js/local-stock-badge.js (boutique-local-stock-badge)
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
 - public/boutique/js/market-context.js -> owner public/boutique/js/market-context.js (boutique-market-context)

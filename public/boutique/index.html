@@ -355,6 +355,13 @@
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
+            <!-- Vague 2 D6 — slot du badge stock local ("Disponible
+                 maintenant / Déjà en stock aux Comores"), distinct de
+                 k-modal-stock (products.stock import, ci-dessus). Peuplé par
+                 local-stock-badge-mount.js sur bus:modal:detail-ready.
+                 Vide tant que commercial_exposure=DISABLED (tous les
+                 produits à ce stade) — capability != exposure. -->
+            <div id="k-local-stock-badge-slot"></div>
             <div class="k-modal-price-row">
               <span class="k-modal-price" id="k-modal-price"></span>
               <span class="k-modal-old-price" id="k-modal-old-price"></span>

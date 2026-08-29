@@ -25,6 +25,7 @@ import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
 import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
+import { setupLocalStockBadgeMount } from './local-stock-badge-mount.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 import { setupClientNotifications } from './b-notifications.js';
@@ -41,6 +42,10 @@ function setupBoutiqueRuntime() {
   setupPdpCurationSuggestions();
   setupHomePremiumV1();
   setupProductDetailModal();
+  // Vague 2 D6 — écoute le même cycle de vie que setupProductDetailModal(),
+  // jamais un nouveau signal. Badge invisible tant que commercial_exposure
+  // reste DISABLED (capability != exposure).
+  setupLocalStockBadgeMount();
   setupProductOpenContract();
   setupCartProductOpenStyle();
   setupKomerceNavIdentity();

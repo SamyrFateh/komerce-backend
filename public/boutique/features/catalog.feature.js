@@ -64,6 +64,7 @@ module.exports = {
       '../js/view-models/product-card-view-model.js',
       '../js/discovery-api.js',
       '../js/local-stock-badge.js',
+      '../js/local-stock-badge-mount.js',
     ],
     css: [
       '../css/hero.css',
