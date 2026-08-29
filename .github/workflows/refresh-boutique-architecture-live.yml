@@ -1,0 +1,34 @@
+name: Refresh Boutique Architecture LIVE
+
+on:
+  push:
+    branches:
+      - docs/boutique-debt-zero-b0-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-live:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/boutique-debt-zero-b0-architecture
+          fetch-depth: 1
+      - name: Generate LIVE architecture from canonical sources
+        run: node public/boutique/scripts/gen-boutique-arch-live.js
+      - name: Prove generated doc has no stale orphan/missing-source claim
+        run: |
+          grep -q '0 orphelin(s)' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          grep -q '0 source(s) bundle manquante(s)' public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+      - name: Commit generated LIVE doc
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+          git diff --cached --quiet && exit 0
+          git commit -m "docs(boutique): refresh LIVE architecture snapshot"
+          git push origin HEAD:docs/boutique-debt-zero-b0-architecture
