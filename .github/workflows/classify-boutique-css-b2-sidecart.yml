@@ -32,14 +32,10 @@ jobs:
             ['navigation', r => /\.k-(bnav|header|search)/.test(r.selector)],
           ];
           console.log(`TOTAL=${rows.length}`);
-          for (const [name, fn] of groups) {
-            const matches = rows.filter(fn);
-            console.log(`${name.toUpperCase()}=${matches.length}`);
-          }
+          for (const [name, fn] of groups) console.log(`${name.toUpperCase()}=${rows.filter(fn).length}`);
           const side = rows.filter(groups[0][1]);
           console.log('\n--- SIDE CART KEYS ---');
           side.forEach(r => console.log(`${r.selector} | ${r.media} | ${r.prop}`));
-
           const selectorCounts = new Map();
           for (const r of side) selectorCounts.set(r.selector, (selectorCounts.get(r.selector)||0)+1);
           console.log('\n--- SIDE CART SELECTORS BY COUNT ---');
