@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-08-28T17:19:38.048Z — 556 endpoints
+> 2026-08-29T08:35:34.837Z — 559 endpoints
 
 | Niveau | Compte |
 |---|---|
 | 🟢 PROTECTED | 509 |
 | ⚪ PUBLIC (légitime) | 7 |
-| 🟠 UNPROTECTED | 38 |
+| 🟠 UNPROTECTED | 41 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -23,6 +23,7 @@
 - 🟠 `GET /api/categories` — UNPROTECTED
 - 🟠 `GET /api/client/magic-link/validate` — UNPROTECTED
 - 🟠 `POST /api/client/magic-link` — UNPROTECTED
+- 🟠 `GET /api/local-stock/availability` — UNPROTECTED
 - 🟠 `GET /api/loyalty/tiers` — UNPROTECTED
 - 🟠 `GET /api/modules/{type}` — UNPROTECTED
 - 🟠 `GET /api/modules/fabrics` — UNPROTECTED
@@ -40,6 +41,8 @@
 - 🟠 `GET /api/products/categories` — UNPROTECTED
 - 🟠 `GET /api/products/subcategories` — UNPROTECTED
 - 🟠 `GET /api/products` — UNPROTECTED
+- 🟠 `GET /api/providers-services/physical-offers/{id}` — UNPROTECTED
+- 🟠 `GET /api/providers-services/services/{id}` — UNPROTECTED
 - 🟠 `GET /api/relais/{id}` — UNPROTECTED
 - 🟠 `GET /api/relais/public` — UNPROTECTED
 - 🟠 `GET /api/relais` — UNPROTECTED

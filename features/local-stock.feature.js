@@ -113,16 +113,18 @@ module.exports = {
   },
 
   security: {
-    status: 'ROUTE_SHADOW',
-    note: 'Vague 2 D4 : routes/local-stock.js existe (GET /availability), ' +
-      'testable, mais JAMAIS montée dans bootstrap/api-routes.js — vérifié ' +
-      'par tests/unit/shadow-domains-boundary.test.js. "Le frontend peut ' +
-      'techniquement lire, mais rien n\'est encore branché." Deux points ' +
+    status: 'CONFIRMED_PUBLIC_BY_DESIGN',
+    authedRoutesDetected: 0,
+    totalRoutes: 1,
+    note: 'Vague 2 D6 : routes/local-stock.js désormais montée dans ' +
+      'bootstrap/api-routes.js. GET /availability classée PUBLIC et ' +
+      'volontairement sans garde — même précédent que recommendations ' +
+      '(GET /api/boutique/suggestions, features/recommendations.feature.js). ' +
+      'Lecture seule, jamais de donnée sensible (jamais le détail d\'une ' +
+      'indisponibilité — allocations actives, exposure brut). Deux points ' +
       'd\'intégration backend écriture restent revus séparément ' +
       '(routes/orders/create.js, order-status-machine.js, tous deux dans la ' +
-      'feature orders — voir features/orders.feature.js contract.consumes). ' +
-      'Montage réel + auth + rate-limit seront un lot séparé (D6/D7), avec ' +
-      'sa propre revue.',
+      'feature orders — voir features/orders.feature.js contract.consumes).',
   },
 
   contract: {

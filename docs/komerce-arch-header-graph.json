@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 454,
+    "scannedCodeFiles": 456,
     "filesWithFullHeaders": 426,
-    "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 454,
+    "filesWithLiteHeaders": 30,
+    "filesWithAnyHeaders": 456,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1025,
-    "edges": 5265,
-    "dbTables": 124,
+    "graphNodes": 1031,
+    "edges": 5278,
+    "dbTables": 126,
     "doctrines": 282,
-    "impactAreas": 165,
-    "unresolvedCodeEdges": 545,
+    "impactAreas": 167,
+    "unresolvedCodeEdges": 547,
     "dbWriteViaOverlapWarnings": 2,
     "multiWriterTables": 62
   },
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 73,
+    "catalog": 75,
     "admin-dashboard": 21,
     "decision-signals": 7,
     "market": 2,
@@ -76,7 +76,7 @@
     "manual-test": 1,
     "middleware": 20,
     "ui-bootstrap": 4,
-    "ui-component": 38,
+    "ui-component": 39,
     "ui-enhancer": 3,
     "ui-renderer": 9,
     "ui-page": 5,
@@ -89,7 +89,7 @@
     "state": 1,
     "util": 32,
     "domain-helper": 1,
-    "adapter": 4,
+    "adapter": 5,
     "controller": 1,
     "api-client": 2,
     "presenter": 1,
@@ -109,7 +109,7 @@
     "critical": 61,
     "medium": 115,
     "high": 241,
-    "low": 37
+    "low": 39
   },
   "nodes": [
     {
@@ -3994,6 +3994,33 @@
       "version": "2026-08"
     },
     {
+      "id": "public/boutique/js/discovery-api.js",
+      "file": "public/boutique/js/discovery-api.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "boutique-discovery-api",
+      "domain": "catalog",
+      "layer": "adapter",
+      "criticality": "low",
+      "owner": "public/boutique/js/discovery-api.js",
+      "purpose": "Frontière frontend unique vers /api/local-stock et",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "boutique",
+        "pdp",
+        "discovery-rail"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "public/boutique/js/group/group-api.js",
       "file": "public/boutique/js/group/group-api.js",
       "type": "file",
@@ -4428,6 +4455,32 @@
         "shared-cart"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/local-stock-badge.js",
+      "file": "public/boutique/js/local-stock-badge.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "boutique-local-stock-badge",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": "low",
+      "owner": "public/boutique/js/local-stock-badge.js",
+      "purpose": "Badge \"Disponible maintenant\" sur la PDP — Vague 2 D6.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "boutique",
+        "pdp"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/main.js",
@@ -8152,20 +8205,25 @@
       "purpose": null,
       "inputs": [
         "product_id",
-        "market_id (query)"
+        "market (query — code KM|YT|CM|CG",
+        "résolu serveur)"
       ],
       "outputs": [
         "availability_projection",
         "exposable_flag"
       ],
       "depends": [
-        "services/local-stock-service.js"
+        "services/local-stock-service.js",
+        "db (résolution code marché)"
       ],
       "usedBy": [
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets (résolution code -> id",
+        "jamais un UUID brut du client)"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -9703,20 +9761,25 @@
       "purpose": null,
       "inputs": [
         "id (params)",
-        "market_id (query)"
+        "market (query — code KM|YT|CM|CG",
+        "résolu serveur)"
       ],
       "outputs": [
         "service_public_fields",
         "physical_offer_public_fields"
       ],
       "depends": [
-        "services/providers-service.js"
+        "services/providers-service.js",
+        "db (résolution code marché)"
       ],
       "usedBy": [
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets (résolution code -> id",
+        "jamais un UUID brut du client)"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -21745,6 +21808,16 @@
       "table": "order_incidents"
     },
     {
+      "id": "db:markets (résolution code -> id",
+      "type": "db-table",
+      "table": "markets (résolution code -> id"
+    },
+    {
+      "id": "db:jamais un UUID brut du client)",
+      "type": "db-table",
+      "table": "jamais un UUID brut du client)"
+    },
+    {
       "id": "db:shipments",
       "type": "db-table",
       "table": "shipments"
@@ -23963,6 +24036,16 @@
       "id": "impact:category-rail",
       "type": "impact-area",
       "area": "category-rail"
+    },
+    {
+      "id": "impact:pdp",
+      "type": "impact-area",
+      "area": "pdp"
+    },
+    {
+      "id": "impact:discovery-rail",
+      "type": "impact-area",
+      "area": "discovery-rail"
     },
     {
       "id": "impact:all-boutique-api",
@@ -29989,6 +30072,30 @@
       "label": "desktop-catalog"
     },
     {
+      "from": "public/boutique/js/discovery-api.js",
+      "to": "public/boutique/js/discovery-api.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/discovery-api.js"
+    },
+    {
+      "from": "public/boutique/js/discovery-api.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/discovery-api.js",
+      "to": "impact:pdp",
+      "type": "impact",
+      "label": "pdp"
+    },
+    {
+      "from": "public/boutique/js/discovery-api.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
+    },
+    {
       "from": "public/boutique/js/group/group-api.js",
       "to": "routes/shared-cart.js",
       "type": "depends",
@@ -30533,6 +30640,24 @@
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/local-stock-badge.js",
+      "to": "public/boutique/js/local-stock-badge.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/local-stock-badge.js"
+    },
+    {
+      "from": "public/boutique/js/local-stock-badge.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/local-stock-badge.js",
+      "to": "impact:pdp",
+      "type": "impact",
+      "label": "pdp"
     },
     {
       "from": "public/boutique/js/main.js",
@@ -35650,6 +35775,12 @@
       "label": "services/local-stock-service.js"
     },
     {
+      "from": "routes/local-stock.js",
+      "to": "db (résolution code marché)",
+      "type": "depends",
+      "label": "db (résolution code marché)"
+    },
+    {
       "from": "(aucun — Vague 2 D4",
       "to": "routes/local-stock.js",
       "type": "uses",
@@ -35660,6 +35791,18 @@
       "to": "routes/local-stock.js",
       "type": "uses",
       "label": "shadow : jamais monté dans bootstrap/api-routes.js)"
+    },
+    {
+      "from": "routes/local-stock.js",
+      "to": "db:markets (résolution code -> id",
+      "type": "db-read",
+      "label": "markets (résolution code -> id"
+    },
+    {
+      "from": "routes/local-stock.js",
+      "to": "db:jamais un UUID brut du client)",
+      "type": "db-read",
+      "label": "jamais un UUID brut du client)"
     },
     {
       "from": "routes/local-stock.js",
@@ -37977,6 +38120,12 @@
       "label": "services/providers-service.js"
     },
     {
+      "from": "routes/providers-services.js",
+      "to": "db (résolution code marché)",
+      "type": "depends",
+      "label": "db (résolution code marché)"
+    },
+    {
       "from": "(aucun — Vague 2 D4",
       "to": "routes/providers-services.js",
       "type": "uses",
@@ -37987,6 +38136,18 @@
       "to": "routes/providers-services.js",
       "type": "uses",
       "label": "shadow : jamais monté dans bootstrap/api-routes.js)"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db:markets (résolution code -> id",
+      "type": "db-read",
+      "label": "markets (résolution code -> id"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db:jamais un UUID brut du client)",
+      "type": "db-read",
+      "label": "jamais un UUID brut du client)"
     },
     {
       "from": "routes/providers-services.js",
@@ -60094,6 +60255,34 @@
         "public/boutique/js/shop-schema.js"
       ]
     },
+    "public/boutique/js/discovery-api.js": {
+      "role": "boutique-discovery-api",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/discovery-api.js",
+      "purpose": "Frontière frontend unique vers /api/local-stock et",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [
+        "public/boutique/js/discovery-api.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "boutique",
+        "pdp",
+        "discovery-rail"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:discovery-rail",
+        "impact:pdp",
+        "public/boutique/js/discovery-api.js"
+      ]
+    },
     "public/boutique/js/group/group-api.js": {
       "role": "shared-cart-front-api",
       "domain": "shared-cart",
@@ -60510,6 +60699,32 @@
         "impact:tracking",
         "public/boutique/js/boutique.js",
         "routes/products.js"
+      ]
+    },
+    "public/boutique/js/local-stock-badge.js": {
+      "role": "boutique-local-stock-badge",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/local-stock-badge.js",
+      "purpose": "Badge \"Disponible maintenant\" sur la PDP — Vague 2 D6.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [
+        "public/boutique/js/local-stock-badge.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "boutique",
+        "pdp"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:pdp",
+        "public/boutique/js/local-stock-badge.js"
       ]
     },
     "public/boutique/js/main.js": {
@@ -64043,14 +64258,18 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/local-stock-service.js"
+        "services/local-stock-service.js",
+        "db (résolution code marché)"
       ],
       "directUsedBy": [
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets (résolution code -> id",
+        "jamais un UUID brut du client)"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -64060,6 +64279,8 @@
         "local-stock"
       ],
       "mustCheck": [
+        "db:jamais un UUID brut du client)",
+        "db:markets (résolution code -> id",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:local-stock",
         "services/local-stock-service.js"
@@ -65565,14 +65786,18 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/providers-service.js"
+        "services/providers-service.js",
+        "db (résolution code marché)"
       ],
       "directUsedBy": [
         "(aucun — Vague 2 D4",
         "shadow : jamais monté dans bootstrap/api-routes.js)"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets (résolution code -> id",
+        "jamais un UUID brut du client)"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -65582,6 +65807,8 @@
         "providers-services"
       ],
       "mustCheck": [
+        "db:jamais un UUID brut du client)",
+        "db:markets (résolution code -> id",
         "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
         "impact:providers-services",
         "services/providers-service.js"
@@ -78889,6 +79116,12 @@
       "label": "services/*"
     },
     {
+      "from": "routes/local-stock.js",
+      "to": "db (résolution code marché)",
+      "type": "depends",
+      "label": "db (résolution code marché)"
+    },
+    {
       "from": "(aucun — Vague 2 D4",
       "to": "routes/local-stock.js",
       "type": "uses",
@@ -79241,6 +79474,12 @@
       "to": "validators.js",
       "type": "depends",
       "label": "validators.js"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db (résolution code marché)",
+      "type": "depends",
+      "label": "db (résolution code marché)"
     },
     {
       "from": "(aucun — Vague 2 D4",

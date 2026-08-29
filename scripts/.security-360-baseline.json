@@ -4,7 +4,7 @@
     "GET /api/boutique/suggestions",
     "GET /api/categories",
     "GET /api/client/magic-link/validate",
-    "GET /api/invoices/public/{token}",
+    "GET /api/local-stock/availability",
     "GET /api/loyalty/tiers",
     "GET /api/modules",
     "GET /api/modules/fabrics",
@@ -17,6 +17,8 @@
     "GET /api/products/subcategories",
     "GET /api/products/{id}",
     "GET /api/products/{id}/detail",
+    "GET /api/providers-services/physical-offers/{id}",
+    "GET /api/providers-services/services/{id}",
     "GET /api/relais",
     "GET /api/relais/public",
     "GET /api/relais/{id}",
@@ -26,7 +28,6 @@
     "GET /health/ready",
     "GET /health/version",
     "GET /webhook/meta-whatsapp",
-    "PATCH /api/shares/{token}/contributions/{id}",
     "POST /api/auth/admin-reset",
     "POST /api/auth/guest-checkout",
     "POST /api/auth/magic-link",
@@ -40,7 +41,6 @@
     "POST /api/pricing/calculate",
     "POST /api/pricing/couture",
     "POST /api/shares",
-    "POST /api/shares/{token}/contributions",
     "POST /api/tracking/{token}/verify-pickup",
     "POST /webhook/meta-whatsapp"
   ]

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 454
+- Scanned code files: 456
 - Files with full headers: 426
-- Files with lite headers: 28
-- Files with any headers: 454
+- Files with lite headers: 30
+- Files with any headers: 456
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1025
-- Edges: 5265
-- DB tables: 124
+- Graph nodes: 1031
+- Edges: 5278
+- DB tables: 126
 - Doctrines: 282
-- Impact areas: 165
-- Unresolved code edges: 545
+- Impact areas: 167
+- Unresolved code edges: 547
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 2
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 73
+- catalog: 75
 - checkout: 2
 - customs: 6
 - dashboard: 27
@@ -64,7 +64,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Layers
 
-- adapter: 4
+- adapter: 5
 - api-client: 2
 - bootstrap: 6
 - composition-root: 1
@@ -87,7 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - state-store: 1
 - ui-bootstrap: 4
 - ui-boundary: 1
-- ui-component: 38
+- ui-component: 39
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -425,8 +425,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-share-cart.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
 - public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
+- public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-share-cart.js (shared-cart-group-state)
 - public/boutique/js/hero-bootstrap.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-hero-bootstrap)
+- public/boutique/js/local-stock-badge.js -> owner public/boutique/js/local-stock-badge.js (boutique-local-stock-badge)
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
 - public/boutique/js/market-context.js -> owner public/boutique/js/market-context.js (boutique-market-context)
 - public/boutique/js/render/category-shelf-visuals.js -> owner public/boutique/js/render/render-categories.js (category-shelf-visual-registry)

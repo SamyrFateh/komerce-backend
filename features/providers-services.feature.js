@@ -106,17 +106,18 @@ module.exports = {
   },
 
   security: {
-    status: 'ROUTE_SHADOW',
-    note: 'Vague 2 D4 : routes/providers-services.js existe ' +
-      '(GET /services/:id, GET /physical-offers/:id), testable, mais ' +
-      'JAMAIS montée dans bootstrap/api-routes.js — vérifié par ' +
-      'tests/unit/shadow-domains-boundary.test.js. Champs publics ' +
-      'minimaux uniquement (id/title/description/zone/market_id) — ' +
-      'JAMAIS le téléphone provider, jamais provider_id : le contact réel ' +
-      'se fait via une Inquiry (écriture), pas par lecture directe ici. ' +
-      'Objet non exposable -> 404, jamais le pourquoi (statut, exposure, ' +
-      'marché). Montage réel + auth + rate-limit seront un lot séparé ' +
-      '(D6/D7), avec sa propre revue.',
+    status: 'CONFIRMED_PUBLIC_BY_DESIGN',
+    authedRoutesDetected: 0,
+    totalRoutes: 2,
+    note: 'Vague 2 D6 : routes/providers-services.js désormais montée ' +
+      'dans bootstrap/api-routes.js. GET /services/:id et GET /physical-' +
+      'offers/:id classées PUBLIC et volontairement sans garde — même ' +
+      'précédent que recommendations (GET /api/boutique/suggestions, ' +
+      'features/recommendations.feature.js). Champs publics minimaux ' +
+      'uniquement (id/title/description/zone/market_id) — JAMAIS le ' +
+      'téléphone provider, jamais provider_id : le contact réel se fait ' +
+      'via une Inquiry (écriture), pas par lecture directe ici. Objet non ' +
+      'exposable -> 404, jamais le pourquoi (statut, exposure, marché).',
   },
 
   contract: {
