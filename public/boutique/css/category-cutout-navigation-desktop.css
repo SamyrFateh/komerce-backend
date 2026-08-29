@@ -148,10 +148,10 @@
     align-items: center;
     gap: 7px;
     flex-wrap: nowrap;
-    width: 100%;
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 6px 24px 2px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 4px 0 0;
     box-sizing: border-box;
   }
 
@@ -160,7 +160,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 5px;
+    padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -221,10 +221,10 @@
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 10px;
-    width: 100%;
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 2px 24px 8px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0 0 5px;
     box-sizing: border-box;
     overflow-x: auto;
     scrollbar-width: none;
@@ -315,17 +315,10 @@
   }
 
   /* Premium home : contexte puis rail, sans cadres supplémentaires. */
-  html.k-home-premium-v1 .k-subcutout-context {
-    width: auto;
-    max-width: none;
-    margin: 0;
-    padding: 4px 0 0;
-  }
 
   html.k-home-premium-v1 .k-subcutout-back {
     width: 28px;
     height: 32px;
-    padding: 0;
     justify-content: center;
   }
 
@@ -335,10 +328,6 @@
 
   html.k-home-premium-v1 .k-subcutout-rail {
     min-width: 0;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    padding: 0 0 5px;
     gap: 10px;
   }
 }

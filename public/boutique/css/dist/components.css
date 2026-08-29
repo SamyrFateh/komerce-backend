@@ -541,7 +541,7 @@
   /* Sticky wrapper */
   .k-hero-cats-sticky {
     position: sticky;
-    top: 68px;
+    top: var(--header-h, 72px);
     z-index: 180;
     margin-top: 0;
     /* Opaque (pas de rgba) : la barre doit masquer totalement les cartes
@@ -573,7 +573,7 @@
     position: relative;
     top: auto;
     z-index: 120;
-    max-width: 1480px;
+    max-width: 1680px;
     margin: 8px auto 0;
     padding: 0 20px;
     border-radius: 0;
@@ -632,10 +632,9 @@
 
   /* Lift au survol */
   .k-chip:hover {
-    transform: translateY(-4px);
+    transform: translateY(-1px);
     box-shadow:
-      0 16px 32px rgba(28,26,23,.13),
-      0 2px 6px rgba(28,26,23,.06);
+      0 8px 18px var(--border-text-08);
   }
 
   /* Neutralise le transform global sur .k-chip-photo (hérité de @hover:hover) */
@@ -646,8 +645,8 @@
 
   /* Zoom discret sur l'image au survol */
   .k-chip:hover .k-chip-photo img {
-    transform: scale(1.07);
-    filter: saturate(1.32) contrast(1.06) brightness(1.06);
+    transform: scale(1.035);
+    filter: saturate(1.04) contrast(1) brightness(.98);
   }
 
   /* ── Photo = le cadre ── */
@@ -702,11 +701,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      to bottom,
-      transparent 28%,
-      rgba(18, 12, 6, .44) 100%
-    );
+    background: linear-gradient(to bottom, rgba(18, 12, 6, .04) 12%, rgba(18, 12, 6, .52) 100%);
     border-radius: inherit;
     pointer-events: none;
     z-index: 1;
@@ -735,7 +730,7 @@
 
   /* ── État actif — vert plein ── */
   .k-chip.active {
-    transform: translateY(-2px);
+    transform: none;
     background: var(--ocean-dark);
     border-color: var(--ocean-dark);
     box-shadow:
@@ -744,7 +739,7 @@
   }
 
   .k-chip.active .k-chip-photo img {
-    filter: saturate(1.28) contrast(1.06) brightness(1.05);
+    filter: saturate(1.04) contrast(1) brightness(.96);
   }
 
   .k-chip.active .k-chip-label {
@@ -922,7 +917,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-cats-shell {
     width: calc(100% - clamp(32px, 2.6vw, 48px));
-    max-width: 1680px;
     margin: 0 auto;
     padding: 0;
   }
@@ -952,29 +946,13 @@ html.k-mobile-premium-v1 .k-chip-label {
     filter: saturate(.78) contrast(.96) brightness(.90);
   }
 
-  html.k-home-premium-v1 .k-chip::after {
-    background: linear-gradient(to bottom, rgba(18, 12, 6, .04) 12%, rgba(18, 12, 6, .52) 100%);
-  }
-
   html.k-home-premium-v1 .k-chip:hover {
-    transform: translateY(-1px);
     border-color: var(--border-text-10);
-    box-shadow: 0 8px 18px var(--border-text-08);
-  }
-
-  html.k-home-premium-v1 .k-chip:hover .k-chip-photo img {
-    transform: scale(1.035);
-    filter: saturate(1.04) contrast(1) brightness(.98);
   }
 
   html.k-home-premium-v1 .k-chip.active {
-    transform: none;
     border-color: var(--ocean-dark);
     box-shadow: inset 0 -3px 0 var(--ocean-dark), 0 4px 12px var(--border-text-06);
-  }
-
-  html.k-home-premium-v1 .k-chip.active .k-chip-photo img {
-    filter: saturate(1.04) contrast(1) brightness(.96);
   }
 
   html.k-home-premium-v1 .k-chip-label {

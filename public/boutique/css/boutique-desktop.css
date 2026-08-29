@@ -500,9 +500,9 @@
      L'inline display:none/'' posé par home-controller.renderSubcatRail pilote
      la visibilité ; le layout/visuel est porté ici (invariant CSS/JS). */
   #k-subcats-wrap {
-    display: block;
-    width: 100%;
-    padding: 0;
+    display: grid;
+    width: calc(100% - clamp(32px, 2.6vw, 48px));
+    padding: 7px 0 9px;
     animation: k-subcats-slide-in .18s var(--ease) both;
   }
 
@@ -510,22 +510,22 @@
   #k-subcats-wrap .k-subcats-context {
     display: flex;
     align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-    width: 100%;
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 8px 24px 6px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
   }
   #k-subcats-wrap .k-subcats-back {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 12px;
+    padding: 0;
     border: 1.5px solid var(--border);
     border-radius: 999px;
-    background: var(--surface-white-88);
+    background: transparent;
     color: var(--text-muted);
     font-family: var(--font);
     font-size: 12.5px;
@@ -545,20 +545,20 @@
     margin: 0;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    font-family: var(--font-display, 'Fraunces', serif);
-    font-size: 21px;
-    font-weight: 700;
+    gap: 6px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 750;
     color: var(--text);
-    letter-spacing: -.02em;
+    letter-spacing: -.012em;
   }
   #k-subcats-wrap .k-subcats-emoji { font-size: 22px; line-height: 1; }
   #k-subcats-wrap .k-subcats-count {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--text-muted);
-    background: var(--sand-warm);
-    padding: 3px 9px;
+    background: transparent;
+    padding: 2px 7px;
     border-radius: 999px;
   }
 
@@ -567,12 +567,12 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 2px 24px 12px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
     background: transparent;
     border: none;
@@ -666,33 +666,19 @@
    horizontal pour prolonger la sélection sans concurrencer le hero. */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-subcats-wrap {
-    display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 10px;
-    width: calc(100% - clamp(32px, 2.6vw, 48px));
     max-width: 1680px;
     margin: 0 auto;
-    padding: 7px 0 9px;
     border-top: 1px solid var(--border-text-06);
-  }
-
-  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-context {
-    width: auto;
-    max-width: none;
-    margin: 0;
-    padding: 0;
-    gap: 8px;
-    flex-wrap: nowrap;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back {
     width: 30px;
     height: 30px;
-    padding: 0;
     justify-content: center;
     border-width: 1px;
-    background: transparent;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back span {
@@ -700,11 +686,6 @@
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-title {
-    gap: 6px;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 750;
-    letter-spacing: -.012em;
     white-space: nowrap;
   }
 
@@ -713,20 +694,11 @@
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-count {
-    padding: 2px 7px;
-    font-size: 10px;
-    background: transparent;
     border: 1px solid var(--border-text-06);
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-rail {
-    flex-wrap: nowrap;
     min-width: 0;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    padding: 0;
-    gap: 6px;
     overflow-x: auto;
   }
 
