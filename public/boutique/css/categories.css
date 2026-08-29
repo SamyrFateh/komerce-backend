@@ -28,7 +28,7 @@
 }
 .k-cats::-webkit-scrollbar { display: none; }
 .k-cats::before,
-.k-cats::after { content: ""; flex: 0 0 12px; }
+.k-cats::after { content: ""; }
 
 /* ── CHIP (mobile-first : legacy horizontal rail fallback) ───── */
 .k-chip {
@@ -37,14 +37,11 @@
   cursor: pointer;
   overflow: hidden;
 }
-.k-chip:active { transform: scale(.95); }
 
 /* Mobile target state — compact 2×4 pill grid, image left + label right. */
 .k-cats-shell {
   margin-top: 0;
   /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
-    0 6px 18px rgba(198,168,93,.09),
-    0 1px 0 rgba(198,168,93,.07);
 }
 
 .k-cats-wrap-fade-left,
@@ -54,10 +51,6 @@
 
 .k-cats {
   overflow: visible;
-}
-
-.k-cats::before,
-.k-cats::after {
 }
 
 .k-chip {
@@ -76,7 +69,7 @@
   align-items: center;
   justify-content: center;
 }
-.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; }
 .k-chip-photo > span {
   display: flex;
   align-items: center;
@@ -93,10 +86,6 @@
 .k-chip-photo {
   border-width: 1px;
   /* POLISH — bord interne lumineux pour soulever l'image du fond */
-}
-
-.k-chip-photo img {
-  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
 }
 
 /* Fond par catégorie */
@@ -156,7 +145,7 @@
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
 .k-chip.active .k-chip-photo svg { stroke: var(--white); }
 .k-chip.active .k-chip-emoji { background: var(--ocean-dark); border-color: var(--ocean-dark); color: var(--white); }
-.k-chip.active .k-chip-label { color: var(--white); font-weight: 800; }
+.k-chip.active .k-chip-label { color: var(--white); }
 
 .k-chip.active {
   background: var(--ocean-dark);
@@ -186,11 +175,9 @@
    ──────────────────────────────────────────────────────────── */
 
 /* Section subcats (dans chaque section catalogue) */
-.k-cat-section  { margin-bottom: 4px; }
 
 /* Padding interne des sections dans le pager mobile */
 .k-cat-section { padding: 0 12px; }
-.k-sec-grid    { padding: 4px 0 12px; }
 .k-sec-header {
   display: flex;
   align-items: center;
@@ -199,7 +186,7 @@
   position: relative;
   scroll-margin-top: 70px;
 }
-.k-sec-header-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.k-sec-header-emoji { line-height: 1; flex-shrink: 0; }
 .k-sec-header-cutout {
   display: grid;
   place-items: center;
@@ -214,7 +201,7 @@
   object-fit: contain;
   filter: drop-shadow(0 2px 4px var(--border-text-15)) contrast(1.10);
 }
-.k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--catalog-nav-strong); flex: 1; min-width: 0; }
+.k-sec-header-name  { font-weight: 700; color: var(--catalog-nav-strong); flex: 1; min-width: 0; }
 .k-sec-header-count {
   font-weight: 500; color: var(--catalog-nav-muted);
   border-radius: 20px;
@@ -770,7 +757,6 @@
 
   .k-sec-subcats { display: none; }
   .k-sec-see-all { display: none; }
-  .k-sec-header  { display: none; }
 
   #k-desktop-sidebar,
   .k-desktop-sidebar {
