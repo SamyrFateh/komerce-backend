@@ -1,0 +1,45 @@
+name: Debt Zero backend final inventory
+
+on:
+  push:
+    branches: [ci/debt-zero-backend-final]
+    paths:
+      - '.github/workflows/debt-zero-backend-final.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --ignore-scripts
+      - name: Exact npm security inventory
+        shell: bash
+        run: |
+          set +e
+          echo '=== npm audit json ==='
+          npm audit --json > /tmp/npm-audit.json
+          node - <<'NODE'
+          const a = require('/tmp/npm-audit.json');
+          console.log(JSON.stringify({metadata:a.metadata,vulnerabilities:a.vulnerabilities}, null, 2));
+          NODE
+          echo '=== npm ls targeted packages ==='
+          npm ls brace-expansion fast-uri js-yaml --all || true
+          exit 0
+      - name: Exact backend debt inventory
+        shell: bash
+        run: |
+          echo '=== debt-audit ==='
+          node scripts/debt-audit.js --json > /tmp/debt.json || true
+          cat /tmp/debt.json
+          echo '=== large-file allowlist references ==='
+          grep -RIn "ALLOWED_LARGE_FILES\|scan-engine.js\|sourcing-scanner.js" scripts tests governance . 2>/dev/null | head -n 240 || true
+          echo '=== quality disables ==='
+          grep -RIn "quality-disable.*N2-SQL-INJECTION" routes services middleware utils 2>/dev/null || true
+          echo '=== direct lifecycle exceptions ==='
+          grep -RIn "payment-paypal.js\|state-advancer.js\|admin/system.js" scripts governance docs 2>/dev/null | head -n 240 || true
