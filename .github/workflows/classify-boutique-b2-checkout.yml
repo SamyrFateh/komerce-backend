@@ -1,4 +1,4 @@
-name: Classify Boutique B2 Checkout Debt
+name: Consolidate Boutique B2 Checkout Ownership
 
 on:
   push:
@@ -6,60 +6,153 @@ on:
       - refactor/boutique-debt-zero-b2-checkout
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  classify:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: refactor/boutique-debt-zero-b2-checkout
           fetch-depth: 1
-      - name: Classify checkout conflict keys by source owners
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+      - name: Remove declarations already owned later by checkout-vertical-rail
         run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const postcss = require('./public/boutique/node_modules/postcss');
+          const { BUNDLES } = require('./public/boutique/scripts/css-bundles');
+
+          const rootDir = path.resolve('public/boutique');
+          const cssDir = path.join(rootDir, 'css');
+          const baseline = JSON.parse(fs.readFileSync(path.join(rootDir, 'scripts/.css-guard-baseline.json'), 'utf8'));
+          const baselineKeys = new Set(baseline.keys);
+          const componentBundle = BUNDLES.find(b => b.out === 'components.css');
+          const files = componentBundle.files.map(name => `${name}.css`);
+          const ownerFile = 'checkout-vertical-rail.css';
+          const ownerIndex = files.indexOf(ownerFile);
+          if (ownerIndex < 0) throw new Error('checkout-vertical-rail.css absent du bundle components');
+
+          function contextOf(rule) {
+            let node = rule.parent;
+            while (node && node.type !== 'root') {
+              if (node.type === 'atrule' && node.name === 'media') return `@media ${node.params} {`;
+              node = node.parent;
+            }
+            return 'global';
+          }
+
+          const ownerCss = fs.readFileSync(path.join(cssDir, ownerFile), 'utf8');
+          const ownerRoot = postcss.parse(ownerCss, { from: ownerFile });
+          const ownerKeys = new Set();
+          ownerRoot.walkRules(rule => {
+            if (contextOf(rule) !== 'global') return;
+            rule.walkDecls(decl => {
+              const key = `${rule.selector}|||global|||${decl.prop}`;
+              if (baselineKeys.has(key)) ownerKeys.add(key);
+            });
+          });
+
+          const removed = [];
+          const touched = new Set();
+          for (const file of files.slice(0, ownerIndex)) {
+            const fp = path.join(cssDir, file);
+            const original = fs.readFileSync(fp, 'utf8');
+            const ast = postcss.parse(original, { from: file });
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== 'global') return;
+              [...rule.nodes].forEach(node => {
+                if (node.type !== 'decl') return;
+                const key = `${rule.selector}|||global|||${node.prop}`;
+                if (!ownerKeys.has(key)) return;
+                removed.push({ file, selector: rule.selector, property: node.prop, value: node.value, key });
+                node.remove();
+              });
+              if (rule.nodes && rule.nodes.filter(n => n.type !== 'comment').length === 0) rule.remove();
+            });
+            const next = ast.toString();
+            if (next !== original) {
+              fs.writeFileSync(fp, next, 'utf8');
+              touched.add(file);
+            }
+          }
+
+          const uniqueKeys = [...new Set(removed.map(r => r.key))].sort();
+          if (!uniqueKeys.length) throw new Error('Aucune déclaration checkout perdante détectée');
+
+          // Proof: none of the exact global owner keys may remain in any earlier source.
+          const leftovers = [];
+          for (const file of files.slice(0, ownerIndex)) {
+            const ast = postcss.parse(fs.readFileSync(path.join(cssDir, file), 'utf8'), { from: file });
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== 'global') return;
+              rule.walkDecls(decl => {
+                const key = `${rule.selector}|||global|||${decl.prop}`;
+                if (ownerKeys.has(key)) leftovers.push(`${file}: ${key}`);
+              });
+            });
+          }
+          if (leftovers.length) throw new Error(`Ownership leftovers:\n${leftovers.join('\n')}`);
+
+          const summary = {
+            oldCascade: baseline.total,
+            finalOwner: ownerFile,
+            touchedFiles: [...touched].sort(),
+            removedDeclarations: removed.length,
+            removedConflictKeys: uniqueKeys.length,
+            keys: uniqueKeys,
+            perFile: removed.reduce((acc, row) => ((acc[row.file] = (acc[row.file] || 0) + 1), acc), {}),
+          };
+          fs.writeFileSync('/tmp/checkout-b2-summary.json', JSON.stringify(summary, null, 2));
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove no new CSS debt before lowering ratchet
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower cascade ratchet and write report
+        run: |
+          npm --prefix public/boutique run check:css-guard:save
           python3 - <<'PY'
           import json
           from pathlib import Path
-          from collections import Counter, defaultdict
-
-          root = Path('public/boutique')
-          baseline = json.loads((root / 'scripts/.css-guard-baseline.json').read_text())
-          css_files = sorted((root / 'css').glob('*.css'))
-          contents = {p.name: p.read_text(errors='ignore') for p in css_files}
-
-          def is_checkout(selector):
-              return (
-                  selector.startswith('.ck-') or
-                  selector.startswith('.k-ck-') or
-                  selector.startswith('.k-order') or
-                  selector.startswith('.k-confirm') or
-                  selector.startswith('.k-modal-subtotal') or
-                  selector.startswith('.k-stripe-wrap')
-              )
-
-          rows = []
-          for key in baseline['keys']:
-              selector, media, prop = key.split('|||')
-              if not is_checkout(selector):
-                  continue
-              owners = tuple(name for name, text in contents.items() if selector in text)
-              rows.append((selector, media, prop, owners))
-
-          print(f'CHECKOUT_CONFLICTS={len(rows)}')
-          print('\n=== OWNER SETS ===')
-          by_owners = Counter(owners for _, _, _, owners in rows)
-          for owners, count in by_owners.most_common():
-              print(f'{count:3}  {" + ".join(owners) if owners else "<no source match>"}')
-
-          print('\n=== SELECTOR COUNTS ===')
-          by_selector = Counter(selector for selector, _, _, _ in rows)
-          for selector, count in by_selector.most_common():
-              owners = next(owners for sel, _, _, owners in rows if sel == selector)
-              print(f'{count:3}  {selector}  [{", ".join(owners)}]')
-
-          print('\n=== ALL CHECKOUT KEYS ===')
-          for selector, media, prop, owners in rows:
-              print(f'{selector} || {media} || {prop} || {", ".join(owners)}')
+          summary = json.loads(Path('/tmp/checkout-b2-summary.json').read_text())
+          new = json.loads(Path('public/boutique/scripts/.css-guard-baseline.json').read_text())['total']
+          lines = [
+              '# Boutique CSS Debt — B2-2 Checkout ownership',
+              '',
+              'Only global declarations already redefined later by `checkout-vertical-rail.css` with the exact same selector/property were removed.',
+              '',
+              f'- Cascade baseline: **{summary["oldCascade"]} → {new}**',
+              f'- Semantic conflict keys removed: **{summary["removedConflictKeys"]}**',
+              f'- Losing declarations physically removed: **{summary["removedDeclarations"]}**',
+              f'- Final owner: `{summary["finalOwner"]}`',
+              '- New cascade keys before ratchet save: **0**',
+              '- Specificity ratchet: **unchanged / strict passed**',
+              '',
+              'Touched earlier sources:',
+          ]
+          for f in summary['touchedFiles']:
+              lines.append(f'- `{f}`: {summary["perFile"].get(f, 0)} declaration(s) removed')
+          lines += ['', 'The winning values are unchanged because the final owner is later in the same canonical `components.css` bundle.']
+          Path('public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_CHECKOUT.md').write_text('\n'.join(lines) + '\n')
           PY
+      - name: Commit B2 checkout consolidation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_CHECKOUT.md
+          git commit -m "refactor(boutique): consolidate checkout CSS ownership"
+          git push origin HEAD:refactor/boutique-debt-zero-b2-checkout
