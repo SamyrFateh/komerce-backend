@@ -776,7 +776,7 @@
    sélectionner" → liste items scrollable. Identité Komerce conservée
    (coral CTA principal, violet "En groupe", ocean livraison).
    Owner structurel du side-cart desktop ≥900px. Les propriétés de
-   convergence visuelle finales sont owned par side-cart-desktop-polish.css ;
+   convergence visuelle finales sont portées par side-cart-desktop-polish.css ;
    elles ne doivent plus être redéclarées dans ce bloc.
    ══════════════════════════════════════════════════════════════════ */
 
@@ -826,7 +826,6 @@
     top: auto; right: auto; bottom: auto;
     width: 100%;
     height: auto;
-    
     min-height: 0;
     flex: 0 1 auto;
     margin-block: 0;
@@ -909,11 +908,8 @@
   .k-sc-header {
     flex-shrink: 0;
     
-    
-    
     display: flex;
     flex-direction: column;
-    
   }
 
   .k-sc-subtotal-row {
@@ -961,12 +957,9 @@
     justify-content: center;
     gap: 4px;
     
-    
     background: transparent;
     
-    
     color: var(--text-muted);
-    
     font-weight: 600;
     cursor: pointer;
     transition: color .15s var(--ease), border-color .15s var(--ease), background .15s var(--ease);
@@ -978,7 +971,6 @@
   }
   .k-sc-clear:hover {
     color: var(--coral);
-    
     
   }
   .k-side-cart.has-items .k-sc-clear {
@@ -993,10 +985,7 @@
     font-weight: 600;
     
     
-    
-    
     width: fit-content;
-    
   }
   .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
@@ -1075,7 +1064,6 @@
   .k-sc-btn-share:active { transform: scale(.95); }
   .k-sc-btn-share[hidden] { display: none; }
 
-
   /* Legacy — conservé pour compat si utilisé ailleurs, ne s'affiche plus dans le HTML */
   .k-sc-btn-group { display: none; }
 
@@ -1094,7 +1082,6 @@
     overscroll-behavior: none;
     scrollbar-width: thin;
     scrollbar-color: var(--border-text-08) transparent;
-    
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1139,9 +1126,6 @@
     align-items: center;
     
     
-    
-    
-    
     transition: background .12s, border-color .12s;
     flex-shrink: 0;
   }
@@ -1149,7 +1133,6 @@
     border-color: var(--border-text-08);
   }
   .k-sc-item-img {
-     
     
     object-fit: cover;
     flex-shrink: 0;
@@ -1157,7 +1140,6 @@
   }
   .k-sc-item-info {
     flex: 1; min-width: 0;
-    
     display: flex; flex-direction: column;  
   }
   .k-sc-item-name {
@@ -1169,19 +1151,14 @@
     overflow: hidden;
   }
   .k-side-cart--in-modal .k-sc-item {
-    
     gap: 10px;
-    
   }
   .k-side-cart--in-modal .k-sc-item-img {
     
-    
   }
   .k-side-cart--in-modal .k-sc-item-info {
-    
   }
   .k-side-cart--in-modal .k-sc-item-name {
-    
     
   }
   .k-sc-item-variant {
@@ -1196,7 +1173,6 @@
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    
     gap: 4px;
   }
   .k-sc-item-price-wrap {
@@ -1300,7 +1276,6 @@
   }
 }
 
-
 @media (min-width: 1200px) {
   .k-side-cart {
     width: var(--sc-reserve-w, 296px);
@@ -1323,7 +1298,6 @@
     max-width: 1680px;
   }
 }
-
 
 /* ── GARDE DESKTOP : le panier plein écran (drawer mobile) ne s'affiche jamais
    en desktop, même si un JS lui ajoute .open (boutons "Voir le panier", dame,
