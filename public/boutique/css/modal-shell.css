@@ -453,14 +453,12 @@
      l'image flotte. Cible tactile conservée via le conteneur (40px),
      rendu visuel sans disque (background/border/shadow neutralisés). */
   #k-modal .k-modal-cart-btn {
-    width: 40px; height: 40px;
     background: transparent;
     border: 0;
     box-shadow: none;
     border-radius: 0; /* sans incidence visuelle : plus de fond à arrondir */
   }
   #k-modal .k-modal-cart-btn:active { background: transparent; }
-  #k-modal .k-modal-cart-icon { width: 30px; height: 30px; }
 
   #k-modal-overlay {
     position: fixed;
@@ -799,7 +797,6 @@
   #k-modal .k-modal-meta-star { font-size: 13px; }
 
   /* ── Titre produit ───────────────────────────────────────── */
-  #k-modal .k-modal-name-row { margin-top: 14px; }
   /* D2 — Titre desktop : 18px/500/1.2 — source unique (spec §9.1)
      Purge font-display, clamp trop grand et weight>500. */
   #k-modal .k-modal-info h2 { font-family: inherit; font-size: 20px; line-height: 1.18; font-weight: 600; letter-spacing: -.01em; color: var(--text); max-width: none; }
@@ -813,7 +810,7 @@
   /* D1 — Prix desktop : 28px/500/text, unité 13px/500/muted — source unique (spec §9.3)
      Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
      (règle séparée plus bas). Purge coral hors promo. */
-  #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  #k-modal .k-modal-price-row { align-items: baseline; flex-wrap: wrap; }
   #k-modal .k-modal-price { font-size: 32px; font-weight: 600; color: var(--text); line-height: 1.1; letter-spacing: -.02em; display: inline-flex; align-items: baseline; gap: 4px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
   #k-modal .k-modal-price-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
@@ -831,7 +828,7 @@
   /* FIX LOT1 — trust sur 1 ligne : nowrap + pills compacts (324px utiles à 1024px).
      flex-wrap:wrap provoquait un saut de ligne systématique sur la colonne droite
      étroite (380px track - 56px padding = 324px < 361px pills). */
-  #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
+  #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; }
   #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
@@ -839,7 +836,7 @@
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
-  #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; }
+  #k-modal .k-modal-share-row { grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
@@ -938,7 +935,6 @@
   /* Les visuels --desktop-list (fond, padding responsive) sont owned exclusivement
      par modal-product-lot4-hybrid.css. D10 — aplat --page-bg, dégradé retiré. */
   #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
-    padding: 28px 36px 48px;
     background: var(--page-bg);
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
@@ -964,9 +960,8 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: unset; grid-row: unset; padding: 0 10px 10px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; margin-bottom: 16px; padding: 0 0 10px; border-bottom: 1px solid var(--sand-dark); background: none; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; padding: 0 0 10px; background: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 10px; margin-bottom: 0; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
 
   /* ── Livraison + Paiement : layout full-width sous suggestions supprimé (LOT1).
      #k-modal-delivery et #k-modal-payment sont désormais dans .k-modal-details
