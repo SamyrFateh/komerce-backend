@@ -9,6 +9,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const {
   evaluateCollisionGovernance,
@@ -19,10 +20,6 @@ const { reclassifyLegacyOutput } = require('../../scripts/backend-audit');
 const ROOT = path.join(__dirname, '..', '..');
 const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
 const GAPS_FILE = path.join(MIGRATIONS_DIR, 'GAPS.md');
-
-function writeFixture(dir, name) {
-  fs.writeFileSync(path.join(dir, name), '-- fixture\n', 'utf8');
-}
 
 describe('migration collision governance — immutable history', () => {
   test('les 7 collisions historiques du dépôt correspondent exactement à GAPS.md', () => {
@@ -46,9 +43,9 @@ describe('migration collision governance — immutable history', () => {
   test('un troisième fichier sous un token réaudité redevient immédiatement bloquant', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kmrc-collision-policy-'));
     try {
-      writeFixture(dir, '119_a.sql');
-      writeFixture(dir, '119_b.sql');
-      writeFixture(dir, '119_c.sql');
+      fs.writeFileSync(path.join(dir, '119_a.sql'), '-- fixture\n', 'utf8');
+      fs.writeFileSync(path.join(dir, '119_b.sql'), '-- fixture\n', 'utf8');
+      fs.writeFileSync(path.join(dir, '119_c.sql'), '-- fixture\n', 'utf8');
       fs.writeFileSync(
         path.join(dir, 'GAPS.md'),
         '- COLLISION: `119` = 119_a.sql, 119_b.sql\n',
@@ -68,8 +65,8 @@ describe('migration collision governance — immutable history', () => {
   test('une collision non documentée reste bloquante', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kmrc-collision-policy-'));
     try {
-      writeFixture(dir, '200_a.sql');
-      writeFixture(dir, '200_b.sql');
+      fs.writeFileSync(path.join(dir, '200_a.sql'), '-- fixture\n', 'utf8');
+      fs.writeFileSync(path.join(dir, '200_b.sql'), '-- fixture\n', 'utf8');
       fs.writeFileSync(path.join(dir, 'GAPS.md'), '', 'utf8');
 
       const result = evaluateCollisionGovernance({ migrationsDir: dir });
@@ -109,5 +106,19 @@ describe('migration collision governance — immutable history', () => {
     expect(output).toContain('7 collision(s) historique(s) de migrations immuables');
     expect(output).not.toContain('── Collisions numéros migrations ──');
     expect(output).toContain('── Taille des fichiers ── (5)');
+  });
+
+  test('l’entrée backend:audit réelle conserve les collisions en information, jamais en warning', () => {
+    const result = spawnSync(process.execPath, ['scripts/backend-audit.js'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: { ...process.env, ROOT },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('7 collision(s) historique(s) de migrations immuables');
+    expect(result.stdout).not.toContain('── Collisions numéros migrations ──');
+    expect(result.stdout).toContain('Aucune violation. Architecture conforme.');
   });
 });
