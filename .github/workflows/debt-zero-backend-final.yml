@@ -65,7 +65,7 @@ jobs:
         run: |
           npm run backend:audit
           node scripts/debt-audit.js --json
-          npm test -- --runInBand
+          npx --no-install jest --config jest.unit.config.js --runInBand --forceExit --detectOpenHandles
       - name: Commit verified package security closure
         run: |
           git diff --check
