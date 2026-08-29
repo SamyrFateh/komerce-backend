@@ -69,8 +69,8 @@
 - [x] B2-1b side-cart cross-owner : supprimer les 3 dernières collisions (`shared-list-side-cart.css` + `modal-shell.css`) tout en conservant les valeurs gagnantes du polish ; cascade **170 → 167**, side-cart **44 → 0 conflit** ;
 - [x] B2-2 checkout ownership : supprimer de `cart.css` 63 déclarations globales perdantes déjà redéfinies plus tard par `checkout-vertical-rail.css` avec le même sélecteur/propriété ; **43 conflits supprimés**, cascade **167 → 124**, 0 nouvelle clé ; checkout **92 → 49 conflits** ;
 - [x] B2-2b checkout interne : pour les doublons exacts sélecteur + contexte media + propriété dans `cart.css`, supprimer uniquement les déclarations antérieures à la dernière gagnante ; **38 conflits supprimés**, cascade **124 → 86**, 0 nouvelle clé ; checkout **49 → 11 conflits** ;
-- [ ] poursuivre la classification des 86 conflits de cascade par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
-- [ ] traiter les 11 conflits checkout restants (identity/interactions/paypal, contextes media et modal) avec preuve d'owner séparée ;
+- [x] B2-2c checkout final : supprimer les 11 dernières déclarations perdantes avec valeurs gagnantes explicitement prouvées (`cart.css` 8, `modal-shell.css` 2, split couleur relais 1) ; cascade **86 → 75**, checkout **11 → 0 conflit**, 0 nouvelle clé ;
+- [ ] poursuivre la classification des **75** conflits de cascade restants par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
 - [ ] classifier les 86 overrides de spécificité par classe globale / famille fonctionnelle et supprimer les couches premium ou d'état qui ne sont plus nécessaires ;
 - [ ] figer chaque baisse par le cliquet existant ;
 - [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.

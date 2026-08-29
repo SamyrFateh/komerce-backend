@@ -267,7 +267,7 @@
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--action-commerce-hover); }
 .k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--action-commerce); color: var(--action-commerce-text); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
-.k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
+.k-modal-subtotal { grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 /* Les actions produit peuvent être masquées par leurs propres états ;
    une liste active ne les remplace plus. */
@@ -1070,8 +1070,6 @@
      hidden + overflow-y:auto, déclarés ENSEMBLE non-visibles — c'est pour ça
      que CET ancêtre n'a pas le problème). Cette règle vide reste comme
      marqueur d'ownership documenté — ne pas y réintroduire d'overflow. */
-  #k-modal .k-modal-product-zone .k-modal-details {
-  }
 
   /* ── Actions inline : padding géré par .k-modal-details, pas ici ── */
   #k-modal .k-modal-product-zone .k-modal-actions {
