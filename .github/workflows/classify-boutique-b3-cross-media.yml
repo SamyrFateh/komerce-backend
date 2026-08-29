@@ -1,0 +1,79 @@
+name: Classify Boutique B3 Cross-Media Specificity
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b3-specificity-cross-media
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b3-specificity-cross-media
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - name: Classify all remaining physical relationships
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),cp=require('child_process');
+          const postcss=require('./public/boutique/node_modules/postcss');
+          const {BUNDLES}=require('./public/boutique/scripts/css-bundles');
+          const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==43||spec.keys.length!==43) throw new Error(`Expected specificity 43, got ${spec.total}/${spec.keys.length}`);
+          if(cascade.total!==0) throw new Error(`Expected cascade 0, got ${cascade.total}`);
+
+          const raw=cp.execFileSync('node',['scripts/css-specificity-guard.js'],{cwd:root,encoding:'utf8',maxBuffer:20*1024*1024});
+          const lines=raw.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/), physical=[];
+          for(let i=0;i<lines.length;i++){
+            const m=lines[i].match(/^🔴 \.([^ ]+) — propriété (.+)$/);if(!m)continue;
+            const w=(lines[i+1]||'').match(/^\s*gagnant\s+([^:]+):L(\d+)\s+(.+)$/);
+            const l=(lines[i+3]||'').match(/^\s*perdant\s+([^:]+):L(\d+)\s+(.+)$/);
+            if(!w||!l)throw new Error('guard parse');
+            physical.push({gc:m[1],prop:m[2],wf:w[1],wl:+w[2],ws:w[3],lf:l[1],ll:+l[2],ls:l[3]});
+          }
+          const keys=new Set(physical.map(f=>[f.gc,f.ws,f.ls,f.prop].join('|||')));
+          if(keys.size!==43)throw new Error(`Expected 43 semantic keys, got ${keys.size}`);
+
+          const rank=new Map();
+          ['base.css','components.css','desktop.css'].forEach((out,di)=>{
+            const b=BUNDLES.find(x=>x.out===out);b.files.forEach((name,si)=>rank.set(`public/boutique/css/${name}.css`,di*1000+si));
+          });
+          const cache=new Map(),norm=s=>s.replace(/\s+/g,' ').trim(),members=r=>(r.selectors||[r.selector]).map(norm);
+          function load(file){if(!cache.has(file))cache.set(file,postcss.parse(fs.readFileSync(path.resolve(file),'utf8'),{from:file}));return cache.get(file)}
+          function media(r){const a=[];let n=r.parent;while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media')a.unshift(`@media ${n.params}`);n=n.parent}return a.length?a.join(' && '):'global'}
+          function resolve(file,line,selector,prop){
+            const target=norm(selector),cs=[];load(file).walkRules(r=>{if(!members(r).includes(target))return;(r.nodes||[]).forEach(d=>{if(d.type==='decl'&&d.prop===prop){const dl=d.source?.start?.line||r.source?.start?.line||0,rl=r.source?.start?.line||0;cs.push({r,d,dist:Math.min(Math.abs(dl-line),Math.abs(rl-line))})}})});
+            if(!cs.length)throw new Error(`missing ${file}:${line} ${selector} ${prop}`);cs.sort((a,b)=>a.dist-b.dist);const x=cs[0];return{file,line:x.d.source?.start?.line||x.r.source?.start?.line||line,selector,prop,value:x.d.value,important:!!x.d.important,media:media(x.r),rank:rank.get(file)??-1};
+          }
+          const groups=new Map();
+          for(const f of physical){const key=[f.gc,f.ws,f.ls,f.prop].join('|||');if(!groups.has(key))groups.set(key,[]);groups.get(key).push({...f,w:resolve(f.wf,f.wl,f.ws,f.prop),l:resolve(f.lf,f.ll,f.ls,f.prop)})}
+          function strip(sel,gc){let s=sel.split('.'+gc).join('').replace(/^(html|body)\s+/,'');return norm(s)}
+          const summary=new Map();
+          for(const [key,rows] of groups){
+            if(rows[0].gc==='modal-open'){summary.set('transient',(summary.get('transient')||0)+1);console.log(`DETAIL transient ${key}`);continue}
+            if(rows.some(r=>strip(r.ws,r.gc)!==norm(r.ls)))throw new Error(`strip mismatch ${key}`);
+            const same=rows.filter(r=>r.w.media===r.l.media), diff=rows.filter(r=>r.w.media!==r.l.media);
+            const earlierOrEqual=rows.filter(r=>r.w.rank<r.l.rank || (r.w.rank===r.l.rank&&r.w.line<=r.l.line));
+            let bucket;
+            if(!earlierOrEqual.length) bucket=same.length&&diff.length?'safe-mixed-strip':'safe-different-strip';
+            else bucket='needs-rehome';
+            summary.set(bucket,(summary.get(bucket)||0)+1);
+            console.log(`DETAIL ${bucket} ${key}`);
+            rows.forEach(r=>console.log(`  ${r.w.file}:${r.w.line} [${r.w.media}] ${r.w.value}  >  ${r.l.file}:${r.l.line} [${r.l.media}] ${r.l.value}  order=${r.w.rank}:${r.l.rank}`));
+          }
+          console.log(`PHYSICAL=${physical.length}`);console.log(`SEMANTIC=${groups.size}`);
+          console.log('=== PLAN ===');[...summary.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>console.log(`${v} ${k}`));
+          NODE
