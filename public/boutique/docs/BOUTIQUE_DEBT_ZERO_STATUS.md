@@ -71,8 +71,8 @@
 - [x] B2-2b checkout interne : pour les doublons exacts sélecteur + contexte media + propriété dans `cart.css`, supprimer uniquement les déclarations antérieures à la dernière gagnante ; **38 conflits supprimés**, cascade **124 → 86**, 0 nouvelle clé ; checkout **49 → 11 conflits** ;
 - [x] B2-2c checkout final : supprimer les 11 dernières déclarations perdantes avec valeurs gagnantes explicitement prouvées (`cart.css` 8, `modal-shell.css` 2, split couleur relais 1) ; cascade **86 → 75**, checkout **11 → 0 conflit**, 0 nouvelle clé ;
 - [x] B2-3 catégories desktop internes : supprimer 23 déclarations supersédées avec groupe de sélecteurs + contexte media + propriété strictement identiques (`category-cutout-navigation-desktop.css` 21, `boutique-desktop.css` 2) ; cascade **75 → 52**, famille catégories **32 → 9 conflits**, 0 nouvelle clé ;
-- [ ] poursuivre la classification des **52** conflits de cascade restants par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
-- [ ] traiter les **9** conflits catégories restants séparément (sources globales/components et ownership cross-layer) ;
+- [x] B2-3b catégories final : supprimer les 9 dernières déclarations perdantes (`categories.css` internes + winners `products.css`) et le fragment d'ombre orphelin invalide déjà ignoré par les navigateurs ; cascade **52 → 43**, famille catégories **9 → 0 conflit**, `categories.css` redevient parseable par PostCSS, 0 nouvelle clé ;
+- [ ] poursuivre la classification des **43** conflits de cascade restants par famille fonctionnelle et réduire les owners concurrents sans augmenter l'allowlist ;
 - [ ] classifier les 86 overrides de spécificité par classe globale / famille fonctionnelle et supprimer les couches premium ou d'état qui ne sont plus nécessaires ;
 - [ ] figer chaque baisse par le cliquet existant ;
 - [ ] ne viser zéro qu'après preuve d'ownership, jamais par acceptation en masse.
