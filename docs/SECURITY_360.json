@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-08-28T17:19:38.048Z",
+  "generatedAt": "2026-08-29T08:35:34.837Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 556,
+    "total": 559,
     "protected": 509,
     "public": 7,
-    "unprotected": 38,
+    "unprotected": 41,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -72,6 +72,12 @@
     },
     {
       "key": "POST /api/client/magic-link",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/local-stock/availability",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -174,6 +180,18 @@
     },
     {
       "key": "GET /api/products",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/providers-services/physical-offers/{id}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/providers-services/services/{id}",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -2692,6 +2710,11 @@
       ]
     },
     {
+      "key": "GET /api/local-stock/availability",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
       "key": "GET /api/logistics/labels/{shipment_id}",
       "level": "PROTECTED",
       "roles": [
@@ -3343,6 +3366,16 @@
       "roles": [
         "admin"
       ]
+    },
+    {
+      "key": "GET /api/providers-services/physical-offers/{id}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/providers-services/services/{id}",
+      "level": "UNPROTECTED",
+      "roles": []
     },
     {
       "key": "POST /api/purchasing/{id}/receive",

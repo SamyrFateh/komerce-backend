@@ -113,6 +113,8 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const autoDistributeRouter = require('../routes/auto-distribute-api');
   const hubMarkOrderedRouter = require('../routes/hub-mark-ordered');
   const sharesRouter = require('../routes/shares');
+  const localStockRouter = require('../routes/local-stock');
+  const providersServicesRouter = require('../routes/providers-services');
   const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic');
@@ -218,6 +220,14 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/unsold',     unsoldRouter);
   app.use('/api/shared-carts/saved', sharedCartSavedRouter);
   app.use('/api/shares',     sharesRouter);
+  // Vague 2 D6 — GET read-only, aucune mutation, jamais de champ interne
+  // (téléphone, provider_id, pourquoi d'une indisponibilité). commercial_
+  // exposure reste DISABLED partout : monté = joignable, pas = visible.
+  // Voir features/local-stock.feature.js et features/providers-services.
+  // feature.js pour la doctrine complète (résolution market par code,
+  // jamais un UUID brut confié au client).
+  app.use('/api/local-stock', localStockRouter);
+  app.use('/api/providers-services', providersServicesRouter);
   app.use('/health',         healthRouter);
   app.use(metaWhatsAppRoutes);
 }

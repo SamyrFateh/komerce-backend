@@ -113,26 +113,31 @@ module.exports = {
   },
 
   security: {
-    status: 'ROUTE_SHADOW',
-    note: 'Vague 2 D4 : routes/local-stock.js existe (GET /availability), ' +
-      'testable, mais JAMAIS montée dans bootstrap/api-routes.js — vérifié ' +
-      'par tests/unit/shadow-domains-boundary.test.js. "Le frontend peut ' +
-      'techniquement lire, mais rien n\'est encore branché." Deux points ' +
+    status: 'CONFIRMED_PUBLIC_BY_DESIGN',
+    authedRoutesDetected: 0,
+    totalRoutes: 1,
+    note: 'Vague 2 D6 : routes/local-stock.js désormais montée dans ' +
+      'bootstrap/api-routes.js. GET /availability classée PUBLIC et ' +
+      'volontairement sans garde — même précédent que recommendations ' +
+      '(GET /api/boutique/suggestions, features/recommendations.feature.js). ' +
+      'Lecture seule, jamais de donnée sensible (jamais le détail d\'une ' +
+      'indisponibilité — allocations actives, exposure brut). Deux points ' +
       'd\'intégration backend écriture restent revus séparément ' +
       '(routes/orders/create.js, order-status-machine.js, tous deux dans la ' +
-      'feature orders — voir features/orders.feature.js contract.consumes). ' +
-      'Montage réel + auth + rate-limit seront un lot séparé (D6/D7), avec ' +
-      'sa propre revue.',
+      'feature orders — voir features/orders.feature.js contract.consumes).',
   },
 
   contract: {
     exposes: [
-      'GET /api/local-stock/availability?product_id=X&market_id=Y — jamais ' +
-        'monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)',
+      'GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais ' +
+        'monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un ' +
+        'CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, ' +
+        'corrigé en D6 après découverte que le contrat initial faisait confiance à un ' +
+        'market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur)',
     ],
     consumes: [
       'catalog (produit concerné — lecture seule, jamais products.stock)',
-      'market (référentiel markets — lecture seule)',
+      'market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)',
       'infrastructure (dépendance technique transversale : db.js)',
     ],
   },
@@ -145,6 +150,11 @@ module.exports = {
   invariants: [
     { statement: 'qty_physical ne descend jamais sous zéro',
       test: 'tests/unit/local-stock-service.test.js' },
+    { statement: 'la route GET /availability ne fait jamais confiance à un market_id ' +
+      'brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et ' +
+      'validé serveur (resolveMarketId, markets.is_active=true) avant tout appel ' +
+      'à isStockExposable/getAvailability',
+      test: 'tests/unit/local-stock-routes.test.js' },
     { statement: 'la disponibilité n\'est jamais lue depuis products.stock ' +
       'ou product_skus.stock — uniquement depuis local_stock',
       test: 'tests/unit/local-stock-service.test.js' },
@@ -207,5 +217,17 @@ module.exports = {
   // Un test dédié (local-stock-service.test.js) vérifie désormais le TEXTE
   // de la requête SQL, pas seulement le comportement sur une réponse
   // mockée — seule façon pour un mock d'attraper cette classe de bug.
+  // 2026-08-28 — Vague 2 D6 : deuxième bug réel trouvé et corrigé, avant
+  // même de commencer le frontend — routes/local-stock.js faisait confiance
+  // à un market_id brut du paramètre de requête HTTP (le client pouvait
+  // fournir n'importe quel UUID). Trouvé en cherchant comment le frontend
+  // connaît son marché courant (zéro référence market_id dans tout le JS
+  // Boutique) : window.KomerceMarket (public/boutique/js/market-context.js)
+  // porte un CODE de navigation (KOMERCE_MARKET_LAYER_FREEZE.md §3 :
+  // "contextuel, client, commutable, NON autorisant"), jamais un UUID.
+  // resolveMarketId() traduit désormais ce code en UUID réel côté serveur,
+  // filtré markets.is_active=true, avant tout appel à isStockExposable.
+  // Vérifié réellement contre Postgres : un UUID brut envoyé à la place
+  // d'un code est rejeté (400), jamais silencieusement accepté.
 
 };
