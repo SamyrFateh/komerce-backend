@@ -125,6 +125,16 @@ Aucun. ✅
 - **`!important`** : 3 (cible : 0 ou exceptions indispensables)
 - **Sélecteurs multi-owner observés** : 13 (à classifier par ownership)
 
+## 9. Dette structurelle exécutable
+
+- **Conflits de cascade suivis** : 0 (cible : 0)
+- **Overrides de spécificité suivis** : 0 (cible : 0)
+- **Dette `!important` ouverte** : 0 (cible : 0)
+- **`!important` physiques** : 3 (guards revus inclus)
+- **Guards `!important` revus** : 1 registre(s)
+
+> Les compteurs cascade/spécificité/!important ouvert proviennent des baselines exécutables, pas d’un recompte documentaire.
+
 ---
 
 *Généré par `scripts/gen-boutique-arch-live.js` depuis les sources réelles.*
