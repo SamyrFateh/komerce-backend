@@ -774,7 +774,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 9 composition-root
+**Technical context** : 0 primitive dependencies, 0 test-only, 11 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -907,6 +907,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement du calcul de disponibilité locale doit être validé par le propriétaire de local-stock-service.js
 
 **Invariants** :
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]
@@ -1447,6 +1448,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement du cycle demande/confirmation doit être validé par le propriétaire de providers-service.js
 
 **Invariants** :
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]

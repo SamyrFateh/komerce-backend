@@ -1450,7 +1450,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | inventory | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | inventory | auth (`auth`) | ✔ |
 | local-stock | catalog (`catalog (produit concerné — lecture seule, jamais products.stock)`) | ✔ |
-| local-stock | market (`market (référentiel markets — lecture seule)`) | ✔ |
+| local-stock | market (`market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)`) | ✔ |
 | local-stock | infrastructure (`infrastructure (dépendance technique transversale : db.js)`) | ✔ |
 | logistics | documents (`documents (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | logistics | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
@@ -1522,7 +1522,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | orders (`orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
-| providers-services | market (`market (référentiel markets — lecture seule)`) | ✔ |
+| providers-services | market (`market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)`) | ✔ |
 | providers-services | infrastructure (`infrastructure (dépendance technique transversale : db.js)`) | ✔ |
 | purchasing | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1592,7 +1592,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (29)
+### TOPOLOGIE ATTENDUE — hors dette (31)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -1602,7 +1602,9 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> local-stock — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "local-stock"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> providers-services — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "providers-services"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
@@ -1628,11 +1630,11 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
-- **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market_id=Y — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow) — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, corrigé en D6 après découverte que le contrat initial faisait confiance à un market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market_id=X — idem — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market_id=X — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow) — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — idem — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6. — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 
@@ -1649,7 +1651,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 972 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 173 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 175 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1699,7 +1701,7 @@ Meta Graph monté : oui.
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
-| catalog | platform-ops | static-code | 62 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 63 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1767,12 +1769,14 @@ Meta Graph monté : oui.
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | local-stock | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | logistics | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | orders | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| infrastructure | providers-services | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | purchasing | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | infrastructure | shared-cart | static-code | 6 | **DECLARED_AND_OBSERVED** |
@@ -1786,7 +1790,7 @@ Meta Graph monté : oui.
 | inventory | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | inventory | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
 | local-stock | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| local-stock | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| local-stock | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | local-stock | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | logistics | auth-identity | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
@@ -1863,7 +1867,7 @@ Meta Graph monté : oui.
 | platform-ops | purchasing | static-code, interface | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
-| providers-services | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -1916,7 +1920,9 @@ Meta Graph monté : oui.
 - `infrastructure` → `business-rules` (canaux: static-code)
 - `infrastructure` → `decision-signals` (canaux: static-code)
 - `infrastructure` → `documents` (canaux: static-code)
+- `infrastructure` → `local-stock` (canaux: static-code)
 - `infrastructure` → `loyalty` (canaux: static-code)
+- `infrastructure` → `providers-services` (canaux: static-code)
 - `infrastructure` → `purchasing` (canaux: static-code)
 - `infrastructure` → `sourcing` (canaux: static-code)
 - `infrastructure` → `unsold-resolution` (canaux: static-code)
@@ -1965,7 +1971,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | Family | N | Policy |
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
-| COMPOSITION_ROOT_WIRING | 13 | application-wiring-not-consumption |
+| COMPOSITION_ROOT_WIRING | 15 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 5 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
@@ -1973,7 +1979,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **18** | |
+| **TOTAL** | **20** | |
 
 ### Projection dependencies
 
@@ -1990,7 +1996,9 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 - `infrastructure` → `business-rules` — import-mixed, RUNTIME_ONLY
 - `infrastructure` → `decision-signals` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `documents` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `local-stock` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `loyalty` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `providers-services` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `purchasing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `sourcing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY

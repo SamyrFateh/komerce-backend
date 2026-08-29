@@ -10665,7 +10665,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 9,
+        "compositionRootRelations": 11,
         "details": [
           {
             "to": "auth-identity",
@@ -10688,7 +10688,15 @@
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
+            "to": "local-stock",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
             "to": "loyalty",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "providers-services",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -11345,6 +11353,10 @@
         {
           "statement": "qty_physical ne descend jamais sous zéro",
           "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "la route GET /availability ne fait jamais confiance à un market_id brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé serveur (resolveMarketId, markets.is_active=true) avant tout appel à isStockExposable/getAvailability",
+          "test": "tests/unit/local-stock-routes.test.js"
         },
         {
           "statement": "la disponibilité n'est jamais lue depuis products.stock ou product_skus.stock — uniquement depuis local_stock",
@@ -17064,6 +17076,10 @@
         },
         {
           "statement": "GET /services/:id et GET /physical-offers/:id ne renvoient jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi d'une non-exposabilité (404 pur, jamais un détail de statut/marché)",
+          "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "les deux routes ne font jamais confiance à un market_id brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé serveur (resolveMarketId, markets.is_active=true) avant tout appel à isServiceExposable/isPhysicalOfferExposable",
           "test": "tests/unit/providers-services-routes.test.js"
         }
       ],

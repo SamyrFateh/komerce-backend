@@ -15875,7 +15875,7 @@
       {
         "from": "local-stock",
         "to": "market",
-        "raw": "market (référentiel markets — lecture seule)",
+        "raw": "market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)",
         "resolved": true
       },
       {
@@ -16307,7 +16307,7 @@
       {
         "from": "providers-services",
         "to": "market",
-        "raw": "market (référentiel markets — lecture seule)",
+        "raw": "market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)",
         "resolved": true
       },
       {
@@ -17181,6 +17181,22 @@
         "category": "js",
         "declared": "../js/view-models/product-card-view-model.js",
         "resolvedPath": "public/boutique/js/view-models/product-card-view-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/discovery-api.js",
+        "resolvedPath": "public/boutique/js/discovery-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/local-stock-badge.js",
+        "resolvedPath": "public/boutique/js/local-stock-badge.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20239,6 +20255,10 @@
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
+                "sourceFileId": "public/boutique/js/local-stock-badge.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-favs.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
@@ -22998,6 +23018,22 @@
       },
       {
         "from": "infrastructure",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/local-stock.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
         "to": "logistics",
         "channels": [
           {
@@ -23231,6 +23267,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "providers-services",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/providers-services.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "infrastructure",
@@ -23519,6 +23571,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/local-stock-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/local-stock.js",
                 "targetFile": "db.js"
               }
             ]
@@ -27244,6 +27300,10 @@
               {
                 "sourceFileId": "services/providers-service.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/providers-services.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -28830,7 +28890,7 @@
         "filesObserved": 972
       },
       "boutique": {
-        "filesObserved": 173,
+        "filesObserved": 175,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -28862,7 +28922,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 13,
+      "COMPOSITION_ROOT_WIRING": 15,
       "NON_RUNTIME_TEST": 5,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -28964,7 +29024,37 @@
       },
       {
         "from": "infrastructure",
+        "to": "local-stock",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
         "to": "loyalty",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "providers-services",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
@@ -29146,7 +29236,7 @@
     "unclassified": [],
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
@@ -31102,8 +31192,18 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> local-stock",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"local-stock\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> loyalty",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> providers-services",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"providers-services\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -31219,7 +31319,7 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "local-stock / GET /api/local-stock/availability?product_id=X&market_id=Y — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)",
+        "ref": "local-stock / GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, corrigé en D6 après découverte que le contrat initial faisait confiance à un market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur)",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -31234,12 +31334,12 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market_id=X — idem",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — idem",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market_id=X — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow)",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6.",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -31256,9 +31356,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 29,
+      "expectedTopology": 31,
       "generatorLimitations": 9,
-      "classifiedCandidates": 38
+      "classifiedCandidates": 40
     }
   }
 }
