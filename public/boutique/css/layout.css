@@ -1179,3 +1179,17 @@ body:has(#k-page-scroll.k-pager-active) {
     scroll-margin-top: var(--nav-stack-h, calc(var(--header-h, 72px) + 64px));
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   HEADER SPACER — owner unique : layout.css
+   Compense le header fixed sur mobile. Sur desktop, le header redevient
+   sticky et reste dans le flux : aucune réserve supplémentaire nécessaire.
+   ══════════════════════════════════════════════════════════════ */
+#k-header-spacer {
+  height: calc(var(--header-h, 56px) + env(safe-area-inset-top, 0px));
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  #k-header-spacer { height: 0; }
+}
