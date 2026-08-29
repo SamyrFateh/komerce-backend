@@ -2933,8 +2933,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-cart-slot {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding-block: 16px;
+    
+    
     box-sizing: border-box;
     border-left: 1px solid var(--border);
     overflow: hidden;
@@ -11000,7 +11000,7 @@ body.cart-open  #k-section-index { display:none; }
 @media (min-width: 900px) {
   #k-cart-surface-switch.k-cart-tabs {
     position: relative;
-    background: var(--surface-sand-97);
+    
   }
 
   #k-cart-surface-switch.k-cart-tabs::after {

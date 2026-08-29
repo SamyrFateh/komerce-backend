@@ -589,8 +589,8 @@
   #k-modal .k-modal-cart-slot {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding-block: 16px;
+    
+    
     box-sizing: border-box;
     border-left: 1px solid var(--border);
     overflow: hidden;
