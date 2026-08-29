@@ -1,4 +1,4 @@
-name: Classify Boutique B2 Final Checkout Cascade
+name: Consolidate Boutique B2 Final Checkout Cascade
 
 on:
   push:
@@ -6,12 +6,13 @@ on:
       - refactor/boutique-debt-zero-b2-checkout-final
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  classify:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,17 +25,19 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
-      - name: Print exact source occurrences for remaining checkout keys
+      - name: Remove the final 11 losing checkout cascade declarations
         run: |
           node <<'NODE'
           const fs = require('fs');
           const path = require('path');
           const postcss = require('./public/boutique/node_modules/postcss');
-          const { BUNDLES } = require('./public/boutique/scripts/css-bundles');
 
           const root = path.resolve('public/boutique');
           const cssDir = path.join(root, 'css');
-          const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-guard-baseline.json'), 'utf8'));
+          const baselinePath = path.join(root, 'scripts/.css-guard-baseline.json');
+          const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+          if (baseline.total !== 86) throw new Error(`Expected cascade baseline 86, got ${baseline.total}`);
+          const baselineKeys = new Set(baseline.keys);
 
           function isCheckoutSelector(selector) {
             return selector.startsWith('.ck-') ||
@@ -44,26 +47,10 @@ jobs:
               selector.startsWith('.k-modal-subtotal') ||
               selector.startsWith('.k-stripe-wrap');
           }
-
-          const checkoutKeys = baseline.keys.filter(key => isCheckoutSelector(key.split('|||')[0]));
-          console.log(`REMAINING_CHECKOUT_KEYS=${checkoutKeys.length}`);
-          checkoutKeys.forEach(k => console.log(`KEY ${k}`));
-
-          const components = BUNDLES.find(b => b.out === 'components.css');
-          const bundleFiles = components.files.map(name => `${name}.css`);
-          const candidates = [
-            'modal-shell.css',
-            'modal-media.css',
-            'modal-product.css',
-            'modal-product-lot4-hybrid.css',
-            'modal-desktop-density.css',
-            'modal-mobile-canonical.css',
-            'cart.css',
-            'interactions.css',
-            'identity.css',
-            'paypal.css',
-            'checkout-vertical-rail.css',
-          ].filter(f => bundleFiles.includes(f));
+          const checkoutKeysBefore = baseline.keys.filter(key => isCheckoutSelector(key.split('|||')[0]));
+          if (checkoutKeysBefore.length !== 11) {
+            throw new Error(`Expected exactly 11 checkout keys before B2-2c, got ${checkoutKeysBefore.length}`);
+          }
 
           function contextOf(rule) {
             let node = rule.parent;
@@ -74,46 +61,172 @@ jobs:
             return 'global';
           }
 
-          const rowsByKey = new Map(checkoutKeys.map(k => [k, []]));
-          for (const file of candidates) {
-            const fp = path.join(cssDir, file);
-            const ast = postcss.parse(fs.readFileSync(fp, 'utf8'), { from: file });
-            const order = bundleFiles.indexOf(file);
+          const cache = new Map();
+          function load(file) {
+            if (!cache.has(file)) {
+              const fp = path.join(cssDir, file);
+              const original = fs.readFileSync(fp, 'utf8');
+              cache.set(file, { fp, original, ast: postcss.parse(original, { from: file }) });
+            }
+            return cache.get(file);
+          }
+
+          const removed = [];
+          function removeExact({ file, selector, media = 'global', prop, oldValue }) {
+            const { ast } = load(file);
+            const matches = [];
             ast.walkRules(rule => {
-              const media = contextOf(rule);
-              const selectorParts = rule.selectors || [rule.selector];
-              rule.walkDecls(decl => {
-                for (const selector of selectorParts) {
-                  const key = `${selector.trim()}|||${media}|||${decl.prop}`;
-                  if (!rowsByKey.has(key)) continue;
-                  rowsByKey.get(key).push({
-                    file,
-                    order,
-                    selector: selector.trim(),
-                    fullSelector: rule.selector,
-                    grouped: selectorParts.length > 1,
-                    media,
-                    prop: decl.prop,
-                    value: decl.value,
-                    line: decl.source?.start?.line || null,
-                  });
+              if (contextOf(rule) !== media) return;
+              const selectors = rule.selectors || [rule.selector];
+              if (!selectors.map(s => s.trim()).includes(selector)) return;
+              rule.nodes.forEach(node => {
+                if (node.type === 'decl' && node.prop === prop && node.value === oldValue) {
+                  matches.push({ rule, decl: node });
                 }
               });
             });
+            if (matches.length !== 1) {
+              throw new Error(`Expected one exact losing declaration for ${file} :: ${selector} :: ${media} :: ${prop}:${oldValue}, got ${matches.length}`);
+            }
+            const key = `${selector}|||${media}|||${prop}`;
+            if (!baselineKeys.has(key)) throw new Error(`Refusing to remove non-baseline key: ${key}`);
+            matches[0].decl.remove();
+            removed.push({ file, key, oldValue });
           }
 
-          for (const key of checkoutKeys) {
-            console.log(`\n=== ${key} ===`);
-            const rows = rowsByKey.get(key) || [];
-            if (!rows.length) {
-              console.log('NO_SOURCE_MATCH');
-              continue;
+          // cart.css — 8 declarations already losing in the canonical bundle.
+          removeExact({ file: 'cart.css', selector: '.ck-chip-lbl em.ck-stripe-tag', prop: 'border-radius', oldValue: '4px' });
+          removeExact({ file: 'cart.css', selector: '.ck-chip-lbl em.ck-stripe-tag', prop: 'margin-top', oldValue: '2px' });
+          removeExact({ file: 'cart.css', selector: '.ck-chip-lbl em.ck-stripe-tag', prop: 'padding', oldValue: '1px 4px' });
+          removeExact({ file: 'cart.css', selector: '.ck-pay-helper', prop: 'font-size', oldValue: '.68rem' });
+          removeExact({ file: 'cart.css', selector: '.ck-pay-helper', prop: 'margin', oldValue: '3px 0 5px' });
+          removeExact({ file: 'cart.css', selector: '.ck-pay-helper', prop: 'padding', oldValue: '5px 8px' });
+          removeExact({ file: 'cart.css', selector: '.k-order-overlay.open .ck-confirm-btn', media: '@media (min-width: 900px) {', prop: 'border-radius', oldValue: '0 0 var(--radius-lg) var(--radius-lg)' });
+          removeExact({ file: 'cart.css', selector: '.k-order-overlay.open .k-order-body--checkout', media: '@media (min-width: 900px) {', prop: 'padding', oldValue: '16px 16px calc(90px + env(safe-area-inset-bottom))' });
+
+          // modal-shell.css — modal-product.css is later and already owns the final values.
+          removeExact({ file: 'modal-shell.css', selector: '.k-modal-subtotal', prop: 'font-size', oldValue: '11px' });
+          removeExact({ file: 'modal-shell.css', selector: '.k-modal-subtotal', prop: 'color', oldValue: 'var(--text-muted)' });
+
+          // checkout-vertical-rail.css — split the shared muted state so .ck-relais-error
+          // keeps its later coral owner without colliding with loading/empty.
+          {
+            const file = 'checkout-vertical-rail.css';
+            const { ast } = load(file);
+            const expectedSelectors = ['.ck-relais-loading', '.ck-relais-empty', '.ck-relais-error'];
+            const grouped = [];
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== 'global') return;
+              const selectors = (rule.selectors || []).map(s => s.trim());
+              if (selectors.length !== 3 || !expectedSelectors.every(s => selectors.includes(s))) return;
+              const color = rule.nodes.find(n => n.type === 'decl' && n.prop === 'color');
+              if (color) grouped.push({ rule, color });
+            });
+            if (grouped.length !== 1 || grouped[0].color.value !== 'var(--text-muted)') {
+              throw new Error(`Expected one grouped relay muted color, got ${grouped.length ? grouped[0].color.value : 'none'}`);
             }
-            rows.sort((a,b) => a.order - b.order || (a.line||0) - (b.line||0));
-            for (const row of rows) {
-              console.log(JSON.stringify(row));
+            const errorRules = [];
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== 'global' || rule.selector.trim() !== '.ck-relais-error') return;
+              const color = rule.nodes.find(n => n.type === 'decl' && n.prop === 'color');
+              if (color) errorRules.push(color.value);
+            });
+            if (errorRules.length !== 1 || errorRules[0] !== 'var(--coral-dark)') {
+              throw new Error(`Expected final .ck-relais-error coral color, got ${errorRules.join(',') || 'none'}`);
             }
-            const winner = rows[rows.length - 1];
-            console.log(`WINNER ${winner.file}:${winner.line} -> ${winner.value}`);
+            const key = '.ck-relais-error|||global|||color';
+            if (!baselineKeys.has(key)) throw new Error(`Missing expected baseline key ${key}`);
+            grouped[0].color.remove();
+            const scoped = postcss.rule({ selector: '.ck-relais-loading,\n.ck-relais-empty' });
+            scoped.append({ prop: 'color', value: 'var(--text-muted)' });
+            grouped[0].rule.after(scoped);
+            removed.push({ file, key, oldValue: 'var(--text-muted)', replacement: 'loading/empty only' });
           }
+
+          if (removed.length !== 11) throw new Error(`Expected 11 removed conflict declarations, got ${removed.length}`);
+          if (new Set(removed.map(r => r.key)).size !== 11) throw new Error('Expected 11 unique conflict keys');
+
+          for (const [file, entry] of cache.entries()) {
+            entry.ast.walkRules(rule => {
+              if (rule.nodes && rule.nodes.filter(n => n.type !== 'comment').length === 0) rule.remove();
+            });
+            fs.writeFileSync(entry.fp, entry.ast.toString(), 'utf8');
+          }
+
+          // Prove exact final winners remain after source edits.
+          function assertExact(file, selector, media, prop, expectedValue) {
+            const ast = postcss.parse(fs.readFileSync(path.join(cssDir, file), 'utf8'), { from: file });
+            const values = [];
+            ast.walkRules(rule => {
+              if (contextOf(rule) !== media) return;
+              const selectors = rule.selectors || [rule.selector];
+              if (!selectors.map(s => s.trim()).includes(selector)) return;
+              rule.walkDecls(prop, decl => values.push(decl.value));
+            });
+            if (!values.includes(expectedValue)) throw new Error(`Expected ${file} ${selector} ${prop}=${expectedValue}; got ${values.join(',')}`);
+          }
+          assertExact('checkout-vertical-rail.css', '.ck-chip-lbl em.ck-stripe-tag', 'global', 'border-radius', '999px');
+          assertExact('interactions.css', '.ck-pay-helper', 'global', 'font-size', '.73rem');
+          assertExact('modal-product.css', '.k-modal-subtotal', 'global', 'font-size', '14px');
+          assertExact('checkout-vertical-rail.css', '.k-order-overlay.open .ck-confirm-btn', '@media (min-width: 900px) {', 'border-radius', '12px');
+          assertExact('checkout-vertical-rail.css', '.k-order-overlay.open .k-order-body--checkout', '@media (min-width: 900px) {', 'padding', '28px 24px 32px');
+          assertExact('checkout-vertical-rail.css', '.ck-relais-error', 'global', 'color', 'var(--coral-dark)');
+          assertExact('checkout-vertical-rail.css', '.ck-relais-loading', 'global', 'color', 'var(--text-muted)');
+          assertExact('checkout-vertical-rail.css', '.ck-relais-empty', 'global', 'color', 'var(--text-muted)');
+
+          fs.writeFileSync('/tmp/checkout-final-summary.json', JSON.stringify({
+            oldCascade: baseline.total,
+            removedConflictKeys: 11,
+            removedDeclarations: 11,
+            files: [...new Set(removed.map(r => r.file))].sort(),
+            keys: removed.map(r => r.key).sort(),
+          }, null, 2));
+          console.log(fs.readFileSync('/tmp/checkout-final-summary.json', 'utf8'));
           NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove no new CSS debt before lowering ratchet
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Lower ratchet, prove checkout zero, and write report
+        run: |
+          npm --prefix public/boutique run check:css-guard:save
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = path.resolve('public/boutique');
+          const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/.css-guard-baseline.json'), 'utf8'));
+          const summary = JSON.parse(fs.readFileSync('/tmp/checkout-final-summary.json', 'utf8'));
+          function isCheckoutSelector(selector) {
+            return selector.startsWith('.ck-') || selector.startsWith('.k-ck-') || selector.startsWith('.k-order') || selector.startsWith('.k-confirm') || selector.startsWith('.k-modal-subtotal') || selector.startsWith('.k-stripe-wrap');
+          }
+          const checkoutKeys = baseline.keys.filter(key => isCheckoutSelector(key.split('|||')[0]));
+          if (baseline.total !== 75) throw new Error(`Expected final cascade baseline 75, got ${baseline.total}`);
+          if (checkoutKeys.length !== 0) throw new Error(`Expected checkout cascade debt 0, got ${checkoutKeys.length}: ${checkoutKeys.join('\n')}`);
+          const report = [
+            '# Boutique CSS Debt — B2-2c final checkout cascade',
+            '',
+            '- Cascade baseline: **86 → 75**',
+            '- Checkout cascade conflicts: **11 → 0**',
+            '- Losing conflict declarations removed: **11**',
+            '- New cascade keys before ratchet save: **0**',
+            '- Specificity ratchet: **86, unchanged / strict passed**',
+            '',
+            'Sources consolidated:',
+            '- `cart.css`: 8 losing declarations removed;',
+            '- `modal-shell.css`: 2 losing `.k-modal-subtotal` declarations removed;',
+            '- `checkout-vertical-rail.css`: relay state color split so loading/empty stay muted and error stays coral.',
+            '',
+            'All final winning values are unchanged.',
+          ].join('\n') + '\n';
+          fs.writeFileSync(path.join(root, 'docs/BOUTIQUE_CSS_DEBT_B2_CHECKOUT_FINAL.md'), report);
+          console.log(report);
+          NODE
+      - name: Commit B2-2c checkout zero
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/cart.css public/boutique/css/modal-shell.css public/boutique/css/checkout-vertical-rail.css public/boutique/css/dist public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_CHECKOUT_FINAL.md
+          git commit -m "refactor(boutique): close final checkout cascade debt"
+          git push origin HEAD:refactor/boutique-debt-zero-b2-checkout-final
