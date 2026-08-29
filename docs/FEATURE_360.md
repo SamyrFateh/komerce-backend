@@ -1678,8 +1678,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 57 fichier(s) déclaré(s), boutique: 18 fichier(s)
-  - boutique : 11
+**Implementation** : 56 fichier(s) déclaré(s), boutique: 18 fichier(s)
+  - boutique : 10
   - dash : 1
   - migrations : 19
   - routes : 4

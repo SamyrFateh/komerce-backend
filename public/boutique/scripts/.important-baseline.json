@@ -1,11 +1,9 @@
 {
-  "total": 2,
-  "perFile": {
-    "share-cart.css": 2
-  },
+  "total": 0,
+  "perFile": {},
   "semantics": "open-debt-only",
   "reviewedGuardIds": [
     "desktop-mobile-drawer-neutralization"
   ],
-  "savedAt": "2026-08-29T15:58:00.000Z"
+  "savedAt": "2026-08-29T16:18:00.000Z"
 }

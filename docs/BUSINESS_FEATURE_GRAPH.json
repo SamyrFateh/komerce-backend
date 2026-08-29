@@ -9733,13 +9733,6 @@
       {
         "feature": "shared-cart",
         "category": "boutique",
-        "declared": "css/share-cart.css",
-        "resolvedPath": "public/boutique/css/share-cart.css",
-        "status": "resolved-on-disk-no-header"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
         "declared": "css/hero-cart-proxy.css",
         "resolvedPath": "public/boutique/css/hero-cart-proxy.css",
         "status": "resolved-on-disk-no-header"
@@ -18259,14 +18252,6 @@
         "category": "css",
         "declared": "../css/hero-cart-proxy.css",
         "resolvedPath": "public/boutique/css/hero-cart-proxy.css",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "css",
-        "declared": "../css/share-cart.css",
-        "resolvedPath": "public/boutique/css/share-cart.css",
         "exists": true,
         "status": "resolved-on-disk"
       },

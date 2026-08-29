@@ -10,22 +10,22 @@ const fs = require('fs');
 const path = require('path');
 const importantGate = require('../../scripts/check-important.js');
 
+const boutiqueRoot = path.join(__dirname, '..', '..');
+const repoRoot = path.join(boutiqueRoot, '..', '..');
 const readBoutiqueFile = (relativePath) => fs.readFileSync(
-  path.join(__dirname, '..', '..', relativePath),
+  path.join(boutiqueRoot, relativePath),
   'utf8',
 );
 
 describe('check-important — dette ouverte vs guards revus', () => {
-  test('état réel : 5 physiques = 3 revues + 2 ouvertes', () => {
+  test('état réel : 3 physiques = 3 revues + 0 ouverte', () => {
     const result = importantGate.scan();
 
-    expect(result.total).toBe(5);
+    expect(result.total).toBe(3);
     expect(result.reviewedTotal).toBe(3);
-    expect(result.openTotal).toBe(2);
+    expect(result.openTotal).toBe(0);
     expect(result.reviewedPerFile).toEqual({ 'boutique-desktop.css': 3 });
-    expect(result.openPerFile).toEqual({
-      'share-cart.css': 2,
-    });
+    expect(result.openPerFile).toEqual({});
   });
 
   test('le spacer header appartient à layout.css, jamais au markup ni au hero', () => {
@@ -40,6 +40,20 @@ describe('check-important — dette ouverte vs guards revus', () => {
     );
     expect(layout).toContain('#k-header-spacer { height: 0; }');
     expect(hero).not.toContain('#k-header-spacer');
+  });
+
+  test('share-cart.css mort est absent du disque, du bundle et des manifests', () => {
+    const bundleConfig = readBoutiqueFile('scripts/css-bundles.js');
+    const boutiqueFeature = readBoutiqueFile('features/shared-cart.feature.js');
+    const rootFeature = fs.readFileSync(
+      path.join(repoRoot, 'features', 'shared-cart.feature.js'),
+      'utf8',
+    );
+
+    expect(fs.existsSync(path.join(boutiqueRoot, 'css', 'share-cart.css'))).toBe(false);
+    expect(bundleConfig).not.toContain("'share-cart'");
+    expect(boutiqueFeature).not.toContain("../css/share-cart.css");
+    expect(rootFeature).not.toContain("'css/share-cart.css'");
   });
 
   test('le guard desktop exact est revu uniquement dans @media min-width 900px', () => {
@@ -78,7 +92,7 @@ describe('check-important — dette ouverte vs guards revus', () => {
     expect(importantGate.findReviewedOccurrences('boutique-desktop.css', changed)).toHaveLength(0);
   });
 
-  test('une nouvelle occurrence reste une hausse de dette ouverte', () => {
+  test('une nouvelle occurrence reste une hausse de dette ouverte même depuis zéro', () => {
     const current = importantGate.scan();
     const synthetic = {
       ...current,
@@ -86,8 +100,8 @@ describe('check-important — dette ouverte vs guards revus', () => {
       openTotal: current.openTotal + 1,
     };
     const baseline = {
-      total: 2,
-      perFile: { 'share-cart.css': 2 },
+      total: 0,
+      perFile: {},
     };
 
     const diff = importantGate.diffAgainstBaseline(synthetic, baseline);

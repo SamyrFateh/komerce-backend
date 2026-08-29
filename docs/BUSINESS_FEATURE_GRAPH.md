@@ -541,7 +541,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 4
 - migrations: 19
 - tests: 13
-- boutique: 11
+- boutique: 10
 - dash: 1
 - tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
 - tables written: 7
