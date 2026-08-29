@@ -1,0 +1,187 @@
+name: Finalize Boutique B3 Specificity Zero
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b3-specificity-final
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b3-specificity-final
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+
+      - name: Fix zero-save behavior and add regression test
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const guardPath = path.resolve('public/boutique/scripts/css-specificity-guard.js');
+          let src = fs.readFileSync(guardPath, 'utf8');
+          const before = `if (findings.length === 0) {
+            console.log(\`${'${GRN}${BLD}'}✔ Aucun override de spécificité via classe globale détecté.${'${R}'}\`);
+            process.exitCode = 0;
+            return;
+          }`;
+          const after = `if (findings.length === 0) {
+            console.log(\`${'${GRN}${BLD}'}✔ Aucun override de spécificité via classe globale détecté.${'${R}'}\`);
+            if (save) {
+              const keys = [];
+              fs.writeFileSync(BASELINE, JSON.stringify({ total: 0, keys, savedAt: new Date().toISOString() }, null, 2));
+              console.log(\`${'${GRN}${BLD}'}✔ Baseline figée à 0 override(s).${'${R}'}\`);
+            }
+            process.exitCode = 0;
+            return;
+          }`;
+          if (!src.includes(before)) throw new Error('zero-findings early-return block not found');
+          src = src.replace(before, after);
+          fs.writeFileSync(guardPath, src, 'utf8');
+
+          const testPath = path.resolve('public/boutique/tests/unit/css-specificity-guard-zero-save.test.js');
+          const test = `'use strict';
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+describe('css-specificity-guard --save at zero findings', () => {
+  test('persists an empty ratchet instead of returning before save', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k-css-spec-zero-'));
+    try {
+      const scripts = path.join(tmp, 'scripts');
+      fs.mkdirSync(scripts, { recursive: true });
+      fs.mkdirSync(path.join(tmp, 'css', 'dist'), { recursive: true });
+      fs.mkdirSync(path.join(tmp, 'js'), { recursive: true });
+      fs.copyFileSync(
+        path.resolve(__dirname, '../../scripts/css-specificity-guard.js'),
+        path.join(scripts, 'css-specificity-guard.js')
+      );
+
+      const run = spawnSync(process.execPath, [path.join(scripts, 'css-specificity-guard.js'), '--save'], {
+        cwd: tmp,
+        encoding: 'utf8'
+      });
+
+      expect(run.status).toBe(0);
+      expect(run.stdout).toContain('Baseline figée à 0 override(s)');
+      const baseline = JSON.parse(fs.readFileSync(path.join(scripts, '.css-specificity-guard-baseline.json'), 'utf8'));
+      expect(baseline.total).toBe(0);
+      expect(baseline.keys).toEqual([]);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+`;
+          fs.writeFileSync(testPath, test, 'utf8');
+          NODE
+
+      - name: Prove zero-save regression test
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/css-specificity-guard-zero-save.test.js
+
+      - name: Rewrite only modal-open position with zero-specificity state token
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const postcss=require('./public/boutique/node_modules/postcss');
+          const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==1||spec.keys.length!==1||spec.keys[0]!=='modal-open|||body.modal-open|||body|||position')throw new Error(`Expected modal-open only, got ${JSON.stringify(spec)}`);
+          if(cascade.total!==0)throw new Error(`Expected cascade 0, got ${cascade.total}`);
+          const fp=path.join(root,'css/reset.css');
+          const ast=postcss.parse(fs.readFileSync(fp,'utf8'),{from:'reset.css'});
+          let target=null;
+          ast.walkRules(r=>{
+            if(r.selector!=='body.modal-open')return;
+            let n=r.parent,desktop=false;
+            while(n&&n.type!=='root'){if(n.type==='atrule'&&n.name==='media'&&n.params==='(min-width: 900px)')desktop=true;n=n.parent}
+            if(!desktop)return;
+            const d=(r.nodes||[]).find(x=>x.type==='decl'&&x.prop==='position');
+            if(d){if(target)throw new Error('Multiple desktop modal-open position declarations');target={r,d}}
+          });
+          if(!target)throw new Error('Expected desktop body.modal-open position declaration');
+          if(target.d.value!=='fixed'||target.d.important)throw new Error(`Expected position:fixed, got ${target.d.toString()}`);
+          target.d.remove();
+          const stateRule=postcss.rule({selector:'body:where(.modal-open)'});
+          stateRule.append({prop:'position',value:'fixed'});
+          target.r.after(stateRule);
+          fs.writeFileSync(fp,ast.toString(),'utf8');
+          NODE
+
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+
+      - name: Prove both CSS structural debts are zero
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+
+      - name: Persist zero specificity ratchet
+        run: |
+          npm --prefix public/boutique run check:css-specificity-guard:save
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const root=path.resolve('public/boutique');
+          const spec=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-specificity-guard-baseline.json'),'utf8'));
+          const cascade=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if(spec.total!==0||spec.keys.length!==0)throw new Error(`Expected specificity zero, got ${JSON.stringify(spec)}`);
+          if(cascade.total!==0||cascade.keys.length!==0)throw new Error(`Expected cascade zero, got ${JSON.stringify(cascade)}`);
+          NODE
+
+      - name: Update B3 evidence and ledger
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const root=path.resolve('public/boutique');
+          const report=[
+            '# Boutique CSS Debt — B3 final specificity zero','',
+            '- Specificity baseline: **1 → 0**',
+            '- Cascade baseline: **0 → 0**',
+            '- Final state override: `body:where(.modal-open) { position: fixed; }`',
+            '- `:where()` contributes zero class specificity; the state rule has the same CSS specificity as base `body` and wins by source order only',
+            '- Other `body.modal-open` properties remain unchanged',
+            '- Guard fix: `css-specificity-guard.js --save` now persists `{ total: 0, keys: [] }` when no findings remain',
+            '- Regression test proves zero-findings save behavior in an isolated temporary workspace','',
+            'B3 specificity debt is fully repaid: **87 historical → 0 current**.'
+          ].join('\n')+'\n';
+          fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B3_ZERO.md'),report,'utf8');
+
+          const ledgerPath=path.join(root,'docs/BOUTIQUE_DEBT_ZERO_STATUS.md');
+          let ledger=fs.readFileSync(ledgerPath,'utf8');
+          ledger=ledger.replace(
+            '- [ ] B3-3 : re-home explicite des **7** clés premium restantes, puis traitement séparé de l’état transitoire `body.modal-open` ;\n- [ ] figer chaque baisse par le cliquet existant ;\n- [ ] ne viser zéro qu’après preuve d’ownership, jamais par acceptation en masse.',
+            '- [x] B3-3 final : re-home explicite des **7** clés premium restantes vers leurs owners canoniques (`layout.css` / `categories.css`), puis neutraliser la sur-spécificité du dernier état transitoire avec `body:where(.modal-open)` ; spécificité **8 → 0**, cascade **0 → 0** ;\n- [x] figer chaque baisse par le cliquet existant, y compris la baseline vide **0** ;\n- [x] zéro atteint après preuve d’ownership et test de non-régression du `--save` vide, sans acceptation en masse.'
+          );
+          if(!ledger.includes('spécificité **8 → 0**'))throw new Error('Ledger B3 final replacement failed');
+          fs.writeFileSync(ledgerPath,ledger,'utf8');
+          NODE
+
+      - name: Final verification after ratchet save
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+          npm --prefix public/boutique test -- --runInBand tests/unit/css-specificity-guard-zero-save.test.js
+
+      - name: Commit B3 zero
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css public/boutique/index.html public/boutique/scripts/css-specificity-guard.js public/boutique/scripts/.css-specificity-guard-baseline.json public/boutique/tests/unit/css-specificity-guard-zero-save.test.js public/boutique/docs/BOUTIQUE_CSS_DEBT_B3_ZERO.md public/boutique/docs/BOUTIQUE_DEBT_ZERO_STATUS.md
+          git commit -m "refactor(boutique): close specificity debt to zero"
+          git push origin HEAD:refactor/boutique-debt-zero-b3-specificity-final
