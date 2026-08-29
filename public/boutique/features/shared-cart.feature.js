@@ -42,7 +42,6 @@ module.exports = {
     ],
     css: [
       '../css/hero-cart-proxy.css',
-      '../css/share-cart.css',
       '../css/shared-list-side-cart.css',
       '../css/shared-list-side-cart-responsive.css',
       '../css/shared-list-library-remove.css',
