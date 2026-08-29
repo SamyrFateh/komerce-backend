@@ -1,4 +1,4 @@
-name: Classify Boutique B2 Final Cascade
+name: Close Boutique B2 Final Cascade
 
 on:
   push:
@@ -6,12 +6,13 @@ on:
       - refactor/boutique-debt-zero-b2-final-cascade
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  classify:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,26 +25,18 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
-      - name: Classify the final 16 cascade keys
+      - name: Remove final 16 losing cascade keys
         run: |
           node <<'NODE'
           const fs = require('fs');
           const path = require('path');
           const postcss = require('./public/boutique/node_modules/postcss');
-          const { BUNDLES } = require('./public/boutique/scripts/css-bundles');
           const root = path.resolve('public/boutique');
           const cssDir = path.join(root,'css');
           const baseline = JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
           if (baseline.total !== 16 || baseline.keys.length !== 16) throw new Error(`Expected final baseline 16, got ${baseline.total}/${baseline.keys.length}`);
-          console.log(`FINAL_KEYS=${baseline.keys.length}`);
-          baseline.keys.forEach(k => console.log(`KEY ${k}`));
+          const baselineKeys = new Set(baseline.keys);
 
-          const distOrder = ['base.css','components.css','desktop.css'];
-          const delivered = [];
-          for (let di=0; di<distOrder.length; di++) {
-            const bundle = BUNDLES.find(b => b.out === distOrder[di]);
-            bundle.files.forEach((name,si) => delivered.push({file:`${name}.css`,dist:distOrder[di],rank:di*1000+si}));
-          }
           function contextOf(rule) {
             let node = rule.parent;
             while (node && node.type !== 'root') {
@@ -52,38 +45,166 @@ jobs:
             }
             return 'global';
           }
-          const rowsByKey = new Map(baseline.keys.map(k => [k,[]]));
-          for (const meta of delivered) {
-            const fp = path.join(cssDir,meta.file);
-            if (!fs.existsSync(fp)) continue;
-            let raw = fs.readFileSync(fp,'utf8');
-            if (meta.file === 'hero.css') {
-              const deadShadow = /\n\s*0 8px 20px rgba\(198,168,93,\.10\),\n\s*0 2px 6px rgba\(100,175,90,\.06\);/;
-              if (!deadShadow.test(raw)) throw new Error('Expected hero malformed orphan shadow fragment not found');
-              raw = raw.replace(deadShadow,'');
+
+          const cache = new Map();
+          function load(file) {
+            if (!cache.has(file)) {
+              const fp = path.join(cssDir,file);
+              let raw = fs.readFileSync(fp,'utf8');
+              if (file === 'hero.css') {
+                const deadShadow = /\n\s*0 8px 20px rgba\(198,168,93,\.10\),\n\s*0 2px 6px rgba\(100,175,90,\.06\);/;
+                if (!deadShadow.test(raw)) throw new Error('Expected hero malformed orphan shadow fragment not found');
+                raw = raw.replace(deadShadow,'');
+              }
+              cache.set(file,{fp,ast:postcss.parse(raw,{from:file})});
             }
-            const ast = postcss.parse(raw,{from:meta.file});
+            return cache.get(file);
+          }
+
+          const removed = [];
+          function removeExact({file,selector,media='global',prop,oldValue}) {
+            const {ast} = load(file);
+            const matches=[];
             ast.walkRules(rule => {
-              const media = contextOf(rule);
-              const selectors = rule.selectors || [rule.selector];
-              rule.walkDecls(decl => selectors.forEach(rawSel => {
-                const selector = rawSel.trim();
-                const key = `${selector}|||${media}|||${decl.prop}`;
-                if (!rowsByKey.has(key)) return;
-                rowsByKey.get(key).push({file:meta.file,dist:meta.dist,rank:meta.rank,line:decl.source?.start?.line||null,selector,fullSelector:rule.selector,grouped:selectors.length>1,media,prop:decl.prop,value:decl.value});
-              }));
+              if (contextOf(rule)!==media) return;
+              const selectors=rule.selectors||[rule.selector];
+              if (!selectors.map(s=>s.trim()).includes(selector)) return;
+              rule.nodes.forEach(node => {
+                if (node.type==='decl' && node.prop===prop && node.value===oldValue) matches.push({rule,decl:node});
+              });
             });
+            if (matches.length!==1) throw new Error(`Expected one ${file} ${selector} ${media} ${prop}:${oldValue}, got ${matches.length}`);
+            const key=`${selector}|||${media}|||${prop}`;
+            if (!baselineKeys.has(key)) throw new Error(`Refusing non-baseline removal ${key}`);
+            matches[0].decl.remove();
+            removed.push({file,key,oldValue});
           }
-          const sets = new Map();
-          for (const key of baseline.keys) {
-            const rows = (rowsByKey.get(key)||[]).sort((a,b)=>a.rank-b.rank||(a.line||0)-(b.line||0));
-            console.log(`\n=== ${key} ===`);
-            rows.forEach(r=>console.log(JSON.stringify(r)));
-            if (!rows.length) console.log('NO_SOURCE_MATCH');
-            else console.log(`WINNER ${rows.at(-1).file}:${rows.at(-1).line} -> ${rows.at(-1).value}`);
-            const owners=[...new Set(rows.map(r=>r.file))].join(' + ')||'<none>';
-            sets.set(owners,(sets.get(owners)||0)+1);
+
+          // Bottom nav badge: layout values already lose to cart.css in components.css.
+          removeExact({file:'layout.css',selector:'.k-bnav-badge',prop:'border',oldValue:'1.5px solid var(--white)'});
+          removeExact({file:'layout.css',selector:'.k-bnav-badge',prop:'height',oldValue:'16px'});
+          removeExact({file:'layout.css',selector:'.k-bnav-badge',prop:'padding',oldValue:'0 4px'});
+          removeExact({file:'layout.css',selector:'.k-bnav-badge',prop:'top',oldValue:'4px'});
+
+          // Drawer: later cart.css full-width mobile rule already wins.
+          removeExact({file:'cart.css',selector:'.k-cart-drawer',prop:'max-width',oldValue:'400px'});
+
+          // Hero: remove the only differing early values; later/current winners stay untouched.
+          removeExact({file:'hero.css',selector:'.k-hero-bubble',prop:'display',oldValue:'flex'});
+          removeExact({file:'hero.css',selector:'.k-hero-cats-sticky::after',prop:'height',oldValue:'4px'});
+          removeExact({file:'hero.css',selector:'.k-hero-img',prop:'height',oldValue:'clamp(110px, 28vw, 140px)'});
+          removeExact({file:'hero.css',selector:'.k-hero-mini-slogan',prop:'display',oldValue:'flex'});
+
+          // Skeleton: do not remove the shared radius declaration for other skeletons.
+          // Only remove .k-skeleton-price from the earlier grouped selector; its later 4px owner remains.
+          {
+            const {ast}=load('layout.css');
+            const target='.k-skeleton-price|||global|||border-radius';
+            if (!baselineKeys.has(target)) throw new Error(`Missing ${target}`);
+            const matches=[];
+            ast.walkRules(rule => {
+              if (contextOf(rule)!=='global') return;
+              const selectors=(rule.selectors||[]).map(s=>s.trim());
+              if (!selectors.includes('.k-skeleton-price')) return;
+              const decl=rule.nodes.find(n=>n.type==='decl'&&n.prop==='border-radius'&&n.value==='var(--radius)');
+              if (decl) matches.push({rule,selectors});
+            });
+            if (matches.length!==1) throw new Error(`Expected one grouped skeleton radius owner, got ${matches.length}`);
+            const next=matches[0].selectors.filter(s=>s!=='.k-skeleton-price');
+            if (!next.length) throw new Error('Skeleton group unexpectedly empty');
+            matches[0].rule.selectors=next;
+            removed.push({file:'layout.css',key:target,oldValue:'var(--radius)',replacement:'selector removed from old group'});
           }
-          console.log('\n=== OWNER SET COUNTS ===');
-          [...sets.entries()].sort((a,b)=>b[1]-a[1]).forEach(([o,c])=>console.log(`${c} ${o}`));
+
+          // Wallet: compact cart values and checkout rail are the already-delivered winners.
+          removeExact({file:'cart.css',selector:'.k-wallet-balance',prop:'font-size',oldValue:'.72rem'});
+          removeExact({file:'cart.css',selector:'.k-wallet-section',prop:'border',oldValue:'1.5px solid rgba(0,0,0,.08)'});
+          removeExact({file:'cart.css',selector:'.k-wallet-section',prop:'border-radius',oldValue:'11px'});
+          removeExact({file:'cart.css',selector:'.k-wallet-section',prop:'margin-top',oldValue:'5px'});
+          removeExact({file:'cart.css',selector:'.k-wallet-section',prop:'padding',oldValue:'9px 12px'});
+          removeExact({file:'cart.css',selector:'.k-wallet-section',prop:'padding',oldValue:'6px 8px'});
+          removeExact({file:'cart.css',selector:'.k-wallet-title',prop:'font-size',oldValue:'.85rem'});
+
+          if (removed.length!==17) throw new Error(`Expected 17 physical removals/splits, got ${removed.length}`);
+          if (new Set(removed.map(r=>r.key)).size!==16) throw new Error('Expected all 16 unique baseline keys to be repaid');
+
+          for (const entry of cache.values()) {
+            entry.ast.walkRules(rule => {
+              if (rule.nodes && rule.nodes.filter(n=>n.type!=='comment').length===0) rule.remove();
+            });
+            fs.writeFileSync(entry.fp,entry.ast.toString(),'utf8');
+          }
+
+          function collect(file,selector,media,prop) {
+            const ast=postcss.parse(fs.readFileSync(path.join(cssDir,file),'utf8'),{from:file});
+            const vals=[];
+            ast.walkRules(rule => {
+              if (contextOf(rule)!==media) return;
+              const selectors=rule.selectors||[rule.selector];
+              if (!selectors.map(s=>s.trim()).includes(selector)) return;
+              rule.walkDecls(prop,d=>vals.push(d.value));
+            });
+            return vals;
+          }
+          function expectValue(file,selector,media,prop,expected) {
+            const vals=collect(file,selector,media,prop);
+            if (!vals.includes(expected)) throw new Error(`Expected ${file} ${selector} ${prop}=${expected}; got ${vals.join(' <> ')}`);
+          }
+
+          expectValue('cart.css','.k-bnav-badge','global','border','2px solid var(--white)');
+          expectValue('cart.css','.k-bnav-badge','global','height','18px');
+          expectValue('cart.css','.k-bnav-badge','global','padding','0 5px');
+          expectValue('cart.css','.k-bnav-badge','global','top','-2px');
+          expectValue('cart.css','.k-cart-drawer','global','max-width','100%');
+          expectValue('hero-cart-proxy.css','.k-hero-bubble','global','display','none');
+          expectValue('hero.css','.k-hero-cats-sticky::after','global','height','0');
+          expectValue('hero.css','.k-hero-img','global','height','clamp(100px, 26vw, 118px)');
+          expectValue('hero.css','.k-hero-mini-slogan','global','display','none');
+          expectValue('layout.css','.k-skeleton-price','global','border-radius','4px');
+          expectValue('cart.css','.k-wallet-balance','global','font-size','.68rem');
+          expectValue('checkout-vertical-rail.css','.k-wallet-section','global','border','1px solid rgba(31,48,36,.10)');
+          expectValue('checkout-vertical-rail.css','.k-wallet-section','global','border-radius','16px');
+          expectValue('cart.css','.k-wallet-section','global','margin-top','4px');
+          expectValue('checkout-vertical-rail.css','.k-wallet-section','global','padding','12px 14px');
+          expectValue('cart.css','.k-wallet-title','global','font-size','.8rem');
+
+          fs.writeFileSync('/tmp/final-cascade-summary.json',JSON.stringify({oldCascade:16,semanticKeys:16,physicalRemovalsOrSplits:17,heroMalformedFragmentRemoved:true,files:[...cache.keys()].sort()},null,2));
+          console.log(fs.readFileSync('/tmp/final-cascade-summary.json','utf8'));
           NODE
+      - name: Rebuild canonical bundles
+        run: npm --prefix public/boutique run deploy:css
+      - name: Prove cascade and specificity before zeroing ratchet
+        run: |
+          npm --prefix public/boutique run check:css-guard
+          npm --prefix public/boutique run check:css-specificity-guard
+      - name: Save zero cascade ratchet and prove empty baseline
+        run: |
+          npm --prefix public/boutique run check:css-guard:save
+          node <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const root=path.resolve('public/boutique');
+          const b=JSON.parse(fs.readFileSync(path.join(root,'scripts/.css-guard-baseline.json'),'utf8'));
+          if (b.total!==0 || b.keys.length!==0) throw new Error(`Expected zero cascade baseline, got ${b.total}/${b.keys.length}`);
+          const report=[
+            '# Boutique CSS Debt — B2 final cascade zero',
+            '',
+            '- Cascade baseline: **16 → 0**',
+            '- Remaining semantic conflict keys: **16 → 0**',
+            '- Physical losing declarations/splits: **17**',
+            '- Malformed orphan hero shadow fragment removed: **1** (already ignored by browsers)',
+            '- New cascade keys before ratchet save: **0**',
+            '- Specificity ratchet: **strict passed; not increased**',
+            '',
+            'The cascade ratchet is now empty. Every retained final value was verified in its current canonical winner.',
+          ].join('\n')+'\n';
+          fs.writeFileSync(path.join(root,'docs/BOUTIQUE_CSS_DEBT_B2_CASCADE_ZERO.md'),report);
+          console.log(report);
+          NODE
+      - name: Commit cascade zero
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/layout.css public/boutique/css/cart.css public/boutique/css/hero.css public/boutique/css/dist public/boutique/index.html public/boutique/scripts/.css-guard-baseline.json public/boutique/docs/BOUTIQUE_CSS_DEBT_B2_CASCADE_ZERO.md
+          git commit -m "refactor(boutique): close cascade debt to zero"
+          git push origin HEAD:refactor/boutique-debt-zero-b2-final-cascade
