@@ -1,0 +1,65 @@
+name: Classify Boutique B2 Checkout Debt
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b2-checkout
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b2-checkout
+          fetch-depth: 1
+      - name: Classify checkout conflict keys by source owners
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from collections import Counter, defaultdict
+
+          root = Path('public/boutique')
+          baseline = json.loads((root / 'scripts/.css-guard-baseline.json').read_text())
+          css_files = sorted((root / 'css').glob('*.css'))
+          contents = {p.name: p.read_text(errors='ignore') for p in css_files}
+
+          def is_checkout(selector):
+              return (
+                  selector.startswith('.ck-') or
+                  selector.startswith('.k-ck-') or
+                  selector.startswith('.k-order') or
+                  selector.startswith('.k-confirm') or
+                  selector.startswith('.k-modal-subtotal') or
+                  selector.startswith('.k-stripe-wrap')
+              )
+
+          rows = []
+          for key in baseline['keys']:
+              selector, media, prop = key.split('|||')
+              if not is_checkout(selector):
+                  continue
+              owners = tuple(name for name, text in contents.items() if selector in text)
+              rows.append((selector, media, prop, owners))
+
+          print(f'CHECKOUT_CONFLICTS={len(rows)}')
+          print('\n=== OWNER SETS ===')
+          by_owners = Counter(owners for _, _, _, owners in rows)
+          for owners, count in by_owners.most_common():
+              print(f'{count:3}  {" + ".join(owners) if owners else "<no source match>"}')
+
+          print('\n=== SELECTOR COUNTS ===')
+          by_selector = Counter(selector for selector, _, _, _ in rows)
+          for selector, count in by_selector.most_common():
+              owners = next(owners for sel, _, _, owners in rows if sel == selector)
+              print(f'{count:3}  {selector}  [{", ".join(owners)}]')
+
+          print('\n=== ALL CHECKOUT KEYS ===')
+          for selector, media, prop, owners in rows:
+              print(f'{selector} || {media} || {prop} || {", ".join(owners)}')
+          PY
