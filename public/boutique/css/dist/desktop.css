@@ -610,15 +610,6 @@
   }
 
   /* État actif */
-  #k-subcats-wrap .k-subchip.active {
-    background: var(--coral);
-    color: var(--white);
-    border-color: var(--coral);
-    box-shadow: 0 4px 14px rgba(200,92,45,.28);
-    font-weight: 700;
-  }
-
-  #k-subcats-wrap .k-subchip[data-subcat=""] { display: none; }
 
   #k-subcats-wrap .k-subchip-icon {
     font-size: 13px;
@@ -709,7 +700,6 @@
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subchip,
   html.k-home-premium-v1 #k-subcats-wrap .k-subchip[data-subcat=""] {
-    display: inline-flex;
     height: 30px;
     padding: 0 11px;
     border-width: 1px;
@@ -720,19 +710,25 @@
     font-weight: 650;
   }
 
-  html.k-home-premium-v1 #k-subcats-wrap .k-subchip:hover {
-    transform: none;
-    border-color: var(--ocean-dark);
-    box-shadow: none;
-  }
+  #k-subcats-wrap .k-subchip[data-subcat=""] { display: inline-flex; }
 
-  html.k-home-premium-v1 #k-subcats-wrap .k-subchip.active {
-    background: color-mix(in srgb, var(--ocean-light) 18%, var(--white));
-    border-color: var(--ocean-dark);
-    box-shadow: inset 0 -2px 0 var(--ocean-dark);
-    color: var(--ocean-dark);
-    font-weight: 750;
-  }
+  html.k-home-premium-v1 #k-subcats-wrap .k-subchip { display: inline-flex; }
+
+  #k-subcats-wrap .k-subchip:hover { box-shadow: none; }
+
+  #k-subcats-wrap .k-subchip:hover { border-color: var(--ocean-dark); }
+
+  #k-subcats-wrap .k-subchip:hover { transform: none; }
+
+  #k-subcats-wrap .k-subchip.active { font-weight: 750; }
+
+  #k-subcats-wrap .k-subchip.active { color: var(--ocean-dark); }
+
+  #k-subcats-wrap .k-subchip.active { box-shadow: inset 0 -2px 0 var(--ocean-dark); }
+
+  #k-subcats-wrap .k-subchip.active { border-color: var(--ocean-dark); }
+
+  #k-subcats-wrap .k-subchip.active { background: color-mix(in srgb, var(--ocean-light) 18%, var(--white)); }
 }
 
 @media (min-width: 900px) {

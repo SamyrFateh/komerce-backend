@@ -540,7 +540,6 @@
 
   /* Sticky wrapper */
   .k-hero-cats-sticky {
-    position: sticky;
     top: var(--header-h, 72px);
     z-index: 180;
     margin-top: 0;
@@ -574,8 +573,6 @@
     top: auto;
     z-index: 120;
     max-width: 1680px;
-    margin: 8px auto 0;
-    padding: 0 20px;
     border-radius: 0;
     border: none;
     background: transparent;
@@ -588,7 +585,6 @@
   .k-cats {
     display: flex;
     flex-flow: row nowrap;
-    gap: 8px;
     max-width: none;
     height: auto;
     margin: 0;
@@ -613,21 +609,13 @@
   .k-chip {
     /* Géométrie carte */
     flex: 1 0 132px;
-    min-width: 132px;
     max-width: none;
     width: 100%;
-    height: 72px;
-    min-height: 64px;
     position: relative;
     display: block;
     padding: 0;
-    border-radius: 14px;
-    border: none;
-    background: var(--sand-warm);
-    box-shadow: var(--shadow-md);
     cursor: pointer;
     overflow: hidden;
-    transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
   /* Lift au survol */
@@ -673,7 +661,6 @@
     display: block;
     object-fit: cover;
     border-radius: 0;
-    filter: saturate(1.20) contrast(1.04) brightness(1.02);
     transition: transform .30s var(--ease), filter .30s var(--ease);
   }
 
@@ -713,10 +700,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 5px 8px 7px;
     color: var(--white);
-    font-size: 11px;
-    font-weight: 800;
     line-height: 1.05;
     letter-spacing: -.02em;
     text-align: center;
@@ -733,9 +717,6 @@
     transform: none;
     background: var(--ocean-dark);
     border-color: var(--ocean-dark);
-    box-shadow:
-      0 0 0 2.5px var(--ocean-dark),
-      0 10px 24px rgba(74,144,64,.22);
   }
 
   .k-chip.active .k-chip-photo img {
@@ -917,9 +898,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-cats-shell {
     width: calc(100% - clamp(32px, 2.6vw, 48px));
-    margin: 0 auto;
-    padding: 0;
   }
+  .k-cats-shell { padding: 0; }
+  .k-cats-shell { margin: 0 auto; }
 
   html.k-home-premium-v1 .k-cats::before {
     content: none;
@@ -927,24 +908,31 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-home-premium-v1 .k-cats {
     position: relative;
-    gap: 10px;
   }
+
+  .k-cats { gap: 10px; }
 
   html.k-home-premium-v1 .k-chip {
     flex-basis: 118px;
-    min-width: 118px;
-    height: 64px;
-    min-height: 64px;
-    border: 1px solid var(--border-text-06);
-    border-radius: 16px;
-    background: var(--sand-warm);
-    box-shadow: none;
-    transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
   }
 
-  html.k-home-premium-v1 .k-chip-photo img {
-    filter: saturate(.78) contrast(.96) brightness(.90);
-  }
+  .k-chip { box-shadow: none; }
+
+  .k-chip { transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease); }
+
+  .k-chip { background: var(--sand-warm); }
+
+  .k-chip { border-radius: 16px; }
+
+  .k-chip { border: 1px solid var(--border-text-06); }
+
+  .k-chip { min-height: 64px; }
+
+  .k-chip { height: 64px; }
+
+  .k-chip { min-width: 118px; }
+
+  .k-chip-photo img { filter: saturate(.78) contrast(.96) brightness(.90); }
 
   html.k-home-premium-v1 .k-chip:hover {
     border-color: var(--border-text-10);
@@ -952,14 +940,15 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-home-premium-v1 .k-chip.active {
     border-color: var(--ocean-dark);
-    box-shadow: inset 0 -3px 0 var(--ocean-dark), 0 4px 12px var(--border-text-06);
   }
 
-  html.k-home-premium-v1 .k-chip-label {
-    padding: 5px 7px 6px;
-    font-size: 10.5px;
-    font-weight: 700;
-  }
+  .k-chip.active { box-shadow: inset 0 -3px 0 var(--ocean-dark), 0 4px 12px var(--border-text-06); }
+
+  .k-chip-label { font-weight: 700; }
+
+  .k-chip-label { font-size: 10.5px; }
+
+  .k-chip-label { padding: 5px 7px 6px; }
 }
 
 /* ── ANIMATION CHANGEMENT DE CATÉGORIE ───────────────────────────
