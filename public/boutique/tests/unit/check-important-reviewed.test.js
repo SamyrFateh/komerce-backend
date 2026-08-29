@@ -9,15 +9,15 @@
 const importantGate = require('../../scripts/check-important.js');
 
 describe('check-important — dette ouverte vs guards revus', () => {
-  test('état réel : 9 physiques = 3 revues + 6 ouvertes', () => {
+  test('état réel : 6 physiques = 3 revues + 3 ouvertes', () => {
     const result = importantGate.scan();
 
-    expect(result.total).toBe(9);
+    expect(result.total).toBe(6);
     expect(result.reviewedTotal).toBe(3);
-    expect(result.openTotal).toBe(6);
+    expect(result.openTotal).toBe(3);
     expect(result.reviewedPerFile).toEqual({ 'boutique-desktop.css': 3 });
     expect(result.openPerFile).toEqual({
-      'hero.css': 4,
+      'hero.css': 1,
       'share-cart.css': 2,
     });
   });
@@ -66,8 +66,8 @@ describe('check-important — dette ouverte vs guards revus', () => {
       openTotal: current.openTotal + 1,
     };
     const baseline = {
-      total: 6,
-      perFile: { 'hero.css': 4, 'share-cart.css': 2 },
+      total: 3,
+      perFile: { 'hero.css': 1, 'share-cart.css': 2 },
     };
 
     const diff = importantGate.diffAgainstBaseline(synthetic, baseline);
