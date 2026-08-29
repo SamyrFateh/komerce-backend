@@ -1,0 +1,32 @@
+name: Refresh business graph B1b3
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b1b-3
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b1b-3
+          fetch-depth: 1
+      - name: Generate canonical business graph
+        run: node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+      - name: Commit generated artifacts if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "Business graph already fresh"
+            exit 0
+          fi
+          git commit -m "docs(governance): refresh business feature graph"
+          git push origin HEAD:refactor/boutique-debt-zero-b1b-3
