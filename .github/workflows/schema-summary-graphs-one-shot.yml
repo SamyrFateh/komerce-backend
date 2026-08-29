@@ -26,6 +26,9 @@ jobs:
           node-version: '20'
       - run: npm ci --ignore-scripts
 
+      - name: Model final tree without this temporary helper
+        run: rm .github/workflows/schema-summary-graphs-one-shot.yml
+
       - name: Regenerate canonical governance artifacts
         run: |
           npm run business-graph:gen
