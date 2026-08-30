@@ -61,9 +61,13 @@ const CONTRACTS = Object.freeze({
     'Corriger la logique si la divergence est accidentelle; sinon recapturer le golden avec justification métier explicite.',
     'Ne pas recapturer le golden uniquement pour rendre la CI verte.'),
   'BACKEND-REVIEWED-EXCEPTION': contract('backend', 'exception exacte documentée dans son gate source',
-    'Une exception historique/cohésive est mesurée mais explicitement réauditée.',
+    'Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.',
     'Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.',
     'Ne pas copier cette exception sur un nouveau fichier.', { severity: 'info', autoRemediation: false }),
+  'BACKEND-HEALTHY-MEASUREMENT': contract('backend', 'gate ou ratchet source qui produit la mesure',
+    'Une mesure de gouvernance est présente dans le rapport mais sa dette effective est déjà à zéro.',
+    'Ne rien corriger; conserver le cliquet à zéro et réagir uniquement si sa valeur future augmente.',
+    'Ne pas transformer une mesure saine en allowlist ni relever le cliquet.', { severity: 'info', autoRemediation: false }),
 
   // Dashboards
   'DASH-ORPHAN-ROUTE': contract('dashboard', 'public/dashboards/admin/js/app.js + vue déclarée',
@@ -191,7 +195,18 @@ function baseBackendRule(rule) {
 
 function backendDebtCode(debt) {
   const rule = String(debt?.rule || '');
-  if (/\(reviewed\)/i.test(rule) || /exception document/i.test(String(debt?.lot || ''))) {
+  const count = Number(debt?.count || 0);
+  const text = `${debt?.lot || ''} ${debt?.note || ''}`.toLowerCase();
+
+  if (count === 0 || /tous les .*cliquets.*(?:à|a) 0|dette .*ferm[ée]e/.test(text)) {
+    return 'BACKEND-HEALTHY-MEASUREMENT';
+  }
+  if (
+    /\(reviewed\)/i.test(rule)
+    || /exception document/i.test(text)
+    || /l[ée]gitim/.test(text)
+    || /(?:r[ée]audit|revalid)/.test(text)
+  ) {
     return 'BACKEND-REVIEWED-EXCEPTION';
   }
   return 'BACKEND-ARCH';
