@@ -23,6 +23,16 @@ const { resolveRuntimeEnvironment } = require('../middleware/require-non-product
 const FLAG = 'DISCOVERY_STAGING_SEED_ENABLED';
 const MARKET_CODE = 'KM';
 
+// Médias Boutique existants utilisés uniquement pour éprouver le pipeline
+// image_ref en staging. Ils restent des placeholders explicites : les vraies
+// photos provider remplaceront ces références sans changement de code.
+const STAGING_MEDIA = Object.freeze({
+  FOOD: '/boutique/categories/cat-maison-v3.webp',
+  BUILDING: '/boutique/categories/cat-bricolage-v3.webp',
+  AUTO: '/boutique/categories/cat-auto-v3.webp',
+  GENERAL: '/boutique/categories/cat-all-v3.webp',
+});
+
 const PROVIDERS = Object.freeze([
   { id: 'd15c0000-0000-4000-8000-000000000001', name: '[STAGING] Saveurs d\'Anjouan', phone: '+269000000001' },
   { id: 'd15c0000-0000-4000-8000-000000000002', name: '[STAGING] Bâtir Anjouan', phone: '+269000000002' },
@@ -36,25 +46,25 @@ const PHYSICAL_OFFERS = Object.freeze([
     id: 'd15c1000-0000-4000-8000-000000000001', providerId: PROVIDERS[0].id,
     title: 'Samboussas au bœuf',
     description: 'Préparation locale pour commande familiale ou réception. Donnée de démonstration staging.',
-    zone: 'Mutsamudu',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.FOOD,
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000002', providerId: PROVIDERS[0].id,
     title: 'Plateau de samboussas pour réception',
     description: 'Préparation sur demande pour événement. Donnée de démonstration staging.',
-    zone: 'Anjouan',
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.FOOD,
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000003', providerId: PROVIDERS[4].id,
     title: 'Ciment 32,5R disponible localement',
     description: 'Offre physique locale de test pour éprouver la découverte de matériaux sur place.',
-    zone: 'Mutsamudu',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000004', providerId: PROVIDERS[4].id,
     title: 'Pack d’eau 6 × 1,5 L',
     description: 'Offre locale de disponibilité immédiate utilisée uniquement en staging.',
-    zone: 'Anjouan',
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.GENERAL,
   },
 ]);
 
@@ -63,37 +73,37 @@ const SERVICES = Object.freeze([
     id: 'd15c2000-0000-4000-8000-000000000001', providerId: PROVIDERS[1].id,
     title: 'Maçonnerie et petits travaux',
     description: 'Demande de travaux de maçonnerie, réparation ou finition. Donnée staging.',
-    zone: 'Mutsamudu',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000002', providerId: PROVIDERS[2].id,
     title: 'Plomberie maison',
     description: 'Diagnostic, fuite, robinetterie et petits travaux de plomberie. Donnée staging.',
-    zone: 'Mutsamudu',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000003', providerId: PROVIDERS[2].id,
     title: 'Électricité bâtiment',
     description: 'Petite installation, diagnostic et dépannage électrique. Donnée staging.',
-    zone: 'Ouani',
+    zone: 'Ouani', imageRef: STAGING_MEDIA.BUILDING,
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000004', providerId: PROVIDERS[3].id,
     title: 'Mécanique automobile',
     description: 'Diagnostic et petite réparation automobile. Donnée staging.',
-    zone: 'Mutsamudu',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.AUTO,
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000005', providerId: PROVIDERS[1].id,
     title: 'Menuiserie aluminium',
     description: 'Demande de fabrication ou réparation légère en aluminium. Donnée staging.',
-    zone: 'Anjouan',
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.BUILDING,
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000006', providerId: PROVIDERS[3].id,
     title: 'Livraison et petite manutention',
     description: 'Besoin ponctuel de transport ou manutention locale. Donnée staging.',
-    zone: 'Anjouan',
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.GENERAL,
   },
 ]);
 
@@ -136,36 +146,38 @@ async function upsertProvider(client, marketId, provider) {
 async function upsertService(client, marketId, service) {
   await client.query(
     `INSERT INTO services
-       (id, provider_id, title, description, market_id, zone, status, commercial_exposure)
-     VALUES ($1, $2, $3, $4, $5, $6, 'active', 'ENABLED')
+       (id, provider_id, title, description, market_id, zone, image_ref, status, commercial_exposure)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', 'ENABLED')
      ON CONFLICT (id) DO UPDATE SET
        provider_id = EXCLUDED.provider_id,
        title = EXCLUDED.title,
        description = EXCLUDED.description,
        market_id = EXCLUDED.market_id,
        zone = EXCLUDED.zone,
+       image_ref = EXCLUDED.image_ref,
        status = 'active',
        commercial_exposure = 'ENABLED',
        updated_at = now()`,
-    [service.id, service.providerId, service.title, service.description, marketId, service.zone]
+    [service.id, service.providerId, service.title, service.description, marketId, service.zone, service.imageRef]
   );
 }
 
 async function upsertPhysicalOffer(client, marketId, offer) {
   await client.query(
     `INSERT INTO physical_offers
-       (id, provider_id, title, description, market_id, zone, status, commercial_exposure)
-     VALUES ($1, $2, $3, $4, $5, $6, 'active', 'ENABLED')
+       (id, provider_id, title, description, market_id, zone, image_ref, status, commercial_exposure)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', 'ENABLED')
      ON CONFLICT (id) DO UPDATE SET
        provider_id = EXCLUDED.provider_id,
        title = EXCLUDED.title,
        description = EXCLUDED.description,
        market_id = EXCLUDED.market_id,
        zone = EXCLUDED.zone,
+       image_ref = EXCLUDED.image_ref,
        status = 'active',
        commercial_exposure = 'ENABLED',
        updated_at = now()`,
-    [offer.id, offer.providerId, offer.title, offer.description, marketId, offer.zone]
+    [offer.id, offer.providerId, offer.title, offer.description, marketId, offer.zone, offer.imageRef]
   );
 }
 
@@ -221,6 +233,7 @@ if (require.main === module) {
 module.exports = {
   FLAG,
   MARKET_CODE,
+  STAGING_MEDIA,
   PROVIDERS,
   PHYSICAL_OFFERS,
   SERVICES,
