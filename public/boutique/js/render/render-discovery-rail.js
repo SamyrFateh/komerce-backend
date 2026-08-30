@@ -50,7 +50,7 @@ function renderCard(card) {
     : `<div class="k-discovery-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
 
   return `
-    <article class="k-discovery-card" data-discovery-kind="${card.kind}">
+    <article class="k-discovery-card" data-discovery-kind="${card.kind}" role="listitem">
       <div class="k-discovery-media">
         ${image}
         ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
@@ -63,15 +63,6 @@ function renderCard(card) {
     </article>`;
 }
 
-/**
- * Rend un rail déjà autorisé par le backend. Si aucune carte valide ne reste,
- * le composant reste absent : capability != exposure.
- *
- * @param {HTMLElement|null} container
- * @param {Array<object>} cards
- * @param {{marketLabel?: string}} options
- * @returns {number} nombre de cartes effectivement rendues
- */
 export function renderDiscoveryRail(container, cards, options = {}) {
   if (!container) return 0;
 
@@ -89,7 +80,7 @@ export function renderDiscoveryRail(container, cards, options = {}) {
   container.innerHTML = `
     <div class="k-discovery-header">
       <div class="k-discovery-heading">
-        <h2 class="k-discovery-title">Près de vous</h2>
+        <h2 id="k-discovery-local-title" class="k-discovery-title">Près de vous</h2>
         ${marketLabel ? `<span class="k-discovery-market">${sanitize(marketLabel)}</span>` : ''}
       </div>
     </div>
