@@ -20,6 +20,8 @@ jobs:
         run: node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
       - name: Generate canonical CSS bundle artifacts
         run: node public/boutique/scripts/deploy-css.js
+      - name: Copy hidden cache state for artifact upload
+        run: cp public/boutique/.cache-buster-state.json generated-cache-buster-state.json
       - name: Upload generated artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -30,4 +32,4 @@ jobs:
             docs/O6_INVENTORY.md
             public/boutique/css/dist/components.css
             public/boutique/index.html
-            public/boutique/.cache-buster-state.json
+            generated-cache-buster-state.json
