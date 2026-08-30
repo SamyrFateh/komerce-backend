@@ -37,7 +37,7 @@ jobs:
       boutique_unit: ${{ steps.scope.outputs.boutique_unit }}
       boutique_package: ${{ steps.scope.outputs.boutique_package }}
       governance: ${{ steps.scope.outputs.governance }}
-      governance_files: ${{ steps.scope.outputs.governance_files }}
+      governance_files: ${{ steps.scope.outputs.govenance_files }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -271,6 +271,8 @@ jobs:
         run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
       - name: Feature 360 canonical projection fresh
         run: node scripts/feature-360-check.js
+      - name: Agent remediation contract — all scopes
+        run: node scripts/check-agent-remediation-contract.js
       - name: Agent remediation index fresh
         run: node scripts/gen-agent-remediation-index.js --check
       - name: Prove gates did not mutate the tree
