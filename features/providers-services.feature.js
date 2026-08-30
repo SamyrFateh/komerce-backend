@@ -106,7 +106,9 @@ module.exports = {
       'POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; revalidation exposabilité avant insertion',
     ],
     consumes: [
-      'auth — session canonique côté serveur et requireIdentity() côté Boutique avant mutation',
+      'auth — authenticateOrCreateGuest et session canonique côté serveur',
+      'auth-identity — requireIdentity() côté Boutique avant mutation',
+      'platform-ops — bus et showToast comme primitives UI transverses',
       'market — référentiel markets, résolution code -> id côté serveur',
       'infrastructure — dépendance technique db.js',
     ],
