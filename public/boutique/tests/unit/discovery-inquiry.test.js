@@ -66,7 +66,7 @@ describe('handleDiscoveryRequest', () => {
     expect(button.hasAttribute('aria-busy')).toBe(false);
   });
 
-  it('service : identité canonique puis Inquiry, confirmation native', async () => {
+  it('service : identité canonique terminée avant Inquiry, puis confirmation native', async () => {
     const button = document.createElement('button');
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
     mockCreateProviderInquiry.mockResolvedValue({
@@ -78,6 +78,8 @@ describe('handleDiscoveryRequest', () => {
 
     expect(result).toBe(true);
     expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-1');
+    expect(mockRequireIdentity.mock.invocationCallOrder[0])
+      .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée', 'success', 3200);
     expect(mockBus.emit).toHaveBeenCalledWith('discovery:inquiry-created', {
       id: 'inq-1', status: 'sent', kind: 'service', ref: 'svc-1',
