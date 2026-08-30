@@ -1,0 +1,181 @@
+name: Close B5 Agent Remediation Contract
+
+on:
+  push:
+    branches:
+      - governance/agent-remediation-contract-b5
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  close-b5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: governance/agent-remediation-contract-b5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Patch B5 into canonical enforcement
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # package.json — scripts only, keep formatting stable.
+          p = Path('package.json')
+          s = p.read_text()
+          anchor = '    "gate:findings:gen": "node scripts/gen-gate-findings.js",\n'
+          addition = anchor + '    "agent:remediation:gen": "node scripts/gen-agent-remediation-index.js",\n    "agent:remediation:check": "node scripts/check-agent-remediation-contract.js",\n'
+          if '"agent:remediation:gen"' not in s:
+              assert anchor in s
+              s = s.replace(anchor, addition, 1)
+          p.write_text(s)
+
+          # Gate Findings — enrich every future finding with B5 remediation metadata.
+          p = Path('scripts/gen-gate-findings.js')
+          s = p.read_text()
+          import_anchor = "const { spawnSync } = require('child_process');\n"
+          import_line = "const { remediationForGateFinding } = require('./agent-remediation-contract.js');\n"
+          if import_line not in s:
+              assert import_anchor in s
+              s = s.replace(import_anchor, import_anchor + import_line, 1)
+          s = s.replace("const VERSION = 'GF-2.1';", "const VERSION = 'GF-3.0';")
+          model_anchor = "  const model = { version: VERSION, generatedAt: new Date().toISOString().slice(0, 10), contract: {"
+          if 'const enrichedFindings = findings.map' not in s:
+              assert model_anchor in s
+              s = s.replace(model_anchor,
+                  "  const enrichedFindings = findings.map(finding => ({ ...finding, remediation: remediationForGateFinding(finding) }));\n" + model_anchor,
+                  1)
+          s = s.replace('  }, sources, findings };', '  }, sources, findings: enrichedFindings };')
+          p.write_text(s)
+
+          # PR scope — explicit Dashboard scope, including canonical/schema/docs tooling.
+          p = Path('scripts/pr-enforcement-scope.js')
+          s = p.read_text()
+          fn_anchor = "function isBoutiqueRelevant(file) {\n"
+          dash_fn = """function isDashboardFile(file) {\n  const f = norm(file);\n  return /^public\\/dashboards\\/.+/i.test(f)\n    || /^docs\\/DASHBOARDS_360\\.(?:json|md)$/i.test(f)\n    || f === 'scripts/gen-dashboards-360.js'\n    || f === 'scripts/.dashboards-360-baseline.json'\n    || f === 'scripts/agent-remediation-contract.js'\n    || f === 'scripts/gen-agent-remediation-index.js'\n    || f === 'scripts/check-agent-remediation-contract.js'\n    || f === 'docs/AGENT_REMEDIATION_INDEX.json'\n    || f === 'docs/contract/AGENT_REMEDIATION_CONTRACT.md';\n}\n\n"""
+          if 'function isDashboardFile(file)' not in s:
+              assert fn_anchor in s
+              s = s.replace(fn_anchor, dash_fn + fn_anchor, 1)
+          classify_anchor = "  const boutiqueFiles = changedFiles.filter(isBoutiqueRelevant);\n"
+          if 'const dashboardFiles = changedFiles.filter(isDashboardFile);' not in s:
+              assert classify_anchor in s
+              s = s.replace(classify_anchor, classify_anchor + "  const dashboardFiles = changedFiles.filter(isDashboardFile);\n", 1)
+          return_anchor = "    boutiqueFiles,\n"
+          if '    dashboardFiles,\n' not in s:
+              assert return_anchor in s
+              s = s.replace(return_anchor, return_anchor + "    dashboardFiles,\n", 1)
+          bool_anchor = "    boutique: boutiqueFiles.length > 0,\n"
+          if '    dashboard: dashboardFiles.length > 0,\n' not in s:
+              assert bool_anchor in s
+              s = s.replace(bool_anchor, bool_anchor + "    dashboard: dashboardFiles.length > 0,\n", 1)
+          out_anchor = "    `boutique=${model.boutique ? 'true' : 'false'}`,\n"
+          if "`dashboard=${model.dashboard ? 'true' : 'false'}`" not in s:
+              assert out_anchor in s
+              s = s.replace(out_anchor, "    `dashboard=${model.dashboard ? 'true' : 'false'}`,\n    `dashboard_files=${model.dashboardFiles.join(',')}`,\n" + out_anchor, 1)
+          export_anchor = "  isBoutiqueRelevant,\n"
+          if '  isDashboardFile,\n' not in s:
+              assert export_anchor in s
+              s = s.replace(export_anchor, "  isDashboardFile,\n" + export_anchor, 1)
+          p.write_text(s)
+
+          # PR enforcement — explicit dashboard job + remediation freshness in every relevant scope.
+          p = Path('.github/workflows/pr-enforcement.yml')
+          s = p.read_text()
+          outputs_anchor = "      backend_files: ${{ steps.scope.outputs.backend_files }}\n"
+          if '      dashboard: ${{ steps.scope.outputs.dashboard }}\n' not in s:
+              assert outputs_anchor in s
+              s = s.replace(outputs_anchor, outputs_anchor + "      dashboard: ${{ steps.scope.outputs.dashboard }}\n      dashboard_files: ${{ steps.scope.outputs.dashboard_files }}\n", 1)
+
+          # Backend: B5 static/index check after core gates.
+          backend_anchor = "      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n  migrations:\n"
+          backend_repl = "      - name: Agent remediation contract — backend\n        run: node scripts/check-agent-remediation-contract.js --scope=backend\n\n      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n  migrations:\n"
+          if 'Agent remediation contract — backend' not in s:
+              assert backend_anchor in s
+              s = s.replace(backend_anchor, backend_repl, 1)
+
+          # Insert Dashboard job before Boutique.
+          boutique_job = "  boutique:\n    name: Boutique source gates\n"
+          dashboard_job = """  dashboard:\n    name: Dashboard canonical gates\n    needs: changes\n    if: needs.changes.outputs.dashboard == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      - name: Dashboard 360 structural ratchet\n        run: npm run dashboards:360:check\n      - name: Agent remediation contract — dashboard\n        run: node scripts/check-agent-remediation-contract.js --scope=dashboard\n      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n"""
+          if 'name: Dashboard canonical gates' not in s:
+              assert boutique_job in s
+              s = s.replace(boutique_job, dashboard_job + boutique_job, 1)
+
+          # Boutique: index freshness is required even for CSS-only changes.
+          boutique_anchor = "      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n  governance:\n"
+          boutique_repl = "      - name: Agent remediation contract — boutique\n        run: node scripts/check-agent-remediation-contract.js --scope=boutique\n\n      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n  governance:\n"
+          if 'Agent remediation contract — boutique' not in s:
+              assert boutique_anchor in s
+              s = s.replace(boutique_anchor, boutique_repl, 1)
+
+          governance_anchor = "      - name: Feature 360 canonical projection fresh\n        run: node scripts/feature-360-check.js\n"
+          if 'Agent remediation index fresh' not in s:
+              assert governance_anchor in s
+              s = s.replace(governance_anchor, governance_anchor + "      - name: Agent remediation index fresh\n        run: node scripts/gen-agent-remediation-index.js --check\n", 1)
+
+          # Verdict includes dashboard.
+          s = s.replace('needs: [changes, backend, migrations, boutique, governance]', 'needs: [changes, backend, migrations, dashboard, boutique, governance]')
+          env_anchor = "          MIGRATIONS_RESULT: ${{ needs.migrations.result }}\n"
+          if '          DASHBOARD_RESULT: ${{ needs.dashboard.result }}\n' not in s:
+              assert env_anchor in s
+              s = s.replace(env_anchor, env_anchor + "          DASHBOARD_RESULT: ${{ needs.dashboard.result }}\n", 1)
+          echo_anchor = '          echo "migrations=$MIGRATIONS_RESULT"\n'
+          if '          echo "dashboard=$DASHBOARD_RESULT"\n' not in s:
+              assert echo_anchor in s
+              s = s.replace(echo_anchor, echo_anchor + '          echo "dashboard=$DASHBOARD_RESULT"\n', 1)
+          loop_old = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
+          loop_new = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
+          assert loop_old in s or loop_new in s
+          s = s.replace(loop_old, loop_new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Generate canonical remediation index
+        run: node scripts/gen-agent-remediation-index.js
+
+      - name: Validate B5 and scopes
+        shell: bash
+        run: |
+          node scripts/check-agent-remediation-contract.js
+          node scripts/gen-dashboards-360.js --check
+          node - <<'NODE'
+          const s = require('./scripts/pr-enforcement-scope.js');
+          const dash = s.classify(['public/dashboards/admin/js/app.js']);
+          if (!dash.dashboard || !dash.governance) throw new Error('dashboard JS must wake dashboard + governance');
+          const canon = s.classify(['public/dashboards/canonical/README.md']);
+          if (!canon.dashboard) throw new Error('canonical dashboard docs must wake dashboard');
+          const back = s.classify(['services/order-service.js']);
+          if (!back.backend || !back.governance) throw new Error('backend must keep backend + governance');
+          console.log('scope self-checks OK');
+          NODE
+          npx jest tests/unit/agent-remediation-contract.test.js tests/unit/pr-enforcement-security360-scope.test.js --runInBand
+          git diff --check
+
+      - name: Commit B5 closure
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            package.json \
+            scripts/gen-gate-findings.js \
+            scripts/pr-enforcement-scope.js \
+            .github/workflows/pr-enforcement.yml \
+            scripts/agent-remediation-contract.js \
+            scripts/gen-agent-remediation-index.js \
+            scripts/check-agent-remediation-contract.js \
+            docs/contract/AGENT_REMEDIATION_CONTRACT.md \
+            docs/AGENT_REMEDIATION_INDEX.json \
+            tests/unit/agent-remediation-contract.test.js
+          if git diff --cached --quiet; then
+            echo "B5 already committed"
+            exit 0
+          fi
+          git commit -m "feat(governance): enforce agent remediation across backend dashboard boutique"
+          git push origin HEAD:governance/agent-remediation-contract-b5
