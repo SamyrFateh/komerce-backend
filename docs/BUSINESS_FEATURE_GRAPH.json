@@ -433,7 +433,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-02",
-        "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
+        "service": "Classer et suggérer des produits boutique selon un moteur de ranking dédié. Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale d’activation serveur, sans jamais posséder ni cloner les données sources.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -9410,6 +9410,13 @@
       },
       {
         "feature": "recommendations",
+        "category": "services",
+        "declared": "services/discovery-rail-service.js",
+        "resolvedPath": "services/discovery-rail-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "recommendations",
         "category": "routes",
         "declared": "routes/boutique-suggestions.js",
         "resolvedPath": "routes/boutique-suggestions.js",
@@ -9434,6 +9441,13 @@
         "category": "tests",
         "declared": "tests/unit/discovery-rail-composer.test.js",
         "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "recommendations",
+        "category": "tests",
+        "declared": "tests/unit/discovery-rail-service.test.js",
+        "resolvedPath": "tests/unit/discovery-rail-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14223,14 +14237,6 @@
         "status": "resolved-owned"
       },
       {
-        "feature": "recommendations",
-        "entry": "GET /api/boutique/suggestions",
-        "method": "GET",
-        "path": "/api/boutique/suggestions",
-        "routeFile": "routes/boutique-suggestions.js",
-        "status": "resolved-owned"
-      },
-      {
         "feature": "shared-cart",
         "entry": "GET    /api/shared-carts/public/:token",
         "method": "GET",
@@ -16493,7 +16499,7 @@
       {
         "from": "recommendations",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "raw": "infrastructure (DB et composition root)",
         "resolved": true
       },
       {
@@ -16505,19 +16511,25 @@
       {
         "from": "recommendations",
         "to": "orders",
-        "raw": "orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)",
+        "raw": "orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "market",
+        "raw": "market (référentiel markets — résolution code -> id côté serveur)",
         "resolved": true
       },
       {
         "from": "recommendations",
         "to": "local-stock",
-        "raw": "local-stock (Vague 2 D5 — isStockExposable() pour la carte product du rail Discovery ; preuve: services/discovery-rail-composer.js -> services/local-stock-service.js)",
+        "raw": "local-stock — isStockExposable() pour la carte product du rail Discovery",
         "resolved": true
       },
       {
         "from": "recommendations",
         "to": "providers-services",
-        "raw": "providers-services (Vague 2 D5 — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes service et physical_offer ; jamais de SQL direct sur leurs tables ; preuve: services/discovery-rail-composer.js -> services/providers-service.js)",
+        "raw": "providers-services — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes tierces",
         "resolved": true
       },
       {
@@ -17281,6 +17293,22 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/render/render-discovery-rail.js",
+        "resolvedPath": "public/boutique/js/render/render-discovery-rail.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/discovery-rail.js",
+        "resolvedPath": "public/boutique/js/discovery-rail.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/shop-schema.js",
         "resolvedPath": "public/boutique/js/shop-schema.js",
         "exists": true,
@@ -17363,6 +17391,14 @@
         "category": "css",
         "declared": "../css/products.css",
         "resolvedPath": "public/boutique/css/products.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/discovery-rail.css",
+        "resolvedPath": "public/boutique/css/discovery-rail.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17491,6 +17527,14 @@
         "category": "tests",
         "declared": "../tests/unit/render-categories.test.js",
         "resolvedPath": "public/boutique/tests/unit/render-categories.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/discovery-rail.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-rail.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20381,6 +20425,14 @@
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
+                "sourceFileId": "public/boutique/js/render/render-discovery-rail.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/local-stock-badge.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
@@ -20506,6 +20558,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-subcat.js",
+                "targetFile": "public/boutique/js/b-modal.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
@@ -26930,6 +26986,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/discovery-rail.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-greeting.js"
               },
               {
@@ -27797,6 +27857,14 @@
               {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/discovery-rail-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/discovery-rail-service.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -27828,6 +27896,22 @@
             "evidence": [
               {
                 "table": "parcels",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
                 "mode": "R"
               }
             ]
@@ -29089,10 +29173,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 991
+        "filesObserved": 993
       },
       "boutique": {
-        "filesObserved": 176,
+        "filesObserved": 179,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -30789,7 +30873,8 @@
       ],
       "readers": [
         "local-stock",
-        "providers-services"
+        "providers-services",
+        "recommendations"
       ],
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
@@ -31545,6 +31630,16 @@
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "recommendations / GET /api/boutique/suggestions — ranking produit historique",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /*.html",
         "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
@@ -31559,8 +31654,8 @@
       "signals": 0,
       "debt": 0,
       "expectedTopology": 31,
-      "generatorLimitations": 9,
-      "classifiedCandidates": 40
+      "generatorLimitations": 11,
+      "classifiedCandidates": 42
     }
   }
 }
