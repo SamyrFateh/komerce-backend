@@ -7,7 +7,7 @@
  * @inputs        KOMERCE_ENV, DISCOVERY_STAGING_SEED_ENABLED, market KM
  * @outputs       deterministic staging providers, services, physical_offers
  * @depends       db, middleware/require-non-production.js
- * @used-by       scripts/seed.js, manual staging operations
+ * @used-by       manual staging operations
  * @db-read       markets
  * @db-write      providers, services, physical_offers
  * @db-txn        write
