@@ -126,6 +126,7 @@ describe('serviceCard', () => {
     mockGetService.mockResolvedValue({
       id: SERVICE_ID,
       provider_id: PROVIDER_ID,
+      phone: '+269000000000',
       title: 'Installation climatiseur',
       image_ref: '/media/providers/installateur.webp',
     });
@@ -139,7 +140,9 @@ describe('serviceCard', () => {
       cta_action_ref: SERVICE_ID,
       image_ref: '/media/providers/installateur.webp',
     });
-    expect(JSON.stringify(card)).not.toMatch(/phone|téléphone|provider/i);
+    expect(card).not.toHaveProperty('provider_id');
+    expect(card).not.toHaveProperty('phone');
+    expect(card).not.toHaveProperty('requester_phone');
   });
 });
 
