@@ -78,14 +78,14 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 29 | 29 | 365 | 365 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 15 | 15 | 92 | 92 | 0 |
+| boutique | 16 | 16 | 92 | 92 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
 ### Identités canoniques
 
-- **Cross-repo features** (10) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (23) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `platform`, `providers-services`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Cross-repo features** (11) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `providers-services`, `recommendations`, `shared-cart`, `wallet`
+- **Single-repo features** (22) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -121,7 +121,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 6
 - dependencies (consumes): 3 — auth-identity, infrastructure, notifications
-- consumers: 22 — auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+- consumers: 23 — auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, providers-services, purchasing, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### auth-identity _(business-feature)_
 
@@ -138,7 +138,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 22
 - internal APIs: 12
 - dependencies (consumes): 11 — orders, loyalty, logistics, catalog, platform-ops, infrastructure, auth, auth-passkey, notifications, wallet, documents
-- consumers: 15 — auth, auth-passkey, business-rules, catalog, dashboard, documents, economic-engine, logistics, loyalty, notifications, orders, payments, platform-ops, shared-cart, wallet
+- consumers: 16 — auth, auth-passkey, business-rules, catalog, dashboard, documents, economic-engine, logistics, loyalty, notifications, orders, payments, platform-ops, providers-services, shared-cart, wallet
 
 ### auth-passkey _(business-feature)_
 
@@ -475,20 +475,21 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 33
 - internal APIs: 0
 - dependencies (consumes): 11 — documents, incident-management, purchasing, catalog, auth-identity, infrastructure, business-rules, auth, economic-engine, logistics, orders
-- consumers: 11 — auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, recommendations, shared-cart, wallet
+- consumers: 12 — auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet
 
 ### providers-services _(business-feature)_
 
-> Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.
+> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
 
 - services: 1
 - routes: 1
+- boutique: 2
 - tests: 2
 - tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
 - tables written: 4
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 2 — market, infrastructure
+- dependencies (consumes): 5 — auth, auth-identity, platform-ops, market, infrastructure
 - consumers: 1 — recommendations
 
 ### purchasing _(business-feature)_
@@ -1521,8 +1522,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | orders (`orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
-| providers-services | market (`market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)`) | ✔ |
-| providers-services | infrastructure (`infrastructure (dépendance technique transversale : db.js)`) | ✔ |
+| providers-services | auth (`auth — authenticateOrCreateGuest et session canonique côté serveur`) | ✔ |
+| providers-services | auth-identity (`auth-identity — requireIdentity() côté Boutique avant mutation`) | ✔ |
+| providers-services | platform-ops (`platform-ops — bus et showToast comme primitives UI transverses`) | ✔ |
+| providers-services | market (`market — référentiel markets, résolution code -> id côté serveur`) | ✔ |
+| providers-services | infrastructure (`infrastructure — dépendance technique db.js`) | ✔ |
 | purchasing | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)`) | ✔ |
@@ -1592,7 +1596,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (31)
+### TOPOLOGIE ATTENDUE — hors dette (32)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -1612,6 +1616,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> providers-services — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "providers-services"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> recommendations — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "recommendations"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> shared-cart — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "shared-cart"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> auth — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "auth"
@@ -1626,15 +1631,16 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
 
-### LIMITES DU GÉNÉRATEUR — hors dette (11)
+### LIMITES DU GÉNÉRATEUR — hors dette (12)
 
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, corrigé en D6 après découverte que le contrat initial faisait confiance à un market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — idem — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6. — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale d’une offre physique exposable — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale d’un service exposable — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; revalidation exposabilité avant insertion — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions — ranking produit historique — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
@@ -1653,7 +1659,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 993 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 179 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 183 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1866,11 +1872,15 @@ Meta Graph monté : oui.
 | platform-ops | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | orders | static-code, interface, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | platform-ops | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | providers-services | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | purchasing | static-code, interface | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
+| providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
@@ -1933,6 +1943,7 @@ Meta Graph monté : oui.
 - `platform-ops` → `auth-passkey` (canaux: static-code)
 - `platform-ops` → `notifications` (canaux: static-code)
 - `platform-ops` → `payments` (canaux: static-code)
+- `platform-ops` → `providers-services` (canaux: static-code)
 - `platform-ops` → `recommendations` (canaux: static-code)
 - `platform-ops` → `shared-cart` (canaux: static-code)
 - `refunds` → `auth` (canaux: static-code)
@@ -1974,7 +1985,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | Family | N | Policy |
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
-| COMPOSITION_ROOT_WIRING | 15 | application-wiring-not-consumption |
+| COMPOSITION_ROOT_WIRING | 16 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 5 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
@@ -1982,7 +1993,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **20** | |
+| **TOTAL** | **21** | |
 
 ### Projection dependencies
 
@@ -2007,6 +2018,7 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 - `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `auth-passkey` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `notifications` — business-file-import, RUNTIME_ONLY
+- `platform-ops` → `providers-services` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `recommendations` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `shared-cart` — business-file-import, RUNTIME_AND_TEST
 

@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 231,
+    "businessDependencies": 234,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -836,6 +836,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1518,6 +1525,13 @@
             "static-code",
             "interface",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -17035,6 +17049,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17062,7 +17083,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 1,
-        "compositionRootRelations": 4,
+        "compositionRootRelations": 5,
         "details": [
           {
             "to": "auth-passkey",
@@ -17075,6 +17096,10 @@
           {
             "to": "payments",
             "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "providers-services",
+            "family": "COMPOSITION_ROOT_WIRING"
           },
           {
             "to": "recommendations",
@@ -17131,62 +17156,89 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.",
+      "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
       "perimeter": {
         "in": [
           "table providers (identité, contact, market, statut pending|active|suspended)",
-          "table services (prestation d'un provider, exposition DISABLED par défaut)",
-          "table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table SŒUR de services, jamais la même table, même patron d'exposition — Vague 2 D1)",
-          "table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation ; porte sur EXACTEMENT une cible, service_id XOR physical_offer_id, contrainte DB inquiries_exactly_one_target — jamais offer_type/offer_id, association polymorphe rejetée)",
-          "isServiceExposable() / isPhysicalOfferExposable() — le statut provider gouverne toujours l'exposition, quelle que soit la cible"
+          "table services (prestation d’un provider, exposition DISABLED par défaut)",
+          "table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table sœur de services)",
+          "table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)",
+          "isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant",
+          "POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur",
+          "consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire"
         ],
         "out": [
-          "authentification provider (pas de users / user_role — identité par téléphone, contact réel hors app à ce stade)",
-          "scheduler / créneaux structurés (requested_window/proposed_window sont du texte libre, jamais un slot — RECHALLENGE_MODELE_MINIMAL §5/§7)",
-          "paiement, commission, settlement, provider wallet (le vrai chantier — ARBITRAGE_RECHALLENGE_SONNET.md : le jour où de l'argent doit sortir vers quelqu'un qui n'est pas Komerce)",
-          "market_offer / multi-offres / ranking (aucune deuxième origine commerciale à ce stade)",
-          "god-table Listing/Offer unifiée (physical_offers reste une table distincte de services, jamais un champ discriminant kind — RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D)",
-          "prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)",
-          "toute exposition Boutique/Discovery (Vague 2, lots D3+)"
+          "authentification provider (pas de users / user_role pour le provider)",
+          "scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre",
+          "paiement, commission, settlement, provider wallet",
+          "orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders",
+          "market_offer / multi-offres / ranking",
+          "god-table Listing/Offer unifiée",
+          "prescription artisan et shared-cart",
+          "composition, ranking et ordre éditorial du rail Près de vous — owner recommendations",
+          "surface produit/catalogue et navigation — owner catalog"
         ]
       },
-      "authority": "backend-core — tout changement du cycle demande/confirmation doit être validé par le propriétaire de providers-service.js",
+      "authority": "backend-core — providers-services possède le cycle demande/confirmation et l’écriture inquiries ; catalog/recommendations ne font que produire la découverte et l’intention UI.",
       "invariants": [
         {
           "statement": "un service ne peut être créé que pour un provider déjà actif",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "un service n'est exposable que si lui-même actif, exposition activée, provider actif, ET market_id correspond exactement au marché demandé (Vague 2 D3) — le statut provider prime toujours, mais aucune exposabilité n'est vraie hors du marché de l'objet, jamais une confiance aveugle en l'appelant",
+          "statement": "service et physical_offer ne sont exposables que si objet actif, exposition ENABLED, provider actif et market_id correspondant",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une offre physique (physical_offers) suit exactement les mêmes garanties qu'un service, market_id inclus (Vague 2 D3) : créée seulement pour un provider actif, exposable seulement si elle-même active, exposition activée, provider actif, ET marché correspondant",
+          "statement": "une inquiry porte sur exactement une cible — service_id XOR physical_offer_id, jamais les deux ni aucune",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une inquiry porte sur EXACTEMENT une cible — service_id XOR physical_offer_id, jamais les deux, jamais aucune (contrainte DB inquiries_exactly_one_target, doublée en validation applicative)",
+          "statement": "une inquiry n’engage aucune ressource avant la décision finale et ne devient jamais une réservation",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une inquiry ne représente jamais une ressource engagée avant la décision finale (accepted|declined) — jamais un objet réservation",
+          "statement": "le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined, jamais de saut d'état",
-          "test": "tests/unit/providers-service.test.js"
-        },
-        {
-          "statement": "GET /services/:id et GET /physical-offers/:id ne renvoient jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi d'une non-exposabilité (404 pur, jamais un détail de statut/marché)",
+          "statement": "les GET ne renvoient jamais provider_id, téléphone ou raison interne de non-exposabilité",
           "test": "tests/unit/providers-services-routes.test.js"
         },
         {
-          "statement": "les deux routes ne font jamais confiance à un market_id brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé serveur (resolveMarketId, markets.is_active=true) avant tout appel à isServiceExposable/isPhysicalOfferExposable",
+          "statement": "market est toujours un code résolu côté serveur avant les checks d’exposabilité, jamais un market_id autorisant fourni par le client",
           "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "POST /inquiries dérive requester_phone de la session authentifiée ; le body client ne peut jamais usurper ce téléphone et la réponse ne le reflète pas",
+          "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "POST /inquiries revalide l’exposabilité de la cible dans le marché courant juste avant createInquiry()",
+          "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce",
+          "test": "public/boutique/tests/unit/discovery-inquiry.test.js"
         }
       ],
       "implementation": {
         "byCategory": {
+          "boutique": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "js/discovery-inquiry.js",
+                "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/providers-services-api.js",
+                "resolvedPath": "public/boutique/js/providers-services-api.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
           "routes": {
             "count": 1,
             "files": [
@@ -17223,11 +17275,40 @@
             ]
           }
         },
-        "totalFiles": 4,
-        "boutiqueManifest": null,
+        "totalFiles": 6,
+        "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
-          "count": 0,
-          "files": []
+          "count": 4,
+          "files": [
+            {
+              "declared": "../js/discovery-inquiry.js",
+              "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/providers-services-api.js",
+              "resolvedPath": "public/boutique/js/providers-services-api.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/discovery-inquiry.test.js",
+              "resolvedPath": "public/boutique/tests/unit/discovery-inquiry.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/providers-services-api.test.js",
+              "resolvedPath": "public/boutique/tests/unit/providers-services-api.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            }
+          ]
         }
       },
       "ownership": {
@@ -17342,6 +17423,20 @@
       },
       "businessDependencies": [
         {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17353,6 +17448,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
