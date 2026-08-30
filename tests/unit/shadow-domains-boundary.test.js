@@ -51,14 +51,14 @@ function walk(dir, exts, out = []) {
 describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 2)', () => {
 
   // Vague 2 D2 (28-08-2026) : deux points d'intégration backend ÉCRITURE,
-  // délibérés et revus — services/order-checkout-service.js (allocateForOrderItem,
+  // délibérés et revus — services/order-checkout-persistence.js (allocateForOrderItem,
   // dans la même transaction que la commande — déplacé depuis routes/orders/
   // create.js lors du refactoring domaine 4/5, même point d'intégration,
   // même transaction, seul le fichier a bougé) et services/order-status-
   // machine.js (consumeAllocationsForOrder/releaseAllocationsForOrder, sur
   // les transitions confirmed/cancelled déjà existantes).
   const ALLOWED_WRITE_CONSUMERS = [
-    'services/order-checkout-service.js',
+    'services/order-checkout-persistence.js',
     'services/order-status-machine.js',
   ];
 
@@ -98,7 +98,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const routeFiles = walk(path.join(ROOT, 'routes'), ['.js']);
     const offenders = [];
     for (const file of routeFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       const src = fs.readFileSync(file, 'utf8');
       for (const svc of SHADOW_SERVICES) {
         if (src.includes(svc) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
@@ -129,7 +129,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const featureFiles = walk(path.join(ROOT, 'public', 'boutique', 'features'), ['.js']);
     const offenders = [];
     for (const file of [...boutiqueFiles, ...featureFiles]) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_URL_MENTION_FILES.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const svc of SHADOW_SERVICES) {
@@ -158,7 +158,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
     for (const file of boutiqueFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_FRONTEND_URL_CONSUMERS.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const segment of SHADOW_URL_SEGMENTS) {
@@ -189,7 +189,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
     for (const file of boutiqueFiles) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       if (ALLOWED_URL_MENTION_FILES.includes(rel)) continue;
       const src = fs.readFileSync(file, 'utf8');
       for (const table of SHADOW_TABLES) {
@@ -213,7 +213,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
 
     const offenders = [];
     for (const file of allJs) {
-      const rel = path.relative(ROOT, file);
+      const rel = path.relative(ROOT, file).split(path.sep).join('/');
       const src = fs.readFileSync(file, 'utf8');
       if (/require\(.*local-stock-service/.test(src) && !ALLOWED_LOCAL_STOCK_CONSUMERS.includes(rel)) {
         offenders.push(`${rel} → local-stock-service`);
