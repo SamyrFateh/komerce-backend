@@ -191,11 +191,11 @@
 
 @media (min-width: 900px) {
   .k-discovery-shell {
-    padding: 12px 20px 6px;
+    padding: 8px 20px 4px;
   }
 
   .k-discovery-header {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .k-discovery-title {
@@ -208,15 +208,28 @@
 
   .k-discovery-rail {
     gap: 12px;
-    padding-bottom: 7px;
+    padding-bottom: 5px;
   }
 
+  /*
+   * Work visual pass — 4 cartes doivent réellement occuper le terrain.
+   * flex-grow absorbe l'espace disponible jusqu'à 340px, tout en gardant
+   * 5 cartes possibles à 1280px et un overflow horizontal naturel au-delà.
+   * La hauteur média est découplée de la largeur pour gagner en densité :
+   * élargir les cartes ne repousse donc pas le catalogue sous le fold.
+   */
   .k-discovery-card {
-    flex-basis: clamp(188px, 18vw, 230px);
+    flex: 1 0 230px;
+    max-width: 340px;
+  }
+
+  .k-discovery-media {
+    height: 156px;
+    aspect-ratio: auto;
   }
 
   .k-discovery-info {
-    min-height: 116px;
+    min-height: 104px;
     padding: 10px;
   }
 
