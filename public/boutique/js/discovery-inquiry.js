@@ -13,7 +13,7 @@
 import { bus } from './b-bus.js';
 import { requireIdentity } from './b-identity.js';
 import { showToast } from './b-utils.js';
-import { createDiscoveryInquiry } from './discovery-api.js';
+import { createProviderInquiry } from './providers-services-api.js';
 
 let _installed = false;
 const _pending = new Set();
@@ -57,7 +57,7 @@ async function handleDiscoveryRequest(payload = {}) {
     });
     if (!identity) return false;
 
-    const result = await createDiscoveryInquiry(kind, ref);
+    const result = await createProviderInquiry(kind, ref);
     if (!result?.ok) {
       showToast(failureMessage(result), 'error', 3200);
       return false;
