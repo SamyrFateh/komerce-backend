@@ -8,21 +8,14 @@
 /**
  * tests/unit/discovery-api.test.js
  *
- * Module js/discovery-api.js — Vague 2 D6.
- *
- * Couverture :
- *   ✓ market lu depuis window.KomerceMarket, jamais codé en dur dans l'URL
- *   ✓ fallback KM si window.KomerceMarket absent (jamais un throw)
- *   ✓ échec réseau -> null, jamais une exception qui remonte à l'appelant
- *   ✓ réponse non-ok (404/500) -> null
- *   ✓ productId/serviceId/physicalOfferId manquant -> null sans appel réseau
- *   ✓ URL exacte appelée pour chacune des 3 fonctions
+ * Couverture lecture + mutation Discovery locale.
  */
 
 const {
   fetchLocalStockAvailability,
   fetchServiceCard,
   fetchPhysicalOfferCard,
+  createDiscoveryInquiry,
 } = require('../../js/discovery-api.js');
 
 const PRODUCT_ID = 'prod-1';
@@ -106,5 +99,74 @@ describe('fetchPhysicalOfferCard — cas de vérité samboussas', () => {
     });
     const result = await fetchPhysicalOfferCard(OFFER_ID);
     expect(result.title).toBe('Samboussas mariage');
+  });
+});
+
+describe('createDiscoveryInquiry', () => {
+  it('refuse un kind hors contrat sans appel réseau', async () => {
+    const result = await createDiscoveryInquiry('marketplace_item', 'x-1');
+    expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid_target' }));
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('service : POST uniquement service_id, jamais requester_phone', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ inquiry: { id: 'inq-1', status: 'sent', target_kind: 'service' } }),
+    });
+
+    const result = await createDiscoveryInquiry('service', SERVICE_ID);
+
+    expect(result).toEqual({
+      ok: true,
+      inquiry: { id: 'inq-1', status: 'sent', target_kind: 'service' },
+    });
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/providers-services/inquiries?market=KM',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    const options = global.fetch.mock.calls[0][1];
+    expect(JSON.parse(options.body)).toEqual({ service_id: SERVICE_ID });
+    expect(options.body).not.toMatch(/phone/i);
+  });
+
+  it('physical_offer : POST uniquement physical_offer_id', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ inquiry: { id: 'inq-2', status: 'sent', target_kind: 'physical_offer' } }),
+    });
+
+    await createDiscoveryInquiry('physical_offer', OFFER_ID);
+    const options = global.fetch.mock.calls[0][1];
+    expect(JSON.parse(options.body)).toEqual({ physical_offer_id: OFFER_ID });
+  });
+
+  it('préserve le code identity_required pour permettre un message UX explicite', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'Identité requise', code: 'identity_required' }),
+    });
+
+    const result = await createDiscoveryInquiry('service', SERVICE_ID);
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      code: 'identity_required',
+      error: 'Identité requise',
+    });
+  });
+
+  it('échec réseau -> résultat structuré, jamais un throw silencieux', async () => {
+    global.fetch.mockRejectedValue(new Error('network down'));
+    await expect(createDiscoveryInquiry('service', SERVICE_ID)).resolves.toEqual(
+      expect.objectContaining({ ok: false, code: 'network_error' })
+    );
   });
 });
