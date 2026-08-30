@@ -180,7 +180,27 @@ orders create
 
 ---
 
-## 7. Règle de clôture
+## 7. Gate global B4 — couverture applicative
+
+La propriété Feature-First de la Boutique est désormais vérifiée sur **tout le code applicatif** par :
+
+```bash
+npm run gate:boutique-ownership:full
+```
+
+Invariant B4 :
+
+- chaque fichier applicatif `public/boutique/**/*.{js,mjs,cjs,ts,css,html}` doit être rattaché à une carte `features/*.feature.js` ;
+- le gate s'exécute en `--strict` et la cible est **0 fichier applicatif orphelin** ;
+- `public/boutique/harnais/**` est explicitement hors périmètre : ce sont des outils/repros de mesure navigateur, pas des owners runtime ;
+- tests, artefacts générés, docs et scripts infra restent exclus par le même contrat ;
+- toute nouvelle source runtime Boutique sans feature owner fait échouer la CI.
+
+État de fermeture B4-0 : **131 / 131 fichiers applicatifs rattachés — 100%**.
+
+---
+
+## 8. Règle de clôture
 
 Une modification est acceptable si :
 

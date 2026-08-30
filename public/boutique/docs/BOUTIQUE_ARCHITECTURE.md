@@ -19,6 +19,7 @@
 | Overrides de spécificité | `scripts/css-specificity-guard.js` + `.css-specificity-guard-baseline.json` |
 | Dette `!important` ouverte | `scripts/check-important.js` + `.important-baseline.json` |
 | Cache-busters CSS | `scripts/deploy-css.js` + `index.html` |
+| Ownership applicatif global | `scripts/boutique-ownership-full-check.js` / `npm run gate:boutique-ownership:full` |
 
 **Interdit** : reconstruire l’architecture en parsant un ancien wrapper comme `bundle-css.js`, ou maintenir manuellement une seconde liste de fichiers censée remplacer `css-bundles.js`.
 
@@ -83,6 +84,12 @@ Le JS pose des classes d’état et des variables CSS runtime ; il n’injecte p
 ### I-8 — Desktop explicite
 
 Le breakpoint desktop canonique est `900px`. Les exceptions de breakpoint existantes sont régies par le guard dédié ; aucune nouvelle valeur n’est ajoutée sans justification et sans mise à jour du contrat concerné.
+
+### I-9 — Ownership applicatif global strict
+
+`gate:boutique-ownership:full` scanne toutes les sources applicatives Boutique et doit rester à **0 orphelin**. Un nouveau fichier runtime doit être déclaré dans une carte Feature-First au moment où il entre dans le produit.
+
+Les répertoires explicitement non applicatifs (`tests`, `scripts`, `docs`, `harnais`, artefacts générés) ne sont pas des owners runtime et restent hors de ce compteur.
 
 ---
 

@@ -81,4 +81,12 @@
 - [x] figer chaque baisse par le cliquet existant, y compris la baseline vide **0** ;
 - [x] zéro atteint après preuve d’ownership et test de non-régression du `--save` vide, sans acceptation en masse.
 
+## B4 — Ownership applicatif exécutable
+
+- [x] B4-0 couverture globale : mesurer le gate existant sur le dépôt réel — **145** fichiers initialement comptés, **131** rattachés, **14** faux orphelins tous situés dans `public/boutique/harnais/geometry/` ;
+- [x] classifier le harnais géométrique comme outillage navigateur non applicatif, conformément à son README et à son rôle de repro/mesure ;
+- [x] fermer le périmètre runtime à **131 / 131 = 100%**, **0 fichier applicatif orphelin** ;
+- [x] passer `gate:boutique-ownership:full` en `--strict` et l'ajouter aux Boutique source gates de `pr-enforcement.yml` ;
+- [ ] B4-1 : transformer la cartographie des sélecteurs critiques multi-owner en contrat exécutable d'owners/autorisations contextuelles.
+
 Ce fichier est un ledger de chantier, pas une nouvelle baseline. Les cliquets existants restent les guards exécutables jusqu'à leur remboursement explicite.

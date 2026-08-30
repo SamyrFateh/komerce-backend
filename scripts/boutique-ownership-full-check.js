@@ -9,9 +9,9 @@
  *   chaque fichier applicatif est rattaché à une carte features/*.feature.js (ou exclu
  *   légitimement : tests, dist, scripts infra — même périmètre que le Gate 1).
  *
- *   Mode actuel : WARN ONLY. Le backfill (governance/boutique-global-ownership) n'est pas
- *   encore stabilisé — ne pas transformer ces warnings en échec de build avant nouvelle passe.
- *   Voir docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md §6 pour la dette détaillée.
+ *   B4 : la couverture applicative est désormais fermée à 100%. Les harnais de mesure
+ *   navigateur sont exclus du périmètre applicatif au même titre que tests/scripts infra.
+ *   Le mode --strict est le gate canonique en CI et doit rester à zéro orphelin.
  *
  * Usage :
  *   node scripts/boutique-ownership-full-check.js            # rapport, exit 0 toujours
@@ -31,6 +31,7 @@ const EXCLUDE = [
   /^archive\//, /node_modules\//, /\/dist\//, /\.github\//, /(^|\/)docs\//,
   /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
   /(^|\/)migrations\//, /(^|\/)scripts\//,
+  /(^|\/)harnais\//,
   /package(-lock)?\.json$/, /\.config\.(js|cjs|mjs)$/,
   // Backfill gouvernance globale (governance/boutique-global-ownership) :
   // sortie générée (rapport Playwright, jamais du code applicatif) et harnais
@@ -119,5 +120,6 @@ if (STRICT && orphans.length) {
   process.exit(1);
 }
 
-console.log(`\n${C.grn}${C.bld}✔ Rapport généré (mode warning — ne bloque pas tant que --strict n'est pas activé).${C.r}`);
+if (STRICT) console.log(`\n${C.grn}${C.bld}✔ Mode strict — couverture applicative Boutique complète.${C.r}`);
+else console.log(`\n${C.grn}${C.bld}✔ Rapport ownership généré.${C.r}`);
 process.exit(0);

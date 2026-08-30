@@ -107,7 +107,7 @@
     "gate:docs-lint:full": "node scripts/docs-history-lint.js --strict --full",
     "gate:docs-lint:save": "node scripts/docs-history-lint.js --save",
     "gate:boutique-ownership": "node scripts/boutique-ownership-check.js",
-    "gate:boutique-ownership:full": "node scripts/boutique-ownership-full-check.js",
+    "gate:boutique-ownership:full": "node scripts/boutique-ownership-full-check.js --strict",
     "gate:concept-impact": "node scripts/concept-impact-gate.js",
     "map:check": "npm run gate:concept-impact && npm run alerts:contract:check && node scripts/map-check.js",
     "map:check:verbose": "node scripts/map-check.js --verbose",
