@@ -6,9 +6,10 @@ on:
       - feat/discovery-local-v2
     paths:
       - '.github/workflows/discovery-work-visual-audit.yml'
+      - 'public/boutique/css/discovery-rail.css'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -25,6 +26,8 @@ jobs:
           cache: npm
           cache-dependency-path: public/boutique/package-lock.json
       - run: npm ci
+      - name: Rebuild canonical CSS bundle
+        run: npm run deploy:css
       - run: npx playwright install --with-deps chromium
       - name: Capture desktop/mobile geometry
         shell: bash
@@ -87,12 +90,6 @@ jobs:
             await page.route(/\/api\/boutique\/suggestions/, r => r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify({ cards }) }));
           }
 
-          function rect(el) {
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return { x:r.x, y:r.y, width:r.width, height:r.height, top:r.top, bottom:r.bottom, left:r.left, right:r.right };
-          }
-
           async function capture(browser, name, viewport) {
             const context = await browser.newContext({ viewport, locale:'fr-FR', serviceWorkers:'block', deviceScaleFactor:1 });
             const page = await context.newPage();
@@ -112,24 +109,25 @@ jobs:
               const rail = q('.k-discovery-rail');
               const cards = qa('.k-discovery-card').map(toRect);
               const visibleCards = cards.filter(r => r && r.right > 0 && r.left < innerWidth).length;
-              const selectors = ['.k-hero', '#k-hero', '.k-cat-rail', '.k-categories', '#k-discovery-local', '#k-desktop-catalog-wrap', '.k-grid'];
-              const surfaces = {};
-              for (const s of selectors) surfaces[s] = toRect(q(s));
               const shell = q('#k-discovery-local');
               const catalog = q('#k-desktop-catalog-wrap');
+              const grid = q('.k-grid');
+              const hero = q('.k-hero');
+              const occupiedRight = cards.reduce((max, r) => Math.max(max, r?.right || 0), 0);
               return {
                 viewport:{ width:innerWidth, height:innerHeight },
-                scrollHeight:document.documentElement.scrollHeight,
                 shell:toRect(shell),
                 catalog:toRect(catalog),
+                grid:toRect(grid),
+                hero:toRect(hero),
                 rail:toRect(rail),
                 cards,
                 visibleCards,
                 railScrollWidth:rail?.scrollWidth || 0,
                 railClientWidth:rail?.clientWidth || 0,
                 horizontalOverflow:(rail?.scrollWidth || 0) - (rail?.clientWidth || 0),
-                gapToCatalog:shell && catalog ? catalog.getBoundingClientRect().top - shell.getBoundingClientRect().bottom : null,
-                surfaces
+                emptyRightPx: rail ? Math.max(0, rail.getBoundingClientRect().right - occupiedRight) : null,
+                gapToGrid:shell && grid ? grid.getBoundingClientRect().top - shell.getBoundingClientRect().bottom : null
               };
             });
 
@@ -158,3 +156,14 @@ jobs:
           name: discovery-work-visual-audit
           path: public/boutique/work-visual-audit/
           if-no-files-found: error
+      - name: Commit canonical generated CSS outputs
+        if: success()
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u .
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(boutique): rebuild discovery rail css bundle'
+            git push origin HEAD:feat/discovery-local-v2
+          fi
