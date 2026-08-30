@@ -56,7 +56,7 @@ jobs:
           data['scripts']['gate:boutique-ownership:full'] = 'node scripts/boutique-ownership-full-check.js --strict'
           p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
-          # 3) PR enforcement runs the full ownership gate for every Boutique-scoped PR.
+          # 3) Prepare the PR-enforcement patch locally; it is committed separately via GitHub API.
           p = root / '.github/workflows/pr-enforcement.yml'
           s = p.read_text()
           marker = "      - name: Full Boutique unit tests after dependency changes\n        if: needs.changes.outputs.boutique_package == 'true'\n        run: npm --prefix public/boutique run test:unit -- --forceExit\n\n      - name: Prove gates did not mutate the tree\n"
@@ -111,12 +111,12 @@ jobs:
       - name: Commit B4 closure
         shell: bash
         run: |
-          if git diff --quiet; then
-            echo "B4 patch already committed"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/boutique-ownership-full-check.js package.json .github/workflows/pr-enforcement.yml docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md public/boutique/docs/BOUTIQUE_ARCHITECTURE.md public/boutique/docs/BOUTIQUE_DEBT_ZERO_STATUS.md
+          git add scripts/boutique-ownership-full-check.js package.json docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md public/boutique/docs/BOUTIQUE_ARCHITECTURE.md public/boutique/docs/BOUTIQUE_DEBT_ZERO_STATUS.md
+          if git diff --cached --quiet; then
+            echo "B4 non-workflow patch already committed"
+            exit 0
+          fi
           git commit -m "refactor(boutique): enforce global application ownership"
           git push origin HEAD:refactor/boutique-debt-zero-b4-ownership
