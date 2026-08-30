@@ -14,6 +14,7 @@ jest.mock('../../db', () => ({
 
 const db = require('../../db');
 const {
+  STAGING_MEDIA,
   PROVIDERS,
   PHYSICAL_OFFERS,
   SERVICES,
@@ -37,7 +38,6 @@ afterAll(() => { process.env = ORIGINAL_ENV; });
 test('seed impossible en production même avec le flag explicite', async () => {
   process.env.KOMERCE_ENV = 'production';
   process.env.DISCOVERY_STAGING_SEED_ENABLED = 'true';
-
   expect(shouldSeedDiscoveryStaging()).toBe(false);
   await expect(seedDiscoveryStaging()).resolves.toEqual({
     seeded: false,
@@ -49,13 +49,12 @@ test('seed impossible en production même avec le flag explicite', async () => {
 
 test('staging reste sans écriture tant que le flag seed est absent', async () => {
   process.env.KOMERCE_ENV = 'staging';
-
   expect(shouldSeedDiscoveryStaging()).toBe(false);
   await seedDiscoveryStaging();
   expect(db.query).not.toHaveBeenCalled();
 });
 
-test('staging opt-in écrit le jeu déterministe dans une seule transaction', async () => {
+test('staging opt-in écrit le jeu déterministe et ses image_ref dans une transaction', async () => {
   process.env.KOMERCE_ENV = 'staging';
   process.env.DISCOVERY_STAGING_SEED_ENABLED = 'yes';
   db.query.mockResolvedValue({ rows: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }] });
@@ -64,7 +63,6 @@ test('staging opt-in écrit le jeu déterministe dans une seule transaction', as
   db.withTransaction.mockImplementation(async callback => callback(client));
 
   const result = await seedDiscoveryStaging();
-
   expect(result.seeded).toBe(true);
   expect(result.market).toBe('KM');
   expect(result.providers).toBe(5);
@@ -84,7 +82,12 @@ test('staging opt-in écrit le jeu déterministe dans une seule transaction', as
   expect(sql).toMatch(/INSERT INTO providers/);
   expect(sql).toMatch(/INSERT INTO physical_offers/);
   expect(sql).toMatch(/INSERT INTO services/);
+  expect(sql).toMatch(/image_ref/);
   expect(sql).toMatch(/commercial_exposure = 'ENABLED'/);
+
+  expect(PHYSICAL_OFFERS.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
+  expect(SERVICES.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
+  expect(Object.values(STAGING_MEDIA).every(x => x.endsWith('.webp'))).toBe(true);
 });
 
 test('les UUID et l’ordre éditorial sont stables et compatibles Discovery', () => {
