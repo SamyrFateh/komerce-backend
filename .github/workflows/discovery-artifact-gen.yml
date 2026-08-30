@@ -1,0 +1,33 @@
+name: Discovery artifact generation
+
+on:
+  push:
+    branches:
+      - feat/discovery-local-v2
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate canonical governance artifacts
+        run: node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+      - name: Generate canonical CSS bundle artifacts
+        run: node public/boutique/scripts/deploy-css.js
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-generated-artifacts
+          path: |
+            docs/BUSINESS_FEATURE_GRAPH.json
+            docs/BUSINESS_FEATURE_GRAPH.md
+            docs/O6_INVENTORY.md
+            public/boutique/css/dist/components.css
+            public/boutique/index.html
+            public/boutique/.cache-buster-state.json
