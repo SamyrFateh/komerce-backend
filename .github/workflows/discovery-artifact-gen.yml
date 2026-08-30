@@ -30,6 +30,6 @@ jobs:
             docs/BUSINESS_FEATURE_GRAPH.json
             docs/BUSINESS_FEATURE_GRAPH.md
             docs/O6_INVENTORY.md
-            public/boutique/css/dist/components.css
+            public/boutique/css/dist/*.css
             public/boutique/index.html
             generated-cache-buster-state.json
