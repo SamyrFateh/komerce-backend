@@ -200,8 +200,8 @@ jobs:
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
-          BASE_SHA: ${{ needs.changes.outputs.boutique_files }}
-        run: node scripts/arch-doctrine-sanitize-check.js --diff="${{ github.event.pull_request.base.sha }}"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
 
       - name: Related Boutique unit tests
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
