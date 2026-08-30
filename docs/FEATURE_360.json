@@ -2714,7 +2714,7 @@
             ]
           },
           "services": {
-            "count": 31,
+            "count": 39,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2807,6 +2807,26 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/product-sellable-service.js",
+                "resolvedPath": "services/product-sellable-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/product-sku-service.js",
+                "resolvedPath": "services/product-sku-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/product-stock-service.js",
+                "resolvedPath": "services/product-stock-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/product-variant-service.js",
+                "resolvedPath": "services/product-variant-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/prompts/catalog-enrichment.prompt.js",
                 "resolvedPath": "services/prompts/catalog-enrichment.prompt.js",
                 "status": "resolved-in-technical-graph"
@@ -2867,9 +2887,29 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/media-normalizer.js",
+                "resolvedPath": "services/suppliers/media-normalizer.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/suppliers/normalized-product.js",
                 "resolvedPath": "services/suppliers/normalized-product.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/pipeline-constants.js",
+                "resolvedPath": "services/suppliers/pipeline-constants.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/suppliers/promotion-classifier.js",
+                "resolvedPath": "services/suppliers/promotion-classifier.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/suppliers/source-product-normalizer.js",
+                "resolvedPath": "services/suppliers/source-product-normalizer.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
@@ -3129,7 +3169,7 @@
             ]
           }
         },
-        "totalFiles": 154,
+        "totalFiles": 162,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -11822,7 +11862,7 @@
             ]
           },
           "services": {
-            "count": 16,
+            "count": 21,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -11873,6 +11913,31 @@
                 "declared": "services/parcelOptimizationService.js",
                 "resolvedPath": "services/parcelOptimizationService.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pickup-code-helpers.js",
+                "resolvedPath": "services/pickup-code-helpers.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/pickup-collection-recorder.js",
+                "resolvedPath": "services/pickup-collection-recorder.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/pickup-collection-service.js",
+                "resolvedPath": "services/pickup-collection-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/pickup-exceptional-collection-service.js",
+                "resolvedPath": "services/pickup-exceptional-collection-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/pickup-secret-access-service.js",
+                "resolvedPath": "services/pickup-secret-access-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/pickup-secret-service.js",
@@ -12117,7 +12182,7 @@
             ]
           }
         },
-        "totalFiles": 84,
+        "totalFiles": 89,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14277,7 +14342,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 16,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -14288,6 +14353,21 @@
                 "declared": "services/cancel-order-purchase-orders.js",
                 "resolvedPath": "services/cancel-order-purchase-orders.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-checkout-item-resolution.js",
+                "resolvedPath": "services/order-checkout-item-resolution.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/order-checkout-persistence.js",
+                "resolvedPath": "services/order-checkout-persistence.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/order-checkout-service.js",
+                "resolvedPath": "services/order-checkout-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/order-cost-snapshot.js",
@@ -14313,6 +14393,11 @@
                 "declared": "services/order-payment-confirmation.js",
                 "resolvedPath": "services/order-payment-confirmation.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-post-commit-hooks.js",
+                "resolvedPath": "services/order-post-commit-hooks.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/order-service.js",
@@ -14522,7 +14607,7 @@
             ]
           }
         },
-        "totalFiles": 61,
+        "totalFiles": 65,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,

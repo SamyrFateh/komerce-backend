@@ -390,7 +390,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 154 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 162 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 38
   - ci : 3
   - config : 1
@@ -400,7 +400,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 13
   - routes : 6
   - schemas : 4
-  - services : 31
+  - services : 39
   - tests : 48
   - utils : 1
 
@@ -1003,14 +1003,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 84 fichier(s) déclaré(s)
+**Implementation** : 89 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 4
   - middleware : 1
   - migrations : 2
   - routes : 18
-  - services : 16
+  - services : 21
   - tests : 37
   - utils : 3
 
@@ -1277,10 +1277,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 61 fichier(s) déclaré(s), boutique: 17 fichier(s)
+**Implementation** : 65 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 3
   - routes : 12
-  - services : 12
+  - services : 16
   - tests : 33
   - utils : 1
 
