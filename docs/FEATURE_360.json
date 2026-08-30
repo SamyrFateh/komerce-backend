@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 230,
+    "businessDependencies": 231,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -13487,6 +13487,13 @@
           "channels": [
             "data-read"
           ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
         }
       ],
       "projections": {
@@ -17825,34 +17832,45 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
+      "service": "Classer et suggérer des produits boutique selon un moteur de ranking dédié. Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale d’activation serveur, sans jamais posséder ni cloner les données sources.",
       "perimeter": {
         "in": [
           "moteur de classement boutique",
           "endpoint de suggestions",
-          "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), Vague 2 D5, jamais persistée, composée à partir de candidats explicites"
+          "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée",
+          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre",
+          "surface read-only surface=local sur la façade /api/boutique/suggestions"
         ],
         "out": [
-          "donnees produit source (feature catalog)",
-          "prix affiche (feature economic-engine)",
-          "sélection/recherche autonome de candidats (politique éditoriale = problème d'activation, D7-D9, pas de ce composeur)",
-          "toute exposition Boutique (aucune route/composant ne consomme encore discovery-rail-composer.js dans ce lot)"
+          "données produit source (feature catalog)",
+          "prix affiché (feature economic-engine)",
+          "vérité d’exposabilité stock/service/offre physique (local-stock / providers-services)",
+          "cycle Inquiry, paiement, réservation ou settlement",
+          "taxonomie ou navigation frontend parallèle pour le local"
         ]
       },
-      "authority": "backend-core — tout changement de formule de classement doit etre valide par le proprietaire de boutique-ranking-engine.js",
+      "authority": "backend-core — recommendations possède le ranking et l’ordre éditorial du rail ; les features sources possèdent seules leur vérité métier et leur exposabilité.",
       "invariants": [
-        "le ranking ne modifie jamais les donnees produit, lecture seule sur catalog",
+        "le ranking ne modifie jamais les données produit, lecture seule sur catalog",
         {
-          "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires (isStockExposable, isServiceExposable, isPhysicalOfferExposable, getService, getPhysicalOffer) — Discovery ne possède aucune vérité, il la compose",
+          "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires ; Discovery ne possède aucune vérité, il la compose",
           "test": "tests/unit/discovery-rail-composer.test.js"
         },
         {
-          "statement": "un objet non exposable est silencieusement omis du rail, jamais un objet d'erreur ni le pourquoi — même discipline que les routes D4",
+          "statement": "un objet non exposable est silencieusement omis du rail, jamais un objet d’erreur ni le pourquoi",
           "test": "tests/unit/discovery-rail-composer.test.js"
         },
         {
-          "statement": "composeDiscoveryRail ne sélectionne jamais ses propres candidats — uniquement ceux fournis explicitement par l'appelant, aucune recherche autonome",
+          "statement": "composeDiscoveryRail ne sélectionne jamais ses propres candidats — uniquement ceux fournis explicitement par l’appelant",
           "test": "tests/unit/discovery-rail-composer.test.js"
+        },
+        {
+          "statement": "la surface Discovery est OFF par défaut et n’est activée que par une politique serveur explicite ; aucun flag d’exposition n’est détenu par le frontend",
+          "test": "tests/unit/discovery-rail-service.test.js"
+        },
+        {
+          "statement": "l’ordre du rail suit exactement la liste éditoriale serveur, y compris lorsqu’elle mélange product, physical_offer et service",
+          "test": "tests/unit/discovery-rail-service.test.js"
         }
       ],
       "implementation": {
@@ -17868,7 +17886,7 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "services/boutique-ranking-engine.js",
@@ -17879,11 +17897,16 @@
                 "declared": "services/discovery-rail-composer.js",
                 "resolvedPath": "services/discovery-rail-composer.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/discovery-rail-service.js",
+                "resolvedPath": "services/discovery-rail-service.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "tests/unit/boutique-ranking-engine.test.js",
@@ -17899,11 +17922,16 @@
                 "declared": "tests/unit/discovery-rail-composer.test.js",
                 "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/discovery-rail-service.test.js",
+                "resolvedPath": "tests/unit/discovery-rail-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 8,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
           "count": 5,
@@ -17951,6 +17979,10 @@
         "writesTables": [],
         "readsTables": [
           {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
             "table": "order_items",
             "lifecycleOwner": "orders"
           },
@@ -17973,6 +18005,10 @@
         "writesTables": [],
         "readsTables": [
           {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
             "table": "order_items",
             "lifecycleOwner": "orders"
           },
@@ -17993,7 +18029,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 1
+          "count": 0
         }
       },
       "businessDependencies": [
@@ -18021,6 +18057,13 @@
         },
         {
           "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
