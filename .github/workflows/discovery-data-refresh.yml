@@ -1,0 +1,41 @@
+name: Discovery Data Governance Refresh
+
+on:
+  push:
+    branches:
+      - feat/discovery-local-v2
+    paths:
+      - '.github/workflows/discovery-data-refresh.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/discovery-local-v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Refresh canonical governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+          npm run agent:remediation:gen
+      - name: Commit generated outputs and remove temporary workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/discovery-data-refresh.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(governance): refresh discovery data projections'
+            git push origin HEAD:feat/discovery-local-v2
+          fi
