@@ -21,6 +21,8 @@ jobs:
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
+      dashboard: ${{ steps.scope.outputs.dashboard }}
+      dashboard_files: ${{ steps.scope.outputs.dashboard_files }}
       golden: ${{ steps.scope.outputs.golden }}
       golden_files: ${{ steps.scope.outputs.golden_files }}
       migrations: ${{ steps.scope.outputs.migrations }}
@@ -100,6 +102,9 @@ jobs:
         if: needs.changes.outputs.golden == 'true'
         run: node tools/golden-cdr/golden-cdr.js verify
 
+      - name: Agent remediation contract — backend
+        run: node scripts/check-agent-remediation-contract.js --scope=backend
+
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
@@ -136,6 +141,26 @@ jobs:
       - name: Schema anti-resurrection
         if: needs.changes.outputs.schema_dump == 'true'
         run: node scripts/check-schema-resurrection.js
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  dashboard:
+    name: Dashboard canonical gates
+    needs: changes
+    if: needs.changes.outputs.dashboard == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Dashboard 360 structural ratchet
+        run: npm run dashboards:360:check
+      - name: Agent remediation contract — dashboard
+        run: node scripts/check-agent-remediation-contract.js --scope=dashboard
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
@@ -221,6 +246,9 @@ jobs:
           node public/boutique/scripts/check-selector-ownership.js
           node public/boutique/scripts/check-runtime-css-var-ownership.js
 
+      - name: Agent remediation contract — boutique
+        run: node scripts/check-agent-remediation-contract.js --scope=boutique
+
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
@@ -243,13 +271,17 @@ jobs:
         run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
       - name: Feature 360 canonical projection fresh
         run: node scripts/feature-360-check.js
+      - name: Agent remediation contract — all scopes
+        run: node scripts/check-agent-remediation-contract.js
+      - name: Agent remediation index fresh
+        run: node scripts/gen-agent-remediation-index.js --check
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations, boutique, governance]
+    needs: [changes, backend, migrations, dashboard, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -258,16 +290,18 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
+          DASHBOARD_RESULT: ${{ needs.dashboard.result }}
           BOUTIQUE_RESULT: ${{ needs.boutique.result }}
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
+          echo "dashboard=$DASHBOARD_RESULT"
           echo "boutique=$BOUTIQUE_RESULT"
           echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1

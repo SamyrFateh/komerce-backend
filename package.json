@@ -56,6 +56,8 @@
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",
     "gate:findings:gen": "node scripts/gen-gate-findings.js",
+    "agent:remediation:gen": "node scripts/gen-agent-remediation-index.js",
+    "agent:remediation:check": "node scripts/check-agent-remediation-contract.js",
     "feature:360:gen": "node scripts/gen-feature-360.js",
     "feature:360:refresh-global": "npm run gate:findings:gen && npm run feature:360:gen",
     "feature:360:check": "node scripts/feature-360-check.js",
