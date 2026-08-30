@@ -34,6 +34,13 @@
 
 const db = require('../db');
 const { getRuleNumber } = require('../utils/rules');
+const { checkCashOverdue, checkStripeFailed, checkCashPendingAtRelais } = require('./radar-alerts/payment-signals');
+const { checkWalletTotalHigh } = require('./radar-alerts/treasury-signals');
+const { checkBlockedParcels, checkStaleDeliveries } = require('./radar-alerts/logistics-signals');
+const { checkCancelRate, checkOpenIncidents, checkLowStock, checkStockOut } = require('./radar-alerts/commerce-signals');
+const {
+  checkCashNotCollected, checkCashNotDeposited, checkDepositsPendingReview, checkSuspectCashPattern,
+} = require('./radar-alerts/cash-reconciliation-signals');
 
 // Fallback : si computeOrderStatusDetail pas exporté par parcels.js, on le calcule localement
 let computeOrderStatusDetail;
@@ -124,411 +131,39 @@ async function getAlerts() {
   return cached('radar:alerts', 30, async () => {
 
     // Seuils dynamiques
-    const slaWarningDays  = await getRuleNumber('SLA_WARNING_DAYS', 35);
-    const slaLateDays     = await getRuleNumber('SLA_LATE_DAYS', 42);
-    const slaBlockedDays  = await getRuleNumber('SLA_BLOCKED_DAYS', 56);
-    const cashTimeoutHrs  = await getRuleNumber('CASH_PAYMENT_TIMEOUT_HOURS', 36);
-    const cashCollectKmf  = await getRuleNumber('CASH_COLLECT_ALERT_KMF', 1000000);
-    const walletTotalKmf  = await getRuleNumber('WALLET_TOTAL_ALERT_KMF', 5000000);
-    const paymentFailedCt = await getRuleNumber('PAYMENT_FAILED_ALERT_COUNT_24H', 5);
-    const cancelRatePct   = await getRuleNumber('CANCEL_RATE_ALERT_PCT', 15);
-    const backorderMaxD   = await getRuleNumber('BACKORDER_MAX_DAYS', 45);
-    const stockLowThresh  = await getRuleNumber('STOCK_LOW_THRESHOLD', 5);
-
-    const alerts = [];
-
-    // ── A. Commandes cash impayées > timeout ───────────────────────────
-    const { rows: cashOverdue } = await db.query(`
-      SELECT COUNT(*) AS cnt, COALESCE(SUM(total_kmf), 0) AS total_kmf
-      FROM orders
-      WHERE payment_mode = 'cash_relais'
-        AND status = 'pending'
-        AND created_at < NOW() - ($1 * INTERVAL '1 hour')
-    `, [cashTimeoutHrs]);
-    if (cashOverdue[0].cnt > 0) {
-      alerts.push({
-        level: 'critical',
-        icon: '💸',
-        code: 'CASH_OVERDUE',
-        title: `${cashOverdue[0].cnt} commande(s) cash impayée(s) > ${cashTimeoutHrs}h`,
-        value_kmf: Number(cashOverdue[0].total_kmf),
-        count: Number(cashOverdue[0].cnt),
-        action: 'Relancer ou annuler',
-        target_view: 'orders',
-        target_filter: { payment_mode: 'cash_relais', status: 'pending', overdue: true },
-      });
-    }
-
-    // ── B. Paiements Stripe échoués > seuil 24h ─────────────────────────
-    const { rows: stripeFailed } = await db.query(`
-      SELECT COUNT(*) AS cnt
-      FROM orders
-      WHERE payment_mode = 'stripe_eur'
-        AND payment_status = 'failed'
-        AND created_at > NOW() - INTERVAL '24 hours'
-    `).catch(() => ({ rows: [{ cnt: 0 }] }));
-    if (Number(stripeFailed[0].cnt) >= paymentFailedCt) {
-      alerts.push({
-        level: 'critical',
-        icon: '🚨',
-        code: 'STRIPE_FAILED',
-        title: `${stripeFailed[0].cnt} paiement(s) Stripe échoué(s) en 24h`,
-        count: Number(stripeFailed[0].cnt),
-        action: 'Vérifier Stripe dashboard',
-        target_view: 'orders',
-        target_filter: { payment_status: 'failed' },
-      });
-    }
-
-    // ── C. Colis bloqués > SLA_BLOCKED_DAYS ─────────────────────────────
-    const { rows: blockedParcels } = await db.query(`
-      SELECT COUNT(DISTINCT p.id) AS cnt
-      FROM parcels p
-      WHERE p.status NOT IN ('collected', 'cancelled')
-        AND p.created_at < NOW() - ($1 * INTERVAL '1 day')
-    `, [slaBlockedDays]);
-    if (Number(blockedParcels[0].cnt) > 0) {
-      alerts.push({
-        level: 'critical',
-        icon: '🔴',
-        code: 'PARCELS_BLOCKED',
-        title: `${blockedParcels[0].cnt} colis bloqué(s) > ${slaBlockedDays}j`,
-        count: Number(blockedParcels[0].cnt),
-        action: 'Intervention urgente',
-        target_view: 'orders',
-        target_filter: { parcel_status: 'blocked' },
-      });
-    }
-
-    // ── D. Cash en attente aux relais > seuil ───────────────────────────
-    const { rows: cashPending } = await db.query(`
-      SELECT COUNT(*) AS cnt, COALESCE(SUM(total_kmf), 0) AS total_kmf
-      FROM orders
-      WHERE payment_mode = 'cash_relais'
-        AND status = 'available'
-        AND total_kmf > 0
-    `);
-    const cashPendingKmf = Number(cashPending[0].total_kmf);
-    if (cashPendingKmf >= cashCollectKmf) {
-      alerts.push({
-        level: 'critical',
-        icon: '💰',
-        code: 'CASH_PENDING_HIGH',
-        title: `${cashPendingKmf.toLocaleString('fr-FR')} KMF attendus aux relais`,
-        value_kmf: cashPendingKmf,
-        count: Number(cashPending[0].cnt),
-        action: 'Accélérer collecte',
-        target_view: 'relais',
-        target_filter: {},
-      });
-    }
-
-    // ── E. Trésorerie wallets > seuil alerte ────────────────────────────
-    const { rows: wallets } = await db.query(`
-      SELECT COALESCE(SUM(balance_kmf), 0) AS total
-      FROM wallets
-      WHERE balance_kmf > 0
-    `);
-    const walletTotal = Number(wallets[0].total);
-    if (walletTotal >= walletTotalKmf) {
-      alerts.push({
-        level: 'signal',
-        icon: '💼',
-        code: 'WALLET_TOTAL_HIGH',
-        title: `Encours wallets: ${walletTotal.toLocaleString('fr-FR')} KMF`,
-        value_kmf: walletTotal,
-        action: 'Encourager utilisation',
-        target_view: 'finances',
-        target_filter: {},
-      });
-    }
-
-    // ── F. Commandes partiellement livrées depuis > 7j ────────────────
-    const { rows: partialOrders } = await db.query(`
-      SELECT o.id, o.reference, o.created_at, o.total_kmf,
-             COALESCE(json_agg(p.status), '[]'::json) AS parcel_statuses,
-             COALESCE(json_agg(p.id), '[]'::json) AS parcel_ids
-      FROM orders o
-      JOIN parcels p ON p.order_id = o.id
-      WHERE o.status NOT IN ('cancelled', 'refunded')
-        AND o.created_at < NOW() - INTERVAL '7 days'
-      GROUP BY o.id
-    `);
-
-    let partialCollectedCount = 0;
-    let partialAvailableCount = 0;
-    let awaitingStockCount = 0;
-    for (const order of partialOrders) {
-      const fakeParcels = order.parcel_statuses.map(s => ({ status: s }));
-      const detail = getDetail(fakeParcels);
-      if (detail === 'partial_collected') partialCollectedCount++;
-      if (detail === 'partial_available') partialAvailableCount++;
-      if (detail === 'awaiting_stock' &&
-          (new Date() - new Date(order.created_at)) / 86400000 > backorderMaxD) {
-        awaitingStockCount++;
-      }
-    }
-
-    if (partialCollectedCount > 0) {
-      alerts.push({
-        level: 'critical',
-        icon: '⚠️',
-        code: 'PARTIAL_COLLECTED_STALE',
-        title: `${partialCollectedCount} commande(s) partiellement récupérée(s) > 7j`,
-        count: partialCollectedCount,
-        action: 'Client a laissé du stock au relais',
-        target_view: 'orders',
-        target_filter: { status_detail: 'partial_collected' },
-      });
-    }
-    if (partialAvailableCount > 0) {
-      alerts.push({
-        level: 'signal',
-        icon: '🟠',
-        code: 'PARTIAL_AVAILABLE_STALE',
-        title: `${partialAvailableCount} commande(s) partiellement disponible(s) > 7j`,
-        count: partialAvailableCount,
-        action: 'Compléter la livraison',
-        target_view: 'orders',
-        target_filter: { status_detail: 'partial_available' },
-      });
-    }
-    if (awaitingStockCount > 0) {
-      alerts.push({
-        level: 'critical',
-        icon: '📦',
-        code: 'AWAITING_STOCK_EXPIRED',
-        title: `${awaitingStockCount} commande(s) en attente stock > ${backorderMaxD}j`,
-        count: awaitingStockCount,
-        action: 'Échec sourcing — décider',
-        target_view: 'orders',
-        target_filter: { status_detail: 'awaiting_stock' },
-      });
-    }
-
-    // ── G. Taux annulation 7j > seuil ──────────────────────────────────
-    const { rows: cancelStats } = await db.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days') AS total_7d,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days' AND status = 'cancelled') AS cancelled_7d
-      FROM orders
-    `);
-    const total7d = Number(cancelStats[0].total_7d);
-    const cancelled7d = Number(cancelStats[0].cancelled_7d);
-    if (total7d > 0) {
-      const ratePct = (cancelled7d / total7d) * 100;
-      if (ratePct >= cancelRatePct) {
-        alerts.push({
-          level: 'critical',
-          icon: '📉',
-          code: 'CANCEL_RATE_HIGH',
-          title: `Taux annulation 7j: ${ratePct.toFixed(1)}% (seuil ${cancelRatePct}%)`,
-          value_pct: Number(ratePct.toFixed(1)),
-          count: cancelled7d,
-          action: 'Analyser les causes',
-          target_view: 'orders',
-          target_filter: { status: 'cancelled' },
-        });
-      }
-    }
-
-    // ── H. Incidents ouverts critiques ─────────────────────────────────
-    const { rows: incidents } = await db.query(`
-      SELECT COUNT(*) AS cnt
-      FROM incidents
-      WHERE status = 'open'
-        AND (severity = 'critical' OR severity = 'high')
-    `).catch(() => ({ rows: [{ cnt: 0 }] }));
-    if (Number(incidents[0].cnt) > 0) {
-      alerts.push({
-        level: 'critical',
-        icon: '🔥',
-        code: 'INCIDENTS_OPEN',
-        title: `${incidents[0].cnt} incident(s) critique(s) ouvert(s)`,
-        count: Number(incidents[0].cnt),
-        action: 'Traiter',
-        target_view: 'incidents',
-        target_filter: { status: 'open' },
-      });
-    }
-
-    // ── I. Stock bas (produits actifs) ─────────────────────────────────
-    const { rows: lowStock } = await db.query(`
-      SELECT COUNT(*) AS cnt
-      FROM products
-      WHERE is_active = TRUE
-        AND stock > 0
-        AND stock <= $1
-    `, [stockLowThresh]).catch(() => ({ rows: [{ cnt: 0 }] }));
-    if (Number(lowStock[0].cnt) > 0) {
-      alerts.push({
-        level: 'signal',
-        icon: '📉',
-        code: 'STOCK_LOW',
-        title: `${lowStock[0].cnt} produit(s) stock bas (≤ ${stockLowThresh})`,
-        count: Number(lowStock[0].cnt),
-        action: 'Réapprovisionner',
-        target_view: 'inventory',
-        target_filter: {},
-      });
-    }
-
-    // ── J. Ruptures ────────────────────────────────────────────────────
-    const { rows: ruptures } = await db.query(`
-      SELECT COUNT(*) AS cnt
-      FROM products
-      WHERE is_active = TRUE AND stock = 0
-    `).catch(() => ({ rows: [{ cnt: 0 }] }));
-    if (Number(ruptures[0].cnt) > 0) {
-      alerts.push({
-        level: 'signal',
-        icon: '❌',
-        code: 'STOCK_OUT',
-        title: `${ruptures[0].cnt} produit(s) en rupture`,
-        count: Number(ruptures[0].cnt),
-        action: 'Désactiver ou réapprovisionner',
-        target_view: 'inventory',
-        target_filter: {},
-      });
-    }
-
-    // ── K. Cash non déclaré > 48h ──────────────────────────────────────
+    const slaBlockedDays      = await getRuleNumber('SLA_BLOCKED_DAYS', 56);
+    const cashTimeoutHrs      = await getRuleNumber('CASH_PAYMENT_TIMEOUT_HOURS', 36);
+    const cashCollectKmf      = await getRuleNumber('CASH_COLLECT_ALERT_KMF', 1000000);
+    const walletTotalKmf      = await getRuleNumber('WALLET_TOTAL_ALERT_KMF', 5000000);
+    const paymentFailedCt     = await getRuleNumber('PAYMENT_FAILED_ALERT_COUNT_24H', 5);
+    const cancelRatePct       = await getRuleNumber('CANCEL_RATE_ALERT_PCT', 15);
+    const backorderMaxD       = await getRuleNumber('BACKORDER_MAX_DAYS', 45);
+    const stockLowThresh      = await getRuleNumber('STOCK_LOW_THRESHOLD', 5);
     const cashNotCollectedHrs = await getRuleNumber('CASH_NOT_COLLECTED_HOURS', 48);
-    try {
-      const { rows: [uncollected] } = await db.query(`
-        SELECT COUNT(*) AS cnt, COALESCE(SUM(o.total_kmf), 0) AS total_kmf
-        FROM orders o
-        WHERE o.payment_mode = 'cash_relais'
-          AND o.status IN ('available', 'collected')
-          AND o.created_at < NOW() - ($1 * INTERVAL '1 hour')
-          AND NOT EXISTS (
-            SELECT 1 FROM cash_collections cc WHERE cc.order_id = o.id
-          )
-      `, [cashNotCollectedHrs]);
-      if (Number(uncollected.cnt) > 0) {
-        alerts.push({
-          level: 'critical',
-          icon: '🕳️',
-          code: 'CASH_NOT_COLLECTED',
-          title: `${uncollected.cnt} commande(s) cash livrée(s) > ${cashNotCollectedHrs}h sans encaissement déclaré`,
-          value_kmf: Number(uncollected.total_kmf),
-          count: Number(uncollected.cnt),
-          action: 'Vérifier avec les agents relais',
-          target_view: 'cash',
-          target_filter: { type: 'uncollected' },
-        });
-      }
-    } catch (_) { /* cash_collections table may not exist yet */ }
-
-    // ── L. Cash non déposé > 72h ───────────────────────────────────────
     const cashNotDepositedHrs = await getRuleNumber('CASH_NOT_DEPOSITED_HOURS', 72);
-    try {
-      const { rows: [undeposited] } = await db.query(`
-        SELECT
-          COUNT(DISTINCT cc.collected_by) AS agent_count,
-          COALESCE(SUM(cc.amount_kmf), 0) AS total_kmf
-        FROM cash_collections cc
-        WHERE cc.confirmed_at < NOW() - ($1 * INTERVAL '1 hour')
-          AND NOT EXISTS (
-            SELECT 1 FROM cash_deposits cd
-            WHERE cd.agent_id = cc.collected_by
-              AND cd.period_start <= cc.confirmed_at::date
-              AND cd.period_end >= cc.confirmed_at::date
-          )
-      `, [cashNotDepositedHrs]);
-      if (Number(undeposited.total_kmf) > 0) {
-        alerts.push({
-          level: 'critical',
-          icon: '🏦',
-          code: 'CASH_NOT_DEPOSITED',
-          title: `${Number(undeposited.total_kmf).toLocaleString('fr-FR')} KMF encaissés non déposés (${undeposited.agent_count} agent(s))`,
-          value_kmf: Number(undeposited.total_kmf),
-          count: Number(undeposited.agent_count),
-          action: 'Demander les versements',
-          target_view: 'cash',
-          target_filter: { type: 'undeposited' },
-        });
-      }
-    } catch (_) { /* table may not exist yet */ }
 
-    // ── M. Dépôts en attente de vérification ───────────────────────────
-    try {
-      const { rows: [pendingDeposits] } = await db.query(`
-        SELECT COUNT(*) AS cnt, COALESCE(SUM(amount_kmf), 0) AS total_kmf
-        FROM cash_deposits
-        WHERE status = 'pending'
-      `);
-      if (Number(pendingDeposits.cnt) > 0) {
-        alerts.push({
-          level: 'signal',
-          icon: '📋',
-          code: 'DEPOSITS_PENDING_REVIEW',
-          title: `${pendingDeposits.cnt} dépôt(s) en attente de vérification (${Number(pendingDeposits.total_kmf).toLocaleString('fr-FR')} KMF)`,
-          value_kmf: Number(pendingDeposits.total_kmf),
-          count: Number(pendingDeposits.cnt),
-          action: 'Vérifier les justificatifs',
-          target_view: 'cash',
-          target_filter: { type: 'pending_deposits' },
-        });
-      }
-    } catch (_) { /* table may not exist yet */ }
+    // Chaque check est autonome (db + seuil(s) → alerte | null) et vit dans
+    // services/radar-alerts/, groupé par domaine métier. L'ordre d'appel
+    // ci-dessous reproduit exactement l'ordre historique A→N : il n'a pas
+    // de signification métier (checks indépendants, aucun état partagé),
+    // mais il est conservé pour ne rien changer à l'ordre d'affichage.
+    const alerts = [];
+    const push = (alert) => { if (alert) alerts.push(alert); };
 
-    // ── N. Pattern suspect : agent avec écart > 3 semaines consécutives ──
-    try {
-      const { rows: suspectAgents } = await db.query(`
-        WITH cc_aligned AS (
-          SELECT
-            cc.collected_by,
-            cc.amount_kmf,
-            DATE_TRUNC('week', cc.confirmed_at) AS week_start
-          FROM cash_collections cc
-          WHERE cc.confirmed_at > NOW() - INTERVAL '4 weeks'
-        ),
-        weekly_gaps AS (
-          SELECT
-            cca.collected_by AS agent_id,
-            cca.week_start,
-            SUM(cca.amount_kmf) AS declared_kmf,
-            COALESCE((
-              SELECT SUM(cd.amount_kmf)
-              FROM cash_deposits cd
-              WHERE cd.agent_id = cca.collected_by
-                AND cd.period_start <= (cca.week_start + INTERVAL '6 days')::date
-                AND cd.period_end >= cca.week_start::date
-            ), 0) AS deposited_kmf
-          FROM cc_aligned cca
-          GROUP BY cca.collected_by, cca.week_start
-        ),
-        agent_gaps AS (
-          SELECT
-            agent_id,
-            COUNT(*) FILTER (WHERE declared_kmf - deposited_kmf > 0) AS weeks_with_gap,
-            SUM(declared_kmf - deposited_kmf) AS total_gap_kmf
-          FROM weekly_gaps
-          GROUP BY agent_id
-          HAVING COUNT(*) FILTER (WHERE declared_kmf - deposited_kmf > 0) >= 3
-        )
-        SELECT ag.agent_id, u.full_name, ag.weeks_with_gap, ag.total_gap_kmf
-        FROM agent_gaps ag
-        LEFT JOIN users u ON u.id = ag.agent_id
-      `);
-      if (suspectAgents.length > 0) {
-        const names = suspectAgents.map(a => a.full_name || 'Inconnu').join(', ');
-        const totalGap = suspectAgents.reduce((s, a) => s + Number(a.total_gap_kmf), 0);
-        alerts.push({
-          level: 'critical',
-          icon: '🚩',
-          code: 'CASH_SUSPECT_PATTERN',
-          title: `Pattern suspect : ${suspectAgents.length} agent(s) avec écart cash > 3 semaines`,
-          value_kmf: totalGap,
-          count: suspectAgents.length,
-          detail: names,
-          action: 'Investigation requise',
-          target_view: 'cash',
-          target_filter: { type: 'suspect' },
-        });
-      }
-    } catch (_) { /* tables may not exist yet */ }
+    push(await checkCashOverdue(db, cashTimeoutHrs));                    // A
+    push(await checkStripeFailed(db, paymentFailedCt));                  // B
+    push(await checkBlockedParcels(db, slaBlockedDays));                 // C
+    push(await checkCashPendingAtRelais(db, cashCollectKmf));            // D
+    push(await checkWalletTotalHigh(db, walletTotalKmf));                // E
+    alerts.push(...await checkStaleDeliveries(db, { getDetail, backorderMaxD })); // F (0-3 alertes)
+    push(await checkCancelRate(db, cancelRatePct));                      // G
+    push(await checkOpenIncidents(db));                                  // H
+    push(await checkLowStock(db, stockLowThresh));                       // I
+    push(await checkStockOut(db));                                       // J
+    push(await checkCashNotCollected(db, cashNotCollectedHrs));          // K
+    push(await checkCashNotDeposited(db, cashNotDepositedHrs));          // L
+    push(await checkDepositsPendingReview(db));                          // M
+    push(await checkSuspectCashPattern(db));                             // N
 
     // Tri : critical d'abord, puis signal
     alerts.sort((a, b) => {
