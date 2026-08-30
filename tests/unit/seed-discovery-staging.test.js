@@ -71,6 +71,10 @@ test('staging opt-in écrit le jeu déterministe dans une seule transaction', as
   expect(result.physicalOffers).toBe(4);
   expect(result.services).toBe(6);
   expect(result.candidates.split(',')).toHaveLength(10);
+  expect(db.query).toHaveBeenCalledWith(
+    'SELECT id FROM markets WHERE code = $1 AND is_active = true',
+    ['KM']
+  );
   expect(db.withTransaction).toHaveBeenCalledTimes(1);
   expect(client.query).toHaveBeenCalledTimes(
     PROVIDERS.length + PHYSICAL_OFFERS.length + SERVICES.length
