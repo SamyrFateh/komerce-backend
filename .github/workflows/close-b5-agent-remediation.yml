@@ -28,39 +28,35 @@ jobs:
           from pathlib import Path
           import re
 
-          # package.json
           p = Path('package.json'); s = p.read_text()
           anchor = '    "gate:findings:gen": "node scripts/gen-gate-findings.js",\n'
           if '"agent:remediation:gen"' not in s:
-              assert anchor in s, 'package anchor'
+              assert anchor in s
               s = s.replace(anchor, anchor + '    "agent:remediation:gen": "node scripts/gen-agent-remediation-index.js",\n    "agent:remediation:check": "node scripts/check-agent-remediation-contract.js",\n', 1)
           p.write_text(s)
 
-          # Gate Findings: future findings carry the remediation payload.
           p = Path('scripts/gen-gate-findings.js'); s = p.read_text()
           ia = "const { spawnSync } = require('child_process');\n"
           il = "const { remediationForGateFinding } = require('./agent-remediation-contract.js');\n"
           if il not in s:
-              assert ia in s, 'gate findings import anchor'
+              assert ia in s
               s = s.replace(ia, ia + il, 1)
           s = s.replace("const VERSION = 'GF-2.1';", "const VERSION = 'GF-3.0';")
           ma = "  const model = { version: VERSION, generatedAt: new Date().toISOString().slice(0, 10), contract: {"
           if 'const enrichedFindings = findings.map' not in s:
-              assert ma in s, 'gate findings model anchor'
+              assert ma in s
               s = s.replace(ma, "  const enrichedFindings = findings.map(finding => ({ ...finding, remediation: remediationForGateFinding(finding) }));\n" + ma, 1)
-          assert '  }, sources, findings };' in s or '  }, sources, findings: enrichedFindings };' in s, 'gate findings close anchor'
           s = s.replace('  }, sources, findings };', '  }, sources, findings: enrichedFindings };', 1)
           p.write_text(s)
 
-          # Explicit Dashboard scope.
           p = Path('scripts/pr-enforcement-scope.js'); s = p.read_text()
           fa = "function isBoutiqueRelevant(file) {\n"
           if 'function isDashboardFile(file)' not in s:
-              assert fa in s, 'scope function anchor'
+              assert fa in s
               s = s.replace(fa, """function isDashboardFile(file) {\n  const f = norm(file);\n  return /^public\\/dashboards\\/.+/i.test(f)\n    || /^docs\\/DASHBOARDS_360\\.(?:json|md)$/i.test(f)\n    || f === 'scripts/gen-dashboards-360.js'\n    || f === 'scripts/.dashboards-360-baseline.json'\n    || f === 'scripts/agent-remediation-contract.js'\n    || f === 'scripts/gen-agent-remediation-index.js'\n    || f === 'scripts/check-agent-remediation-contract.js'\n    || f === 'docs/AGENT_REMEDIATION_INDEX.json'\n    || f === 'docs/contract/AGENT_REMEDIATION_CONTRACT.md';\n}\n\n""" + fa, 1)
           ca = "  const boutiqueFiles = changedFiles.filter(isBoutiqueRelevant);\n"
           if 'const dashboardFiles = changedFiles.filter(isDashboardFile);' not in s:
-              assert ca in s, 'scope classify anchor'
+              assert ca in s
               s = s.replace(ca, ca + "  const dashboardFiles = changedFiles.filter(isDashboardFile);\n", 1)
           if '    dashboardFiles,\n' not in s:
               s = s.replace("    boutiqueFiles,\n", "    boutiqueFiles,\n    dashboardFiles,\n", 1)
@@ -68,53 +64,37 @@ jobs:
               s = s.replace("    boutique: boutiqueFiles.length > 0,\n", "    boutique: boutiqueFiles.length > 0,\n    dashboard: dashboardFiles.length > 0,\n", 1)
           oa = "    `boutique=${model.boutique ? 'true' : 'false'}`,\n"
           if "`dashboard=${model.dashboard ? 'true' : 'false'}`" not in s:
-              assert oa in s, 'scope output anchor'
+              assert oa in s
               s = s.replace(oa, "    `dashboard=${model.dashboard ? 'true' : 'false'}`,\n    `dashboard_files=${model.dashboardFiles.join(',')}`,\n" + oa, 1)
           if '  isDashboardFile,\n' not in s:
               s = s.replace("  isBoutiqueRelevant,\n", "  isDashboardFile,\n  isBoutiqueRelevant,\n", 1)
           p.write_text(s)
 
-          # Canonical PR enforcement. Build GitHub expressions dynamically so
-          # this temporary workflow does not interpolate them before Python.
           p = Path('.github/workflows/pr-enforcement.yml'); s = p.read_text()
           expr = lambda body: '$' + '{{ ' + body + ' }}'
-
           if '      dashboard: ' + expr('steps.scope.outputs.dashboard') not in s:
-              pat = r'(      backend_files: .*\n)'
-              repl = r'\1' + '      dashboard: ' + expr('steps.scope.outputs.dashboard') + '\n      dashboard_files: ' + expr('steps.scope.outputs.dashboard_files') + '\n'
-              s, n = re.subn(pat, repl, s, count=1); assert n == 1, 'workflow outputs anchor'
-
+              s, n = re.subn(r'(      backend_files: .*\n)', r'\1' + '      dashboard: ' + expr('steps.scope.outputs.dashboard') + '\n      dashboard_files: ' + expr('steps.scope.outputs.dashboard_files') + '\n', s, count=1); assert n == 1
           if 'Agent remediation contract — backend' not in s:
-              pat = r'(      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n)(  migrations:)'
-              repl = '      - name: Agent remediation contract — backend\n        run: node scripts/check-agent-remediation-contract.js --scope=backend\n\n' + r'\1\2'
-              s, n = re.subn(pat, repl, s, count=1); assert n == 1, 'backend remediation anchor'
-
+              s, n = re.subn(r'(      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n)(  migrations:)', '      - name: Agent remediation contract — backend\n        run: node scripts/check-agent-remediation-contract.js --scope=backend\n\n' + r'\1\2', s, count=1); assert n == 1
           if 'name: Dashboard canonical gates' not in s:
-              dashboard_job = """  dashboard:\n    name: Dashboard canonical gates\n    needs: changes\n    if: needs.changes.outputs.dashboard == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: __HEAD_SHA__\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      - name: Dashboard 360 structural ratchet\n        run: npm run dashboards:360:check\n      - name: Agent remediation contract — dashboard\n        run: node scripts/check-agent-remediation-contract.js --scope=dashboard\n      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n""".replace('__HEAD_SHA__', expr('github.event.pull_request.head.sha'))
-              assert "  boutique:\n    name: Boutique source gates\n" in s, 'boutique job anchor'
-              s = s.replace("  boutique:\n    name: Boutique source gates\n", dashboard_job + "  boutique:\n    name: Boutique source gates\n", 1)
-
+              job = """  dashboard:\n    name: Dashboard canonical gates\n    needs: changes\n    if: needs.changes.outputs.dashboard == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: __HEAD_SHA__\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      - name: Dashboard 360 structural ratchet\n        run: npm run dashboards:360:check\n      - name: Agent remediation contract — dashboard\n        run: node scripts/check-agent-remediation-contract.js --scope=dashboard\n      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n""".replace('__HEAD_SHA__', expr('github.event.pull_request.head.sha'))
+              assert "  boutique:\n    name: Boutique source gates\n" in s
+              s = s.replace("  boutique:\n    name: Boutique source gates\n", job + "  boutique:\n    name: Boutique source gates\n", 1)
           if 'Agent remediation contract — boutique' not in s:
-              pat = r'(      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n)(  governance:)'
-              repl = '      - name: Agent remediation contract — boutique\n        run: node scripts/check-agent-remediation-contract.js --scope=boutique\n\n' + r'\1\2'
-              s, n = re.subn(pat, repl, s, count=1); assert n == 1, 'boutique remediation anchor'
-
+              s, n = re.subn(r'(      - name: Prove gates did not mutate the tree\n        run: git diff --exit-code\n\n)(  governance:)', '      - name: Agent remediation contract — boutique\n        run: node scripts/check-agent-remediation-contract.js --scope=boutique\n\n' + r'\1\2', s, count=1); assert n == 1
           ga = "      - name: Feature 360 canonical projection fresh\n        run: node scripts/feature-360-check.js\n"
           if 'Agent remediation index fresh' not in s:
-              assert ga in s, 'governance remediation anchor'
+              assert ga in s
               s = s.replace(ga, ga + "      - name: Agent remediation index fresh\n        run: node scripts/gen-agent-remediation-index.js --check\n", 1)
-
           s = s.replace('needs: [changes, backend, migrations, boutique, governance]', 'needs: [changes, backend, migrations, dashboard, boutique, governance]')
           if '          DASHBOARD_RESULT: ' + expr('needs.dashboard.result') not in s:
-              pat = r'(          MIGRATIONS_RESULT: .*\n)'
-              repl = r'\1' + '          DASHBOARD_RESULT: ' + expr('needs.dashboard.result') + '\n'
-              s, n = re.subn(pat, repl, s, count=1); assert n == 1, 'verdict env anchor'
+              s, n = re.subn(r'(          MIGRATIONS_RESULT: .*\n)', r'\1' + '          DASHBOARD_RESULT: ' + expr('needs.dashboard.result') + '\n', s, count=1); assert n == 1
           if 'echo "dashboard=$DASHBOARD_RESULT"' not in s:
               s = s.replace('          echo "migrations=$MIGRATIONS_RESULT"\n', '          echo "migrations=$MIGRATIONS_RESULT"\n          echo "dashboard=$DASHBOARD_RESULT"\n', 1)
-          old_loop = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
-          new_loop = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
-          assert old_loop in s or new_loop in s, 'verdict loop anchor'
-          s = s.replace(old_loop, new_loop, 1)
+          old = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
+          new = '          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do\n'
+          assert old in s or new in s
+          s = s.replace(old, new, 1)
           p.write_text(s)
           PY
 
@@ -139,24 +119,26 @@ jobs:
           npx jest tests/unit/agent-remediation-contract.test.js tests/unit/pr-enforcement-security360-scope.test.js --runInBand
           git diff --check
 
-      - name: Commit B5 closure
+      - name: Commit ordinary B5 files and workflow candidate
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp .github/workflows/pr-enforcement.yml docs/PR_ENFORCEMENT_B5_CANDIDATE.yml
+          git checkout -- .github/workflows/pr-enforcement.yml
           git add \
             package.json \
             scripts/gen-gate-findings.js \
             scripts/pr-enforcement-scope.js \
-            .github/workflows/pr-enforcement.yml \
             scripts/agent-remediation-contract.js \
             scripts/gen-agent-remediation-index.js \
             scripts/check-agent-remediation-contract.js \
             docs/contract/AGENT_REMEDIATION_CONTRACT.md \
             docs/AGENT_REMEDIATION_INDEX.json \
+            docs/PR_ENFORCEMENT_B5_CANDIDATE.yml \
             tests/unit/agent-remediation-contract.test.js
           if git diff --cached --quiet; then
-            echo "B5 already committed"
+            echo "B5 ordinary files already committed"
             exit 0
           fi
           git commit -m "feat(governance): enforce agent remediation across backend dashboard boutique"
