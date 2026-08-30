@@ -58,10 +58,18 @@ function backendSection() {
     note: row.note || null,
     remediation: remediationForBackendDebt(row),
   }));
+
+  const totalFor = code => measured
+    .filter(x => x.remediation?.code === code)
+    .reduce((n, x) => n + x.count, 0);
+
   return {
-    measuredCount: measured.length,
-    openCount: measured.filter(x => x.count > 0 && x.remediation?.severity !== 'info').reduce((n, x) => n + x.count, 0),
-    reviewedCount: measured.filter(x => x.count > 0 && x.remediation?.severity === 'info').reduce((n, x) => n + x.count, 0),
+    measuredRows: measured.length,
+    openDebtCount: measured
+      .filter(x => x.remediation?.severity === 'error')
+      .reduce((n, x) => n + x.count, 0),
+    reviewedExceptionCount: totalFor('BACKEND-REVIEWED-EXCEPTION'),
+    healthyMeasurementCount: totalFor('BACKEND-HEALTHY-MEASUREMENT'),
     measured,
   };
 }
