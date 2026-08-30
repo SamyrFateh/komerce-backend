@@ -117,6 +117,8 @@ Un nouveau fichier CSS n’est réel que lorsqu’il est ajouté dans `css-bundl
 
 Le principe n’est plus « un selector littéral dans un seul fichier à tout prix ». Le contrat est : **un owner sémantique principal + uniquement des adaptations contextuelles explicites**. Le LIVE signale les selectors multi-owner pour revue ; ils ne constituent pas une dette lorsqu’ils correspondent au tableau ci-dessous et que cascade/spécificité restent à zéro.
 
+La source exécutable unique de ce contrat est `scripts/critical-selector-ownership.js`. `gen-boutique-arch-live.js`, `check-selector-ownership.js` et l’invariant I-2 de `audit-boutique-arch.js` consomment ce même registre : aucune seconde allowlist d’owners n’est admise.
+
 | Sélecteur | Owner principal | Adaptations autorisées |
 |---|---|---|
 | `.k-chip` | `categories.css` | `interactions.css` pour états/transition |
@@ -124,6 +126,7 @@ Le principe n’est plus « un selector littéral dans un seul fichier à tout p
 | `.k-hero-cats-sticky` | `hero.css` pour la base | `categories.css` pour l’état/skin desktop canonique |
 | `#k-subcats-wrap`, `.k-subchip` | `boutique-desktop.css` structure | `categories.css` pour theming catégorie |
 | `.k-grid` | `products.css` | `cart.css` contexte panier, `layout.css` contrainte structurelle desktop |
+| `.k-sec-grid` | `products.css` | `categories.css` pour le contexte des sections catégorie |
 | `.k-card` | `products.css` | `categories.css` état d’entrée, `boutique-desktop.css` interaction desktop |
 | `.k-card-add`, `.k-card-fav` | `products.css` | `cart.css` sizing/contexte panier desktop |
 | `.k-side-cart` | `layout.css` pour présence mobile | `boutique-desktop.css` pour coque desktop ; `side-cart-desktop-polish.css` pour descendants/polish |
@@ -132,7 +135,7 @@ Le principe n’est plus « un selector littéral dans un seul fichier à tout p
 | `.k-hero-media` | `hero.css` | `hero-ultra-mobile.css`, `mobile-catalog-convergence.css` pour adaptations mobiles ciblées |
 | `.k-modal` | `modal-shell.css` | `modal-product.css` pour contexte PDP desktop ciblé |
 
-Toute nouvelle adaptation doit répondre aux trois conditions : contexte identifiable, propriété non concurrente avec une valeur différente, et owner/documentation explicites.
+Toute nouvelle adaptation doit répondre aux trois conditions : contexte identifiable, propriété non concurrente avec une valeur différente, et owner/documentation explicites. Le guard `node scripts/check-selector-ownership.js` bloque tout owner ou contexte media non déclaré et exige la présence de l’owner principal. Une réduction d’adaptation reste autorisée.
 
 ---
 
