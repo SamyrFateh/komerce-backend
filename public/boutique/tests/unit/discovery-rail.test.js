@@ -23,37 +23,28 @@ describe('renderDiscoveryRail', () => {
     expect(target().innerHTML).toBe('');
   });
 
-  it('rend dans un seul rail les trois intentions avec leurs verbes', () => {
+  it('rend dans un seul rail les trois intentions avec leurs verbes et médias', () => {
     const cards = [
       {
-        kind: 'product',
-        title: 'Climatiseur',
-        subtitle: 'Disponible maintenant',
-        cta_label: 'Acheter',
-        cta_action_ref: 'p-1',
-        image_ref: '/images/product.webp',
+        kind: 'product', title: 'Climatiseur', subtitle: 'Disponible maintenant',
+        cta_label: 'Acheter', cta_action_ref: 'p-1', image_ref: '/images/product.webp',
       },
       {
-        kind: 'physical_offer',
-        title: 'Samboussas mariage',
-        subtitle: 'Préparation sur commande',
-        cta_label: 'Commander',
-        cta_action_ref: 'o-1',
-        image_ref: null,
+        kind: 'physical_offer', title: 'Samboussas mariage', subtitle: 'Préparation sur commande',
+        cta_label: 'Commander', cta_action_ref: 'o-1', image_ref: '/images/samboussas.webp',
       },
       {
-        kind: 'service',
-        title: 'Plomberie',
-        subtitle: 'Sur demande',
-        cta_label: 'Demander',
-        cta_action_ref: 's-1',
-        image_ref: null,
+        kind: 'service', title: 'Plomberie', subtitle: 'Sur demande',
+        cta_label: 'Demander', cta_action_ref: 's-1', image_ref: '/images/plombier.webp',
       },
     ];
 
     expect(renderDiscoveryRail(target(), cards, { marketLabel: 'Comores' })).toBe(3);
     expect(target().hidden).toBe(false);
     expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-img')).toHaveLength(3);
+    expect(Array.from(target().querySelectorAll('.k-discovery-img')).map(img => img.getAttribute('src')))
+      .toEqual(['/images/product.webp', '/images/samboussas.webp', '/images/plombier.webp']);
     expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
     expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
     expect(target().querySelector('#k-discovery-local-title')?.textContent).toBe('Près de vous');
