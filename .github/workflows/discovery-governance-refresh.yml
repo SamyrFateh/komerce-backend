@@ -1,0 +1,36 @@
+name: Discovery governance refresh
+
+on:
+  push:
+    branches:
+      - feat/discovery-local-v2
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-and-commit:
+    if: ${{ !contains(github.event.head_commit.message, 'chore(generated): refresh dependent governance') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/discovery-local-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Refresh canonical governance projections
+        run: |
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+          node scripts/gen-agent-remediation-index.js
+      - name: Commit exact generated outputs and remove temporary workflow
+        run: |
+          rm .github/workflows/discovery-governance-refresh.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git add -u .github/workflows/discovery-governance-refresh.yml
+          git commit -m "chore(generated): refresh dependent governance projections"
+          git push origin HEAD:feat/discovery-local-v2
