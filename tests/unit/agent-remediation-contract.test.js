@@ -41,6 +41,28 @@ describe('B5 agent remediation contract', () => {
     expect(rem.autoRemediation).toBe(false);
   });
 
+  test('legitimate glue/test exemptions are reviewed exceptions', () => {
+    expect(backendDebtCode({
+      rule: 'N2 (fichiers exemptés)',
+      count: 2,
+      lot: 'Infrastructure bas niveau — légitimes',
+    })).toBe('BACKEND-REVIEWED-EXCEPTION');
+    expect(backendDebtCode({
+      rule: 'N3 (test-exemptions)',
+      count: 6,
+      lot: 'Glue/bootstrap — légitimes mais à revalider à chaque modification',
+    })).toBe('BACKEND-REVIEWED-EXCEPTION');
+  });
+
+  test('zero or closed backend ratchets are healthy measurements', () => {
+    expect(backendDebtCode({ rule: 'I-BACK-7', count: 0 })).toBe('BACKEND-HEALTHY-MEASUREMENT');
+    expect(backendDebtCode({
+      rule: 'ARCH (ratchet)',
+      count: 2,
+      note: 'Tous les cliquets sont à 0 — dette d’architecture fermée',
+    })).toBe('BACKEND-HEALTHY-MEASUREMENT');
+  });
+
   test('open backend debt remains actionable', () => {
     const debt = { rule: 'I-BACK-7', count: 2, entries: ['routes/a.js'], note: 'remove console.log' };
     const rem = remediationForBackendDebt(debt);
