@@ -1221,6 +1221,34 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/product-variant-service.js",
+        "resolvedPath": "services/product-variant-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/product-sku-service.js",
+        "resolvedPath": "services/product-sku-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/product-sellable-service.js",
+        "resolvedPath": "services/product-sellable-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/product-stock-service.js",
+        "resolvedPath": "services/product-stock-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/product-price-audit.js",
         "resolvedPath": "services/product-price-audit.js",
         "status": "resolved-in-technical-graph"
@@ -1287,6 +1315,34 @@
         "declared": "services/suppliers/json-source-pipeline.js",
         "resolvedPath": "services/suppliers/json-source-pipeline.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/pipeline-constants.js",
+        "resolvedPath": "services/suppliers/pipeline-constants.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/media-normalizer.js",
+        "resolvedPath": "services/suppliers/media-normalizer.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/promotion-classifier.js",
+        "resolvedPath": "services/suppliers/promotion-classifier.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/source-product-normalizer.js",
+        "resolvedPath": "services/suppliers/source-product-normalizer.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -7192,6 +7248,41 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/pickup-secret-access-service.js",
+        "resolvedPath": "services/pickup-secret-access-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/pickup-collection-service.js",
+        "resolvedPath": "services/pickup-collection-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/pickup-collection-recorder.js",
+        "resolvedPath": "services/pickup-collection-recorder.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/pickup-exceptional-collection-service.js",
+        "resolvedPath": "services/pickup-exceptional-collection-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/pickup-code-helpers.js",
+        "resolvedPath": "services/pickup-code-helpers.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/parcel-auto-create-service.js",
         "resolvedPath": "services/parcel-auto-create-service.js",
         "status": "resolved-in-technical-graph"
@@ -8182,6 +8273,34 @@
         "declared": "services/order-status-machine.js",
         "resolvedPath": "services/order-status-machine.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/order-checkout-service.js",
+        "resolvedPath": "services/order-checkout-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/order-checkout-item-resolution.js",
+        "resolvedPath": "services/order-checkout-item-resolution.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/order-checkout-persistence.js",
+        "resolvedPath": "services/order-checkout-persistence.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/order-post-commit-hooks.js",
+        "resolvedPath": "services/order-post-commit-hooks.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "orders",
@@ -23685,11 +23804,11 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/pickup-secret-service.js",
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "utils/name-normalize.js"
               },
               {
-                "sourceFileId": "services/pickup-secret-service.js",
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "services/pickup-authorization-service.js"
               },
               {
@@ -23886,6 +24005,30 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-access-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-access-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -24161,11 +24304,11 @@
                 "targetFile": "services/notification-service.js"
               },
               {
-                "sourceFileId": "services/pickup-secret-service.js",
+                "sourceFileId": "services/pickup-collection-service.js",
                 "targetFile": "utils/alerts.js"
               },
               {
-                "sourceFileId": "services/pickup-secret-service.js",
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "services/notifications/notification-service.js"
               },
               {
@@ -24233,8 +24376,28 @@
                 "targetFile": "services/order-mutation-service.js"
               },
               {
-                "sourceFileId": "services/pickup-secret-service.js",
+                "sourceFileId": "services/pickup-secret-access-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-recorder.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-collection-recorder.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "services/parcel-auto-create-service.js",
@@ -24782,10 +24945,6 @@
               },
               {
                 "sourceFileId": "routes/orders/create.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
                 "targetFile": "middleware/auth-guest.js"
               },
               {
@@ -24901,7 +25060,7 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "utils/rules.js"
               },
               {
@@ -24949,11 +25108,15 @@
                 "targetFile": "services/product-admin-service.js"
               },
               {
-                "sourceFileId": "services/order-payment-confirmation.js",
-                "targetFile": "services/product-admin-service.js"
+                "sourceFileId": "services/order-checkout-item-resolution.js",
+                "targetFile": "services/product-sku-service.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-item-resolution.js",
+                "targetFile": "services/product-sellable-service.js"
+              },
+              {
+                "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "services/product-admin-service.js"
               },
               {
@@ -24998,7 +25161,7 @@
                 "targetFile": "services/customs-shipment-service.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/customs-classification.js"
               },
               {
@@ -25080,7 +25243,7 @@
                 "targetFile": "services/pricing-engine.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/transport-pricing.js"
               },
               {
@@ -25133,6 +25296,26 @@
               },
               {
                 "sourceFileId": "services/order-status-machine.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-persistence.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/order-post-commit-hooks.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -25197,23 +25380,11 @@
               },
               {
                 "sourceFileId": "routes/orders/create.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
-                "targetFile": "utils/rates.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
                 "targetFile": "middleware/validate.js"
               },
               {
                 "sourceFileId": "routes/orders/create.js",
                 "targetFile": "validators/index.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
-                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/orders/qr.js",
@@ -25342,7 +25513,7 @@
                 "targetFile": "services/local-stock-service.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/local-stock-service.js"
               }
             ]
@@ -25374,20 +25545,24 @@
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/routing.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-persistence.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/order-post-commit-hooks.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "routes/orders/detail.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "routes/orders/parcels.js",
                 "targetFile": "services/parcel-operations.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
-                "targetFile": "services/pickup-secret-service.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
-                "targetFile": "services/routing.js"
               },
               {
                 "sourceFileId": "routes/orders/list.js",
@@ -25470,11 +25645,15 @@
                 "targetFile": "services/loyalty-service.js"
               },
               {
-                "sourceFileId": "routes/orders/status.js",
+                "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/loyalty-service.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-post-commit-hooks.js",
+                "targetFile": "services/loyalty-service.js"
+              },
+              {
+                "sourceFileId": "routes/orders/status.js",
                 "targetFile": "services/loyalty-service.js"
               },
               {
@@ -25526,6 +25705,10 @@
                 "targetFile": "services/client-notification-service.js"
               },
               {
+                "sourceFileId": "services/order-post-commit-hooks.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
                 "sourceFileId": "services/admin-order-refund.js",
                 "targetFile": "utils/alerts.js"
               },
@@ -25535,10 +25718,6 @@
               },
               {
                 "sourceFileId": "routes/orders/status.js",
-                "targetFile": "services/notification-service.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
                 "targetFile": "services/notification-service.js"
               },
               {
@@ -25845,7 +26024,7 @@
                 "targetFile": "public/boutique/js/group/shared-cart-library-api.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-post-commit-hooks.js",
                 "targetFile": "services/cart-share-service.js"
               },
               {
@@ -25885,7 +26064,11 @@
                 "targetFile": "services/wallet-service.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/wallet-service.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/wallet-service.js"
               },
               {
@@ -28906,7 +29089,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 974
+        "filesObserved": 991
       },
       "boutique": {
         "filesObserved": 176,

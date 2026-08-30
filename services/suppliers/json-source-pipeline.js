@@ -72,84 +72,54 @@
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 const importProfileSchema = require('../../schemas/catalog/import-profile.v1.schema.json');
-const { validateNormalizedProduct } = require('./normalized-product');
 
-const PIPELINE_VERSION = '2026-07-ING6';
+// Domaine 2/5 (ING-6, 2026-08) : classifyPromotion() et le bloc média/vidéo
+// ont été extraits vers promotion-classifier.js et media-normalizer.js
+// (audit Phase 1). Nettoyage architectural ultérieur : le parsing scalaire,
+// la résolution poids/devise et l'assemblage du contrat V1/V2 vivent
+// désormais dans source-product-normalizer.js ; promotion-classifier.js ne
+// porte plus que la décision de classification elle-même. Les constantes
+// communes (FINDINGS, REASON_CODES,
+// PROMOTION_STATUSES, STATUS_PRIORITY, finding(), WEIGHT_CONVERSIONS_TO_KG)
+// vivent désormais dans pipeline-constants.js pour que ces deux modules ne
+// dépendent pas en retour de ce fichier. Ce fichier réexporte l'API
+// publique inchangée : aucun appelant externe (json-connector.js, tests)
+// n'a besoin d'être modifié.
+const {
+  PIPELINE_VERSION,
+  FINDINGS,
+  REASON_CODES,
+  PROMOTION_STATUSES,
+  STATUS_PRIORITY,
+  finding,
+  WEIGHT_CONVERSIONS_TO_KG,
+} = require('./pipeline-constants');
 
-/** Codes de finding — stables, consommables par l'orchestrateur et l'audit. */
-const FINDINGS = Object.freeze({
-  SOURCE_WEIGHT_UNIT_UNKNOWN: 'SOURCE_WEIGHT_UNIT_UNKNOWN',
-  SOURCE_WEIGHT_ABSENT: 'SOURCE_WEIGHT_ABSENT',
-  SOURCE_WEIGHT_CONVERTED: 'SOURCE_WEIGHT_CONVERTED',
-  THUMBNAIL_FALLBACK_USED: 'THUMBNAIL_FALLBACK_USED',
-  MEDIA_RELATION_DEDUPLICATED: 'MEDIA_RELATION_DEDUPLICATED',
-  ASSET_REUSED_ACROSS_ROLES: 'ASSET_REUSED_ACROSS_ROLES',
-  ASSET_SHARED_ACROSS_PRODUCTS: 'ASSET_SHARED_ACROSS_PRODUCTS',
-  MISSING_IMAGE: 'MISSING_IMAGE',
-  MISSING_BRAND: 'MISSING_BRAND',
-  CATEGORY_NORMALIZED: 'CATEGORY_NORMALIZED',
-  PRICE_STRING_PARSED: 'PRICE_STRING_PARSED',
-  STOCK_STRING_PARSED: 'STOCK_STRING_PARSED',
-  CURRENCY_FROM_SOURCE: 'CURRENCY_FROM_SOURCE',
-  CURRENCY_FROM_PROFILE_DEFAULT: 'CURRENCY_FROM_PROFILE_DEFAULT',
-  UNSUPPORTED_VIDEO_PRESENT: 'UNSUPPORTED_VIDEO_PRESENT',
-  GALLERY_TRUNCATED_BY_V1: 'GALLERY_TRUNCATED_BY_V1',
-});
+const {
+  detectVideoForms,
+  classifyUrlSyntactically,
+  normalizeMedia,
+} = require('./media-normalizer');
 
-/**
- * Codes de rejet machine-lisibles, stables, distincts du texte du motif.
- * `promotion_status` porte la CATÉGORIE (source vs contrat) ; `reason_code`
- * porte la CAUSE exploitable automatiquement. Persistés dans
- * supplier_catalog_import_rejections.reason_code.
- */
-const REASON_CODES = Object.freeze({
-  // Défauts de ligne détectés AVANT la classification métier.
-  SOURCE_ROW_NOT_OBJECT: 'SOURCE_ROW_NOT_OBJECT',
-  MISSING_SUPPLIER_PRODUCT_ID: 'MISSING_SUPPLIER_PRODUCT_ID',
-  DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH: 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH',
-  SOURCE_FIELD_TOO_LARGE: 'SOURCE_FIELD_TOO_LARGE',
-  SOURCE_PRODUCT_TOO_DEEP: 'SOURCE_PRODUCT_TOO_DEEP',
-  // Défauts détectés PENDANT la classification.
-  SOURCE_VALUE_UNPARSABLE: 'SOURCE_VALUE_UNPARSABLE',
-  CONTRACT_SCHEMA_INVALID: 'CONTRACT_SCHEMA_INVALID',
-  // Rejets PAR POLITIQUE de profil — la donnée n'est pas fautive, le profil
-  // a décidé de ne pas l'accepter. Codes ajoutés à la liste initiale : sans
-  // eux, policies.*=REJECT_PRODUCT produirait un rejet sans cause lisible.
-  SOURCE_WEIGHT_UNIT_UNKNOWN: 'SOURCE_WEIGHT_UNIT_UNKNOWN',
-  UNSUPPORTED_VIDEO_REJECTED_BY_POLICY: 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY',
-  LOSSY_MAPPING_REJECTED_BY_POLICY: 'LOSSY_MAPPING_REJECTED_BY_POLICY',
-});
+const {
+  parseSourceProduct,
+  resolveWeight,
+  resolveCurrency,
+  normalizeProduct,
+  validateContract,
+  buildV1,
+  buildV2,
+} = require('./source-product-normalizer');
 
-const PROMOTION_STATUSES = Object.freeze([
-  'READY_FOR_PROMOTION',
-  'QUARANTINED_UNSUPPORTED_MEDIA',
-  'QUARANTINED_LOSSY_MAPPING',
-  'QUARANTINED_CURRENCY_POLICY',
-  'REJECTED_CONTRACT_INVALID',
-  'REJECTED_SOURCE_DATA_INVALID',
-]);
-
-/** Priorité déterministe : valeur basse = priorité haute. */
-const STATUS_PRIORITY = Object.freeze({
-  REJECTED_SOURCE_DATA_INVALID: 1,
-  QUARANTINED_CURRENCY_POLICY: 2,
-  REJECTED_CONTRACT_INVALID: 3,
-  QUARANTINED_UNSUPPORTED_MEDIA: 4,
-  QUARANTINED_LOSSY_MAPPING: 5,
-  READY_FOR_PROMOTION: 6,
-});
-
-function finding(code, detail, extra) {
-  return { code, detail, ...(extra || {}) };
-}
+const {
+  classifyPromotion,
+} = require('./promotion-classifier');
 
 // ── 1. Profil d'import — validation AJV RÉELLE (ING-I9) ───────────────────
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
 const validateProfileSchema = ajv.compile(importProfileSchema);
-
-const WEIGHT_CONVERSIONS_TO_KG = Object.freeze({ kg: 1, g: 0.001, lb: 0.45359237, oz: 0.028349523125 });
 
 function humanizeAjvError(e) {
   const where = e.instancePath || '(racine)';
@@ -426,443 +396,6 @@ function analyzeSourceRows(rows, profile) {
   return entries;
 }
 
-// ── 3. Parsing scalaire explicite (aucune conversion silencieuse) ─────────
-
-function parsePrice(raw) {
-  if (typeof raw === 'number') return { value: raw, currency: null, transformed: false };
-  if (typeof raw === 'string') {
-    const m = raw.trim().match(/^([\d]+)[,.]([\d]+)\s*([A-Z]{3})$/);
-    if (m) return { value: parseFloat(`${m[1]}.${m[2]}`), currency: m[3], transformed: true, original: raw };
-    return { value: null, currency: null, transformed: false, original: raw, unparsed: true };
-  }
-  return { value: null, currency: null, transformed: false, original: raw, unparsed: true };
-}
-
-function parseStock(raw) {
-  if (typeof raw === 'number' && Number.isInteger(raw)) return { value: raw, transformed: false };
-  if (typeof raw === 'string' && /^\d+$/.test(raw.trim())) {
-    return { value: parseInt(raw.trim(), 10), transformed: true, original: raw };
-  }
-  return { value: null, transformed: false, original: raw, unparsed: true };
-}
-
-function normalizeCategoryProposed(raw) {
-  if (typeof raw !== 'string') return { proposed: null, changed: false };
-  const normalized = raw.trim().toLowerCase();
-  return { proposed: normalized, changed: normalized !== raw };
-}
-
-/**
- * Poids : AUCUNE unité inventée (ING-I2).
- *
- * Tant que profile.weight.source_unit est null, l'unité du champ source
- * n'est pas confirmée par le fournisseur : `weight_kg = null`. La valeur
- * brute reste intégralement dans raw_payload (ING-I3) et un finding
- * SOURCE_WEIGHT_UNIT_UNKNOWN est produit.
- *
- * IMPORTANT — ce que ce null déclenche en aval :
- * supplier-catalog-scanner.estimateWeight() remplace un weight_kg absent par
- * une estimation (table codée en dur, puis 0.5). Ce comportement est un
- * CHANTIER DISTINCT, non modifié ici. Mais le pipeline ne ment plus : il ne
- * présente plus un poids d'unité inconnue comme source=supplier /
- * confidence=high. `provenance` permet au scanner de signaler explicitement
- * ESTIMATED_WEIGHT_FALLBACK_USED / confidence=low, et à la décision aval de
- * distinguer : poids confirmé | poids estimé | poids absent.
- *
- * @returns {{ value: number|null, findings: Array, provenance: Object }}
- */
-function resolveWeight(p, profile) {
-  const cfg = profile.weight;
-  const findings = [];
-  const field = cfg.source_field;
-  const raw = field ? p[field] : undefined;
-  const hasRaw = typeof raw === 'number' && Number.isFinite(raw);
-
-  const provenance = {
-    source_field: field,
-    raw_value: raw === undefined ? null : raw,
-    source_unit: cfg.source_unit,
-    target_unit: cfg.target_unit,
-    unit_confirmed: cfg.source_unit !== null,
-    resolved_kg: null,
-    basis: null,
-    downstream_expectation: null,
-  };
-
-  if (!hasRaw) {
-    provenance.basis = 'source_absent';
-    provenance.downstream_expectation = 'ESTIMATED_WEIGHT_FALLBACK_USED';
-    findings.push(finding(FINDINGS.SOURCE_WEIGHT_ABSENT,
-      `aucun poids source exploitable dans "${field}" — le scanner produira une estimation (confidence=low)`));
-    return { value: null, findings, provenance };
-  }
-
-  if (cfg.source_unit === null) {
-    provenance.basis = 'source_unit_unconfirmed';
-    provenance.downstream_expectation = 'ESTIMATED_WEIGHT_FALLBACK_USED';
-    findings.push(finding(FINDINGS.SOURCE_WEIGHT_UNIT_UNKNOWN,
-      `poids source "${field}"=${raw} conservé dans raw_payload mais NON mappé : weight.source_unit n'est pas confirmée par le profil. Aucune unité n'est inventée (ING-I2). weight_kg=null -> le scanner estimera (ESTIMATED_WEIGHT_FALLBACK_USED, confidence=low) ; il ne doit jamais présenter cette valeur comme source=supplier/confidence=high.`,
-      { raw_value: raw, source_field: field }));
-    return { value: null, findings, provenance };
-  }
-
-  const factor = WEIGHT_CONVERSIONS_TO_KG[cfg.source_unit];
-  const kg = raw * factor;
-  provenance.resolved_kg = kg;
-  provenance.basis = 'source_unit_confirmed';
-  provenance.downstream_expectation = 'SUPPLIER_WEIGHT_USED';
-  if (cfg.source_unit !== 'kg') {
-    findings.push(finding(FINDINGS.SOURCE_WEIGHT_CONVERTED,
-      `poids ${raw} ${cfg.source_unit} converti en ${kg} kg (facteur ${factor}, unité déclarée explicitement au profil)`));
-  }
-  return { value: kg, findings, provenance };
-}
-
-/** Normalise les champs scalaires bruts d'un produit source. */
-function parseSourceProduct(p, profile) {
-  const out = {
-    price: parsePrice(p.price),
-    stock: parseStock(p.stock),
-    category: normalizeCategoryProposed(p.category),
-  };
-  if (profile) out.weight = resolveWeight(p, profile);
-  return out;
-}
-
-// ── 4. Devise : SOURCE_THEN_DEFAULT ───────────────────────────────────────
-
-function resolveCurrency(sourceCurrency, profile) {
-  const allowed = profile.currency.allowed;
-  const defaultCurrency = profile.currency.default;
-  if (sourceCurrency) {
-    if (!allowed.includes(sourceCurrency)) {
-      return { value: null, origin: 'source_rejected_by_policy', quarantined: true };
-    }
-    return { value: sourceCurrency, origin: 'source', quarantined: false };
-  }
-  if (defaultCurrency) return { value: defaultCurrency, origin: 'import_profile', quarantined: false };
-  return { value: null, origin: 'absent', quarantined: false };
-}
-
-// ── 5. Détection vidéo (3 formes possibles, jamais représentable) ─────────
-
-function classifyUrlSyntactically(u) {
-  if (u === null || u === undefined) return { present: false };
-  if (typeof u !== 'string' || !u.trim()) return { present: true, syntacticallyValid: false, reason: 'valeur vide ou non-string' };
-  if (!/^https?:\/\//i.test(u.trim())) return { present: true, syntacticallyValid: false, reason: 'schéma non http(s)' };
-  if (/invalid\.example\.test|not-found|broken/i.test(u)) {
-    return { present: true, syntacticallyValid: false, reason: 'marqueur explicite d\'invalidité dans l\'URL' };
-  }
-  return { present: true, syntacticallyValid: true };
-}
-
-function detectVideoForms(p) {
-  const forms = [];
-  const videoItems = [];
-  if (Array.isArray(p.videos) && p.videos.length > 0) {
-    forms.push('form1_videos_array');
-    for (const v of p.videos) videoItems.push({ form: 'form1_videos_array', url: v.url, poster: v.poster || null, urlCheck: classifyUrlSyntactically(v.url) });
-  }
-  if (p.video) {
-    forms.push('form2_video_string');
-    videoItems.push({ form: 'form2_video_string', url: p.video, poster: p.videoPoster || null, urlCheck: classifyUrlSyntactically(p.video) });
-  }
-  if (Array.isArray(p.media)) {
-    const videoMedia = p.media.filter((m) => m && m.type === 'video');
-    for (const m of videoMedia) videoItems.push({ form: 'form3_media_array', url: m.url, poster: m.poster || null, urlCheck: classifyUrlSyntactically(m.url) });
-    if (videoMedia.length > 0) forms.push('form3_media_array');
-  }
-  return { forms, videoItems, hasVideo: forms.length > 0 };
-}
-
-// ── 6. Galerie médias déterministe + déduplication des relations ──────────
-
-/**
- * Un rôle média n'est JAMAIS déduit d'une position. Toute entrée de la
- * galerie source est role=PRODUCT ; display_order est une position
- * d'affichage, pas une sémantique.
- *
- * Déduplication (policies.duplicate_relation) :
- *   • même (url + type + rôle) dans le même produit -> une seule relation,
- *     événement d'audit MEDIA_RELATION_DEDUPLICATED ;
- *   • même url sous plusieurs rôles -> les DEUX relations sont conservées,
- *     finding ASSET_REUSED_ACROSS_ROLES. Une réutilisation légitime n'est
- *     jamais supprimée ;
- *   • même asset partagé entre produits -> hors de portée d'un produit,
- *     traité au niveau batch par le connecteur (policies.asset_reuse).
- *
- * @returns {{ media: Array, roleAssignmentBasis: string|null, findings: Array }}
- */
-function normalizeMedia(p, profile) {
-  const field = profile.media.gallery_source_field;
-  const findings = [];
-  const rawImages = Array.isArray(p[field]) ? p[field] : [];
-
-  let candidates;
-  let roleAssignmentBasis;
-
-  if (rawImages.length > 0) {
-    // La thumbnail n'est JAMAIS ajoutée à une galerie non vide : c'est un
-    // aperçu technique, pas un média catalogue.
-    candidates = rawImages.map((url, idx) => ({ url, type: 'image', role: 'PRODUCT', source_index: idx }));
-    roleAssignmentBasis = 'source_field_images';
-  } else if (profile.media.thumbnail_fallback && typeof p.thumbnail === 'string' && p.thumbnail.trim()) {
-    // Point 7 — le fallback est RÉELLEMENT utilisé sur ce dataset (id 15 :
-    // images: [], thumbnail valide). La base est exposée en V1 comme en V2,
-    // jamais laissée à null.
-    candidates = [{ url: p.thumbnail, type: 'image', role: 'PRODUCT', source_index: 0 }];
-    roleAssignmentBasis = 'thumbnail_fallback';
-    findings.push(finding(FINDINGS.THUMBNAIL_FALLBACK_USED,
-      `${field} vide : thumbnail utilisée comme image principale (role=PRODUCT, display_order=0)`));
-  } else {
-    findings.push(finding(FINDINGS.MISSING_IMAGE,
-      `aucun média : ${field} vide et pas de thumbnail exploitable (policies.missing_image=${profile.policies.missing_image})`));
-    return { media: [], roleAssignmentBasis: null, findings };
-  }
-
-  const kept = [];
-  const seenTriples = new Map();
-  const urlRoles = new Map();
-  for (const c of candidates) {
-    const triple = `${c.url}|${c.type}|${c.role}`;
-    if (seenTriples.has(triple)) {
-      findings.push(finding(FINDINGS.MEDIA_RELATION_DEDUPLICATED,
-        `relation média identique (url + type + rôle) déjà présente à la position source ${seenTriples.get(triple)} : position source ${c.source_index} dédupliquée (policies.duplicate_relation=${profile.policies.duplicate_relation})`,
-        { url: c.url, role: c.role, media_type: c.type, source_index: c.source_index, kept_source_index: seenTriples.get(triple) }));
-      continue;
-    }
-    seenTriples.set(triple, c.source_index);
-    const roles = urlRoles.get(c.url) || new Set();
-    roles.add(c.role);
-    urlRoles.set(c.url, roles);
-    kept.push(c);
-  }
-
-  for (const [url, roles] of urlRoles.entries()) {
-    if (roles.size > 1) {
-      findings.push(finding(FINDINGS.ASSET_REUSED_ACROSS_ROLES,
-        `asset réutilisé sous ${roles.size} rôles (${[...roles].join(', ')}) — relations conservées, une réutilisation légitime n'est jamais supprimée (policies.asset_reuse=${profile.policies.asset_reuse})`,
-        { url, roles: [...roles] }));
-    }
-  }
-
-  // display_order = position d'affichage finale, recalculée après dédup pour
-  // rester contiguë. La position source d'origine reste dans les findings.
-  const media = kept.map((c, idx) => ({ url: c.url, role: c.role, display_order: idx }));
-  return { media, roleAssignmentBasis, findings };
-}
-
-// ── 7. Assemblage NormalizedSupplierProduct (V1 / V2) ─────────────────────
-
-function resolveSupplierProductId(p, profile) {
-  const raw = p[profile.identity.supplier_id_field];
-  return raw != null ? String(raw) : null;
-}
-
-function baseFields(p, profile, parsed, currencyResolved, supplierProductId) {
-  return {
-    supplier_name: profile.supplier_name,
-    supplier_product_id: supplierProductId,
-    product_name: p.title || null,
-    supplier_category: parsed.category.proposed,
-    purchase_price: parsed.price.value,
-    currency: currencyResolved.value,
-    product_url: null,
-    description: p.description || null,
-    stock_available: parsed.stock.value,
-    min_order_qty: (typeof p.minimumOrderQuantity === 'number') ? p.minimumOrderQuantity : null,
-    supplier_delay_days: null,
-    // Point 4 — jamais p.weight brut : cf. resolveWeight(). null tant que
-    // l'unité source n'est pas déclarée au profil.
-    weight_kg: parsed.weight.value,
-    dimensions: null,
-    raw_payload: p,
-  };
-}
-
-function buildV1(p, profile, parsed, currencyResolved, supplierProductId, mediaResult) {
-  const media = mediaResult.media;
-  const droppedFields = media.length > 1
-    ? [{ field: `${profile.media.gallery_source_field}[1..]`, count: media.length - 1, reason: 'V1 ne porte qu\'un image_url singulier.' }]
-    : [];
-  return {
-    contract: {
-      schema_version: '1',
-      image_url: media.length > 0 ? media[0].url : null,
-      ...baseFields(p, profile, parsed, currencyResolved, supplierProductId),
-    },
-    droppedFields,
-    galleryPreserved: media.length <= 1,
-    roleAssignmentBasis: mediaResult.roleAssignmentBasis,
-  };
-}
-
-function buildV2(p, profile, parsed, currencyResolved, supplierProductId, mediaResult) {
-  return {
-    contract: {
-      schema_version: '2',
-      image_url: mediaResult.media.length > 0 ? mediaResult.media[0].url : null,
-      media: mediaResult.media,
-      ...baseFields(p, profile, parsed, currencyResolved, supplierProductId),
-    },
-    roleAssignmentBasis: mediaResult.roleAssignmentBasis,
-  };
-}
-
-/**
- * Contrat cible du connecteur JSON : V2 dans TOUS les cas.
- *
- * La promotion catalogue officielle refuse explicitement V1. Un produit
- * déclaré READY_FOR_PROMOTION doit donc être réellement promouvable, qu'il
- * possède zéro, une ou plusieurs images. Le schéma V2 accepte media[] vide
- * ou mono-élément : aucune raison honnête de produire V1 ici.
- *
- * V1 reste supporté par les connecteurs legacy, mais le connecteur JSON
- * profilé ne fabrique jamais un statut READY adossé à un contrat impossible
- * à promouvoir.
- */
-function normalizeProduct(p, profile, parsed, currencyResolved, supplierProductId, mediaResult) {
-  const media = mediaResult || normalizeMedia(p, profile);
-  const v2 = buildV2(p, profile, parsed, currencyResolved, supplierProductId, media);
-  return {
-    contract: v2.contract,
-    schemaVersionUsed: '2',
-    galleryPreserved: true,
-    roleAssignmentBasis: v2.roleAssignmentBasis,
-    droppedFields: [],
-    lossy: false,
-    mediaResult: media,
-  };
-}
-
-// ── 8. Validation de contrat (délègue à l'AJV réel, aucune duplication) ───
-
-function validateContract(contract) {
-  return validateNormalizedProduct(contract);
-}
-
-// ── 9. Classification de promotion — priorité déterministe ────────────────
-
-/**
- * Point d'entrée unique par produit. Applique l'ordre documenté en tête de
- * fichier. Les motifs secondaires restent dans `findings` ; le statut
- * primaire suit STATUS_PRIORITY et rien d'autre.
- */
-function classifyPromotion(p, profile) {
-  const findings = [];
-  const supplierProductId = resolveSupplierProductId(p, profile);
-  const parsed = parseSourceProduct(p, profile);
-  const videoInfo = detectVideoForms(p);
-
-  findings.push(...parsed.weight.findings);
-  if (parsed.category.changed) {
-    findings.push(finding(FINDINGS.CATEGORY_NORMALIZED,
-      `catégorie source "${p.category}" -> "${parsed.category.proposed}" (proposition source, jamais une catégorie Komerce)`));
-  }
-  if (parsed.price.transformed) findings.push(finding(FINDINGS.PRICE_STRING_PARSED, `prix "${parsed.price.original}" -> ${parsed.price.value} + devise ${parsed.price.currency}`));
-  if (parsed.stock.transformed) findings.push(finding(FINDINGS.STOCK_STRING_PARSED, `stock "${parsed.stock.original}" -> ${parsed.stock.value}`));
-  if (!p.brand) findings.push(finding(FINDINGS.MISSING_BRAND, `marque absente (policies.missing_brand=${profile.policies.missing_brand})`));
-
-  const base = { supplierProductId, findings, videoInfo, parsed, sourceId: p.id };
-
-  // ── Étape 1 : données sources minimales ────────────────────────────────
-  if (parsed.price.unparsed || parsed.stock.unparsed) {
-    const reasons = [];
-    if (parsed.price.unparsed) reasons.push(`price non interprétable : ${JSON.stringify(parsed.price.original)}`);
-    if (parsed.stock.unparsed) reasons.push(`stock non interprétable : ${JSON.stringify(parsed.stock.original)}`);
-    return { ...base, status: 'REJECTED_SOURCE_DATA_INVALID', reasonCode: REASON_CODES.SOURCE_VALUE_UNPARSABLE, eligible: false, reasons, contract: null };
-  }
-  if (profile.weight.unknown_unit_policy === 'REJECT_PRODUCT'
-      && parsed.weight.provenance.basis === 'source_unit_unconfirmed') {
-    return {
-      ...base, status: 'REJECTED_SOURCE_DATA_INVALID', reasonCode: REASON_CODES.SOURCE_WEIGHT_UNIT_UNKNOWN, eligible: false,
-      reasons: ['poids d\'unité inconnue et weight.unknown_unit_policy=REJECT_PRODUCT'], contract: null,
-    };
-  }
-
-  // ── Étape 2 : devise — AVANT l'AJV (cf. en-tête : currency est required) ─
-  const currencyResolved = resolveCurrency(parsed.price.currency, profile);
-  if (currencyResolved.quarantined) {
-    return {
-      ...base, status: 'QUARANTINED_CURRENCY_POLICY', eligible: false,
-      reasons: [`devise source "${parsed.price.currency}" hors currency.allowed (${profile.currency.allowed.join(', ')})`],
-      contract: null, currencyResolved,
-    };
-  }
-  findings.push(currencyResolved.origin === 'source'
-    ? finding(FINDINGS.CURRENCY_FROM_SOURCE, `devise ${currencyResolved.value} lue dans la source (SOURCE_THEN_DEFAULT)`)
-    : finding(FINDINGS.CURRENCY_FROM_PROFILE_DEFAULT, `aucune devise source : repli sur currency.default=${currencyResolved.value} du profil`));
-
-  // ── Étape 3 : construction du contrat ──────────────────────────────────
-  const mediaResult = normalizeMedia(p, profile);
-  findings.push(...mediaResult.findings);
-  const normalized = normalizeProduct(p, profile, parsed, currencyResolved, supplierProductId, mediaResult);
-
-  const common = {
-    ...base, currencyResolved,
-    contract: normalized.contract,
-    schemaVersionUsed: normalized.schemaVersionUsed,
-    galleryPreserved: normalized.galleryPreserved,
-    roleAssignmentBasis: normalized.roleAssignmentBasis,
-    droppedFields: normalized.droppedFields,
-    mediaCount: normalized.mediaResult.media.length,
-  };
-
-  // ── Étape 4 : AJV réelle — AVANT la vidéo ──────────────────────────────
-  // Un produit vidéo ne masque JAMAIS un contrat de base invalide.
-  const verdict = validateContract(normalized.contract);
-  if (!verdict.valid) {
-    return {
-      ...common, status: 'REJECTED_CONTRACT_INVALID', reasonCode: REASON_CODES.CONTRACT_SCHEMA_INVALID, eligible: false, reasons: verdict.errors,
-      contractValidation: { attempted: true, valid: false, errors: verdict.errors },
-    };
-  }
-
-  // ── Étape 5 : fidélité média ───────────────────────────────────────────
-  if (videoInfo.hasVideo) {
-    findings.push(finding(FINDINGS.UNSUPPORTED_VIDEO_PRESENT,
-      `vidéo détectée (${videoInfo.forms.join(', ')}) — aucun support schéma/DB/modale ; champs vidéo intégralement conservés dans raw_payload (ING-I3)`));
-    if (profile.policies.unsupported_video === 'REJECT_PRODUCT') {
-      return {
-        ...common, status: 'REJECTED_SOURCE_DATA_INVALID', reasonCode: REASON_CODES.UNSUPPORTED_VIDEO_REJECTED_BY_POLICY, eligible: false,
-        reasons: ['vidéo présente et policies.unsupported_video=REJECT_PRODUCT'],
-        contractValidation: { attempted: true, valid: true, errors: [] },
-      };
-    }
-    return {
-      ...common, status: 'QUARANTINED_UNSUPPORTED_MEDIA', eligible: false,
-      reasons: [`média vidéo présent (${videoInfo.forms.join(', ')}) — aucun support schéma/DB/modale actuel ; policies.unsupported_video=${profile.policies.unsupported_video}`],
-      contractValidation: { attempted: true, valid: true, errors: [] },
-      // Le contrat de base est AJV-valide mais NE représente PAS la fiche
-      // entière. Ne jamais laisser un lecteur en conclure l'inverse.
-      videoRepresentation: {
-        base_product_contract_validation: { attempted: true, valid: true, schema_version: normalized.schemaVersionUsed },
-        source_fidelity: { complete: false, unsupported_fields: ['video'] },
-        promotion: { eligible: false, status: 'QUARANTINED_UNSUPPORTED_MEDIA' },
-      },
-    };
-  }
-
-  if (normalized.lossy) {
-    if (profile.policies.lossy_mapping === 'REJECT_PRODUCT') {
-      return {
-        ...common, status: 'REJECTED_SOURCE_DATA_INVALID', reasonCode: REASON_CODES.LOSSY_MAPPING_REJECTED_BY_POLICY, eligible: false, reasons: normalized.lossyReasons,
-        contractValidation: { attempted: true, valid: true, errors: [] },
-      };
-    }
-    findings.push(finding(FINDINGS.GALLERY_TRUNCATED_BY_V1, normalized.lossyReasons.join(' | ')));
-    return {
-      ...common, status: 'QUARANTINED_LOSSY_MAPPING', eligible: false, reasons: normalized.lossyReasons,
-      contractValidation: { attempted: true, valid: true, errors: [] },
-    };
-  }
-
-  // ── Étape 6 : promotion ────────────────────────────────────────────────
-  return {
-    ...common, status: 'READY_FOR_PROMOTION', eligible: true, reasons: [],
-    contractValidation: { attempted: true, valid: true, errors: [] },
-  };
-}
 
 /**
  * Diagnostics par produit — c'est CE bloc que le rapport officiel et le

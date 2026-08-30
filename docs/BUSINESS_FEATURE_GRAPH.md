@@ -176,7 +176,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - middleware: 1
 - ci: 3
 - utils: 1
-- services: 31
+- services: 39
 - schemas: 4
 - migrations: 13
 - config: 1
@@ -361,7 +361,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 2
 - docs: 4
 - utils: 3
-- services: 16
+- services: 21
 - routes: 18
 - boutique: 1
 - dash: 2
@@ -422,7 +422,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 12
+- services: 16
 - routes: 12
 - boutique: 3
 - tests: 33
@@ -1650,7 +1650,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 974 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 991 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 176 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1798,10 +1798,10 @@ Meta Graph monté : oui.
 | logistics | catalog | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| logistics | infrastructure | static-code | 72 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 78 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
-| logistics | orders | static-code, data-read | 24 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-read | 29 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1819,17 +1819,17 @@ Meta Graph monté : oui.
 | notifications | logistics | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| orders | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | orders | auth-identity | static-code, interface, data-read | 11 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| orders | catalog | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| orders | catalog | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 55 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 57 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 21 | **DECLARED_AND_OBSERVED** |
-| orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 22 | **DECLARED_AND_OBSERVED** |
+| orders | loyalty | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 7 | **DECLARED_AND_OBSERVED** |
@@ -1837,7 +1837,7 @@ Meta Graph monté : oui.
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| orders | wallet | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |

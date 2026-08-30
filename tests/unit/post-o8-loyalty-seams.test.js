@@ -90,7 +90,7 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
       { flow: 'Stripe',            file: 'services/payment-stripe.js',      provenBy: 'REAL_DB seam (STRIPE-1/2/3/4)' },
       { flow: 'Cash',              file: 'services/payment-cash-confirm.js', provenBy: 'REAL_DB seam (CASH-4)' },
       { flow: 'PayPal',            file: 'services/payment-paypal.js',       provenBy: 'REAL_DB seam (PAYPAL-CAPTURE / PAYPAL-WEBHOOK-FALLBACK)' },
-      { flow: 'Wallet full order', file: 'routes/orders/create.js',          provenBy: 'STATIC ONLY — no REAL_DB seam yet, see residual risks' },
+      { flow: 'Wallet full order', file: 'services/order-post-commit-hooks.js', provenBy: 'STATIC ONLY — no REAL_DB seam yet, see residual risks' },
     ];
 
     it.each(expectedCallSites)(

@@ -51,12 +51,14 @@ function walk(dir, exts, out = []) {
 describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 2)', () => {
 
   // Vague 2 D2 (28-08-2026) : deux points d'intégration backend ÉCRITURE,
-  // délibérés et revus — routes/orders/create.js (allocateForOrderItem,
-  // dans la même transaction que la commande) et services/order-status-
+  // délibérés et revus — services/order-checkout-persistence.js (allocateForOrderItem,
+  // dans la même transaction que la commande — déplacé depuis routes/orders/
+  // create.js lors du refactoring domaine 4/5, même point d'intégration,
+  // même transaction, seul le fichier a bougé) et services/order-status-
   // machine.js (consumeAllocationsForOrder/releaseAllocationsForOrder, sur
   // les transitions confirmed/cancelled déjà existantes).
   const ALLOWED_WRITE_CONSUMERS = [
-    'routes/orders/create.js',
+    'services/order-checkout-persistence.js',
     'services/order-status-machine.js',
   ];
 
