@@ -88,6 +88,7 @@
 - [x] fermer le périmètre runtime à **131 / 131 = 100%**, **0 fichier applicatif orphelin** ;
 - [x] passer `gate:boutique-ownership:full` en `--strict` et l'ajouter aux Boutique source gates de `pr-enforcement.yml` ;
 - [x] B4-1 sélecteurs critiques : remplacer l’ancienne allowlist I-2 historique par un registre machine-readable unique partagé par le LIVE, le guard dédié et l’audit architecture ; **15 sélecteurs contractés**, owner principal obligatoire, nouveaux owners/contextes base-desktop interdits, réduction d’adaptation autorisée ;
-- [ ] B4-2 : verrouiller de la même façon les producteurs des variables CSS runtime posées par JS.
+- [x] B4-2 variables runtime : registre machine-readable unique pour **5 variables CSS écrites par JS**, producteur principal obligatoire, nouveaux producteurs interdits, **1 chemin `setProperty()` max par producteur autorisé**, réduction d’adaptation permise ; LIVE + guard dédié + audit I-7 partagent la même source ;
+- [x] B4 clos : ownership applicatif, sélecteurs critiques et variables CSS runtime sont tous protégés par des invariants exécutables.
 
 Ce fichier est un ledger de chantier, pas une nouvelle baseline. Les cliquets existants restent les guards exécutables jusqu'à leur remboursement explicite.

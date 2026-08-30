@@ -14,8 +14,9 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { TRACKED_SELECTORS, selectorMap } = require('./gen-boutique-arch-live.js');
+const { TRACKED_SELECTORS, selectorMap, JS_OWNED_VARS, jsVarOwners } = require('./gen-boutique-arch-live.js');
 const { evaluateSelectorOwnership } = require('./critical-selector-ownership.js');
+const { evaluateRuntimeCssVarOwnership } = require('./runtime-css-var-ownership.js');
 
 const ROOT     = path.resolve(__dirname, '..');
 const CSS_DIR  = path.join(ROOT, 'css');
@@ -70,8 +71,7 @@ const HEX_ALLOWLIST = [
 const { BUNDLES: _rawBundles } = require('./css-bundles.js');
 const EXPECTED_BUNDLES = Object.fromEntries(_rawBundles.map(b => [b.out, b.files]));
 
-// I-6 : Variables CSS posées par JS uniquement
-const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];
+// I-6/I-7 : variables runtime et producteurs viennent du registre canonique.
 
 // ════════════════════════════════════════════════════════════════
 // HELPERS
@@ -280,6 +280,18 @@ function checkI6_jsOwnedVars() {
 }
 
 // ════════════════════════════════════════════════════════════════
+// CHECK I-7 : Producteurs JS des variables runtime conformes au contrat B4
+// ════════════════════════════════════════════════════════════════
+function checkI7_runtimeVarOwnership() {
+  const result = evaluateRuntimeCssVarOwnership(jsVarOwners(), JS_OWNED_VARS);
+  for (const error of result.errors) {
+    violate('I-7', error.message,
+      'Modifier le producteur principal/contextuel existant ou mettre à jour explicitement ' +
+      'scripts/runtime-css-var-ownership.js si la nouvelle responsabilité est volontaire.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
 // CHECK BUNDLE : deploy-css.js et audit utilisent la même source (css-bundles.js)
 // ════════════════════════════════════════════════════════════════
 function checkBundleConfig() {
@@ -323,6 +335,7 @@ checkI2_ownership();
 checkI3_hexHardcoded();
 checkI4_brokenTokens();
 checkI6_jsOwnedVars();
+checkI7_runtimeVarOwnership();
 checkBundleConfig();
 
 // Rapport
@@ -343,6 +356,7 @@ const RULE_LABELS = {
   'I-3':    'I-3  Aucun hex hors tokens.css',
   'I-4':    'I-4  Aucun token cassé "var(--x)nnn"',
   'I-6':    'I-6  Variables JS-owned non déclarées par CSS',
+  'I-7':    'I-7  Producteurs JS runtime conformes au contrat B4',
   'BUNDLE': 'BUNDLE  Cohérence css-bundles.js',
 };
 
