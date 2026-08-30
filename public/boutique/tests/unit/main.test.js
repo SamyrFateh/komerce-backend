@@ -20,12 +20,14 @@ const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
 const mockSetupProductDetailModal = jest.fn();
 const mockSetupLocalStockBadgeMount = jest.fn();
+const mockSetupDiscoveryInquiry = jest.fn();
 const mockSetupDiscoveryRail = jest.fn();
 const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 const mockSetupModalDesktopEnhancers = jest.fn();
 const mockSetupClientNotifications = jest.fn();
 const mockSetupKomerceNavIdentity = jest.fn();
+const mockSetupPasskeyEnrollment = jest.fn();
 
 jest.mock('../../js/b-utils.js', () => ({}));
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
@@ -37,10 +39,6 @@ jest.mock('../../js/b-share-phone-guard.js', () => ({
 jest.mock('../../js/b-desktop-upgrade.js', () => ({
   setupDesktopUpgrade: mockSetupDesktopUpgrade,
 }));
-// MDP-3 : main.js importe désormais setupModalDesktopEnhancers directement
-// (en plus de l'appel existant à l'intérieur de setupDesktopUpgrade) pour
-// brancher les listeners resize avant le premier passage desktop. Mocké ici
-// pour ne pas tirer la vraie chaîne b-modal-core.js/b-cart.js/b-catalog.js.
 jest.mock('../../js/b-modal-desktop-enhancers.js', () => ({
   setupModalDesktopEnhancers: mockSetupModalDesktopEnhancers,
 }));
@@ -60,19 +58,19 @@ jest.mock('../../js/b-home-premium-v1.js', () => ({
 jest.mock('../../js/b-modal-product-detail-bootstrap.js', () => ({
   setupProductDetailModal: mockSetupProductDetailModal,
 }));
-// Vague 2 D6 — écoute le même cycle de vie que setupProductDetailModal(),
-// mocké pour la même raison : ne pas tirer le vrai b-bus.js (mockBus vide).
 jest.mock('../../js/local-stock-badge-mount.js', () => ({
   setupLocalStockBadgeMount: mockSetupLocalStockBadgeMount,
 }));
-// Discovery a ses propres tests d'intégration DOM/API. Le smoke test de main
-// vérifie uniquement que son bootstrap est appelé, sans charger modal/catalogue.
+jest.mock('../../js/discovery-inquiry.js', () => ({
+  setupDiscoveryInquiry: mockSetupDiscoveryInquiry,
+}));
 jest.mock('../../js/discovery-rail.js', () => ({
   setupDiscoveryRail: mockSetupDiscoveryRail,
 }));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 jest.mock('../../js/b-notifications.js', () => ({ setupClientNotifications: mockSetupClientNotifications }));
 jest.mock('../../js/b-komerce-nav-identity.js', () => ({ setupKomerceNavIdentity: mockSetupKomerceNavIdentity }));
+jest.mock('../../js/b-passkey-enrollment.js', () => ({ setupPasskeyEnrollment: mockSetupPasskeyEnrollment }));
 
 test('main initialise le runtime et applique les enrichissements desktop au premier resize', () => {
   jest.useFakeTimers();
@@ -89,10 +87,12 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
+  expect(mockSetupDiscoveryInquiry).toHaveBeenCalledTimes(1);
   expect(mockSetupDiscoveryRail).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);
   expect(mockSetupCartProductOpenStyle).toHaveBeenCalledTimes(1);
   expect(mockSetupKomerceNavIdentity).toHaveBeenCalledTimes(1);
+  expect(mockSetupPasskeyEnrollment).toHaveBeenCalledTimes(1);
   expect(mockGreetIfKnown).toHaveBeenCalledTimes(1);
   expect(mockSetupClientNotifications).toHaveBeenCalledTimes(1);
 
@@ -108,6 +108,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
+  expect(mockSetupDiscoveryInquiry).toHaveBeenCalledTimes(1);
   expect(mockSetupDiscoveryRail).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
 });
