@@ -1,0 +1,35 @@
+name: Discovery Media Verify
+
+on:
+  push:
+    branches: [feat/discovery-local-v2]
+    paths: ['.github/workflows/discovery-media-verify.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Focused media tests
+        run: npx jest tests/unit/discovery-rail-composer.test.js tests/unit/providers-services-routes.test.js tests/unit/seed-discovery-staging.test.js --runInBand --forceExit
+      - name: Feature and governance checks
+        run: |
+          node scripts/feature-guard.js --strict
+          npm run business-graph:check
+          npm run feature:360:check
+          npm run security:360:check
+      - name: Migration checks
+        run: |
+          node scripts/check-migration-immutability.js --base 7cf1dea862987ab590a0152476d264d88a862cf8 --head HEAD
+          node scripts/check-schema-freshness.js
