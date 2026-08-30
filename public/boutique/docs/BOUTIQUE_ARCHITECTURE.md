@@ -141,17 +141,17 @@ Toute nouvelle adaptation doit répondre aux trois conditions : contexte identif
 
 ## 5. Variables CSS runtime owned par JS
 
-Ces variables sont posées par le runtime et ne doivent pas recevoir une valeur métier concurrente depuis CSS :
+Ces variables sont posées par le runtime et ne doivent pas recevoir une valeur métier concurrente depuis CSS. La source exécutable unique de leurs producteurs est `scripts/runtime-css-var-ownership.js` ; le LIVE, le guard dédié et l’invariant I-7 de l’audit consomment ce même registre.
 
-| Variable | Producteur(s) actuel(s) |
-|---|---|
-| `--pager-top` | `b-pager.js`, `hero-bootstrap.js` |
-| `--pager-h` | `b-pager.js`, `b-subcat.js`, `hero-bootstrap.js` |
-| `--pager-w` | `b-pager.js` |
-| `--bnav-h` | `b-pager.js` |
-| `--modal-scroll-y` | `b-modal-core.js` |
+| Variable | Producteur principal | Adaptations runtime autorisées |
+|---|---|---|
+| `--pager-top` | `b-pager.js` | `hero-bootstrap.js` pendant collapse/expand du hero mobile |
+| `--pager-h` | `b-pager.js` | `b-subcat.js` pour le pager plat ; `hero-bootstrap.js` pendant collapse/expand |
+| `--pager-w` | `b-pager.js` | aucune |
+| `--bnav-h` | `b-pager.js` | aucune |
+| `--modal-scroll-y` | `b-modal-core.js` | aucune |
 
-Les multi-producteurs de pager correspondent à la mesure/bootstrap du même contrat. Ajouter un nouveau producteur exige une justification d’ownership, pas seulement un `setProperty()` supplémentaire.
+Le guard `node scripts/check-runtime-css-var-ownership.js` exige la présence du producteur principal, bloque tout nouveau fichier producteur et limite chaque producteur autorisé à son nombre actuel de chemins `setProperty()` (1). Retirer une adaptation contextuelle reste autorisé ; ajouter silencieusement un second chemin d’écriture ne l’est pas.
 
 ---
 

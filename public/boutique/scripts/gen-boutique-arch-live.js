@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { BUNDLES } = require('./css-bundles.js');
 const { CRITICAL_SELECTOR_OWNERSHIP } = require('./critical-selector-ownership.js');
+const { RUNTIME_CSS_VAR_OWNERSHIP } = require('./runtime-css-var-ownership.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const CSS_DIR = path.join(ROOT, 'css');
@@ -24,7 +25,7 @@ const IMPORTANT_BASELINE = path.join(__dirname, '.important-baseline.json');
 
 const TRACKED_SELECTORS = Object.freeze(Object.keys(CRITICAL_SELECTOR_OWNERSHIP));
 
-const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];
+const JS_OWNED_VARS = Object.freeze(Object.keys(RUNTIME_CSS_VAR_OWNERSHIP));
 
 function listCss() {
   return fs.readdirSync(CSS_DIR)
