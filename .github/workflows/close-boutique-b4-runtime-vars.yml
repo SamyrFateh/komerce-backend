@@ -1,0 +1,140 @@
+name: Close Boutique B4 Runtime Variable Ownership
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b4-runtime-vars
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  b4-runtime-vars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/boutique-debt-zero-b4-runtime-vars
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Consolidate runtime CSS variable ownership
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # LIVE: runtime variables are exactly the machine-readable contract keys.
+          p = Path('public/boutique/scripts/gen-boutique-arch-live.js')
+          s = p.read_text()
+          selector_require = "const { CRITICAL_SELECTOR_OWNERSHIP } = require('./critical-selector-ownership.js');\n"
+          runtime_require = "const { RUNTIME_CSS_VAR_OWNERSHIP } = require('./runtime-css-var-ownership.js');\n"
+          if runtime_require not in s:
+              assert selector_require in s
+              s = s.replace(selector_require, selector_require + runtime_require, 1)
+          old_vars = "const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];"
+          new_vars = "const JS_OWNED_VARS = Object.freeze(Object.keys(RUNTIME_CSS_VAR_OWNERSHIP));"
+          assert old_vars in s or new_vars in s
+          s = s.replace(old_vars, new_vars, 1)
+          p.write_text(s)
+
+          # Architecture audit: keep CSS-vs-JS guard I-6 and add producer ownership I-7.
+          p = Path('public/boutique/scripts/audit-boutique-arch.js')
+          s = p.read_text()
+          old_import = "const { TRACKED_SELECTORS, selectorMap } = require('./gen-boutique-arch-live.js');\n"
+          new_import = "const { TRACKED_SELECTORS, selectorMap, JS_OWNED_VARS, jsVarOwners } = require('./gen-boutique-arch-live.js');\n"
+          assert old_import in s or new_import in s
+          s = s.replace(old_import, new_import, 1)
+          selector_eval = "const { evaluateSelectorOwnership } = require('./critical-selector-ownership.js');\n"
+          runtime_eval = "const { evaluateRuntimeCssVarOwnership } = require('./runtime-css-var-ownership.js');\n"
+          if runtime_eval not in s:
+              assert selector_eval in s
+              s = s.replace(selector_eval, selector_eval + runtime_eval, 1)
+          local_vars = "// I-6 : Variables CSS posées par JS uniquement\nconst JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];\n\n"
+          s = s.replace(local_vars, "// I-6/I-7 : variables runtime et producteurs viennent du registre canonique.\n\n", 1)
+
+          if 'function checkI7_runtimeVarOwnership() {' not in s:
+              marker = "// ════════════════════════════════════════════════════════════════\n// CHECK BUNDLE : deploy-css.js et audit utilisent la même source (css-bundles.js)\n"
+              fn = '''// ════════════════════════════════════════════════════════════════\n// CHECK I-7 : Producteurs JS des variables runtime conformes au contrat B4\n// ════════════════════════════════════════════════════════════════\nfunction checkI7_runtimeVarOwnership() {\n  const result = evaluateRuntimeCssVarOwnership(jsVarOwners(), JS_OWNED_VARS);\n  for (const error of result.errors) {\n    violate('I-7', error.message,\n      'Modifier le producteur principal/contextuel existant ou mettre à jour explicitement ' +\n      'scripts/runtime-css-var-ownership.js si la nouvelle responsabilité est volontaire.');\n  }\n}\n\n'''
+              assert marker in s
+              s = s.replace(marker, fn + marker, 1)
+          call_marker = "checkI6_jsOwnedVars();\ncheckBundleConfig();"
+          call_new = "checkI6_jsOwnedVars();\ncheckI7_runtimeVarOwnership();\ncheckBundleConfig();"
+          assert call_marker in s or call_new in s
+          s = s.replace(call_marker, call_new, 1)
+          label_marker = "  'I-6':    'I-6  Variables JS-owned non déclarées par CSS',\n"
+          label_new = label_marker + "  'I-7':    'I-7  Producteurs JS runtime conformes au contrat B4',\n"
+          if "'I-7':" not in s:
+              assert label_marker in s
+              s = s.replace(label_marker, label_new, 1)
+          p.write_text(s)
+
+          # Normative architecture: one executable registry, principal producer + contextual adapters.
+          p = Path('public/boutique/docs/BOUTIQUE_ARCHITECTURE.md')
+          s = p.read_text()
+          old = '''Ces variables sont posées par le runtime et ne doivent pas recevoir une valeur métier concurrente depuis CSS :\n\n| Variable | Producteur(s) actuel(s) |\n|---|---|\n| `--pager-top` | `b-pager.js`, `hero-bootstrap.js` |\n| `--pager-h` | `b-pager.js`, `b-subcat.js`, `hero-bootstrap.js` |\n| `--pager-w` | `b-pager.js` |\n| `--bnav-h` | `b-pager.js` |\n| `--modal-scroll-y` | `b-modal-core.js` |\n\nLes multi-producteurs de pager correspondent à la mesure/bootstrap du même contrat. Ajouter un nouveau producteur exige une justification d’ownership, pas seulement un `setProperty()` supplémentaire.\n'''
+          new = '''Ces variables sont posées par le runtime et ne doivent pas recevoir une valeur métier concurrente depuis CSS. La source exécutable unique de leurs producteurs est `scripts/runtime-css-var-ownership.js` ; le LIVE, le guard dédié et l’invariant I-7 de l’audit consomment ce même registre.\n\n| Variable | Producteur principal | Adaptations runtime autorisées |\n|---|---|---|\n| `--pager-top` | `b-pager.js` | `hero-bootstrap.js` pendant collapse/expand du hero mobile |\n| `--pager-h` | `b-pager.js` | `b-subcat.js` pour le pager plat ; `hero-bootstrap.js` pendant collapse/expand |\n| `--pager-w` | `b-pager.js` | aucune |\n| `--bnav-h` | `b-pager.js` | aucune |\n| `--modal-scroll-y` | `b-modal-core.js` | aucune |\n\nLe guard `node scripts/check-runtime-css-var-ownership.js` exige la présence du producteur principal, bloque tout nouveau fichier producteur et limite chaque producteur autorisé à son nombre actuel de chemins `setProperty()` (1). Retirer une adaptation contextuelle reste autorisé ; ajouter silencieusement un second chemin d’écriture ne l’est pas.\n'''
+          assert old in s or new in s
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Debt Zero ledger: B4-2 is the final identified B4 lot.
+          p = Path('public/boutique/docs/BOUTIQUE_DEBT_ZERO_STATUS.md')
+          s = p.read_text()
+          old = '- [ ] B4-2 : verrouiller de la même façon les producteurs des variables CSS runtime posées par JS.'
+          new = '- [x] B4-2 variables runtime : registre machine-readable unique pour **5 variables CSS écrites par JS**, producteur principal obligatoire, nouveaux producteurs interdits, **1 chemin `setProperty()` max par producteur autorisé**, réduction d’adaptation permise ; LIVE + guard dédié + audit I-7 partagent la même source ;\n- [x] B4 clos : ownership applicatif, sélecteurs critiques et variables CSS runtime sont tous protégés par des invariants exécutables.'
+          assert old in s or new in s
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Install Boutique unit dependencies
+        run: npm --prefix public/boutique ci
+
+      - name: Prove runtime variable ownership and negative detection
+        shell: bash
+        run: |
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/audit-boutique-arch.js
+          cd public/boutique
+          npx jest \
+            tests/unit/runtime-css-var-ownership.test.js \
+            tests/unit/critical-selector-ownership.test.js \
+            tests/unit/gen-boutique-arch-live-debt-metrics.test.js \
+            --runInBand
+
+      - name: Regenerate LIVE from canonical contracts
+        run: node public/boutique/scripts/gen-boutique-arch-live.js
+
+      - name: Re-prove after LIVE regeneration
+        run: |
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/audit-boutique-arch.js
+          npm run gate:boutique-ownership:full
+
+      - name: Commit B4-2 closure
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/boutique/scripts/runtime-css-var-ownership.js \
+            public/boutique/scripts/check-runtime-css-var-ownership.js \
+            public/boutique/scripts/gen-boutique-arch-live.js \
+            public/boutique/scripts/audit-boutique-arch.js \
+            public/boutique/tests/unit/runtime-css-var-ownership.test.js \
+            public/boutique/docs/BOUTIQUE_ARCHITECTURE.md \
+            public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md \
+            public/boutique/docs/BOUTIQUE_DEBT_ZERO_STATUS.md
+          if git diff --cached --quiet; then
+            echo "B4-2 already committed"
+            exit 0
+          fi
+          git commit -m "refactor(boutique): enforce runtime CSS variable ownership"
+          git push origin HEAD:refactor/boutique-debt-zero-b4-runtime-vars
