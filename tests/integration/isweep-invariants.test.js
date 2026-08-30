@@ -156,7 +156,19 @@ describe('I-SWEEP invariants regression net', () => {
   // Spec     : docs/specs/SPEC_KEYSTONE_DOUANE.md
 
   test('I-DOUANE-1: tous les sites INSERT order_items gèlent la classification douanière', () => {
-    const create   = read('routes/orders/create.js');
+    // Domaine 4/5 (28-08-2026) : l'orchestration checkout (dont la boucle
+    // INSERT INTO order_items + resolveFrozenClassification) a été extraite
+    // de routes/orders/create.js vers services/order-checkout-service.js —
+    // même site d'INSERT, seul le fichier a bougé. Nettoyage architectural
+    // ultérieur (refactoring checkout réel, warning I-BACK-2) : cette même
+    // boucle INSERT order_items + resolveFrozenClassification a de nouveau
+    // bougé, cette fois vers services/order-checkout-persistence.js
+    // (insertOrderItemsWithStock) — order-checkout-service.js l'appelle
+    // toujours, dans la même transaction, au même point de la séquence.
+    // On concatène les deux fichiers pour que ce test reste un invariant
+    // sur le SITE d'INSERT (peu importe le fichier qui le porte), pas un
+    // test de localisation figée.
+    const create   = read('services/order-checkout-service.js') + read('services/order-checkout-persistence.js');
     const adminSys = read('routes/admin/system.js');
     const clf      = read('services/customs-classification.js');
 
