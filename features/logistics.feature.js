@@ -84,7 +84,7 @@ module.exports = {
     ],
     utils: [
       'utils/parcelSync.js',
-    
+
       'utils/parcels.js',
       'utils/pickup-receipt-html.js',],
     services: [
@@ -97,11 +97,16 @@ module.exports = {
       'services/scan-engine.js',
       'services/auto-parcel.js',
       'services/pickup-secret-service.js',
+      'services/pickup-secret-access-service.js',
+      'services/pickup-collection-service.js',
+      'services/pickup-collection-recorder.js',
+      'services/pickup-exceptional-collection-service.js',
+      'services/pickup-code-helpers.js',
       'services/parcel-auto-create-service.js',
       'services/parcel-guards.js',
       'services/parcelOptimizationService.js',
       'services/parcel-service.js',
-    
+
       'services/hub-operations.js',
       'services/routing.js',
       'services/transport-rails.js',],
@@ -122,7 +127,7 @@ module.exports = {
       'routes/parcel-api-v2.js',
       'routes/relais.js',
       'routes/logistics.js',
-    
+
       'routes/auto-distribute-api.js',
       'routes/hub.js',],
     boutique: [
