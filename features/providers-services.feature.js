@@ -48,6 +48,7 @@ module.exports = {
       'isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant',
       'POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur',
       'consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire',
+      'seed Discovery staging Anjouan — dataset déterministe et idempotent, strictement opt-in et impossible en production',
     ],
     out: [
       'authentification provider (pas de users / user_role pour le provider)',
@@ -73,9 +74,13 @@ module.exports = {
       'js/discovery-inquiry.js',
       'js/providers-services-api.js',
     ],
+    scripts: [
+      'scripts/seed-discovery-staging.js',
+    ],
     tests: [
       'tests/unit/providers-service.test.js',
       'tests/unit/providers-services-routes.test.js',
+      'tests/unit/seed-discovery-staging.test.js',
     ],
   },
 
@@ -96,7 +101,8 @@ module.exports = {
     note: 'GET /services/:id et GET /physical-offers/:id restent publics et minimaux. ' +
       'POST /inquiries est protégé par authenticateOrCreateGuest et le csrfOriginGuard global. ' +
       'Le requester_phone est exclusivement dérivé de req.user.phone ; un téléphone fourni ' +
-      'dans le body n’est jamais consommé ni reflété dans la réponse.',
+      'dans le body n’est jamais consommé ni reflété dans la réponse. Le seed Discovery est ' +
+      'un tooling staging, sans route HTTP, et exige KOMERCE_ENV=staging + opt-in explicite.',
   },
 
   contract: {
@@ -110,12 +116,13 @@ module.exports = {
       'auth-identity — requireIdentity() côté Boutique avant mutation',
       'platform-ops — bus et showToast comme primitives UI transverses',
       'market — référentiel markets, résolution code -> id côté serveur',
-      'infrastructure — dépendance technique db.js',
+      'infrastructure — dépendance technique db.js et résolution KOMERCE_ENV',
     ],
   },
 
-  authority: 'backend-core — providers-services possède le cycle demande/confirmation et ' +
-    'l’écriture inquiries ; catalog/recommendations ne font que produire la découverte et l’intention UI.',
+  authority: 'backend-core — providers-services possède le cycle demande/confirmation, ' +
+    'l’écriture inquiries et ses données de démonstration staging ; catalog/recommendations ' +
+    'ne font que produire la découverte et l’intention UI.',
 
   invariants: [
     { statement: 'un service ne peut être créé que pour un provider déjà actif',
@@ -138,12 +145,15 @@ module.exports = {
       test: 'tests/unit/providers-services-routes.test.js' },
     { statement: 'Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce',
       test: 'public/boutique/tests/unit/discovery-inquiry.test.js' },
+    { statement: 'le seed Discovery ne peut écrire qu’en staging avec opt-in explicite et conserve des UUID/candidats déterministes',
+      test: 'tests/unit/seed-discovery-staging.test.js' },
   ],
 
   // 2026-08-28 — création shadow providers/services/inquiries.
   // 2026-08-28 — ajout physical_offers comme table sœur de services.
   // 2026-08-28 — exposabilité rendue market-scoped et routes GET montées avec résolution code -> UUID.
   // 2026-08-30 — V2 native Boutique : activation du parcours Commander/Demander.
+  // 2026-08-31 — dataset Discovery staging Anjouan : 5 providers, 4 physical_offers, 6 services.
   // L’intention Discovery reste émise par catalog ; le consumer providers-services
   // exige l’identité Komerce, POSTe une Inquiry authentifiée et confirme l’envoi.
 };
