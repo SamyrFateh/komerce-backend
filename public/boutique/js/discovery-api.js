@@ -4,8 +4,7 @@
  * @domain        catalog
  * @layer         adapter
  * @owner         public/boutique/js/discovery-api.js
- * @purpose       Frontière frontend unique vers /api/local-stock et
- *                /api/providers-services — Vague 2 D6.
+ * @purpose       Frontière frontend unique vers les contrats Discovery locale.
  * @impact-areas  boutique, pdp, discovery-rail
  * @version       2026-08
  */
@@ -13,34 +12,43 @@
 
 /**
  * @module discovery-api
- * @brief Appels réseau vers les deux domaines Discovery locale montés en D6.
+ * @brief Appels réseau vers les domaines Discovery locale et leur projection unifiée.
  *
  * Échec silencieux systématique — même discipline que le reste de la
- * boutique (voir b-group-banner.js#refreshBanner) : une erreur réseau, un
- * marché inconnu, ou un objet non exposable produisent tous `null`, jamais
- * une exception qui remonterait au composant appelant. Le composant qui
- * consomme ce module doit donc toujours savoir gérer `null` en ne rendant
- * rien — c'est précisément le contrat "si aucune donnée exposable, rien ne
- * s'affiche" (Vague 2 D6, capability != exposure).
+ * boutique : une erreur réseau, un marché inconnu, ou un objet non exposable
+ * produisent `null`, jamais une exception qui remonterait au composant appelant.
+ * Le consommateur sait donc toujours appliquer le contrat :
+ * "si aucune donnée exposable, rien ne s'affiche" (capability != exposure).
  *
  * market est toujours un CODE (KM/YT/CM/CG), jamais un UUID — lu depuis
- * window.KomerceMarket.get().code (market-context.js), la seule source de
- * marché déjà légitimée côté client (KOMERCE_MARKET_LAYER_FREEZE.md §3 :
- * "navigation... NON autorisant"). Ce module ne résout jamais lui-même de
- * market_id — la résolution réelle reste entièrement côté serveur
- * (routes/local-stock.js, routes/providers-services.js#resolveMarketId).
+ * window.KomerceMarket.get().code. La résolution d'autorisation reste serveur.
  */
 
-/**
- * @returns {string} le code marché courant (toujours KM aujourd'hui, voir
- *   market-context.js — M2 branchera une vraie résolution plus tard)
- */
 function currentMarketCode() {
   try {
     return window.KomerceMarket?.get()?.code || 'KM';
   } catch (e) {
     return 'KM';
   }
+}
+
+/**
+ * Projection unifiée du rail local. Tant que la route recommendations ne
+ * fournit pas la surface `local`, la réponse est traitée comme vide et le
+ * composant reste absent — le frontend final peut donc être construit avant
+ * l'ouverture commerciale sans inventer de donnée.
+ *
+ * @returns {Promise<{cards: Array<object>}|null>}
+ */
+export function fetchDiscoveryRail() {
+  const market = currentMarketCode();
+  return fetch(`/api/boutique/suggestions?surface=local&market=${encodeURIComponent(market)}`)
+    .then(async response => {
+      if (!response.ok) return null;
+      const payload = await response.json();
+      return Array.isArray(payload?.cards) ? payload : null;
+    })
+    .catch(() => null);
 }
 
 /**
@@ -57,9 +65,7 @@ export function fetchLocalStockAvailability(productId) {
 }
 
 /**
- * Champs publics d'un service tiers exposable, ou null (non exposable,
- * introuvable, ou erreur réseau — le composant appelant ne distingue jamais
- * ces cas, même discipline "jamais le pourquoi" que la route elle-même).
+ * Champs publics d'un service tiers exposable, ou null.
  * @param {string} serviceId
  * @returns {Promise<{id: string, title: string, description: string|null, zone: string|null}|null>}
  */
