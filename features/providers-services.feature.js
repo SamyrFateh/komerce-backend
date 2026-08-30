@@ -11,76 +11,57 @@
 'use strict';
 
 module.exports = {
-
-  // ── Identite ─────────────────────────────────────────────────────────────
   name:     'providers-services',
-  nature:   'feature',   // feature | capability | governance-unit
+  nature:   'feature',
   type:     'feature',
   domain:   'providers-services',
-  status:   'staging',   // draft | staging | production | deprecated
+  status:   'staging',
   owner:    'backend-core',
 
   classification: {
-    axis:     'business',   // business | support
-    kind:     'business-feature',
+    axis: 'business',
+    kind: 'business-feature',
     rationale: [
-      'Autorité de mutation exclusive sur providers, services, inquiries — ' +
-      'le second principal payable identifié par ARBITRAGE_RECHALLENGE_SONNET.md. ' +
-      'Cycle de vie propre (demande -> confirmation, hors calendrier structuré), ' +
-      'distinct de catalog (products, canonical Komerce) et de shared-cart ' +
-      '(aucun couplage — la prescription artisan V0/V1 reste hors périmètre ' +
-      'de ce lot, voir RECHALLENGE_DISCOVERY_LOCALE_COMPLET).',
-      'Frontière métier autonome d’exposition et de demande : un service ou une offre ' +
-      'physique n’est exposable que sous l’autorité d’un provider actif, et une inquiry ' +
-      'reste un cycle sent -> answered -> accepted|declined — jamais une réservation, ' +
-      'un paiement ou un calendrier. Ces invariants sont testés dans providers-service.test.js.',
+      'Autorité de mutation exclusive sur providers, services, physical_offers et inquiries. ' +
+      'Le cycle demande -> réponse reste distinct du catalogue, des commandes Komerce, du ' +
+      'paiement et de la liste partagée.',
+      'Frontière métier autonome d’exposition et de demande : un service ou une offre physique ' +
+      'n’est exposable que sous l’autorité d’un provider actif ; une inquiry reste sent -> ' +
+      'answered -> accepted|declined, jamais une réservation ni une commande orders.',
     ],
   },
 
   since:    '2026-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Porter l\'identité d\'un provider tiers, ses propositions de ' +
-    'service, et le cycle demande -> confirmation avec un client. Shadow ' +
-    'uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : ' +
-    'aucune exposition frontend, aucun paiement, aucune commission, aucun ' +
-    'calendrier structuré tant que l\'exposition n\'est pas explicitement activée.',
+  service: 'Porter l’identité d’un provider tiers, ses services et offres physiques, leur ' +
+    'exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native ' +
+    'Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, ' +
+    'calendrier structuré ou order Komerce n’est créé par Commander/Demander.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'table providers (identité, contact, market, statut pending|active|suspended)',
-      'table services (prestation d\'un provider, exposition DISABLED par défaut)',
-      'table physical_offers (produit physique réellement proposé par un ' +
-        'provider — ex. samboussas — table SŒUR de services, jamais la même ' +
-        'table, même patron d\'exposition — Vague 2 D1)',
-      'table inquiries (cycle sent -> answered -> accepted|declined, jamais ' +
-        'une réservation ; porte sur EXACTEMENT une cible, service_id XOR ' +
-        'physical_offer_id, contrainte DB inquiries_exactly_one_target — ' +
-        'jamais offer_type/offer_id, association polymorphe rejetée)',
-      'isServiceExposable() / isPhysicalOfferExposable() — le statut ' +
-        'provider gouverne toujours l\'exposition, quelle que soit la cible',
+      'table services (prestation d’un provider, exposition DISABLED par défaut)',
+      'table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table sœur de services)',
+      'table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)',
+      'isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant',
+      'POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur',
+      'consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire',
     ],
     out: [
-      'authentification provider (pas de users / user_role — identité par ' +
-        'téléphone, contact réel hors app à ce stade)',
-      'scheduler / créneaux structurés (requested_window/proposed_window sont ' +
-        'du texte libre, jamais un slot — RECHALLENGE_MODELE_MINIMAL §5/§7)',
-      'paiement, commission, settlement, provider wallet (le vrai chantier — ' +
-        'ARBITRAGE_RECHALLENGE_SONNET.md : le jour où de l\'argent doit sortir ' +
-        'vers quelqu\'un qui n\'est pas Komerce)',
-      'market_offer / multi-offres / ranking (aucune deuxième origine ' +
-        'commerciale à ce stade)',
-      'god-table Listing/Offer unifiée (physical_offers reste une table ' +
-        'distincte de services, jamais un champ discriminant kind — ' +
-        'RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D)',
-      'prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)',
-      'toute exposition Boutique/Discovery (Vague 2, lots D3+)',
+      'authentification provider (pas de users / user_role pour le provider)',
+      'scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre',
+      'paiement, commission, settlement, provider wallet',
+      'orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders',
+      'market_offer / multi-offres / ranking',
+      'god-table Listing/Offer unifiée',
+      'prescription artisan et shared-cart',
+      'composition, ranking et ordre éditorial du rail Près de vous — owner recommendations',
+      'surface produit/catalogue et navigation — owner catalog',
     ],
   },
 
-  // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     services: [
       'services/providers-service.js',
@@ -88,13 +69,16 @@ module.exports = {
     routes: [
       'routes/providers-services.js',
     ],
+    boutique: [
+      'js/discovery-inquiry.js',
+      'js/providers-services-api.js',
+    ],
     tests: [
       'tests/unit/providers-service.test.js',
       'tests/unit/providers-services-routes.test.js',
     ],
   },
 
-  // ── Tables DB ────────────────────────────────────────────────────────────
   db: {
     tables: [
       'providers: RW',
@@ -106,98 +90,58 @@ module.exports = {
   },
 
   security: {
-    status: 'CONFIRMED_PUBLIC_BY_DESIGN',
-    authedRoutesDetected: 0,
-    totalRoutes: 2,
-    note: 'Vague 2 D6 : routes/providers-services.js désormais montée ' +
-      'dans bootstrap/api-routes.js. GET /services/:id et GET /physical-' +
-      'offers/:id classées PUBLIC et volontairement sans garde — même ' +
-      'précédent que recommendations (GET /api/boutique/suggestions, ' +
-      'features/recommendations.feature.js). Champs publics minimaux ' +
-      'uniquement (id/title/description/zone/market_id) — JAMAIS le ' +
-      'téléphone provider, jamais provider_id : le contact réel se fait ' +
-      'via une Inquiry (écriture), pas par lecture directe ici. Objet non ' +
-      'exposable -> 404, jamais le pourquoi (statut, exposure, marché).',
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 1,
+    totalRoutes: 3,
+    note: 'GET /services/:id et GET /physical-offers/:id restent publics et minimaux. ' +
+      'POST /inquiries est protégé par authenticateOrCreateGuest et le csrfOriginGuard global. ' +
+      'Le requester_phone est exclusivement dérivé de req.user.phone ; un téléphone fourni ' +
+      'dans le body n’est jamais consommé ni reflété dans la réponse.',
   },
 
   contract: {
     exposes: [
-      'GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais ' +
-        'monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market ' +
-        'est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6.',
-      'GET /api/providers-services/physical-offers/:id?market=CODE — idem',
+      'GET /api/providers-services/services/:id?market=CODE — lecture publique minimale d’un service exposable',
+      'GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale d’une offre physique exposable',
+      'POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; revalidation exposabilité avant insertion',
     ],
     consumes: [
-      'market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)',
-      'infrastructure (dépendance technique transversale : db.js)',
+      'auth — session canonique côté serveur et requireIdentity() côté Boutique avant mutation',
+      'market — référentiel markets, résolution code -> id côté serveur',
+      'infrastructure — dépendance technique db.js',
     ],
   },
 
-  // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement du cycle demande/confirmation ' +
-    'doit être validé par le propriétaire de providers-service.js',
+  authority: 'backend-core — providers-services possède le cycle demande/confirmation et ' +
+    'l’écriture inquiries ; catalog/recommendations ne font que produire la découverte et l’intention UI.',
 
-  // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     { statement: 'un service ne peut être créé que pour un provider déjà actif',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'un service n\'est exposable que si lui-même actif, exposition ' +
-      'activée, provider actif, ET market_id correspond exactement au marché ' +
-      'demandé (Vague 2 D3) — le statut provider prime toujours, mais aucune ' +
-      'exposabilité n\'est vraie hors du marché de l\'objet, jamais une ' +
-      'confiance aveugle en l\'appelant',
+    { statement: 'service et physical_offer ne sont exposables que si objet actif, exposition ENABLED, provider actif et market_id correspondant',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'une offre physique (physical_offers) suit exactement les mêmes ' +
-      'garanties qu\'un service, market_id inclus (Vague 2 D3) : créée seulement ' +
-      'pour un provider actif, exposable seulement si elle-même active, ' +
-      'exposition activée, provider actif, ET marché correspondant',
+    { statement: 'une inquiry porte sur exactement une cible — service_id XOR physical_offer_id, jamais les deux ni aucune',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'une inquiry porte sur EXACTEMENT une cible — service_id XOR ' +
-      'physical_offer_id, jamais les deux, jamais aucune (contrainte DB ' +
-      'inquiries_exactly_one_target, doublée en validation applicative)',
+    { statement: 'une inquiry n’engage aucune ressource avant la décision finale et ne devient jamais une réservation',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'une inquiry ne représente jamais une ressource engagée avant ' +
-      'la décision finale (accepted|declined) — jamais un objet réservation',
+    { statement: 'le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'le cycle inquiry est strictement linéaire : sent -> answered ' +
-      '-> accepted|declined, jamais de saut d\'état',
-      test: 'tests/unit/providers-service.test.js' },
-    { statement: 'GET /services/:id et GET /physical-offers/:id ne renvoient ' +
-      'jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi ' +
-      'd\'une non-exposabilité (404 pur, jamais un détail de statut/marché)',
+    { statement: 'les GET ne renvoient jamais provider_id, téléphone ou raison interne de non-exposabilité',
       test: 'tests/unit/providers-services-routes.test.js' },
-    { statement: 'les deux routes ne font jamais confiance à un market_id brut ' +
-      'fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé ' +
-      'serveur (resolveMarketId, markets.is_active=true) avant tout appel à ' +
-      'isServiceExposable/isPhysicalOfferExposable',
+    { statement: 'market est toujours un code résolu côté serveur avant les checks d’exposabilité, jamais un market_id autorisant fourni par le client',
       test: 'tests/unit/providers-services-routes.test.js' },
+    { statement: 'POST /inquiries dérive requester_phone de la session authentifiée ; le body client ne peut jamais usurper ce téléphone et la réponse ne le reflète pas',
+      test: 'tests/unit/providers-services-routes.test.js' },
+    { statement: 'POST /inquiries revalide l’exposabilité de la cible dans le marché courant juste avant createInquiry()',
+      test: 'tests/unit/providers-services-routes.test.js' },
+    { statement: 'Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce',
+      test: 'public/boutique/tests/unit/discovery-inquiry.test.js' },
   ],
 
-  // ── Historique ───────────────────────────────────────────────────────────
-  // 2026-08-28 — création (PR B, Vague 1 Shadow). Second nouveau domaine
-  // après local-stock (PR A) — voir IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md
-  // §Providers-services pour l'arbitrage complet.
-  // 2026-08-28 — Vague 2 D1 : ajout physical_offers (table sœur de services)
-  // et adaptation de inquiries (double FK nullable + CHECK exactement-une-
-  // non-nulle) — voir RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D pour
-  // l'arbitrage owner (4 signaux sur 5 de FEATURE_DOCTRINE.md pointent vers
-  // un rattachement à cette feature, pas une nouvelle feature).
-  // 2026-08-28 — Vague 2 D3 : isServiceExposable/isPhysicalOfferExposable
-  // exigent et vérifient désormais market_id — asymétrie trouvée avec
-  // isStockExposable (local-stock, déjà market-scopé par construction) en
-  // revoyant le critère "market correct" de D3. Signature cassante mais
-  // sûre : aucun consommateur hors tests avant ce lot (confirmé par
-  // shadow-domains-boundary.test.js). Vérifié réellement contre Postgres :
-  // un samboussas actif+exposé dans un marché n'est jamais exposable
-  // depuis un autre marché.
-  // 2026-08-28 — Vague 2 D4 : routes/providers-services.js (GET /services/:id,
-  // GET /physical-offers/:id), read-only, jamais montée dans bootstrap/
-  // api-routes.js. Champs publics minimaux, jamais téléphone/provider_id.
-  // 2026-08-28 — Vague 2 D6 : bug réel corrigé — les deux routes faisaient
-  // confiance à un market_id brut du client. window.KomerceMarket
-  // (public/boutique/js/market-context.js) porte un CODE de navigation
-  // (freeze §3 : "NON autorisant"), jamais un UUID — resolveMarketId()
-  // traduit désormais ce code en UUID réel côté serveur. Voir
-  // features/local-stock.feature.js pour la trouvaille complète.
-
+  // 2026-08-28 — création shadow providers/services/inquiries.
+  // 2026-08-28 — ajout physical_offers comme table sœur de services.
+  // 2026-08-28 — exposabilité rendue market-scoped et routes GET montées avec résolution code -> UUID.
+  // 2026-08-30 — V2 native Boutique : activation du parcours Commander/Demander.
+  // L’intention Discovery reste émise par catalog ; le consumer providers-services
+  // exige l’identité Komerce, POSTe une Inquiry authentifiée et confirme l’envoi.
 };
