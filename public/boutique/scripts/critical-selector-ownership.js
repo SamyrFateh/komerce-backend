@@ -54,6 +54,13 @@ const CRITICAL_SELECTOR_OWNERSHIP = Object.freeze({
       'layout.css': Object.freeze([DESKTOP]),
     }),
   }),
+  '.k-sec-grid': Object.freeze({
+    principal: 'products.css',
+    owners: Object.freeze({
+      'products.css': Object.freeze([BASE, DESKTOP]),
+      'categories.css': Object.freeze([BASE, DESKTOP]),
+    }),
+  }),
   '.k-card': Object.freeze({
     principal: 'products.css',
     owners: Object.freeze({
