@@ -1,0 +1,307 @@
+name: PR enforcement
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-enforcement-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect PR scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.scope.outputs.backend }}
+      backend_files: ${{ steps.scope.outputs.backend_files }}
+      dashboard: ${{ steps.scope.outputs.dashboard }}
+      dashboard_files: ${{ steps.scope.outputs.dashboard_files }}
+      golden: ${{ steps.scope.outputs.golden }}
+      golden_files: ${{ steps.scope.outputs.golden_files }}
+      migrations: ${{ steps.scope.outputs.migrations }}
+      migration_files: ${{ steps.scope.outputs.migration_files }}
+      schema_dump: ${{ steps.scope.outputs.schema_dump }}
+      boutique: ${{ steps.scope.outputs.boutique }}
+      boutique_files: ${{ steps.scope.outputs.boutique_files }}
+      boutique_test_files: ${{ steps.scope.outputs.boutique_test_files }}
+      boutique_css: ${{ steps.scope.outputs.boutique_css }}
+      boutique_js: ${{ steps.scope.outputs.boutique_js }}
+      boutique_html: ${{ steps.scope.outputs.boutique_html }}
+      boutique_unit: ${{ steps.scope.outputs.boutique_unit }}
+      boutique_package: ${{ steps.scope.outputs.boutique_package }}
+      governance: ${{ steps.scope.outputs.governance }}
+      governance_files: ${{ steps.scope.outputs.governance_files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      # CI FAST-4 : le classifier a besoin des deux arbres, pas de tout l'historique.
+      - name: Fetch PR base commit only
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      - id: scope
+        name: Classify changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+
+  backend:
+    name: Backend gates
+    needs: changes
+    # CI FAST-2 : le Golden partage ce runner avec Backend. Un changement du
+    # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Quality gate
+        if: needs.changes.outputs.backend == 'true'
+        run: node scripts/code-quality-gate.js --strict
+      - name: Feature guard
+        if: needs.changes.outputs.backend == 'true'
+        run: node scripts/feature-guard.js --strict
+      - name: Contract consumer check
+        if: needs.changes.outputs.backend == 'true'
+        run: node scripts/contract-check.js
+      - name: Security 360 freshness and ratchet
+        if: needs.changes.outputs.backend == 'true'
+        run: npm run security:360:check
+      - name: Related unit tests
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
+        run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
+
+      - name: Golden CDR — présence du snapshot réel
+        if: needs.changes.outputs.golden == 'true'
+        run: |
+          if [ ! -f tools/golden-cdr/golden/cdr.golden.json ]; then
+            echo "::error::Golden absent (tools/golden-cdr/golden/cdr.golden.json). Lance 'capture' et commite-le."
+            exit 1
+          fi
+      - name: Golden CDR — parité
+        if: needs.changes.outputs.golden == 'true'
+        run: node tools/golden-cdr/golden-cdr.js verify
+
+      - name: Agent remediation contract — backend
+        run: node scripts/check-agent-remediation-contract.js --scope=backend
+
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  migrations:
+    name: Migration and schema gates
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      # schema-freshness doit retrouver le dernier commit ayant réellement
+      # touché le dump. Un seul fetch rend le checkout non-shallow en ne
+      # récupérant que l'historique des branches head+base, sans blobs/tags.
+      - name: Fetch PR history for migration/schema gates
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch --no-tags --filter=blob:none --unshallow origin \
+            "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
+      - name: Migration immutability
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-migration-immutability.js --base "$BASE_SHA" --head "$HEAD_SHA"
+      - name: Schema freshness
+        run: node scripts/check-schema-freshness.js
+      - name: Schema anti-resurrection
+        if: needs.changes.outputs.schema_dump == 'true'
+        run: node scripts/check-schema-resurrection.js
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  dashboard:
+    name: Dashboard canonical gates
+    needs: changes
+    if: needs.changes.outputs.dashboard == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Dashboard 360 structural ratchet
+        run: npm run dashboards:360:check
+      - name: Agent remediation contract — dashboard
+        run: node scripts/check-agent-remediation-contract.js --scope=dashboard
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  boutique:
+    name: Boutique source gates
+    needs: changes
+    if: needs.changes.outputs.boutique == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      # Seul le sanitize diff a besoin du commit de base ; CSS/HTML/tests n'en ont pas besoin.
+      - name: Fetch PR base commit for sanitize diff
+        if: needs.changes.outputs.boutique_js == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique test dependencies
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true'
+        run: npm --prefix public/boutique ci
+
+      - name: JS quality
+        if: needs.changes.outputs.boutique_js == 'true'
+        run: node scripts/code-quality-gate.js --strict
+
+      - name: CSS source gates
+        if: needs.changes.outputs.boutique_css == 'true'
+        run: |
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+
+      - name: JS source gates
+        if: needs.changes.outputs.boutique_js == 'true'
+        run: |
+          node public/boutique/scripts/check-js-imports.js
+          node public/boutique/scripts/check-no-css-injection.js
+
+      - name: HTML balance
+        if: needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/check-html-balance.js
+
+      - name: Body-class contract
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/check-body-classes.js
+
+      - name: Boutique architecture
+        if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/audit-boutique-arch.js
+
+      - name: Sanitization on added front lines
+        if: needs.changes.outputs.boutique_js == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
+
+      - name: Related Boutique unit tests
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
+        env:
+          BOUTIQUE_TEST_FILES: ${{ needs.changes.outputs.boutique_test_files }}
+        run: node scripts/run-staged-related-tests.js --files "$BOUTIQUE_TEST_FILES"
+
+      - name: Full Boutique unit tests after dependency changes
+        if: needs.changes.outputs.boutique_package == 'true'
+        run: npm --prefix public/boutique run test:unit -- --forceExit
+
+      - name: Boutique global ownership
+        run: node scripts/boutique-ownership-full-check.js --strict
+
+      - name: Boutique critical visual ownership
+        run: |
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
+
+      - name: Agent remediation contract — boutique
+        run: node scripts/check-agent-remediation-contract.js --scope=boutique
+
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  governance:
+    name: Governance and feature-first gates
+    needs: changes
+    if: needs.changes.outputs.governance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
+      # Mode --check uniquement : ne jamais generer (--write) en CI. Le git diff
+      # final prouve l'absence de mutation, donc l'absence de faux-rouge d'artefact.
+      - name: Feature slice guard
+        run: node scripts/feature-guard.js --strict
+      - name: Business graph reconstructible and fresh
+        run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+      - name: Feature 360 canonical projection fresh
+        run: node scripts/feature-360-check.js
+      - name: Agent remediation index fresh
+        run: node scripts/gen-agent-remediation-index.js --check
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  verdict:
+    name: Required verdict
+    if: always()
+    needs: [changes, backend, migrations, dashboard, boutique, governance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate scoped results
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          MIGRATIONS_RESULT: ${{ needs.migrations.result }}
+          DASHBOARD_RESULT: ${{ needs.dashboard.result }}
+          BOUTIQUE_RESULT: ${{ needs.boutique.result }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
+        run: |
+          echo "changes=$CHANGES_RESULT"
+          echo "backend=$BACKEND_RESULT"
+          echo "migrations=$MIGRATIONS_RESULT"
+          echo "dashboard=$DASHBOARD_RESULT"
+          echo "boutique=$BOUTIQUE_RESULT"
+          echo "governance=$GOVERNANCE_RESULT"
+          test "$CHANGES_RESULT" = "success"
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "Scoped enforcement failed: $result"
+              exit 1
+            fi
+          done
