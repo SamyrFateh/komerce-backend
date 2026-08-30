@@ -89,6 +89,19 @@ function isBoutiquePackageFile(file) {
   return /^public\/boutique\/package(?:-lock)?\.json$/i.test(norm(file));
 }
 
+function isDashboardFile(file) {
+  const f = norm(file);
+  return /^public\/dashboards\/.+/i.test(f)
+    || /^docs\/DASHBOARDS_360\.(?:json|md)$/i.test(f)
+    || f === 'scripts/gen-dashboards-360.js'
+    || f === 'scripts/.dashboards-360-baseline.json'
+    || f === 'scripts/agent-remediation-contract.js'
+    || f === 'scripts/gen-agent-remediation-index.js'
+    || f === 'scripts/check-agent-remediation-contract.js'
+    || f === 'docs/AGENT_REMEDIATION_INDEX.json'
+    || f === 'docs/contract/AGENT_REMEDIATION_CONTRACT.md';
+}
+
 function isBoutiqueRelevant(file) {
   return isBoutiqueCssSource(file)
     || isBoutiqueJsSource(file)
@@ -152,6 +165,7 @@ function classify(files) {
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
   const boutiqueFiles = changedFiles.filter(isBoutiqueRelevant);
+  const dashboardFiles = changedFiles.filter(isDashboardFile);
   const boutiqueCss = changedFiles.some(isBoutiqueCssSource);
   const boutiqueJs = changedFiles.some(isBoutiqueJsSource);
   const boutiqueHtml = changedFiles.some(isBoutiqueHtml);
@@ -166,6 +180,7 @@ function classify(files) {
     goldenFiles,
     migrationFiles,
     boutiqueFiles,
+    dashboardFiles,
     boutiqueTestFiles,
     governanceFiles,
     backend: backendFiles.length > 0,
@@ -173,6 +188,7 @@ function classify(files) {
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
     boutique: boutiqueFiles.length > 0,
+    dashboard: dashboardFiles.length > 0,
     boutiqueCss,
     boutiqueJs,
     boutiqueHtml,
@@ -283,6 +299,8 @@ function appendGithubOutput(path, model) {
     `migrations=${model.migrations ? 'true' : 'false'}`,
     `migration_files=${model.migrationFiles.join(',')}`,
     `schema_dump=${model.schemaDump ? 'true' : 'false'}`,
+    `dashboard=${model.dashboard ? 'true' : 'false'}`,
+    `dashboard_files=${model.dashboardFiles.join(',')}`,
     `boutique=${model.boutique ? 'true' : 'false'}`,
     `boutique_files=${model.boutiqueFiles.join(',')}`,
     `boutique_test_files=${model.boutiqueTestFiles.join(',')}`,
@@ -329,6 +347,7 @@ module.exports = {
   isBoutiqueHtml,
   isBoutiqueUnitTest,
   isBoutiquePackageFile,
+  isDashboardFile,
   isBoutiqueRelevant,
   isBusinessManifestSource,
   isBusinessGraphRuntimeSource,

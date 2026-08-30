@@ -5,11 +5,12 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { remediationForGateFinding } = require('./agent-remediation-contract.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const BOUTIQUE = path.join(ROOT, 'public', 'boutique');
 const OUT = path.join(ROOT, 'docs', 'GATE_FINDINGS.json');
-const VERSION = 'GF-2.1';
+const VERSION = 'GF-3.0';
 const MIN = 18;
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
@@ -257,10 +258,11 @@ function main() {
 
   findings.sort((a, b) => `${a.gate}::${a.sourceFile || ''}::${a.message}`.localeCompare(`${b.gate}::${b.sourceFile || ''}::${b.message}`));
   const contract = validateSourceContract(sources);
+  const enrichedFindings = findings.map(finding => ({ ...finding, remediation: remediationForGateFinding(finding) }));
   const model = { version: VERSION, generatedAt: new Date().toISOString().slice(0, 10), contract: {
     minimumAttributableSources: MIN, configuredSources: SOURCES.length, attributableSources: contract.attributable,
     coverageBeforeViolations: true,
-  }, sources, findings };
+  }, sources, findings: enrichedFindings };
   fs.writeFileSync(OUT, JSON.stringify(model, null, 2) + '\n');
   console.log(`docs/GATE_FINDINGS.json : ${contract.attributable}/${SOURCES.length} source(s) attribuable(s), ${findings.length} finding(s)`);
   for (const s of sources) {

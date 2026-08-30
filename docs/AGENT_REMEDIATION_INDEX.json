@@ -1,0 +1,957 @@
+{
+  "version": "ARI-1.0",
+  "contractVersion": "ARC-1.0",
+  "generatedAt": "2026-08-30",
+  "policy": {
+    "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
+    "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
+    "generatedTruth": "regenerate this index from executable measurements; never hand-edit it"
+  },
+  "backend": {
+    "measuredRows": 11,
+    "openDebtCount": 0,
+    "reviewedExceptionCount": 15,
+    "healthyMeasurementCount": 2,
+    "measured": [
+      {
+        "rule": "I-BACK-2 (reviewed)",
+        "label": "Fichiers volumineux réaudités et cohésifs",
+        "count": 1,
+        "entries": [
+          "services/scan-engine.js"
+        ],
+        "lot": "Exception documentée — revue architecturale 2026-08-28",
+        "note": "Conservés grands par cohésion métier ; à revalider seulement si leur responsabilité évolue",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-2",
+            "lot": "Exception documentée — revue architecturale 2026-08-28",
+            "note": "Conservés grands par cohésion métier ; à revalider seulement si leur responsabilité évolue",
+            "entries": [
+              "services/scan-engine.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-4",
+        "label": "Propriété orders.payment_status — allowlist hors scripts légitimes",
+        "count": 1,
+        "entries": [
+          "services/simulator/state-advancer.js"
+        ],
+        "lot": "Exception documentée (voir commentaire in-source)",
+        "note": "Remedy : Passer par services/payment-service.js (markPaid/markRefunded/markFailed)",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-4",
+            "lot": "Exception documentée (voir commentaire in-source)",
+            "note": "Remedy : Passer par services/payment-service.js (markPaid/markRefunded/markFailed)",
+            "entries": [
+              "services/simulator/state-advancer.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-14",
+        "label": "Propriété parcels.status — allowlist hors scripts légitimes",
+        "count": 1,
+        "entries": [
+          "services/simulator/state-advancer.js"
+        ],
+        "lot": "Exception documentée (voir commentaire in-source)",
+        "note": "Remedy : Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-14",
+            "lot": "Exception documentée (voir commentaire in-source)",
+            "note": "Remedy : Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)",
+            "entries": [
+              "services/simulator/state-advancer.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-12",
+        "label": "Propriété wallet_transactions / store_credits — allowlist hors scripts légitimes",
+        "count": 1,
+        "entries": [
+          "services/simulator/state-advancer.js"
+        ],
+        "lot": "Exception documentée (voir commentaire in-source)",
+        "note": "Remedy : Passer par services/wallet-service.js",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-12",
+            "lot": "Exception documentée (voir commentaire in-source)",
+            "note": "Remedy : Passer par services/wallet-service.js",
+            "entries": [
+              "services/simulator/state-advancer.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-12",
+        "label": "Propriété wallet_transactions / store_credits — allowlist hors scripts légitimes",
+        "count": 1,
+        "entries": [
+          "services/simulator/state-advancer.js"
+        ],
+        "lot": "Exception documentée (voir commentaire in-source)",
+        "note": "Remedy : Passer par services/store-credit-service.js",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-12",
+            "lot": "Exception documentée (voir commentaire in-source)",
+            "note": "Remedy : Passer par services/store-credit-service.js",
+            "entries": [
+              "services/simulator/state-advancer.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-6 (reviewed)",
+        "label": "Routes au nom historique *-scanner, façade déjà mince",
+        "count": 1,
+        "entries": [
+          "routes/sourcing-scanner.js"
+        ],
+        "lot": "Exception documentée — dette nominale réauditée",
+        "note": "Le suffixe historique ne correspond plus à une responsabilité engine",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-6",
+            "lot": "Exception documentée — dette nominale réauditée",
+            "note": "Le suffixe historique ne correspond plus à une responsabilité engine",
+            "entries": [
+              "routes/sourcing-scanner.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-7",
+        "label": "console.log existants (baseline figée 2026-05-17)",
+        "count": 0,
+        "entries": [],
+        "lot": "Lot F1",
+        "note": "Baseline vide — tous les fichiers existants sont à 0 console.log ou baseline non générée",
+        "remediation": {
+          "code": "BACKEND-HEALTHY-MEASUREMENT",
+          "scope": "backend",
+          "owner": "gate ou ratchet source qui produit la mesure",
+          "cause": "Une mesure de gouvernance est présente dans le rapport mais sa dette effective est déjà à zéro.",
+          "action": "Ne rien corriger; conserver le cliquet à zéro et réagir uniquement si sa valeur future augmente.",
+          "forbidden": "Ne pas transformer une mesure saine en allowlist ni relever le cliquet.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-7",
+            "lot": "Lot F1",
+            "note": "Baseline vide — tous les fichiers existants sont à 0 console.log ou baseline non générée",
+            "entries": []
+          }
+        }
+      },
+      {
+        "rule": "I-BACK-13 (reviewed)",
+        "label": "DELETE/TRUNCATE intentionnel et r?audit?",
+        "count": 1,
+        "entries": [
+          "routes/admin/system.js"
+        ],
+        "lot": "Exception document?e ? revue s?curit? destructive 2026-08-29",
+        "note": "Reset admin intentionnel, prot?g? par authenticate + requireAdmin",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "I-BACK-13",
+            "lot": "Exception document?e ? revue s?curit? destructive 2026-08-29",
+            "note": "Reset admin intentionnel, prot?g? par authenticate + requireAdmin",
+            "entries": [
+              "routes/admin/system.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "N2 (fichiers exemptés)",
+        "label": "Fichiers avec exception de règle N2 (RULE_FILE_EXEMPT)",
+        "count": 2,
+        "entries": [
+          "N2-NO-CONSOLE → utils/logger.js",
+          "N2-NO-CONSOLE → middleware/error-handler.js"
+        ],
+        "lot": "Infrastructure bas niveau — légitimes",
+        "note": "console.log autorisé dans logger/error-handler (bootstrap pino)",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "N2 (fichiers exemptés)",
+            "lot": "Infrastructure bas niveau — légitimes",
+            "note": "console.log autorisé dans logger/error-handler (bootstrap pino)",
+            "entries": [
+              "N2-NO-CONSOLE → utils/logger.js",
+              "N2-NO-CONSOLE → middleware/error-handler.js"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "N3 (test-exemptions)",
+        "label": "Fichiers exemptés du gate touched-tests",
+        "count": 6,
+        "entries": [
+          "routes/health.js — endpoint /health — glue pur, aucune branche métier",
+          "routes/version.js — endpoint /version — retourne une constante, non testable unitairement",
+          "server.js — bootstrap Express — couvert par tests d'intégration globaux",
+          "utils/logger.js — wrapper pino — pas de branche, interface stable",
+          "utils/env.js — lecture process.env — pas de branche testable unitairement",
+          "features/infrastructure.feature.js — Feature transversale (middleware, utils, bootstrap) — couverte indirectement par les tests d'intégration de toutes les features qui la consomment."
+        ],
+        "lot": "Glue/bootstrap — légitimes mais à revalider à chaque modification",
+        "note": "Toute exemption doit être revue si le fichier évolue",
+        "remediation": {
+          "code": "BACKEND-REVIEWED-EXCEPTION",
+          "scope": "backend",
+          "owner": "exception exacte documentée dans son gate source",
+          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "N3 (test-exemptions)",
+            "lot": "Glue/bootstrap — légitimes mais à revalider à chaque modification",
+            "note": "Toute exemption doit être revue si le fichier évolue",
+            "entries": [
+              "routes/health.js — endpoint /health — glue pur, aucune branche métier",
+              "routes/version.js — endpoint /version — retourne une constante, non testable unitairement",
+              "server.js — bootstrap Express — couvert par tests d'intégration globaux",
+              "utils/logger.js — wrapper pino — pas de branche, interface stable",
+              "utils/env.js — lecture process.env — pas de branche testable unitairement",
+              "features/infrastructure.feature.js — Feature transversale (middleware, utils, bootstrap) — couverte indirectement par les tests d'intégration de toutes les features qui la consomment."
+            ]
+          }
+        }
+      },
+      {
+        "rule": "ARCH (ratchet)",
+        "label": "Clichets d'architecture (arch-debt-budget.json)",
+        "count": 2,
+        "entries": [
+          "liveTablesUndocumented = 0",
+          "headerUnderDeclaration = 0"
+        ],
+        "lot": "arch-reconcile.js abaisse automatiquement — jamais relevé",
+        "note": "✅ Tous les clichets sont à 0 — dette d'architecture fermée",
+        "remediation": {
+          "code": "BACKEND-HEALTHY-MEASUREMENT",
+          "scope": "backend",
+          "owner": "gate ou ratchet source qui produit la mesure",
+          "cause": "Une mesure de gouvernance est présente dans le rapport mais sa dette effective est déjà à zéro.",
+          "action": "Ne rien corriger; conserver le cliquet à zéro et réagir uniquement si sa valeur future augmente.",
+          "forbidden": "Ne pas transformer une mesure saine en allowlist ni relever le cliquet.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "info",
+          "autoRemediation": false,
+          "evidence": {
+            "rule": "ARCH (ratchet)",
+            "lot": "arch-reconcile.js abaisse automatiquement — jamais relevé",
+            "note": "✅ Tous les clichets sont à 0 — dette d'architecture fermée",
+            "entries": [
+              "liveTablesUndocumented = 0",
+              "headerUnderDeclaration = 0"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "dashboard": {
+    "summary": {
+      "modules": 41,
+      "routes": 30,
+      "apiMethodsExported": 100,
+      "apiMethodsCalled": 98,
+      "orphanRoutes": 0,
+      "deadApiMethods": 0,
+      "missingApiMethods": 0,
+      "doctrineViolations": 0,
+      "unprovenContracts": 59
+    },
+    "blockingDebt": 0,
+    "informationalDebt": 59,
+    "metrics": [
+      {
+        "metric": "orphanRoutes",
+        "value": 0,
+        "baseline": 0,
+        "remediation": {
+          "code": "DASH-ORPHAN-ROUTE",
+          "scope": "dashboard",
+          "owner": "public/dashboards/admin/js/app.js + vue déclarée",
+          "cause": "Une route SPA pointe vers une vue absente.",
+          "action": "Restaurer/créer la vue owner attendue ou retirer la route devenue morte, puis régénérer DASHBOARDS_360.",
+          "forbidden": "Ne pas créer une vue placeholder uniquement pour satisfaire le gate.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "error",
+          "autoRemediation": true,
+          "evidence": {
+            "metric": "orphanRoutes"
+          }
+        }
+      },
+      {
+        "metric": "deadApiMethods",
+        "value": 0,
+        "baseline": 0,
+        "remediation": {
+          "code": "DASH-DEAD-API-METHOD",
+          "scope": "dashboard",
+          "owner": "public/dashboards/admin/js/api-client.js",
+          "cause": "Une méthode KmcApi est exportée mais n’a plus de consommateur dashboard.",
+          "action": "Supprimer l’export réellement mort ou restaurer le consommateur canonique s’il manque.",
+          "forbidden": "Ne pas ajouter un appel factice pour conserver une API morte.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "error",
+          "autoRemediation": true,
+          "evidence": {
+            "metric": "deadApiMethods"
+          }
+        }
+      },
+      {
+        "metric": "missingApiMethods",
+        "value": 0,
+        "baseline": 0,
+        "remediation": {
+          "code": "DASH-MISSING-API-METHOD",
+          "scope": "dashboard",
+          "owner": "public/dashboards/admin/js/api-client.js",
+          "cause": "Une vue appelle une méthode KmcApi qui n’est pas exportée.",
+          "action": "Ajouter/rétablir la méthode dans api-client.js ou corriger la vue vers la méthode canonique existante.",
+          "forbidden": "Ne pas faire de fetch() brut dans la vue pour contourner KmcApi.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "error",
+          "autoRemediation": true,
+          "evidence": {
+            "metric": "missingApiMethods"
+          }
+        }
+      },
+      {
+        "metric": "doctrineViolations",
+        "value": 0,
+        "baseline": 0,
+        "remediation": {
+          "code": "DASH-DOCTRINE-FETCH",
+          "scope": "dashboard",
+          "owner": "KmcApi / api-client.js",
+          "cause": "Une vue sous doctrine kmc_api_only effectue un accès réseau brut.",
+          "action": "Déplacer l’accès dans api-client.js (ou helper réseau owner déjà documenté) et appeler KmcApi depuis la vue.",
+          "forbidden": "Ne pas ajouter kmc-api-allow sans justification locale réelle.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "error",
+          "autoRemediation": true,
+          "evidence": {
+            "metric": "doctrineViolations"
+          }
+        }
+      },
+      {
+        "metric": "unprovenContracts",
+        "value": 59,
+        "baseline": null,
+        "remediation": {
+          "code": "DASH-UNPROVEN-CONTRACT",
+          "scope": "dashboard",
+          "owner": "route backend + docs/contract/openapi.json + test de contrat",
+          "cause": "Un endpoint consommé par le dashboard est connu mais pas encore PROVEN dans le contrat.",
+          "action": "Ajouter/compléter le test de contrat backend et régénérer le contrat OpenAPI pour faire passer UNKNOWN à PROVEN.",
+          "forbidden": "Ne pas marquer PROVEN manuellement sans témoin exécutable.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "warning",
+          "autoRemediation": true,
+          "evidence": {
+            "metric": "unprovenContracts"
+          }
+        }
+      }
+    ]
+  },
+  "boutique": {
+    "cascadeDebt": 0,
+    "specificityDebt": 0,
+    "importantOpenDebt": 0,
+    "reviewedImportantGuards": [
+      "desktop-mobile-drawer-neutralization"
+    ],
+    "criticalSelectorContracts": 15,
+    "runtimeVariableContracts": 5,
+    "remediation": {
+      "cascade": {
+        "code": "BOUTIQUE-CASCADE",
+        "scope": "boutique",
+        "owner": "owner principal du sélecteur dans critical-selector-ownership.js",
+        "cause": "Deux chemins CSS donnent des valeurs différentes à la même propriété dans le même contexte.",
+        "action": "Conserver la valeur gagnante voulue dans l’owner canonique et supprimer/re-homer la déclaration concurrente.",
+        "forbidden": "Ne jamais relever .css-guard-baseline.json pour accepter le conflit.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      },
+      "specificity": {
+        "code": "BOUTIQUE-SPECIFICITY",
+        "scope": "boutique",
+        "owner": "owner principal du sélecteur",
+        "cause": "Une classe globale crée un override silencieux de spécificité.",
+        "action": "Re-homer la propriété dans l’owner canonique ou neutraliser la spécificité sans changer la valeur gagnante.",
+        "forbidden": "Ne jamais relever .css-specificity-guard-baseline.json pour accepter l’override.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      },
+      "important": {
+        "code": "BOUTIQUE-IMPORTANT",
+        "scope": "boutique",
+        "owner": "owner CSS concerné + REVIEWED_GUARDS",
+        "cause": "Un !important non revu apparaît ou une exception exacte a dérivé.",
+        "action": "Supprimer le !important par ownership/cascade normale ou documenter une exception exacte réellement indispensable.",
+        "forbidden": "Ne pas augmenter la baseline de dette !important ouverte.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      },
+      "selectorOwnership": {
+        "code": "BOUTIQUE-SELECTOR-OWNERSHIP",
+        "scope": "boutique",
+        "owner": "critical-selector-ownership.js",
+        "cause": "Un sélecteur critique est touché par un owner ou contexte non autorisé, ou son principal a disparu.",
+        "action": "Modifier le principal/contextuel déjà contracté; si le design change réellement, modifier explicitement le contrat avec preuve.",
+        "forbidden": "Ne pas ajouter un owner au registre uniquement pour faire passer le gate.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      },
+      "runtimeVariableOwnership": {
+        "code": "BOUTIQUE-RUNTIME-VAR-OWNERSHIP",
+        "scope": "boutique",
+        "owner": "runtime-css-var-ownership.js",
+        "cause": "Une variable CSS runtime a un nouveau producteur, trop de chemins d’écriture ou perd son principal.",
+        "action": "Conserver le producteur principal et les adaptations contractées; fusionner les chemins d’écriture redondants.",
+        "forbidden": "Ne pas ajouter producteur/maxWrites pour masquer une duplication.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      },
+      "globalOwnership": {
+        "code": "BOUTIQUE-GLOBAL-OWNERSHIP",
+        "scope": "boutique",
+        "owner": "features/*.feature.js + public/boutique/features/*.feature.js",
+        "cause": "Un fichier runtime Boutique n’a pas d’owner canonique unique.",
+        "action": "Rattacher le fichier à la feature qui possède réellement la responsabilité ou déplacer le code vers cet owner.",
+        "forbidden": "Ne pas rattacher artificiellement un fichier pour obtenir 100%.",
+        "baselinePolicy": "never-increase-to-pass",
+        "severity": "error",
+        "autoRemediation": true,
+        "evidence": {}
+      }
+    }
+  },
+  "gateFindings": {
+    "sourceVersion": "GF-2.1",
+    "sources": [
+      {
+        "gate": "gate:feature-registry-check",
+        "scope": "root",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "gate:feature-registry-check",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "gate:feature-classification-check",
+        "scope": "root",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "gate:feature-guard",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:group-wording",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:imports",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:body-classes",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:no-injection",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:important",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:css-guard",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:css-specificity-guard",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:breakpoints",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:css-vars",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:zindex",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:keyframes",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "check:sticky",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "audit:modal-ownership",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      },
+      {
+        "gate": "audit:modal-layout",
+        "scope": "boutique",
+        "status": "ok",
+        "errorCount": 0,
+        "warningCount": 0
+      }
+    ],
+    "currentFindings": 0
+  },
+  "catalog": {
+    "BACKEND-ARCH": {
+      "scope": "backend",
+      "owner": "feature manifest + scripts/audit-backend-arch.js",
+      "cause": "Une règle d’architecture backend est violée ou une exception connue a dérivé.",
+      "action": "Corriger le fichier signalé selon le remedy I-BACK correspondant et conserver l’owner canonique.",
+      "forbidden": "Ne pas ajouter le fichier à une allowlist ni élargir une exception pour faire passer le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-QUALITY": {
+      "scope": "backend",
+      "owner": "owner canonique du fichier dans features/*.feature.js",
+      "cause": "Une règle de qualité détecte complexité, taille, duplication ou construction interdite.",
+      "action": "Réduire la cause dans le fichier owner; extraire par responsabilité si nécessaire puis relancer quality:gate.",
+      "forbidden": "Ne pas ajouter quality-disable, exemption de fichier ou budget supplémentaire sans décision architecturale explicite.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-FEATURE-OWNERSHIP": {
+      "scope": "backend",
+      "owner": "features/*.feature.js",
+      "cause": "Un fichier ou une dépendance backend n’est pas correctement rattaché à une feature canonique.",
+      "action": "Rattacher le fichier à l’owner métier réel ou déplacer la responsabilité vers cet owner, puis régénérer les projections.",
+      "forbidden": "Ne pas revendiquer arbitrairement le fichier dans une feature voisine pour faire disparaître l’orphelin.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-CONTRACT": {
+      "scope": "backend",
+      "owner": "contrat API canonique + owner route/service",
+      "cause": "Le producteur backend et son contrat consommateur divergent.",
+      "action": "Corriger l’implémentation ou le contrat au niveau de la source de vérité puis mettre à jour les témoins concernés.",
+      "forbidden": "Ne pas dupliquer le contrat dans un second fichier ni masquer l’écart côté consommateur.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SECURITY": {
+      "scope": "backend",
+      "owner": "owner de la frontière de sécurité concernée",
+      "cause": "Une protection de sécurité mesurée a régressé ou son snapshot n’est plus frais.",
+      "action": "Restaurer le contrôle dans l’owner existant et régénérer la preuve Security 360 si la modification est volontaire.",
+      "forbidden": "Ne pas relever une baseline sécurité pour accepter une nouvelle faiblesse.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-MIGRATION-IMMUTABILITY": {
+      "scope": "backend",
+      "owner": "migrations/ + migrations/GAPS.md",
+      "cause": "Une migration déjà publiée a été modifiée ou une collision non gouvernée est apparue.",
+      "action": "Créer une nouvelle migration corrective; pour une collision historique, conserver l’ensemble exact documenté.",
+      "forbidden": "Ne jamais réécrire ou renommer une migration déjà versionnée pour faire passer le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SCHEMA-FRESHNESS": {
+      "scope": "backend",
+      "owner": "docs/db/railway-live-schema.sql + migrations/",
+      "cause": "Le snapshot de schéma et la chaîne de migrations ne décrivent plus le même état.",
+      "action": "Régénérer/promouvoir le snapshot par les commandes canoniques après avoir corrigé la migration source.",
+      "forbidden": "Ne pas éditer le dump à la main pour masquer un drift.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SCHEMA-RESURRECTION": {
+      "scope": "backend",
+      "owner": "migrations/ + schéma canonique",
+      "cause": "Un objet supprimé ou obsolète réapparaît dans le schéma.",
+      "action": "Identifier la migration qui ressuscite l’objet et corriger cette nouvelle migration ou son ordre.",
+      "forbidden": "Ne pas ajouter l’objet ressuscité à une allowlist.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-GOLDEN-CDR": {
+      "scope": "backend",
+      "owner": "pricing/economic canonical owners + tools/golden-cdr",
+      "cause": "Le comportement économique a divergé du snapshot Golden CDR.",
+      "action": "Corriger la logique si la divergence est accidentelle; sinon recapturer le golden avec justification métier explicite.",
+      "forbidden": "Ne pas recapturer le golden uniquement pour rendre la CI verte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-REVIEWED-EXCEPTION": {
+      "scope": "backend",
+      "owner": "exception exacte documentée dans son gate source",
+      "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
+      "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
+      "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "info",
+      "autoRemediation": false
+    },
+    "BACKEND-HEALTHY-MEASUREMENT": {
+      "scope": "backend",
+      "owner": "gate ou ratchet source qui produit la mesure",
+      "cause": "Une mesure de gouvernance est présente dans le rapport mais sa dette effective est déjà à zéro.",
+      "action": "Ne rien corriger; conserver le cliquet à zéro et réagir uniquement si sa valeur future augmente.",
+      "forbidden": "Ne pas transformer une mesure saine en allowlist ni relever le cliquet.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "info",
+      "autoRemediation": false
+    },
+    "DASH-ORPHAN-ROUTE": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/app.js + vue déclarée",
+      "cause": "Une route SPA pointe vers une vue absente.",
+      "action": "Restaurer/créer la vue owner attendue ou retirer la route devenue morte, puis régénérer DASHBOARDS_360.",
+      "forbidden": "Ne pas créer une vue placeholder uniquement pour satisfaire le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-DEAD-API-METHOD": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/api-client.js",
+      "cause": "Une méthode KmcApi est exportée mais n’a plus de consommateur dashboard.",
+      "action": "Supprimer l’export réellement mort ou restaurer le consommateur canonique s’il manque.",
+      "forbidden": "Ne pas ajouter un appel factice pour conserver une API morte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-MISSING-API-METHOD": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/api-client.js",
+      "cause": "Une vue appelle une méthode KmcApi qui n’est pas exportée.",
+      "action": "Ajouter/rétablir la méthode dans api-client.js ou corriger la vue vers la méthode canonique existante.",
+      "forbidden": "Ne pas faire de fetch() brut dans la vue pour contourner KmcApi.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-DOCTRINE-FETCH": {
+      "scope": "dashboard",
+      "owner": "KmcApi / api-client.js",
+      "cause": "Une vue sous doctrine kmc_api_only effectue un accès réseau brut.",
+      "action": "Déplacer l’accès dans api-client.js (ou helper réseau owner déjà documenté) et appeler KmcApi depuis la vue.",
+      "forbidden": "Ne pas ajouter kmc-api-allow sans justification locale réelle.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-UNPROVEN-CONTRACT": {
+      "scope": "dashboard",
+      "owner": "route backend + docs/contract/openapi.json + test de contrat",
+      "cause": "Un endpoint consommé par le dashboard est connu mais pas encore PROVEN dans le contrat.",
+      "action": "Ajouter/compléter le test de contrat backend et régénérer le contrat OpenAPI pour faire passer UNKNOWN à PROVEN.",
+      "forbidden": "Ne pas marquer PROVEN manuellement sans témoin exécutable.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "warning",
+      "autoRemediation": true
+    },
+    "DASH-CANONICAL": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/canonical + DashboardSchema",
+      "cause": "La projection Canonical, le DashboardSchema ou ses sources backend divergent.",
+      "action": "Corriger la source backend ou le schéma canonique owner, puis régénérer les artefacts dashboard dépendants.",
+      "forbidden": "Ne pas patcher une vue Canonical pour compenser une divergence de source.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-CASCADE": {
+      "scope": "boutique",
+      "owner": "owner principal du sélecteur dans critical-selector-ownership.js",
+      "cause": "Deux chemins CSS donnent des valeurs différentes à la même propriété dans le même contexte.",
+      "action": "Conserver la valeur gagnante voulue dans l’owner canonique et supprimer/re-homer la déclaration concurrente.",
+      "forbidden": "Ne jamais relever .css-guard-baseline.json pour accepter le conflit.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-SPECIFICITY": {
+      "scope": "boutique",
+      "owner": "owner principal du sélecteur",
+      "cause": "Une classe globale crée un override silencieux de spécificité.",
+      "action": "Re-homer la propriété dans l’owner canonique ou neutraliser la spécificité sans changer la valeur gagnante.",
+      "forbidden": "Ne jamais relever .css-specificity-guard-baseline.json pour accepter l’override.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-IMPORTANT": {
+      "scope": "boutique",
+      "owner": "owner CSS concerné + REVIEWED_GUARDS",
+      "cause": "Un !important non revu apparaît ou une exception exacte a dérivé.",
+      "action": "Supprimer le !important par ownership/cascade normale ou documenter une exception exacte réellement indispensable.",
+      "forbidden": "Ne pas augmenter la baseline de dette !important ouverte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-SELECTOR-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "critical-selector-ownership.js",
+      "cause": "Un sélecteur critique est touché par un owner ou contexte non autorisé, ou son principal a disparu.",
+      "action": "Modifier le principal/contextuel déjà contracté; si le design change réellement, modifier explicitement le contrat avec preuve.",
+      "forbidden": "Ne pas ajouter un owner au registre uniquement pour faire passer le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-RUNTIME-VAR-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "runtime-css-var-ownership.js",
+      "cause": "Une variable CSS runtime a un nouveau producteur, trop de chemins d’écriture ou perd son principal.",
+      "action": "Conserver le producteur principal et les adaptations contractées; fusionner les chemins d’écriture redondants.",
+      "forbidden": "Ne pas ajouter producteur/maxWrites pour masquer une duplication.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-GLOBAL-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "features/*.feature.js + public/boutique/features/*.feature.js",
+      "cause": "Un fichier runtime Boutique n’a pas d’owner canonique unique.",
+      "action": "Rattacher le fichier à la feature qui possède réellement la responsabilité ou déplacer le code vers cet owner.",
+      "forbidden": "Ne pas rattacher artificiellement un fichier pour obtenir 100%.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-STATIC-GATE": {
+      "scope": "boutique",
+      "owner": "owner du fichier Boutique signalé",
+      "cause": "Un invariant statique Boutique (imports, tokens, breakpoints, z-index, sticky, body classes, injection, HTML) est violé.",
+      "action": "Corriger la ligne signalée dans son owner canonique et relancer le gate source.",
+      "forbidden": "Ne pas créer d’exception globale ou de deuxième chemin de modification.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-ARCH": {
+      "scope": "boutique",
+      "owner": "BOUTIQUE_ARCHITECTURE.md + registres exécutables",
+      "cause": "L’architecture observée ne respecte plus ses invariants canoniques.",
+      "action": "Corriger la source owner ou le registre canonique si la responsabilité a réellement changé, puis régénérer le LIVE.",
+      "forbidden": "Ne pas modifier le LIVE à la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-BUSINESS-GRAPH": {
+      "scope": "governance",
+      "owner": "features/*.feature.js + Business Feature Graph generator",
+      "cause": "Le graphe business n’est plus reconstructible/frais ou un fichier est mal projeté.",
+      "action": "Corriger l’ownership/import dans la source canonique puis régénérer le graphe.",
+      "forbidden": "Ne pas éditer BUSINESS_FEATURE_GRAPH à la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-FEATURE-360": {
+      "scope": "governance",
+      "owner": "Feature 360 canonical projection",
+      "cause": "La projection Feature 360 est stale ou incohérente avec les manifests/gate findings.",
+      "action": "Corriger les sources, régénérer Gate Findings puis Feature 360.",
+      "forbidden": "Ne pas éditer FEATURE_360 à la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-REMEDIATION-CONTRACT": {
+      "scope": "governance",
+      "owner": "scripts/agent-remediation-contract.js",
+      "cause": "Un gate mesuré n’a pas de stratégie de remédiation machine-readable ou l’index est stale.",
+      "action": "Ajouter/corriger le contrat, puis régénérer AGENT_REMEDIATION_INDEX.json.",
+      "forbidden": "Ne pas exclure le gate du checker pour faire passer la CI.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    }
+  }
+}
