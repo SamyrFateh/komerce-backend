@@ -1427,18 +1427,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : staging
 
-**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
+**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
 
 **Perimeter** :
 - _in_ :
   - table providers (identité, contact, market, statut pending|active|suspended)
-  - table services (prestation d’un provider, exposition DISABLED par défaut)
-  - table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table sœur de services)
+  - table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)
+  - table physical_offers (produit physique tiers, image_ref public optionnel)
   - table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)
   - isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant
   - POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur
   - consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire
-  - seed Discovery staging Anjouan — dataset déterministe et idempotent, strictement opt-in et impossible en production
+  - seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production
 - _out_ :
   - authentification provider (pas de users / user_role pour le provider)
   - scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre
@@ -1449,13 +1449,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - prescription artisan et shared-cart
   - composition, ranking et ordre éditorial du rail Près de vous — owner recommendations
   - surface produit/catalogue et navigation — owner catalog
+  - hébergement/stockage binaire des médias — image_ref reste une référence, pas un media service
 
-**Authority** : backend-core — providers-services possède le cycle demande/confirmation, l’écriture inquiries et ses données de démonstration staging ; catalog/recommendations ne font que produire la découverte et l’intention UI.
+**Authority** : backend-core — providers-services possède le cycle demande/confirmation, les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter image_ref.
 
 **Invariants** :
-- [object Object]
-- [object Object]
-- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]
@@ -1482,8 +1480,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 8 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 9 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
+  - migrations : 1
   - routes : 1
   - scripts : 1
   - services : 1

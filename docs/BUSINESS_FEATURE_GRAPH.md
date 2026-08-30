@@ -479,12 +479,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### providers-services _(business-feature)_
 
-> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
+> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
 
 - services: 1
 - routes: 1
 - boutique: 2
 - scripts: 1
+- migrations: 1
 - tests: 3
 - tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
 - tables written: 4
@@ -1639,9 +1640,9 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, corrigé en D6 après découverte que le contrat initial faisait confiance à un market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale d’une offre physique exposable — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale d’un service exposable — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; revalidation exposabilité avant insertion — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + image_ref optionnel — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + image_ref optionnel — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions — ranking produit historique — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)

@@ -401,7 +401,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, puis le cycle de demande explicite d’un client Komerce. La V2 native Boutique active uniquement l’Inquiry authentifiée ; aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
+        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -9282,6 +9282,13 @@
         "category": "scripts",
         "declared": "scripts/seed-discovery-staging.js",
         "resolvedPath": "scripts/seed-discovery-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/157_providers_services_media.sql",
+        "resolvedPath": "migrations/157_providers_services_media.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -31813,17 +31820,17 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale d’une offre physique exposable",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + image_ref optionnel",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale d’un service exposable",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + image_ref optionnel",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; revalidation exposabilité avant insertion",
+        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
