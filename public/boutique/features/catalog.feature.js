@@ -19,7 +19,7 @@ module.exports = {
   canonicalFeature: 'catalog',
   sliceKind: 'frontend-slice',
 
-  service: 'Navigation et affichage catalogue : catégories, produits, cartes, favoris et fiche produit.',
+  service: 'Navigation et affichage catalogue : catégories, produits, cartes, favoris, fiche produit et surface Discovery locale native.',
   perimeter: {
     in: [
       'navigation et découverte produit',
@@ -27,11 +27,13 @@ module.exports = {
       'état de sélection SKU partagé mobile/desktop',
       'rendu des catégories, sections, favoris et cartes produit',
       'adaptations visuelles desktop de la découverte produit',
+      'surface frontend du rail Discovery local, sans possession des vérités local-stock/providers-services/recommendations',
     ],
     out: [
       'shell et layout globaux (platform-ops)',
       'panier personnel et commande (orders)',
       'classement produit backend (recommendations)',
+      'autorisation d’exposition locale et cycle Inquiry (local-stock / providers-services / recommendations)',
     ],
   },
 
@@ -58,6 +60,8 @@ module.exports = {
       '../js/market-context.js',
       '../js/render/render-home-sections.js',
       '../js/render/render-product-card.js',
+      '../js/render/render-discovery-rail.js',
+      '../js/discovery-rail.js',
       '../js/shop-schema.js',
       '../js/taxonomy-no-hardcode.test.js',
       '../js/view-models/product-card-model.js',
@@ -71,6 +75,7 @@ module.exports = {
       '../css/hero-ultra-mobile.css',
       '../css/categories.css',
       '../css/products.css',
+      '../css/discovery-rail.css',
       '../css/category-cutout-navigation.css',
       '../css/category-cutout-navigation-desktop.css',
       '../css/mobile-catalog-convergence.css',
@@ -93,6 +98,7 @@ module.exports = {
       '../tests/unit/b-greeting.test.js',
       '../tests/unit/render-home-sections.test.js',
       '../tests/unit/render-categories.test.js',
+      '../tests/unit/discovery-rail.test.js',
       '../tests/unit/hero-desktop-panorama.test.js',
       '../tests/unit/category-subcategory-continuity.test.js',
       '../tests/unit/category-cutout-assets-integrity.test.js',
@@ -107,6 +113,7 @@ module.exports = {
     'docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
     'docs/MOBILE_BOUTIQUE_FIXES.md',
     'docs/komerce-categories-design.md',
+    '../../docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md',
   ],
 
   contract: {
@@ -119,6 +126,8 @@ module.exports = {
       'home-controller.js / syncRailActiveState / renderSubcatRail',
       'render-categories.js / renderCategories',
       'render-product-card.js / renderProductCard',
+      'render-discovery-rail.js / renderDiscoveryRail',
+      'discovery-rail.js / setupDiscoveryRail / refreshDiscoveryRail',
       'modal-selection-model.js / createModalSelection / selectModalOption',
     ],
     consumes: [
@@ -126,10 +135,11 @@ module.exports = {
       'orders — actions panier depuis les surfaces produit',
       'auth-identity — salutation best-effort de session',
       'catalog (backend) — catégories et Product Detail Contract',
+      'recommendations — projection DiscoveryCard read-only ; aucun droit d’exposition n’est décidé côté frontend',
     ],
   },
 
-  authority: 'boutique — catalog possède la découverte produit ; modal-selection-model possède seul la sélection SKU.',
+  authority: 'boutique — catalog possède la découverte produit et ses surfaces frontend ; les vérités Discovery restent dans leurs features sources.',
   invariants: [
     'tout fichier js portant @domain catalog est listé dans ce manifeste ou modal-product',
     'mobile et desktop consomment le même Product Detail Contract',
@@ -142,5 +152,7 @@ module.exports = {
     'chaque bouton favori expose son état réel par aria-pressed et un libellé Ajouter ou Retirer synchronisé',
     'ajout, achat et promotion utilisent l accent commerce ; l état déjà au panier reste positif et le favori actif reste éditorial',
     'la vue Favoris conserve sur desktop une composition intentionnelle pour les états vide et un seul produit',
+    'le rail Discovery local est absent si aucune DiscoveryCard exposable n’est fournie ; aucune carte locale factice n’est reconstruite côté frontend',
+    'le kind Discovery ne crée jamais une taxonomie ou une navigation client parallèle ; seuls subtitle et CTA portent la nuance',
   ],
 };
