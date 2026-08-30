@@ -63,11 +63,10 @@ function handleDiscoveryClick(event) {
     return;
   }
 
-  // Le futur flow Inquiry est volontairement séparé du renderer Discovery.
-  // Aucun paiement/booking n'est inventé ici : le consumer propriétaire de
-  // providers-services écoutera ce signal lorsque le parcours Demander/
-  // Commander sera activé.
-  bus.emit('discovery:request', { kind, ref });
+  // Discovery ne possède pas le cycle Inquiry. Le consumer providers-services
+  // reçoit l'intention et porte identité + mutation. `source` ne contient
+  // aucune donnée métier : uniquement le bouton pour refléter l'état pending.
+  bus.emit('discovery:request', { kind, ref, source: button });
 }
 
 export function setupDiscoveryRail() {
