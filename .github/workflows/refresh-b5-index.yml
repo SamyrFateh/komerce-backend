@@ -1,0 +1,39 @@
+name: Refresh B5 Remediation Index
+
+on:
+  push:
+    branches:
+      - governance/agent-remediation-contract-b5
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: governance/agent-remediation-contract-b5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Regenerate and validate
+        run: |
+          node scripts/gen-agent-remediation-index.js
+          node scripts/check-agent-remediation-contract.js
+          node scripts/gen-dashboards-360.js --check
+          npx jest tests/unit/agent-remediation-contract.test.js tests/unit/pr-enforcement-security360-scope.test.js --runInBand
+          git diff --check
+      - name: Commit generated index only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/AGENT_REMEDIATION_INDEX.json
+          if git diff --cached --quiet; then
+            echo "Index already fresh"
+            exit 0
+          fi
+          git commit -m "docs(governance): refresh agent remediation index"
+          git push origin HEAD:governance/agent-remediation-contract-b5
