@@ -17165,7 +17165,8 @@
           "table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)",
           "isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant",
           "POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur",
-          "consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire"
+          "consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire",
+          "seed Discovery staging Anjouan — dataset déterministe et idempotent, strictement opt-in et impossible en production"
         ],
         "out": [
           "authentification provider (pas de users / user_role pour le provider)",
@@ -17179,7 +17180,7 @@
           "surface produit/catalogue et navigation — owner catalog"
         ]
       },
-      "authority": "backend-core — providers-services possède le cycle demande/confirmation et l’écriture inquiries ; catalog/recommendations ne font que produire la découverte et l’intention UI.",
+      "authority": "backend-core — providers-services possède le cycle demande/confirmation, l’écriture inquiries et ses données de démonstration staging ; catalog/recommendations ne font que produire la découverte et l’intention UI.",
       "invariants": [
         {
           "statement": "un service ne peut être créé que pour un provider déjà actif",
@@ -17220,6 +17221,10 @@
         {
           "statement": "Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce",
           "test": "public/boutique/tests/unit/discovery-inquiry.test.js"
+        },
+        {
+          "statement": "le seed Discovery ne peut écrire qu’en staging avec opt-in explicite et conserve des UUID/candidats déterministes",
+          "test": "tests/unit/seed-discovery-staging.test.js"
         }
       ],
       "implementation": {
@@ -17249,6 +17254,16 @@
               }
             ]
           },
+          "scripts": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "scripts/seed-discovery-staging.js",
+                "resolvedPath": "scripts/seed-discovery-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "services": {
             "count": 1,
             "files": [
@@ -17260,7 +17275,7 @@
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "tests/unit/providers-service.test.js",
@@ -17271,11 +17286,16 @@
                 "declared": "tests/unit/providers-services-routes.test.js",
                 "resolvedPath": "tests/unit/providers-services-routes.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/seed-discovery-staging.test.js",
+                "resolvedPath": "tests/unit/seed-discovery-staging.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 8,
         "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
           "count": 4,

@@ -9279,6 +9279,13 @@
       },
       {
         "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/seed-discovery-staging.js",
+        "resolvedPath": "scripts/seed-discovery-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
         "category": "tests",
         "declared": "tests/unit/providers-service.test.js",
         "resolvedPath": "tests/unit/providers-service.test.js",
@@ -9289,6 +9296,13 @@
         "category": "tests",
         "declared": "tests/unit/providers-services-routes.test.js",
         "resolvedPath": "tests/unit/providers-services-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/seed-discovery-staging.test.js",
+        "resolvedPath": "tests/unit/seed-discovery-staging.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16486,7 +16500,7 @@
       {
         "from": "providers-services",
         "to": "infrastructure",
-        "raw": "infrastructure — dépendance technique db.js",
+        "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
         "resolved": true
       },
       {
@@ -27692,6 +27706,18 @@
               {
                 "sourceFileId": "routes/providers-services.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-discovery-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-discovery-staging.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -29319,7 +29345,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 993
+        "filesObserved": 995
       },
       "boutique": {
         "filesObserved": 183,

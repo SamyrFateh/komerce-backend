@@ -1438,6 +1438,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant
   - POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur
   - consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire
+  - seed Discovery staging Anjouan — dataset déterministe et idempotent, strictement opt-in et impossible en production
 - _out_ :
   - authentification provider (pas de users / user_role pour le provider)
   - scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre
@@ -1449,9 +1450,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - composition, ranking et ordre éditorial du rail Près de vous — owner recommendations
   - surface produit/catalogue et navigation — owner catalog
 
-**Authority** : backend-core — providers-services possède le cycle demande/confirmation et l’écriture inquiries ; catalog/recommendations ne font que produire la découverte et l’intention UI.
+**Authority** : backend-core — providers-services possède le cycle demande/confirmation, l’écriture inquiries et ses données de démonstration staging ; catalog/recommendations ne font que produire la découverte et l’intention UI.
 
 **Invariants** :
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]
@@ -1480,11 +1482,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 6 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 8 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
   - routes : 1
+  - scripts : 1
   - services : 1
-  - tests : 2
+  - tests : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="providers-services"]_
 
