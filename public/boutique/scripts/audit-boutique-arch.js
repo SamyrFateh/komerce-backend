@@ -14,6 +14,8 @@
 
 const fs   = require('fs');
 const path = require('path');
+const { TRACKED_SELECTORS, selectorMap } = require('./gen-boutique-arch-live.js');
+const { evaluateSelectorOwnership } = require('./critical-selector-ownership.js');
 
 const ROOT     = path.resolve(__dirname, '..');
 const CSS_DIR  = path.join(ROOT, 'css');
@@ -30,83 +32,8 @@ function violate(rule, msg, detail) {
 // CONFIG – source unique : doit refléter boutique/docs/BOUTIQUE_ARCHITECTURE.md §3
 // ════════════════════════════════════════════════════════════════
 
-// I-2 : Ownership CSS. Format : selector â†’ { owner, scope, allowedAlso? }
-// `scope` : 'mobile' | 'desktop' | 'all'
-// `allowedAlso` : fichiers où le sélecteur peut apparaître pour mention/commentaire
-//                 (regex faible) sans être "défini" – utile pour les overrides légitimes
-//                 dans le fichier owner du scope opposé.
-const OWNERSHIP = [
-  // â”€â”€ .k-chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Base skin : categories.css. Overrides desktop : boutique-desktop.css.
-  // Animations d'état (.transitioning) : interactions.css – owner légitme des transitions inter-composants.
-  { selector: '.k-chip',           owner: 'categories.css',       scope: 'base' },
-  { selector: '.k-chip',           owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  { selector: '.k-chip',           owner: 'interactions.css',     scope: 'all' }, // animations .transitioning uniquement
-
-  // â”€â”€ .k-cats-shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Base : categories.css. Desktop : boutique-desktop.css.
-  // hero.css : adaptation contextuelle quand cats-shell est enfant du hero (mobile).
-  // skeleton : max-width â‰¥1500px – contrainte largeur globale, rôle du skeleton (§7 ARCHITECTURE.md).
-  { selector: '.k-cats-shell',     owner: 'categories.css',                    scope: 'base' },
-  { selector: '.k-cats-shell',     owner: 'boutique-desktop.css',              scope: 'desktop-override' },
-  { selector: '.k-cats-shell',     owner: 'hero.css',                          scope: 'base' },      // contexte hero mobile
-
-  // â”€â”€ .k-hero-cats-sticky â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  { selector: '.k-hero-cats-sticky', owner: 'hero.css',           scope: 'base' },
-  { selector: '.k-hero-cats-sticky', owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  { selector: '.k-hero-cats-sticky', owner: 'categories.css',     scope: 'desktop-override' }, // PALETTE-FIX-01 Sprint 4 S4.2
-
-  // â”€â”€ sous-cats (Lot I-2-A) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Migré depuis categories.css â†’ boutique-desktop.css (base + desktop).
-  // categories.css conserve les overrides couleur par thème catégorie (Sprint 4 S4.2).
-  { selector: '#k-subcats-wrap',   owner: 'boutique-desktop.css', scope: 'all' },
-  { selector: '#k-subcats-wrap',   owner: 'categories.css',       scope: 'all' }, // color-theming subchip actif
-  { selector: '.k-subchip',        owner: 'boutique-desktop.css', scope: 'all' },
-  { selector: '.k-subchip',        owner: 'categories.css',       scope: 'all' }, // color-theming subchip actif
-
-  // â”€â”€ .k-grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // products.css : owner du layout de grille.
-  // interactions.css : animations slide (k-grid-slide-in/out) – rôle explicite du fichier.
-  // layout.css : overflow-x:clip fix sticky side-cart – structural global, commenté PATCH#227.
-  // cart.css : adaptation flat-subcat dans contexte panier uniquement.
-  { selector: '.k-grid',           owner: 'products.css',         scope: 'all' },
-  { selector: '.k-grid',           owner: 'interactions.css',     scope: 'all' },   // animations slide uniquement
-  { selector: '.k-grid',           owner: 'layout.css',           scope: 'desktop' }, // overflow fix PATCH#227
-  { selector: '.k-grid',           owner: 'cart.css',             scope: 'all' },   // contexte flat-subcat panier
-
-  // â”€â”€ .k-sec-grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // products.css : owner layout. categories.css : padding contextuel sections catégorie.
-  { selector: '.k-sec-grid',       owner: 'products.css',         scope: 'all' },
-  { selector: '.k-sec-grid',       owner: 'categories.css',       scope: 'all' },   // padding contexte section-cat
-
-  // â”€â”€ .k-card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // products.css : base. boutique-desktop.css : hover overlay.
-  // skeleton : skin desktop (border-radius, shadow) – cascade §7 skeleton gagne.
-  // categories.css : animation k-card-enter dans .k-grid-entering (transition inter-catégorie).
-  { selector: '.k-card',           owner: 'products.css',         scope: 'base' },
-  { selector: '.k-card',           owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  { selector: '.k-card',           owner: 'categories.css',       scope: 'all' }, // animation k-card-enter (.k-grid-entering .k-card)
-
-  // â”€â”€ .k-card-add / .k-card-fav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // products.css : base + états (boutons sur la card).
-  // cart.css : sizing desktop dans contexte panier ouvert.
-  // boutique-desktop.css : opacité hover desktop (.k-card-fav uniquement).
-  { selector: '.k-card-add',       owner: 'products.css',         scope: 'all' },
-  { selector: '.k-card-add',       owner: 'cart.css',             scope: 'desktop' }, // sizing contexte panier
-  { selector: '.k-card-add',       owner: 'boutique-desktop.css', scope: 'desktop' }, // hover desktop (.k-card:hover .k-card-add)
-  { selector: '.k-card-fav',       owner: 'products.css',         scope: 'all' },
-  { selector: '.k-card-fav',       owner: 'cart.css',             scope: 'desktop' }, // sizing contexte panier
-  { selector: '.k-card-fav',       owner: 'boutique-desktop.css', scope: 'desktop' }, // opacité hover desktop
-
-  // â”€â”€ .k-side-cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  { selector: '.k-side-cart',      owner: 'layout.css',           scope: 'mobile-only' },
-  { selector: '.k-side-cart',      owner: 'boutique-desktop.css', scope: 'desktop' },
-
-  // â”€â”€ #k-desktop-catalog-wrap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // skeleton : grid layout desktop (owner principal).
-  // layout.css : overflow/sticky fixes – structural, ne peut pas vivre dans skeleton (PATCH#227).
-  { selector: '#k-desktop-catalog-wrap', owner: 'layout.css',     scope: 'all' }, // overflow sticky fixes
-];
+// I-2 : le contrat canonique vit dans critical-selector-ownership.js.
+// Le LIVE et cet audit consomment exactement la même cartographie.
 
 // I-3 : Allowlist hex hors tokens.css. Justifier chaque exception.
 const HEX_ALLOWLIST = [
@@ -242,51 +169,11 @@ function checkI1_orphans() {
 // CHECK I-2 : Ownership CSS – un sélecteur, un owner
 // ════════════════════════════════════════════════════════════════
 function checkI2_ownership() {
-  const onDisk = listCssFiles();
-  // Grouper OWNERSHIP par selector
-  const bySelector = {};
-  for (const rule of OWNERSHIP) {
-    (bySelector[rule.selector] = bySelector[rule.selector] || []).push(rule);
-  }
-
-  for (const [selector, rules] of Object.entries(bySelector)) {
-    const allowedOwners = new Set(rules.map(r => r.owner.replace(/\.css$/, '')));
-
-    for (const file of onDisk) {
-      if (file === 'tokens' || file === 'reset') continue; // pas de sélecteurs visuels
-      // Bypass : on ne contrôle que les bundlés
-      const isBundled = Object.values(EXPECTED_BUNDLES).flat().includes(file);
-      if (!isBundled) continue;
-
-      const css = readCss(file);
-      if (!selectorIsDefinedIn(css, selector)) continue;
-
-      const { hasBase, hasDesktop } = selectorScopeIn(css, selector);
-      const isAllowedOwner = allowedOwners.has(file);
-
-      if (!isAllowedOwner) {
-        violate('I-2',
-          `Sélecteur "${selector}" défini hors de son owner`,
-          `Trouvé dans css/${file}.css (base=${hasBase}, desktop=${hasDesktop}). ` +
-          `Owners autorisés : ${[...allowedOwners].map(o => `${o}.css`).join(', ')}.`);
-        continue;
-      }
-
-      // Vérifier scope (base vs desktop) en fonction des règles déclarées pour ce fichier
-      const ruleForFile = rules.find(r => r.owner.replace(/\.css$/, '') === file);
-      if (!ruleForFile) continue;
-
-      if (ruleForFile.scope === 'mobile-only' && hasDesktop) {
-        violate('I-2',
-          `Sélecteur "${selector}" dans ${file}.css scope=mobile-only mais a une déclaration desktop (@media â‰¥900px)`,
-          `Déplacer la déclaration desktop vers ${rules.find(r => r.scope === 'desktop')?.owner || 'l\'owner desktop'}.`);
-      }
-      if (ruleForFile.scope === 'base' && hasDesktop && !rules.some(r => r.scope.includes('desktop'))) {
-        violate('I-2',
-          `Sélecteur "${selector}" dans ${file}.css scope=base mais a une déclaration desktop`,
-          `Soit déclarer un owner desktop, soit déplacer.`);
-      }
-    }
+  const result = evaluateSelectorOwnership(selectorMap(), TRACKED_SELECTORS);
+  for (const error of result.errors) {
+    violate('I-2', error.message,
+      'Mettre à jour le code dans l’owner existant ou modifier explicitement ' +
+      'scripts/critical-selector-ownership.js si la nouvelle responsabilité est volontaire.');
   }
 }
 

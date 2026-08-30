@@ -74,6 +74,7 @@ Cascade réelle des bundles livrés :
 | `#k-subcats-wrap` ⚠️ | `boutique-desktop.css` (12/30)<br>`categories.css` (7/0) |
 | `.k-subchip` ⚠️ | `boutique-desktop.css` (19/12)<br>`categories.css` (6/0) |
 | `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (10/3) |
+| `.k-sec-grid` ⚠️ | `categories.css` (1/0)<br>`products.css` (2/3) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/2)<br>`categories.css` (9/0)<br>`products.css` (7/16) |
 | `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (10/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
@@ -123,7 +124,7 @@ Aucun. ✅
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 15 (cible : 0 ou exceptions documentées)
 - **`!important`** : 3 (cible : 0 ou exceptions indispensables)
-- **Sélecteurs multi-owner observés** : 13 (à classifier par ownership)
+- **Sélecteurs multi-owner observés** : 14 (à classifier par ownership)
 
 ## 9. Dette structurelle exécutable
 

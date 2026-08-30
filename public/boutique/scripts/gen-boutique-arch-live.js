@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { BUNDLES } = require('./css-bundles.js');
+const { CRITICAL_SELECTOR_OWNERSHIP } = require('./critical-selector-ownership.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const CSS_DIR = path.join(ROOT, 'css');
@@ -21,13 +22,7 @@ const CASCADE_BASELINE = path.join(__dirname, '.css-guard-baseline.json');
 const SPECIFICITY_BASELINE = path.join(__dirname, '.css-specificity-guard-baseline.json');
 const IMPORTANT_BASELINE = path.join(__dirname, '.important-baseline.json');
 
-const TRACKED_SELECTORS = [
-  '.k-chip', '.k-cats-shell', '.k-hero-cats-sticky',
-  '#k-subcats-wrap', '.k-subchip',
-  '.k-grid', '.k-card', '.k-card-add', '.k-card-fav',
-  '.k-side-cart', '#k-desktop-catalog-wrap',
-  '.k-header', '.k-hero-media', '.k-modal',
-];
+const TRACKED_SELECTORS = Object.freeze(Object.keys(CRITICAL_SELECTOR_OWNERSHIP));
 
 const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];
 

@@ -87,6 +87,7 @@
 - [x] classifier le harnais géométrique comme outillage navigateur non applicatif, conformément à son README et à son rôle de repro/mesure ;
 - [x] fermer le périmètre runtime à **131 / 131 = 100%**, **0 fichier applicatif orphelin** ;
 - [x] passer `gate:boutique-ownership:full` en `--strict` et l'ajouter aux Boutique source gates de `pr-enforcement.yml` ;
-- [ ] B4-1 : transformer la cartographie des sélecteurs critiques multi-owner en contrat exécutable d'owners/autorisations contextuelles.
+- [x] B4-1 sélecteurs critiques : remplacer l’ancienne allowlist I-2 historique par un registre machine-readable unique partagé par le LIVE, le guard dédié et l’audit architecture ; **15 sélecteurs contractés**, owner principal obligatoire, nouveaux owners/contextes base-desktop interdits, réduction d’adaptation autorisée ;
+- [ ] B4-2 : verrouiller de la même façon les producteurs des variables CSS runtime posées par JS.
 
 Ce fichier est un ledger de chantier, pas une nouvelle baseline. Les cliquets existants restent les guards exécutables jusqu'à leur remboursement explicite.
