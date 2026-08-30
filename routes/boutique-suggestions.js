@@ -35,7 +35,7 @@ const { computeSuggestions } = require('../services/boutique-ranking-engine');
 const { getDiscoveryRail } = require('../services/discovery-rail-service');
 
 // Helper : parse une liste d'UUIDs séparés par virgule, filtre les invalides
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function parseUUIDs(raw) {
   if (!raw) return [];
   return String(raw).split(',').map(s => s.trim()).filter(s => UUID_RE.test(s));
