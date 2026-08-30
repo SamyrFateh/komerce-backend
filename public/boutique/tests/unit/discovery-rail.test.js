@@ -54,7 +54,9 @@ describe('renderDiscoveryRail', () => {
     expect(renderDiscoveryRail(target(), cards, { marketLabel: 'Comores' })).toBe(3);
     expect(target().hidden).toBe(false);
     expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(3);
-    expect(target().textContent).toContain('Près de vous');
+    expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
+    expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
+    expect(target().querySelector('#k-discovery-local-title')?.textContent).toBe('Près de vous');
     expect(target().textContent).toContain('Comores');
 
     const labels = Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent);
