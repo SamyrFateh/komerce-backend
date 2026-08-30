@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -21,6 +20,7 @@ const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
 const mockSetupProductDetailModal = jest.fn();
 const mockSetupLocalStockBadgeMount = jest.fn();
+const mockSetupDiscoveryRail = jest.fn();
 const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 const mockSetupModalDesktopEnhancers = jest.fn();
@@ -65,6 +65,11 @@ jest.mock('../../js/b-modal-product-detail-bootstrap.js', () => ({
 jest.mock('../../js/local-stock-badge-mount.js', () => ({
   setupLocalStockBadgeMount: mockSetupLocalStockBadgeMount,
 }));
+// Discovery a ses propres tests d'intégration DOM/API. Le smoke test de main
+// vérifie uniquement que son bootstrap est appelé, sans charger modal/catalogue.
+jest.mock('../../js/discovery-rail.js', () => ({
+  setupDiscoveryRail: mockSetupDiscoveryRail,
+}));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 jest.mock('../../js/b-notifications.js', () => ({ setupClientNotifications: mockSetupClientNotifications }));
 jest.mock('../../js/b-komerce-nav-identity.js', () => ({ setupKomerceNavIdentity: mockSetupKomerceNavIdentity }));
@@ -84,6 +89,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
+  expect(mockSetupDiscoveryRail).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);
   expect(mockSetupCartProductOpenStyle).toHaveBeenCalledTimes(1);
   expect(mockSetupKomerceNavIdentity).toHaveBeenCalledTimes(1);
@@ -102,6 +108,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupLocalStockBadgeMount).toHaveBeenCalledTimes(1);
+  expect(mockSetupDiscoveryRail).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
 });
 
