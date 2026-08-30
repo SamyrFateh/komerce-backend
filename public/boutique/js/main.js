@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/boutique.js
  * @purpose       supports public/boutique/js/boutique.js
  * @impact-areas  boutique
- * @version       2026-07
+ * @version       2026-08
  */
 'use strict';
 
@@ -26,6 +26,7 @@ import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
 import { setupLocalStockBadgeMount } from './local-stock-badge-mount.js';
+import { setupDiscoveryRail } from './discovery-rail.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 import { setupClientNotifications } from './b-notifications.js';
@@ -46,6 +47,9 @@ function setupBoutiqueRuntime() {
   // jamais un nouveau signal. Badge invisible tant que commercial_exposure
   // reste DISABLED (capability != exposure).
   setupLocalStockBadgeMount();
+  // Discovery locale V2 — shell natif inséré avant le catalogue. Le composant
+  // reste absent tant que la projection backend ne renvoie aucune carte.
+  setupDiscoveryRail();
   setupProductOpenContract();
   setupCartProductOpenStyle();
   setupKomerceNavIdentity();
