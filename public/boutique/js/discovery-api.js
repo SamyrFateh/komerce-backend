@@ -14,11 +14,10 @@
  * @module discovery-api
  * @brief Appels réseau vers les domaines Discovery locale et leur projection unifiée.
  *
- * Échec silencieux systématique — même discipline que le reste de la
- * boutique : une erreur réseau, un marché inconnu, ou un objet non exposable
- * produisent `null`, jamais une exception qui remonterait au composant appelant.
- * Le consommateur sait donc toujours appliquer le contrat :
- * "si aucune donnée exposable, rien ne s'affiche" (capability != exposure).
+ * Les lectures restent silencieuses : une erreur réseau, un marché inconnu ou
+ * un objet non exposable produisent `null`, afin de respecter capability !=
+ * exposure. Les mutations, elles, renvoient un résultat structuré : une action
+ * utilisateur ne doit jamais échouer silencieusement.
  *
  * market est toujours un CODE (KM/YT/CM/CG), jamais un UUID — lu depuis
  * window.KomerceMarket.get().code. La résolution d'autorisation reste serveur.
@@ -33,11 +32,7 @@ function currentMarketCode() {
 }
 
 /**
- * Projection unifiée du rail local. Tant que la route recommendations ne
- * fournit pas la surface `local`, la réponse est traitée comme vide et le
- * composant reste absent — le frontend final peut donc être construit avant
- * l'ouverture commerciale sans inventer de donnée.
- *
+ * Projection unifiée du rail local.
  * @returns {Promise<{cards: Array<object>}|null>}
  */
 export function fetchDiscoveryRail() {
@@ -88,4 +83,55 @@ export function fetchPhysicalOfferCard(physicalOfferId) {
   return fetch(`/api/providers-services/physical-offers/${encodeURIComponent(physicalOfferId)}?market=${encodeURIComponent(market)}`)
     .then(response => response.ok ? response.json() : null)
     .catch(() => null);
+}
+
+/**
+ * Crée une Inquiry pour une cible Discovery locale.
+ *
+ * Le téléphone n'est volontairement PAS un paramètre : le backend le dérive
+ * de la session Komerce authentifiée. Le frontend ne choisit que la cible.
+ *
+ * @param {'service'|'physical_offer'} kind
+ * @param {string} ref
+ * @param {string|null} [requestedWindow]
+ * @returns {Promise<{ok: boolean, inquiry?: object, status?: number, code?: string|null, error?: string}>}
+ */
+export async function createDiscoveryInquiry(kind, ref, requestedWindow = null) {
+  if (!ref || !['service', 'physical_offer'].includes(kind)) {
+    return { ok: false, status: 400, code: 'invalid_target', error: 'Cible invalide' };
+  }
+
+  const market = currentMarketCode();
+  const body = kind === 'service'
+    ? { service_id: ref }
+    : { physical_offer_id: ref };
+
+  if (requestedWindow) body.requested_window = requestedWindow;
+
+  try {
+    const response = await fetch(`/api/providers-services/inquiries?market=${encodeURIComponent(market)}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        code: payload?.code || null,
+        error: payload?.error || 'Impossible d’envoyer la demande',
+      };
+    }
+
+    if (!payload?.inquiry?.id) {
+      return { ok: false, status: 502, code: 'invalid_response', error: 'Réponse de demande invalide' };
+    }
+
+    return { ok: true, inquiry: payload.inquiry };
+  } catch (_) {
+    return { ok: false, status: 0, code: 'network_error', error: 'Connexion impossible' };
+  }
 }
