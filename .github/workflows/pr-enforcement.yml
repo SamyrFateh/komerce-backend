@@ -200,8 +200,8 @@ jobs:
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
+          BASE_SHA: ${{ needs.changes.outputs.boutique_files }}
+        run: node scripts/arch-doctrine-sanitize-check.js --diff="${{ github.event.pull_request.base.sha }}"
 
       - name: Related Boutique unit tests
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
@@ -215,6 +215,11 @@ jobs:
 
       - name: Boutique global ownership
         run: node scripts/boutique-ownership-full-check.js --strict
+
+      - name: Boutique critical visual ownership
+        run: |
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
 
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
