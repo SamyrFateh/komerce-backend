@@ -1,0 +1,29 @@
+name: Audit Boutique B4 Ownership
+
+on:
+  push:
+    branches:
+      - refactor/boutique-debt-zero-b4-ownership
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ownership-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Current ownership coverage
+        run: node scripts/boutique-ownership-full-check.js
+      - name: Strict probe (expected to expose remaining debt)
+        shell: bash
+        run: |
+          set +e
+          node scripts/boutique-ownership-full-check.js --strict
+          code=$?
+          echo "strict_exit=$code"
+          exit 0
