@@ -35,6 +35,23 @@ describe('critical selector ownership contract', () => {
     ]));
   });
 
+  test('rejects an authorized owner expanding into an unauthorized media context', () => {
+    const map = cloneMap(selectorMap());
+    const row = map['.k-side-cart'].find(item => item.file === 'layout.css');
+    row.desktop = 1;
+
+    const result = evaluateSelectorOwnership(map, TRACKED_SELECTORS);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'unauthorized-context',
+        selector: '.k-side-cart',
+        file: 'layout.css',
+        context: 'desktop',
+      }),
+    ]));
+  });
+
   test('rejects disappearance of the semantic principal owner', () => {
     const map = cloneMap(selectorMap());
     const principal = CRITICAL_SELECTOR_OWNERSHIP['.k-grid'].principal;
