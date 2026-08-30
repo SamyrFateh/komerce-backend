@@ -18,7 +18,11 @@ DO $$ BEGIN
   ) THEN
     ALTER TABLE public.services
       ADD CONSTRAINT services_image_ref_public
-      CHECK (image_ref IS NULL OR image_ref LIKE '/%' OR image_ref LIKE 'https://%');
+      CHECK (
+        image_ref IS NULL
+        OR image_ref ~ '^/[^/]'
+        OR image_ref LIKE 'https://%'
+      );
   END IF;
 END $$;
 
@@ -28,14 +32,18 @@ DO $$ BEGIN
   ) THEN
     ALTER TABLE public.physical_offers
       ADD CONSTRAINT physical_offers_image_ref_public
-      CHECK (image_ref IS NULL OR image_ref LIKE '/%' OR image_ref LIKE 'https://%');
+      CHECK (
+        image_ref IS NULL
+        OR image_ref ~ '^/[^/]'
+        OR image_ref LIKE 'https://%'
+      );
   END IF;
 END $$;
 
 COMMENT ON COLUMN public.services.image_ref IS
   'Référence média publique optionnelle pour la représentation du service. '
-  'Chemin public /... ou URL https:// uniquement. Source owner = providers-services.';
+  'Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
 
 COMMENT ON COLUMN public.physical_offers.image_ref IS
   'Référence média publique optionnelle pour la représentation de l''offre physique. '
-  'Chemin public /... ou URL https:// uniquement. Source owner = providers-services.';
+  'Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
