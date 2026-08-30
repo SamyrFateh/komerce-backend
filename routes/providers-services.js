@@ -12,26 +12,12 @@
  * @db-write      none
  * @db-write-via:providers-service inquiries
  * @db-txn        delegated_to_service
- * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de
- *                lecture minimal, demande explicite, jamais une réservation)
+ * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
  * @impact-areas  providers-services, boutique, discovery-rail
  * @version       2026-08
  */
 
 'use strict';
-
-/**
- * KOMERCE — Vague 2 : lecture publique minimale + création d'Inquiry.
- *
- * GET : champs publics minimaux uniquement — JAMAIS téléphone/provider_id.
- * POST /inquiries : identité Komerce obligatoire. Le téléphone demandeur est
- * dérivé de la session canonique côté serveur ; il n'est jamais accepté depuis
- * le payload client. Une demande ne peut viser qu'un objet encore exposable
- * sur le marché courant et porte sur exactement une cible : service_id XOR
- * physical_offer_id. Cela reste une Inquiry, jamais un paiement/réservation.
- *
- * market est un CODE (KM/YT/CM/CG), jamais un UUID — voir routes/local-stock.js.
- */
 
 const express = require('express');
 const router  = express.Router();
@@ -43,12 +29,6 @@ const {
   getPhysicalOffer, isPhysicalOfferExposable,
 } = require('../services/providers-service');
 
-/**
- * Résout un code marché de navigation vers l'UUID markets.id réel.
- * Le client ne fournit jamais directement l'autorité market_id.
- * @param {string} marketCode
- * @returns {Promise<string|null>}
- */
 async function resolveMarketId(marketCode) {
   if (!marketCode) return null;
   const { rows } = await db.query(
@@ -74,22 +54,15 @@ function readRequestedWindow(value) {
   return { ok: true, value: normalized };
 }
 
-// ── GET /api/providers-services/services/:id?market=KM ───────────────────
 router.get('/services/:id', async (req, res, next) => {
   try {
     const { market } = req.query;
-    if (!market) {
-      return res.status(400).json({ error: 'market est requis' });
-    }
+    if (!market) return res.status(400).json({ error: 'market est requis' });
     const marketId = await resolveMarketId(market);
-    if (!marketId) {
-      return res.status(400).json({ error: 'market inconnu ou inactif' });
-    }
+    if (!marketId) return res.status(400).json({ error: 'market inconnu ou inactif' });
 
     const exposable = await isServiceExposable(req.params.id, marketId);
-    if (!exposable) {
-      return res.status(404).json({ error: 'Service introuvable' });
-    }
+    if (!exposable) return res.status(404).json({ error: 'Service introuvable' });
 
     const service = await getService(req.params.id);
     res.json({
@@ -98,28 +71,22 @@ router.get('/services/:id', async (req, res, next) => {
       description: service.description,
       zone: service.zone,
       market_id: service.market_id,
+      image_ref: service.image_ref || null,
     });
   } catch (err) {
     next(err);
   }
 });
 
-// ── GET /api/providers-services/physical-offers/:id?market=KM ────────────
 router.get('/physical-offers/:id', async (req, res, next) => {
   try {
     const { market } = req.query;
-    if (!market) {
-      return res.status(400).json({ error: 'market est requis' });
-    }
+    if (!market) return res.status(400).json({ error: 'market est requis' });
     const marketId = await resolveMarketId(market);
-    if (!marketId) {
-      return res.status(400).json({ error: 'market inconnu ou inactif' });
-    }
+    if (!marketId) return res.status(400).json({ error: 'market inconnu ou inactif' });
 
     const exposable = await isPhysicalOfferExposable(req.params.id, marketId);
-    if (!exposable) {
-      return res.status(404).json({ error: 'Offre introuvable' });
-    }
+    if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
     const offer = await getPhysicalOffer(req.params.id);
     res.json({
@@ -128,24 +95,20 @@ router.get('/physical-offers/:id', async (req, res, next) => {
       description: offer.description,
       zone: offer.zone,
       market_id: offer.market_id,
+      image_ref: offer.image_ref || null,
     });
   } catch (err) {
     next(err);
   }
 });
 
-// ── POST /api/providers-services/inquiries?market=KM ─────────────────────
 router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
   try {
     const { market } = req.query;
-    if (!market) {
-      return res.status(400).json({ error: 'market est requis' });
-    }
+    if (!market) return res.status(400).json({ error: 'market est requis' });
 
     const marketId = await resolveMarketId(market);
-    if (!marketId) {
-      return res.status(400).json({ error: 'market inconnu ou inactif' });
-    }
+    if (!marketId) return res.status(400).json({ error: 'market inconnu ou inactif' });
 
     const target = readInquiryTarget(req.body);
     if (!target) {
@@ -168,9 +131,7 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
       ? await isServiceExposable(target.serviceId, marketId)
       : await isPhysicalOfferExposable(target.physicalOfferId, marketId);
 
-    if (!exposable) {
-      return res.status(404).json({ error: 'Offre introuvable' });
-    }
+    if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
     const inquiry = await createInquiry({
       serviceId: target.serviceId,
