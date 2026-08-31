@@ -133,7 +133,7 @@ describe('LOT 2-CUTOVER — frontière Legacy / Canonical', () => {
     const legacyPath = path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html');
     const res = fakeRes();
 
-    app._routes['/admin/hub-relais']({ query: {} }, res);
+    app._routes['/admin/customs']({ query: {} }, res);
 
     expect(res.sendFile).toHaveBeenCalledWith(legacyPath, expect.any(Function));
     expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
