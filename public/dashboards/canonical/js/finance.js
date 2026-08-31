@@ -100,9 +100,7 @@
       },
     ],
     drill: [
-      { id: 'pilotage', label: 'Retour Pilotage', href: '/admin-next' },
-      { id: 'commerce', label: 'Voir Commerce', href: '/admin-next/commerce' },
-      { id: 'operations', label: 'Voir Opérations', href: '/admin-next/operations' },
+      { id: 'accounting-workspace', label: 'Comptabilité & encaissements', href: '/admin/workspaces/accounting' },
     ],
   });
 
