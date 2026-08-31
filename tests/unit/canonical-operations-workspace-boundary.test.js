@@ -37,7 +37,7 @@ function fakeRes() {
   };
 }
 
-test('URL Workspace est Canonical mais Hub-Relais et Inventory restent Legacy 1', () => {
+test('les trois anciennes entrées Opérations convergent avec rollback Legacy explicite', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
 
@@ -46,10 +46,24 @@ test('URL Workspace est Canonical mais Hub-Relais et Inventory restent Legacy 1'
   expect(workspaceRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
   expect(workspaceRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
-  for (const legacyPath of ['/admin/hub-relais', '/admin/inventory']) {
-    const legacyRes = fakeRes();
-    app._routes[legacyPath]({}, legacyRes);
-    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  const expected = {
+    '/admin/orders-logistics': '/admin/operations',
+    '/admin/hub-relais': '/admin/workspaces/operations',
+    '/admin/inventory': '/admin/workspaces/operations',
+  };
+
+  for (const [legacyPath, canonicalPath] of Object.entries(expected)) {
+    const cutoverRes = fakeRes();
+    app._routes[legacyPath]({ query: {} }, cutoverRes);
+    expect(cutoverRes.redirect).toHaveBeenCalledWith(302, canonicalPath);
+
+    const rollbackRes = fakeRes();
+    app._routes[legacyPath]({ query: { legacy: '1' } }, rollbackRes);
+    expect(rollbackRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(rollbackRes.sendFile).toHaveBeenCalledWith(
+      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
+      expect.any(Function)
+    );
   }
 });
 
