@@ -27,8 +27,14 @@ describe('client notifications identity gate', () => {
     jest.useRealTimers();
   });
 
-  test('anonymous boot performs no notification request; authenticated signal starts the feed', async () => {
+  test('anonymous boot/focus stay silent; authenticated signal starts the feed and identity clear stops it again', async () => {
     setupClientNotifications();
+    expect(mockApiGet).not.toHaveBeenCalled();
+
+    // Les événements de cycle de vie ne doivent jamais transformer un visiteur
+    // anonyme en rafale de 401 sur le feed authentifié.
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
     expect(mockApiGet).not.toHaveBeenCalled();
 
     window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
@@ -38,5 +44,9 @@ describe('client notifications identity gate', () => {
     expect(mockApiGet).toHaveBeenCalledTimes(1);
     expect(mockApiGet).toHaveBeenCalledWith('/api/auth/me/notifications', { retries: 0 });
     await Promise.resolve();
+
+    window.dispatchEvent(new Event('komerce:identity-cleared'));
+    window.dispatchEvent(new Event('focus'));
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 });
