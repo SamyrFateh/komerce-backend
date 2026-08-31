@@ -484,7 +484,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard
 - Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance
 - canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins
-- /admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé
+- les routes /admin/* ne convergent vers Canonical qu’après absorption prouvée ; chaque cutover conserve ?legacy=1 pendant sa fenêtre de rollback
+- OrdersLogistics converge vers le Dashboard Opérations ; Hub-Relais et Inventaire convergent vers le Workspace Opérations mono-marché, sans porter la mutation globale proposeAll
 - auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me
 - Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché
 - le rôle vertical ne donne jamais un scope pays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation
