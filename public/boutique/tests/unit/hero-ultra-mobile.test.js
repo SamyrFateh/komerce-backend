@@ -26,8 +26,16 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('background-position: 70% 12%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
-    expect(css).not.toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).not.toContain('display: none;');
+  });
+
+  test('garde le slogan visible dans la réserve blanche gauche', () => {
+    expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
+    expect(css).toContain('inset: 0 auto 0 0;');
+    expect(css).toContain('width: 36%;');
+    expect(css).toContain('padding: 12px 0 0 10px;');
+    expect(css).toContain('text-align: left;');
+    expect(css).toContain('font-size: clamp(13px, 3.45vw, 15px);');
   });
 
   test('ne réintroduit aucun symbole lunaire', () => {
