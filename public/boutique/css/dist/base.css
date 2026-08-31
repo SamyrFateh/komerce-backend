@@ -2884,6 +2884,28 @@ body:has(#k-page-scroll.k-pager-active) {
     mask-image: none;
   }
 
+  /* Le cluster personnages occupe le centre/droite du dérivé mobile.
+     La signature courte utilise donc la réserve blanche à gauche au lieu
+     de recouvrir les visages. Aucun changement de hauteur du hero. */
+  .k-hero-media .k-hero-mini-slogan--premium {
+    inset: 0 auto 0 0;
+    width: 36%;
+    padding: 12px 0 0 10px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
+    font-size: clamp(13px, 3.35vw, 15px);
+    line-height: 1.05;
+  }
+
+  .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
+    margin-top: 1px;
+    font-size: clamp(13px, 3.45vw, 15px);
+    line-height: 1.05;
+  }
 }
 
 
