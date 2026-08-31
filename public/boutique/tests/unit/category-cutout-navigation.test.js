@@ -22,6 +22,10 @@ const tokens = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const swRefresh = fs.readFileSync(path.join(ROOT, 'js/b-service-worker-refresh.js'), 'utf8');
 const sw = fs.readFileSync(path.resolve(ROOT, '../sw.js'), 'utf8');
+const modeFemme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-femme-v4.svg'), 'utf8');
+const modeHomme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-homme-v4.svg'), 'utf8');
+const modeEnfant = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-enfant-v4.svg'), 'utf8');
+const modeBeaute = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-beaute-v4.svg'), 'utf8');
 
 describe('Komerce Shelf category navigation contract', () => {
   it('conserve k-chip pour le comportement et ajoute un modifier visuel dédié', () => {
@@ -87,12 +91,17 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).toContain("'Mode & Beauté': 'cutout:mode'");
     expect(visuals).toContain("'Créations personnelles': 'cutout:perso'");
     expect(visuals).toContain("__all: 'showcase-mode:0:0'");
-    expect(visuals).toContain("Femme: 'showcase-mode:1:0'");
-    expect(visuals).toContain("Homme: 'showcase-mode:2:0'");
-    expect(visuals).toContain("Enfant: 'showcase-mode:0:1'");
-    expect(visuals).toContain("Beauté: 'showcase-mode:1:1'");
+    expect(visuals).toContain("Femme: 'mode-cutout:femme'");
+    expect(visuals).toContain("Homme: 'mode-cutout:homme'");
+    expect(visuals).toContain("Enfant: 'mode-cutout:enfant'");
+    expect(visuals).toContain("Beauté: 'mode-cutout:beaute'");
     expect(visuals).toContain('renderAtlasCell');
     expect(visuals).toContain('renderCategoryCutout');
+    expect(visuals).toContain('renderModeSubcategoryCutout');
+    expect(visuals).toContain("femme: '/boutique/categories/sub-mode-femme-v4.svg?v=1'");
+    expect(visuals).toContain("homme: '/boutique/categories/sub-mode-homme-v4.svg?v=1'");
+    expect(visuals).toContain("enfant: '/boutique/categories/sub-mode-enfant-v4.svg?v=1'");
+    expect(visuals).toContain("beaute: '/boutique/categories/sub-mode-beaute-v4.svg?v=1'");
     expect(visuals).toContain('k-shelf-cutout-image');
     expect(sprite).toContain('symbol id="cat-all"');
     expect(sprite).toContain('symbol id="cat-soldes"');
@@ -106,6 +115,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).toContain('data-atlas-col');
     expect(visuals).toContain('data-atlas-row');
     expect(visuals).toContain("visual.startsWith('cutout:')");
+    expect(visuals).toContain("visual.startsWith('mode-cutout:')");
     expect(visuals).toContain("visual.startsWith('showcase-mode:')");
     expect(visuals).not.toContain("visual.startsWith('showcase-main:')");
     expect(visuals).not.toContain('<image href=');
@@ -115,6 +125,19 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
     expect(mobile).not.toMatch(/@media \(max-width: 899px\)[\s\S]*\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*position:\s*relative/s);
+  });
+
+  it('garde quatre palettes Mode distinctes sans vert de marque dans les objets', () => {
+    expect(modeFemme).toContain('#D51F3E');
+    expect(modeHomme).toContain('#203C68');
+    expect(modeEnfant).toContain('#2388E8');
+    expect(modeEnfant).toContain('#FFD84D');
+    expect(modeBeaute).toContain('#F6B691');
+    expect(modeBeaute).toContain('#FF4057');
+    [modeFemme, modeHomme, modeEnfant, modeBeaute].forEach((asset) => {
+      expect(asset).toContain('<svg');
+      expect(asset).not.toMatch(/#2A7A3E|#64AF5A|green/i);
+    });
   });
 
   it('utilise un contraste gris franc et les cutouts dans les titres de section', () => {
