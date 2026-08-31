@@ -116,6 +116,19 @@ L’ancienne mutation globale `hubInventoryProposeAll` n’est pas reconstruite.
 
 Cette extension ne bascule pas `/admin/transitaire` ni `/admin/customs`. Le Workspace Expéditions & Douane reste additif jusqu’à complétude de la saisie douane et réconciliation des anciennes expéditions sans `market_id` autoritatif.
 
+## Extension LOT 4P — convergence Finance / Comptabilité
+
+Les anciennes vues de comptabilité opérationnelle et de factures convergent vers le Workspace Comptabilité, tandis que le Dashboard Finance reste la surface d’observation économique.
+
+| Ancien point d’entrée | Destination Canonical | Besoin absorbé |
+|---|---|---|
+| `/admin/accounting` | `/admin/workspaces/accounting` | rapprochement cash, dépôts, vérification/contestation, non-encaissé |
+| `/admin/invoices` | `/admin/workspaces/accounting` | liste des factures du marché et drill vers Order 360 |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback.
+
+LOT 4P ne bascule pas `/admin/economic` ni `/admin/pilotage-fin`. Ces vues historiques restent Legacy jusqu’à un audit séparé de leurs besoins par rapport au Dashboard Finance et aux Workspaces existants.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -123,7 +136,7 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Expéditions / Transitaire
 - Douane
 - Partenaires multi-familles / Suppliers
-- Factures / Comptabilité
+- Economique / Pilotage financier historique
 - Paramètres
 
 Ces URLs continuent de servir Legacy 1 jusqu'à preuve de remplacement par un Workspace, un Entity 360, l'Action Center ou une autre surface Canonical autorisée par la doctrine.
@@ -146,6 +159,7 @@ Avant merge :
 - les quatre routes stables servent Canonical ;
 - `/admin/pilotage?legacy=1` sert Legacy 1 ;
 - les anciennes routes Opérations convergent, avec `?legacy=1` comme rollback ;
+- les anciennes routes Accounting/Invoices convergent vers le Workspace Comptabilité, avec `?legacy=1` comme rollback ;
 - une route non reconstruite telle que `/admin/customs` reste Legacy 1 ;
 - `surfaceForPath()` résout les quatre URLs stables ;
 - Canonical reste sans import de `admin/**` ou `admin-legacy/**` ;

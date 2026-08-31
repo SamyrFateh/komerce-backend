@@ -22,12 +22,13 @@ La doctrine reste :
 - alias build : `/admin-next/workspaces/accounting`
 - API : `/api/admin/workspaces/accounting/market/:marketCode`
 
-Legacy reste disponible pendant la preuve :
+LOT 4P fait converger les anciennes entrées vers cette surface :
 
-- `/admin/accounting`
-- `/admin/invoices`
+- `/admin/accounting` → `/admin/workspaces/accounting`
+- `/admin/invoices` → `/admin/workspaces/accounting`
+- `?legacy=1` conserve le rollback Legacy 1 sur chacun des deux anciens pathnames.
 
-Aucun cutover destructif dans LOT 4D.
+Les fichiers Legacy restent présents pendant la fenêtre de rollback ; aucune suppression n’est incluse dans LOT 4P.
 
 ## Frontière Feature First
 
@@ -194,6 +195,8 @@ LOT 4D :
 - ne modifie pas une facture ;
 - ne recrée pas une facture manuellement.
 
+Le besoin historique `InvoicesView` est donc absorbé par cette projection et son drill vers Order 360 ; LOT 4P fait converger son pathname sans recréer une seconde vue Factures.
+
 ## Browser invariants
 
 Le module Canonical :
@@ -208,12 +211,13 @@ Le module Canonical :
 
 ## Hors périmètre
 
-LOT 4D ne :
+LOT 4D / 4P ne :
 
 - remplace pas le dashboard `/admin/finance` ;
+- bascule pas `/admin/economic` ni `/admin/pilotage-fin` sans audit séparé ;
 - modifie pas les règles du moteur économique ;
 - ne crée pas d’écriture comptable générale ;
 - ne modifie pas les factures immuables ;
 - ne donne pas de mutation au rôle `finance` ;
-- ne supprime pas les vues Legacy ;
+- ne supprime pas les fichiers Legacy pendant la fenêtre de rollback ;
 - ne traite pas les dépôts historiques impossibles à rattacher à un marché.
