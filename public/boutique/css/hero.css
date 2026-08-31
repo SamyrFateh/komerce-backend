@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    KOMERCE — hero.css  (LOT 13 refonte)
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
@@ -24,6 +24,7 @@
   display: block;
 }
 .k-hero-mini-slogan {
+  display: flex;
   position: absolute;
   inset: 0;
   flex-direction: column;
@@ -235,11 +236,10 @@
   height: 0;
 }
 
-/* Slogan mobile : supprimé (H0) */
-.k-hero-mini-slogan { display: none; }
-.k-hero-bubble       { display: none; }
-
-/* k-search-slogan supprimé (H0) — doublon de .k-hero-mini-slogan */
+/* Slogan mobile restauré : owner hero.css.
+   Les CTA secondaires restent masqués sur mobile ; seule la signature courte
+   "Vos envies, à portée de main." revient sur le visuel canonique. */
+.k-hero-bubble { display: none; }
 
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {

@@ -26,8 +26,8 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('background-position: 70% 12%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
-    expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
-    expect(css).toContain('display: none;');
+    expect(css).not.toContain('.k-hero-media .k-hero-mini-slogan--premium');
+    expect(css).not.toContain('display: none;');
   });
 
   test('ne réintroduit aucun symbole lunaire', () => {

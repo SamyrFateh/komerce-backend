@@ -1886,7 +1886,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
 
 /* ── hero.css ────────────────────────────────────────────── */
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    KOMERCE — hero.css  (LOT 13 refonte)
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
@@ -1912,6 +1912,7 @@ body:has(#k-page-scroll.k-pager-active) {
   display: block;
 }
 .k-hero-mini-slogan {
+  display: flex;
   position: absolute;
   inset: 0;
   flex-direction: column;
@@ -2123,11 +2124,10 @@ body:has(#k-page-scroll.k-pager-active) {
   height: 0;
 }
 
-/* Slogan mobile : supprimé (H0) */
-.k-hero-mini-slogan { display: none; }
-.k-hero-bubble       { display: none; }
-
-/* k-search-slogan supprimé (H0) — doublon de .k-hero-mini-slogan */
+/* Slogan mobile restauré : owner hero.css.
+   Les CTA secondaires restent masqués sur mobile ; seule la signature courte
+   "Vos envies, à portée de main." revient sur le visuel canonique. */
+.k-hero-bubble { display: none; }
 
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {
@@ -2857,7 +2857,7 @@ body:has(#k-page-scroll.k-pager-active) {
  * @layer         ui
  * @owner         public/boutique/css/hero.css
  * @purpose       Extension mobile additive du hero H1 : boîte récit ultra-compacte.
- *                Mode diagnostic temporaire : visuel pur, sans texte ni CTA.
+ *                Le slogan court reste visible ; sous-texte et CTA restent masqués.
  * @impact-areas  boutique, hero, mobile
  * @version       2026-08
  */
@@ -2884,9 +2884,6 @@ body:has(#k-page-scroll.k-pager-active) {
     mask-image: none;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium {
-    display: none;
-  }
 }
 
 
