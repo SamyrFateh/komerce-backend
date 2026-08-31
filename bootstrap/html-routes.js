@@ -99,9 +99,6 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, legacyAdminPath);
   }
 
-  // Pilotage est la seule URL stable qui entrait déjà en collision avec
-  // Legacy 1. `?legacy=1` fournit donc un rollback immédiat sans modifier le
-  // pathname vu par le routeur SPA historique.
   app.get('/admin/pilotage', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
@@ -126,33 +123,23 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 3A — première Entity 360 Canonical. La référence reste lisible dans
-  // l'URL ; l'autorité de marché est vérifiée exclusivement côté API.
   app.get('/admin/orders/:orderReference', (req, res) => {
     sendCanonicalAdmin(res);
   });
 
-  // LOT 4I — Client Index Canonical : recherche/navigation légère vers Client 360.
-  // Legacy 1 reste disponible par query explicite pour rollback immédiat.
   app.get('/admin/clients', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
   });
 
-  // LOT 3B — Client 360 Canonical détaillé.
   app.get('/admin/clients/:clientPhone', (req, res) => {
     sendCanonicalAdmin(res);
   });
 
-  // LOT 3C — Product 360 Canonical. product_ref est l'identité métier stable ;
-  // LOT 4K fait converger l'index `/admin/products` vers le Catalog Workspace.
   app.get('/admin/products/:productRef', (req, res) => {
     sendCanonicalAdmin(res);
   });
 
-  // Les URLs de construction restent des aliases temporaires mais ne créent
-  // plus une seconde URL produit : elles ramènent systématiquement vers le
-  // pathname stable correspondant.
   const CANONICAL_BUILD_ALIASES = Object.freeze({
     '/admin-next': '/admin/pilotage',
     '/admin-next/commerce': '/admin/commerce',
@@ -176,10 +163,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4J — les besoins de PricingView, PricingWorkshopView,
-  // PricingStrategyView et EconomicFlowView sont prouvés absorbés par le seul
-  // Pricing Workspace Canonical. Les anciens pathnames deviennent donc des
-  // points d'entrée de compatibilité ; ?legacy=1 conserve le témoin Legacy 1.
   const PRICING_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/pricing',
     '/admin/pricing-workshop',
@@ -194,9 +177,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4K — ProductsView, CategoriesView et CatalogApprovalView sont
-  // prouvés absorbés par le Catalog Workspace Canonical. Les anciens pathnames
-  // deviennent des points d'entrée de compatibilité ; ?legacy=1 garde Legacy 1.
   const CATALOG_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/products',
     '/admin/categories',
@@ -210,9 +190,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4L — SourcingView et SourcingScannerView sont prouvés absorbés
-  // par le Sourcing Workspace Canonical. SuppliersView reste Legacy car il
-  // administre aussi des familles de partenaires hors partner_type=sourcing.
   const SOURCING_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/sourcing',
     '/admin/sourcing-scanner',
@@ -225,9 +202,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4N — AlertsView est remplacée par l'Action Center 4G et la
-  // vérité utile de ProblemsView a été auditée/absorbée par 4H. Aucun moteur
-  // Problems parallèle n'est recréé ; ?legacy=1 garde les témoins historiques.
   const ACTION_CENTER_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/alerts',
     '/admin/problems',
@@ -240,11 +214,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4O — convergence du pilotage opérationnel. OrdersLogisticsView est
-  // absorbée par le Dashboard Opérations ; HubRelaisView et InventoryView
-  // convergent vers le Workspace mono-marché 4A. Le bouton global proposeAll
-  // n'est pas porté : Canonical conserve uniquement les affectations déjà
-  // bornées par le marché serveur. ?legacy=1 garde le rollback explicite.
   const OPERATIONS_CANONICAL_ENTRYPOINTS = Object.freeze({
     '/admin/orders-logistics': '/admin/operations',
     '/admin/hub-relais': '/admin/workspaces/operations',
@@ -258,8 +227,22 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
-  // par un Workspace / Entity 360 / Action Center Canonical.
+  // LOT 4P — AccountingView et InvoicesView sont absorbées par le couple
+  // Dashboard Finance / Workspace Comptabilité. L'entrée action/document
+  // converge vers le Workspace ; ?legacy=1 garde le rollback historique.
+  const FINANCE_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/accounting',
+    '/admin/invoices',
+  ]);
+
+  FINANCE_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/accounting');
+    });
+  });
+
+  // Legacy 1 reste accessible pour les capacités non encore prouvées absorbées.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
@@ -269,10 +252,8 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/transitaire',
     '/admin/economic',
     '/admin/pilotage-fin',
-    '/admin/invoices',
     '/admin/sante',
     '/admin/shared-carts',
-    '/admin/accounting',
     '/admin/settings',
     '/admin/simulator',
   ];
