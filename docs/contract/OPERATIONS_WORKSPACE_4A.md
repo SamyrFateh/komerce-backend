@@ -2,7 +2,7 @@
 
 ## Status
 
-Contract candidate for the first Canonical Workspace.
+Canonical Workspace with controlled Legacy-entry cutover in LOT 4O.
 
 The doctrine is deliberately different from a dashboard:
 
@@ -16,12 +16,12 @@ LOT 4A therefore does **not** replace the Operations dashboard. It adds an actio
 - build alias: `/admin-next/workspaces/operations` → `/admin/workspaces/operations`
 - API namespace: `/api/admin/workspaces/operations`
 
-Legacy remains available during proof:
+Legacy remains available as an explicit rollback:
 
-- `/admin/hub-relais` → Legacy 1
-- `/admin/inventory` → Legacy 1
+- `/admin/hub-relais?legacy=1` → Legacy 1
+- `/admin/inventory?legacy=1` → Legacy 1
 
-No destructive cutover is part of LOT 4A.
+Normal entrypoints redirect to `/admin/workspaces/operations`. The Legacy files remain untouched and recoverable during the rollback window.
 
 ## Action-context invariant
 
@@ -314,7 +314,7 @@ LOT 4A does not:
 
 - create a global mutation endpoint;
 - replace the Operations dashboard;
-- remove Legacy Hub/Relais or Inventory views;
+- delete Legacy Hub/Relais or Inventory files during the rollback window;
 - import Legacy JS/CSS;
 - create a new logistics state machine;
 - create a new payment state machine;
@@ -326,6 +326,11 @@ LOT 4A does not:
 
 ## Cutover rule
 
-Only after runtime proof may `/admin/hub-relais` and `/admin/inventory` be reconsidered for redirect/cutover.
+LOT 4O proves the legitimate historical needs against the Canonical split:
 
-Until then, LOT 4A is additive and rollback-safe.
+- observation from `OrdersLogisticsView` → `/admin/operations`;
+- six Hub/Relais mutations → the corresponding market-scoped Workspace actions;
+- inventory queues/open parcels and explicit assignment → the Workspace inventory section;
+- global `hubInventoryProposeAll` → deliberately retired because it cannot prove a single server-authorized market before mutation.
+
+`/admin/hub-relais` and `/admin/inventory` therefore redirect to the Workspace. `?legacy=1` remains the immediate rollback until the Legacy purge is separately approved.
