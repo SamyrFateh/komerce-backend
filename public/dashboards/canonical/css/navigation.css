@@ -1,0 +1,218 @@
+/* Canonical admin navigation — one cockpit, four primary dashboards. */
+.kmc-admin-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: color-mix(in srgb, var(--kmc-card) 94%, transparent);
+  border-bottom: 1px solid var(--kmc-line);
+  backdrop-filter: blur(14px);
+}
+
+.kmc-admin-navigation-inner {
+  width: min(1440px, calc(100% - 32px));
+  min-height: 64px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(190px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+}
+
+.kmc-admin-navigation-identity,
+.kmc-admin-primary-nav,
+.kmc-admin-utility-nav {
+  display: flex;
+  align-items: center;
+}
+
+.kmc-admin-navigation-identity {
+  gap: 12px;
+  min-width: 0;
+}
+
+.kmc-admin-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--kmc-navy);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-home-mark {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--kmc-card);
+  background: var(--kmc-navy);
+  border-radius: 9px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.kmc-admin-home-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kmc-admin-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 9px;
+  color: var(--kmc-muted);
+  border: 1px solid var(--kmc-line);
+  border-radius: var(--kmc-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-back:hover,
+.kmc-admin-back:focus-visible {
+  color: var(--kmc-navy);
+  border-color: var(--kmc-line-strong);
+  background: var(--kmc-paper);
+}
+
+.kmc-admin-primary-nav {
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.kmc-admin-primary-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 13px;
+  color: var(--kmc-muted);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-primary-link:hover,
+.kmc-admin-primary-link:focus-visible {
+  color: var(--kmc-navy);
+  background: var(--kmc-paper);
+}
+
+.kmc-admin-primary-link.is-active {
+  color: var(--kmc-navy);
+  background: var(--kmc-warning-soft);
+}
+
+.kmc-admin-primary-link.is-active::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  bottom: 4px;
+  height: 2px;
+  background: var(--kmc-amber);
+  border-radius: 999px;
+}
+
+.kmc-admin-utility-nav {
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.kmc-admin-utility-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--kmc-muted);
+  border: 1px solid transparent;
+  border-radius: var(--kmc-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-utility-link:hover,
+.kmc-admin-utility-link:focus-visible,
+.kmc-admin-utility-link.is-active {
+  color: var(--kmc-navy);
+  border-color: var(--kmc-line);
+  background: var(--kmc-card);
+}
+
+.kmc-admin-demo-link::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  background: var(--kmc-positive);
+  border-radius: 999px;
+}
+
+@media (max-width: 980px) {
+  .kmc-admin-navigation-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'identity utilities'
+      'primary primary';
+    gap: 0 12px;
+    padding: 9px 0 8px;
+  }
+
+  .kmc-admin-navigation-identity { grid-area: identity; }
+  .kmc-admin-utility-nav { grid-area: utilities; }
+
+  .kmc-admin-primary-nav {
+    grid-area: primary;
+    justify-content: flex-start;
+    margin-top: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .kmc-admin-primary-nav::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 620px) {
+  .kmc-admin-navigation-inner {
+    width: min(100% - 24px, 1440px);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .kmc-admin-home-label {
+    font-size: 13px;
+  }
+
+  .kmc-admin-back {
+    padding-inline: 8px;
+  }
+
+  .kmc-admin-utility-link {
+    padding-inline: 8px;
+  }
+
+  .kmc-admin-demo-link {
+    font-size: 0;
+  }
+
+  .kmc-admin-demo-link::before {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .kmc-admin-home-label { display: none; }
+  .kmc-admin-navigation-identity { gap: 7px; }
+  .kmc-admin-primary-link { padding-inline: 11px; }
+  .kmc-admin-primary-link.is-active::after { left: 11px; right: 11px; }
+}
