@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="">
+  <defs>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F04455"/><stop offset=".55" stop-color="#D51F3E"/><stop offset="1" stop-color="#A91335"/></linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#FFF" stop-opacity=".62"/><stop offset=".35" stop-color="#FFF" stop-opacity=".08"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+    <filter id="shadow" x="-25%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#3E0A19" flood-opacity=".24"/></filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path fill="url(#dress)" d="M190 52c16 24 116 24 132 0l24 54-34 35 24 55c38 70 72 145 92 231-105 38-239 38-344 0 20-86 54-161 92-231l24-55-34-35 24-54z"/>
+    <path fill="#FF7884" d="M190 52c18 26 114 26 132 0l-11 66c-24 25-86 25-110 0z" opacity=".7"/>
+    <path fill="#8F1731" d="M182 185h148l12 30c-50 20-122 20-172 0z" opacity=".64"/>
+    <path fill="url(#shine)" d="M192 79c12 13 25 21 40 25-16 106-48 224-92 319-17 3-34 1-50-3 24-92 59-170 96-239l21-46-27-28z"/>
+    <g fill="#FFD8DC" opacity=".96">
+      <circle cx="168" cy="279" r="10"/><circle cx="221" cy="248" r="8"/><circle cx="291" cy="281" r="11"/><circle cx="345" cy="327" r="9"/><circle cx="205" cy="362" r="10"/><circle cx="284" cy="395" r="9"/><circle cx="129" cy="381" r="8"/>
+    </g>
+    <g fill="#FFF4E6" opacity=".88"><circle cx="184" cy="293" r="4"/><circle cx="307" cy="301" r="4"/><circle cx="232" cy="386" r="4"/><circle cx="329" cy="366" r="4"/></g>
+  </g>
+</svg>
