@@ -1,0 +1,153 @@
+name: Hero Mobile Slogan Repair
+
+on:
+  push:
+    branches:
+      - feat/discovery-local-v2
+    paths:
+      - '.github/workflows/hero-mobile-slogan-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Restore canonical mobile slogan source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          hero = Path('public/boutique/css/hero.css')
+          text = hero.read_text(encoding='utf-8-sig')
+          old = ".k-hero-mini-slogan {\n  position: absolute;"
+          new = ".k-hero-mini-slogan {\n  display: flex;\n  position: absolute;"
+          if old not in text:
+              raise SystemExit('hero.css base slogan anchor not found')
+          text = text.replace(old, new, 1)
+
+          old_h0 = "/* Slogan mobile : supprimé (H0) */\n.k-hero-mini-slogan { display: none; }\n.k-hero-bubble       { display: none; }\n\n/* k-search-slogan supprimé (H0) — doublon de .k-hero-mini-slogan */"
+          new_h0 = "/* Slogan mobile restauré : owner hero.css.\n   Les CTA secondaires restent masqués sur mobile ; seule la signature courte\n   \"Vos envies, à portée de main.\" revient sur le visuel canonique. */\n.k-hero-bubble { display: none; }"
+          if old_h0 not in text:
+              raise SystemExit('hero.css H0 slogan block not found')
+          text = text.replace(old_h0, new_h0, 1)
+          hero.write_text(text, encoding='utf-8')
+
+          ultra = Path('public/boutique/css/hero-ultra-mobile.css')
+          text = ultra.read_text(encoding='utf-8')
+          text = text.replace(' *                Mode diagnostic temporaire : visuel pur, sans texte ni CTA.\n',
+                              ' *                Le slogan court reste visible ; sous-texte et CTA restent masqués.\n', 1)
+          hidden = "\n  .k-hero-media .k-hero-mini-slogan--premium {\n    display: none;\n  }"
+          if hidden not in text:
+              raise SystemExit('hero-ultra-mobile hidden slogan block not found')
+          text = text.replace(hidden, '', 1)
+          ultra.write_text(text, encoding='utf-8')
+
+          test = Path('public/boutique/tests/unit/hero-ultra-mobile.test.js')
+          text = test.read_text(encoding='utf-8')
+          old_test = "    expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');\n    expect(css).toContain('display: none;');"
+          new_test = "    expect(css).not.toContain('.k-hero-media .k-hero-mini-slogan--premium');\n    expect(css).not.toContain('display: none;');"
+          if old_test not in text:
+              raise SystemExit('hero-ultra-mobile test hidden assertion not found')
+          text = text.replace(old_test, new_test, 1)
+          test.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Targeted hero test
+        working-directory: public/boutique
+        run: npx jest tests/unit/hero-ultra-mobile.test.js --runInBand
+
+      - name: Rebuild canonical CSS
+        working-directory: public/boutique
+        run: npm run deploy:css
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate real mobile render
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          mkdir -p hero-slogan-audit
+          npx serve .. --listen 3000 --no-clipboard >/tmp/komerce-serve.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          for i in {1..30}; do
+            curl -fsS http://localhost:3000/boutique/ >/dev/null && break
+            sleep 1
+          done
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+          const fs = require('fs');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR', serviceWorkers: 'block', deviceScaleFactor: 1 });
+            const page = await context.newPage();
+            await page.route(/\/api\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+            await page.route(/\/api\/products(\?|$)/, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+            await page.goto('http://localhost:3000/boutique/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(800);
+            const metrics = await page.evaluate(() => {
+              const slogan = document.querySelector('.k-hero-mini-slogan--premium');
+              const line1 = document.querySelector('.k-hero-mini-slogan--premium .k-line-1');
+              const line2 = document.querySelector('.k-hero-mini-slogan--premium .k-line-2');
+              const hero = document.querySelector('.k-hero-media');
+              const rect = el => { const r = el?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right} : null; };
+              return {
+                sloganDisplay: slogan ? getComputedStyle(slogan).display : null,
+                sloganVisibility: slogan ? getComputedStyle(slogan).visibility : null,
+                slogan: rect(slogan),
+                line1: rect(line1),
+                line2: rect(line2),
+                hero: rect(hero),
+                line1Text: line1?.textContent?.trim() || '',
+                line2Text: line2?.textContent?.trim() || ''
+              };
+            });
+            if (metrics.sloganDisplay === 'none' || metrics.sloganVisibility === 'hidden') throw new Error('mobile slogan still hidden');
+            if (metrics.line1Text !== 'Vos envies,' || metrics.line2Text !== 'à portée de main.') throw new Error('mobile slogan copy mismatch');
+            if (!metrics.hero || !metrics.line2 || metrics.line2.bottom > metrics.hero.bottom + 1) throw new Error('mobile slogan escapes hero bounds');
+            fs.writeFileSync('hero-slogan-audit/metrics.json', JSON.stringify(metrics, null, 2));
+            console.log('HERO_SLOGAN_METRICS=' + JSON.stringify(metrics));
+            await page.screenshot({ path: 'hero-slogan-audit/mobile-390-hero.jpg', type: 'jpeg', quality: 86, fullPage: false });
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hero-mobile-slogan-audit
+          path: public/boutique/hero-slogan-audit/
+          if-no-files-found: error
+
+      - name: Commit repair and remove temporary workflow
+        if: success()
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/hero-mobile-slogan-repair.yml
+          git add public/boutique/css/hero.css \
+                  public/boutique/css/hero-ultra-mobile.css \
+                  public/boutique/tests/unit/hero-ultra-mobile.test.js \
+                  public/boutique/css/dist \
+                  public/boutique/index.html \
+                  public/boutique/.cache-buster-state.json
+          git commit -m 'fix(boutique): restore mobile hero slogan'
+          git push origin HEAD:feat/discovery-local-v2
