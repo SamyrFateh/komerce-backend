@@ -12,6 +12,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const utils = fs.readFileSync(path.join(ROOT, 'js/b-utils.js'), 'utf8');
 const hydration = fs.readFileSync(path.join(ROOT, 'js/market-hydration.js'), 'utf8');
+const catalogFeature = fs.readFileSync(path.join(ROOT, 'features/catalog.feature.js'), 'utf8');
 
 describe('Boutique runtime CSP contract', () => {
   test('market hydration is same-origin external JS, never inline executable script', () => {
@@ -19,6 +20,7 @@ describe('Boutique runtime CSP contract', () => {
     expect(index).not.toMatch(/<script>\s*\/\* H2 — hydratation/);
     expect(hydration).toContain('hydrateMarketLiterals');
     expect(hydration).toContain('window.KomerceMarket');
+    expect(catalogFeature).toContain("'../js/market-hydration.js'");
   });
 
   test('product image fallback uses delegated listeners, never inline event attributes', () => {
