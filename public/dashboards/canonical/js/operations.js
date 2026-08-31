@@ -83,9 +83,8 @@
       },
     ],
     drill: [
-      { id: 'pilotage', label: 'Retour Pilotage', href: '/admin-next' },
-      { id: 'commerce', label: 'Voir Commerce', href: '/admin-next/commerce' },
-      { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin-next/demo' },
+      { id: 'operations-workspace', label: 'Exécution Hub & Relais', href: '/admin/workspaces/operations' },
+      { id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' },
     ],
   });
 
