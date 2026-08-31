@@ -1,0 +1,333 @@
+name: Runtime CSP Hardening
+
+on:
+  push:
+    branches: [feat/discovery-local-v2]
+    paths:
+      - '.github/workflows/runtime-csp-hardening.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/discovery-local-v2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Patch CSP-safe runtime contracts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+
+          # 1) Externalize market hydration from index.html.
+          index = root / 'public/boutique/index.html'
+          src = index.read_text(encoding='utf-8')
+          pattern = re.compile(r'<script>\s*/\* H2 — hydratation des littéraux pays depuis market-context\.js.*?</script>\s*', re.S)
+          replacement = '<script src="/boutique/js/market-hydration.js"></script>\n'
+          src2, count = pattern.subn(replacement, src, count=1)
+          if count != 1:
+              raise SystemExit(f'index market hydration replacement count={count}')
+          index.write_text(src2, encoding='utf-8')
+
+          market_hydration = root / 'public/boutique/js/market-hydration.js'
+          market_hydration.write_text(r'''/**
+           * @komerce-arch-lite
+           * @role          boutique-market-hydration
+           * @domain        catalog
+           * @layer         ui-adapter
+           * @owner         public/boutique/js/market-context.js
+           * @purpose       Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.
+           * @impact-areas  boutique, market, hero, seo
+           * @version       2026-08
+           */
+          'use strict';
+
+          (function hydrateMarketLiterals() {
+            const marketApi = window.KomerceMarket;
+            if (!marketApi) return;
+
+            const overrideCode = marketApi.getPreviewOverride?.();
+            const market = overrideCode
+              ? marketApi.getByCode?.(overrideCode)
+              : marketApi.get?.();
+            if (!market) return;
+
+            const map = {
+              'k-meta-desc':          ['content', market.seo_description],
+              'k-og-title':           ['content', market.og_title],
+              'k-og-desc':            ['content', market.og_description],
+              'k-hero-h1':            ['text',    market.seo_title],
+              'k-hero-img-tag':       ['alt',     market.seo_title],
+              'k-hero-badge':         ['text',    market.gentile],
+              'k-hero-sub':           ['text',    market.delivery_line],
+              'k-sc-free-ship-label': ['text',    market.free_ship_label],
+              'k-footer-tagline':     ['text',    market.footer_tagline],
+            };
+
+            for (const [id, [kind, value]] of Object.entries(map)) {
+              const element = document.getElementById(id);
+              if (!element || value == null) continue;
+              if (kind === 'text') element.textContent = value;
+              else element.setAttribute(kind, value);
+            }
+          })();
+          ''', encoding='utf-8')
+
+          # 2) Replace inline image event attributes with one CSP-safe delegated listener.
+          utils = root / 'public/boutique/js/b-utils.js'
+          usrc = utils.read_text(encoding='utf-8')
+          start = usrc.index('/**\n * Attribut HTML pour les renderers de chaînes.')
+          end = usrc.index('/**\n * Retourne l\'emoji associé à un produit.', start)
+          replacement = r'''/**
+           * Marqueur HTML pour les images produit gérées par le fallback canonique.
+           *
+           * IMPORTANT CSP : aucun onload/onerror inline. Les événements load/error
+           * sont capturés une seule fois au niveau document, y compris pour les
+           * cartes injectées dynamiquement après le boot.
+           */
+          const MIN_DIM = 16;
+
+          export function productImageFallbackAttr() {
+            return 'data-k-product-image="1"';
+          }
+
+          function _isManagedProductImage(target) {
+            return Boolean(
+              target &&
+              target.tagName === 'IMG' &&
+              target.dataset?.kProductImage === '1'
+            );
+          }
+
+          function _validateProductImage(image) {
+            if (!_isManagedProductImage(image) || image.dataset.kFallbackApplied === '1') return;
+            if (image.naturalWidth < MIN_DIM || image.naturalHeight < MIN_DIM) {
+              applyProductImageFallback(image);
+            }
+          }
+
+          function _installProductImageFallbackDelegation() {
+            if (typeof document === 'undefined') return;
+            const root = document.documentElement;
+            if (!root || root.dataset.kProductImageFallbackBound === '1') return;
+            root.dataset.kProductImageFallbackBound = '1';
+
+            document.addEventListener('error', (event) => {
+              if (_isManagedProductImage(event.target)) applyProductImageFallback(event.target);
+            }, true);
+
+            document.addEventListener('load', (event) => {
+              if (_isManagedProductImage(event.target)) _validateProductImage(event.target);
+            }, true);
+          }
+
+          _installProductImageFallbackDelegation();
+
+          '''
+          utils.write_text(usrc[:start] + replacement + usrc[end:], encoding='utf-8')
+
+          # 3) Notifications: no authenticated feed call before identity signal.
+          notif = root / 'public/boutique/js/b-notifications.js'
+          nsrc = notif.read_text(encoding='utf-8')
+          nsrc = nsrc.replace(
+              'let lastRefreshAt = 0;\nconst REFRESH_INTERVAL_MS = 60000;',
+              'let lastRefreshAt = 0;\nlet identityReady = false;\nconst REFRESH_INTERVAL_MS = 60000;'
+          )
+          nsrc = nsrc.replace(
+              'export async function refreshClientNotifications({ force = false } = {}) {\n  const now = Date.now();',
+              "export async function refreshClientNotifications({ force = false } = {}) {\n  if (!identityReady) {\n    hideBanner();\n    return;\n  }\n  const now = Date.now();"
+          )
+          nsrc = nsrc.replace(
+              "    if (err?.status === 401 || err?.status === 403) hideBanner();",
+              "    if (err?.status === 401 || err?.status === 403) {\n      identityReady = false;\n      openNotifications = [];\n      hideBanner();\n    }"
+          )
+          old_setup = '''export function setupClientNotifications() {
+            if (installed) return;
+            installed = true;
+            refreshClientNotifications({ force: true });
+            window.addEventListener('komerce:identity-authenticated', () => refreshClientNotifications({ force: true }));
+            window.addEventListener('focus', () => refreshClientNotifications());
+            document.addEventListener('visibilitychange', refreshWhenVisible);
+            // Polling léger uniquement quand l'application est visible : il remplace le
+            // besoin d'un push externe sans produire de nouveau message ni doublon.
+            window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
+          }'''.replace('          ', '')
+          new_setup = '''export function setupClientNotifications() {
+            if (installed) return;
+            installed = true;
+
+            // Le feed est authentifié : un visiteur anonyme ne doit jamais produire
+            // de 401 de polling. Le premier GET est déclenché uniquement par le signal
+            // canonique émis après restauration de session ou validation OTP.
+            window.addEventListener('komerce:identity-authenticated', () => {
+              identityReady = true;
+              refreshClientNotifications({ force: true });
+            });
+            window.addEventListener('komerce:identity-cleared', () => {
+              identityReady = false;
+              openNotifications = [];
+              hideBanner();
+            });
+            window.addEventListener('focus', () => refreshClientNotifications());
+            document.addEventListener('visibilitychange', refreshWhenVisible);
+            // Polling léger uniquement quand l'application est visible ET identifiée.
+            window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
+          }'''.replace('          ', '')
+          if old_setup not in nsrc:
+              raise SystemExit('notification setup block not found')
+          nsrc = nsrc.replace(old_setup, new_setup)
+          notif.write_text(nsrc, encoding='utf-8')
+
+          # 4) Feature ownership: catalog owns the external market hydration adapter.
+          fmanifest = root / 'public/boutique/features/catalog.feature.js'
+          fsrc = fmanifest.read_text(encoding='utf-8')
+          needle = "      '../js/market-context.js',\n"
+          if "../js/market-hydration.js" not in fsrc:
+              if needle not in fsrc:
+                  raise SystemExit('frontend catalog manifest insertion point missing')
+              fsrc = fsrc.replace(needle, needle + "      '../js/market-hydration.js',\n")
+          fmanifest.write_text(fsrc, encoding='utf-8')
+
+          root_manifest = root / 'features/catalog.feature.js'
+          rsrc = root_manifest.read_text(encoding='utf-8')
+          if "'js/market-hydration.js'" not in rsrc:
+              needle = "      'js/shop-schema.js',\n"
+              if needle not in rsrc:
+                  raise SystemExit('root catalog manifest insertion point missing')
+              rsrc = rsrc.replace(needle, needle + "      'js/market-hydration.js',\n")
+          root_manifest.write_text(rsrc, encoding='utf-8')
+
+          # 5) Dedicated regression tests.
+          test = root / 'public/boutique/tests/unit/runtime-csp-contract.test.js'
+          test.write_text(r'''/**
+           * @test-kind unit
+           * @test-runner jest
+           * @test-requires none
+           */
+          'use strict';
+
+          const fs = require('fs');
+          const path = require('path');
+
+          const ROOT = path.resolve(__dirname, '../..');
+          const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+          const utils = fs.readFileSync(path.join(ROOT, 'js/b-utils.js'), 'utf8');
+          const hydration = fs.readFileSync(path.join(ROOT, 'js/market-hydration.js'), 'utf8');
+
+          describe('Boutique runtime CSP contract', () => {
+            test('market hydration is same-origin external JS, never inline executable script', () => {
+              expect(index).toContain('<script src="/boutique/js/market-hydration.js"></script>');
+              expect(index).not.toMatch(/<script>\s*\/\* H2 — hydratation/);
+              expect(hydration).toContain('hydrateMarketLiterals');
+              expect(hydration).toContain('window.KomerceMarket');
+            });
+
+            test('product image fallback uses delegated listeners, never inline event attributes', () => {
+              expect(utils).toContain('data-k-product-image="1"');
+              expect(utils).toContain("document.addEventListener('error'");
+              expect(utils).toContain("document.addEventListener('load'");
+              expect(utils).not.toMatch(/return `onload=/);
+              expect(utils).not.toMatch(/return `onerror=/);
+              expect(utils).not.toContain('onload="${onload}"');
+              expect(utils).not.toContain('onerror="${onerror}"');
+            });
+          });
+          ''', encoding='utf-8')
+
+          ntest = root / 'public/boutique/tests/unit/b-notifications.test.js'
+          ntest.write_text(r'''/**
+           * @test-kind unit
+           * @test-runner jest
+           * @test-requires none
+           */
+          'use strict';
+
+          const mockApiGet = jest.fn();
+          const mockApiPost = jest.fn();
+          const mockBus = { emit: jest.fn() };
+
+          jest.mock('../../js/b-utils.js', () => ({
+            apiGet: (...args) => mockApiGet(...args),
+            apiPost: (...args) => mockApiPost(...args),
+          }));
+          jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
+
+          const { setupClientNotifications } = require('../../js/b-notifications.js');
+
+          describe('client notifications identity gate', () => {
+            beforeAll(() => {
+              jest.useFakeTimers();
+              mockApiGet.mockResolvedValue({ notifications: [] });
+            });
+
+            afterAll(() => {
+              jest.useRealTimers();
+            });
+
+            test('anonymous boot performs no notification request; authenticated signal starts the feed', async () => {
+              setupClientNotifications();
+              expect(mockApiGet).not.toHaveBeenCalled();
+
+              window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
+                detail: { user: { id: 'u-1' } },
+              }));
+
+              expect(mockApiGet).toHaveBeenCalledTimes(1);
+              expect(mockApiGet).toHaveBeenCalledWith('/api/auth/me/notifications', { retries: 0 });
+              await Promise.resolve();
+            });
+          });
+          ''', encoding='utf-8')
+
+          # Add tests to frontend catalog slice where applicable; notification test remains
+          # owned by root notification feature through its source header/graph.
+          fsrc = fmanifest.read_text(encoding='utf-8')
+          tneedle = "      '../tests/unit/products.test.js',\n"
+          if "../tests/unit/runtime-csp-contract.test.js" not in fsrc:
+              if tneedle not in fsrc:
+                  raise SystemExit('catalog test manifest insertion point missing')
+              fsrc = fsrc.replace(tneedle, tneedle + "      '../tests/unit/runtime-csp-contract.test.js',\n")
+          fmanifest.write_text(fsrc, encoding='utf-8')
+          PY
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Runtime contract tests
+        working-directory: public/boutique
+        run: npx jest tests/unit/runtime-csp-contract.test.js tests/unit/b-notifications.test.js --runInBand
+
+      - name: Strict inline-script CSP gate
+        working-directory: public/boutique
+        run: node scripts/check-inline-scripts.js --strict
+
+      - name: Import and feature ownership gates
+        working-directory: public/boutique
+        run: |
+          npm run check:imports
+          npm run feature:guard:strict
+
+      - name: Commit hardening and remove temporary workflow
+        shell: bash
+        run: |
+          rm .github/workflows/runtime-csp-hardening.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(boutique): harden CSP-safe runtime fallbacks'
+          git push origin HEAD:feat/discovery-local-v2
