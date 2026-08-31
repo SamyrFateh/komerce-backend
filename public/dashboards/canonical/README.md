@@ -38,6 +38,13 @@ LOT 4N réduit les deux anciennes surfaces de constats :
 `/admin/alerts` et `/admin/problems` redirigent vers `/admin/action-center`.
 `?legacy=1` conserve temporairement les témoins Legacy ; aucun moteur Problems parallèle n’est recréé.
 
+LOT 4O réduit trois entrées opérationnelles historiques :
+`/admin/orders-logistics` redirige vers `/admin/operations`, tandis que
+`/admin/hub-relais` et `/admin/inventory` redirigent vers `/admin/workspaces/operations`.
+`?legacy=1` conserve le rollback Legacy 1. L’ancien `proposeAll` global d’inventaire
+n’est pas porté : le Workspace Canonical ne permet que des affectations mono-marché
+autorisées côté serveur.
+
 Les aliases `/admin-next/**` et `/admin/pilotage-v2` restent disponibles pendant la fenêtre de cutover.
 
 Le cutover est **additif** : les anciennes capacités qui n'ont pas encore d'équivalent Workspace / Entity 360 / Action Center continuent d'être servies par Legacy 1 sur leurs URLs historiques. Elles ne sont ni supprimées ni masquées.
