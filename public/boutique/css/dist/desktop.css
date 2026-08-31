@@ -528,21 +528,20 @@
     align-items: center;
     gap: 5px;
     padding: 0;
-    border: 1.5px solid var(--border);
-    border-radius: 999px;
+    border: 0;
+    border-radius: 0;
     background: transparent;
     color: var(--text-muted);
     font-family: var(--font);
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 650;
     cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s, transform .15s;
+    transition: color .15s, transform .15s;
     flex-shrink: 0;
   }
   #k-subcats-wrap .k-subcats-back:hover {
-    background: var(--white);
-    border-color: var(--text-muted);
-    color: var(--text);
+    background: transparent;
+    color: var(--ocean-dark);
     transform: translateX(-1px);
   }
   #k-subcats-wrap .k-subcats-back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
@@ -662,23 +661,23 @@
    horizontal pour prolonger la sélection sans concurrencer le hero. */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-subcats-wrap {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 3px;
     max-width: 1680px;
     margin: 0 auto;
-    border-top: 1px solid var(--border-text-06);
+    border-top: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back {
-    width: 30px;
-    height: 30px;
-    justify-content: center;
-    border-width: 1px;
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    border-width: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back span {
-    display: none;
+    display: inline;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-title {
@@ -690,7 +689,7 @@
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-count {
-    border: 1px solid var(--border-text-06);
+    border: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-rail {
@@ -1737,12 +1736,12 @@
   .k-subcutout-context {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
     flex-wrap: nowrap;
     width: auto;
     max-width: none;
     margin: 0;
-    padding: 4px 0 0;
+    padding: 2px 0 0;
     box-sizing: border-box;
   }
 
@@ -1755,10 +1754,10 @@
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: var(--text-muted);
+    color: var(--catalog-nav-sage);
     font-family: var(--font);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 650;
     cursor: pointer;
   }
 
@@ -1780,9 +1779,9 @@
     gap: 5px;
     color: var(--text);
     font-family: var(--font);
-    font-size: 12px;
-    font-weight: 750;
-    line-height: 1.2;
+    font-size: 14px;
+    font-weight: 780;
+    line-height: 1.15;
   }
 
   /* Le contexte est textuel ; l'objet visuel vit dans le rail juste dessous. */
@@ -1798,7 +1797,7 @@
 
   .k-subcutout-count {
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 600;
   }
 
@@ -1811,11 +1810,11 @@
     align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 10px;
+    gap: 14px;
     width: auto;
     max-width: none;
     margin: 0;
-    padding: 0 0 5px;
+    padding: 1px 0 4px;
     box-sizing: border-box;
     overflow-x: auto;
     scrollbar-width: none;
@@ -1908,18 +1907,18 @@
   /* Premium home : contexte puis rail, sans cadres supplémentaires. */
 
   html.k-home-premium-v1 .k-subcutout-back {
-    width: 28px;
-    height: 32px;
-    justify-content: center;
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
   }
 
   html.k-home-premium-v1 .k-subcutout-back span {
-    display: none;
+    display: inline;
   }
 
   html.k-home-premium-v1 .k-subcutout-rail {
     min-width: 0;
-    gap: 10px;
+    gap: 14px;
   }
 }
 
@@ -2086,14 +2085,14 @@
     --k-sub-scale: .98;
     --k-sub-active-y: -1px;
     --k-sub-active-scale: 1.03;
-    min-width: 66px;
-    min-height: 58px;
+    min-width: 72px;
+    min-height: 60px;
   }
 
   .k-subcutout-icon {
     position: relative;
-    width: 46px;
-    height: 40px;
+    width: 48px;
+    height: 42px;
     font-size: 22px;
   }
 
@@ -2219,8 +2218,8 @@
   }
 
   .k-subcutout-label {
-    font-size: 10.5px;
-    font-weight: 620;
+    font-size: 11px;
+    font-weight: 630;
   }
 
   .k-subcutout {
@@ -2236,6 +2235,6 @@
   }
 
   .k-subcutout.active::after {
-    width: 18px;
+    width: 22px;
   }
 }

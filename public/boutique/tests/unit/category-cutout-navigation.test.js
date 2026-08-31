@@ -11,6 +11,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const mobile = fs.readFileSync(path.join(ROOT, 'css/category-cutout-navigation.css'), 'utf8');
 const desktop = fs.readFileSync(path.join(ROOT, 'css/category-cutout-navigation-desktop.css'), 'utf8');
+const desktopLegacy = fs.readFileSync(path.join(ROOT, 'css/boutique-desktop.css'), 'utf8');
 const renderer = fs.readFileSync(path.join(ROOT, 'js/render/render-categories.js'), 'utf8');
 const visuals = fs.readFileSync(path.join(ROOT, 'js/render/category-shelf-visuals.js'), 'utf8');
 const home = fs.readFileSync(path.join(ROOT, 'js/controllers/home-controller.js'), 'utf8');
@@ -150,9 +151,21 @@ describe('Komerce Shelf category navigation contract', () => {
 
   it('rend les sous-catégories verticales, sans capsule ni fond métier', () => {
     expect(desktop).toMatch(/\.k-subcutout\s*\{[^}]*flex-direction:\s*column[^}]*border:\s*0[^}]*background:\s*transparent/s);
-    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*35px/s);
-    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*10\.5px/s);
+    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*48px[^}]*height:\s*42px/s);
+    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11px/s);
     expect(desktop).toMatch(/\.k-subcutout\.active::after[\s\S]*background:\s*var\(--ocean-dark\)/);
+  });
+
+  it('garde le contexte desktop ouvert et les sous-catégories portées par leurs objets', () => {
+    expect(desktopLegacy).toMatch(/html\.k-home-premium-v1 #k-subcats-wrap\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*border-top:\s*0/s);
+    expect(desktopLegacy).toMatch(/#k-subcats-wrap \.k-subcats-back\s*\{[^}]*border:\s*0[^}]*border-radius:\s*0/s);
+    expect(desktopLegacy).toMatch(/#k-subcats-wrap \.k-subcats-back span\s*\{[^}]*display:\s*inline/s);
+    expect(desktopLegacy).toMatch(/#k-subcats-wrap \.k-subcats-count\s*\{[^}]*border:\s*0/s);
+    expect(desktop).toMatch(/\.k-subcutout-title\s*\{[^}]*font-size:\s*14px/s);
+    expect(desktop).toMatch(/html\.k-home-premium-v1 \.k-subcutout-back span\s*\{[^}]*display:\s*inline/s);
+    expect(desktop).toMatch(/\.k-subcutout\s*\{[^}]*min-width:\s*72px[^}]*min-height:\s*60px/s);
+    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*48px[^}]*height:\s*42px/s);
+    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11px/s);
   });
 
   it('garde les nouveaux skins hors des selectors ownership historiques', () => {
