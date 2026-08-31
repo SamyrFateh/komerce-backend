@@ -576,36 +576,7 @@
 
 <script src="/boutique/js/market-context.js"></script>
 <script defer src="/boutique/js/hero-bootstrap.js"></script>
-<script>
-/* H2 — hydratation des littéraux pays depuis market-context.js
-   H4-preview — ?market=CM/CG/YT bascule l'affichage pour démo, jamais le
-   panier ni la commande. getPreviewMarketOverride() est défini dans
-   market-context.js, portée documentée là-bas. */
-(function(){
-  var overrideCode = window.KomerceMarket && window.KomerceMarket.getPreviewOverride && window.KomerceMarket.getPreviewOverride();
-  var m = overrideCode
-    ? window.KomerceMarket.getByCode(overrideCode)
-    : (window.KomerceMarket && window.KomerceMarket.get());
-  if (!m) return;
-  var map = {
-    'k-meta-desc':         ['content', m.seo_description],
-    'k-og-title':          ['content', m.og_title],
-    'k-og-desc':           ['content', m.og_description],
-    'k-hero-h1':           ['text',    m.seo_title],
-    'k-hero-img-tag':      ['alt',     m.seo_title],
-    'k-hero-badge':        ['text',    m.gentile],
-    'k-hero-sub':          ['text',    m.delivery_line],
-    'k-sc-free-ship-label':['text',    m.free_ship_label],
-    'k-footer-tagline':    ['text',    m.footer_tagline],
-  };
-  for (var id in map) {
-    var el = document.getElementById(id);
-    if (!el) continue;
-    if (map[id][0] === 'text') el.textContent = map[id][1];
-    else el.setAttribute(map[id][0], map[id][1]);
-  }
-})();
-</script>
+<script src="/boutique/js/market-hydration.js"></script>
 <!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script src="/boutique/js/komerce-api.js?v=340"></script>

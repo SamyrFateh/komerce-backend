@@ -259,24 +259,49 @@ export function applyProductImageFallback(image) {
 }
 
 /**
- * Attribut HTML pour les renderers de chaînes.
+ * Marqueur HTML pour les images produit gérées par le fallback canonique.
  *
- * onload : vérifie les dimensions après chargement.
- *   · Une vraie image produit mesure au minimum MIN_DIM px dans sa plus
- *     petite dimension. L'image d'erreur Cloudinary et les fichiers corrompus
- *     sont typiquement ≤ 8 px.
- *   · Si les dimensions sont insuffisantes → même traitement qu'un 404.
- *
- * onerror : déclenché sur 404 / erreur réseau / image invalide.
+ * IMPORTANT CSP : aucun onload/onerror inline. Les événements load/error
+ * sont capturés une seule fois au niveau document, y compris pour les
+ * cartes injectées dynamiquement après le boot.
  */
-const MIN_DIM = 16; // px — seuil de détection d'image d'erreur
+const MIN_DIM = 16;
+
 export function productImageFallbackAttr() {
-  const fb = PRODUCT_IMAGE_FALLBACK_URL;
-  const apply = `this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.alt='';this.classList.add('is-image-fallback');this.src='${fb}'`;
-  const onload  = `if(this.dataset.kFallbackApplied!=='1'&&(this.naturalWidth<${MIN_DIM}||this.naturalHeight<${MIN_DIM})){${apply}}`;
-  const onerror = `if(this.dataset.kFallbackApplied!=='1'){${apply}}`;
-  return `onload="${onload}" onerror="${onerror}"`;
+  return 'data-k-product-image="1"';
 }
+
+function _isManagedProductImage(target) {
+  return Boolean(
+    target &&
+    target.tagName === 'IMG' &&
+    target.dataset?.kProductImage === '1'
+  );
+}
+
+function _validateProductImage(image) {
+  if (!_isManagedProductImage(image) || image.dataset.kFallbackApplied === '1') return;
+  if (image.naturalWidth < MIN_DIM || image.naturalHeight < MIN_DIM) {
+    applyProductImageFallback(image);
+  }
+}
+
+function _installProductImageFallbackDelegation() {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (!root || root.dataset.kProductImageFallbackBound === '1') return;
+  root.dataset.kProductImageFallbackBound = '1';
+
+  document.addEventListener('error', (event) => {
+    if (_isManagedProductImage(event.target)) applyProductImageFallback(event.target);
+  }, true);
+
+  document.addEventListener('load', (event) => {
+    if (_isManagedProductImage(event.target)) _validateProductImage(event.target);
+  }, true);
+}
+
+_installProductImageFallbackDelegation();
 
 /**
  * Retourne l'emoji associé à un produit.
