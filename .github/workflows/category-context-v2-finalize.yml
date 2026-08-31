@@ -1,0 +1,82 @@
+name: Category Context V2 Finalize
+
+on:
+  push:
+    branches:
+      - feat/desktop-category-context-v2
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/desktop-category-context-v2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Apply the already-reviewed polish patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/category-context-v2-polish.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(workflow) if line.strip() == "python - <<'PY'") + 1
+          end = next(i for i in range(start, len(workflow)) if workflow[i].strip() == 'PY')
+          code = textwrap.dedent('\n'.join(workflow[start:end]))
+          exec(compile(code, '<category-context-v2-polish>', 'exec'))
+          PY
+
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+
+      - name: Rebuild canonical CSS bundle
+        run: npm --prefix public/boutique run bundle:css
+
+      - name: Targeted navigation contract
+        run: npm --prefix public/boutique exec -- jest tests/unit/category-cutout-navigation.test.js --runInBand
+
+      - name: CSS source gates — same contract as PR enforcement
+        run: |
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+
+      - name: Boutique architecture and ownership
+        run: |
+          node public/boutique/scripts/audit-boutique-arch.js
+          node scripts/boutique-ownership-full-check.js --strict
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
+          node scripts/check-agent-remediation-contract.js --scope=boutique
+
+      - name: Cache and diff integrity
+        run: |
+          npm --prefix public/boutique run check:cache
+          git diff --check
+
+      - name: Remove temporary QA workflows
+        run: |
+          rm -f .github/workflows/category-context-v2-polish.yml
+          rm -f .github/workflows/category-context-v2-finalize.yml
+
+      - name: Commit polished context
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(boutique): open desktop category context"
+          git push origin HEAD:feat/desktop-category-context-v2
