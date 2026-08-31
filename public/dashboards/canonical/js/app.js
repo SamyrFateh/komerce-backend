@@ -5,8 +5,8 @@
  * @layer         ui-entrypoint
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
- * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @outputs       canonical_admin_boot_state, canonical_market_selection, canonical_navigation_context
+ * @depends       canonical navigation, admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
  * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
@@ -563,7 +563,15 @@
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
-    await renderReady(root, user, adminContext);
+    if (!global.KomerceCanonicalNavigation || typeof global.KomerceCanonicalNavigation.mount !== 'function') {
+      throw new Error('canonical_navigation_module_missing');
+    }
+    const content = global.KomerceCanonicalNavigation.mount({
+      root,
+      document: global.document,
+      surface,
+    });
+    await renderReady(content, user, adminContext);
     return user;
   }
 

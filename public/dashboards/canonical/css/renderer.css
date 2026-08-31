@@ -3,6 +3,85 @@
   min-height: 100vh;
 }
 
+.kmc-canonical-app {
+  min-height: 100vh;
+}
+
+.kmc-canonical-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--kmc-line);
+  background: rgb(244 246 250 / 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.kmc-canonical-nav-inner {
+  width: min(1440px, calc(100% - 32px));
+  min-height: 58px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.kmc-canonical-nav-location,
+.kmc-canonical-primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kmc-canonical-brand {
+  color: var(--kmc-navy);
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-canonical-back,
+.kmc-canonical-primary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 11px;
+  color: var(--kmc-navy);
+  border: 1px solid transparent;
+  border-radius: var(--kmc-radius-sm);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-canonical-back {
+  border-color: var(--kmc-line-strong);
+  background: var(--kmc-card);
+}
+
+.kmc-canonical-primary-link:hover,
+.kmc-canonical-primary-link:focus-visible,
+.kmc-canonical-back:hover,
+.kmc-canonical-back:focus-visible {
+  border-color: var(--kmc-navy);
+  outline: none;
+}
+
+.kmc-canonical-primary-link[aria-current="page"] {
+  color: var(--kmc-card);
+  background: var(--kmc-navy);
+  border-color: var(--kmc-navy);
+}
+
+.kmc-canonical-content {
+  min-width: 0;
+}
+
 .kmc-market-context {
   width: min(1440px, calc(100% - 32px));
   margin: 20px auto 0;
@@ -152,6 +231,35 @@
 }
 
 @media (max-width: 720px) {
+  .kmc-canonical-nav-inner {
+    width: min(100% - 24px, 1440px);
+    min-height: 0;
+    padding: 9px 0 8px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .kmc-canonical-nav-location {
+    justify-content: space-between;
+  }
+
+  .kmc-canonical-primary-nav {
+    width: 100%;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .kmc-canonical-primary-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .kmc-canonical-primary-link {
+    min-width: max-content;
+    flex: 1 0 auto;
+  }
+
   .kmc-market-context {
     width: min(100% - 24px, 1440px);
     margin-top: 12px;
