@@ -32,7 +32,7 @@ function fakeRes() {
   };
 }
 
-test('URL Accounting Workspace est Canonical tandis que Accounting/Invoices historiques restent Legacy', () => {
+test('Accounting et Invoices convergent vers le Workspace avec rollback Legacy explicite', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
 
@@ -42,9 +42,17 @@ test('URL Accounting Workspace est Canonical tandis que Accounting/Invoices hist
   expect(canonicalRes.sendFile).toHaveBeenCalledWith(path.join(CANONICAL, 'index.html'), expect.any(Function));
 
   for (const legacyPath of ['/admin/accounting', '/admin/invoices']) {
-    const legacyRes = fakeRes();
-    app._routes[legacyPath]({}, legacyRes);
-    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    const cutoverRes = fakeRes();
+    app._routes[legacyPath]({ query: {} }, cutoverRes);
+    expect(cutoverRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/accounting');
+
+    const rollbackRes = fakeRes();
+    app._routes[legacyPath]({ query: { legacy: '1' } }, rollbackRes);
+    expect(rollbackRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(rollbackRes.sendFile).toHaveBeenCalledWith(
+      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
+      expect.any(Function)
+    );
   }
 });
 

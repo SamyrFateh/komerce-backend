@@ -74,13 +74,7 @@
         emptyText: 'Aucune étape économique disponible.',
       },
     ],
-    drill: [
-      { id: 'commerce-canonical', label: 'Commerce', href: '/admin/commerce' },
-      { id: 'operations-canonical', label: 'Opérations', href: '/admin/operations' },
-      { id: 'finance-canonical', label: 'Finance', href: '/admin/finance' },
-      { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin/demo' },
-      { id: 'pilotage-legacy', label: 'Témoin Pilotage historique', href: '/admin/pilotage?legacy=1' },
-    ],
+    drill: [],
   });
 
   const KPI_KEYS = Object.freeze({

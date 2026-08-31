@@ -240,24 +240,52 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 4O — convergence du pilotage opérationnel. OrdersLogisticsView est
+  // absorbée par le Dashboard Opérations ; HubRelaisView et InventoryView
+  // convergent vers le Workspace mono-marché 4A. Le bouton global proposeAll
+  // n'est pas porté : Canonical conserve uniquement les affectations déjà
+  // bornées par le marché serveur. ?legacy=1 garde le rollback explicite.
+  const OPERATIONS_CANONICAL_ENTRYPOINTS = Object.freeze({
+    '/admin/orders-logistics': '/admin/operations',
+    '/admin/hub-relais': '/admin/workspaces/operations',
+    '/admin/inventory': '/admin/workspaces/operations',
+  });
+
+  Object.entries(OPERATIONS_CANONICAL_ENTRYPOINTS).forEach(([routePath, stablePath]) => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, stablePath);
+    });
+  });
+
+  // LOT 4P — AccountingView et InvoicesView sont absorbées par le couple
+  // Dashboard Finance / Workspace Comptabilité. Les entrées d'action et de
+  // documents convergent vers le Workspace ; ?legacy=1 garde le rollback.
+  const FINANCE_CANONICAL_ENTRYPOINTS = Object.freeze([
+    '/admin/accounting',
+    '/admin/invoices',
+  ]);
+
+  FINANCE_CANONICAL_ENTRYPOINTS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, '/admin/workspaces/accounting');
+    });
+  });
+
   // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
   // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
-    '/admin/orders-logistics',
     '/admin/customs',
     '/admin/suppliers',
     '/admin/sales',
-    '/admin/hub-relais',
     '/admin/transitaire',
-    '/admin/inventory',
     '/admin/economic',
     '/admin/pilotage-fin',
-    '/admin/invoices',
     '/admin/sante',
     '/admin/shared-carts',
-    '/admin/accounting',
     '/admin/settings',
     '/admin/simulator',
   ];
