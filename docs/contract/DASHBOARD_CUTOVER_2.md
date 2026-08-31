@@ -43,11 +43,7 @@ Pilotage est la seule URL stable qui existait déjà dans Legacy 1. Le rollback 
 
 Le serveur sert alors `public/dashboards/admin/index.html` avec `X-Admin-Generation: legacy-1` tout en laissant le pathname navigateur à `/admin/pilotage`. Le routeur SPA historique retrouve donc `PilotageView` sans adaptation du code Legacy 1.
 
-Les autres témoins historiques restent accessibles via leurs URLs existantes, par exemple :
-
-- Commerce historique : `/admin/sales`
-- Opérations historique : `/admin/orders-logistics`
-- Finance historique : `/admin/economic`, `/admin/pilotage-fin`
+Les autres témoins historiques restent accessibles via leurs URLs existantes, avec `?legacy=1` lorsque leur entrée normale a déjà convergé vers Canonical.
 
 ## Extension LOT 4J — convergence Pricing
 
@@ -104,16 +100,29 @@ Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant l
 
 `ProblemsView` n’est pas recopié : LOT 4H a audité ses règles une par une. Les prédicats faux ou non prouvables restent volontairement absents du moteur `decision-signals`.
 
+## Extension LOT 4O — convergence Opérations
+
+Les trois anciennes entrées de pilotage et d’exécution opérationnels convergent vers les deux natures de surface prévues par la doctrine : le Dashboard observe, le Workspace agit.
+
+| Ancien point d’entrée | Destination Canonical | Besoin absorbé |
+|---|---|---|
+| `/admin/orders-logistics` | `/admin/operations` | KPI, file active, retards et signaux opérationnels |
+| `/admin/hub-relais` | `/admin/workspaces/operations` | commander, répartir, expédier, encaisser, réceptionner et remettre |
+| `/admin/inventory` | `/admin/workspaces/operations` | file inventaire, colis ouverts et affectation mono-marché |
+
+Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant la fenêtre de rollback.
+
+L’ancienne mutation globale `hubInventoryProposeAll` n’est pas reconstruite. Elle ne possède pas l’autorité mono-marché exigée par Canonical ; l’affectation explicite d’un article à un colis autorisé remplace ce raccourci sans réintroduire une mutation globale.
+
+Cette extension ne bascule pas `/admin/transitaire` ni `/admin/customs`. Le Workspace Expéditions & Douane reste additif jusqu’à complétude de la saisie douane et réconciliation des anciennes expéditions sans `market_id` autoritatif.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
 
-- Hub / Relais
-- Inventaire
 - Expéditions / Transitaire
 - Douane
 - Partenaires multi-familles / Suppliers
-- Clients / Entity 360
 - Factures / Comptabilité
 - Paramètres
 
@@ -136,7 +145,8 @@ Avant merge :
 
 - les quatre routes stables servent Canonical ;
 - `/admin/pilotage?legacy=1` sert Legacy 1 ;
-- une route non reconstruite telle que `/admin/hub-relais` reste Legacy 1 ;
+- les anciennes routes Opérations convergent, avec `?legacy=1` comme rollback ;
+- une route non reconstruite telle que `/admin/customs` reste Legacy 1 ;
 - `surfaceForPath()` résout les quatre URLs stables ;
 - Canonical reste sans import de `admin/**` ou `admin-legacy/**` ;
 - les gates Backend et Governance restent vertes.
