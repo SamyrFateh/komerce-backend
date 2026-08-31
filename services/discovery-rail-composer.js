@@ -7,51 +7,30 @@
  * @inputs        market_id, listes explicites de product_id/physical_offer_id/service_id
  * @outputs       DiscoveryCard[] — projection de lecture, jamais persistée
  * @depends       db, services/local-stock-service.js, services/providers-service.js
- * @used-by       (aucun — Vague 2 D5, shadow : composition disponible, jamais branchée
- *                à une route ou à un composant frontend dans ce lot)
+ * @used-by       services/discovery-rail-service.js
  * @db-read       products
  * @db-read-via:local-stock-service local_stock, local_stock_allocations
  * @db-read-via:providers-service services, physical_offers, providers
  * @db-write      none
  * @db-txn        single_statement_sufficient
- * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de lecture
- *                minimal, jamais une vérité métier), §D0-D10 (D5 : DiscoveryCard)
- * @impact-areas  recommendations
+ * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
+ * @impact-areas  recommendations, boutique, discovery-rail
  * @version       2026-08
  */
 
 'use strict';
 
 /**
- * ═══════════════════════════════════════════════════════════════
- * DISCOVERY RAIL COMPOSER — Vague 2 D5
+ * Discovery ne possède aucune vérité, il la compose.
+ * recommendations n'écrit jamais dans local_stock, services ou
+ * physical_offers et ne clone jamais leurs données. Les objets provider
+ * passent uniquement par les fonctions de leur owner métier.
  *
- * "Discovery ne possède aucune vérité, il la compose." recommendations
- * n'écrit jamais dans local_stock, services ou physical_offers, ne clone jamais
- * leurs données en base, ne lit même jamais leurs tables en SQL direct —
- * uniquement via les fonctions déjà propriétaires (isStockExposable,
- * isServiceExposable, isPhysicalOfferExposable, getService,
- * getPhysicalOffer). products reste lu directement : recommendations
- * possède déjà `products: R` en contrat (catalog reste l'owner d'écriture).
+ * DiscoveryCard est une projection. `kind` route l'interaction frontend ;
+ * aucune règle métier d'exposabilité n'est décidée ici.
  *
- * DiscoveryCard est une PROJECTION, jamais un objet métier : `kind` route
- * l'interaction frontend (quel CTA, quelle action au clic), il ne porte
- * AUCUNE règle métier — Discovery ne décide jamais si un objet peut être
- * vendu/exécuté, il demande à l'owner (isXExposable) et n'affiche que ce
- * qui répond oui.
- *
- * Candidats fournis EXPLICITEMENT par l'appelant (product_id/physical_
- * offer_id/service_id) — aucune logique de sélection/recherche autonome
- * ici. "Discovery peut appliquer une politique éditoriale simple avant
- * tout moteur sophistiqué" — la politique éditoriale (quels candidats
- * proposer) est un problème d'activation (D7-D9), pas de ce composeur.
- *
- * Tout objet non exposable est silencieusement omis du résultat — jamais
- * une carte qui explique pourquoi, même discipline que les routes D4.
- *
- * SHADOW : composition disponible et testée, mais jamais appelée par
- * aucune route ni aucun composant Boutique dans ce lot.
- * ═══════════════════════════════════════════════════════════════
+ * Les candidats sont fournis explicitement par l'appelant. Tout objet non
+ * exposable est silencieusement omis.
  */
 
 const db = require('../db');
@@ -73,25 +52,12 @@ const CTA_LABEL = Object.freeze({
   [CARD_KIND.SERVICE]:        'Demander',
 });
 
-// Sous-titres fixes par kind (RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §F —
-// le sous-titre porte la nuance, jamais optionnel). local_stock ne porte pas
-// de distinction plus fine à ce stade (pas de "encore 2" — un badge binaire).
 const SUBTITLE = Object.freeze({
   [CARD_KIND.PRODUCT]:        'Disponible maintenant',
   [CARD_KIND.PHYSICAL_OFFER]: 'Préparation sur commande',
   [CARD_KIND.SERVICE]:        'Sur demande',
 });
 
-/**
- * Projette un Product Komerce en DiscoveryCard, ou null s'il n'est pas
- * exposable (stock local absent/épuisé, exposure DISABLED, produit
- * inactif). N'écrit rien, ne lit products QUE pour les 3 champs
- * d'affichage — jamais price_kmf, stock brut, ni aucun champ interne.
- *
- * @param {string} productId
- * @param {string} marketId
- * @returns {Promise<object|null>}
- */
 async function productCard(productId, marketId) {
   const exposable = await isStockExposable(productId, marketId);
   if (!exposable) return null;
@@ -113,15 +79,6 @@ async function productCard(productId, marketId) {
   };
 }
 
-/**
- * Projette une offre physique tierce (ex. samboussas) en DiscoveryCard, ou
- * null si non exposable. Ne lit jamais provider_id ni aucun champ du
- * provider — mêmes champs publics que routes/providers-services.js.
- *
- * @param {string} physicalOfferId
- * @param {string} marketId
- * @returns {Promise<object|null>}
- */
 async function physicalOfferCard(physicalOfferId, marketId) {
   const exposable = await isPhysicalOfferExposable(physicalOfferId, marketId);
   if (!exposable) return null;
@@ -135,18 +92,10 @@ async function physicalOfferCard(physicalOfferId, marketId) {
     subtitle: SUBTITLE[CARD_KIND.PHYSICAL_OFFER],
     cta_label: CTA_LABEL[CARD_KIND.PHYSICAL_OFFER],
     cta_action_ref: offer.id,
-    image_ref: null, // physical_offers ne porte pas encore de champ image
+    image_ref: offer.image_ref || null,
   };
 }
 
-/**
- * Projette un service tiers en DiscoveryCard, ou null si non exposable.
- * Ne lit jamais provider_id ni téléphone.
- *
- * @param {string} serviceId
- * @param {string} marketId
- * @returns {Promise<object|null>}
- */
 async function serviceCard(serviceId, marketId) {
   const exposable = await isServiceExposable(serviceId, marketId);
   if (!exposable) return null;
@@ -160,24 +109,10 @@ async function serviceCard(serviceId, marketId) {
     subtitle: SUBTITLE[CARD_KIND.SERVICE],
     cta_label: CTA_LABEL[CARD_KIND.SERVICE],
     cta_action_ref: service.id,
-    image_ref: null,
+    image_ref: service.image_ref || null,
   };
 }
 
-/**
- * Compose un rail mixte à partir de candidats explicites — jamais une
- * recherche/sélection autonome. Chaque candidat est projeté selon son
- * kind puis vérifié en exposabilité ; tout ce qui n'est pas exposable est
- * silencieusement omis (jamais un objet d'erreur dans le tableau).
- *
- * @param {object} params
- * @param {string} params.marketId
- * @param {string[]} [params.productIds]
- * @param {string[]} [params.physicalOfferIds]
- * @param {string[]} [params.serviceIds]
- * @returns {Promise<object[]>} DiscoveryCard[], jamais plus long que la
- *   somme des candidats fournis, potentiellement plus court
- */
 async function composeDiscoveryRail({
   marketId,
   productIds = [],

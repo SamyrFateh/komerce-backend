@@ -8,15 +8,7 @@
 /**
  * tests/unit/discovery-api.test.js
  *
- * Module js/discovery-api.js — Vague 2 D6.
- *
- * Couverture :
- *   ✓ market lu depuis window.KomerceMarket, jamais codé en dur dans l'URL
- *   ✓ fallback KM si window.KomerceMarket absent (jamais un throw)
- *   ✓ échec réseau -> null, jamais une exception qui remonte à l'appelant
- *   ✓ réponse non-ok (404/500) -> null
- *   ✓ productId/serviceId/physicalOfferId manquant -> null sans appel réseau
- *   ✓ URL exacte appelée pour chacune des 3 fonctions
+ * Module js/discovery-api.js — lectures Discovery locale uniquement.
  */
 
 const {

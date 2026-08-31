@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -9,10 +8,6 @@
 /**
  * tests/unit/boutique-suggestions.test.js
  * Couvre routes/boutique-suggestions.js
- *
- * Route fine sans auth (suggestions découverte non intrusives, lecture seule).
- * Aucun calcul ici : parse les query params (UUID, troncature) puis délègue
- * au moteur computeSuggestions(), mocké.
  */
 
 const express = require('express');
@@ -21,6 +16,11 @@ const request = require('supertest');
 const mockComputeSuggestions = jest.fn();
 jest.mock('../../services/boutique-ranking-engine', () => ({
   computeSuggestions: (...args) => mockComputeSuggestions(...args),
+}));
+
+const mockGetDiscoveryRail = jest.fn();
+jest.mock('../../services/discovery-rail-service', () => ({
+  getDiscoveryRail: (...args) => mockGetDiscoveryRail(...args),
 }));
 
 const suggestionsRouter = require('../../routes/boutique-suggestions');
@@ -39,6 +39,7 @@ const VALID_UUID_2 = '22222222-2222-2222-2222-222222222222';
 beforeEach(() => {
   jest.clearAllMocks();
   mockComputeSuggestions.mockResolvedValue({ sections: [] });
+  mockGetDiscoveryRail.mockResolvedValue([]);
 });
 
 describe('GET /api/boutique/suggestions — accès public', () => {
@@ -65,6 +66,41 @@ describe('GET /api/boutique/suggestions — accès public', () => {
   it('erreur moteur → 500 via next', async () => {
     mockComputeSuggestions.mockRejectedValue(new Error('moteur down'));
     const res = await request(buildApp()).get('/api/boutique/suggestions');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('GET /api/boutique/suggestions?surface=local — Discovery locale', () => {
+  it('market absent → 400 sans appeler ranking ni Discovery', async () => {
+    const res = await request(buildApp()).get('/api/boutique/suggestions?surface=local');
+    expect(res.status).toBe(400);
+    expect(mockGetDiscoveryRail).not.toHaveBeenCalled();
+    expect(mockComputeSuggestions).not.toHaveBeenCalled();
+  });
+
+  it('délègue au service recommendations avec le code marché', async () => {
+    mockGetDiscoveryRail.mockResolvedValue([
+      { kind: 'physical_offer', title: 'Samboussas', cta_label: 'Commander', cta_action_ref: 'o-1' },
+      { kind: 'service', title: 'Maçon', cta_label: 'Demander', cta_action_ref: 's-1' },
+    ]);
+
+    const res = await request(buildApp()).get('/api/boutique/suggestions?surface=local&market=KM');
+
+    expect(res.status).toBe(200);
+    expect(mockGetDiscoveryRail).toHaveBeenCalledWith({ marketCode: 'KM' });
+    expect(mockComputeSuggestions).not.toHaveBeenCalled();
+    expect(res.body).toEqual({
+      surface: 'local',
+      cards: [
+        { kind: 'physical_offer', title: 'Samboussas', cta_label: 'Commander', cta_action_ref: 'o-1' },
+        { kind: 'service', title: 'Maçon', cta_label: 'Demander', cta_action_ref: 's-1' },
+      ],
+    });
+  });
+
+  it('erreur Discovery → 500 via next', async () => {
+    mockGetDiscoveryRail.mockRejectedValue(new Error('discovery down'));
+    const res = await request(buildApp()).get('/api/boutique/suggestions?surface=local&market=KM');
     expect(res.status).toBe(500);
   });
 });

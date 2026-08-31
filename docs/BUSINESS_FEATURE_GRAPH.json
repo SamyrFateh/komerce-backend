@@ -401,7 +401,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.",
+        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -433,7 +433,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-02",
-        "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
+        "service": "Classer et suggérer des produits boutique selon un moteur de ranking dédié. Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale d’activation serveur, sans jamais posséder ni cloner les données sources.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -700,6 +700,15 @@
         "repo": "boutique",
         "canonicalFeature": "platform-ops",
         "sliceKind": "frontend-transversal",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:providers-services",
+        "name": "providers-services",
+        "file": "boutique:features/providers-services.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "providers-services",
+        "sliceKind": "frontend-slice",
         "governed": true
       },
       {
@@ -1854,6 +1863,13 @@
         "declared": "js/shop-schema.js",
         "resolvedPath": "public/boutique/js/shop-schema.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
+        "declared": "js/market-hydration.js",
+        "resolvedPath": "public/boutique/js/market-hydration.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -9256,6 +9272,34 @@
       },
       {
         "feature": "providers-services",
+        "category": "boutique",
+        "declared": "js/discovery-inquiry.js",
+        "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "providers-services",
+        "category": "boutique",
+        "declared": "js/providers-services-api.js",
+        "resolvedPath": "public/boutique/js/providers-services-api.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/seed-discovery-staging.js",
+        "resolvedPath": "scripts/seed-discovery-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/157_providers_services_media.sql",
+        "resolvedPath": "migrations/157_providers_services_media.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
         "category": "tests",
         "declared": "tests/unit/providers-service.test.js",
         "resolvedPath": "tests/unit/providers-service.test.js",
@@ -9266,6 +9310,13 @@
         "category": "tests",
         "declared": "tests/unit/providers-services-routes.test.js",
         "resolvedPath": "tests/unit/providers-services-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/seed-discovery-staging.test.js",
+        "resolvedPath": "tests/unit/seed-discovery-staging.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9410,6 +9461,13 @@
       },
       {
         "feature": "recommendations",
+        "category": "services",
+        "declared": "services/discovery-rail-service.js",
+        "resolvedPath": "services/discovery-rail-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "recommendations",
         "category": "routes",
         "declared": "routes/boutique-suggestions.js",
         "resolvedPath": "routes/boutique-suggestions.js",
@@ -9434,6 +9492,13 @@
         "category": "tests",
         "declared": "tests/unit/discovery-rail-composer.test.js",
         "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "recommendations",
+        "category": "tests",
+        "declared": "tests/unit/discovery-rail-service.test.js",
+        "resolvedPath": "tests/unit/discovery-rail-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14223,14 +14288,6 @@
         "status": "resolved-owned"
       },
       {
-        "feature": "recommendations",
-        "entry": "GET /api/boutique/suggestions",
-        "method": "GET",
-        "path": "/api/boutique/suggestions",
-        "routeFile": "routes/boutique-suggestions.js",
-        "status": "resolved-owned"
-      },
-      {
         "feature": "shared-cart",
         "entry": "GET    /api/shared-carts/public/:token",
         "method": "GET",
@@ -16432,14 +16489,32 @@
       },
       {
         "from": "providers-services",
+        "to": "auth",
+        "raw": "auth — authenticateOrCreateGuest et session canonique côté serveur",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
+        "to": "auth-identity",
+        "raw": "auth-identity — requireIdentity() côté Boutique avant mutation",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
+        "to": "platform-ops",
+        "raw": "platform-ops — bus et showToast comme primitives UI transverses",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
         "to": "market",
-        "raw": "market (référentiel markets — lecture seule + résolution code -> id, Vague 2 D6)",
+        "raw": "market — référentiel markets, résolution code -> id côté serveur",
         "resolved": true
       },
       {
         "from": "providers-services",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale : db.js)",
+        "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
         "resolved": true
       },
       {
@@ -16493,7 +16568,7 @@
       {
         "from": "recommendations",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "raw": "infrastructure (DB et composition root)",
         "resolved": true
       },
       {
@@ -16505,19 +16580,25 @@
       {
         "from": "recommendations",
         "to": "orders",
-        "raw": "orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)",
+        "raw": "orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "market",
+        "raw": "market (référentiel markets — résolution code -> id côté serveur)",
         "resolved": true
       },
       {
         "from": "recommendations",
         "to": "local-stock",
-        "raw": "local-stock (Vague 2 D5 — isStockExposable() pour la carte product du rail Discovery ; preuve: services/discovery-rail-composer.js -> services/local-stock-service.js)",
+        "raw": "local-stock — isStockExposable() pour la carte product du rail Discovery",
         "resolved": true
       },
       {
         "from": "recommendations",
         "to": "providers-services",
-        "raw": "providers-services (Vague 2 D5 — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes service et physical_offer ; jamais de SQL direct sur leurs tables ; preuve: services/discovery-rail-composer.js -> services/providers-service.js)",
+        "raw": "providers-services — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes tierces",
         "resolved": true
       },
       {
@@ -16823,6 +16904,11 @@
         "canonicalFeature": "platform-ops",
         "boutiqueManifest": "platform-ops",
         "sliceKind": "frontend-transversal"
+      },
+      {
+        "canonicalFeature": "providers-services",
+        "boutiqueManifest": "providers-services",
+        "sliceKind": "frontend-slice"
       },
       {
         "canonicalFeature": "recommendations",
@@ -17265,6 +17351,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/market-hydration.js",
+        "resolvedPath": "public/boutique/js/market-hydration.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/render/render-home-sections.js",
         "resolvedPath": "public/boutique/js/render/render-home-sections.js",
         "exists": true,
@@ -17275,6 +17369,22 @@
         "category": "js",
         "declared": "../js/render/render-product-card.js",
         "resolvedPath": "public/boutique/js/render/render-product-card.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/render/render-discovery-rail.js",
+        "resolvedPath": "public/boutique/js/render/render-discovery-rail.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/discovery-rail.js",
+        "resolvedPath": "public/boutique/js/discovery-rail.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17363,6 +17473,14 @@
         "category": "css",
         "declared": "../css/products.css",
         "resolvedPath": "public/boutique/css/products.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/discovery-rail.css",
+        "resolvedPath": "public/boutique/css/discovery-rail.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17497,6 +17615,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "tests",
+        "declared": "../tests/unit/discovery-rail.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-rail.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
         "declared": "../tests/unit/hero-desktop-panorama.test.js",
         "resolvedPath": "public/boutique/tests/unit/hero-desktop-panorama.test.js",
         "exists": true,
@@ -17523,6 +17649,14 @@
         "category": "tests",
         "declared": "../tests/unit/products.test.js",
         "resolvedPath": "public/boutique/tests/unit/products.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/runtime-csp-contract.test.js",
+        "resolvedPath": "public/boutique/tests/unit/runtime-csp-contract.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -18227,6 +18361,38 @@
         "category": "tests",
         "declared": "../tests/unit/mobile-shell-convergence.test.js",
         "resolvedPath": "public/boutique/tests/unit/mobile-shell-convergence.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "providers-services",
+        "category": "js",
+        "declared": "../js/discovery-inquiry.js",
+        "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "providers-services",
+        "category": "js",
+        "declared": "../js/providers-services-api.js",
+        "resolvedPath": "public/boutique/js/providers-services-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "providers-services",
+        "category": "tests",
+        "declared": "../tests/unit/discovery-inquiry.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-inquiry.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "providers-services",
+        "category": "tests",
+        "declared": "../tests/unit/providers-services-api.test.js",
+        "resolvedPath": "public/boutique/tests/unit/providers-services-api.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20381,6 +20547,14 @@
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
+                "sourceFileId": "public/boutique/js/render/render-discovery-rail.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/local-stock-badge.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
@@ -20506,6 +20680,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-subcat.js",
+                "targetFile": "public/boutique/js/b-modal.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
@@ -26930,6 +27108,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/discovery-rail.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-greeting.js"
               },
               {
@@ -27416,6 +27598,22 @@
       },
       {
         "from": "platform-ops",
+        "to": "providers-services",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/discovery-inquiry.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "platform-ops",
         "to": "purchasing",
         "channels": [
           {
@@ -27494,6 +27692,38 @@
       },
       {
         "from": "providers-services",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/providers-services.js",
+                "targetFile": "middleware/auth-guest.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "providers-services",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/discovery-inquiry.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "providers-services",
         "to": "infrastructure",
         "channels": [
           {
@@ -27505,6 +27735,18 @@
               },
               {
                 "sourceFileId": "routes/providers-services.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-discovery-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-discovery-staging.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -27522,6 +27764,26 @@
               {
                 "table": "markets",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "providers-services",
+        "to": "platform-ops",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/discovery-inquiry.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-inquiry.js",
+                "targetFile": "public/boutique/js/b-utils.js"
               }
             ]
           }
@@ -27797,6 +28059,14 @@
               {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/discovery-rail-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/discovery-rail-service.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -27828,6 +28098,22 @@
             "evidence": [
               {
                 "table": "parcels",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
                 "mode": "R"
               }
             ]
@@ -29089,10 +29375,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 991
+        "filesObserved": 995
       },
       "boutique": {
-        "filesObserved": 176,
+        "filesObserved": 185,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -29124,7 +29410,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 15,
+      "COMPOSITION_ROOT_WIRING": 16,
       "NON_RUNTIME_TEST": 5,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -29376,6 +29662,21 @@
       },
       {
         "from": "platform-ops",
+        "to": "providers-services",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
         "to": "recommendations",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
@@ -29443,7 +29744,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
@@ -30789,7 +31090,8 @@
       ],
       "readers": [
         "local-stock",
-        "providers-services"
+        "providers-services",
+        "recommendations"
       ],
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
@@ -31269,8 +31571,8 @@
         "note": "pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)"
       },
       "boutique": {
-        "manifestsDiscovered": 15,
-        "manifestsConnected": 15,
+        "manifestsDiscovered": 16,
+        "manifestsConnected": 16,
         "technicalNodesTotal": 92,
         "technicalNodesOwned": 92,
         "technicalOrphans": 0
@@ -31285,6 +31587,7 @@
         "orders",
         "payments",
         "platform-ops",
+        "providers-services",
         "recommendations",
         "shared-cart",
         "wallet"
@@ -31307,7 +31610,6 @@
         "loyalty",
         "market",
         "platform",
-        "providers-services",
         "purchasing",
         "refunds",
         "sourcing",
@@ -31444,6 +31746,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> providers-services",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"providers-services\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> recommendations",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"recommendations\""
       },
@@ -31536,12 +31843,27 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — idem",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + image_ref optionnel",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur avant tout usage, corrigé en D6.",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + image_ref optionnel",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "recommendations / GET /api/boutique/suggestions — ranking produit historique",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -31558,9 +31880,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 31,
-      "generatorLimitations": 9,
-      "classifiedCandidates": 40
+      "expectedTopology": 32,
+      "generatorLimitations": 12,
+      "classifiedCandidates": 44
     }
   }
 }

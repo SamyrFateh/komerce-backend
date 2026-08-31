@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-29T08:35:34.837Z",
+  "generatedAt": "2026-08-31T00:43:38.443Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 559,
-    "protected": 509,
+    "total": 560,
+    "protected": 510,
     "public": 7,
     "unprotected": 41,
     "admin_no_guard": 0,
@@ -3366,6 +3366,11 @@
       "roles": [
         "admin"
       ]
+    },
+    {
+      "key": "POST /api/providers-services/inquiries",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "GET /api/providers-services/physical-offers/{id}",

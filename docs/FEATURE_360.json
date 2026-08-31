@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 230,
+    "businessDependencies": 234,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -836,6 +836,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1518,6 +1525,13 @@
             "static-code",
             "interface",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -2299,7 +2313,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 38,
+            "count": 39,
             "files": [
               {
                 "declared": "css/categories.css",
@@ -2445,6 +2459,11 @@
                 "declared": "js/controllers/home-controller.js",
                 "resolvedPath": "public/boutique/js/controllers/home-controller.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "js/market-hydration.js",
+                "resolvedPath": "public/boutique/js/market-hydration.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "js/product-store.js",
@@ -3169,7 +3188,7 @@
             ]
           }
         },
-        "totalFiles": 162,
+        "totalFiles": 163,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -13487,6 +13506,13 @@
           "channels": [
             "data-read"
           ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
         }
       ],
       "projections": {
@@ -17028,6 +17054,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17055,7 +17088,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 1,
-        "compositionRootRelations": 4,
+        "compositionRootRelations": 5,
         "details": [
           {
             "to": "auth-passkey",
@@ -17068,6 +17101,10 @@
           {
             "to": "payments",
             "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "providers-services",
+            "family": "COMPOSITION_ROOT_WIRING"
           },
           {
             "to": "recommendations",
@@ -17124,62 +17161,93 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Porter l'identité d'un provider tiers, ses propositions de service, et le cycle demande -> confirmation avec un client. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun paiement, aucune commission, aucun calendrier structuré tant que l'exposition n'est pas explicitement activée.",
+      "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
       "perimeter": {
         "in": [
           "table providers (identité, contact, market, statut pending|active|suspended)",
-          "table services (prestation d'un provider, exposition DISABLED par défaut)",
-          "table physical_offers (produit physique réellement proposé par un provider — ex. samboussas — table SŒUR de services, jamais la même table, même patron d'exposition — Vague 2 D1)",
-          "table inquiries (cycle sent -> answered -> accepted|declined, jamais une réservation ; porte sur EXACTEMENT une cible, service_id XOR physical_offer_id, contrainte DB inquiries_exactly_one_target — jamais offer_type/offer_id, association polymorphe rejetée)",
-          "isServiceExposable() / isPhysicalOfferExposable() — le statut provider gouverne toujours l'exposition, quelle que soit la cible"
+          "table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)",
+          "table physical_offers (produit physique tiers, image_ref public optionnel)",
+          "table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)",
+          "isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant",
+          "POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur",
+          "consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire",
+          "seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production"
         ],
         "out": [
-          "authentification provider (pas de users / user_role — identité par téléphone, contact réel hors app à ce stade)",
-          "scheduler / créneaux structurés (requested_window/proposed_window sont du texte libre, jamais un slot — RECHALLENGE_MODELE_MINIMAL §5/§7)",
-          "paiement, commission, settlement, provider wallet (le vrai chantier — ARBITRAGE_RECHALLENGE_SONNET.md : le jour où de l'argent doit sortir vers quelqu'un qui n'est pas Komerce)",
-          "market_offer / multi-offres / ranking (aucune deuxième origine commerciale à ce stade)",
-          "god-table Listing/Offer unifiée (physical_offers reste une table distincte de services, jamais un champ discriminant kind — RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §D)",
-          "prescription artisan V0/V1/V2, shared-cart (hors périmètre de ce lot)",
-          "toute exposition Boutique/Discovery (Vague 2, lots D3+)"
+          "authentification provider (pas de users / user_role pour le provider)",
+          "scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre",
+          "paiement, commission, settlement, provider wallet",
+          "orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders",
+          "market_offer / multi-offres / ranking",
+          "god-table Listing/Offer unifiée",
+          "prescription artisan et shared-cart",
+          "composition, ranking et ordre éditorial du rail Près de vous — owner recommendations",
+          "surface produit/catalogue et navigation — owner catalog",
+          "hébergement/stockage binaire des médias — image_ref reste une référence, pas un media service"
         ]
       },
-      "authority": "backend-core — tout changement du cycle demande/confirmation doit être validé par le propriétaire de providers-service.js",
+      "authority": "backend-core — providers-services possède le cycle demande/confirmation, les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter image_ref.",
       "invariants": [
         {
           "statement": "un service ne peut être créé que pour un provider déjà actif",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "un service n'est exposable que si lui-même actif, exposition activée, provider actif, ET market_id correspond exactement au marché demandé (Vague 2 D3) — le statut provider prime toujours, mais aucune exposabilité n'est vraie hors du marché de l'objet, jamais une confiance aveugle en l'appelant",
+          "statement": "service et physical_offer ne sont exposables que si objet actif, exposition ENABLED, provider actif et market_id correspondant",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une offre physique (physical_offers) suit exactement les mêmes garanties qu'un service, market_id inclus (Vague 2 D3) : créée seulement pour un provider actif, exposable seulement si elle-même active, exposition activée, provider actif, ET marché correspondant",
+          "statement": "une inquiry porte sur exactement une cible — service_id XOR physical_offer_id",
           "test": "tests/unit/providers-service.test.js"
         },
         {
-          "statement": "une inquiry porte sur EXACTEMENT une cible — service_id XOR physical_offer_id, jamais les deux, jamais aucune (contrainte DB inquiries_exactly_one_target, doublée en validation applicative)",
-          "test": "tests/unit/providers-service.test.js"
-        },
-        {
-          "statement": "une inquiry ne représente jamais une ressource engagée avant la décision finale (accepted|declined) — jamais un objet réservation",
-          "test": "tests/unit/providers-service.test.js"
-        },
-        {
-          "statement": "le cycle inquiry est strictement linéaire : sent -> answered -> accepted|declined, jamais de saut d'état",
-          "test": "tests/unit/providers-service.test.js"
-        },
-        {
-          "statement": "GET /services/:id et GET /physical-offers/:id ne renvoient jamais le téléphone ni provider_id, et ne renvoient jamais le pourquoi d'une non-exposabilité (404 pur, jamais un détail de statut/marché)",
+          "statement": "les GET ne renvoient jamais provider_id ou téléphone et image_ref est le seul média public optionnel",
           "test": "tests/unit/providers-services-routes.test.js"
         },
         {
-          "statement": "les deux routes ne font jamais confiance à un market_id brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé serveur (resolveMarketId, markets.is_active=true) avant tout appel à isServiceExposable/isPhysicalOfferExposable",
+          "statement": "market est toujours résolu côté serveur avant les checks d’exposabilité",
           "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "POST /inquiries dérive requester_phone de la session authentifiée",
+          "test": "tests/unit/providers-services-routes.test.js"
+        },
+        {
+          "statement": "Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce",
+          "test": "public/boutique/tests/unit/discovery-inquiry.test.js"
+        },
+        {
+          "statement": "le seed Discovery ne peut écrire qu’en staging avec opt-in explicite, conserve UUID/candidats déterministes et écrit image_ref",
+          "test": "tests/unit/seed-discovery-staging.test.js"
         }
       ],
       "implementation": {
         "byCategory": {
+          "boutique": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "js/discovery-inquiry.js",
+                "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/providers-services-api.js",
+                "resolvedPath": "public/boutique/js/providers-services-api.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/157_providers_services_media.sql",
+                "resolvedPath": "migrations/157_providers_services_media.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "routes": {
             "count": 1,
             "files": [
@@ -17187,6 +17255,16 @@
                 "declared": "routes/providers-services.js",
                 "resolvedPath": "routes/providers-services.js",
                 "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "scripts": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "scripts/seed-discovery-staging.js",
+                "resolvedPath": "scripts/seed-discovery-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -17201,7 +17279,7 @@
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "tests/unit/providers-service.test.js",
@@ -17212,15 +17290,49 @@
                 "declared": "tests/unit/providers-services-routes.test.js",
                 "resolvedPath": "tests/unit/providers-services-routes.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/seed-discovery-staging.test.js",
+                "resolvedPath": "tests/unit/seed-discovery-staging.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 4,
-        "boutiqueManifest": null,
+        "totalFiles": 9,
+        "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
-          "count": 0,
-          "files": []
+          "count": 4,
+          "files": [
+            {
+              "declared": "../js/discovery-inquiry.js",
+              "resolvedPath": "public/boutique/js/discovery-inquiry.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/providers-services-api.js",
+              "resolvedPath": "public/boutique/js/providers-services-api.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/discovery-inquiry.test.js",
+              "resolvedPath": "public/boutique/tests/unit/discovery-inquiry.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/providers-services-api.test.js",
+              "resolvedPath": "public/boutique/tests/unit/providers-services-api.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            }
+          ]
         }
       },
       "ownership": {
@@ -17335,6 +17447,20 @@
       },
       "businessDependencies": [
         {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17346,6 +17472,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -17825,34 +17958,45 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Classer et suggerer des produits boutique selon un moteur de ranking dedie. Vague 2 D5 : compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers), sans jamais posséder ni cloner les données sources.",
+      "service": "Classer et suggérer des produits boutique selon un moteur de ranking dédié. Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale d’activation serveur, sans jamais posséder ni cloner les données sources.",
       "perimeter": {
         "in": [
           "moteur de classement boutique",
           "endpoint de suggestions",
-          "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), Vague 2 D5, jamais persistée, composée à partir de candidats explicites"
+          "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée",
+          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre",
+          "surface read-only surface=local sur la façade /api/boutique/suggestions"
         ],
         "out": [
-          "donnees produit source (feature catalog)",
-          "prix affiche (feature economic-engine)",
-          "sélection/recherche autonome de candidats (politique éditoriale = problème d'activation, D7-D9, pas de ce composeur)",
-          "toute exposition Boutique (aucune route/composant ne consomme encore discovery-rail-composer.js dans ce lot)"
+          "données produit source (feature catalog)",
+          "prix affiché (feature economic-engine)",
+          "vérité d’exposabilité stock/service/offre physique (local-stock / providers-services)",
+          "cycle Inquiry, paiement, réservation ou settlement",
+          "taxonomie ou navigation frontend parallèle pour le local"
         ]
       },
-      "authority": "backend-core — tout changement de formule de classement doit etre valide par le proprietaire de boutique-ranking-engine.js",
+      "authority": "backend-core — recommendations possède le ranking et l’ordre éditorial du rail ; les features sources possèdent seules leur vérité métier et leur exposabilité.",
       "invariants": [
-        "le ranking ne modifie jamais les donnees produit, lecture seule sur catalog",
+        "le ranking ne modifie jamais les données produit, lecture seule sur catalog",
         {
-          "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires (isStockExposable, isServiceExposable, isPhysicalOfferExposable, getService, getPhysicalOffer) — Discovery ne possède aucune vérité, il la compose",
+          "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires ; Discovery ne possède aucune vérité, il la compose",
           "test": "tests/unit/discovery-rail-composer.test.js"
         },
         {
-          "statement": "un objet non exposable est silencieusement omis du rail, jamais un objet d'erreur ni le pourquoi — même discipline que les routes D4",
+          "statement": "un objet non exposable est silencieusement omis du rail, jamais un objet d’erreur ni le pourquoi",
           "test": "tests/unit/discovery-rail-composer.test.js"
         },
         {
-          "statement": "composeDiscoveryRail ne sélectionne jamais ses propres candidats — uniquement ceux fournis explicitement par l'appelant, aucune recherche autonome",
+          "statement": "composeDiscoveryRail ne sélectionne jamais ses propres candidats — uniquement ceux fournis explicitement par l’appelant",
           "test": "tests/unit/discovery-rail-composer.test.js"
+        },
+        {
+          "statement": "la surface Discovery est OFF par défaut et n’est activée que par une politique serveur explicite ; aucun flag d’exposition n’est détenu par le frontend",
+          "test": "tests/unit/discovery-rail-service.test.js"
+        },
+        {
+          "statement": "l’ordre du rail suit exactement la liste éditoriale serveur, y compris lorsqu’elle mélange product, physical_offer et service",
+          "test": "tests/unit/discovery-rail-service.test.js"
         }
       ],
       "implementation": {
@@ -17868,7 +18012,7 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "services/boutique-ranking-engine.js",
@@ -17879,11 +18023,16 @@
                 "declared": "services/discovery-rail-composer.js",
                 "resolvedPath": "services/discovery-rail-composer.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/discovery-rail-service.js",
+                "resolvedPath": "services/discovery-rail-service.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "tests/unit/boutique-ranking-engine.test.js",
@@ -17899,11 +18048,16 @@
                 "declared": "tests/unit/discovery-rail-composer.test.js",
                 "resolvedPath": "tests/unit/discovery-rail-composer.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/discovery-rail-service.test.js",
+                "resolvedPath": "tests/unit/discovery-rail-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 8,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
           "count": 5,
@@ -17951,6 +18105,10 @@
         "writesTables": [],
         "readsTables": [
           {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
             "table": "order_items",
             "lifecycleOwner": "orders"
           },
@@ -17973,6 +18131,10 @@
         "writesTables": [],
         "readsTables": [
           {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
             "table": "order_items",
             "lifecycleOwner": "orders"
           },
@@ -17993,7 +18155,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 1
+          "count": 0
         }
       },
       "businessDependencies": [
@@ -18021,6 +18183,13 @@
         },
         {
           "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"

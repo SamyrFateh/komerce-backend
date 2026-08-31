@@ -9,8 +9,10 @@ const fs = require('fs');
 const path = require('path');
 
 const cssPath = path.resolve(__dirname, '../../css/hero-ultra-mobile.css');
+const heroCssPath = path.resolve(__dirname, '../../css/hero.css');
 const heroBootstrapPath = path.resolve(__dirname, '../../js/hero-bootstrap.js');
 const css = fs.readFileSync(cssPath, 'utf8');
+const heroCss = fs.readFileSync(heroCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
@@ -26,8 +28,18 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('background-position: 70% 12%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
+    expect(css).not.toContain('display: none;');
+  });
+
+  test('garde le slogan visible dans la réserve blanche gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
-    expect(css).toContain('display: none;');
+    expect(css).toContain('inset: 0 auto 0 0;');
+    expect(css).toContain('width: 36%;');
+    expect(css).toContain('padding: 12px 0 0 10px;');
+    expect(css).toContain('text-align: left;');
+    expect(css).toContain('font-size: clamp(13px, 3.45vw, 15px);');
+    expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
+    expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });
 
   test('ne réintroduit aucun symbole lunaire', () => {

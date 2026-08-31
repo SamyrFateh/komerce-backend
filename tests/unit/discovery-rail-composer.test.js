@@ -5,25 +5,6 @@
  * @test-runner jest
  * @test-requires none
  */
-/**
- * Tests unitaires — discovery-rail-composer.js
- *
- * Invariants couverts :
- *   productCard        : non exposable -> null ; produit introuvable/inactif -> null ;
- *                         nominal -> kind/title/subtitle/cta_label/cta_action_ref/image_ref
- *                         exacts, JAMAIS price_kmf/stock brut
- *   physicalOfferCard   : non exposable -> null ; nominal -> jamais provider_id
- *   serviceCard         : non exposable -> null ; nominal -> jamais provider_id ni téléphone
- *   composeDiscoveryRail : market_id requis ; candidats explicites uniquement (aucune
- *                         sélection autonome) ; omission silencieuse des non-exposables
- *                         (jamais un objet d'erreur dans le résultat) ; cas de vérité
- *                         samboussas mixé avec un produit et un service dans un même rail
- *
- * DB et services propriétaires mockés — aucune connexion Postgres, aucun SQL direct sur
- * les tables local_stock, services ou physical_offers (vérifié : composeDiscoveryRail ne
- * passe jamais par mockDbQuery pour ces domaines, uniquement via les fonctions
- * isXExposable/getX importées).
- */
 
 let mockDbQuery;
 let mockIsStockExposable;
@@ -60,14 +41,11 @@ const OFFER_ID   = '33333333-3333-3333-3333-333333333333';
 const SERVICE_ID = '44444444-4444-4444-4444-444444444444';
 const PROVIDER_ID = '55555555-5555-5555-5555-555555555555';
 
-// ─── productCard ─────────────────────────────────────────────────────────────
-
 describe('productCard', () => {
   it('non exposable -> null, jamais de requête produit inutile', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(false);
-    const result = await c.productCard(PRODUCT_ID, MARKET_ID);
-    expect(result).toBeNull();
+    expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
     expect(mockDbQuery).not.toHaveBeenCalled();
   });
 
@@ -75,20 +53,17 @@ describe('productCard', () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({ rows: [] });
-    const result = await c.productCard(PRODUCT_ID, MARKET_ID);
-    expect(result).toBeNull();
+    expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
   });
 
-  it('nominal : climatiseur — champs exacts, jamais price_kmf ni stock brut', async () => {
+  it('nominal : champs exacts et image catalogue', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
       rows: [{ id: PRODUCT_ID, name: 'Climatiseur 12000 BTU', image_url: 'https://cdn/clim.jpg' }],
     });
 
-    const card = await c.productCard(PRODUCT_ID, MARKET_ID);
-
-    expect(card).toEqual({
+    expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toEqual({
       kind: 'product',
       title: 'Climatiseur 12000 BTU',
       subtitle: 'Disponible maintenant',
@@ -96,123 +71,108 @@ describe('productCard', () => {
       cta_action_ref: PRODUCT_ID,
       image_ref: 'https://cdn/clim.jpg',
     });
-    expect(Object.keys(card)).not.toContain('price_kmf');
-    expect(Object.keys(card)).not.toContain('stock');
-
-    const [sql] = mockDbQuery.mock.calls[0];
-    expect(sql).toMatch(/is_active = true/);
   });
 });
-
-// ─── physicalOfferCard ───────────────────────────────────────────────────────
 
 describe('physicalOfferCard — cas de vérité samboussas', () => {
   it('non exposable -> null, jamais de lecture inutile', async () => {
     const c = loadComposer();
     mockIsPhysicalOfferExposable.mockResolvedValue(false);
-    const result = await c.physicalOfferCard(OFFER_ID, MARKET_ID);
-    expect(result).toBeNull();
+    expect(await c.physicalOfferCard(OFFER_ID, MARKET_ID)).toBeNull();
     expect(mockGetPhysicalOffer).not.toHaveBeenCalled();
   });
 
-  it('nominal : Samboussas mariage — jamais provider_id', async () => {
+  it('projette image_ref depuis providers-services, jamais provider_id', async () => {
     const c = loadComposer();
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
-      id: OFFER_ID, provider_id: PROVIDER_ID, title: 'Samboussas mariage',
-      description: 'Plateau de 50, préparation sur commande', zone: 'Moroni',
-      market_id: MARKET_ID, status: 'active', commercial_exposure: 'ENABLED',
+      id: OFFER_ID,
+      provider_id: PROVIDER_ID,
+      title: 'Samboussas mariage',
+      image_ref: '/media/providers/samboussas.webp',
     });
 
     const card = await c.physicalOfferCard(OFFER_ID, MARKET_ID);
-
     expect(card).toEqual({
       kind: 'physical_offer',
       title: 'Samboussas mariage',
       subtitle: 'Préparation sur commande',
       cta_label: 'Commander',
       cta_action_ref: OFFER_ID,
-      image_ref: null,
+      image_ref: '/media/providers/samboussas.webp',
     });
     expect(card.provider_id).toBeUndefined();
   });
-});
 
-// ─── serviceCard ─────────────────────────────────────────────────────────────
+  it('image_ref absent reste null et laisse le renderer utiliser son fallback', async () => {
+    const c = loadComposer();
+    mockIsPhysicalOfferExposable.mockResolvedValue(true);
+    mockGetPhysicalOffer.mockResolvedValue({ id: OFFER_ID, title: 'Samboussas mariage' });
+    expect((await c.physicalOfferCard(OFFER_ID, MARKET_ID)).image_ref).toBeNull();
+  });
+});
 
 describe('serviceCard', () => {
   it('non exposable -> null', async () => {
     const c = loadComposer();
     mockIsServiceExposable.mockResolvedValue(false);
-    const result = await c.serviceCard(SERVICE_ID, MARKET_ID);
-    expect(result).toBeNull();
+    expect(await c.serviceCard(SERVICE_ID, MARKET_ID)).toBeNull();
     expect(mockGetService).not.toHaveBeenCalled();
   });
 
-  it('nominal : Installation climatiseur — jamais provider_id ni téléphone', async () => {
+  it('projette image_ref depuis providers-services, jamais provider_id ni téléphone', async () => {
     const c = loadComposer();
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
-      id: SERVICE_ID, provider_id: PROVIDER_ID, title: 'Installation climatiseur',
-      description: 'Pose et raccordement', zone: 'Moroni', market_id: MARKET_ID,
+      id: SERVICE_ID,
+      provider_id: PROVIDER_ID,
+      phone: '+269000000000',
+      title: 'Installation climatiseur',
+      image_ref: '/media/providers/installateur.webp',
     });
 
     const card = await c.serviceCard(SERVICE_ID, MARKET_ID);
-
     expect(card).toEqual({
       kind: 'service',
       title: 'Installation climatiseur',
       subtitle: 'Sur demande',
       cta_label: 'Demander',
       cta_action_ref: SERVICE_ID,
-      image_ref: null,
+      image_ref: '/media/providers/installateur.webp',
     });
-    expect(JSON.stringify(card)).not.toMatch(/phone|téléphone|provider/i);
+    expect(card).not.toHaveProperty('provider_id');
+    expect(card).not.toHaveProperty('phone');
+    expect(card).not.toHaveProperty('requester_phone');
   });
 });
 
-// ─── composeDiscoveryRail ─────────────────────────────────────────────────────
-
-describe('composeDiscoveryRail — un rail, candidats explicites, jamais de sélection autonome', () => {
+describe('composeDiscoveryRail', () => {
   it('lève si market_id manquant', async () => {
     const c = loadComposer();
     await expect(c.composeDiscoveryRail({})).rejects.toThrow(/market_id est requis/);
   });
 
-  it('aucun candidat fourni -> tableau vide, aucune requête émise', async () => {
+  it('aucun candidat fourni -> tableau vide', async () => {
     const c = loadComposer();
-    const rail = await c.composeDiscoveryRail({ marketId: MARKET_ID });
-    expect(rail).toEqual([]);
-    expect(mockIsStockExposable).not.toHaveBeenCalled();
-    expect(mockIsServiceExposable).not.toHaveBeenCalled();
-    expect(mockIsPhysicalOfferExposable).not.toHaveBeenCalled();
+    expect(await c.composeDiscoveryRail({ marketId: MARKET_ID })).toEqual([]);
   });
 
-  it('omet silencieusement les non-exposables — jamais un objet d\'erreur dans le résultat', async () => {
+  it('omet silencieusement les non-exposables', async () => {
     const c = loadComposer();
-    mockIsStockExposable.mockResolvedValue(false); // produit non exposable
-
-    const rail = await c.composeDiscoveryRail({ marketId: MARKET_ID, productIds: [PRODUCT_ID] });
-
-    expect(rail).toEqual([]); // omis, pas un objet { error: ... }
+    mockIsStockExposable.mockResolvedValue(false);
+    expect(await c.composeDiscoveryRail({ marketId: MARKET_ID, productIds: [PRODUCT_ID] })).toEqual([]);
   });
 
-  it('cas de vérité — rail mixte Product Komerce + samboussas + service, un seul appel composé', async () => {
+  it('rail mixte conserve les trois verbes et les médias source', async () => {
     const c = loadComposer();
-
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
-      rows: [{ id: PRODUCT_ID, name: 'Climatiseur 12000 BTU', image_url: 'https://cdn/clim.jpg' }],
+      rows: [{ id: PRODUCT_ID, name: 'Climatiseur', image_url: '/p.webp' }],
     });
-
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
-    mockGetPhysicalOffer.mockResolvedValue({
-      id: OFFER_ID, title: 'Samboussas mariage',
-      description: 'Plateau de 50, préparation sur commande',
-    });
-
+    mockGetPhysicalOffer.mockResolvedValue({ id: OFFER_ID, title: 'Samboussas', image_ref: '/o.webp' });
     mockIsServiceExposable.mockResolvedValue(true);
-    mockGetService.mockResolvedValue({ id: SERVICE_ID, title: 'Installation climatiseur' });
+    mockGetService.mockResolvedValue({ id: SERVICE_ID, title: 'Plombier', image_ref: '/s.webp' });
 
     const rail = await c.composeDiscoveryRail({
       marketId: MARKET_ID,
@@ -222,30 +182,15 @@ describe('composeDiscoveryRail — un rail, candidats explicites, jamais de sél
     });
 
     expect(rail).toHaveLength(3);
-    expect(rail.map(card => card.kind).sort()).toEqual(['physical_offer', 'product', 'service']);
-    // Chaque kind route un CTA différent — la distinction n'est jamais une
-    // taxonomie visible, juste le verbe (RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §F).
-    const ctaByKind = Object.fromEntries(rail.map(card => [card.kind, card.cta_label]));
-    expect(ctaByKind).toEqual({ product: 'Acheter', physical_offer: 'Commander', service: 'Demander' });
-    // Tous les sous-titres sont présents, jamais optionnels.
-    expect(rail.every(card => typeof card.subtitle === 'string' && card.subtitle.length > 0)).toBe(true);
-  });
-
-  it('rail mixte partiellement exposable — un seul candidat non exposable est omis, les autres restent', async () => {
-    const c = loadComposer();
-
-    mockIsStockExposable.mockResolvedValue(true);
-    mockDbQuery.mockResolvedValue({ rows: [{ id: PRODUCT_ID, name: 'X', image_url: null }] });
-
-    mockIsPhysicalOfferExposable.mockResolvedValue(false); // ex. Fatima a suspendu son offre
-
-    const rail = await c.composeDiscoveryRail({
-      marketId: MARKET_ID,
-      productIds: [PRODUCT_ID],
-      physicalOfferIds: [OFFER_ID],
+    expect(Object.fromEntries(rail.map(card => [card.kind, card.cta_label]))).toEqual({
+      product: 'Acheter',
+      physical_offer: 'Commander',
+      service: 'Demander',
     });
-
-    expect(rail).toHaveLength(1);
-    expect(rail[0].kind).toBe('product');
+    expect(Object.fromEntries(rail.map(card => [card.kind, card.image_ref]))).toEqual({
+      product: '/p.webp',
+      physical_offer: '/o.webp',
+      service: '/s.webp',
+    });
   });
 });

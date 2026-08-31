@@ -21,6 +21,7 @@ import { apiGet, apiPost } from './b-utils.js';
 let installed = false;
 let openNotifications = [];
 let lastRefreshAt = 0;
+let identityReady = false;
 const REFRESH_INTERVAL_MS = 60000;
 
 function ensureBanner() {
@@ -103,6 +104,10 @@ function renderCurrent() {
 }
 
 export async function refreshClientNotifications({ force = false } = {}) {
+  if (!identityReady) {
+    hideBanner();
+    return;
+  }
   const now = Date.now();
   if (!force && now - lastRefreshAt < 30000) return;
   lastRefreshAt = now;
@@ -113,7 +118,11 @@ export async function refreshClientNotifications({ force = false } = {}) {
   } catch (err) {
     // Une session absente/expirée n'ouvre jamais l'OTP : le bandeau reste
     // simplement masqué. Une panne réseau ne doit pas gêner la boutique.
-    if (err?.status === 401 || err?.status === 403) hideBanner();
+    if (err?.status === 401 || err?.status === 403) {
+      identityReady = false;
+      openNotifications = [];
+      hideBanner();
+    }
   }
 }
 
@@ -124,11 +133,21 @@ function refreshWhenVisible() {
 export function setupClientNotifications() {
   if (installed) return;
   installed = true;
-  refreshClientNotifications({ force: true });
-  window.addEventListener('komerce:identity-authenticated', () => refreshClientNotifications({ force: true }));
+
+  // Le feed est authentifié : un visiteur anonyme ne doit jamais produire
+  // de 401 de polling. Le premier GET est déclenché uniquement par le signal
+  // canonique émis après restauration de session ou validation OTP.
+  window.addEventListener('komerce:identity-authenticated', () => {
+    identityReady = true;
+    refreshClientNotifications({ force: true });
+  });
+  window.addEventListener('komerce:identity-cleared', () => {
+    identityReady = false;
+    openNotifications = [];
+    hideBanner();
+  });
   window.addEventListener('focus', () => refreshClientNotifications());
   document.addEventListener('visibilitychange', refreshWhenVisible);
-  // Polling léger uniquement quand l'application est visible : il remplace le
-  // besoin d'un push externe sans produire de nouveau message ni doublon.
+  // Polling léger uniquement quand l'application est visible ET identifiée.
   window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
 }

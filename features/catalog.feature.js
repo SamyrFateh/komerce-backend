@@ -186,6 +186,7 @@ module.exports = {
       'js/view-models/modal-selection-model.js',
       'js/view-models/product-content-model.js',
       'js/shop-schema.js',
+      'js/market-hydration.js',
       'js/b-pager.js',
       'js/b-subcat.js',
       // Lot O4 (cross-repo feature coverage) : ecart factuel comble — ces 2
