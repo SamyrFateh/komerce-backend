@@ -96,8 +96,10 @@
       },
     ],
     drill: [
-      { id: 'pilotage', label: 'Retour Pilotage', href: '/admin-next' },
-      { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin-next/demo' },
+      { id: 'catalog-workspace', label: 'Catalogue', href: '/admin/workspaces/catalog' },
+      { id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing' },
+      { id: 'pricing-workspace', label: 'Pricing', href: '/admin/workspaces/pricing' },
+      { id: 'clients', label: 'Clients', href: '/admin/clients' },
     ],
   });
 
