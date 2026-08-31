@@ -44,7 +44,8 @@ jobs:
         run: npm --prefix public/boutique run bundle:css
 
       - name: Targeted navigation contract
-        run: npm --prefix public/boutique exec -- jest tests/unit/category-cutout-navigation.test.js --runInBand
+        working-directory: public/boutique
+        run: npx jest tests/unit/category-cutout-navigation.test.js --runInBand
 
       - name: CSS source gates — same contract as PR enforcement
         run: |
