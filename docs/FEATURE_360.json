@@ -2313,7 +2313,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 38,
+            "count": 39,
             "files": [
               {
                 "declared": "css/categories.css",
@@ -2459,6 +2459,11 @@
                 "declared": "js/controllers/home-controller.js",
                 "resolvedPath": "public/boutique/js/controllers/home-controller.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "js/market-hydration.js",
+                "resolvedPath": "public/boutique/js/market-hydration.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "js/product-store.js",
@@ -3183,7 +3188,7 @@
             ]
           }
         },
-        "totalFiles": 162,
+        "totalFiles": 163,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,

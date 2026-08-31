@@ -1,7 +1,7 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-08-30",
+  "generatedAt": "2026-08-31",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",

@@ -1867,6 +1867,13 @@
       {
         "feature": "catalog",
         "category": "boutique",
+        "declared": "js/market-hydration.js",
+        "resolvedPath": "public/boutique/js/market-hydration.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
         "declared": "js/b-pager.js",
         "resolvedPath": "public/boutique/js/b-pager.js",
         "status": "resolved-in-technical-graph"
@@ -17344,6 +17351,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/market-hydration.js",
+        "resolvedPath": "public/boutique/js/market-hydration.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/render/render-home-sections.js",
         "resolvedPath": "public/boutique/js/render/render-home-sections.js",
         "exists": true,
@@ -17634,6 +17649,14 @@
         "category": "tests",
         "declared": "../tests/unit/products.test.js",
         "resolvedPath": "public/boutique/tests/unit/products.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/runtime-csp-contract.test.js",
+        "resolvedPath": "public/boutique/tests/unit/runtime-csp-contract.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -29355,7 +29378,7 @@
         "filesObserved": 995
       },
       "boutique": {
-        "filesObserved": 183,
+        "filesObserved": 185,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

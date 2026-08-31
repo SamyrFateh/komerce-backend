@@ -182,7 +182,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - config: 1
 - docs: 4
 - routes: 6
-- boutique: 38
+- boutique: 39
 - dash: 4
 - tests: 48
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
@@ -1661,7 +1661,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 995 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 183 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 185 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
