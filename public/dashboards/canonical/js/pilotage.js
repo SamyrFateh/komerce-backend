@@ -79,7 +79,6 @@
       { id: 'operations-canonical', label: 'Opérations', href: '/admin/operations' },
       { id: 'finance-canonical', label: 'Finance', href: '/admin/finance' },
       { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin/demo' },
-      { id: 'pilotage-legacy', label: 'Témoin Pilotage historique', href: '/admin/pilotage?legacy=1' },
     ],
   });
 
