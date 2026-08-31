@@ -523,21 +523,20 @@
     align-items: center;
     gap: 5px;
     padding: 0;
-    border: 1.5px solid var(--border);
-    border-radius: 999px;
+    border: 0;
+    border-radius: 0;
     background: transparent;
     color: var(--text-muted);
     font-family: var(--font);
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 650;
     cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s, transform .15s;
+    transition: color .15s, transform .15s;
     flex-shrink: 0;
   }
   #k-subcats-wrap .k-subcats-back:hover {
-    background: var(--white);
-    border-color: var(--text-muted);
-    color: var(--text);
+    background: transparent;
+    color: var(--ocean-dark);
     transform: translateX(-1px);
   }
   #k-subcats-wrap .k-subcats-back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
@@ -547,8 +546,8 @@
     align-items: center;
     gap: 6px;
     font-family: var(--font);
-    font-size: 13px;
-    font-weight: 750;
+    font-size: 14px;
+    font-weight: 780;
     color: var(--text);
     letter-spacing: -.012em;
   }
@@ -565,10 +564,10 @@
   /* ── Ligne pills : transparente (le fond de la sticky bar transparaît) ── */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 18px;
     width: auto;
     max-width: none;
     margin: 0;
@@ -657,23 +656,23 @@
    horizontal pour prolonger la sélection sans concurrencer le hero. */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-subcats-wrap {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 3px;
     max-width: 1680px;
     margin: 0 auto;
-    border-top: 1px solid var(--border-text-06);
+    border-top: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back {
-    width: 30px;
-    height: 30px;
-    justify-content: center;
-    border-width: 1px;
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    border-width: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back span {
-    display: none;
+    display: inline;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-title {
@@ -685,7 +684,7 @@
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-count {
-    border: 1px solid var(--border-text-06);
+    border: 0;
   }
 
   html.k-home-premium-v1 #k-subcats-wrap .k-subcats-rail {
