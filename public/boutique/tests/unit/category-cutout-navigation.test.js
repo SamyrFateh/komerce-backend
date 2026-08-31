@@ -151,8 +151,8 @@ describe('Komerce Shelf category navigation contract', () => {
 
   it('rend les sous-catégories verticales, sans capsule ni fond métier', () => {
     expect(desktop).toMatch(/\.k-subcutout\s*\{[^}]*flex-direction:\s*column[^}]*border:\s*0[^}]*background:\s*transparent/s);
-    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*48px[^}]*height:\s*42px/s);
-    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11px/s);
+    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*76px[^}]*height:\s*68px/s);
+    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11\.5px/s);
     expect(desktop).toMatch(/\.k-subcutout\.active::after[\s\S]*background:\s*var\(--ocean-dark\)/);
   });
 
@@ -163,9 +163,9 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(desktopLegacy).toMatch(/#k-subcats-wrap \.k-subcats-count\s*\{[^}]*border:\s*0/s);
     expect(desktop).toMatch(/\.k-subcutout-title\s*\{[^}]*font-size:\s*14px/s);
     expect(desktop).toMatch(/html\.k-home-premium-v1 \.k-subcutout-back span\s*\{[^}]*display:\s*inline/s);
-    expect(desktop).toMatch(/\.k-subcutout\s*\{[^}]*min-width:\s*72px[^}]*min-height:\s*60px/s);
-    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*48px[^}]*height:\s*42px/s);
-    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11px/s);
+    expect(desktop).toMatch(/\.k-subcutout\s*\{[^}]*min-width:\s*104px[^}]*min-height:\s*88px/s);
+    expect(desktop).toMatch(/\.k-subcutout-icon\s*\{[^}]*width:\s*76px[^}]*height:\s*68px/s);
+    expect(desktop).toMatch(/\.k-subcutout-label\s*\{[^}]*font-size:\s*11\.5px/s);
   });
 
   it('garde les nouveaux skins hors des selectors ownership historiques', () => {

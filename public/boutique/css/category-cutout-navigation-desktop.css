@@ -220,7 +220,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 14px;
+    gap: 18px;
     width: auto;
     max-width: none;
     margin: 0;
@@ -299,7 +299,7 @@
     white-space: nowrap;
     text-align: center;
     color: currentColor;
-    font-size: 10.5px;
+    font-size: 11.5px;
     line-height: 1.15;
   }
 
@@ -328,7 +328,7 @@
 
   html.k-home-premium-v1 .k-subcutout-rail {
     min-width: 0;
-    gap: 14px;
+    gap: 18px;
   }
 }
 
@@ -493,48 +493,44 @@
     --k-sub-x: 0px;
     --k-sub-y: 1px;
     --k-sub-scale: .98;
-    --k-sub-active-y: -1px;
-    --k-sub-active-scale: 1.03;
-    min-width: 72px;
-    min-height: 60px;
+    --k-sub-active-y: -2px;
+    --k-sub-active-scale: 1.035;
+    min-width: 104px;
+    min-height: 88px;
   }
 
   .k-subcutout-icon {
     position: relative;
-    width: 48px;
-    height: 42px;
-    font-size: 22px;
+    width: 76px;
+    height: 68px;
+    font-size: 24px;
   }
 
   .k-subcutout-icon::before {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 2px;
-    width: 34px;
-    height: 10px;
+    bottom: 3px;
+    width: 48px;
+    height: 12px;
     border-radius: 50%;
     background: var(--sand-warm);
-    opacity: .16;
-    filter: blur(4px);
+    opacity: .12;
+    filter: blur(5px);
     transform: translateX(-50%);
     pointer-events: none;
   }
 
   .k-shelf-object--subcategory {
-    width: 46px;
-    height: 41px;
+    width: 72px;
+    height: 64px;
     transform:
       translate(var(--k-sub-x), var(--k-sub-y))
       scale(var(--k-sub-scale));
     filter:
       drop-shadow(0 3px 5px var(--border-text-08))
-      grayscale(1)
-      sepia(.58)
-      hue-rotate(62deg)
-      saturate(1.55)
-      contrast(1.16)
-      brightness(.74);
+      saturate(1.02)
+      contrast(1.04);
   }
 
   .k-subcutout:hover .k-shelf-object--subcategory,
@@ -543,13 +539,9 @@
       translate(var(--k-sub-x), var(--k-sub-active-y))
       scale(var(--k-sub-active-scale));
     filter:
-      drop-shadow(0 4px 6px var(--border-text-08))
-      grayscale(1)
-      sepia(.68)
-      hue-rotate(62deg)
-      saturate(1.8)
-      contrast(1.22)
-      brightness(.66);
+      drop-shadow(0 4px 7px var(--border-text-08))
+      saturate(1.06)
+      contrast(1.06);
   }
 
   /* Mode & Beauté — atlas photo : quatre masses différentes. */
@@ -599,23 +591,23 @@
   .k-subcutout-icon--all .k-shelf-object--all {
     opacity: .9;
     transform: translateY(1px) scale(1.03);
-    color: var(--catalog-nav-sage);
-    fill: var(--catalog-nav-sage);
+    color: var(--catalog-nav-muted);
+    fill: currentColor;
     filter: drop-shadow(0 2px 3px var(--border-text-08));
   }
 
   .k-subcutout.active .k-subcutout-icon--all .k-shelf-object--all,
   .k-subcutout:hover .k-subcutout-icon--all .k-shelf-object--all {
     transform: translateY(-1px) scale(1.07);
-    color: var(--green-dark-text);
-    fill: var(--green-dark-text);
+    color: var(--catalog-nav-strong);
+    fill: currentColor;
   }
 
   .k-shelf-emoji-fallback {
-    font-size: 21px;
-    line-height: 40px;
-    opacity: .9;
-    filter: grayscale(1) sepia(.58) hue-rotate(62deg) saturate(1.55) contrast(1.16) brightness(.74);
+    font-size: 24px;
+    line-height: 64px;
+    opacity: .92;
+    filter: drop-shadow(0 2px 3px var(--border-text-08));
   }
 
   .k-subcutout:hover .k-subcutout-icon,
@@ -628,7 +620,7 @@
   }
 
   .k-subcutout-label {
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 630;
   }
 

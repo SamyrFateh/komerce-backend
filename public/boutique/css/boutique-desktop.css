@@ -546,8 +546,8 @@
     align-items: center;
     gap: 6px;
     font-family: var(--font);
-    font-size: 13px;
-    font-weight: 750;
+    font-size: 14px;
+    font-weight: 780;
     color: var(--text);
     letter-spacing: -.012em;
   }
@@ -564,10 +564,10 @@
   /* ── Ligne pills : transparente (le fond de la sticky bar transparaît) ── */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 18px;
     width: auto;
     max-width: none;
     margin: 0;
