@@ -27,10 +27,12 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
-      - name: Apply product-photo patch and remove temporary harness sources
+      - name: Apply product-photo patch and final contract guards
         run: |
           python3 scripts/tmp-subcategory-product-photo-v6.py
+          python3 scripts/tmp-subcategory-product-photo-v6-test-fix.py
           rm -f scripts/tmp-subcategory-product-photo-v6.py
+          rm -f scripts/tmp-subcategory-product-photo-v6-test-fix.py
           rm -f .github/workflows/tmp-subcategory-product-photo-v6b.yml
 
       - name: Build canonical CSS bundles and guards
@@ -138,6 +140,7 @@ jobs:
                   public/boutique/tests/unit/category-subcategory-continuity.test.js \
                   public/boutique/tests/unit/home-controller.test.js \
                   scripts/tmp-subcategory-product-photo-v6.py \
+                  scripts/tmp-subcategory-product-photo-v6-test-fix.py \
                   .github/workflows/tmp-subcategory-product-photo-v6b.yml
           git commit -m "feat(boutique): use catalog photos for all subcategories [photo-v6 done]"
           git push origin HEAD:feat/subcategory-photo-cutouts-v6
