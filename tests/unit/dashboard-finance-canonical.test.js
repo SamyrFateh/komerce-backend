@@ -41,6 +41,9 @@ beforeEach(() => {
     if (text.includes('ORDER BY r.completed_at DESC')) {
       return { rows: [{ order_reference: 'CMD-R', amount_kmf: '500', refund_method: 'stripe', completed_at: '2026-08-23T00:00:00.000Z' }] };
     }
+    if (text.includes('JOIN relais r ON r.id = ct.relais_id')) {
+      return { rows: [{ relais_name: 'Relais Centre', orders: '4', revenue_kmf: '120000', estimated_cost_kmf: '70000', actual_orders: '3', actual_revenue_kmf: '90000', real_cost_kmf: '52000' }] };
+    }
     if (text.includes('WITH scoped_orders AS')) {
       return { rows: [{ bucket: '2026-08-18T00:00:00.000Z', paid_orders: '4', revenue_kmf: '120000', real_cost_kmf: '70000', actual_orders: '3', consolidated_margin_kmf: '50000' }] };
     }
@@ -78,7 +81,7 @@ test('Finance market applique le scope serveur aux métriques et projections', a
     const text = String(sql);
     return text.includes('GROUP BY o.payment_mode') || text.includes('WITH scoped_orders AS') || text.includes('GROUP BY alc.cost_type::text') || text.includes('AS estimated_cost_kmf');
   });
-  expect(scopedCalls.length).toBeGreaterThanOrEqual(4);
+  expect(scopedCalls.length).toBeGreaterThanOrEqual(5);
   scopedCalls.forEach(([sql, params]) => {
     expect(String(sql)).toContain('o.market_id =');
     expect(params).toContain('market-cm-id');
@@ -89,9 +92,35 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   expect(payload.trend[0]).toMatchObject({ revenue_kmf: 120000, actual_orders: 3, cost_coverage_pct: 75 });
   expect(payload.cost_families[0]).toEqual({ cost_type: 'product_purchase', orders: 4, amount_kmf: 40000 });
   expect(payload.costing_orders[0]).toMatchObject({ reference: 'CMD-C', variance_kmf: 1000, consolidated_margin_kmf: 8000, cost_status: 'actual' });
+  expect(payload.relay_profitability[0]).toMatchObject({
+    relais_name: 'Relais Centre',
+    revenue_kmf: 120000,
+    estimated_margin_kmf: 50000,
+    consolidated_margin_kmf: 38000,
+    actual_orders: 3,
+    cost_coverage_pct: 75,
+  });
   expect(payload.costing_kpis.map(item => item.key)).toEqual(['cout_estime', 'cout_reel', 'marge_estimee', 'marge_variable_reelle', 'marge_consolidee']);
   expect(payload.data_quality.economic_global_engine_consumed).toBe(false);
+  expect(payload.data_quality.relay_real_margin_basis).toBe('actual_cost_orders_only');
   expect(JSON.stringify(payload)).not.toContain('market-cm-id');
+});
+
+test('une rentabilité relais sans coût actual ne fabrique aucune marge réelle', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    relais_name: 'Relais Test',
+    orders: '3',
+    revenue_kmf: '60000',
+    estimated_cost_kmf: '40000',
+    actual_orders: '0',
+    actual_revenue_kmf: null,
+    real_cost_kmf: null,
+  }] });
+
+  const rows = await finance.getRelayProfitability({ market_id: 'market-cm-id' });
+  expect(rows[0]).toMatchObject({ estimated_margin_kmf: 20000, consolidated_margin_kmf: null, real_cost_kmf: null });
+  expect(String(mockQuery.mock.calls[0][0])).toContain('o.market_id =');
+  expect(mockQuery.mock.calls[0][1]).toContain('market-cm-id');
 });
 
 test('les remboursements market utilisent la période et le marché serveur', async () => {
