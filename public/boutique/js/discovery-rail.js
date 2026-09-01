@@ -51,22 +51,34 @@ async function refreshDiscoveryRail() {
 }
 
 function handleDiscoveryClick(event) {
+  // CTA button click — action directe
   const button = event.target.closest('[data-discovery-action][data-discovery-ref]');
-  if (!button) return;
+  if (button && button.matches('button')) {
+    const kind = button.dataset.discoveryAction;
+    const ref = button.dataset.discoveryRef;
+    if (!kind || !ref) return;
 
-  const kind = button.dataset.discoveryAction;
-  const ref = button.dataset.discoveryRef;
+    if (kind === 'product') {
+      openModal(ref);
+      return;
+    }
+
+    bus.emit('discovery:request', { kind, ref, source: button });
+    return;
+  }
+
+  // Card click (non-button) — product → PDP, others → detail (future L2)
+  const card = event.target.closest('.k-discovery-card[data-discovery-kind][data-discovery-ref]');
+  if (!card) return;
+
+  const kind = card.dataset.discoveryKind;
+  const ref = card.dataset.discoveryRef;
   if (!kind || !ref) return;
 
   if (kind === 'product') {
     openModal(ref);
-    return;
   }
-
-  // Discovery ne possède pas le cycle Inquiry. Le consumer providers-services
-  // reçoit l'intention et porte identité + mutation. `source` ne contient
-  // aucune donnée métier : uniquement le bouton pour refléter l'état pending.
-  bus.emit('discovery:request', { kind, ref, source: button });
+  // physical_offer and service card click → future L2 detail sheet
 }
 
 export function setupDiscoveryRail() {
