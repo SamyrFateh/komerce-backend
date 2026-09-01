@@ -465,7 +465,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-03",
-        "service": "Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.",
+        "service": "Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -9769,6 +9769,13 @@
       },
       {
         "feature": "shared-cart",
+        "category": "migrations",
+        "declared": "migrations/190_shared_cart_auto_close_backfill.sql",
+        "resolvedPath": "migrations/190_shared_cart_auto_close_backfill.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
         "category": "tests",
         "declared": "tests/unit/baskets.test.js",
         "resolvedPath": "tests/unit/baskets.test.js",
@@ -15433,6 +15440,18 @@
         "feature": "shared-cart",
         "fn": "deleteUserBasketData",
         "file": "services/shared-cart-user-cleanup.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "shared-cart",
+        "fn": "markShareConvertedToOrder",
+        "file": "services/cart-share-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "shared-cart",
+        "fn": "closeCompletedSharedCartForOrderItems",
+        "file": "services/cart-share-service.js",
         "status": "resolved"
       },
       {
@@ -26203,6 +26222,10 @@
               },
               {
                 "sourceFileId": "services/order-post-commit-hooks.js",
+                "targetFile": "services/cart-share-service.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
                 "targetFile": "services/cart-share-service.js"
               },
               {

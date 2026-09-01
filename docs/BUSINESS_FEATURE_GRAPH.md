@@ -538,18 +538,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### shared-cart _(business-feature)_
 
-> Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.
+> Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.
 
 - services: 9
 - routes: 4
-- migrations: 19
+- migrations: 20
 - tests: 13
 - boutique: 10
 - dash: 1
 - tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
 - tables written: 7
 - interfaces exposed: 16
-- internal APIs: 1
+- internal APIs: 3
 - dependencies (consumes): 8 — recommendations, platform-ops, infrastructure, orders, catalog, notifications, auth, auth-identity
 - consumers: 4 — catalog, dashboard, infrastructure, orders
 
@@ -1344,6 +1344,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
 | `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
 | `deleteUserBasketData` | `services/shared-cart-user-cleanup.js` | shared-cart | resolved |
+| `markShareConvertedToOrder` | `services/cart-share-service.js` | shared-cart | resolved |
+| `closeCompletedSharedCartForOrderItems` | `services/cart-share-service.js` | shared-cart | resolved |
 | `upsertCandidateFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
 | `archiveMissingCandidatesFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
 
@@ -1846,7 +1848,7 @@ Meta Graph monté : oui.
 | orders | platform-ops | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
-| orders | shared-cart | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| orders | shared-cart | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
