@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports, server_market_scope_is_authority
  * @impact-areas  admin-dashboard, pilotage, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -27,6 +27,36 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCanonicalPilotage() {
   const GLOBAL_ENDPOINT = '/api/admin/dashboard/unified';
   const MARKET_ENDPOINT_PREFIX = '/api/admin/dashboard/unified/market/';
+
+  const CANONICAL_PATH_REDIRECTS = Object.freeze({
+    '/admin/control-tower': '/admin/pilotage',
+    '/admin/orders-logistics': '/admin/operations',
+    '/admin/pricing': '/admin/workspaces/pricing',
+    '/admin/pricing-workshop': '/admin/workspaces/pricing',
+    '/admin/pricing-strategy': '/admin/workspaces/pricing',
+    '/admin/economic-flow': '/admin/workspaces/pricing',
+    '/admin/alerts': '/admin/action-center',
+    '/admin/problems': '/admin/action-center',
+    '/admin/hub-relais': '/admin/workspaces/operations',
+    '/admin/inventory': '/admin/workspaces/operations',
+    '/admin/accounting': '/admin/workspaces/accounting',
+    '/admin/invoices': '/admin/workspaces/accounting',
+    '/admin/products': '/admin/workspaces/catalog',
+    '/admin/categories': '/admin/workspaces/catalog',
+    '/admin/catalog-approval': '/admin/workspaces/catalog',
+    '/admin/sourcing': '/admin/workspaces/sourcing',
+    '/admin/sourcing-scanner': '/admin/workspaces/sourcing',
+  });
+
+  const FLOW_DESTINATIONS = Object.freeze({
+    estimated_price: 'Pricing',
+    order: 'Opérations',
+    payment: 'Opérations',
+    parcels_scans: 'Opérations',
+    real_cost: 'Finance',
+    real_margin: 'Finance',
+    recalibration: 'Pricing',
+  });
 
   const PILOTAGE_SCHEMA = Object.freeze({
     id: 'pilotage',
@@ -69,7 +99,7 @@
         source: 'pilotage.flow',
         columns: [
           { key: 'etape', label: 'Étape' },
-          { key: 'destination', label: 'Drill' },
+          { key: 'destination', label: 'Destination' },
         ],
         emptyText: 'Aucune étape économique disponible.',
       },
@@ -84,6 +114,15 @@
     alertes_critiques: 'alertes-critiques',
     taux_completude_couts: 'completude-couts',
   });
+
+  function canonicalAdminHref(value) {
+    if (typeof value !== 'string' || !value.trim()) return undefined;
+    const href = value.trim();
+    const match = href.match(/^([^?#]+)(.*)$/);
+    if (!match) return href;
+    const stablePath = CANONICAL_PATH_REDIRECTS[match[1]];
+    return stablePath ? stablePath + match[2] : href;
+  }
 
   function formatNumber(value) {
     if (value == null || value === '') return '—';
@@ -140,11 +179,12 @@
     const message = item.message || (Number.isFinite(count) ? `${count} élément(s) concerné(s)` : 'Action requise');
     const rawLevel = item.level || item.severity;
     const level = rawLevel === 'urgent' ? 'critical' : (['critical', 'warning', 'info'].includes(rawLevel) ? rawLevel : 'info');
+    const href = canonicalAdminHref(item.action_url || item.href);
     return {
       level,
       title: String(title),
       message: String(message),
-      ...(item.action_url || item.href ? { href: item.action_url || item.href } : {}),
+      ...(href ? { href } : {}),
       ...(item.action_label || item.actionLabel ? { actionLabel: item.action_label || item.actionLabel } : {}),
     };
   }
@@ -171,7 +211,7 @@
       : [];
     return stages.map(stage => ({
       etape: stage && stage.label ? String(stage.label) : '—',
-      destination: stage && stage.url ? String(stage.url) : '—',
+      destination: stage && FLOW_DESTINATIONS[stage.key] ? FLOW_DESTINATIONS[stage.key] : '—',
     }));
   }
 
@@ -239,8 +279,11 @@
   return Object.freeze({
     GLOBAL_ENDPOINT,
     MARKET_ENDPOINT_PREFIX,
+    CANONICAL_PATH_REDIRECTS,
+    FLOW_DESTINATIONS,
     KPI_KEYS,
     PILOTAGE_SCHEMA,
+    canonicalAdminHref,
     formatMetricValue,
     metricTone,
     metricHelper,
