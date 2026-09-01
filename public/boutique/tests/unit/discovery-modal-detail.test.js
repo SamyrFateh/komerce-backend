@@ -117,13 +117,16 @@ test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
   expect(slot.innerHTML).toBe('');
 });
 
-test('contrat U1 : aucun second renderer/overlay Discovery ne subsiste', () => {
+test('contrat Discovery : un seul shell et aucune mutation métier directe depuis le rail', () => {
   const root = path.join(__dirname, '../..');
   const rail = fs.readFileSync(path.join(root, 'js/discovery-rail.js'), 'utf8');
   const core = fs.readFileSync(path.join(root, 'js/b-modal-core.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
   expect(rail).not.toMatch(/render-discovery-detail/);
+  expect(rail).not.toMatch(/requestDiscovery/);
+  expect(rail).toMatch(/async function openDiscoveryDetail\(kind, ref\)/);
+  expect(rail).toMatch(/openDiscoveryDetail\(kind, ref\)/);
   expect(rail).toMatch(/openModal\(ref, \{ kind, detail \}\)/);
   expect(core).toMatch(/modal:discovery-opened/);
   expect((html.match(/id="k-modal-overlay"/g) || [])).toHaveLength(1);
