@@ -1,0 +1,153 @@
+name: tmp-wire-subcategory-media-v8
+
+on:
+  push:
+    branches:
+      - fix/subcategory-canonical-cutouts-v8
+    paths:
+      - .github/workflows/tmp-wire-subcategory-media-v8.yml
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/subcategory-canonical-cutouts-v8
+          fetch-depth: 0
+
+      - name: Patch desktop mobile CSS tests and migration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Expected block not found in {path}: {old[:120]!r}')
+              text = text.replace(old, new, 1)
+              p.write_text(text, encoding='utf-8')
+
+          # Desktop controller: canonical cutout first + runtime anti-broken fallback.
+          replace_once(
+              'public/boutique/js/controllers/home-controller.js',
+              "import {\n  getShelfSubcategoryProductImage,\n  getShelfSubcategoryVisual,\n  renderShelfProductPhoto,\n  renderShelfUse,\n} from '../render/category-shelf-visuals.js';",
+              "import {\n  bindShelfMediaFallbacks,\n  getShelfSubcategoryVisual,\n  renderShelfSubcategoryMedia,\n} from '../render/category-shelf-visuals.js';"
+          )
+          replace_once(
+              'public/boutique/js/controllers/home-controller.js',
+              "        const icon = escapeHtml(sub.icon || '✨');\n        const photo = getShelfSubcategoryProductImage(state.products, catKey, sub.key);\n        const visual = getShelfSubcategoryVisual(catKey, sub.key);\n        const object = photo\n          ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory')\n          : visual\n            ? renderShelfUse(visual, 'k-shelf-object--subcategory')\n            : `<span class=\"k-shelf-emoji-fallback\">${icon}</span>`;\n        const active = activeSubcat === sub.key ? ' active' : '';\n        const mediaAttr = photo ? ' data-shelf-media=\"product\"' : '';\n        return `<button type=\"button\" class=\"k-subcutout${active}\" data-subcat=\"${key}\"${visual ? ` data-shelf-visual=\"${escapeHtml(visual)}\"` : ''}${mediaAttr}>\n          <span class=\"k-subcutout-icon\" aria-hidden=\"true\">${object}</span>",
+              "        const visual = getShelfSubcategoryVisual(catKey, sub.key);\n        const object = renderShelfSubcategoryMedia(\n          state.products,\n          catKey,\n          sub.key,\n          'k-shelf-object--subcategory'\n        );\n        const active = activeSubcat === sub.key ? ' active' : '';\n        return `<button type=\"button\" class=\"k-subcutout${active}\" data-subcat=\"${key}\"${visual ? ` data-shelf-visual=\"${escapeHtml(visual)}\"` : ''}>\n          <span class=\"k-subcutout-icon\" aria-hidden=\"true\">${object}</span>"
+          )
+          replace_once(
+              'public/boutique/js/controllers/home-controller.js',
+              "  wrap.innerHTML = header + rail;\n\n  const backBtn = wrap.querySelector('[data-back-all=\"1\"]');",
+              "  wrap.innerHTML = header + rail;\n  bindShelfMediaFallbacks(wrap);\n\n  const backBtn = wrap.querySelector('[data-back-all=\"1\"]');"
+          )
+
+          # Mobile pager: exactly the same media resolver and fallback binder.
+          replace_once(
+              'public/boutique/js/b-subcat.js',
+              "import {\n  getShelfSubcategoryProductImage,\n  getShelfSubcategoryVisual,\n  renderShelfProductPhoto,\n  renderShelfUse,\n}                                  from './render/category-shelf-visuals.js';",
+              "import {\n  bindShelfMediaFallbacks,\n  getShelfSubcategoryVisual,\n  renderShelfSubcategoryMedia,\n}                                  from './render/category-shelf-visuals.js';"
+          )
+          replace_once(
+              'public/boutique/js/b-subcat.js',
+              "          const photo = getShelfSubcategoryProductImage(state.products, fs.cat, s.key);\n          const visual = getShelfSubcategoryVisual(fs.cat, s.key);\n          const object = photo\n            ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory k-flat-subcat-object')\n            : visual\n              ? renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')\n              : '<span class=\"k-shelf-emoji-fallback\">' + sanitize(s.icon || '✨') + '</span>';\n          return '<button class=\"k-flat-subcat-tab\" data-flat-sub=\"' + s.key + '\"' +\n            (visual ? ' data-shelf-visual=\"' + sanitize(visual) + '\"' : '') +\n            (photo ? ' data-shelf-media=\"product\"' : '') + '>' +",
+              "          const visual = getShelfSubcategoryVisual(fs.cat, s.key);\n          const object = renderShelfSubcategoryMedia(\n            state.products,\n            fs.cat,\n            s.key,\n            'k-shelf-object--subcategory k-flat-subcat-object'\n          );\n          return '<button class=\"k-flat-subcat-tab\" data-flat-sub=\"' + s.key + '\"' +\n            (visual ? ' data-shelf-visual=\"' + sanitize(visual) + '\"' : '') + '>' +"
+          )
+          replace_once(
+              'public/boutique/js/b-subcat.js',
+              "    wrapper.innerHTML = state._flatSubcatHeaderHtml || '';\n    sec.insertBefore(wrapper, grid);",
+              "    wrapper.innerHTML = state._flatSubcatHeaderHtml || '';\n    bindShelfMediaFallbacks(wrapper);\n    sec.insertBefore(wrapper, grid);"
+          )
+
+          # Shared neutral missing-media treatment. It inherits each rail's sizing class.
+          css = Path('public/boutique/css/interactions.css')
+          text = css.read_text(encoding='utf-8')
+          anchor = '.k-flat-subcat-tab-icon .k-shelf-emoji-fallback { display:block; filter:none; }'
+          addition = '''.k-flat-subcat-tab-icon .k-shelf-emoji-fallback { display:block; filter:none; }\n\n/* Canonical subcategory media: final fallback is explicit, neutral and never broken. */\n.k-shelf-media-placeholder {\n  display:grid;\n  place-items:center;\n  color:var(--catalog-nav-muted);\n  opacity:.46;\n  filter:none;\n}\n.k-shelf-media-placeholder svg {\n  width:58%;\n  height:58%;\n  fill:none;\n  stroke:currentColor;\n  stroke-width:1.7;\n  stroke-linecap:round;\n  stroke-linejoin:round;\n}\n'''
+          if anchor not in text:
+              raise SystemExit('interactions.css placeholder anchor missing')
+          css.write_text(text.replace(anchor, addition, 1), encoding='utf-8')
+
+          # Restore canonical Tech entries at the DB source of truth.
+          migrations = Path('migrations')
+          nums = []
+          for p in migrations.glob('*.sql'):
+              m = re.match(r'^(\d{3})_', p.name)
+              if m:
+                  nums.append(int(m.group(1)))
+          next_num = (max(nums) + 1) if nums else 158
+          migration = migrations / f'{next_num:03d}_restore_tech_navigation_subcategories.sql'
+          if migration.exists():
+              raise SystemExit(f'Migration collision: {migration}')
+          migration.write_text(f'''-- @migration {next_num:03d}_restore_tech_navigation_subcategories.sql\n-- @domain catalog\n-- @owner scripts/run-migrations-once.js\n-- @phase expand\n-- @description Restore canonical Ordi and Gaming navigation entries for the Tech Boutique rail.\n\nINSERT INTO boutique_subcategories (category_key, key, label, emoji, display_order, is_active)\nVALUES\n  ('Tech', 'Ordi', 'Ordi', '💻', 2, TRUE),\n  ('Tech', 'Gaming', 'Gaming', '🎮', 5, TRUE)\nON CONFLICT (category_key, key)\nDO UPDATE SET\n  label = EXCLUDED.label,\n  emoji = EXCLUDED.emoji,\n  display_order = EXCLUDED.display_order,\n  is_active = TRUE;\n''', encoding='utf-8')
+          print('MIGRATION_CREATED', migration)
+
+          # Update source-contract tests from raw-product-first to canonical-cutout-first.
+          p = Path('public/boutique/tests/unit/category-subcategory-continuity.test.js')
+          t = p.read_text(encoding='utf-8')
+          start = t.index("  test('préfère la photo catalogue réelle et conserve seulement un fallback canonique'")
+          end = t.index("\n  test('garde les huit images dans la seule source taxonomique'", start)
+          new_tests = '''  test('préfère les cutouts canoniques et garde la photo produit comme secours explicite', () => {\n    const canonicalVisualKeys = [\n      'mode-cutout:femme', 'mode-cutout:homme', 'mode-cutout:enfant', 'mode-cutout:beaute',\n      'sub-maison-confort', 'sub-maison-cuisine', 'sub-maison-deco', 'sub-maison-enfants',\n      'sub-tech-phone', 'sub-tech-ordi', 'sub-tech-audio', 'sub-tech-montre', 'sub-tech-gaming',\n      'sub-brico-outils', 'sub-brico-elec', 'sub-brico-securite',\n      'sub-perso-ceremonie', 'sub-perso-cadeau', 'sub-perso-impression',\n      'sub-auto-filtres', 'sub-auto-freinage', 'sub-auto-eclairage', 'sub-auto-moto',\n    ];\n    canonicalVisualKeys.forEach((key) => expect(visuals).toContain(key));\n    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS');\n    expect(visuals).toContain('renderShelfSubcategoryMedia');\n    expect(visuals).toContain('data-shelf-media=\\"canonical\\"');\n    expect(visuals).toContain('data-shelf-fallback-src');\n    expect(visuals).toContain('product-fallback');\n    expect(visuals).toContain('k-shelf-media-placeholder');\n    expect(visuals).toContain("console.warn('[boutique] missing subcategory media'");\n    expect(desktopShelf).toContain('.k-shelf-product-photo');\n    expect(desktopShelf).not.toContain('grayscale(1)');\n    expect(desktopShelf).not.toContain('sepia(.58)');\n    expect(desktopShelf).not.toContain('hue-rotate(62deg)');\n  });\n\n  test('réutilise exactement le même resolver anti-casse dans le pager mobile', () => {\n    expect(subcat).toContain('renderShelfSubcategoryMedia');\n    expect(subcat).toContain('bindShelfMediaFallbacks');\n    expect(subcat).not.toContain('data-shelf-media=\\"product\\"');\n    expect(interactions).toContain('.k-shelf-media-placeholder');\n    expect(interactions).toMatch(/\\.k-flat-subcat-tab\\s*\\{[^}]*flex-direction:\\s*column[^}]*background:\\s*transparent[^}]*border:\\s*0/s);\n    expect(interactions).toMatch(/\\.k-flat-subcat-object\\s*\\{[^}]*object-fit:contain[^}]*saturate\\(1\\.02\\)[^}]*contrast\\(1\\.04\\)/s);\n    expect(interactions).not.toMatch(/\\.k-flat-subcat-object[^}]*grayscale\\(1\\)/s);\n    expect(interactions).not.toMatch(/\\.k-flat-subcat-object[^}]*hue-rotate\\(62deg\\)/s);\n  });\n'''
+          p.write_text(t[:start] + new_tests + t[end:], encoding='utf-8')
+
+          # Modernize the visual asset contract test without keeping the old SVG as source truth.
+          p = Path('public/boutique/tests/unit/category-cutout-navigation.test.js')
+          t = p.read_text(encoding='utf-8')
+          for line in [
+              "const modeFemme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-femme-v4.svg'), 'utf8');\n",
+              "const modeHomme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-homme-v4.svg'), 'utf8');\n",
+              "const modeEnfant = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-enfant-v4.svg'), 'utf8');\n",
+              "const modeBeaute = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-beaute-v4.svg'), 'utf8');\n",
+          ]:
+              t = t.replace(line, '')
+          inject_after = "const sw = fs.readFileSync(path.resolve(ROOT, '../sw.js'), 'utf8');\n"
+          if inject_after not in t:
+              raise SystemExit('category test manifest injection anchor missing')
+          t = t.replace(inject_after, inject_after + "const subcutoutManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'categories/subcutouts/manifest.json'), 'utf8'));\n", 1)
+
+          old_start = t.index("  it('porte les huit cutouts HD dans le registre visuel unique'")
+          old_end = t.index("\n  it('rend les cutouts directs et réserve le crop atlas au niveau 2 Mode'", old_start)
+          replacement = '''  it('porte les 23 cutouts de sous-catégorie dans le registre visuel unique', () => {\n    const businessAssets = subcutoutManifest.filter((item) => item.slug);\n    expect(businessAssets).toHaveLength(23);\n    expect(businessAssets.filter((item) => item.provenance === 'komerce-catalog')).toHaveLength(22);\n    expect(businessAssets.filter((item) => item.provenance === 'cc-by-2.0')).toHaveLength(1);\n    businessAssets.forEach((item) => {\n      expect(fs.existsSync(path.join(ROOT, 'categories/subcutouts', item.asset))).toBe(true);\n    });\n    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS');\n    expect(visuals).toContain("'sub-maison-cuisine': '/boutique/categories/subcutouts/sub-maison-cuisine-v1.webp?v=1'");\n    expect(visuals).toContain("'sub-tech-ordi': '/boutique/categories/subcutouts/sub-tech-ordi-v1.webp?v=1'");\n    expect(visuals).toContain("'sub-tech-gaming': '/boutique/categories/subcutouts/sub-tech-gaming-v1.webp?v=1'");\n    expect(visuals).toContain('renderSubcategoryCutout');\n    expect(visuals).toContain('renderShelfSubcategoryMedia');\n    expect(sprite).toContain('symbol id=\"cat-all\"');\n    expect(sprite).toContain('symbol id=\"sub-auto-moto\"');\n  });\n'''
+          t = t[:old_start] + replacement + t[old_end:]
+
+          palette_start = t.index("  it('garde quatre palettes Mode distinctes sans vert de marque dans les objets'")
+          palette_end = t.index("\n  it('utilise un contraste gris franc", palette_start)
+          provenance_test = '''  it('documente la provenance du seul cutout externe Ordi', () => {\n    const ordi = subcutoutManifest.find((item) => item.slug === 'tech-ordi');\n    const attribution = subcutoutManifest.find((item) => item._attribution);\n    expect(ordi.provenance).toBe('cc-by-2.0');\n    expect(ordi.source_url).toContain('wikimedia.org');\n    expect(attribution._license_url).toBe('https://creativecommons.org/licenses/by/2.0/');\n  });\n'''
+          t = t[:palette_start] + provenance_test + t[palette_end:]
+          # Old renderer function name is no longer the contract.
+          t = t.replace("    expect(visuals).toContain(\"visual.startsWith('mode-cutout:')\");\n", "    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS[visual]');\n")
+          p.write_text(t, encoding='utf-8')
+
+          # Existing b-subcat fixture uses an intentionally unknown fake category: it must now show the neutral missing state.
+          p = Path('public/boutique/tests/unit/b-subcat.test.js')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace("expect(state._flatSubcatHeaderHtml).toContain('k-shelf-emoji-fallback');", "expect(state._flatSubcatHeaderHtml).toContain('k-shelf-media-placeholder');")
+          p.write_text(t, encoding='utf-8')
+          PY
+
+          node public/boutique/scripts/deploy-css.js
+
+      - name: Commit product patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/boutique migrations
+          git commit -m 'fix(boutique): canonicalize subcategory media fallbacks'
+          git push origin HEAD:fix/subcategory-canonical-cutouts-v8
+
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/tmp-wire-subcategory-media-v8.yml || true
+          git commit -m 'chore(qa): remove temporary media wiring workflow' || true
+          git push origin HEAD:fix/subcategory-canonical-cutouts-v8
