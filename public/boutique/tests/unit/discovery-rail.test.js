@@ -49,9 +49,7 @@ describe('renderDiscoveryRail', () => {
     expect(Array.from(target().querySelectorAll('.k-discovery-img')).map(img => img.getAttribute('src')))
       .toEqual(['/images/product.webp', '/images/samboussas.webp', '/images/plombier.webp']);
     expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
-    // Desktop composition: role="list" is on the zone containers, not the rail wrapper
-    const lists = target().querySelectorAll('[role="list"]');
-    expect(lists.length).toBeGreaterThanOrEqual(1);
+    expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
     expect(target().querySelector('#k-discovery-local-title')?.textContent).toBe('Près de vous');
     expect(target().textContent).toContain('Comores');
 
@@ -159,42 +157,31 @@ describe('selectMobile — surface policy HOME V1', () => {
   });
 });
 
-describe('selectDesktop — 75/25 composition policy', () => {
+describe('selectDesktop — flat mixed rail', () => {
   function card(kind, id) {
     return normalizeCard({
       kind, title: `${kind}-${id}`, cta_action_ref: id, cta_label: 'Test',
     });
   }
 
-  it('splits into 4 commerce + 2 services from a mixed pool', () => {
+  it('returns up to 6 items from a mixed pool in editorial order', () => {
     const pool = [
-      card('product', 'p1'), card('product', 'p2'), card('product', 'p3'),
-      card('physical_offer', 'o1'), card('physical_offer', 'o2'),
-      card('service', 's1'), card('service', 's2'), card('service', 's3'),
+      card('product', 'p1'), card('physical_offer', 'o1'), card('service', 's1'),
+      card('product', 'p2'), card('service', 's2'), card('product', 'p3'),
+      card('product', 'p4'),
     ];
     const result = selectDesktop(pool);
-    expect(result.commerce).toHaveLength(4);
-    expect(result.services).toHaveLength(2);
-    expect(result.commerce.every(c => c.kind === 'product' || c.kind === 'physical_offer')).toBe(true);
-    expect(result.services.every(c => c.kind === 'service')).toBe(true);
+    expect(result).toHaveLength(6);
+    expect(result.map(c => c.kind)).toEqual(['product', 'physical_offer', 'service', 'product', 'service', 'product']);
   });
 
-  it('returns empty services array when no services in pool', () => {
-    const pool = [card('product', 'p1'), card('physical_offer', 'o1')];
-    const result = selectDesktop(pool);
-    expect(result.commerce).toHaveLength(2);
-    expect(result.services).toHaveLength(0);
+  it('caps at 6 even with large pool', () => {
+    const pool = Array.from({ length: 12 }, (_, i) => card('product', `p${i}`));
+    expect(selectDesktop(pool)).toHaveLength(6);
   });
 
-  it('caps commerce at 4 even with large pool', () => {
-    const pool = Array.from({ length: 10 }, (_, i) => card('product', `p${i}`));
-    const result = selectDesktop(pool);
-    expect(result.commerce).toHaveLength(4);
-  });
-
-  it('caps services at 2', () => {
-    const pool = Array.from({ length: 6 }, (_, i) => card('service', `s${i}`));
-    const result = selectDesktop(pool);
-    expect(result.services).toHaveLength(2);
+  it('returns fewer if pool is small', () => {
+    const pool = [card('product', 'p1'), card('service', 's1')];
+    expect(selectDesktop(pool)).toHaveLength(2);
   });
 });
