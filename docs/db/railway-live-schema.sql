@@ -3204,7 +3204,9 @@ CREATE TABLE public.physical_offers (
     commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT physical_offers_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text])))
+    image_ref text,
+    CONSTRAINT physical_offers_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
+    CONSTRAINT physical_offers_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text)))
 );
 
 
@@ -3220,6 +3222,13 @@ COMMENT ON TABLE public.physical_offers IS 'Produit physique réellement propos�
 --
 
 COMMENT ON COLUMN public.physical_offers.commercial_exposure IS 'Même patron que services.commercial_exposure et les rails transport (DOCTRINE_TRANSPORT_RAILS.md) : donnée vivante, valorisée, jamais exposée tant que ce champ reste DISABLED.';
+
+
+--
+-- Name: COLUMN physical_offers.image_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.physical_offers.image_ref IS 'Référence média publique optionnelle pour la représentation de l''offre physique. Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
 
 
 --
@@ -4347,7 +4356,9 @@ CREATE TABLE public.services (
     commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT services_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text])))
+    image_ref text,
+    CONSTRAINT services_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
+    CONSTRAINT services_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text)))
 );
 
 
@@ -4363,6 +4374,13 @@ COMMENT ON TABLE public.services IS 'Proposition de service local d''un provider
 --
 
 COMMENT ON COLUMN public.services.commercial_exposure IS 'Patron déjà en production sur les rails transport (DOCTRINE_TRANSPORT_RAILS.md) : une donnée vivante, valorisée, mais non exposée tant que ce champ reste DISABLED. Attribut de donnée, jamais une branche de code frontend.';
+
+
+--
+-- Name: COLUMN services.image_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.services.image_ref IS 'Référence média publique optionnelle pour la représentation du service. Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
 
 
 --
