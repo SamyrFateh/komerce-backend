@@ -38,10 +38,11 @@ module.exports = {
   canonicalFeature: 'shared-cart',
   sliceKind: 'frontend-slice',
 
-  service: "Surface modale du panier partagé (panier/groupe) — orchestration d'ouverture, navigation carousel, contenu produit dans le modal, preuve sociale, ajout panier depuis le modal.",
+  service: "Cycle de vie du shell modal Komerce — ouverture/fermeture/historique/scroll communs ; les renderers métier Product et Discovery restent propriétaires de leur contenu.",
 
   perimeter: {
     in:  ['fichiers js/* annotés @domain shared-cart-modal'],
+    // Le shell #k-modal peut héberger plusieurs projections, sans absorber leur métier.
     out: [
       'logique backend équivalente (repo komerce-backend, feature shared-cart)',
       'modal de fiche produit (modal-product.feature.js) — système distinct',
@@ -78,7 +79,7 @@ module.exports = {
   contract: {
     exposes: [],
     internalApi: [
-      'openModal / closeModal / setupModal (b-modal-core.js)',
+      'openModal(id, boolean|{kind,pushHistory,detail}) / closeModal / setupModal (b-modal-core.js)',
       'updateModalNavArrows / navigateModal (b-modal-nav.js)',
       'goToSlide / buildCarouselSlides (b-modal-product.js)',
       'setupImageUX (b-modal-image-ux.js)',
@@ -87,6 +88,7 @@ module.exports = {
     consumes: [
       'boutique — b-bus.js, b-store.js, b-scroll-owner.js',
       'shared-cart — b-cart.js (addToCart/quickAdd/quickRemove/setQty, via b-modal-cart.js)',
+      'catalog — projection Service/Physical Offer via modal:discovery-opened ; aucune vérité provider n est possédée ici',
     ],
   },
 
@@ -98,6 +100,7 @@ module.exports = {
     'le bouton favori de la fiche produit garde aria-pressed et son libellé Ajouter ou Retirer synchronisés avec l état réel',
     'le stepper de la fiche produit mute une ligne panier exacte ; pour un SKU, b-modal-cart.js résout sku_id puis variant_combo avant tout setQty',
     'sur desktop le bouton panier centre ouvre le recapitulatif canonique du checkout sans cibler le side-cart ; sur mobile il ouvre le drawer de relecture',
+    'le cycle open/close/history du shell #k-modal reste unique pour Product, Physical Offer et Service ; aucun overlay Discovery parallèle',
   ],
 
   // Dette consignée (R7 — hors périmètre de ce palier) :

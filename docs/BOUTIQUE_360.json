@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-01T20:29:15.156Z",
+  "generatedAt": "2026-09-01T21:46:59.065Z",
   "summary": {
-    "modules": 97,
-    "withHeader": 97,
-    "events": 23,
-    "declaredActive": 40,
+    "modules": 98,
+    "withHeader": 98,
+    "events": 24,
+    "declaredActive": 41,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 61,
@@ -14,7 +14,7 @@
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 42,
     "dynamicEndpoints": 22,
-    "ownedEvents": 4,
+    "ownedEvents": 5,
     "ownershipRed": 0,
     "ownershipOrange": 1
   },
@@ -937,6 +937,7 @@
         "b-cart.js"
       ],
       "emits": [
+        "modal:discovery-opened",
         "modal:opened",
         "modal:closed",
         "side-cart:render",
@@ -968,6 +969,10 @@
         "modal-has-cart"
       ],
       "emitCalls": [
+        {
+          "name": "modal:discovery-opened",
+          "hasArg": true
+        },
         {
           "name": "modal:opened",
           "hasArg": true
@@ -1055,6 +1060,31 @@
         "b-modal-product-fields",
         "product-content-model",
         "modal-cart-product-model"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-discovery-detail.js",
+      "id": "b-modal-discovery-detail",
+      "hasHeader": true,
+      "role": "catalog-modal-discovery-detail",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:discovery-opened",
+        "modal:closed"
+      ],
+      "imports": [
+        "b-bus",
+        "discovery-actions",
+        "b-utils",
+        "b-modal"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2178,6 +2208,32 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/discovery-actions.js",
+      "id": "discovery-actions",
+      "hasHeader": true,
+      "role": "catalog-discovery-actions",
+      "domain": "catalog",
+      "layer": "ui-controller",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "discovery:request"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus"
+      ],
+      "bodyClasses": [],
+      "emitCalls": [
+        {
+          "name": "discovery:request",
+          "hasArg": true
+        }
+      ]
+    },
+    {
       "file": "public/boutique/js/discovery-api.js",
       "id": "discovery-api",
       "hasHeader": true,
@@ -2229,28 +2285,16 @@
       "doctrine": [],
       "depends": [],
       "usedBy": [],
-      "emits": [
-        "discovery:request"
-      ],
+      "emits": [],
       "listens": [],
       "imports": [
-        "b-bus",
+        "discovery-actions",
         "b-modal",
         "discovery-api",
-        "render-discovery-rail",
-        "render-discovery-detail"
+        "render-discovery-rail"
       ],
       "bodyClasses": [],
-      "emitCalls": [
-        {
-          "name": "discovery:request",
-          "hasArg": true
-        },
-        {
-          "name": "discovery:request",
-          "hasArg": true
-        }
-      ]
+      "emitCalls": []
     },
     {
       "file": "public/boutique/js/group/group-api.js",
@@ -2679,6 +2723,7 @@
         "b-modal-product-detail-bootstrap",
         "local-stock-badge-mount",
         "discovery-rail",
+        "b-modal-discovery-detail",
         "discovery-inquiry",
         "b-greeting",
         "b-notifications",
@@ -2805,25 +2850,6 @@
         "b-utils",
         "shop-schema",
         "category-shelf-visuals"
-      ],
-      "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
-      "file": "public/boutique/js/render/render-discovery-detail.js",
-      "id": "render-discovery-detail",
-      "hasHeader": true,
-      "role": "catalog-render-discovery-detail",
-      "domain": "catalog",
-      "layer": "ui-renderer",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [
-        "b-utils"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -3255,6 +3281,14 @@
         "local-stock-badge-mount"
       ]
     },
+    "modal:discovery-opened": {
+      "emitters": [
+        "b-modal-core"
+      ],
+      "listeners": [
+        "b-modal-discovery-detail"
+      ]
+    },
     "modal:opened": {
       "emitters": [
         "b-modal-core"
@@ -3272,6 +3306,7 @@
         "b-modal-core"
       ],
       "listeners": [
+        "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
         "b-pager",
         "group-side-cart",
@@ -3306,7 +3341,7 @@
     },
     "discovery:request": {
       "emitters": [
-        "discovery-rail"
+        "discovery-actions"
       ],
       "listeners": [
         "discovery-inquiry"
@@ -4058,6 +4093,7 @@
       "komerce:show",
       "nav:goto-komerce-wallet",
       "modal:opened",
+      "modal:discovery-opened",
       "modal:closed",
       "modal:composition-synced",
       "cart-snapshot:render",
@@ -4090,6 +4126,11 @@
         "producer": "b-modal-core",
         "payload": "value"
       },
+      "modal:discovery-opened": {
+        "owner": "catalog",
+        "producer": "b-modal-core",
+        "payload": "value"
+      },
       "modal:closed": {
         "owner": "modal-product",
         "producer": "b-modal-core",
@@ -4102,7 +4143,7 @@
       },
       "discovery:request": {
         "owner": "catalog",
-        "producer": "discovery-rail",
+        "producer": "discovery-actions",
         "payload": "value"
       }
     },
@@ -4114,8 +4155,12 @@
         "b-pager",
         "b-modal-desktop-enhancers"
       ],
+      "modal:discovery-opened": [
+        "b-modal-discovery-detail"
+      ],
       "modal:closed": [
         "b-modal-product-detail-bootstrap",
+        "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart"
       ],
@@ -4253,6 +4298,24 @@
       "payload": "value",
       "payloadMismatches": []
     },
+    "modal:discovery-opened": {
+      "owner": "catalog",
+      "declaredProducer": "b-modal-core",
+      "actualEmitters": [
+        "b-modal-core"
+      ],
+      "producerMissing": false,
+      "producerUnauthorized": [],
+      "declaredConsumers": [
+        "b-modal-discovery-detail"
+      ],
+      "actualConsumers": [
+        "b-modal-discovery-detail"
+      ],
+      "consumerUndeclared": [],
+      "payload": "value",
+      "payloadMismatches": []
+    },
     "modal:closed": {
       "owner": "modal-product",
       "declaredProducer": "b-modal-core",
@@ -4263,10 +4326,12 @@
       "producerUnauthorized": [],
       "declaredConsumers": [
         "b-modal-product-detail-bootstrap",
+        "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart"
       ],
       "actualConsumers": [
+        "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
         "b-pager",
         "group-side-cart",
@@ -4302,9 +4367,9 @@
     },
     "discovery:request": {
       "owner": "catalog",
-      "declaredProducer": "discovery-rail",
+      "declaredProducer": "discovery-actions",
       "actualEmitters": [
-        "discovery-rail"
+        "discovery-actions"
       ],
       "producerMissing": false,
       "producerUnauthorized": [],
@@ -4321,6 +4386,10 @@
   },
   "ownershipStatus": {
     "modal:opened": {
+      "level": "green",
+      "msg": "propriété saine"
+    },
+    "modal:discovery-opened": {
       "level": "green",
       "msg": "propriété saine"
     },

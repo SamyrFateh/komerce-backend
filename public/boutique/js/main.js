@@ -27,6 +27,7 @@ import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
 import { setupLocalStockBadgeMount } from './local-stock-badge-mount.js';
 import { setupDiscoveryRail } from './discovery-rail.js';
+import { setupDiscoveryModalDetail } from './b-modal-discovery-detail.js';
 import { setupDiscoveryInquiry } from './discovery-inquiry.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
@@ -51,6 +52,7 @@ function setupBoutiqueRuntime() {
   // Discovery locale V2 — shell natif inséré avant le catalogue. Le composant
   // reste absent tant que la projection backend ne renvoie aucune carte.
   setupDiscoveryInquiry();
+  setupDiscoveryModalDetail();
   setupDiscoveryRail();
   setupProductOpenContract();
   setupCartProductOpenStyle();

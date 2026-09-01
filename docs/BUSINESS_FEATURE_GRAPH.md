@@ -78,7 +78,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 29 | 29 | 388 | 388 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 98 | 98 | 0 |
+| boutique | 16 | 16 | 99 | 99 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -1664,7 +1664,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 1005 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 186 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 189 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1714,8 +1714,8 @@ Meta Graph monté : oui.
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
-| catalog | platform-ops | static-code | 68 | **DECLARED_AND_OBSERVED** |
-| catalog | shared-cart | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 69 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -1868,7 +1868,7 @@ Meta Graph monté : oui.
 | platform-ops | auth-identity | static-code, interface, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| platform-ops | catalog | static-code, interface, data-read | 23 | **DECLARED_AND_OBSERVED** |
+| platform-ops | catalog | static-code, interface, data-read | 24 | **DECLARED_AND_OBSERVED** |
 | platform-ops | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
