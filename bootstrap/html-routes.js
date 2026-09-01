@@ -12,7 +12,7 @@
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -273,8 +273,15 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
-  // par un Workspace / Entity 360 / Action Center Canonical.
+  // LOT 4Q — ControlTowerView est lecture seule et ses besoins légitimes sont
+  // déjà répartis entre Pilotage, Opérations et Action Center. Son pathname
+  // normal converge donc vers Pilotage ; ?legacy=1 garde le témoin historique.
+  const LEGACY_CANONICAL_REDIRECTS = Object.freeze({
+    '/admin/control-tower': '/admin/pilotage',
+  });
+
+  // Legacy 1 reste accessible pour les témoins et les capacités non encore
+  // prouvées absorbées par une surface Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
@@ -292,6 +299,10 @@ function mountHtmlRoutes(app, rootDir) {
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {
     app.get(routePath, (req, res) => {
+      const stablePath = LEGACY_CANONICAL_REDIRECTS[routePath];
+      if (stablePath && !(req.query && req.query.legacy === '1')) {
+        return res.redirect(302, stablePath);
+      }
       sendLegacyAdmin(res);
     });
   });
