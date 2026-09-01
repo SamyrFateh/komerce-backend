@@ -68,7 +68,9 @@ jobs:
       - name: Apply U0 source finalizer
         run: |
           node scripts/u0-debt-zero-finalize-once.js
+          node scripts/u0-fix-generated-test-once.js
           rm -f scripts/u0-debt-zero-finalize-once.js
+          rm -f scripts/u0-fix-generated-test-once.js
           rm -f .github/workflows/u0-debt-zero-radar-governance-once.yml
 
       - name: Prepare invariant database
