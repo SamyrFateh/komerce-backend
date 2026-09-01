@@ -7,8 +7,9 @@ on:
         description: 'Opération staging autorisée'
         required: true
         type: choice
-        default: discovery-check
+        default: railway-check
         options:
+          - railway-check
           - discovery-check
           - discovery-seed
   issues:
@@ -29,7 +30,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' &&
        github.actor == github.repository_owner &&
-       (github.event.issue.title == '[staging-op] discovery-seed' ||
+       (github.event.issue.title == '[staging-op] railway-check' ||
+        github.event.issue.title == '[staging-op] discovery-seed' ||
         github.event.issue.title == '[staging-op] discovery-check'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -38,8 +40,9 @@ jobs:
       DISCOVERY_STAGING_SEED_ENABLED: 'true'
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RAILWAY_SERVICE_NAME: ${{ secrets.RAILWAY_SERVICE_NAME }}
-      RAILWAY_ENVIRONMENT_NAME: ${{ secrets.RAILWAY_ENVIRONMENT_NAME }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
 
     steps:
       - name: Resolve bounded operation
@@ -55,6 +58,7 @@ jobs:
             operation="$DISPATCH_OPERATION"
           else
             case "$ISSUE_TITLE" in
+              '[staging-op] railway-check') operation='railway-check' ;;
               '[staging-op] discovery-seed') operation='discovery-seed' ;;
               '[staging-op] discovery-check') operation='discovery-check' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
@@ -62,7 +66,7 @@ jobs:
           fi
 
           case "$operation" in
-            discovery-seed|discovery-check) ;;
+            railway-check|discovery-seed|discovery-check) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
 
@@ -81,10 +85,44 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install dependencies
+      - name: Verify direct Railway staging access
+        if: steps.operation.outputs.operation == 'railway-check' || steps.operation.outputs.operation == 'discovery-seed'
+        id: railway_access
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo '::error::RAILWAY_TOKEN manque dans les secrets GitHub'
+            exit 1
+          fi
+
+          npm install --global @railway/cli
+
+          railway link \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            --json >/dev/null
+
+          railway status --json > "$RUNNER_TEMP/railway-status.json"
+          railway service status \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            --json > "$RUNNER_TEMP/railway-service-status.json"
+
+          echo 'railway_access=ok' >> "$GITHUB_OUTPUT"
+          echo 'Railway staging target resolved successfully.'
+          echo "Project: $RAILWAY_PROJECT_ID"
+          echo "Environment: $RAILWAY_ENVIRONMENT_ID"
+          echo "Service: $RAILWAY_SERVICE_ID"
+
+      - name: Install application dependencies
+        if: steps.operation.outputs.operation != 'railway-check'
         run: npm ci
 
       - name: Require staging database secret
+        if: steps.operation.outputs.operation != 'railway-check'
         shell: bash
         run: |
           set -euo pipefail
@@ -112,6 +150,7 @@ jobs:
           echo "candidate_count=$(printf '%s' "$candidates" | awk -F',' '{print NF}')" >> "$GITHUB_OUTPUT"
 
       - name: Verify Discovery staging data
+        if: steps.operation.outputs.operation != 'railway-check'
         id: verify
         shell: bash
         run: |
@@ -163,7 +202,7 @@ jobs:
             .finally(() => db.pool.end());
           NODE
 
-      - name: Sync rail variables to Railway staging when access is configured
+      - name: Sync rail variables to Railway staging
         if: steps.operation.outputs.operation == 'discovery-seed'
         id: railway
         shell: bash
@@ -172,29 +211,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "${RAILWAY_TOKEN:-}" ] || [ -z "${RAILWAY_SERVICE_NAME:-}" ]; then
-            echo 'runtime_sync=not-configured' >> "$GITHUB_OUTPUT"
-            echo '::notice::DB seed terminé. Pour synchroniser automatiquement les variables runtime, ajouter les secrets RAILWAY_TOKEN et RAILWAY_SERVICE_NAME.'
-            exit 0
-          fi
-
-          target_env="${RAILWAY_ENVIRONMENT_NAME:-staging}"
-          npm install --global @railway/cli
-
           railway variable set \
             "DISCOVERY_RAIL_ENABLED=true" \
             "DISCOVERY_RAIL_CANDIDATES=$CANDIDATES" \
-            --service "$RAILWAY_SERVICE_NAME" \
-            --environment "$target_env"
+            --service "$RAILWAY_SERVICE_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --json >/dev/null
 
           echo 'runtime_sync=updated' >> "$GITHUB_OUTPUT"
-          echo "Railway runtime variables updated for environment: $target_env"
+          echo 'Railway staging Discovery variables updated.'
 
       - name: Write operation summary
         if: always()
         shell: bash
         env:
           OPERATION: ${{ steps.operation.outputs.operation }}
+          RAILWAY_ACCESS: ${{ steps.railway_access.outputs.railway_access }}
           LOCAL_PRODUCTS: ${{ steps.verify.outputs.local_products }}
           PHYSICAL_OFFERS: ${{ steps.verify.outputs.physical_offers }}
           SERVICES: ${{ steps.verify.outputs.services }}
@@ -202,12 +234,17 @@ jobs:
           RUNTIME_SYNC: ${{ steps.railway.outputs.runtime_sync }}
         run: |
           {
-            echo '## Komerce staging Discovery'
+            echo '## Komerce staging operations'
             echo
             echo "- operation: ${OPERATION:-unknown}"
-            echo "- local products: ${LOCAL_PRODUCTS:-unknown}"
-            echo "- physical offers: ${PHYSICAL_OFFERS:-unknown}"
-            echo "- services: ${SERVICES:-unknown}"
+            if [ "$OPERATION" = 'railway-check' ] || [ "$OPERATION" = 'discovery-seed' ]; then
+              echo "- direct Railway access: ${RAILWAY_ACCESS:-unknown}"
+            fi
+            if [ "$OPERATION" != 'railway-check' ]; then
+              echo "- local products: ${LOCAL_PRODUCTS:-unknown}"
+              echo "- physical offers: ${PHYSICAL_OFFERS:-unknown}"
+              echo "- services: ${SERVICES:-unknown}"
+            fi
             if [ "$OPERATION" = 'discovery-seed' ]; then
               echo "- candidates: ${CANDIDATE_COUNT:-unknown}"
               echo "- Railway runtime sync: ${RUNTIME_SYNC:-unknown}"
@@ -221,12 +258,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           OPERATION: ${{ steps.operation.outputs.operation }}
+          RAILWAY_ACCESS: ${{ steps.railway_access.outputs.railway_access }}
           RUNTIME_SYNC: ${{ steps.railway.outputs.runtime_sync }}
         run: |
           set -euo pipefail
           note="Staging operation \`$OPERATION\` completed successfully."
+          if [ "$OPERATION" = 'railway-check' ]; then
+            note="$note Direct Railway access: ${RAILWAY_ACCESS:-unknown}."
+          fi
           if [ "$OPERATION" = 'discovery-seed' ]; then
-            note="$note Railway runtime sync: ${RUNTIME_SYNC:-unknown}."
+            note="$note Direct Railway access: ${RAILWAY_ACCESS:-unknown}. Runtime sync: ${RUNTIME_SYNC:-unknown}."
           fi
           gh issue comment "$ISSUE_NUMBER" --body "$note"
           gh issue close "$ISSUE_NUMBER" --reason completed
