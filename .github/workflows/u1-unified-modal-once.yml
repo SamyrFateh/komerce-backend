@@ -42,7 +42,9 @@ jobs:
       - name: Apply U1 source finalizer
         run: |
           node scripts/u1-unified-modal-finalize-once.js
+          node scripts/u1-modal-ownership-fix-once.js
           rm -f scripts/u1-unified-modal-finalize-once.js
+          rm -f scripts/u1-modal-ownership-fix-once.js
           # Qualification transport only: keep it out of governance scans.
           rm -f .github/workflows/u1-unified-modal-once.yml
 
@@ -68,7 +70,6 @@ jobs:
 
       - name: Prove current Boutique source contracts
         run: |
-          # Mirrors the active PR-enforcement Boutique gates for the affected JS/CSS/HTML scope.
           node scripts/code-quality-gate.js --strict
           node public/boutique/scripts/check-important.js --strict
           node public/boutique/scripts/check-breakpoints.js --strict
@@ -97,8 +98,8 @@ jobs:
 
       - name: Persist qualified U1 tree
         run: |
-          # Restore the transport workflow unchanged so the Actions token never
-          # needs to delete/modify a file under .github/workflows in its push.
+          # Restore the transport workflow unchanged so Actions does not have to
+          # mutate a workflow file in the generated application commit.
           git checkout -- .github/workflows/u1-unified-modal-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
