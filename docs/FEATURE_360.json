@@ -978,11 +978,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/121_exceptional_pickup_authorization.sql",
                 "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/158_market_operator_user_role.sql",
+                "resolvedPath": "migrations/158_market_operator_user_role.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -1083,7 +1088,7 @@
             ]
           }
         },
-        "totalFiles": 19,
+        "totalFiles": 20,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,

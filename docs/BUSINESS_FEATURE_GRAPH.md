@@ -131,7 +131,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 3
 - boutique: 3
 - utils: 1
-- migrations: 1
+- migrations: 2
 - tests: 8
 - tables owned (lifecycle): 4 — `revoked_tokens`, `users`, `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
