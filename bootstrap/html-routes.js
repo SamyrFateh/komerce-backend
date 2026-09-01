@@ -292,6 +292,8 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/suppliers',
     '/admin/sales',
     '/admin/transitaire',
+    '/admin/economic',
+    '/admin/pilotage-fin',
     '/admin/sante',
     '/admin/shared-carts',
     '/admin/settings',
