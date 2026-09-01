@@ -13,7 +13,7 @@
  * @db-txn        @none
  * @doctrine      server_market_scope_is_authority
  * @impact-areas  dashboard, admin-dashboard, orders-logistics
- * @version       2026-08
+ * @version       2026-09
  */
 
 /**
@@ -68,7 +68,7 @@ async function getPaiementsEnAttente(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('paiements_en_attente', 'Paiements en attente', value, 'count', {
-    drillTo: '/admin/orders-logistics?payment_status=pending',
+    drillTo: '/admin/operations?payment_status=pending',
   });
 }
 
@@ -100,7 +100,7 @@ async function getDisponiblesRelais(filters = {}) {
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
   return makeKpi('disponibles_relais', 'Disponibles relais', value, 'count', {
-    drillTo: '/admin/orders-logistics?parcel_status=available',
+    drillTo: '/admin/operations?parcel_status=available',
   });
 }
 
