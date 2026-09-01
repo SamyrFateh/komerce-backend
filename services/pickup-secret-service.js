@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/pickup-code-helpers.js, services/pickup-secret-access-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/order-mutation-service.js
  * @used-by       routes/pickup-secret.js, services/payment-stripe.js, services/payment-paypal.js, routes/pickup-pay-cash.js, services/scan-operations.js
- * @db-read       orders
+ * @db-read       orders, users
  * @db-write      orders
  * @db-write-via:order-mutation-service orders
  * @db-write-via:pickup-secret-access-service orders, pickup_print_tokens, pickup_reveal_codes
