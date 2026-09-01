@@ -2111,6 +2111,12 @@
     pointer-events: none;
   }
 
+  .k-shelf-product-photo {
+    object-fit: contain;
+    object-position: center;
+    background: transparent;
+  }
+
   .k-shelf-object--subcategory {
     width: 72px;
     height: 64px;

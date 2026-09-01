@@ -34,7 +34,12 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
-import { getShelfSubcategoryVisual, renderShelfUse } from '../render/category-shelf-visuals.js';
+import {
+  getShelfSubcategoryProductImage,
+  getShelfSubcategoryVisual,
+  renderShelfProductPhoto,
+  renderShelfUse,
+} from '../render/category-shelf-visuals.js';
 import { getSubcategories, getRailCategories, getCategorySectionEmoji, getCategoryLabel } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
@@ -145,12 +150,16 @@ export function renderSubcatRail(catKey, opts = {}) {
         const key = escapeHtml(sub.key);
         const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
         const icon = escapeHtml(sub.icon || '✨');
+        const photo = getShelfSubcategoryProductImage(state.products, catKey, sub.key);
         const visual = getShelfSubcategoryVisual(catKey, sub.key);
-        const object = visual
-          ? renderShelfUse(visual, 'k-shelf-object--subcategory')
-          : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
+        const object = photo
+          ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory')
+          : visual
+            ? renderShelfUse(visual, 'k-shelf-object--subcategory')
+            : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
         const active = activeSubcat === sub.key ? ' active' : '';
-        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}>
+        const mediaAttr = photo ? ' data-shelf-media="product"' : '';
+        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}${mediaAttr}>
           <span class="k-subcutout-icon" aria-hidden="true">${object}</span>
           <span class="k-subcutout-label">${lbl}</span>
         </button>`;

@@ -49,6 +49,8 @@ jest.mock('../../js/shop-schema.js', () => ({
   getRailCategories: jest.fn(),
   getCategorySectionEmoji: jest.fn(),
   getCategoryLabel: jest.fn(),
+  normalizeCategoryKey: jest.fn((key) => key),
+  matchesSubcategory: jest.fn((cat, sub, productSub) => sub === productSub),
 }));
 
 jest.mock('../../js/b-catalog.js', () => ({
@@ -167,6 +169,9 @@ describe('home-controller', () => {
         { key: 'sacs', label: 'Sacs à main' },
       ]);
       state.activeSubcat = 'chaussures';
+      state.products = [
+        { id: 'p-photo', product_ref: 'PHOTO-001', category: 'mode', subcategory: 'chaussures', image_url: 'https://cdn.example.test/chaussure.webp', sort_order: 1 },
+      ];
 
       renderSubcatRail('mode', { count: 42 });
 
@@ -180,6 +185,8 @@ describe('home-controller', () => {
       expect(wrap.querySelectorAll('.k-subcutout').length).toBe(3);
       const activeChip = wrap.querySelector('.k-subcutout.active');
       expect(activeChip.textContent).toContain('Chaussures');
+      expect(activeChip.dataset.shelfMedia).toBe('product');
+      expect(activeChip.querySelector('img.k-shelf-product-photo')?.getAttribute('src')).toBe('https://cdn.example.test/chaussure.webp');
     });
 
     it('réutilise le compteur en cache (dataset.catCount) si opts.count absent', () => {

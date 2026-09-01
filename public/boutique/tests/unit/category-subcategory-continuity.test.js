@@ -22,11 +22,14 @@ const schema = fs.readFileSync(path.resolve(__dirname, '../../js/shop-schema.js'
 describe('continuité catégories et sous-catégories desktop', () => {
   test('rend le rail image compact et aligné sur le hero', () => {
     expect(categories).toMatch(
-      /html\.k-home-premium-v1 \.k-cats-shell\s*\{[^}]*width:\s*calc\(100% - clamp\(32px, 2\.6vw, 48px\)\)[^}]*max-width:\s*1680px/s
+      /html\.k-home-premium-v1 \.k-cats-shell\s*\{[^}]*width:\s*calc\(100% - clamp\(32px, 2\.6vw, 48px\)\)/s
     );
+    expect(categories).toContain('max-width: 1680px;');
     expect(categories).toMatch(
-      /html\.k-home-premium-v1 \.k-chip\s*\{[^}]*height:\s*64px[^}]*min-height:\s*64px/s
+      /html\.k-home-premium-v1 \.k-chip\s*\{[^}]*flex-basis:\s*118px/s
     );
+    expect(categories).toMatch(/\.k-chip\s*\{\s*min-height:\s*64px;\s*\}/s);
+    expect(categories).toMatch(/\.k-chip\s*\{\s*height:\s*64px;\s*\}/s);
   });
 
   test('laisse le rail principal respirer sans filet structurel', () => {
@@ -38,10 +41,13 @@ describe('continuité catégories et sous-catégories desktop', () => {
 
   test('prolonge la catégorie active par un sous-rail horizontal compact', () => {
     expect(desktop).toMatch(
-      /html\.k-home-premium-v1 #k-subcats-wrap\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)[^}]*max-width:\s*1680px/s
+      /@media \(min-width:\s*900px\)[\s\S]*?#k-subcats-wrap\s*\{[^}]*display:\s*grid[^}]*width:\s*calc\(100% - clamp\(32px, 2\.6vw, 48px\)\)/s
     );
     expect(desktop).toMatch(
-      /html\.k-home-premium-v1 #k-subcats-wrap \.k-subcats-rail\s*\{[^}]*flex-wrap:\s*nowrap[^}]*overflow-x:\s*auto/s
+      /html\.k-home-premium-v1 #k-subcats-wrap\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*max-width:\s*1680px/s
+    );
+    expect(desktop).toMatch(
+      /html\.k-home-premium-v1 #k-subcats-wrap \.k-subcats-rail\s*\{[^}]*min-width:\s*0[^}]*overflow-x:\s*auto/s
     );
   });
 
@@ -90,36 +96,38 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(desktopShelf).toContain('min-height: 94px;');
   });
 
-  test('calibre tous les visuels connus de sous-catégories et le fallback futur', () => {
-    const visualKeys = [
-      'showcase-mode:1:0', 'showcase-mode:2:0', 'showcase-mode:0:1', 'showcase-mode:1:1',
+  test('préfère la photo catalogue réelle et conserve seulement un fallback canonique', () => {
+    const fallbackVisualKeys = [
+      'mode-cutout:femme', 'mode-cutout:homme', 'mode-cutout:enfant', 'mode-cutout:beaute',
       'sub-maison-confort', 'sub-maison-cuisine', 'sub-maison-deco', 'sub-maison-enfants',
       'sub-tech-phone', 'sub-tech-ordi', 'sub-tech-audio', 'sub-tech-montre', 'sub-tech-gaming',
       'sub-brico-outils', 'sub-brico-elec', 'sub-brico-securite',
       'sub-perso-ceremonie', 'sub-perso-cadeau', 'sub-perso-impression',
       'sub-auto-filtres', 'sub-auto-freinage', 'sub-auto-eclairage', 'sub-auto-moto',
     ];
-    visualKeys.forEach((key) => {
-      expect(visuals).toContain(key);
-      expect(desktopShelf).toContain(`[data-shelf-visual="${key}"]`);
-    });
+    fallbackVisualKeys.forEach((key) => expect(visuals).toContain(key));
+    expect(visuals).toContain('getShelfSubcategoryProductImage');
+    expect(visuals).toContain('renderShelfProductPhoto');
+    expect(visuals).toContain('categoryCandidates');
+    expect(desktopShelf).toContain('.k-shelf-product-photo');
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
-    expect(desktopShelf).toContain('fill: var(--catalog-nav-sage);');
-    expect(desktopShelf).toContain('fill: var(--green-dark-text);');
-    expect(subcat).toContain('getShelfSubcategoryVisual');
-    expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
-    expect(desktopShelf).toContain('grayscale(1)');
-    expect(desktopShelf).toContain('sepia(.58)');
-    expect(desktopShelf).toContain('hue-rotate(62deg)');
-    expect(desktopShelf).toContain('saturate(1.55)');
+    expect(desktopShelf).toContain('color: var(--catalog-nav-muted);');
     expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
+    expect(subcat).toContain('getShelfSubcategoryProductImage');
+    expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
+    expect(desktopShelf).not.toContain('grayscale(1)');
+    expect(desktopShelf).not.toContain('sepia(.58)');
+    expect(desktopShelf).not.toContain('hue-rotate(62deg)');
   });
 
-  test('réutilise les mêmes objets monochromes dans le pager mobile', () => {
-    expect(subcat).toContain('getShelfSubcategoryVisual');
-    expect(subcat).toContain("renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')");
+  test('réutilise les mêmes photos produit naturelles dans le pager mobile', () => {
+    expect(subcat).toContain('getShelfSubcategoryProductImage');
+    expect(subcat).toContain('renderShelfProductPhoto');
+    expect(subcat).toContain('data-shelf-media=\"product\"');
     expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
-    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*grayscale\(1\)[^}]*hue-rotate\(62deg\)[^}]*saturate\(1\.55\)/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*object-fit:contain[^}]*saturate\(1\.02\)[^}]*contrast\(1\.04\)/s);
+    expect(interactions).not.toMatch(/\.k-flat-subcat-object[^}]*grayscale\(1\)/s);
+    expect(interactions).not.toMatch(/\.k-flat-subcat-object[^}]*hue-rotate\(62deg\)/s);
     expect(interactions).toMatch(/\.k-flat-subcat-tab\.is-active::after\s*\{[^}]*width:\s*18px/s);
   });
 
