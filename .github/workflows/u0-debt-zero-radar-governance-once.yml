@@ -104,10 +104,17 @@ jobs:
           npm run business-graph:disposition-check
           npm run map:check
 
-      - name: Persist qualified U0 tree
+      - name: Persist qualified U0 tree except workflow files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # GITHUB_TOKEN may not create/update/delete workflow files. Keep the
+          # branch's workflow files unchanged in this bot commit; they are
+          # finalized immediately afterward through the GitHub connector.
+          git restore --source=HEAD -- .github/workflows/pr-enforcement.yml
+          git restore --source=HEAD -- .github/workflows/u0-debt-zero-radar-governance-once.yml
+
           git add -A
           git diff --cached --check
           if git diff --cached --quiet; then
