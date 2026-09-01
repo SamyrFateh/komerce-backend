@@ -1,0 +1,30 @@
+name: Temporary market pricing validation
+
+on:
+  push:
+    branches:
+      - feat/market-operator-provisioning
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-operator-provisioning
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Focused tests
+        run: >-
+          npx jest --runInBand
+          tests/unit/cost-component-market-service.test.js
+          tests/unit/admin-pricing-workspace-market-route.test.js
+          tests/unit/order-cost-snapshot.test.js
+          tests/unit/admin-pricing-workspace-route.test.js
+          tests/unit/pricing-cdr.test.js
+          tests/unit/pricing-workspace.test.js
+      - name: Code quality
+        run: node scripts/code-quality-gate.js --strict
