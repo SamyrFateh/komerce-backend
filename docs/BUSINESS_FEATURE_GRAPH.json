@@ -4247,6 +4247,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/cost-component-market-service.js",
+        "resolvedPath": "services/cost-component-market-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-workspace.js",
         "resolvedPath": "services/pricing-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -4666,6 +4673,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/159_cost_component_market_overrides.sql",
+        "resolvedPath": "migrations/159_cost_component_market_overrides.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -4998,6 +5012,20 @@
         "category": "tests",
         "declared": "tests/unit/admin-pricing-workspace-route.test.js",
         "resolvedPath": "tests/unit/admin-pricing-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-market-route.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-market-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/cost-component-market-service.test.js",
+        "resolvedPath": "tests/unit/cost-component-market-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12297,6 +12325,38 @@
         "path": "/api/admin/workspaces/pricing/cost-components/{id}/toggle",
         "routeFile": "routes/admin-pricing-workspace.js",
         "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
       },
       {
         "feature": "economic-engine",
@@ -22659,6 +22719,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/cost-component-market-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/pricing-workspace.js",
                 "targetFile": "db.js"
               },
@@ -22795,6 +22859,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin-pricing-matrices.js",
                 "targetFile": "db.js"
               },
@@ -22915,6 +22983,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/admin-pricing-workspace-market-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cost-component-market-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/pricing-dashboard-truth.test.js",
                 "targetFile": "db.js"
               },
@@ -23007,6 +23083,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "middleware/require-market-scope.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "economic-engine",
@@ -29561,7 +29653,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1005
+        "filesObserved": 1008
       },
       "boutique": {
         "filesObserved": 189,
@@ -29601,7 +29693,7 @@
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
-      "BUSINESS_FEATURE_INTERFACE": 0,
+      "BUSINESS_FEATURE_INTERFACE": 1,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
@@ -29618,6 +29710,21 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "economic-engine",
+        "to": "market",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -29925,6 +30032,7 @@
     "unclassified": [],
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
@@ -30955,6 +31063,32 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
     },
+    "cost_component_market_override_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "cost_component_market_overrides": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "cost_components": {
       "writers": [
         {
@@ -31837,8 +31971,60 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / GET /api/admin/workspaces/pricing/market/{id}",
+        "msg": "\"GET /api/admin/workspaces/pricing/market/{id}\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "economic-engine -> market",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"market\""
+      }
+    ],
+    "debt": [
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / GET /api/admin/workspaces/pricing/market/{id}",
+        "msg": "\"GET /api/admin/workspaces/pricing/market/{id}\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update",
+        "msg": "\"POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "economic-engine -> market",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"market\""
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -32064,11 +32250,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
+      "signals": 5,
+      "debt": 5,
       "expectedTopology": 32,
       "generatorLimitations": 12,
-      "classifiedCandidates": 44
+      "classifiedCandidates": 49
     }
   }
 }

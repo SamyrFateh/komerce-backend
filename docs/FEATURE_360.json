@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 235,
+    "businessDependencies": 236,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -7166,7 +7166,7 @@
             ]
           },
           "migrations": {
-            "count": 20,
+            "count": 21,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -7267,6 +7267,11 @@
                 "declared": "migrations/152_pricing_workspace_global_authority.sql",
                 "resolvedPath": "migrations/152_pricing_workspace_global_authority.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/159_cost_component_market_overrides.sql",
+                "resolvedPath": "migrations/159_cost_component_market_overrides.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -7341,7 +7346,7 @@
             ]
           },
           "services": {
-            "count": 29,
+            "count": 30,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -7372,6 +7377,11 @@
                 "declared": "services/cost-component-admin-service.js",
                 "resolvedPath": "services/cost-component-admin-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cost-component-market-service.js",
+                "resolvedPath": "services/cost-component-market-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/dashboard-finance-metrics.js",
@@ -7491,7 +7501,7 @@
             ]
           },
           "tests": {
-            "count": 55,
+            "count": 57,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -7526,6 +7536,11 @@
               {
                 "declared": "tests/unit/admin-pricing-matrices.test.js",
                 "resolvedPath": "tests/unit/admin-pricing-matrices.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-pricing-workspace-market-route.test.js",
+                "resolvedPath": "tests/unit/admin-pricing-workspace-market-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7571,6 +7586,11 @@
               {
                 "declared": "tests/unit/cost-component-admin-service.test.js",
                 "resolvedPath": "tests/unit/cost-component-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cost-component-market-service.test.js",
+                "resolvedPath": "tests/unit/cost-component-market-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7791,7 +7811,7 @@
             ]
           }
         },
-        "totalFiles": 127,
+        "totalFiles": 131,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7815,6 +7835,14 @@
           {
             "table": "cost_component_events",
             "resolution": "single-writer"
+          },
+          {
+            "table": "cost_component_market_override_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "cost_component_market_overrides",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "cost_components",
@@ -7890,6 +7918,18 @@
           },
           {
             "table": "cost_component_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cost_component_market_override_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cost_component_market_overrides",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8079,6 +8119,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cost_component_market_override_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "cost_component_market_overrides",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "cost_components",
             "resolution": "single-writer"
           },
@@ -8152,6 +8200,18 @@
           },
           {
             "table": "cost_component_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cost_component_market_override_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cost_component_market_overrides",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8336,7 +8396,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 84
+          "count": 88
         }
       },
       "businessDependencies": [
@@ -8401,6 +8461,13 @@
         {
           "provider": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "static-code"
           ]
@@ -13549,6 +13616,13 @@
         {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "static-code"
           ]

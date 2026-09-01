@@ -263,14 +263,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 3
 - middleware: 1
-- services: 29
+- services: 30
 - routes: 13
-- migrations: 20
+- migrations: 21
 - dash: 6
-- tests: 55
-- tables owned (lifecycle): 17 — `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_snapshots`, `finance_config`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
-- tables written: 17
-- interfaces exposed: 84
+- tests: 57
+- tables owned (lifecycle): 19 — `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_snapshots`, `finance_config`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+- tables written: 19
+- interfaces exposed: 88
 - internal APIs: 2
 - dependencies (consumes): 12 — refunds, platform-ops, customs, business-rules, auth-identity, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 9 — catalog, customs, dashboard, infrastructure, loyalty, orders, platform-ops, sourcing, admin-dashboard
@@ -635,6 +635,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `competitor_prices` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_benchmarks` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_component_events` | `economic-engine` | single-writer | economic-engine | — |
+| `cost_component_market_override_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `cost_component_market_overrides` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `cost_components` | `economic-engine` | single-writer | economic-engine | — |
 | `currency_parities` | `market` | declared-table-owner | market | — |
 | `customs_categories` | `customs` | single-writer | customs | economic-engine |
@@ -908,6 +910,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/cost-components` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | — (not-in-openapi-contract) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | — (not-in-openapi-contract) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | — (not-in-openapi-contract) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | — (not-in-openapi-contract) |
 | `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `GET /api/admin/cost-components/_meta` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
@@ -1595,11 +1601,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (0)
+### DETTE / DRIFT ACTIONNABLE (5)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- none
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / GET /api/admin/workspaces/pricing/market/{id} — "GET /api/admin/workspaces/pricing/market/{id}" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ economic-engine -> market — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "economic-engine" vers "market"
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1663,7 +1673,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1005 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1008 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 189 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1762,9 +1772,10 @@ Meta Graph monté : oui.
 | economic-engine | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | customs | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| economic-engine | infrastructure | static-code | 78 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 82 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 1 | **OBSERVED_UNDECLARED** |
 | economic-engine | orders | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -1934,6 +1945,7 @@ Meta Graph monté : oui.
 ### Observed undeclared dependencies
 
 - `dashboard` → `loyalty` (canaux: static-code)
+- `economic-engine` → `market` (canaux: static-code)
 - `infrastructure` → `auth-identity` (canaux: static-code)
 - `infrastructure` → `auth-passkey` (canaux: static-code)
 - `infrastructure` → `business-rules` (canaux: static-code)
@@ -1996,10 +2008,10 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
-| BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
+| BUSINESS_FEATURE_INTERFACE | 1 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **21** | |
+| **TOTAL** | **22** | |
 
 ### Projection dependencies
 
@@ -2060,7 +2072,7 @@ require() direct d'un fichier d'une autre business-feature — couture à casser
 
 Consommation d'une business-feature via interface/http — candidat `contract.consumes`.
 
-- _none_
+- `economic-engine` → `market` — technical-primitive, RUNTIME_ONLY
 
 ### Piloting capability dependencies
 
