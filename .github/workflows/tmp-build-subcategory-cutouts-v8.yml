@@ -1,0 +1,146 @@
+name: tmp-build-subcategory-cutouts-v8
+
+on:
+  push:
+    branches:
+      - fix/subcategory-canonical-cutouts-v8
+    paths:
+      - .github/workflows/tmp-build-subcategory-cutouts-v8.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build-cutouts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/subcategory-canonical-cutouts-v8
+          fetch-depth: 0
+
+      - name: Install cutout tooling
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install 'rembg[cpu]' pillow requests
+
+      - name: Build 23 canonical transparent cutouts
+        run: |
+          cat > /tmp/build_subcategory_cutouts.py <<'PY'
+          import io, json, requests
+          from pathlib import Path
+          from PIL import Image
+          from rembg import remove, new_session
+
+          OUT = Path('public/boutique/categories/subcutouts')
+          OUT.mkdir(parents=True, exist_ok=True)
+
+          # 22 sources are real Komerce Showcase V2 product photos.
+          # Tech/Ordi uses an already-transparent Wikimedia Commons photograph
+          # because every live Ordi/Tablettes media URL currently points to the
+          # retired Cloudinary source and returns HTTP 401.
+          sources = {
+            'mode-femme': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0001/hero.jpg', 'SHOWCASE-V2-0001', 'komerce-catalog'),
+            'mode-homme': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0036/hero.jpg', 'SHOWCASE-V2-0036', 'komerce-catalog'),
+            'mode-enfant': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0061/hero.jpg', 'SHOWCASE-V2-0061', 'komerce-catalog'),
+            'mode-beaute': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0086/hero.jpg', 'SHOWCASE-V2-0086', 'komerce-catalog'),
+            'maison-confort': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0131/hero.jpg', 'SHOWCASE-V2-0131', 'komerce-catalog'),
+            'maison-cuisine': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0156/hero.jpg', 'SHOWCASE-V2-0156', 'komerce-catalog'),
+            'maison-deco': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0181/hero.jpg', 'SHOWCASE-V2-0181', 'komerce-catalog'),
+            'maison-enfants': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0201/hero.jpg', 'SHOWCASE-V2-0201', 'komerce-catalog'),
+            'tech-phones': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0221/hero.jpg', 'SHOWCASE-V2-0221', 'komerce-catalog'),
+            'tech-ordi': ('https://upload.wikimedia.org/wikipedia/commons/8/8d/MacBook_Pro_transparency.png', 'WIKIMEDIA-MACBOOK-PRO-TRANSPARENCY', 'cc-by-2.0'),
+            'tech-audio': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0251/hero.jpg', 'SHOWCASE-V2-0251', 'komerce-catalog'),
+            'tech-montres': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0281/hero.jpg', 'SHOWCASE-V2-0281', 'komerce-catalog'),
+            'tech-gaming': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0255/hero.jpg', 'SHOWCASE-V2-0255', 'komerce-catalog'),
+            'brico-outillage': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0311/hero.jpg', 'SHOWCASE-V2-0311', 'komerce-catalog'),
+            'brico-electricite': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0336/hero.jpg', 'SHOWCASE-V2-0336', 'komerce-catalog'),
+            'brico-securite': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0361/hero.jpg', 'SHOWCASE-V2-0361', 'komerce-catalog'),
+            'perso-ceremonie': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0381/hero.jpg', 'SHOWCASE-V2-0381', 'komerce-catalog'),
+            'perso-cadeau': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0401/hero.jpg', 'SHOWCASE-V2-0401', 'komerce-catalog'),
+            'perso-impression': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0421/hero.jpg', 'SHOWCASE-V2-0421', 'komerce-catalog'),
+            'auto-filtres': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0436/hero.jpg', 'SHOWCASE-V2-0436', 'komerce-catalog'),
+            'auto-freinage': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0456/hero.jpg', 'SHOWCASE-V2-0456', 'komerce-catalog'),
+            'auto-eclairage': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0471/hero.jpg', 'SHOWCASE-V2-0471', 'komerce-catalog'),
+            'auto-moto': ('https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0486/hero.jpg', 'SHOWCASE-V2-0486', 'komerce-catalog'),
+          }
+
+          session = new_session('u2netp')
+          manifest = []
+          for slug, (url, source_ref, license_kind) in sources.items():
+            response = requests.get(url, timeout=30, headers={'User-Agent': 'Mozilla/5.0 KomerceSubcategoryCutout/1.0'})
+            response.raise_for_status()
+            original = Image.open(io.BytesIO(response.content)).convert('RGBA')
+
+            if slug == 'tech-ordi':
+              cut = original
+            else:
+              cut = remove(
+                original,
+                session=session,
+                alpha_matting=True,
+                alpha_matting_foreground_threshold=240,
+                alpha_matting_background_threshold=15,
+                alpha_matting_erode_size=8,
+              )
+              if not isinstance(cut, Image.Image):
+                cut = Image.open(io.BytesIO(cut)).convert('RGBA')
+              else:
+                cut = cut.convert('RGBA')
+
+            bbox = cut.getchannel('A').getbbox()
+            if not bbox:
+              raise RuntimeError(f'{slug}: empty alpha after cutout')
+            cut = cut.crop(bbox)
+            scale = min(420 / cut.width, 420 / cut.height, 1.0)
+            cut = cut.resize(
+              (max(1, round(cut.width * scale)), max(1, round(cut.height * scale))),
+              Image.Resampling.LANCZOS,
+            )
+            canvas = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
+            canvas.alpha_composite(cut, ((512 - cut.width) // 2, (512 - cut.height) // 2))
+            asset = f'sub-{slug}-v1.webp'
+            canvas.save(OUT / asset, 'WEBP', quality=92, method=6)
+
+            alpha = canvas.getchannel('A')
+            opaque_bbox = alpha.getbbox()
+            if not opaque_bbox:
+              raise RuntimeError(f'{slug}: output has no visible pixels')
+            manifest.append({
+              'slug': slug,
+              'asset': asset,
+              'source_ref': source_ref,
+              'source_url': url,
+              'provenance': license_kind,
+            })
+            print('CUTOUT_OK', slug, asset, source_ref)
+
+          if len(manifest) != 23:
+            raise RuntimeError(f'Expected 23 cutouts, generated {len(manifest)}')
+
+          manifest.append({
+            '_attribution': 'Tech/Ordi: MacBook Pro transparency.png, derived from a photograph by Jarkko Laine; CC BY 2.0; resized/normalized by Komerce.',
+            '_license_url': 'https://creativecommons.org/licenses/by/2.0/',
+            '_source_page': 'https://commons.wikimedia.org/wiki/File:MacBook_Pro_transparency.png',
+          })
+          (OUT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('CUTOUT_SUMMARY generated=23')
+          PY
+          python3 /tmp/build_subcategory_cutouts.py
+
+      - name: Commit canonical cutouts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/boutique/categories/subcutouts
+          git commit -m 'feat(boutique): add canonical subcategory cutouts'
+          git push origin HEAD:fix/subcategory-canonical-cutouts-v8
+
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/tmp-build-subcategory-cutouts-v8.yml || true
+          git commit -m 'chore(qa): remove temporary cutout builder' || true
+          git push origin HEAD:fix/subcategory-canonical-cutouts-v8
