@@ -1429,13 +1429,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : staging
 
-**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
+**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
 
 **Perimeter** :
 - _in_ :
   - table providers (identité, contact, market, statut pending|active|suspended)
   - table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)
   - table physical_offers (produit physique tiers, image_ref public optionnel)
+  - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni téléphone
   - table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)
   - isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant
   - POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur
@@ -1443,6 +1444,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production
 - _out_ :
   - authentification provider (pas de users / user_role pour le provider)
+  - profil public provider riche, bio, téléphone, adresse exacte, métriques sociales ou comparaison de providers
   - scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre
   - paiement, commission, settlement, provider wallet
   - orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders
@@ -1453,7 +1455,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - surface produit/catalogue et navigation — owner catalog
   - hébergement/stockage binaire des médias — image_ref reste une référence, pas un media service
 
-**Authority** : backend-core — providers-services possède le cycle demande/confirmation, les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter image_ref.
+**Authority** : backend-core — providers-services possède le cycle demande/confirmation, le nom public minimal du provider, les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.
 
 **Invariants** :
 - [object Object]

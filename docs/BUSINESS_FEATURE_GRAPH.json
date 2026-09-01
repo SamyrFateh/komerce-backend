@@ -401,7 +401,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
+        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -32029,12 +32029,12 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + image_ref optionnel",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + image_ref optionnel",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
