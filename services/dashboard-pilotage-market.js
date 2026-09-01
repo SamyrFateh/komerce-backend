@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      server_market_scope_is_authority, dashboard_no_business_recompute
  * @impact-areas  dashboard, admin-dashboard, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -98,7 +98,7 @@ async function buildMarketPilotage(filters, market) {
       view: 'control_tower',
       title: 'Tour de contrôle',
       subtitle: 'Voir, comprendre, décider',
-      url: '/admin/control-tower',
+      url: '/admin/pilotage',
       kpis_summary: [ca, cmdsActives, alertesCritiques, margeConsolidee, tauxCouts],
     },
     {
@@ -112,7 +112,7 @@ async function buildMarketPilotage(filters, market) {
       view: 'orders_logistics',
       title: 'Commandes & logistique',
       subtitle: 'Exécuter sans friction',
-      url: '/admin/orders-logistics',
+      url: '/admin/operations',
       kpis_summary: [cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans],
     },
   ];
@@ -130,10 +130,10 @@ async function buildMarketPilotage(filters, market) {
     view_blocks,
     economic_flow: {
       stages: [
-        { key: 'estimated_price', label: 'Prix estimé', url: '/admin/pricing' },
-        { key: 'order', label: 'Commande', url: '/admin/orders-logistics' },
-        { key: 'payment', label: 'Paiement', url: '/admin/orders-logistics?payment_status=paid' },
-        { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/orders-logistics?parcel_status=in_transit' },
+        { key: 'estimated_price', label: 'Prix estimé', url: '/admin/workspaces/pricing' },
+        { key: 'order', label: 'Commande', url: '/admin/operations' },
+        { key: 'payment', label: 'Paiement', url: '/admin/operations?payment_status=paid' },
+        { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/operations?parcel_status=in_transit' },
         { key: 'real_cost', label: 'Coût réel reventilé', url: '/admin/costing' },
         { key: 'real_margin', label: 'Marge consolidée', url: '/admin/costing?cost_status=actual' },
         { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/costing/recalibration' },
