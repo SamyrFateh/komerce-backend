@@ -140,7 +140,7 @@ async function closeCompletedSharedCartForOrderItems(orderItems, orderId) {
               jsonb_build_object(
                 'closed_at', closed.closed_at,
                 'reason', 'all_items_claimed',
-                'order_id', $2
+                'order_id', $2::text
               )
          FROM closed
        RETURNING shared_cart_id`,
