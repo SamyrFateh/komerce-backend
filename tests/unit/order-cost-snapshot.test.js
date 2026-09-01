@@ -116,6 +116,21 @@ describe('order-cost-snapshot', () => {
     expect(client.query.mock.calls[3][0]).toContain('UPDATE orders');
   });
 
+
+  it('charge le modèle de coûts du marché figé sur la commande', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const client = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ order_item_id: 'oi-cm', product_id: 'prod-1', quantity: 1, price_kmf: 3000, market_id: 'market-cm' }] })
+      .mockResolvedValueOnce({ rows: [] }) };
+    pricingEngine.loadGlobalConfig.mockResolvedValueOnce({ market: 'CM' });
+    pricingEngine.recommend.mockResolvedValueOnce({ landed_relay_cost_kmf: 1000, business_complete_cost_kmf: 2000 });
+
+    await lockEstimatedCostsForOrder('order-cm', client);
+
+    expect(pricingEngine.loadGlobalConfig).toHaveBeenCalledWith({ marketId: 'market-cm' });
+    expect(pricingEngine.recommend).toHaveBeenCalledWith(expect.any(Object), { config: { market: 'CM' } });
+  });
+
   it('reste idempotent si ON CONFLICT DO NOTHING ne retourne aucune ligne', async () => {
     process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
     const client = { query: jest.fn()

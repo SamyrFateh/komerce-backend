@@ -34,6 +34,7 @@
 
 const db = require('../db');
 const { resolveFxRates } = require('../utils/rates');
+const marketCostComponents = require('./cost-component-market-service');
 
 const DEFAULT_TARGET_ORDERS_PER_MONTH = 100;
 
@@ -66,7 +67,7 @@ function _legacyCategoryToNew(oldCat, key) {
 }
 
 // ── Config globale ────────────────────────────────────────────────
-async function loadGlobalConfig() {
+async function loadGlobalConfig(options = {}) {
   let components = [];
   let componentsSource = 'cost_components';
   try {
@@ -82,6 +83,16 @@ async function loadGlobalConfig() {
       ORDER BY display_order, key
     `);
     components = ccRes.rows;
+    if (options.marketId) {
+      const today = new Date();
+      components = (await marketCostComponents.listEffectiveComponents(options.marketId)).filter(component => {
+        if (!component.is_active || component.is_exceptional) return false;
+        if (component.active_from && new Date(component.active_from) > today) return false;
+        if (component.active_until && new Date(component.active_until) < today) return false;
+        return true;
+      });
+      componentsSource = 'cost_components_market_override';
+    }
   } catch (err) {
     components = [];
   }

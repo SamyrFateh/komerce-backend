@@ -25,6 +25,7 @@ const pricingRates = require('./pricing-rates');
 const pricingApply = require('./pricing-apply');
 const strategyService = require('./pricing-strategy-service');
 const costComponents = require('./cost-component-admin-service');
+const marketCostComponents = require('./cost-component-market-service');
 const economicQueries = require('./economic-engine-queries');
 
 class PricingWorkspaceError extends Error {
@@ -261,12 +262,79 @@ async function toggleCostComponent(key, actor = {}) {
   return publicComponent(await costComponents.toggleComponent({ key }, actor.id || null));
 }
 
+
+async function buildMarketWorkspace({ market } = {}) {
+  if (!market || !market.id || !market.code) {
+    throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
+  }
+  const components = (await marketCostComponents.listEffectiveComponents(market.id)).map(publicComponent);
+  return {
+    scope: {
+      mode: 'market_pricing',
+      market_code: market.code,
+      market_name: market.name,
+      market_currency: market.currency,
+      inherits_global: true,
+    },
+    summary: {
+      cost_components: components.length,
+      active_cost_components: components.filter(component => component.is_active).length,
+      overridden_cost_components: components.filter(component => component.inherited === false).length,
+    },
+    cost_components: components,
+    cost_meta: costComponents.META,
+    capabilities: {
+      cost_overrides: true,
+      reset_to_global: true,
+      create_components: false,
+      product_price_mutation: false,
+      strategy_mutation: false,
+    },
+  };
+}
+
+function marketOverridePayload(body = {}) {
+  const payload = {};
+  if (Object.prototype.hasOwnProperty.call(body, 'default_value')) payload.default_value = body.default_value;
+  if (Object.prototype.hasOwnProperty.call(body, 'notes')) payload.notes = body.notes;
+  return payload;
+}
+
+async function updateMarketCostComponent(market, key, body = {}, actor = {}) {
+  if (!market || !market.id) throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
+  return marketCostComponents.upsertOverride({
+    marketId: market.id,
+    key,
+    body: marketOverridePayload(body),
+    actorId: actor.id || null,
+  });
+}
+
+async function toggleMarketCostComponent(market, key, actor = {}) {
+  if (!market || !market.id) throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
+  const components = await marketCostComponents.listEffectiveComponents(market.id);
+  const current = components.find(component => component.key === key);
+  if (!current) throw new PricingWorkspaceError(404, 'Composant introuvable', 'market_cost_component_not_found');
+  return marketCostComponents.upsertOverride({
+    marketId: market.id,
+    key,
+    body: { is_active: !current.is_active },
+    actorId: actor.id || null,
+  });
+}
+
+async function resetMarketCostComponent(market, key, actor = {}) {
+  if (!market || !market.id) throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
+  return marketCostComponents.resetOverride({ marketId: market.id, key, actorId: actor.id || null });
+}
+
 module.exports = {
   PricingWorkspaceError,
   stripInternalIds,
   resolveProductRef,
   resolveCompetitorRef,
   buildWorkspace,
+  buildMarketWorkspace,
   simulate,
   flow,
   applyPrice,
@@ -277,4 +345,7 @@ module.exports = {
   createCostComponent,
   updateCostComponent,
   toggleCostComponent,
+  updateMarketCostComponent,
+  toggleMarketCostComponent,
+  resetMarketCostComponent,
 };

@@ -21,7 +21,7 @@
 (function (global) {
   'use strict';
 
-  const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']);
+  const ALLOWED_ROLES = new Set(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']);
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
@@ -356,15 +356,15 @@
     });
   }
 
-  function renderPricingWorkspace(root, user) {
-    if (!global.KomerceCanonicalPricingWorkspace) throw new Error('canonical_pricing_workspace_module_missing');
-    return global.KomerceCanonicalPricingWorkspace.mount({
+  function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
+    return canonicalMount(
+      global.KomerceCanonicalPricingWorkspace,
+      'canonical_pricing_workspace_module_missing',
       root,
       user,
-      document: global.document,
-      fetch: global.fetch.bind(global),
-      ui: global.KomerceCanonicalUI,
-    });
+      adminContext,
+      requestedMarket
+    );
   }
 
   function renderActionCenter(root, user) {
@@ -522,6 +522,15 @@
       render: renderFinanceAccountingWorkspace,
     });
   }
+
+  function renderPricingWorkspaceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'pricing-workspace',
+      title: 'Workspace Pricing / Atelier des coûts',
+      requireMarket: user && user.role === 'market_operator',
+      render: renderPricingWorkspace,
+    });
+  }
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -543,7 +552,7 @@
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
     if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
-    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspace(root, user);
+    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
@@ -558,7 +567,7 @@
 
     const user = await requireSession();
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PRICING_WORKSPACE || surface === SURFACES.ACTION_CENTER)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
@@ -601,6 +610,7 @@
     renderOperationsWorkspaceShell,
     renderShippingCustomsWorkspaceShell,
     renderFinanceAccountingWorkspaceShell,
+    renderPricingWorkspaceShell,
     renderDemo,
     renderReady,
   };
