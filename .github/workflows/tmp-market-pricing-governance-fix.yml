@@ -1,0 +1,53 @@
+name: Temporary market pricing governance fix
+
+on:
+  push:
+    branches:
+      - feat/market-operator-provisioning
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-operator-provisioning
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Declare economic-engine dependency on market
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('features/economic-engine.feature.js')
+          s = p.read_text(encoding='utf-8')
+          anchor = "      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',\n"
+          addition = anchor + "      'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',\n"
+          if "'market (autorité serveur des modèles Pricing pays" not in s:
+              if anchor not in s:
+                  raise SystemExit('economic-engine consumes anchor missing')
+              s = s.replace(anchor, addition, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Regenerate OpenAPI contract
+        run: npm run contract:generate
+      - name: Regenerate governance projections
+        run: |
+          npm run business-graph:gen
+          node scripts/gen-feature-360.js
+          npm run security:360
+      - name: Commit governance fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/economic-engine.feature.js docs/contract/openapi.json docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md docs/SECURITY_360.json docs/SECURITY_360.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(governance): declare market pricing dependency and contract"
+          git push origin HEAD:feat/market-operator-provisioning
