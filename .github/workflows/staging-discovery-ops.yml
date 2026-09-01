@@ -20,7 +20,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: komerce-staging-discovery-ops
+  group: komerce-staging-${{ github.event_name == 'workflow_dispatch' && inputs.operation || github.event.issue.title }}
   cancel-in-progress: false
 
 jobs:
