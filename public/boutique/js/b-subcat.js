@@ -41,7 +41,9 @@ import { openModal }               from './b-modal.js';
 import { toggleFav, quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
 import { isDesktop }               from './b-scroll-owner.js';
 import {
+  getShelfSubcategoryProductImage,
   getShelfSubcategoryVisual,
+  renderShelfProductPhoto,
   renderShelfUse,
 }                                  from './render/category-shelf-visuals.js';
 
@@ -168,12 +170,16 @@ import {
       '</div>' +
       '<div class="k-flat-subcat-tabs" id="k-flat-subcat-tabs">' +
         subs.map(function(s) {
+          const photo = getShelfSubcategoryProductImage(state.products, fs.cat, s.key);
           const visual = getShelfSubcategoryVisual(fs.cat, s.key);
-          const object = visual
-            ? renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')
-            : '<span class="k-shelf-emoji-fallback">' + sanitize(s.icon || '✨') + '</span>';
+          const object = photo
+            ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory k-flat-subcat-object')
+            : visual
+              ? renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')
+              : '<span class="k-shelf-emoji-fallback">' + sanitize(s.icon || '✨') + '</span>';
           return '<button class="k-flat-subcat-tab" data-flat-sub="' + s.key + '"' +
-            (visual ? ' data-shelf-visual="' + sanitize(visual) + '"' : '') + '>' +
+            (visual ? ' data-shelf-visual="' + sanitize(visual) + '"' : '') +
+            (photo ? ' data-shelf-media="product"' : '') + '>' +
             '<span class="k-flat-subcat-tab-icon" aria-hidden="true">' + object + '</span>' +
             '<span class="k-flat-subcat-tab-label">' + sanitize(s.label) + '</span>' +
           '</button>';

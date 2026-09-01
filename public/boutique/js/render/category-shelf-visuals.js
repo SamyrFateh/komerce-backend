@@ -10,6 +10,8 @@
  */
 'use strict';
 
+import { matchesSubcategory, normalizeCategoryKey } from '../shop-schema.js';
+
 export const KOMERCE_SHELF_SPRITE = '/boutique/categories/komerce-shelf-sprite.svg';
 export const KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=3';
 
@@ -114,6 +116,67 @@ function renderModeSubcategoryCutout(visual, extraClass = '') {
   if (!src) return '';
   const cls = extraClass ? ` ${extraClass}` : '';
   return `<img class="k-shelf-object${cls} k-shelf-cutout-image k-mode-subcategory-cutout" src="${src}" alt="" aria-hidden="true" loading="eager" decoding="async" width="512" height="512">`;
+}
+
+function normalizeProductImageUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return null;
+  if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;
+  return null;
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Picks one deterministic REAL catalog image for a subcategory.
+ * The catalog remains the media source of truth: no parallel subcategory asset catalog.
+ * Stable ordering prevents the navigation image from changing with ranking/shuffle order.
+ */
+export function getShelfSubcategoryProductImage(products, categoryKey, subcategoryKey) {
+  if (!Array.isArray(products) || !products.length || !subcategoryKey) return null;
+  const canonicalCategory = normalizeCategoryKey(categoryKey);
+  const candidates = products
+    .filter((product) => {
+      if (!product || !normalizeProductImageUrl(product.image_url)) return false;
+      if (normalizeCategoryKey(product.category) !== canonicalCategory) return false;
+      return matchesSubcategory(categoryKey, subcategoryKey, product.subcategory);
+    })
+    .sort((a, b) => {
+      const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : Number.MAX_SAFE_INTEGER;
+      const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      const aKey = String(a.product_ref || a.id || a.name || '');
+      const bKey = String(b.product_ref || b.id || b.name || '');
+      return aKey.localeCompare(bKey, 'fr');
+    });
+  if (candidates.length) return normalizeProductImageUrl(candidates[0].image_url);
+
+  const categoryCandidates = products
+    .filter((product) => product
+      && normalizeProductImageUrl(product.image_url)
+      && normalizeCategoryKey(product.category) === canonicalCategory)
+    .sort((a, b) => {
+      const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : Number.MAX_SAFE_INTEGER;
+      const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      const aKey = String(a.product_ref || a.id || a.name || '');
+      const bKey = String(b.product_ref || b.id || b.name || '');
+      return aKey.localeCompare(bKey, 'fr');
+    });
+  return categoryCandidates.length ? normalizeProductImageUrl(categoryCandidates[0].image_url) : null;
+}
+
+export function renderShelfProductPhoto(src, extraClass = '') {
+  const safeSrc = normalizeProductImageUrl(src);
+  if (!safeSrc) return '';
+  const cls = extraClass ? ` ${extraClass}` : '';
+  return `<img class="k-shelf-object${cls} k-shelf-product-photo" src="${escapeAttribute(safeSrc)}" alt="" aria-hidden="true" loading="eager" decoding="async">`;
 }
 
 export function getShelfCategoryVisual(categoryKey) {
