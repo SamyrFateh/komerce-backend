@@ -81,9 +81,6 @@ describe('handleDiscoveryRequest', () => {
     expect(mockRequireIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée', 'success', 3200);
-    expect(mockBus.emit).toHaveBeenCalledWith('discovery:inquiry-created', {
-      id: 'inq-1', status: 'sent', kind: 'service', ref: 'svc-1',
-    });
   });
 
   it('physical_offer : Commander reste une demande, pas une order', async () => {
@@ -107,7 +104,6 @@ describe('handleDiscoveryRequest', () => {
 
     expect(result).toBe(false);
     expect(mockShowToast).toHaveBeenCalledWith('Cette offre n’est plus disponible.', 'error', 3200);
-    expect(mockBus.emit).not.toHaveBeenCalledWith('discovery:inquiry-created', expect.anything());
   });
 });
 

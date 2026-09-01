@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-08-29T08:51:32.340Z",
+  "generatedAt": "2026-09-01T20:29:15.156Z",
   "summary": {
-    "modules": 91,
-    "withHeader": 91,
-    "events": 22,
-    "declaredActive": 39,
+    "modules": 97,
+    "withHeader": 97,
+    "events": 23,
+    "declaredActive": 40,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 60,
+    "endpoints": 61,
     "orphanEmit": 0,
     "orphanListen": 0,
     "undeclared": 0,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 42,
-    "dynamicEndpoints": 21,
-    "ownedEvents": 3,
+    "dynamicEndpoints": 22,
+    "ownedEvents": 4,
     "ownershipRed": 0,
     "ownershipOrange": 1
   },
@@ -2195,6 +2195,64 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/discovery-inquiry.js",
+      "id": "discovery-inquiry",
+      "hasHeader": true,
+      "role": "providers-services-discovery-inquiry",
+      "domain": "providers-services",
+      "layer": "ui-service",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "discovery:request"
+      ],
+      "imports": [
+        "b-bus",
+        "b-identity",
+        "b-utils",
+        "providers-services-api"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/discovery-rail.js",
+      "id": "discovery-rail",
+      "hasHeader": true,
+      "role": "catalog-discovery-rail",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "discovery:request"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-modal",
+        "discovery-api",
+        "render-discovery-rail",
+        "render-discovery-detail"
+      ],
+      "bodyClasses": [],
+      "emitCalls": [
+        {
+          "name": "discovery:request",
+          "hasArg": true
+        },
+        {
+          "name": "discovery:request",
+          "hasArg": true
+        }
+      ]
+    },
+    {
       "file": "public/boutique/js/group/group-api.js",
       "id": "group-api",
       "hasHeader": true,
@@ -2620,6 +2678,8 @@
         "b-home-premium-v1",
         "b-modal-product-detail-bootstrap",
         "local-stock-badge-mount",
+        "discovery-rail",
+        "discovery-inquiry",
         "b-greeting",
         "b-notifications",
         "b-komerce-nav-identity",
@@ -2635,6 +2695,23 @@
       "role": "boutique-market-context",
       "domain": "catalog",
       "layer": "ui-boundary",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/market-hydration.js",
+      "id": "market-hydration",
+      "hasHeader": true,
+      "role": "boutique-market-hydration",
+      "domain": "catalog",
+      "layer": "ui-adapter",
       "criticality": null,
       "doctrine": [],
       "depends": [],
@@ -2676,6 +2753,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/providers-services-api.js",
+      "id": "providers-services-api",
+      "hasHeader": true,
+      "role": "providers-services-api",
+      "domain": "providers-services",
+      "layer": "adapter",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/render/category-shelf-visuals.js",
       "id": "category-shelf-visuals",
       "hasHeader": true,
@@ -2688,7 +2782,9 @@
       "usedBy": [],
       "emits": [],
       "listens": [],
-      "imports": [],
+      "imports": [
+        "shop-schema"
+      ],
       "bodyClasses": [],
       "emitCalls": []
     },
@@ -2709,6 +2805,44 @@
         "b-utils",
         "shop-schema",
         "category-shelf-visuals"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/render/render-discovery-detail.js",
+      "id": "render-discovery-detail",
+      "hasHeader": true,
+      "role": "catalog-render-discovery-detail",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/render/render-discovery-rail.js",
+      "id": "render-discovery-rail",
+      "hasHeader": true,
+      "role": "catalog-render-discovery-rail",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -3169,6 +3303,14 @@
       "listeners": [
         "b-pdp-curation-suggestions"
       ]
+    },
+    "discovery:request": {
+      "emitters": [
+        "discovery-rail"
+      ],
+      "listeners": [
+        "discovery-inquiry"
+      ]
     }
   },
   "bundles": [
@@ -3189,6 +3331,7 @@
         "categories",
         "category-cutout-navigation",
         "products",
+        "discovery-rail",
         "modal-shell",
         "modal-media",
         "modal-product",
@@ -3208,7 +3351,6 @@
         "shared-list-side-cart-responsive",
         "shared-list-library-remove",
         "shared-list-lists-tab",
-        "share-cart",
         "identity",
         "paypal",
         "wallet",
@@ -3588,6 +3730,13 @@
     },
     {
       "module": "discovery-api",
+      "route": "/api/boutique/suggestions",
+      "raw": "/api/boutique/suggestions?surface=local&market=${encodeURIComponent(market)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "discovery-api",
       "route": "/api/local-stock/availability",
       "raw": "/api/local-stock/availability?product_id=${encodeURIComponent(productId)}&market=${encodeURIComponent(market)}",
       "dynamic": true,
@@ -3867,6 +4016,13 @@
       "contractStatus": "DYNAMIC"
     },
     {
+      "module": "providers-services-api",
+      "route": "/api/providers-services/inquiries",
+      "raw": "/api/providers-services/inquiries?market=${encodeURIComponent(market)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
       "module": "shop-schema",
       "route": "/api/categories",
       "raw": "/api/categories",
@@ -3887,6 +4043,7 @@
       "chip:center",
       "catalog:cat-changed",
       "favorites:view-refresh",
+      "discovery:request",
       "modal:suggestions-rendered",
       "carousel:changed",
       "modal:detail-ready",
@@ -3942,6 +4099,11 @@
         "owner": "modal-product",
         "producer": "b-modal-product-detail-bootstrap",
         "payload": "none"
+      },
+      "discovery:request": {
+        "owner": "catalog",
+        "producer": "discovery-rail",
+        "payload": "value"
       }
     },
     "consumers": {
@@ -3961,6 +4123,9 @@
         "b-modal-desktop-enhancers",
         "b-modal-core",
         "b-modal-suggestions"
+      ],
+      "discovery:request": [
+        "discovery-inquiry"
       ]
     }
   },
@@ -4047,6 +4212,7 @@
       "/api/payments/paypal/capture/{id}",
       "/api/products/{id}",
       "/api/products/{id}/detail",
+      "/api/providers-services/inquiries",
       "/api/providers-services/physical-offers/{id}",
       "/api/providers-services/services/{id}",
       "/api/purchasing/suppliers/{id}",
@@ -4133,6 +4299,24 @@
       "consumerUndeclared": [],
       "payload": "none",
       "payloadMismatches": []
+    },
+    "discovery:request": {
+      "owner": "catalog",
+      "declaredProducer": "discovery-rail",
+      "actualEmitters": [
+        "discovery-rail"
+      ],
+      "producerMissing": false,
+      "producerUnauthorized": [],
+      "declaredConsumers": [
+        "discovery-inquiry"
+      ],
+      "actualConsumers": [
+        "discovery-inquiry"
+      ],
+      "consumerUndeclared": [],
+      "payload": "value",
+      "payloadMismatches": []
     }
   },
   "ownershipStatus": {
@@ -4145,6 +4329,10 @@
       "msg": "consommateur non déclaré : local-stock-badge-mount"
     },
     "modal:composition-synced": {
+      "level": "green",
+      "msg": "propriété saine"
+    },
+    "discovery:request": {
       "level": "green",
       "msg": "propriété saine"
     }
@@ -4242,6 +4430,7 @@
     "/api/products",
     "/api/products/{id}",
     "/api/products/{id}/detail",
+    "/api/providers-services/inquiries",
     "/api/providers-services/physical-offers/{id}",
     "/api/providers-services/services/{id}",
     "/api/public/config",

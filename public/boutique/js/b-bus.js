@@ -35,6 +35,7 @@
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
  *   favorites:view-refresh —               — rafraîchir la vue Favoris après mutation du catalogue
+ *   discovery:request { kind, ref, source } — agir sur une offre/service Discovery ; catalog → providers-services
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   carousel:changed { index }             — slide produit actif changé ; synchroniser l'UX image
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
@@ -76,6 +77,7 @@
  *   modal:opened               owner=modal-product producer=b-modal-core.js payload=value
  *   modal:closed                owner=modal-product producer=b-modal-core.js payload=none
  *   modal:composition-synced    owner=modal-product producer=b-modal-product-detail-bootstrap.js payload=none
+ *   discovery:request           owner=catalog producer=discovery-rail.js payload=value
  *
  * Consommateurs déclarés (P3b) — tout écouteur observé hors de cette liste remonte
  * en ATTENTION comme consommateur non déclaré (un ajout légitime doit d'abord être
@@ -83,6 +85,7 @@
  *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
  *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js, group-side-cart.js
  *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js
+ *   discovery:request : discovery-inquiry.js
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
  *   cart:add, cart:open, cart:close, search:query, pager:navigate

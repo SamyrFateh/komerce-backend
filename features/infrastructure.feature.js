@@ -129,6 +129,7 @@ module.exports = {
       'scripts/feature-audit.js',
       'scripts/feature-classification-check.js',
       'scripts/feature-guard.js',
+      'scripts/feature-invariant-check.js',
       'scripts/feature-memo.js',
       'scripts/feature-registry-check.js',
       'scripts/feature-schema-check.js',
@@ -246,6 +247,7 @@ module.exports = {
       // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.
       '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
+      '.github/workflows/staging-discovery-ops.yml',
       '.github/workflows/showcase-v2-media-realism.yml',
       '.github/workflows/schema-refresh.yml',
       // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.

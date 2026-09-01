@@ -180,9 +180,9 @@ module.exports = {
     { statement: 'release ne touche jamais qty_physical (l\'unité n\'a ' +
       'jamais été réellement prélevée avant consume)',
       test: 'tests/unit/local-stock-service.test.js' },
-    { statement: 'aucune ligne local_stock n\'est visible ou consommée par un ' +
-      'chemin Boutique/checkout tant que l\'exposition n\'est pas activée ' +
-      '(shadow frontend strict, y compris après D2)',
+    { statement: 'Boutique ne lit jamais une ligne local_stock ni le service owner directement : ' +
+      'elle ne consomme que la projection publique availability/exposable via la frontière Discovery, ' +
+      'et le checkout conserve les mutations allocate/consume/release via les services owners',
       test: 'tests/unit/shadow-domains-boundary.test.js' },
     { statement: 'GET /api/local-stock/availability ne renvoie jamais le ' +
       'pourquoi d\'une indisponibilité (allocations actives, exposure ' +

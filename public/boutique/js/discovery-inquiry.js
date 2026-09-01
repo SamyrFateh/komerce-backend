@@ -64,12 +64,6 @@ async function handleDiscoveryRequest(payload = {}) {
     }
 
     showToast(successMessage(kind), 'success', 3200);
-    bus.emit('discovery:inquiry-created', {
-      id: result.inquiry.id,
-      status: result.inquiry.status,
-      kind,
-      ref,
-    });
     return true;
   } finally {
     setSourcePending(source, false);

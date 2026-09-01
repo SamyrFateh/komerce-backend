@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-29T08:51:32.340Z.
+> Régénéré le 2026-09-01T20:29:15.156Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **91** (91 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **60** — 🔴 0 hors contrat · ⚪ 42 non prouvés · 🔵 21 dynamiques
+- Modules JS : **97** (97 headés) · Événements bus : **23** · Bundles CSS : **3**
+- Endpoints appelés : **61** — 🔴 0 hors contrat · ⚪ 42 non prouvés · 🔵 22 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 0 écouteur(s) orphelin(s), 0 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -31,7 +31,7 @@
 | `/api/auth/passkey/register/verify` | b-passkey-enrollment | ⚪ non prouvé |
 | `/api/auth/passkey/step-up/options` | b-passkey-step-up | ⚪ non prouvé |
 | `/api/auth/passkey/step-up/verify` | b-passkey-step-up | ⚪ non prouvé |
-| `/api/boutique/suggestions` | b-checkout, b-modal-core | 🔵 dynamique |
+| `/api/boutique/suggestions` | b-checkout, b-modal-core, discovery-api | 🔵 dynamique |
 | `/api/carriers` | komerce-api | ⚪ non prouvé |
 | `/api/carriers/{id}` | komerce-api | 🔵 dynamique |
 | `/api/categories` | shop-schema | ⚪ non prouvé |
@@ -56,6 +56,7 @@
 | `/api/products` | komerce-api | ⚪ non prouvé |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
 | `/api/products/{id}/detail` | b-modal-product-detail-bootstrap | 🔵 dynamique |
+| `/api/providers-services/inquiries` | providers-services-api | 🔵 dynamique |
 | `/api/providers-services/physical-offers/{id}` | discovery-api | 🔵 dynamique |
 | `/api/providers-services/services/{id}` | discovery-api | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal, b-utils | ⚪ non prouvé |
@@ -88,6 +89,7 @@
 | `checkout:open` | b-cart, b-modal-buybox-shared, b-modal-core | boutique | 🟢 sain |
 | `checkout:order-failed` | b-checkout | group-side-cart | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
+| `discovery:request` | discovery-rail | discovery-inquiry | 🟢 sain (propriétaire: catalog) |
 | `favorites:view-refresh` | b-catalog | b-favs | 🟢 sain |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
@@ -167,6 +169,7 @@ graph LR
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_suggestions["b-modal-suggestions"]
   b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:suggestions-rendered| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
+  discovery_rail["discovery-rail"] -->|discovery:request| discovery_inquiry["discovery-inquiry"]
 ```
 
 ## 2b. Propriété des contrats bus (P3b)
@@ -181,13 +184,14 @@ graph LR
 | `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
 | `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart, local-stock-badge-mount | none | 🟠 consommateur non déclaré : local-stock-badge-mount |
 | `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | none | 🟢 propriété saine |
+| `discovery:request` | catalog | discovery-rail | discovery-inquiry | value | 🟢 propriété saine |
 
 ## 3. Bundles CSS
 
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero`, `hero-ultra-mobile`, `mobile-shell-convergence` |
-| `css/dist/components.css` | `categories`, `category-cutout-navigation`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-desktop-density`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `modal-suggestion-filter`, `modal-suggestion-card-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `shared-list-lists-tab`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce`, `notifications`, `checkout-vertical-rail`, `mobile-catalog-convergence`, `mobile-cart-convergence` |
+| `css/dist/components.css` | `categories`, `category-cutout-navigation`, `products`, `discovery-rail`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-desktop-density`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `modal-suggestion-filter`, `modal-suggestion-card-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `shared-list-lists-tab`, `identity`, `paypal`, `wallet`, `komerce`, `notifications`, `checkout-vertical-rail`, `mobile-catalog-convergence`, `mobile-cart-convergence` |
 | `css/dist/desktop.css` | `boutique-desktop`, `side-cart-desktop-polish`, `category-cutout-navigation-desktop` |
 
 ---

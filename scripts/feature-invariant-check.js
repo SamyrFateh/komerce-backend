@@ -26,7 +26,7 @@
  *
  * Ce gate vérifie, pour tout invariant portant un champ `test` :
  *   1. Le fichier de test référencé EXISTE sur disque.
- *   2. Le test PASSE (jest --testPathPattern sur ce fichier).
+ *   2. Le test PASSE (jest --testPathPatterns sur ce fichier).
  *
  * Sans ce gate, la forme { statement, test } est une déclaration d'intention,
  * pas une garantie — exactement le problème qu'elle prétend résoudre.
@@ -103,14 +103,18 @@ for (const inv of collected) {
 
   // 2b. Exécution du test
   try {
+    const boutiqueRoot = path.join(ROOT, 'public', 'boutique');
+    const isBoutiqueTest = inv.absPath.startsWith(boutiqueRoot + path.sep);
+    const jestCwd = isBoutiqueTest ? boutiqueRoot : ROOT;
+    const jestPath = (isBoutiqueTest ? path.relative(boutiqueRoot, inv.absPath) : inv.absPath).replace(/\\/g, '/');
     const args = [
-      '--testPathPattern', inv.absPath.replace(/\\/g, '/'),
+      '--testPathPatterns', jestPath,
       '--no-coverage',
       '--forceExit',
       ...(verbose ? [] : ['--silent']),
     ];
     const out = execFileSync('npx', ['jest', ...args], {
-      cwd: ROOT,
+      cwd: jestCwd,
       encoding: 'utf8',
       timeout: 60_000,
       stdio: verbose ? 'inherit' : 'pipe',

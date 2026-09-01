@@ -322,12 +322,6 @@ module.exports = {
       'services/order-360.js',
       'services/product-360.js',
       'services/shipping-customs-workspace.js',
-      'services/radar-queries.js',
-      'services/radar-alerts/cash-reconciliation-signals.js',
-      'services/radar-alerts/commerce-signals.js',
-      'services/radar-alerts/logistics-signals.js',
-      'services/radar-alerts/payment-signals.js',
-      'services/radar-alerts/treasury-signals.js',
     ],
     routes: [
       'routes/admin/dashboard.js',

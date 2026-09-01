@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-29T08:37:55.936Z",
+  "generatedAt": "2026-09-01T20:29:15.784Z",
   "sources": {
     "backend": {
-      "nodes": 1031
+      "nodes": 1066
     },
     "boutique": {
-      "modules": 88,
-      "endpoints": 57
+      "modules": 97,
+      "endpoints": 61
     },
     "dashboards": {
       "modules": 41,
@@ -20,7 +20,7 @@
     "endpointsConsumed": 96,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
-    "sharedTables": 15
+    "sharedTables": 11
   },
   "endpoints": {
     "/api/public/config": {
@@ -90,22 +90,9 @@
       "status": "UNKNOWN",
       "routeFile": "routes/orders/create.js",
       "services": [
-        "services/*",
-        "services/product-admin-service.js",
-        "services/cart-share-service.js"
+        "services/order-checkout-service.js"
       ],
-      "tables": [
-        "orders",
-        "product_skus",
-        "product_variants",
-        "products",
-        "recipients",
-        "relais",
-        "shared_cart_items",
-        "shared_carts",
-        "order_items",
-        "order_status_history"
-      ]
+      "tables": []
     },
     "/api/payments/stripe/intent": {
       "boutique": [
@@ -240,7 +227,8 @@
       "status": "UNKNOWN",
       "routeFile": "routes/boutique-suggestions.js",
       "services": [
-        "services/boutique-suggestion-service.js"
+        "services/boutique-ranking-engine.js",
+        "services/discovery-rail-service.js"
       ],
       "tables": []
     },
@@ -1669,18 +1657,14 @@
     "sharedTables": [
       "invoices",
       "order_items",
-      "order_status_history",
       "orders",
       "parcel_items",
       "parcels",
       "product_skus",
       "product_variants",
       "products",
-      "recipients",
       "relais",
       "scan_events",
-      "shared_cart_items",
-      "shared_carts",
       "users"
     ]
   },
@@ -1703,7 +1687,6 @@
         "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/logistics.js",
-        "routes/orders/create.js",
         "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/relais.js",
@@ -1719,7 +1702,6 @@
       "dashboards": [
         "CostingView",
         "HubRelaisView",
-        "OrdersLogisticsView",
         "ProblemsView",
         "TransitaireView"
       ]
@@ -1736,7 +1718,6 @@
         "routes/hub.js",
         "routes/invoices.js",
         "routes/logistics.js",
-        "routes/orders/create.js",
         "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/payments-paypal.js",
@@ -1761,7 +1742,6 @@
         "CustomsView",
         "HubRelaisView",
         "InvoicesView",
-        "OrdersLogisticsView",
         "ProblemsView",
         "SanteView",
         "TransitaireView"
@@ -1851,149 +1831,6 @@
       ],
       "dashboards": []
     },
-    "product_skus": {
-      "routes": [
-        "routes/orders/create.js",
-        "routes/products.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "EconomicFlowView",
-        "OrdersLogisticsView",
-        "PricingStrategyView",
-        "ProblemsView"
-      ]
-    },
-    "product_variants": {
-      "routes": [
-        "routes/orders/create.js",
-        "routes/products.js",
-        "routes/sourcing.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "EconomicFlowView",
-        "OrdersLogisticsView",
-        "PricingStrategyView",
-        "ProblemsView",
-        "SourcingView"
-      ]
-    },
-    "products": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/client-tracking.js",
-        "routes/orders/create.js",
-        "routes/parcel-api-v2/read.js",
-        "routes/parcels.js",
-        "routes/pricing.js",
-        "routes/products.js",
-        "routes/scans.js",
-        "routes/shares.js",
-        "routes/sourcing.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-favs",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "CostingView",
-        "EconomicFlowView",
-        "EconomicView",
-        "HubRelaisView",
-        "OrdersLogisticsView",
-        "PricingStrategyView",
-        "ProblemsView",
-        "SourcingView"
-      ]
-    },
-    "recipients": {
-      "routes": [
-        "routes/orders/create.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "shared_cart_items": {
-      "routes": [
-        "routes/orders/create.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "shared_carts": {
-      "routes": [
-        "routes/orders/create.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "order_items": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/client-tracking.js",
-        "routes/logistics.js",
-        "routes/orders/create.js",
-        "routes/parcel-api-v2/read.js",
-        "routes/parcels.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "CostingView",
-        "HubRelaisView",
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "order_status_history": {
-      "routes": [
-        "routes/orders/create.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
     "stripe_events_processed": {
       "routes": [
         "routes/payments.js"
@@ -2011,6 +1848,33 @@
         "b-favs"
       ],
       "dashboards": []
+    },
+    "products": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/client-tracking.js",
+        "routes/parcel-api-v2/read.js",
+        "routes/parcels.js",
+        "routes/pricing.js",
+        "routes/products.js",
+        "routes/scans.js",
+        "routes/shares.js",
+        "routes/sourcing.js"
+      ],
+      "boutique": [
+        "b-favs",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView",
+        "EconomicFlowView",
+        "EconomicView",
+        "HubRelaisView",
+        "PricingStrategyView",
+        "ProblemsView",
+        "SourcingView"
+      ]
     },
     "loyalty_tiers": {
       "routes": [
@@ -2076,6 +1940,24 @@
         "b-notifications"
       ],
       "dashboards": []
+    },
+    "order_items": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/client-tracking.js",
+        "routes/logistics.js",
+        "routes/parcel-api-v2/read.js",
+        "routes/parcels.js"
+      ],
+      "boutique": [
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView",
+        "HubRelaisView",
+        "ProblemsView"
+      ]
     },
     "parcels": {
       "routes": [
@@ -2197,6 +2079,32 @@
         "komerce-api"
       ],
       "dashboards": []
+    },
+    "product_skus": {
+      "routes": [
+        "routes/products.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "EconomicFlowView",
+        "PricingStrategyView"
+      ]
+    },
+    "product_variants": {
+      "routes": [
+        "routes/products.js",
+        "routes/sourcing.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "EconomicFlowView",
+        "PricingStrategyView",
+        "SourcingView"
+      ]
     },
     "suppliers": {
       "routes": [

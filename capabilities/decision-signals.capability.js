@@ -43,6 +43,11 @@ module.exports = {
     ],
     services: [
       'services/radar-queries.js',
+      'services/radar-alerts/cash-reconciliation-signals.js',
+      'services/radar-alerts/commerce-signals.js',
+      'services/radar-alerts/logistics-signals.js',
+      'services/radar-alerts/payment-signals.js',
+      'services/radar-alerts/treasury-signals.js',
       'services/signal-service.js',
       'services/signal-admin-service.js',
       'services/action-center-workspace.js',
@@ -56,6 +61,10 @@ module.exports = {
     ],
     tests: [
       'tests/unit/radar-queries.test.js',
+      'tests/unit/radar-alerts-cash-reconciliation-signals.test.js',
+      'tests/unit/radar-alerts-logistics-signals.test.js',
+      'tests/unit/radar-alerts-payment-signals.test.js',
+      'tests/unit/radar-alerts-treasury-commerce-signals.test.js',
       'tests/unit/signals.test.js',
       'tests/unit/signal-service.test.js',
       'tests/unit/signal-admin-service.test.js',
