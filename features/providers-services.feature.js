@@ -45,7 +45,7 @@ module.exports = {
       'isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant',
       'POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur',
       'consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire',
-      'seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production',
+      'seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production, avec Golden Product + sélection Showcase V2 multi-univers',
     ],
     out: [
       'authentification provider (pas de users / user_role pour le provider)',
@@ -138,11 +138,13 @@ module.exports = {
       test: 'tests/unit/providers-services-routes.test.js' },
     { statement: 'Commander une physical_offer reste une Inquiry providers-services et ne crée jamais une order Komerce',
       test: 'public/boutique/tests/unit/discovery-inquiry.test.js' },
-    { statement: 'le seed Discovery ne peut écrire qu’en staging avec opt-in explicite, conserve UUID/candidats déterministes et écrit image_ref',
+    { statement: 'le seed Discovery ne peut écrire qu’en staging avec opt-in explicite, conserve les UUID déterministes providers/offres/services, sélectionne des product_ref Showcase V2 stables, construit au plus 12 candidats dans un ordre déterministe et écrit image_ref',
       test: 'tests/unit/seed-discovery-staging.test.js' },
   ],
 
   // 2026-08-28 — création shadow providers/services/inquiries + physical_offers.
   // 2026-08-30 — V2 native Boutique : parcours Commander/Demander.
   // 2026-08-31 — dataset Discovery staging Anjouan + image_ref source-owned.
+  // 2026-09-01 — rail staging enrichi avec 7 produits Showcase V2 multi-univers
+  // en plus du Golden Product pour éprouver un rendu ecommerce réellement dense.
 };
