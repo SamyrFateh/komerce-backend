@@ -218,26 +218,65 @@
   .k-discovery-rail {
     display: flex;
     gap: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
     padding-bottom: 5px;
-    scrollbar-width: none;
   }
 
   .k-discovery-rail::-webkit-scrollbar {
     display: none;
   }
 
-  /*
-   * Work visual pass — 4 cartes doivent réellement occuper le terrain.
-   * flex-grow absorbe l'espace disponible jusqu'à 340px, tout en gardant
-   * 5 cartes possibles à 1280px et un overflow horizontal naturel au-delà.
-   * La hauteur média est découplée de la largeur pour gagner en densité :
-   * élargir les cartes ne repousse donc pas le catalogue sous le fold.
-   */
+  /* ── 75/25 composition: commerce left + services right ── */
+  .k-discovery-composition {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 16px;
+    overflow: visible;
+  }
+
+  .k-discovery-zone-commerce {
+    display: flex;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .k-discovery-zone-services {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  /* Commerce cards: compact, fill available space */
+  .k-discovery-zone-commerce > .k-discovery-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* Service cards: full width of service zone, text-oriented */
+  .k-discovery-zone-services > .k-discovery-card {
+    flex: none;
+    width: 100%;
+  }
+
+  .k-discovery-zone-services > .k-discovery-card .k-discovery-media {
+    height: 90px;
+  }
+
+  .k-discovery-zone-services > .k-discovery-card .k-discovery-info {
+    min-height: 80px;
+    padding: 8px 10px;
+  }
+
+  /* Fallback: non-composition rail (when only one kind exists) */
+  .k-discovery-rail:not(.k-discovery-composition) {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
   .k-discovery-card {
-    flex: 1 0 230px;
-    max-width: 340px;
+    flex: 1 0 160px;
+    max-width: 280px;
   }
 
   .k-discovery-media {

@@ -49,7 +49,9 @@ describe('renderDiscoveryRail', () => {
     expect(Array.from(target().querySelectorAll('.k-discovery-img')).map(img => img.getAttribute('src')))
       .toEqual(['/images/product.webp', '/images/samboussas.webp', '/images/plombier.webp']);
     expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
-    expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
+    // Desktop composition: role="list" is on the zone containers, not the rail wrapper
+    const lists = target().querySelectorAll('[role="list"]');
+    expect(lists.length).toBeGreaterThanOrEqual(1);
     expect(target().querySelector('#k-discovery-local-title')?.textContent).toBe('Près de vous');
     expect(target().textContent).toContain('Comores');
 
@@ -114,7 +116,7 @@ describe('renderDiscoveryRail', () => {
 
 // ── selectMobile policy tests ───────────────────────────────────────────
 
-const { selectMobile, normalizeCard } = require('../../js/render/render-discovery-rail.js');
+const { selectMobile, selectDesktop, normalizeCard } = require('../../js/render/render-discovery-rail.js');
 
 describe('selectMobile — surface policy HOME V1', () => {
   function card(kind, id) {
@@ -141,7 +143,6 @@ describe('selectMobile — surface policy HOME V1', () => {
     ];
     const result = selectMobile(pool);
     expect(result).toHaveLength(4);
-    // p1, s1 (first pair), p2 (second commerce, no second service), then backfill o1
     expect(result[0].kind).toBe('product');
     expect(result[1].kind).toBe('service');
   });
@@ -155,5 +156,45 @@ describe('selectMobile — surface policy HOME V1', () => {
   it('never exceeds 4', () => {
     const pool = Array.from({ length: 12 }, (_, i) => card('product', `p${i}`));
     expect(selectMobile(pool)).toHaveLength(4);
+  });
+});
+
+describe('selectDesktop — 75/25 composition policy', () => {
+  function card(kind, id) {
+    return normalizeCard({
+      kind, title: `${kind}-${id}`, cta_action_ref: id, cta_label: 'Test',
+    });
+  }
+
+  it('splits into 4 commerce + 2 services from a mixed pool', () => {
+    const pool = [
+      card('product', 'p1'), card('product', 'p2'), card('product', 'p3'),
+      card('physical_offer', 'o1'), card('physical_offer', 'o2'),
+      card('service', 's1'), card('service', 's2'), card('service', 's3'),
+    ];
+    const result = selectDesktop(pool);
+    expect(result.commerce).toHaveLength(4);
+    expect(result.services).toHaveLength(2);
+    expect(result.commerce.every(c => c.kind === 'product' || c.kind === 'physical_offer')).toBe(true);
+    expect(result.services.every(c => c.kind === 'service')).toBe(true);
+  });
+
+  it('returns empty services array when no services in pool', () => {
+    const pool = [card('product', 'p1'), card('physical_offer', 'o1')];
+    const result = selectDesktop(pool);
+    expect(result.commerce).toHaveLength(2);
+    expect(result.services).toHaveLength(0);
+  });
+
+  it('caps commerce at 4 even with large pool', () => {
+    const pool = Array.from({ length: 10 }, (_, i) => card('product', `p${i}`));
+    const result = selectDesktop(pool);
+    expect(result.commerce).toHaveLength(4);
+  });
+
+  it('caps services at 2', () => {
+    const pool = Array.from({ length: 6 }, (_, i) => card('service', `s${i}`));
+    const result = selectDesktop(pool);
+    expect(result.services).toHaveLength(2);
   });
 });

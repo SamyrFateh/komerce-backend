@@ -152,15 +152,64 @@ function selectMobile(cards) {
 }
 
 /**
- * Desktop: full pool (up to 12), editorial order preserved.
- * L4 will refine this into 75/25 composition.
+ * Desktop: 75/25 composition — 4 commerce + 2 services.
+ * Returns { commerce: card[], services: card[] } for two-zone rendering.
  */
 function selectDesktop(cards) {
-  return cards;
+  const commerce = cards.filter(c => COMMERCE_KINDS.has(c.kind));
+  const services = cards.filter(c => SERVICE_KINDS.has(c.kind));
+  return {
+    commerce: commerce.slice(0, 4),
+    services: services.slice(0, 2),
+  };
 }
 
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 900;
+}
+
+// ── Render internals ────────────────────────────────────────────────────
+
+function renderMobileRail(selected, marketLabel) {
+  return `
+    <div class="k-discovery-header">
+      <div class="k-discovery-heading">
+        <h2 id="k-discovery-local-title" class="k-discovery-title">Près de vous</h2>
+        ${marketLabel ? `<span class="k-discovery-market">${sanitize(marketLabel)}</span>` : ''}
+      </div>
+    </div>
+    <div class="k-discovery-rail" role="list" aria-label="Offres disponibles près de vous">
+      ${selected.map(renderCard).join('')}
+    </div>`;
+}
+
+function renderDesktopComposition(groups, marketLabel) {
+  const allCards = [...groups.commerce, ...groups.services];
+  if (allCards.length === 0) return '';
+
+  const commerceHtml = groups.commerce.length > 0
+    ? `<div class="k-discovery-zone-commerce" role="list" aria-label="Produits et offres près de vous">
+        ${groups.commerce.map(renderCard).join('')}
+      </div>`
+    : '';
+
+  const servicesHtml = groups.services.length > 0
+    ? `<div class="k-discovery-zone-services" role="list" aria-label="Services près de vous">
+        ${groups.services.map(renderCard).join('')}
+      </div>`
+    : '';
+
+  return `
+    <div class="k-discovery-header">
+      <div class="k-discovery-heading">
+        <h2 id="k-discovery-local-title" class="k-discovery-title">Près de vous</h2>
+        ${marketLabel ? `<span class="k-discovery-market">${sanitize(marketLabel)}</span>` : ''}
+      </div>
+    </div>
+    <div class="k-discovery-rail k-discovery-composition" aria-label="Offres disponibles près de vous">
+      ${commerceHtml}
+      ${servicesHtml}
+    </div>`;
 }
 
 // ── Render public ───────────────────────────────────────────────────────
@@ -178,25 +227,28 @@ export function renderDiscoveryRail(container, cards, options = {}) {
     return 0;
   }
 
-  const selected = isMobileViewport() ? selectMobile(normalized) : selectDesktop(normalized);
+  const marketLabel = options.marketLabel ? String(options.marketLabel) : '';
+  const mobile = isMobileViewport();
 
-  if (selected.length === 0) {
-    container.innerHTML = '';
-    container.hidden = true;
-    return 0;
+  if (mobile) {
+    const selected = selectMobile(normalized);
+    if (selected.length === 0) {
+      container.innerHTML = '';
+      container.hidden = true;
+      return 0;
+    }
+    container.innerHTML = renderMobileRail(selected, marketLabel);
+  } else {
+    const groups = selectDesktop(normalized);
+    const total = groups.commerce.length + groups.services.length;
+    if (total === 0) {
+      container.innerHTML = '';
+      container.hidden = true;
+      return 0;
+    }
+    container.innerHTML = renderDesktopComposition(groups, marketLabel);
   }
 
-  const marketLabel = options.marketLabel ? String(options.marketLabel) : '';
-  container.innerHTML = `
-    <div class="k-discovery-header">
-      <div class="k-discovery-heading">
-        <h2 id="k-discovery-local-title" class="k-discovery-title">Près de vous</h2>
-        ${marketLabel ? `<span class="k-discovery-market">${sanitize(marketLabel)}</span>` : ''}
-      </div>
-    </div>
-    <div class="k-discovery-rail" role="list" aria-label="Offres disponibles près de vous">
-      ${selected.map(renderCard).join('')}
-    </div>`;
   container.hidden = false;
   return normalized.length;
 }
