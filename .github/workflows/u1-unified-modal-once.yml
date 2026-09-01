@@ -43,6 +43,9 @@ jobs:
         run: |
           node scripts/u1-unified-modal-finalize-once.js
           rm -f scripts/u1-unified-modal-finalize-once.js
+          # The qualification workflow is only a transport harness. Keep it out
+          # of the governed working tree so it cannot manufacture an orphan.
+          rm -f .github/workflows/u1-unified-modal-once.yml
 
       - name: Rebuild governed projections
         run: |
@@ -88,6 +91,9 @@ jobs:
 
       - name: Persist qualified U1 tree
         run: |
+          # Restore the transport workflow unchanged so the Actions token never
+          # needs to delete/modify a file under .github/workflows in its push.
+          git checkout -- .github/workflows/u1-unified-modal-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
