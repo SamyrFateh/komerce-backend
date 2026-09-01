@@ -25,13 +25,15 @@ module.exports = {
   // véhicule de paiement groupé — c'est une liste de souhaits partageable.
   service: 'Permettre à un créateur de publier une liste immuable par lien public ; ' +
            'chaque acheteur sélectionne une ou plusieurs lignes disponibles, ' +
-           'passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.',
+           'passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; ' +
+           'la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.',
 
   // ── Périmètre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'création puis publication immuable, fermeture et annulation de la liste partagée',
+      'création puis publication immuable, fermeture explicite ou automatique et annulation de la liste partagée',
       'lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)',
+      'réconciliation de complétion : dernière ligne réclamée => OPEN -> CLOSED',
     ],
     out: [
       'paiement carte/PayPal/cash (feature payments, consommée en sortie)',
@@ -42,8 +44,9 @@ module.exports = {
   },
 
   // ── Autorité ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de statut (open/closed/cancelled) ' +
-             'doit être validé par le propriétaire de shared-cart-lifecycle.js',
+  authority: 'backend-core — le domaine shared-cart est seul autorisé à écrire son lifecycle : ' +
+             'close/cancel explicites via shared-cart-lifecycle.js ; fermeture automatique de complétion ' +
+             'via la frontière cross-feature cart-share-service.js appelée par orders.',
 
   // ── Périmètre fichiers ────────────────────────────────────────────────────
   files: {
@@ -55,10 +58,11 @@ module.exports = {
       'services/shared-cart-lifecycle.js',       // closeCart, cancelSharedCart
       'services/shared-cart-library.js',         // getSharedCartLibrary, saveSharedCartForUser (Amendement V2 §D)
       'services/shared-cart-queries.js',
-      // Frontière publique cross-feature pour cart_shares (campagne
-      // gouvernance WRITER-NOT-OWNER, 2026-08) — appelée par orders au lieu
-      // d'un SQL direct dans cette table. Voir features/orders.feature.js
-      // contract.consumes.
+      // Frontière publique cross-feature du domaine shared-cart (campagne
+      // gouvernance WRITER-NOT-OWNER, 2026-08 ; étendue 2026-09) — orders
+      // l'appelle pour cart_shares ET pour réconcilier la fermeture d'une
+      // liste dont toutes les lignes viennent d'être réclamées, jamais par
+      // SQL direct dans shared_carts/shared_cart_events.
       'services/cart-share-service.js',
       'services/shared-cart-user-cleanup.js', // lifecycle-owned cleanup appelé par l'admin users
     ],
@@ -88,6 +92,7 @@ module.exports = {
       'migrations/127_shared_cart_saved_access.sql',         // bibliothèque "Mes listes" (Amendement V2 §D)
       'migrations/128_shared_list_pickup_code_recipient.sql', // destinataire vérifié du secret de retrait
       'migrations/129_shared_cart_one_open_per_organizer.sql',// cardinalité V1 : 0..1 OPEN par organisateur
+      'migrations/190_shared_cart_auto_close_backfill.sql',   // répare les listes historiques 100% réclamées restées OPEN
     ],
     tests: [
       'tests/unit/baskets.test.js',
@@ -198,6 +203,8 @@ module.exports = {
     ],
     internalApi: [
       { fn: 'deleteUserBasketData', file: 'services/shared-cart-user-cleanup.js' },
+      { fn: 'markShareConvertedToOrder', file: 'services/cart-share-service.js' },
+      { fn: 'closeCompletedSharedCartForOrderItems', file: 'services/cart-share-service.js' },
     ],
     consumes: [
       'recommendations (modal partagé consomme suggestions via interface /api/boutique/suggestions)',
@@ -224,6 +231,7 @@ module.exports = {
     'une sélection de liste est locale, ne réserve rien et passe toujours par récapitulatif puis checkout canonique',
     'une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux',
     'un article de liste n\'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)',
+    'dès que toutes les lignes possèdent un order_items.shared_cart_item_id, la liste passe automatiquement OPEN -> CLOSED ; aucun état observable 100% réclamé + OPEN',
     'aucune donnée financière n\'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items',
     'lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)',
     'annulation de liste (cancel) n\'effectue jamais de remboursement — aucune contribution n\'y transite',
@@ -235,7 +243,7 @@ module.exports = {
     decision: 'feature-autonome',
     signals: {
       ownsTables:          true,   // shared_carts, shared_cart_items, shared_cart_events
-      ownsLifecycle:       true,   // open → closed → cancelled (3 états)
+      ownsLifecycle:       true,   // open → closed/cancelled ; close explicite ou automatique
       activeService:       true,
       multiConsumer:       false,
       ownsMigrations:      true,
@@ -244,7 +252,7 @@ module.exports = {
     },
     rationale: [
       'écrit dans des tables propriétaires (shared_carts, shared_cart_items)',
-      'porte un cycle de vie propre à 3 états, réduit au strict nécessaire (migration 124)',
+      'porte un cycle de vie propre à 3 états, avec fermeture automatique quand la dernière ligne est réclamée',
       'rend un service métier autonome : composer et partager une liste — l\'achat lui-même est délégué à la feature orders',
     ],
   },

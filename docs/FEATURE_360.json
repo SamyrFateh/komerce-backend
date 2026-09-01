@@ -18556,11 +18556,12 @@
         "kind": "business-feature",
         "status": "production"
       },
-      "service": "Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.",
+      "service": "Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.",
       "perimeter": {
         "in": [
-          "création puis publication immuable, fermeture et annulation de la liste partagée",
-          "lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)"
+          "création puis publication immuable, fermeture explicite ou automatique et annulation de la liste partagée",
+          "lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)",
+          "réconciliation de complétion : dernière ligne réclamée => OPEN -> CLOSED"
         ],
         "out": [
           "paiement carte/PayPal/cash (feature payments, consommée en sortie)",
@@ -18569,7 +18570,7 @@
           "crédit wallet (feature wallet)"
         ]
       },
-      "authority": "backend-core — tout changement de statut (open/closed/cancelled) doit être validé par le propriétaire de shared-cart-lifecycle.js",
+      "authority": "backend-core — le domaine shared-cart est seul autorisé à écrire son lifecycle : close/cancel explicites via shared-cart-lifecycle.js ; fermeture automatique de complétion via la frontière cross-feature cart-share-service.js appelée par orders.",
       "invariants": [
         "une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable",
         "tant que les listes V1 ne sont pas nommables, un créateur possède au maximum une liste OPEN",
@@ -18577,6 +18578,7 @@
         "une sélection de liste est locale, ne réserve rien et passe toujours par récapitulatif puis checkout canonique",
         "une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux",
         "un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)",
+        "dès que toutes les lignes possèdent un order_items.shared_cart_item_id, la liste passe automatiquement OPEN -> CLOSED ; aucun état observable 100% réclamé + OPEN",
         "aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items",
         "lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)",
         "annulation de liste (cancel) n'effectue jamais de remboursement — aucune contribution n'y transite"
@@ -18649,7 +18651,7 @@
             ]
           },
           "migrations": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "migrations/044_shared_cart.sql",
@@ -18744,6 +18746,11 @@
               {
                 "declared": "migrations/129_shared_cart_one_open_per_organizer.sql",
                 "resolvedPath": "migrations/129_shared_cart_one_open_per_organizer.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/190_shared_cart_auto_close_backfill.sql",
+                "resolvedPath": "migrations/190_shared_cart_auto_close_backfill.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -18894,7 +18901,7 @@
             ]
           }
         },
-        "totalFiles": 56,
+        "totalFiles": 57,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,
@@ -19219,8 +19226,18 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "closeCompletedSharedCartForOrderItems",
+            "file": "services/cart-share-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "deleteUserBasketData",
             "file": "services/shared-cart-user-cleanup.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markShareConvertedToOrder",
+            "file": "services/cart-share-service.js",
             "status": "resolved"
           }
         ],
