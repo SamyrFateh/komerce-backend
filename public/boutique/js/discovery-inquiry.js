@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/discovery-inquiry.js
  * @purpose       Consommer l'intention Commander/Demander du rail Discovery et créer l'Inquiry canonique après identité Komerce.
  * @impact-areas  boutique, discovery-rail, providers-services, auth
- * @version       2026-08
+ * @version       2026-09
  */
 'use strict';
 
@@ -41,7 +41,7 @@ function setSourcePending(source, pending) {
 }
 
 async function handleDiscoveryRequest(payload = {}) {
-  const { kind, ref, source = null } = payload;
+  const { kind, ref, source = null, requestedWindow = null } = payload;
   if (!ref || !['service', 'physical_offer'].includes(kind)) return false;
 
   const key = `${kind}:${ref}`;
@@ -57,7 +57,7 @@ async function handleDiscoveryRequest(payload = {}) {
     });
     if (!identity) return false;
 
-    const result = await createProviderInquiry(kind, ref);
+    const result = await createProviderInquiry(kind, ref, requestedWindow);
     if (!result?.ok) {
       showToast(failureMessage(result), 'error', 3200);
       return false;

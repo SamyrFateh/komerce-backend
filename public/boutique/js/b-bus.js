@@ -10,7 +10,7 @@
  * @used-by       public/boutique/js/b-cart-core.js, public/boutique/js/b-cart-pill.js, public/boutique/js/b-cart.js, public/boutique/js/b-catalog-desktop-enhancers.js, public/boutique/js/b-catalog.js, public/boutique/js/b-checkout.js, public/boutique/js/b-desktop-sidebar.js, public/boutique/js/group/group-side-cart.js, public/boutique/js/b-home-premium-v1.js, public/boutique/js/b-mini-cart.js, public/boutique/js/b-modal-core.js, public/boutique/js/b-modal-desktop-enhancers.js, public/boutique/js/b-modal-image-ux.js, public/boutique/js/b-modal-nav.js, public/boutique/js/b-modal-product.js, public/boutique/js/b-modal-suggestions.js, public/boutique/js/b-nav.js, public/boutique/js/b-notifications.js, public/boutique/js/b-pager.js, public/boutique/js/b-pdp-curation-suggestions.js, public/boutique/js/b-product-open-contract.js, public/boutique/js/b-store.js, public/boutique/js/b-subcat.js, public/boutique/js/boutique.js, public/boutique/js/main.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  boutique
- * @version       2026-06
+ * @version       2026-09
  */
 'use strict';
 
@@ -35,7 +35,7 @@
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
  *   favorites:view-refresh —               — rafraîchir la vue Favoris après mutation du catalogue
- *   discovery:request { kind, ref, source } — agir sur une offre/service Discovery ; catalog → providers-services
+ *   discovery:request { kind, ref, source, requestedWindow } — agir sur une offre/service Discovery ; requestedWindow est facultatif ; catalog → providers-services
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   carousel:changed { index }             — slide produit actif changé ; synchroniser l'UX image
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
@@ -111,7 +111,7 @@ export const bus = {
   },
 
   /**
-   * Désabonne une fonction d'un événement.
+   * Désabonne une fonction à un événement.
    * @param {string} event - Nom de l'événement
    * @param {Function} fn - Même référence que celle passée à on()
    */
@@ -133,7 +133,7 @@ export const bus = {
   },
 
   /**
-   * Abonne une fonction à un seul déclenchement (one-shot).
+   * Abonne une fonction à un seul déclenchement (one-shot)
    * @param {string} event - Nom de l'événement
    * @param {Function} fn - Callback one-shot
    */

@@ -77,10 +77,26 @@ describe('handleDiscoveryRequest', () => {
     const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-1', source: button });
 
     expect(result).toBe(true);
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-1');
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-1', null);
     expect(mockRequireIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée', 'success', 3200);
+  });
+
+  it('transporte requestedWindow après identité sans nouveau flow métier', async () => {
+    mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
+    mockCreateProviderInquiry.mockResolvedValue({
+      ok: true,
+      inquiry: { id: 'inq-window', status: 'sent', target_kind: 'service' },
+    });
+
+    await handleDiscoveryRequest({
+      kind: 'service',
+      ref: 'svc-window',
+      requestedWindow: 'Samedi matin',
+    });
+
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-window', 'Samedi matin');
   });
 
   it('physical_offer : Commander reste une demande, pas une order', async () => {
@@ -92,7 +108,7 @@ describe('handleDiscoveryRequest', () => {
 
     await handleDiscoveryRequest({ kind: 'physical_offer', ref: 'offer-1' });
 
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1');
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1', null);
     expect(mockShowToast).toHaveBeenCalledWith('Demande de commande envoyée', 'success', 3200);
   });
 

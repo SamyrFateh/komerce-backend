@@ -26,6 +26,14 @@ function ctaFor(kind) {
   return kind === 'physical_offer' ? 'Commander' : 'Demander';
 }
 
+function requestLabelFor(kind) {
+  return kind === 'physical_offer' ? 'Pour quand ?' : 'Quand souhaitez-vous l’intervention ?';
+}
+
+function requestPlaceholderFor(kind) {
+  return kind === 'physical_offer' ? 'Ex. vendredi soir' : 'Ex. samedi matin';
+}
+
 function buildDetailHTML(kind, ref, detail) {
   const image = detail.image_ref
     ? `<img class="k-modal-discovery-img" src="${sanitize(detail.image_ref)}" alt="${sanitize(detail.title)}" loading="lazy" decoding="async">`
@@ -45,6 +53,13 @@ function buildDetailHTML(kind, ref, detail) {
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
         ${description}
+        <label class="k-modal-discovery-request">
+          <span class="k-modal-discovery-request-label">${sanitize(requestLabelFor(kind))} <span>· facultatif</span></span>
+          <input class="k-modal-discovery-request-input" type="text" maxlength="160"
+            autocomplete="off" spellcheck="true"
+            data-discovery-requested-window
+            placeholder="${sanitize(requestPlaceholderFor(kind))}">
+        </label>
         <button class="k-discovery-cta k-modal-discovery-cta" type="button"
           data-discovery-modal-action="${sanitize(kind)}"
           data-discovery-ref="${sanitize(ref)}">${sanitize(ctaFor(kind))}</button>
@@ -79,10 +94,14 @@ function handleAction(event) {
   const ref = button.dataset.discoveryRef;
   if (!kind || !ref) return;
 
+  const detailShell = button.closest('.k-modal-discovery-shell');
+  const requestInput = detailShell?.querySelector('[data-discovery-requested-window]');
+  const requestedWindow = requestInput?.value?.trim() || null;
+
   // Continue inside Komerce: close the detail lifecycle without browser-back,
   // then hand the business action to the canonical Inquiry path.
   closeModal({ skipHistoryBack: true });
-  requestDiscovery(kind, ref, button);
+  requestDiscovery(kind, ref, button, requestedWindow);
 }
 
 export function setupDiscoveryModalDetail() {
