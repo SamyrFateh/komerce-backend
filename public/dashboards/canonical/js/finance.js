@@ -117,6 +117,22 @@
         emptyText: 'Aucun coût réel alloué sur la période.',
       },
       {
+        id: 'rentabilite-relais',
+        title: 'Rentabilité relais',
+        description: 'CA et marge par relais. La marge réelle ne porte que sur les commandes dont le costing est complet.',
+        type: 'table',
+        source: 'finance.relay-profitability',
+        columns: [
+          { key: 'relais', label: 'Relais' },
+          { key: 'commandes', label: 'Cmds', align: 'right' },
+          { key: 'ca', label: 'CA', align: 'right' },
+          { key: 'marge_estimee', label: 'Marge estimée', align: 'right' },
+          { key: 'marge_reelle', label: 'Marge réelle', align: 'right' },
+          { key: 'couverture', label: 'Couverture', align: 'right' },
+        ],
+        emptyText: 'Aucune rentabilité relais calculable sur la période.',
+      },
+      {
         id: 'modes-paiement',
         title: 'Encaissements par mode',
         description: 'Répartition des commandes payées et du montant encaissé par moyen de paiement.',
@@ -287,6 +303,17 @@
     }));
   }
 
+  function projectRelayProfitability(payload) {
+    return (Array.isArray(payload && payload.relay_profitability) ? payload.relay_profitability : []).map(row => ({
+      relais: row.relais_name || '—',
+      commandes: formatNumber(row.orders, 0),
+      ca: formatKmf(row.revenue_kmf),
+      marge_estimee: formatKmf(row.estimated_margin_kmf),
+      marge_reelle: formatKmf(row.consolidated_margin_kmf),
+      couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
+    }));
+  }
+
   function projectPaymentMix(payload) {
     return (Array.isArray(payload && payload.payment_mix) ? payload.payment_mix : []).map(row => ({
       mode: row.payment_mode || '—',
@@ -314,6 +341,7 @@
       'finance.costing-summary': projectCostingSummary(payload),
       'finance.costing-orders': projectCostingOrders(payload),
       'finance.cost-families': projectCostFamilies(payload),
+      'finance.relay-profitability': projectRelayProfitability(payload),
       'finance.payment-mix': projectPaymentMix(payload),
       'finance.refunds': projectRefunds(payload),
     });
@@ -396,6 +424,7 @@
     projectCostingSummary,
     projectCostingOrders,
     projectCostFamilies,
+    projectRelayProfitability,
     projectPaymentMix,
     projectRefunds,
     resolveSources,
