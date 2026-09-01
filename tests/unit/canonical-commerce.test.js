@@ -20,7 +20,10 @@ function payloadFixture() {
       { key: 'marge_consolidee', value: 24500, unit: 'KMF', data_quality: {} },
     ],
     top_products: [
-      { name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000 },
+      { product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000 },
+    ],
+    product_profitability: [
+      { product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', orders: 3, quantity: 3, revenue_kmf: 90000, estimated_margin_kmf: 36000, consolidated_margin_kmf: 25000, cost_coverage_pct: 66.7 },
     ],
     categories: [
       { category: 'Électronique', orders: 3, quantity: 3, revenue_kmf: 90000 },
@@ -67,6 +70,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(schema.metrics.source).toBe('commerce.metrics');
     expect(schema.sections.map(section => section.source)).toEqual([
       'commerce.top-products',
+      'commerce.product-profitability',
       'commerce.categories',
       'commerce.funnel',
     ]);
@@ -84,11 +88,25 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
       quantite: '3',
       ca: expect.stringContaining('KMF'),
     });
+    expect(sources['commerce.product-profitability'][0]).toEqual({
+      produit: 'Téléphone',
+      categorie: 'Électronique',
+      commandes: '3',
+      ca: '90 000 KMF',
+      marge_estimee: '36 000 KMF',
+      marge_reelle: '25 000 KMF',
+      couverture: '66,7 %',
+    });
     expect(sources['commerce.funnel'][1]).toEqual({
       etape: 'Payées',
       commandes: '10',
       taux: '83,3 %',
     });
+  });
+
+  test('une marge réelle absente reste explicitement inconnue', () => {
+    const sources = commerce.resolveSources({ product_profitability: [{ name: 'X', orders: 2, revenue_kmf: 10000, estimated_margin_kmf: 2000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
+    expect(sources['commerce.product-profitability'][0].marge_reelle).toBe('—');
   });
 
   test('résout l’endpoint uniquement depuis AdminContext', () => {
