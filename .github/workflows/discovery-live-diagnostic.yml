@@ -18,18 +18,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
 
-      - name: Install ephemeral Playwright
-        run: |
-          npm install --no-save --ignore-scripts playwright@1.55.0
-          npx playwright install --with-deps chromium
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
 
-      - name: Probe live Komerce Discovery
+      - name: Install native Chromium browser
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Probe live Komerce Discovery with repo Playwright
+        working-directory: public/boutique
         env:
-          TARGET_URL: https://komerce.co/
+          TARGET_URL: https://komerce.co/boutique/
         run: |
           node <<'NODE'
-          const { chromium } = require('playwright');
+          const { chromium } = require('@playwright/test');
 
           const target = process.env.TARGET_URL;
           const failures = [];
@@ -81,7 +87,6 @@ jobs:
               const overlay = document.querySelector('#k-modal-overlay');
               const modal = document.querySelector('#k-modal');
               const discovery = document.querySelector('#k-modal-discovery-detail');
-              const productZone = document.querySelector('#k-modal .k-modal-product-zone');
               return {
                 overlayOpen: Boolean(overlay?.classList.contains('open')),
                 modalClasses: modal?.className || null,
@@ -89,46 +94,39 @@ jobs:
                 discoveryText: discovery && !discovery.hidden
                   ? discovery.textContent.replace(/\s+/g, ' ').trim().slice(0, 260)
                   : null,
-                productZoneDisplay: productZone ? getComputedStyle(productZone).display : null,
               };
             });
           }
 
           async function closeModal(page) {
             const close = page.locator('#k-modal .k-modal-close, #k-modal-close').first();
-            if (await close.count()) {
-              await close.click().catch(() => {});
-            } else {
-              await page.keyboard.press('Escape').catch(() => {});
-            }
-            await page.waitForFunction(() => !document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 5000 }).catch(() => {});
+            if (await close.count()) await close.click().catch(() => {});
+            else await page.keyboard.press('Escape').catch(() => {});
+            await page.waitForFunction(
+              () => !document.querySelector('#k-modal-overlay')?.classList.contains('open'),
+              null,
+              { timeout: 5000 }
+            ).catch(() => {});
           }
 
-          async function openByCard(page, kind) {
+          async function openByCard(page, kind, viaCta = false) {
             const card = page.locator(`#k-discovery-local .k-discovery-card[data-discovery-kind="${kind}"]`).first();
             if (!(await card.count())) return { kind, found: false, opened: false };
             const ref = await card.getAttribute('data-discovery-ref');
-            await card.locator('.k-discovery-media').click();
-            const opened = await page.waitForFunction(() => document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 8000 })
-              .then(() => true).catch(() => false);
+            const target = viaCta ? card.locator('.k-discovery-cta') : card.locator('.k-discovery-media');
+            await target.click();
+            const opened = await page.waitForFunction(
+              () => document.querySelector('#k-modal-overlay')?.classList.contains('open'),
+              null,
+              { timeout: 8000 }
+            ).then(() => true).catch(() => false);
             const snapshot = await modalSnapshot(page);
             await closeModal(page);
-            return { kind, ref, found: true, opened, snapshot };
-          }
-
-          async function openServiceByRailCta(page) {
-            const cta = page.locator('#k-discovery-local .k-discovery-card[data-discovery-kind="service"] .k-discovery-cta').first();
-            if (!(await cta.count())) return { found: false, opened: false };
-            await cta.click();
-            const opened = await page.waitForFunction(() => document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 8000 })
-              .then(() => true).catch(() => false);
-            const snapshot = await modalSnapshot(page);
-            await closeModal(page);
-            return { found: true, opened, snapshot };
+            return { kind, ref, viaCta, found: true, opened, snapshot };
           }
 
           async function bootPage(browser, viewport) {
-            const page = await browser.newPage({ viewport });
+            const page = await browser.newPage({ viewport, locale: 'fr-FR' });
             page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
             page.on('console', (msg) => {
               if (msg.type() === 'error') consoleErrors.push(`console: ${msg.text()}`);
@@ -138,10 +136,9 @@ jobs:
                 networkErrors.push(`${response.status()} ${response.url()}`);
               }
             });
-
             await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForSelector('#k-discovery-local .k-discovery-card', { state: 'visible', timeout: 30000 });
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(1500);
             return page;
           }
 
@@ -150,40 +147,33 @@ jobs:
             try {
               const desktop = await bootPage(browser, { width: 1728, height: 900 });
               const desktopCards = await metrics(desktop);
-              const heights = desktopCards.map((c) => c.card.height);
-              const ctaBottoms = desktopCards.map((c) => c.cta?.bottom).filter(Number.isFinite);
-              const cardTops = desktopCards.map((c) => c.card.top);
-
-              console.log('DESKTOP_CARDS=' + JSON.stringify(desktopCards, null, 2));
-              console.log('DESKTOP_GEOMETRY=' + JSON.stringify({
+              const geometry = {
                 count: desktopCards.length,
-                cardHeightSpread: spread(heights),
-                cardTopSpread: spread(cardTops),
-                ctaBottomSpread: spread(ctaBottoms),
-              }));
-
+                cardHeightSpread: spread(desktopCards.map(c => c.card.height)),
+                ctaBottomSpread: spread(desktopCards.map(c => c.cta?.bottom).filter(Number.isFinite)),
+              };
+              console.log('DESKTOP_CARDS=' + JSON.stringify(desktopCards, null, 2));
+              console.log('DESKTOP_GEOMETRY=' + JSON.stringify(geometry));
               if (desktopCards.length < 3) failures.push(`desktop card count=${desktopCards.length}`);
-              if ((spread(heights) ?? 999) > 2) failures.push(`desktop card heights diverge by ${spread(heights)}px`);
-              if ((spread(ctaBottoms) ?? 999) > 2) failures.push(`desktop CTA bottoms diverge by ${spread(ctaBottoms)}px`);
+              if ((geometry.cardHeightSpread ?? 999) > 2) failures.push(`desktop card heights diverge by ${geometry.cardHeightSpread}px`);
+              if ((geometry.ctaBottomSpread ?? 999) > 2) failures.push(`desktop CTA bottoms diverge by ${geometry.ctaBottomSpread}px`);
 
               const product = await openByCard(desktop, 'product');
               const offer = await openByCard(desktop, 'physical_offer');
               const service = await openByCard(desktop, 'service');
-              const serviceCta = await openServiceByRailCta(desktop);
+              const serviceCta = await openByCard(desktop, 'service', true);
               console.log('DESKTOP_MODAL_PRODUCT=' + JSON.stringify(product, null, 2));
               console.log('DESKTOP_MODAL_OFFER=' + JSON.stringify(offer, null, 2));
               console.log('DESKTOP_MODAL_SERVICE=' + JSON.stringify(service, null, 2));
               console.log('DESKTOP_MODAL_SERVICE_CTA=' + JSON.stringify(serviceCta, null, 2));
 
-              for (const result of [product, offer, service]) {
+              for (const result of [product, offer, service, serviceCta]) {
                 if (!result.found) failures.push(`${result.kind} card missing`);
-                else if (!result.opened) failures.push(`${result.kind} card did not open modal`);
+                else if (!result.opened) failures.push(`${result.kind}${result.viaCta ? ' CTA' : ' card'} did not open modal`);
               }
-              if (!serviceCta.found || !serviceCta.opened) failures.push('service rail CTA did not open modal');
               if (service.snapshot?.discoveryHidden !== false) failures.push('service modal did not render discovery detail');
               if (offer.snapshot?.discoveryHidden !== false) failures.push('physical offer modal did not render discovery detail');
               if (product.snapshot?.modalClasses?.includes('k-modal--discovery')) failures.push('product opened in discovery modal mode');
-
               await desktop.close();
 
               const mobile = await bootPage(browser, { width: 390, height: 844 });
@@ -191,8 +181,7 @@ jobs:
               console.log('MOBILE_CARDS=' + JSON.stringify(mobileCards, null, 2));
               console.log('MOBILE_GEOMETRY=' + JSON.stringify({
                 count: mobileCards.length,
-                cardHeightSpread: spread(mobileCards.map((c) => c.card.height)),
-                ctaBottomsByRow: mobileCards.map((c) => c.cta?.bottom),
+                cardHeightSpread: spread(mobileCards.map(c => c.card.height)),
               }));
               if (mobileCards.length > 4) failures.push(`mobile exposes ${mobileCards.length} cards (>4)`);
               const mobileService = await openByCard(mobile, 'service');
@@ -203,7 +192,6 @@ jobs:
               console.log('API_ERRORS=' + JSON.stringify(networkErrors, null, 2));
               console.log('CONSOLE_ERRORS=' + JSON.stringify(consoleErrors, null, 2));
               console.log('FAILURES=' + JSON.stringify(failures, null, 2));
-
               if (failures.length) process.exitCode = 1;
             } finally {
               await browser.close();
