@@ -89,7 +89,7 @@ jobs:
 
       - name: Prove targeted source fixes
         run: |
-          npm test -- --runInBand tests/unit/shadow-domains-boundary.test.js
+          npx jest --testPathPatterns tests/unit/shadow-domains-boundary.test.js --runInBand --no-coverage --forceExit
           npm --prefix public/boutique test -- --runInBand tests/unit/discovery-inquiry.test.js
           npm run feature:invariant:check:strict
           npm run boutique:360:check
