@@ -23,7 +23,7 @@ describe('renderDiscoveryRail', () => {
     expect(target().innerHTML).toBe('');
   });
 
-  it('rend dans un seul rail les trois intentions avec contenu spécialisé par kind', () => {
+  it('rend dans un seul rail les trois intentions avec une géométrie identique', () => {
     const cards = [
       {
         kind: 'product', title: 'Climatiseur', subtitle: 'Disponible maintenant',
@@ -56,7 +56,14 @@ describe('renderDiscoveryRail', () => {
     const labels = Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent);
     expect(labels).toEqual(['Acheter', 'Commander', 'Demander']);
 
-    // V2 — contenu spécialisé
+    // Le subtitle est la promesse du badge, jamais une ligne dupliquée dans le body.
+    expect(target().querySelectorAll('.k-discovery-status')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-subtitle')).toHaveLength(0);
+
+    // Les slots structurels existent pour chaque kind même quand leur contenu est vide.
+    expect(target().querySelectorAll('.k-discovery-primary-slot')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-context-slot')).toHaveLength(3);
+
     expect(target().querySelector('.k-discovery-price')?.textContent).toContain('195');
     expect(target().querySelector('.k-discovery-price')?.textContent).toContain('KMF');
 
@@ -67,11 +74,11 @@ describe('renderDiscoveryRail', () => {
     expect(providers[1]).toContain('Ali Plomberie');
     expect(providers[1]).toContain('Mutsamudu');
 
-    // product card must NOT show provider
+    // Product garde son slot contexte mais n'invente aucun provider.
     const productCard = target().querySelector('[data-discovery-kind="product"]');
     expect(productCard.querySelector('.k-discovery-provider')).toBeNull();
+    expect(productCard.querySelector('.k-discovery-context-slot')).not.toBeNull();
 
-    // cards are now clickable via data-discovery-ref on article
     expect(target().querySelector('.k-discovery-card[data-discovery-ref="p-1"]')).not.toBeNull();
   });
 
@@ -111,8 +118,6 @@ describe('renderDiscoveryRail', () => {
     expect(target().textContent).toContain('<img src=x onerror=alert(1)>');
   });
 });
-
-// ── selectMobile policy tests ───────────────────────────────────────────
 
 const { selectMobile, selectDesktop, normalizeCard } = require('../../js/render/render-discovery-rail.js');
 

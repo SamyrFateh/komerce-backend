@@ -63,6 +63,8 @@
 
 .k-discovery-card {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--sand);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -76,6 +78,7 @@
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+  flex: 0 0 auto;
   background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
 }
 
@@ -120,14 +123,20 @@
   font-weight: 700;
 }
 
+/* Géométrie canonique Discovery : les trois kinds possèdent les mêmes
+   rangs structurels. Une donnée optionnelle peut être vide ; elle ne peut
+   jamais déplacer le CTA ni modifier l'empreinte de la carte. */
 .k-discovery-info {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 108px;
+  min-height: 112px;
   padding: 9px;
 }
 
 .k-discovery-name {
+  min-height: 30px;
+  max-height: 30px;
   color: var(--ocean-dark);
   font-size: 12px;
   font-weight: 700;
@@ -138,19 +147,22 @@
   overflow: hidden;
 }
 
-.k-discovery-subtitle {
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 10px;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+.k-discovery-primary-slot {
+  min-height: 17px;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.k-discovery-context-slot {
+  min-height: 16px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .k-discovery-price {
-  margin-top: 4px;
   color: var(--ocean-dark);
   font-size: 12px;
   font-weight: 800;
@@ -158,7 +170,7 @@
 }
 
 .k-discovery-provider {
-  margin-top: 3px;
+  min-width: 0;
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
@@ -274,6 +286,7 @@
 
   .k-discovery-rail {
     display: flex;
+    align-items: stretch;
     gap: 12px;
     padding-bottom: 5px;
   }
@@ -294,7 +307,7 @@
   }
 
   .k-discovery-info {
-    min-height: 96px;
+    min-height: 104px;
     padding: 8px 9px;
   }
 
@@ -302,7 +315,6 @@
     font-size: 12px;
   }
 
-  .k-discovery-subtitle,
   .k-discovery-status,
   .k-discovery-cta {
     font-size: 10px;

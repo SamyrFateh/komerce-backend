@@ -6,11 +6,10 @@
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Monter le rail « Près de vous » dans la home Boutique et déléguer l'exposition au backend.
  * @impact-areas  home, product-discovery, discovery-rail
- * @version       2026-08
+ * @version       2026-09
  */
 'use strict';
 
-import { requestDiscovery } from './discovery-actions.js';
 import { openModal } from './b-modal.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
@@ -50,43 +49,43 @@ async function refreshDiscoveryRail() {
   return renderDiscoveryRail(shell, cards, { marketLabel: getMarketLabel() });
 }
 
-function handleDiscoveryClick(event) {
-  // CTA button click — action directe
-  const button = event.target.closest('[data-discovery-action][data-discovery-ref]');
-  if (button && button.matches('button')) {
-    const kind = button.dataset.discoveryAction;
-    const ref = button.dataset.discoveryRef;
-    if (!kind || !ref) return;
-
-    if (kind === 'product') {
-      openModal(ref);
-      return;
-    }
-
-    requestDiscovery(kind, ref, button);
-    return;
-  }
-
-  // Card click (non-button) — all kinds open the same Komerce modal shell.
-  const card = event.target.closest('.k-discovery-card[data-discovery-kind][data-discovery-ref]');
-  if (!card) return;
-
-  const kind = card.dataset.discoveryKind;
-  const ref = card.dataset.discoveryRef;
-  if (!kind || !ref) return;
+/**
+ * Point d'entrée unique du détail Discovery.
+ * Product utilise le chemin PDC existant ; Service/Physical Offer chargent
+ * leur projection puis ouvrent le même shell #k-modal.
+ * Aucune Inquiry n'est créée depuis le rail : l'action métier finale vit
+ * exclusivement dans la fiche détaillée Komerce.
+ */
+async function openDiscoveryDetail(kind, ref) {
+  if (!kind || !ref) return false;
 
   if (kind === 'product') {
     openModal(ref);
-  } else if (kind === 'service' || kind === 'physical_offer') {
-    openCardDetail(kind, ref);
+    return true;
   }
-}
 
-async function openCardDetail(kind, ref) {
+  if (kind !== 'service' && kind !== 'physical_offer') return false;
+
   const fetcher = kind === 'service' ? fetchServiceCard : fetchPhysicalOfferCard;
   const detail = await fetcher(ref);
-  if (!detail) return;
+  if (!detail) return false;
+
   openModal(ref, { kind, detail });
+  return true;
+}
+
+function handleDiscoveryClick(event) {
+  const target = event.target.closest(
+    '[data-discovery-action][data-discovery-ref], .k-discovery-card[data-discovery-kind][data-discovery-ref]'
+  );
+  if (!target) return;
+
+  const isAction = target.matches('[data-discovery-action][data-discovery-ref]');
+  const kind = isAction ? target.dataset.discoveryAction : target.dataset.discoveryKind;
+  const ref = target.dataset.discoveryRef;
+  if (!kind || !ref) return;
+
+  openDiscoveryDetail(kind, ref);
 }
 
 export function setupDiscoveryRail() {
@@ -98,11 +97,10 @@ export function setupDiscoveryRail() {
 
   shell.addEventListener('click', handleDiscoveryClick);
 
-
   refreshDiscoveryRail().catch(() => {
     shell.innerHTML = '';
     shell.hidden = true;
   });
 }
 
-export { refreshDiscoveryRail };
+export { refreshDiscoveryRail, openDiscoveryDetail, handleDiscoveryClick };
