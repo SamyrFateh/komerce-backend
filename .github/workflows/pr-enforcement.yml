@@ -269,6 +269,10 @@ jobs:
         run: node scripts/feature-guard.js --strict
       - name: Business graph reconstructible and fresh
         run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+      - name: Business graph debt ratchet
+        run: npm run business-graph:ratchet-check
+      - name: Business graph dependency disposition
+        run: npm run business-graph:disposition-check
       - name: Feature 360 canonical projection fresh
         run: node scripts/feature-360-check.js
       - name: Agent remediation contract — all scopes
