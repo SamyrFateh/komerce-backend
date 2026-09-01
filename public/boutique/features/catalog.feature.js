@@ -28,12 +28,14 @@ module.exports = {
       'rendu des catégories, sections, favoris et cartes produit',
       'adaptations visuelles desktop de la découverte produit',
       'surface frontend du rail Discovery local, sans possession des vérités local-stock/providers-services/recommendations',
+      'contrat de présentation Discovery : géométrie commune de carte et entrée unique vers le détail Komerce',
     ],
     out: [
       'shell et layout globaux (platform-ops)',
       'panier personnel et commande (orders)',
       'classement produit backend (recommendations)',
       'autorisation d’exposition locale et cycle Inquiry (local-stock / providers-services / recommendations)',
+      'mutation Inquiry directement depuis une carte du rail — l action métier finale appartient au détail Komerce',
     ],
   },
 
@@ -134,8 +136,8 @@ module.exports = {
       'render-product-card.js / renderProductCard',
       'render-discovery-rail.js / renderDiscoveryRail',
       'b-modal-discovery-detail.js / setupDiscoveryModalDetail / renderDiscoveryModalDetail',
-      'discovery-actions.js / requestDiscovery — producteur unique discovery:request',
-      'discovery-rail.js / setupDiscoveryRail / refreshDiscoveryRail',
+      'discovery-actions.js / requestDiscovery — producteur unique discovery:request depuis le détail Komerce',
+      'discovery-rail.js / setupDiscoveryRail / refreshDiscoveryRail / openDiscoveryDetail — entrée unique du détail depuis carte ou CTA',
       'modal-selection-model.js / createModalSelection / selectModalOption',
     ],
     consumes: [
@@ -163,6 +165,9 @@ module.exports = {
     'la vue Favoris conserve sur desktop une composition intentionnelle pour les états vide et un seul produit',
     'le rail Discovery local est absent si aucune DiscoveryCard exposable n’est fournie ; aucune carte locale factice n’est reconstruite côté frontend',
     'le kind Discovery ne crée jamais une taxonomie ou une navigation client parallèle ; seuls subtitle et CTA portent la nuance',
+    'sur une même surface Discovery, Product, Physical Offer et Service partagent la même géométrie de carte ; les données optionnelles occupent des slots réservés et ne déplacent jamais le CTA',
+    'sur le rail Discovery, clic carte et CTA utilisent le même openDiscoveryDetail ; aucune Inquiry ni mutation métier ne part directement du rail',
     'Product, Physical Offer et Service utilisent le même shell #k-modal ; aucune seconde modale Discovery ne peut être créée',
+    'Acheter, Commander et Demander expriment l intention sur la carte ; la transaction ou demande finale est déclenchée depuis le détail Komerce selon le kind',
   ],
 };
