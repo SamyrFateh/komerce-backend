@@ -60,7 +60,7 @@ describe('productCard', () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
-      rows: [{ id: PRODUCT_ID, name: 'Climatiseur 12000 BTU', image_url: 'https://cdn/clim.jpg' }],
+      rows: [{ id: PRODUCT_ID, name: 'Climatiseur 12000 BTU', image_url: 'https://cdn/clim.jpg', price_kmf: 195000 }],
     });
 
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toEqual({
@@ -70,6 +70,10 @@ describe('productCard', () => {
       cta_label: 'Acheter',
       cta_action_ref: PRODUCT_ID,
       image_ref: 'https://cdn/clim.jpg',
+      price: 195000,
+      zone: null,
+      provider_name: null,
+      description: null,
     });
   });
 });
@@ -82,13 +86,16 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
     expect(mockGetPhysicalOffer).not.toHaveBeenCalled();
   });
 
-  it('projette image_ref depuis providers-services, jamais provider_id', async () => {
+  it('projette image_ref, zone, provider_name depuis providers-services, jamais provider_id', async () => {
     const c = loadComposer();
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
       id: OFFER_ID,
       provider_id: PROVIDER_ID,
       title: 'Samboussas mariage',
+      description: 'Plateau de 50 pièces',
+      zone: 'Moroni',
+      provider_name: 'Fatima Traiteur',
       image_ref: '/media/providers/samboussas.webp',
     });
 
@@ -100,6 +107,10 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
       cta_label: 'Commander',
       cta_action_ref: OFFER_ID,
       image_ref: '/media/providers/samboussas.webp',
+      price: null,
+      zone: 'Moroni',
+      provider_name: 'Fatima Traiteur',
+      description: 'Plateau de 50 pièces',
     });
     expect(card.provider_id).toBeUndefined();
   });
@@ -108,7 +119,10 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
     const c = loadComposer();
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({ id: OFFER_ID, title: 'Samboussas mariage' });
-    expect((await c.physicalOfferCard(OFFER_ID, MARKET_ID)).image_ref).toBeNull();
+    const card = await c.physicalOfferCard(OFFER_ID, MARKET_ID);
+    expect(card.image_ref).toBeNull();
+    expect(card.zone).toBeNull();
+    expect(card.provider_name).toBeNull();
   });
 });
 
@@ -120,7 +134,7 @@ describe('serviceCard', () => {
     expect(mockGetService).not.toHaveBeenCalled();
   });
 
-  it('projette image_ref depuis providers-services, jamais provider_id ni téléphone', async () => {
+  it('projette image_ref, zone, provider_name depuis providers-services, jamais provider_id ni téléphone', async () => {
     const c = loadComposer();
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
@@ -128,6 +142,9 @@ describe('serviceCard', () => {
       provider_id: PROVIDER_ID,
       phone: '+269000000000',
       title: 'Installation climatiseur',
+      description: 'Pose et mise en service',
+      zone: 'Mutsamudu',
+      provider_name: 'Bâtir Anjouan',
       image_ref: '/media/providers/installateur.webp',
     });
 
@@ -139,6 +156,10 @@ describe('serviceCard', () => {
       cta_label: 'Demander',
       cta_action_ref: SERVICE_ID,
       image_ref: '/media/providers/installateur.webp',
+      price: null,
+      zone: 'Mutsamudu',
+      provider_name: 'Bâtir Anjouan',
+      description: 'Pose et mise en service',
     });
     expect(card).not.toHaveProperty('provider_id');
     expect(card).not.toHaveProperty('phone');
@@ -163,16 +184,22 @@ describe('composeDiscoveryRail', () => {
     expect(await c.composeDiscoveryRail({ marketId: MARKET_ID, productIds: [PRODUCT_ID] })).toEqual([]);
   });
 
-  it('rail mixte conserve les trois verbes et les médias source', async () => {
+  it('rail mixte conserve les trois verbes, les médias source et les champs enrichis', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
-      rows: [{ id: PRODUCT_ID, name: 'Climatiseur', image_url: '/p.webp' }],
+      rows: [{ id: PRODUCT_ID, name: 'Climatiseur', image_url: '/p.webp', price_kmf: 195000 }],
     });
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
-    mockGetPhysicalOffer.mockResolvedValue({ id: OFFER_ID, title: 'Samboussas', image_ref: '/o.webp' });
+    mockGetPhysicalOffer.mockResolvedValue({
+      id: OFFER_ID, title: 'Samboussas', image_ref: '/o.webp',
+      zone: 'Moroni', provider_name: 'Fatima', description: 'Plateau',
+    });
     mockIsServiceExposable.mockResolvedValue(true);
-    mockGetService.mockResolvedValue({ id: SERVICE_ID, title: 'Plombier', image_ref: '/s.webp' });
+    mockGetService.mockResolvedValue({
+      id: SERVICE_ID, title: 'Plombier', image_ref: '/s.webp',
+      zone: 'Anjouan', provider_name: 'Ali', description: 'Dépannage',
+    });
 
     const rail = await c.composeDiscoveryRail({
       marketId: MARKET_ID,
@@ -192,5 +219,19 @@ describe('composeDiscoveryRail', () => {
       physical_offer: '/o.webp',
       service: '/s.webp',
     });
+
+    // Enriched fields
+    const product = rail.find(c => c.kind === 'product');
+    expect(product.price).toBe(195000);
+    expect(product.provider_name).toBeNull();
+
+    const offer = rail.find(c => c.kind === 'physical_offer');
+    expect(offer.zone).toBe('Moroni');
+    expect(offer.provider_name).toBe('Fatima');
+    expect(offer.description).toBe('Plateau');
+
+    const service = rail.find(c => c.kind === 'service');
+    expect(service.zone).toBe('Anjouan');
+    expect(service.provider_name).toBe('Ali');
   });
 });
