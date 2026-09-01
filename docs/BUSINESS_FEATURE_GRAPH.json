@@ -1232,28 +1232,28 @@
         "category": "services",
         "declared": "services/product-variant-service.js",
         "resolvedPath": "services/product-variant-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/product-sku-service.js",
         "resolvedPath": "services/product-sku-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/product-sellable-service.js",
         "resolvedPath": "services/product-sellable-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/product-stock-service.js",
         "resolvedPath": "services/product-stock-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -1330,28 +1330,28 @@
         "category": "services",
         "declared": "services/suppliers/pipeline-constants.js",
         "resolvedPath": "services/suppliers/pipeline-constants.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/suppliers/media-normalizer.js",
         "resolvedPath": "services/suppliers/media-normalizer.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/suppliers/promotion-classifier.js",
         "resolvedPath": "services/suppliers/promotion-classifier.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/suppliers/source-product-normalizer.js",
         "resolvedPath": "services/suppliers/source-product-normalizer.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -1869,7 +1869,7 @@
         "category": "boutique",
         "declared": "js/market-hydration.js",
         "resolvedPath": "public/boutique/js/market-hydration.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -7266,35 +7266,35 @@
         "category": "services",
         "declared": "services/pickup-secret-access-service.js",
         "resolvedPath": "services/pickup-secret-access-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/pickup-collection-service.js",
         "resolvedPath": "services/pickup-collection-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/pickup-collection-recorder.js",
         "resolvedPath": "services/pickup-collection-recorder.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/pickup-exceptional-collection-service.js",
         "resolvedPath": "services/pickup-exceptional-collection-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/pickup-code-helpers.js",
         "resolvedPath": "services/pickup-code-helpers.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -8295,28 +8295,28 @@
         "category": "services",
         "declared": "services/order-checkout-service.js",
         "resolvedPath": "services/order-checkout-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/order-checkout-item-resolution.js",
         "resolvedPath": "services/order-checkout-item-resolution.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/order-checkout-persistence.js",
         "resolvedPath": "services/order-checkout-persistence.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/order-post-commit-hooks.js",
         "resolvedPath": "services/order-post-commit-hooks.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -9275,14 +9275,14 @@
         "category": "boutique",
         "declared": "js/discovery-inquiry.js",
         "resolvedPath": "public/boutique/js/discovery-inquiry.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "providers-services",
         "category": "boutique",
         "declared": "js/providers-services-api.js",
         "resolvedPath": "public/boutique/js/providers-services-api.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "providers-services",
@@ -9464,7 +9464,7 @@
         "category": "services",
         "declared": "services/discovery-rail-service.js",
         "resolvedPath": "services/discovery-rail-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "recommendations",
@@ -31575,15 +31575,21 @@
       "resolution": "single-writer"
     }
   },
-  "orphanTechnicalNodes": [],
+  "orphanTechnicalNodes": [
+    "services/radar-alerts/cash-reconciliation-signals.js",
+    "services/radar-alerts/commerce-signals.js",
+    "services/radar-alerts/logistics-signals.js",
+    "services/radar-alerts/payment-signals.js",
+    "services/radar-alerts/treasury-signals.js"
+  ],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 365,
-        "technicalNodesOwned": 365,
-        "technicalOrphans": 0
+        "technicalNodesTotal": 388,
+        "technicalNodesOwned": 383,
+        "technicalOrphans": 5
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -31596,8 +31602,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 92,
-        "technicalNodesOwned": 92,
+        "technicalNodesTotal": 97,
+        "technicalNodesOwned": 97,
         "technicalOrphans": 0
       }
     },
@@ -31649,7 +31655,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 0
+      "technicalOrphansRemaining": 5
     }
   },
   "scopeTopology": {
@@ -31674,8 +31680,60 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/cash-reconciliation-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/cash-reconciliation-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/commerce-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/commerce-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/logistics-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/logistics-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/payment-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/payment-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/treasury-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/treasury-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      }
+    ],
+    "debt": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/cash-reconciliation-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/cash-reconciliation-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/commerce-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/commerce-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/logistics-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/logistics-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/payment-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/payment-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/radar-alerts/treasury-signals.js",
+        "msg": "nœud technique \"services/radar-alerts/treasury-signals.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -31901,11 +31959,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
+      "signals": 5,
+      "debt": 5,
       "expectedTopology": 32,
       "generatorLimitations": 12,
-      "classifiedCandidates": 44
+      "classifiedCandidates": 49
     }
   }
 }
