@@ -190,7 +190,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 31
 - internal APIs: 6
 - dependencies (consumes): 11 — notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth, orders
-- consumers: 16 — auth-identity, customs, documents, economic-engine, infrastructure, inventory, local-stock, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
+- consumers: 17 — auth-identity, customs, documents, economic-engine, infrastructure, inventory, local-stock, logistics, orders, platform-ops, providers-services, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
 
@@ -351,7 +351,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, market, infrastructure
-- consumers: 2 — orders, recommendations
+- consumers: 3 — orders, providers-services, recommendations
 
 ### logistics _(business-feature)_
 
@@ -491,7 +491,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 5 — auth, auth-identity, platform-ops, market, infrastructure
+- dependencies (consumes): 7 — auth, auth-identity, platform-ops, market, catalog, local-stock, infrastructure
 - consumers: 1 — recommendations
 
 ### purchasing _(business-feature)_
@@ -1530,6 +1530,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | providers-services | auth-identity (`auth-identity — requireIdentity() côté Boutique avant mutation`) | ✔ |
 | providers-services | platform-ops (`platform-ops — bus et showToast comme primitives UI transverses`) | ✔ |
 | providers-services | market (`market — référentiel markets, résolution code -> id côté serveur`) | ✔ |
+| providers-services | catalog (`catalog — Golden Product canonique utilisé par le seed Discovery staging via son owner officiel`) | ✔ |
+| providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
 | providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
 | purchasing | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1891,6 +1893,7 @@ Meta Graph monté : oui.
 | providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| providers-services | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1963,7 +1966,7 @@ Meta Graph monté : oui.
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
-- none
+- `providers-services` → `catalog` (déclaré : `catalog — Golden Product canonique utilisé par le seed Discovery staging via son owner officiel`)
 
 ### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)
 
