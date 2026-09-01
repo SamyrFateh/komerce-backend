@@ -47,7 +47,7 @@ describe('dashboard-pilotage-market', () => {
       .rejects.toThrow('dashboard_market_filter_not_server_bound');
   });
 
-  test('injecte le même scope marché dans toutes les métriques', async () => {
+  test('injecte le même scope marché et expose les destinations Canonical prouvées', async () => {
     const result = await pilotage.buildMarketPilotage(filters, market);
 
     for (const name of mockMetricNames) {
@@ -64,6 +64,20 @@ describe('dashboard-pilotage-market', () => {
     expect(result.data_quality.filters.market_id).toBeUndefined();
     expect(result.kpis_global).toHaveLength(5);
     expect(result.view_blocks).toHaveLength(3);
+    expect(result.view_blocks.map(block => block.url)).toEqual([
+      '/admin/pilotage',
+      '/admin/costing',
+      '/admin/operations',
+    ]);
+    expect(result.economic_flow.stages.map(stage => stage.url)).toEqual([
+      '/admin/workspaces/pricing',
+      '/admin/operations',
+      '/admin/operations?payment_status=paid',
+      '/admin/operations?parcel_status=in_transit',
+      '/admin/costing',
+      '/admin/costing?cost_status=actual',
+      '/admin/costing/recalibration',
+    ]);
   });
 
   test('les top alerts utilisent une preuve de rattachement marché paramétrée', async () => {
