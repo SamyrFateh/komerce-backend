@@ -46,6 +46,15 @@ jest.mock('../../services/cost-component-admin-service', () => ({
   toggleComponent: (...args) => mockToggleComponent(...args),
 }));
 
+const mockEconomicExecutive = jest.fn();
+const mockEconomicVariables = jest.fn();
+const mockEconomicCharges = jest.fn();
+jest.mock('../../services/economic-engine-queries', () => ({
+  buildExecutiveSummary: (...args) => mockEconomicExecutive(...args),
+  getVariables: (...args) => mockEconomicVariables(...args),
+  getCharges: (...args) => mockEconomicCharges(...args),
+}));
+
 const workspace = require('../../services/pricing-workspace');
 
 beforeEach(() => {
@@ -53,6 +62,9 @@ beforeEach(() => {
   mockRates.mockResolvedValue({ eur_kmf: 492, aed_kmf: 138 });
   mockListComponents.mockResolvedValue({ components: [], grouped: {}, count: 0 });
   mockRecommendBatch.mockResolvedValue({ items: [] });
+  mockEconomicExecutive.mockResolvedValue({ status: 'stable', kpis: [], internal_id: 'hidden-exec' });
+  mockEconomicVariables.mockResolvedValue({ categories: {}, source_of_truth: 'finance_config' });
+  mockEconomicCharges.mockResolvedValue({ families: {}, totals: {} });
 });
 
 test('product_ref est résolu côté serveur', async () => {
@@ -96,4 +108,25 @@ test('stripInternalIds retire les identifiants internes récursivement', () => {
     id: 'x', product_id: 'p', competitor_id: 'c', keep: 1,
     nested: { component_id: 'cc', label: 'ok' },
   })).toEqual({ keep: 1, nested: { label: 'ok' } });
+});
+
+
+test('workspace absorbe la vérité économique globale sans exposer les ids internes', async () => {
+  mockQuery.mockImplementation(async sql => {
+    const source = String(sql);
+    if (source.includes('FROM products')) return { rows: [] };
+    if (source.includes('FROM competitor_prices')) return { rows: [{ count: 0 }] };
+    return { rows: [] };
+  });
+  mockEconomicExecutive.mockResolvedValueOnce({ status: 'surveiller', kpis: [{ key: 'seuil_rentabilite', value: 42000, unit: 'KMF' }], internal_id: 'exec-internal' });
+  mockEconomicVariables.mockResolvedValueOnce({ categories: { pricing: { label: 'Pricing', variables: [{ id: 'var-internal', key: 'target_basket', value_used: 50000, unit: 'KMF' }] } } });
+  mockEconomicCharges.mockResolvedValueOnce({ families: { operationnelle: { label: 'Opérationnelle', charges: [{ id: 'charge-internal', name: 'Hub Dubai', amount_kmf: 400, is_active: true }] } } });
+
+  const result = await workspace.buildWorkspace();
+
+  expect(mockEconomicExecutive).toHaveBeenCalledTimes(1);
+  expect(mockEconomicVariables).toHaveBeenCalledTimes(1);
+  expect(mockEconomicCharges).toHaveBeenCalledTimes(1);
+  expect(result.economic).toMatchObject({ scope: 'global_pricing', source_of_truth: 'economic-engine', executive: { status: 'surveiller' } });
+  expect(JSON.stringify(result.economic)).not.toMatch(/exec-internal|var-internal|charge-internal/);
 });

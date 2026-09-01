@@ -38,6 +38,7 @@ test('URL Pricing et anciens points d?entr?e convergent vers Canonical avec roll
     '/admin/pricing-workshop',
     '/admin/pricing-strategy',
     '/admin/economic-flow',
+    '/admin/economic',
   ]) {
     const canonicalAliasRes = fakeRes();
     app._routes[routePath]({ query: {} }, canonicalAliasRes);
@@ -70,7 +71,11 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
   expect(source).not.toMatch(/\b(?:PricingView|PricingWorkshopView|PricingStrategyView|EconomicFlowView|SimulatorView|ApiClient|KmcApi)\b/);
   expect(source).not.toContain("'/api/pricing");
   expect(source).not.toContain('/api/admin/cost-components');
+  expect(source).not.toContain('/api/admin/economic');
   expect(source).toContain('/api/admin/workspaces/pricing');
+  expect(source).toContain('Santé économique globale');
+  expect(source).toContain('Variables économiques');
+  expect(source).toContain('Charges économiques');
 });
 
 test('Pricing Canonical est global et utilise uniquement refs métier navigateur', () => {
@@ -92,4 +97,18 @@ test('service délègue aux autorités pricing existantes', () => {
   expect(source).toContain("require('./pricing-apply')");
   expect(source).toContain("require('./pricing-strategy-service')");
   expect(source).toContain("require('./cost-component-admin-service')");
+  expect(source).toContain("require('./economic-engine-queries')");
+});
+
+test('Pilotage Financier converge vers Finance avec rollback Legacy explicite', () => {
+  const app = fakeApp();
+  mountHtmlRoutes(app, ROOT);
+
+  const canonicalRes = fakeRes();
+  app._routes['/admin/pilotage-fin']({ query: {} }, canonicalRes);
+  expect(canonicalRes.redirect).toHaveBeenCalledWith(302, '/admin/finance');
+
+  const legacyRes = fakeRes();
+  app._routes['/admin/pilotage-fin']({ query: { legacy: '1' } }, legacyRes);
+  expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
 });

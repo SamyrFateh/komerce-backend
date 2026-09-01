@@ -5,10 +5,10 @@
  * @layer         service
  * @criticality   high
  * @inputs        product_ref, competitor_ref, cost_component_key, simulation_payload, actor
- * @outputs       canonical_pricing_projection, delegated_mutation_results
- * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js
+ * @outputs       canonical_pricing_projection, global_economic_projection, delegated_mutation_results
+ * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js, services/economic-engine-queries.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       products, competitor_prices
+ * @db-read       products, competitor_prices, charges, economic_variables, economic_snapshots, finance_config
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only
@@ -25,6 +25,7 @@ const pricingRates = require('./pricing-rates');
 const pricingApply = require('./pricing-apply');
 const strategyService = require('./pricing-strategy-service');
 const costComponents = require('./cost-component-admin-service');
+const economicQueries = require('./economic-engine-queries');
 
 class PricingWorkspaceError extends Error {
   constructor(status, message, code = null) {
@@ -95,7 +96,15 @@ function publicProduct(product) {
 }
 
 async function buildWorkspace() {
-  const [productRes, componentProjection, rates, competitorCountRes] = await Promise.all([
+  const [
+    productRes,
+    componentProjection,
+    rates,
+    competitorCountRes,
+    economicExecutive,
+    economicVariables,
+    economicCharges,
+  ] = await Promise.all([
     db.query(
       `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, is_active
          FROM products
@@ -105,6 +114,9 @@ async function buildWorkspace() {
     costComponents.listComponents({}),
     pricingRates.getCurrentRates().catch(() => null),
     db.query('SELECT COUNT(*)::int AS count FROM competitor_prices WHERE is_active = TRUE'),
+    economicQueries.buildExecutiveSummary().catch(() => null),
+    economicQueries.getVariables().catch(() => null),
+    economicQueries.getCharges().catch(() => null),
   ]);
 
   let recommendations = [];
@@ -136,6 +148,13 @@ async function buildWorkspace() {
     cost_components: components,
     cost_meta: costComponents.META,
     rates: stripInternalIds(rates),
+    economic: stripInternalIds({
+      scope: 'global_pricing',
+      source_of_truth: 'economic-engine',
+      executive: economicExecutive,
+      variables: economicVariables,
+      charges: economicCharges,
+    }),
   };
 }
 
