@@ -1,4 +1,4 @@
-name: Feature 360 refresh one-shot
+name: Governance projections refresh one-shot
 
 on:
   push:
@@ -21,20 +21,35 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Regenerate Feature 360 canonical projection
+      - name: Keep only the observed cross-feature dependency
         run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'features/providers-services.feature.js';
+          let s = fs.readFileSync(file, 'utf8');
+          s = s.replace("      'catalog — Golden Product canonique utilisé par le seed Discovery staging via son owner officiel',\n", '');
+          if (!s.includes("'local-stock — déclaration et exposition du stock local Product Komerce")) {
+            throw new Error('local-stock declared dependency missing');
+          }
+          fs.writeFileSync(file, s);
+          NODE
+
+      - name: Regenerate governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
           node scripts/gen-feature-360.js
           node scripts/feature-360-check.js
           git diff --check
 
-      - name: Commit regenerated Feature 360
+      - name: Commit regenerated canonical projections
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/FEATURE_360.json docs/FEATURE_360.md
+          git add features/providers-services.feature.js docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md
           if git diff --cached --quiet; then
-            echo "No Feature 360 drift to commit."
+            echo "No governance drift to commit."
             exit 0
           fi
-          git commit -m "fix(governance): refresh Feature 360 projection"
+          git commit -m "fix(governance): align Discovery dependency projections"
           git push origin HEAD:feat/discovery-product-staging
