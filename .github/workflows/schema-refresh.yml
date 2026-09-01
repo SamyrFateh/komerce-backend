@@ -115,14 +115,75 @@ jobs:
           fi
           exit 0
 
-      - name: Promote SCHEMA.md + reconcile architecture
+      # ── A. SCHEMA TRUTH — bloquant ──────────────────────────
+      # Ces étapes constituent la frontière fail-closed qui interdit
+      # la fiction documentaire. Jamais de continue-on-error ici.
+      - name: Promote SCHEMA.md (schema truth)
         if: steps.snapshot.outputs.success == 'true'
         run: |
           node scripts/schema-promote-all.js --write
-          npm run arch:reconcile:write
-          npm run arch:gate
           node scripts/schema-promote-all.js --check
           git diff --check
+
+      # ── B. ARCHITECTURE VALIDATION — non bloquant pour le snapshot ─
+      # Un défaut d'architecture (header manquant, sous-déclaration SQL)
+      # ne doit plus empêcher la publication de la vérité Railway.
+      # Le step reste visible comme failure/warning dans le run.
+      - name: Architecture gate (reconcile + check)
+        id: arch_gate
+        if: steps.snapshot.outputs.success == 'true'
+        continue-on-error: true
+        run: |
+          npm run arch:reconcile:write
+          npm run arch:gate
+
+      - name: Open/update architecture gate alert
+        if: steps.arch_gate.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'architecture-gate-alert';
+            const title = '🏗️ Architecture gate rouge dans schema-refresh';
+            try {
+              await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: label });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: label, color: 'D93F0B',
+                description: 'arch:gate a échoué dans le workflow schema-refresh (snapshot Railway synchronisé quand même)',
+              }).catch(() => {});
+            }
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const openIssue = existing.find(i => !i.pull_request);
+            const body = [
+              `\`arch:gate\` a échoué dans le workflow \`schema-refresh\`.`,
+              ``,
+              `Le snapshot Railway a **quand même été synchronisé** — la vérité DB n'est pas bloquée.`,
+              `L'architecture applicative doit être corrigée indépendamment.`,
+              ``,
+              `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Commit : ${context.sha}`,
+              ``,
+              `Action : corriger les sous-déclarations \`@db-read\`/\`@db-write\` signalées par \`npm run arch:gate\`, puis relancer.`,
+            ].join('\n');
+
+            if (openIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: openIssue.number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: [label],
+              });
+            }
 
       - name: Open/update Railway deployment lag alert
         if: steps.snapshot.outputs.deploy_lag == 'true'
