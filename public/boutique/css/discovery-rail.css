@@ -187,6 +187,20 @@
   transform: scale(.98);
 }
 
+/* ── CTA differentiation by kind ──────────────────────────────────── */
+
+.k-discovery-card[data-discovery-kind="physical_offer"] .k-discovery-cta {
+  background: var(--terracotta-bg);
+  color: var(--terracotta-dark);
+  border-color: var(--border-terra-22);
+}
+
+.k-discovery-card[data-discovery-kind="service"] .k-discovery-cta {
+  background: var(--cta-green-10);
+  color: var(--cta-green);
+  border-color: var(--border-sage-22);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .k-discovery-card:hover {
     transform: translateY(-2px);
@@ -225,78 +239,30 @@
     display: none;
   }
 
-  /* ── 75/25 composition: commerce left + services right ── */
-  .k-discovery-composition {
-    display: grid;
-    grid-template-columns: 1fr 260px;
-    gap: 16px;
-    overflow: visible;
-  }
-
-  .k-discovery-zone-commerce {
-    display: flex;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .k-discovery-zone-services {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  /* Commerce cards: compact, fill available space */
-  .k-discovery-zone-commerce > .k-discovery-card {
+  .k-discovery-card {
     flex: 1 1 0;
     min-width: 0;
-    max-width: none;
-  }
-
-  /* Service cards: full width of service zone, text-oriented */
-  .k-discovery-zone-services > .k-discovery-card {
-    flex: none;
-    width: 100%;
-  }
-
-  .k-discovery-zone-services > .k-discovery-card .k-discovery-media {
-    height: 90px;
-  }
-
-  .k-discovery-zone-services > .k-discovery-card .k-discovery-info {
-    min-height: 80px;
-    padding: 8px 10px;
-  }
-
-  /* Fallback: non-composition rail (when only one kind exists) */
-  .k-discovery-rail:not(.k-discovery-composition) {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .k-discovery-card {
-    flex: 1 0 160px;
-    max-width: 280px;
+    max-width: 220px;
   }
 
   .k-discovery-media {
-    height: 156px;
+    height: 130px;
     aspect-ratio: auto;
   }
 
   .k-discovery-info {
-    min-height: 104px;
-    padding: 10px;
+    min-height: 96px;
+    padding: 8px 9px;
   }
 
   .k-discovery-name {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .k-discovery-subtitle,
   .k-discovery-status,
   .k-discovery-cta {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 
