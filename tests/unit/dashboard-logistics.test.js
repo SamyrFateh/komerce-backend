@@ -27,12 +27,12 @@ describe('dashboard-metrics/logistics', () => {
     expect(result.delta).toMatchObject({ value: 50, direction: 'up', vs_period: 'hier' });
   });
 
-  it('getPaiementsEnAttente applique les filtres et drilldown', async () => {
+  it('getPaiementsEnAttente applique les filtres et drilldown Canonical', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '5' }] });
 
     const result = await logistics.getPaiementsEnAttente({ relais_id: 'r1' });
 
-    expect(result).toMatchObject({ key: 'paiements_en_attente', value: 5, drill_to: '/admin/orders-logistics?payment_status=pending' });
+    expect(result).toMatchObject({ key: 'paiements_en_attente', value: 5, drill_to: '/admin/operations?payment_status=pending' });
     expect(db.query.mock.calls[0][1]).toEqual(['r1']);
   });
 
@@ -51,12 +51,12 @@ describe('dashboard-metrics/logistics', () => {
     expect(getColisEnTransit).toHaveBeenCalledWith({ status: 'available' });
   });
 
-  it('getDisponiblesRelais retourne le drilldown disponible', async () => {
+  it('getDisponiblesRelais retourne le drilldown Canonical disponible', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '9' }] });
 
     const result = await logistics.getDisponiblesRelais();
 
-    expect(result).toMatchObject({ key: 'disponibles_relais', value: 9, drill_to: '/admin/orders-logistics?parcel_status=available' });
+    expect(result).toMatchObject({ key: 'disponibles_relais', value: 9, drill_to: '/admin/operations?parcel_status=available' });
   });
 
   it('getRetardsCritiques ajoute un warning si retard present', async () => {

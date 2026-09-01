@@ -79,6 +79,7 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee',
     ]);
+    expect(result.kpis[2].drill_to).toBe('/admin/operations?payment_status=paid');
     expect(result.kpis[3].unit).toBe('KMF');
     expect(result.top_products[0]).toEqual({
       name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,

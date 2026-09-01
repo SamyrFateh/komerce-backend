@@ -1,13 +1,13 @@
 # DASHBOARD CUTOVER 2 — contrat de bascule Canonical
 
 **Statut :** cutover contrôlé, additif, réversible.  
-**Date :** 2026-08.
+**Date :** 2026-09.
 
 ## Objectif
 
 Faire de `public/dashboards/canonical/**` le runtime courant des quatre dashboards déjà reconstruits et prouvés, sans supprimer les capacités Legacy 1 qui n'ont pas encore d'équivalent Canonical.
 
-Le cutover ne change aucune autorité métier, aucun calcul économique et aucun MarketScope. Il change uniquement la résolution des routes HTML d'administration.
+Le cutover ne change aucune autorité métier, aucun calcul économique et aucun MarketScope. Il change uniquement la résolution des routes HTML d'administration et les destinations de navigation déjà prouvées.
 
 ## Routes stables Canonical
 
@@ -129,6 +129,31 @@ Chaque ancien pathname accepte encore `?legacy=1` pour servir Legacy 1 pendant l
 
 LOT 4P ne bascule pas `/admin/economic` ni `/admin/pilotage-fin`. Ces vues historiques restent Legacy jusqu’à un audit séparé de leurs besoins par rapport au Dashboard Finance et aux Workspaces existants.
 
+## Extension LOT 4Q — convergence Control Tower
+
+`ControlTowerView` est une surface de lecture. Ses besoins légitimes sont déjà répartis entre Pilotage, Opérations et Action Center ; elle ne justifie donc plus une destination produit autonome.
+
+| Ancien point d’entrée | Destination Canonical |
+|---|---|
+| `/admin/control-tower` | `/admin/pilotage` |
+
+`/admin/control-tower?legacy=1` conserve le témoin Legacy 1 pendant la fenêtre de rollback. L’ancien `/control-tower.html` garde son mécanisme de dépréciation existant.
+
+## Normalisation des destinations internes
+
+Une surface Canonical ne doit pas renvoyer normalement vers une URL déjà cutover. Les projections et métriques utilisent donc directement les destinations stables suivantes :
+
+- commandes / logistique → `/admin/operations` ;
+- alertes critiques → `/admin/action-center` ;
+- pricing → `/admin/workspaces/pricing` ;
+- Control Tower → `/admin/pilotage`.
+
+Les query strings de contexte peuvent être conservées pour exprimer le drill demandé, même si une surface Canonical ne les exploite pas encore toutes.
+
+Cette normalisation ne masque pas les besoins encore incomplets. Les destinations `costing`, `economic`, `pilotage-fin` et `recalibration` restent Legacy tant que Finance/Pricing Canonical n’ont pas prouvé leur couverture fonctionnelle complète.
+
+Dans Pilotage Canonical, la table « Chaîne économique » n’affiche plus des pathnames techniques ; elle affiche la destination fonctionnelle (`Pricing`, `Opérations`, `Finance`). Les liens d’alertes reçus du backend sont normalisés vers leur destination Canonical lorsqu’un cutover est déjà prouvé.
+
 ## Migration additive
 
 Le cutover ne détourne pas les routes correspondant à des capacités non encore reconstruites, notamment :
@@ -137,6 +162,7 @@ Le cutover ne détourne pas les routes correspondant à des capacités non encor
 - Douane
 - Partenaires multi-familles / Suppliers
 - Economique / Pilotage financier historique
+- Costing détaillé / recalibrage
 - Paramètres
 
 Ces URLs continuent de servir Legacy 1 jusqu'à preuve de remplacement par un Workspace, un Entity 360, l'Action Center ou une autre surface Canonical autorisée par la doctrine.
@@ -160,6 +186,8 @@ Avant merge :
 - `/admin/pilotage?legacy=1` sert Legacy 1 ;
 - les anciennes routes Opérations convergent, avec `?legacy=1` comme rollback ;
 - les anciennes routes Accounting/Invoices convergent vers le Workspace Comptabilité, avec `?legacy=1` comme rollback ;
+- `/admin/control-tower` converge vers Pilotage et `?legacy=1` garde le témoin ;
+- les métriques/drills déjà cutover ne ciblent plus `orders-logistics`, `alerts` ou `pricing` Legacy ;
 - une route non reconstruite telle que `/admin/customs` reste Legacy 1 ;
 - `surfaceForPath()` résout les quatre URLs stables ;
 - Canonical reste sans import de `admin/**` ou `admin-legacy/**` ;
@@ -167,4 +195,4 @@ Avant merge :
 
 ## Après cutover
 
-La séquence doctrine reprend avec les surfaces d'action et d'investigation : Entity 360, Workspaces et Action Center. La purge de Legacy 1 reste interdite tant que ces besoins ne sont pas prouvés remplacés.
+La séquence doctrine reprend avec la couverture fonctionnelle manquante des surfaces encore Legacy, en priorité Finance (`EconomicView`, `CostingView`, `PilotageFinView`) et Commerce (`SalesView`). La purge de Legacy 1 reste interdite tant que ces besoins ne sont pas prouvés remplacés.

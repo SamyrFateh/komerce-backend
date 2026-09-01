@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority
  * @impact-areas  admin-dashboard, commerce, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -61,7 +61,7 @@ async function getPanierMoyen(filters) {
   return makeKpi('panier_moyen', 'Panier moyen encaissé', value, 'KMF', {
     itemsTotal,
     itemsWithData: itemsTotal,
-    drillTo: '/admin/orders-logistics?payment_status=paid',
+    drillTo: '/admin/operations?payment_status=paid',
   });
 }
 

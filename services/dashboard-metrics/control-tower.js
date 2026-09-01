@@ -13,7 +13,7 @@
  * @db-txn        @none
  * @doctrine      server_market_scope_is_authority
  * @impact-areas  dashboard, admin-dashboard
- * @version       2026-08
+ * @version       2026-09
  */
 
 /**
@@ -83,7 +83,7 @@ async function getCmdsCreees(filters = {}) {
 
   return makeKpi('cmds_creees', 'Commandes créées', value, 'count', {
     delta,
-    drillTo: '/admin/orders-logistics',
+    drillTo: '/admin/operations',
   });
 }
 
@@ -99,7 +99,7 @@ async function getCmdsActives(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_actives', 'Commandes actives', value, 'count', {
-    drillTo: '/admin/orders-logistics?status=active',
+    drillTo: '/admin/operations?status=active',
   });
 }
 
@@ -116,7 +116,7 @@ async function getColisEnTransit(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('colis_transit', 'Colis en transit', value, 'count', {
-    drillTo: '/admin/orders-logistics?parcel_status=in_transit',
+    drillTo: '/admin/operations?parcel_status=in_transit',
   });
 }
 
@@ -149,7 +149,7 @@ async function getAlertesCritiques(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('alertes_critiques', 'Alertes critiques', value, 'count', {
-    drillTo: '/admin/signals?severity=critical',
+    drillTo: '/admin/action-center?severity=critical',
     warning: value > 10 ? 'Beaucoup de signaux non resolus' : null,
   });
 }
@@ -168,7 +168,7 @@ async function getCmdsBloquees(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_bloquees', 'Commandes bloquées', value, 'count', {
-    drillTo: '/admin/orders-logistics?anomalie=stock_blocked',
+    drillTo: '/admin/operations?anomalie=stock_blocked',
     warning: value > 0 ? `${value} commande(s) payée(s) sans stock` : null,
   });
 }

@@ -20,7 +20,13 @@ function payloadFixture() {
       { key: 'taux_completude_couts', value: 75, unit: '%', data_quality: {} },
     ],
     system_alerts: [
-      { level: 'urgent', source: 'orders', message: 'Deux commandes bloquées' },
+      {
+        level: 'urgent',
+        source: 'orders',
+        message: 'Deux commandes bloquées',
+        action_url: '/admin/alerts?severity=critical',
+        action_label: 'Voir les alertes',
+      },
     ],
     view_blocks: [
       {
@@ -30,7 +36,7 @@ function payloadFixture() {
       },
     ],
     economic_flow: {
-      stages: [{ label: 'Commande', url: '/admin/orders-logistics' }],
+      stages: [{ key: 'order', label: 'Commande', url: '/admin/orders-logistics' }],
     },
   };
 }
@@ -65,9 +71,25 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     expect(schema.id).toBe('pilotage');
     expect(schema.metrics.source).toBe('pilotage.metrics');
     expect(schema.sections.map(section => section.source)).toEqual(['pilotage.views', 'pilotage.flow']);
+    expect(schema.sections[1].columns[1].label).toBe('Destination');
   });
 
-  test('projette /unified sans recalcul métier', () => {
+  test('normalise seulement les anciennes destinations déjà cutover', () => {
+    expect(pilotage.canonicalAdminHref('/admin/orders-logistics?status=active'))
+      .toBe('/admin/operations?status=active');
+    expect(pilotage.canonicalAdminHref('/admin/pricing-strategy'))
+      .toBe('/admin/workspaces/pricing');
+    expect(pilotage.canonicalAdminHref('/admin/alerts?severity=critical'))
+      .toBe('/admin/action-center?severity=critical');
+    expect(pilotage.canonicalAdminHref('/admin/control-tower'))
+      .toBe('/admin/pilotage');
+    expect(pilotage.canonicalAdminHref('/admin/costing?cost_status=actual'))
+      .toBe('/admin/costing?cost_status=actual');
+    expect(pilotage.canonicalAdminHref('/admin/products/PRD-42'))
+      .toBe('/admin/products/PRD-42');
+  });
+
+  test('projette /unified sans recalcul métier ni URL legacy brute dans la chaîne économique', () => {
     const sources = pilotage.resolveSources(payloadFixture());
 
     expect(sources['pilotage.metrics']['ca-encaisse'].value).toContain('KMF');
@@ -77,6 +99,8 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       level: 'critical',
       title: 'orders',
       message: 'Deux commandes bloquées',
+      href: '/admin/action-center?severity=critical',
+      actionLabel: 'Voir les alertes',
     }));
     expect(sources['pilotage.views'][0]).toEqual({
       vue: 'Tour de contrôle',
@@ -85,7 +109,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     });
     expect(sources['pilotage.flow'][0]).toEqual({
       etape: 'Commande',
-      destination: '/admin/orders-logistics',
+      destination: 'Opérations',
     });
   });
 
