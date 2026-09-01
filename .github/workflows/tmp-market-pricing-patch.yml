@@ -39,6 +39,11 @@ jobs:
               ("  role = 'market_operator';", "  mockRole = 'market_operator';"),
               ("  authorized = new Set(['market-cm']);", "  mockAuthorized = new Set(['market-cm']);"),
               ("  centralPricing = false;", "  mockCentralPricing = false;"),
+              ("const workspace = {\n  PricingWorkspaceError", "const mockWorkspace = {\n  PricingWorkspaceError"),
+              ("jest.mock('../../services/pricing-workspace', () => workspace);", "jest.mock('../../services/pricing-workspace', () => mockWorkspace);"),
+              ("expect(workspace.buildMarketWorkspace)", "expect(mockWorkspace.buildMarketWorkspace)"),
+              ("expect(workspace.updateMarketCostComponent)", "expect(mockWorkspace.updateMarketCostComponent)"),
+              ("expect(workspace.buildWorkspace)", "expect(mockWorkspace.buildWorkspace)"),
           ]
           for old, new in replacements:
               if old not in s:
