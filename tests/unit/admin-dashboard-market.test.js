@@ -163,6 +163,22 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(mockQuery).not.toHaveBeenCalled();
   });
 
+  test('market_operator CM lit son cockpit CM mais ne peut pas lire CG', async () => {
+    mockCurrentUser = { id: 'partner-cm-1', role: 'market_operator' };
+    mockAllowedMarkets = new Set(['market-cm-id']);
+    mockGlobalAllowed = false;
+
+    const contextRes = await request(makeApp()).get('/api/admin/dashboard/context');
+    const cmRes = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
+    const cgRes = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
+
+    expect(contextRes.status).toBe(200);
+    expect(contextRes.body.actor.role).toBe('market_operator');
+    expect(cmRes.status).toBe(200);
+    expect(cgRes.status).toBe(403);
+    expect(cgRes.body.code).toBe('market_scope_denied');
+  });
+
   test('market_id en query est refusé avant toute résolution et ne peut jamais autoriser', async () => {
     const res = await request(makeApp())
       .get('/api/admin/dashboard/unified/market/CM?market_id=market-cg-id');

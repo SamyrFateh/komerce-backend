@@ -143,3 +143,15 @@ Pilotage ne charge donc jamais l'agrégat global pour ensuite filtrer côté nav
 - aucun import legacy dans `canonical/**`.
 
 Le premier Pilotage Canonical possède désormais une chaîne d'autorité complète du serveur jusqu'au renderer. Le prochain lot peut ajouter la **sélection de marché visible dans l'UI pour le contexte global/multi-market**, sans modifier la frontière de sécurité.
+
+## LOT 4U — opérateur partenaire pays
+
+Le rôle `market_operator` est le rôle de lecture du cockpit partenaire pays. Le rôle seul ne donne aucun accès : un grant actif `operator_market_scopes` reste obligatoire.
+
+- `market_operator` peut résoudre `/api/admin/dashboard/context` ;
+- il peut lire Pilotage, Commerce, Opérations et Finance uniquement via les routes `/market/:marketCode` ;
+- il ne peut jamais atteindre les agrégats globaux, qui restent `admin` + `dashboard_global_access_grants` ;
+- Cameroun (`CM`) et Congo (`CG`) sont donc isolés par le scope serveur, indépendamment de toute sélection navigateur.
+
+Les workspaces de mutation restent hors de ce rôle dans ce lot.
+
