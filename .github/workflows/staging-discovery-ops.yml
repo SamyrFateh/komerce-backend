@@ -20,7 +20,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: komerce-staging-${{ github.event_name == 'workflow_dispatch' && inputs.operation || github.event.issue.title }}
+  group: komerce-staging-v2-${{ github.event_name == 'workflow_dispatch' && inputs.operation || github.event.issue.title }}
   cancel-in-progress: false
 
 jobs:
@@ -34,15 +34,17 @@ jobs:
         github.event.issue.title == '[staging-op] discovery-seed' ||
         github.event.issue.title == '[staging-op] discovery-check'))
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     env:
       KOMERCE_ENV: staging
+      NODE_ENV: test
       DISCOVERY_STAGING_SEED_ENABLED: 'true'
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
       RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
       RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_GRAPHQL_URL: 'https://backboard.railway.com/graphql/v2'
 
     steps:
       - name: Resolve bounded operation
@@ -54,7 +56,7 @@ jobs:
           DISPATCH_OPERATION: ${{ inputs.operation || '' }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ]; then
             operation="$DISPATCH_OPERATION"
           else
             case "$ISSUE_TITLE" in
@@ -80,12 +82,13 @@ jobs:
           fetch-depth: 1
 
       - name: Set up Node
+        if: steps.operation.outputs.operation != 'railway-check'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
 
-      - name: Verify direct Railway staging access
+      - name: Verify Railway staging project token
         if: steps.operation.outputs.operation == 'railway-check' || steps.operation.outputs.operation == 'discovery-seed'
         id: railway_access
         shell: bash
@@ -96,26 +99,36 @@ jobs:
             exit 1
           fi
 
-          npm install --global @railway/cli
+          response="$RUNNER_TEMP/railway-project-token.json"
+          payload='{"query":"query { projectToken { projectId environmentId } }"}'
+          http_code="$(curl --silent --show-error \
+            --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
 
-          railway link \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            --json >/dev/null
+          if [ "$http_code" != '200' ]; then
+            echo "::error::Railway API HTTP $http_code"
+            exit 1
+          fi
+          if jq -e '.errors and (.errors | length > 0)' "$response" >/dev/null; then
+            echo '::error::Railway API a refusé le project token'
+            jq -c '.errors | map({message})' "$response"
+            exit 1
+          fi
 
-          railway status --json > "$RUNNER_TEMP/railway-status.json"
-          railway service status \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            --json > "$RUNNER_TEMP/railway-service-status.json"
+          project_id="$(jq -r '.data.projectToken.projectId // empty' "$response")"
+          environment_id="$(jq -r '.data.projectToken.environmentId // empty' "$response")"
+          if [ "$project_id" != "$RAILWAY_PROJECT_ID" ] || [ "$environment_id" != "$RAILWAY_ENVIRONMENT_ID" ]; then
+            echo '::error::Le token ne cible pas la staging Komerce attendue'
+            exit 1
+          fi
 
           echo 'railway_access=ok' >> "$GITHUB_OUTPUT"
-          echo 'Railway staging target resolved successfully.'
-          echo "Project: $RAILWAY_PROJECT_ID"
-          echo "Environment: $RAILWAY_ENVIRONMENT_ID"
-          echo "Service: $RAILWAY_SERVICE_ID"
+          echo 'Railway staging project token authenticated and correctly scoped.'
 
       - name: Install application dependencies
         if: steps.operation.outputs.operation != 'railway-check'
@@ -137,7 +150,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          output="$(node scripts/seed-discovery-staging.js)"
+          output="$(timeout 90s node scripts/seed-discovery-staging.js)"
           printf '%s\n' "$output"
 
           candidates="$(printf '%s\n' "$output" | sed -n 's/^DISCOVERY_RAIL_CANDIDATES=//p' | tail -n 1)"
@@ -155,7 +168,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node - <<'NODE'
+          timeout 45s node - <<'NODE'
           const db = require('./db');
 
           async function main() {
@@ -202,7 +215,7 @@ jobs:
             .finally(() => db.pool.end());
           NODE
 
-      - name: Sync rail variables to Railway staging
+      - name: Sync Discovery rail variables through Railway API
         if: steps.operation.outputs.operation == 'discovery-seed'
         id: railway
         shell: bash
@@ -210,16 +223,48 @@ jobs:
           CANDIDATES: ${{ steps.seed.outputs.candidates }}
         run: |
           set -euo pipefail
+          response="$RUNNER_TEMP/railway-variable-upsert.json"
+          payload="$(jq -n \
+            --arg projectId "$RAILWAY_PROJECT_ID" \
+            --arg environmentId "$RAILWAY_ENVIRONMENT_ID" \
+            --arg serviceId "$RAILWAY_SERVICE_ID" \
+            --arg candidates "$CANDIDATES" \
+            '{
+              query: "mutation variableCollectionUpsert($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
+              variables: {
+                input: {
+                  projectId: $projectId,
+                  environmentId: $environmentId,
+                  serviceId: $serviceId,
+                  variables: {
+                    DISCOVERY_RAIL_ENABLED: "true",
+                    DISCOVERY_RAIL_CANDIDATES: $candidates
+                  }
+                }
+              }
+            }')"
 
-          railway variable set \
-            "DISCOVERY_RAIL_ENABLED=true" \
-            "DISCOVERY_RAIL_CANDIDATES=$CANDIDATES" \
-            --service "$RAILWAY_SERVICE_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --json >/dev/null
+          http_code="$(curl --silent --show-error \
+            --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
 
-          echo 'runtime_sync=updated' >> "$GITHUB_OUTPUT"
-          echo 'Railway staging Discovery variables updated.'
+          if [ "$http_code" != '200' ]; then
+            echo "::error::Railway variable API HTTP $http_code"
+            exit 1
+          fi
+          if jq -e '.errors and (.errors | length > 0)' "$response" >/dev/null; then
+            echo '::error::Railway variableCollectionUpsert a échoué'
+            jq -c '.errors | map({message})' "$response"
+            exit 1
+          fi
+
+          echo 'runtime_sync=accepted' >> "$GITHUB_OUTPUT"
+          echo 'Railway accepted the two Discovery staging variable updates.'
 
       - name: Write operation summary
         if: always()
@@ -238,7 +283,7 @@ jobs:
             echo
             echo "- operation: ${OPERATION:-unknown}"
             if [ "$OPERATION" = 'railway-check' ] || [ "$OPERATION" = 'discovery-seed' ]; then
-              echo "- direct Railway access: ${RAILWAY_ACCESS:-unknown}"
+              echo "- Railway access: ${RAILWAY_ACCESS:-unknown}"
             fi
             if [ "$OPERATION" != 'railway-check' ]; then
               echo "- local products: ${LOCAL_PRODUCTS:-unknown}"
@@ -247,7 +292,7 @@ jobs:
             fi
             if [ "$OPERATION" = 'discovery-seed' ]; then
               echo "- candidates: ${CANDIDATE_COUNT:-unknown}"
-              echo "- Railway runtime sync: ${RUNTIME_SYNC:-unknown}"
+              echo "- Railway variable update: ${RUNTIME_SYNC:-unknown}"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -264,10 +309,10 @@ jobs:
           set -euo pipefail
           note="Staging operation \`$OPERATION\` completed successfully."
           if [ "$OPERATION" = 'railway-check' ]; then
-            note="$note Direct Railway access: ${RAILWAY_ACCESS:-unknown}."
+            note="$note Railway access: ${RAILWAY_ACCESS:-unknown}."
           fi
           if [ "$OPERATION" = 'discovery-seed' ]; then
-            note="$note Direct Railway access: ${RAILWAY_ACCESS:-unknown}. Runtime sync: ${RUNTIME_SYNC:-unknown}."
+            note="$note Railway access: ${RAILWAY_ACCESS:-unknown}. Variable update: ${RUNTIME_SYNC:-unknown}."
           fi
-          gh issue comment "$ISSUE_NUMBER" --body "$note"
-          gh issue close "$ISSUE_NUMBER" --reason completed
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
