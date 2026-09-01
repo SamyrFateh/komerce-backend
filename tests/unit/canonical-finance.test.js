@@ -106,8 +106,8 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       relais: 'Relais Centre',
       commandes: '4',
       ca: '120 000 KMF',
-      marge_estimee: '50 000 KMF',
-      marge_reelle: '38 000 KMF',
+      'marge-estimee': '50 000 KMF',
+      'marge-reelle': '38 000 KMF',
       couverture: '75 %',
     });
     expect(sources['finance.payment-mix'][0]).toEqual({ mode: 'stripe_eur', commandes: '3', montant: '90 000 KMF' });
@@ -116,7 +116,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
 
   test('une marge réelle relais absente reste explicitement inconnue', () => {
     const sources = finance.resolveSources({ relay_profitability: [{ relais_name: 'R', orders: 1, revenue_kmf: 10000, estimated_margin_kmf: 1000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
-    expect(sources['finance.relay-profitability'][0].marge_reelle).toBe('—');
+    expect(sources['finance.relay-profitability'][0]['marge-reelle']).toBe('—');
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
