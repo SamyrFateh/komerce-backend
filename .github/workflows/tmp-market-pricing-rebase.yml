@@ -1,0 +1,31 @@
+name: Temporary market pricing rebase
+
+on:
+  push:
+    branches:
+      - feat/market-operator-provisioning
+
+permissions:
+  contents: write
+
+jobs:
+  rebase:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-operator-provisioning
+          fetch-depth: 0
+      - name: Rebase onto current main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git rebase origin/main
+      - name: Remove temporary workflow and push rebased branch
+        run: |
+          rm .github/workflows/tmp-market-pricing-rebase.yml
+          git add -A
+          git commit -m "ci: remove temporary market pricing rebase workflow"
+          git push --force-with-lease origin HEAD:feat/market-operator-provisioning
