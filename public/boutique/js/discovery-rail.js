@@ -12,8 +12,9 @@
 
 import { bus } from './b-bus.js';
 import { openModal } from './b-modal.js';
-import { fetchDiscoveryRail } from './discovery-api.js';
+import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
+import { openDiscoveryDetail, closeDiscoveryDetail } from './render/render-discovery-detail.js';
 
 let _installed = false;
 
@@ -77,8 +78,17 @@ function handleDiscoveryClick(event) {
 
   if (kind === 'product') {
     openModal(ref);
+  } else if (kind === 'service' || kind === 'physical_offer') {
+    openCardDetail(kind, ref);
   }
-  // physical_offer and service card click → future L2 detail sheet
+}
+
+async function openCardDetail(kind, ref) {
+  const fetcher = kind === 'service' ? fetchServiceCard : fetchPhysicalOfferCard;
+  const detail = await fetcher(ref);
+  if (!detail) return;
+  // Enrich with kind for the detail renderer
+  openDiscoveryDetail({ ...detail, kind });
 }
 
 export function setupDiscoveryRail() {
@@ -89,6 +99,18 @@ export function setupDiscoveryRail() {
   if (!shell) return;
 
   shell.addEventListener('click', handleDiscoveryClick);
+
+  // CTA dans le detail sheet (injecté dans body, pas dans le shell)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('#k-discovery-detail-sheet [data-discovery-action][data-discovery-ref]');
+    if (!btn || !btn.matches('button')) return;
+    const kind = btn.dataset.discoveryAction;
+    const ref = btn.dataset.discoveryRef;
+    if (!kind || !ref) return;
+    closeDiscoveryDetail();
+    bus.emit('discovery:request', { kind, ref, source: btn });
+  });
+
   refreshDiscoveryRail().catch(() => {
     shell.innerHTML = '';
     shell.hidden = true;
