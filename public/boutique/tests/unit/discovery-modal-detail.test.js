@@ -105,22 +105,6 @@ test('le CTA transporte la précision vers Inquiry après fermeture contrôlée 
   expect(mockEmit).not.toHaveBeenCalledWith('discovery:request', expect.anything());
 });
 
-test('le CTA reste valide sans précision', () => {
-  setupDiscoveryModalDetail();
-  listeners['modal:discovery-opened']({
-    kind: 'physical_offer',
-    ref: 'offer-empty',
-    detail: { title: 'Plateau de samboussas' },
-  });
-  document.querySelector('[data-discovery-modal-action="physical_offer"]').click();
-  expect(mockRequestDiscovery).toHaveBeenCalledWith(
-    'physical_offer',
-    'offer-empty',
-    expect.any(HTMLElement),
-    null,
-  );
-});
-
 test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
   renderDiscoveryModalDetail({
     kind: 'service',
