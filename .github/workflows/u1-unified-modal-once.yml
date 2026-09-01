@@ -43,8 +43,10 @@ jobs:
         run: |
           node scripts/u1-unified-modal-finalize-once.js
           node scripts/u1-modal-ownership-fix-once.js
+          node scripts/u1-discovery-command-owner-once.js
           rm -f scripts/u1-unified-modal-finalize-once.js
           rm -f scripts/u1-modal-ownership-fix-once.js
+          rm -f scripts/u1-discovery-command-owner-once.js
           # Qualification transport only: keep it out of governance scans.
           rm -f .github/workflows/u1-unified-modal-once.yml
 
@@ -62,6 +64,7 @@ jobs:
       - name: Prove U1 targeted behavior
         run: |
           npm --prefix public/boutique test -- --runInBand \
+            tests/unit/discovery-actions.test.js \
             tests/unit/discovery-modal-detail.test.js \
             tests/unit/discovery-rail.test.js \
             tests/unit/main.test.js \
