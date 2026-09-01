@@ -78,8 +78,8 @@
           { key: 'categorie', label: 'Catégorie' },
           { key: 'commandes', label: 'Cmds', align: 'right' },
           { key: 'ca', label: 'CA', align: 'right' },
-          { key: 'marge_estimee', label: 'Marge estimée', align: 'right' },
-          { key: 'marge_reelle', label: 'Marge réelle', align: 'right' },
+          { key: 'marge-estimee', label: 'Marge estimée', align: 'right' },
+          { key: 'marge-reelle', label: 'Marge réelle', align: 'right' },
           { key: 'couverture', label: 'Couverture', align: 'right' },
         ],
         emptyText: 'Aucune rentabilité produit calculable sur la période.',
@@ -198,8 +198,8 @@
       categorie: row.category || '—',
       commandes: formatNumber(row.orders, 0),
       ca: formatKmf(row.revenue_kmf),
-      marge_estimee: formatKmf(row.estimated_margin_kmf),
-      marge_reelle: formatKmf(row.consolidated_margin_kmf),
+      'marge-estimee': formatKmf(row.estimated_margin_kmf),
+      'marge-reelle': formatKmf(row.consolidated_margin_kmf),
       couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
     }));
   }
