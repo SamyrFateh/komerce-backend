@@ -9,7 +9,7 @@ function mustContain(needle, label) {
   if (!source.includes(needle)) throw new Error(`Doctrine anchor missing: ${label}`);
 }
 
-source = source.replace('> **Date** : 2026-08-28', '> **Date** : 2026-09-02');
+source = source.replace(/^> \*\*Date\*\* : 2026-08-28\s*$/m, '> **Date** : 2026-09-02');
 
 const oldCommander = 'Le CTA `Commander` sur une offre physique V0 crée une `inquiry`, **pas** une ligne dans `orders`.';
 const newCommander = 'L’action finale `Commander`, déclenchée depuis le détail Komerce d’une offre physique V0, crée une `inquiry`, **pas** une ligne dans `orders`. Le rail lui-même ne déclenche aucune mutation métier.';
