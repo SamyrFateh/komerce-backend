@@ -201,6 +201,49 @@
   border-color: var(--border-sage-22);
 }
 
+/* ── U3 — facultative timing inside Discovery detail ────────────────
+   Feature-owned content only: the modal shell/layout remains owned by
+   modal-shell.css. This block never styles .k-modal itself. */
+.k-modal-discovery-request {
+  display: block;
+  margin-top: 16px;
+}
+
+.k-modal-discovery-request-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.k-modal-discovery-request-label span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.k-modal-discovery-request-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+}
+
+.k-modal-discovery-request-input::placeholder {
+  color: var(--text-muted);
+}
+
+.k-modal-discovery-request-input:focus-visible {
+  outline: 2px solid var(--border-sage-22);
+  outline-offset: 2px;
+  border-color: var(--cta-green);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .k-discovery-card:hover {
     transform: translateY(-2px);

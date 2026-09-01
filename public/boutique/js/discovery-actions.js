@@ -12,8 +12,16 @@
 
 import { bus } from './b-bus.js';
 
-export function requestDiscovery(kind, ref, source) {
+export function requestDiscovery(kind, ref, source, requestedWindow = null) {
   if ((kind !== 'service' && kind !== 'physical_offer') || !ref) return false;
-  bus.emit('discovery:request', { kind, ref: String(ref), source });
+  const normalizedWindow = typeof requestedWindow === 'string'
+    ? (requestedWindow.trim() || null)
+    : null;
+  bus.emit('discovery:request', {
+    kind,
+    ref: String(ref),
+    source,
+    requestedWindow: normalizedWindow,
+  });
   return true;
 }

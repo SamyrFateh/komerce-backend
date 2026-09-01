@@ -33,14 +33,15 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   service: 'Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, ' +
-    'leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, ' +
-    'settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.',
+    'leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. ' +
+    'Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.',
 
   perimeter: {
     in: [
       'table providers (identité, contact, market, statut pending|active|suspended)',
       'table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)',
       'table physical_offers (produit physique tiers, image_ref public optionnel)',
+      'projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni téléphone',
       'table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)',
       'isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant',
       'POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur',
@@ -49,6 +50,7 @@ module.exports = {
     ],
     out: [
       'authentification provider (pas de users / user_role pour le provider)',
+      'profil public provider riche, bio, téléphone, adresse exacte, métriques sociales ou comparaison de providers',
       'scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre',
       'paiement, commission, settlement, provider wallet',
       'orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders',
@@ -99,15 +101,16 @@ module.exports = {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 1,
     totalRoutes: 3,
-    note: 'GET /services/:id et GET /physical-offers/:id restent publics et minimaux et peuvent exposer image_ref. ' +
-      'POST /inquiries est protégé par authenticateOrCreateGuest et le csrfOriginGuard global. Le requester_phone ' +
-      'est exclusivement dérivé de req.user.phone. Le seed Discovery exige KOMERCE_ENV=staging + opt-in explicite.',
+    note: 'GET /services/:id et GET /physical-offers/:id restent publics et minimaux : provider_name et image_ref ' +
+      'peuvent être exposés, jamais provider_id ni téléphone. POST /inquiries est protégé par authenticateOrCreateGuest ' +
+      'et le csrfOriginGuard global. Le requester_phone est exclusivement dérivé de req.user.phone. ' +
+      'Le seed Discovery exige KOMERCE_ENV=staging + opt-in explicite.',
   },
 
   contract: {
     exposes: [
-      'GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + image_ref optionnel',
-      'GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + image_ref optionnel',
+      'GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel',
+      'GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel',
       'POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id',
     ],
     consumes: [
@@ -120,8 +123,8 @@ module.exports = {
     ],
   },
 
-  authority: 'backend-core — providers-services possède le cycle demande/confirmation, les médias source ' +
-    'service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter image_ref.',
+  authority: 'backend-core — providers-services possède le cycle demande/confirmation, le nom public minimal du provider, ' +
+    'les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.',
 
   invariants: [
     { statement: 'un service ne peut être créé que pour un provider déjà actif',
@@ -130,7 +133,7 @@ module.exports = {
       test: 'tests/unit/providers-service.test.js' },
     { statement: 'une inquiry porte sur exactement une cible — service_id XOR physical_offer_id',
       test: 'tests/unit/providers-service.test.js' },
-    { statement: 'les GET ne renvoient jamais provider_id ou téléphone et image_ref est le seul média public optionnel',
+    { statement: 'les GET peuvent exposer provider_name et image_ref mais ne renvoient jamais provider_id ou téléphone',
       test: 'tests/unit/providers-services-routes.test.js' },
     { statement: 'market est toujours résolu côté serveur avant les checks d’exposabilité',
       test: 'tests/unit/providers-services-routes.test.js' },
@@ -145,4 +148,5 @@ module.exports = {
   // 2026-08-28 — création shadow providers/services/inquiries + physical_offers.
   // 2026-08-30 — V2 native Boutique : parcours Commander/Demander.
   // 2026-08-31 — dataset Discovery staging Anjouan + image_ref source-owned.
+  // 2026-09-02 — U2 : provider_name public minimal dans le détail, aucune donnée de contact exposée.
 };

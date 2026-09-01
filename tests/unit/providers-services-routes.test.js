@@ -76,12 +76,14 @@ describe('GET /api/providers-services/services/:id', () => {
     expect(mockGetService).not.toHaveBeenCalled();
   });
 
-  it('nominal : champs publics + image_ref, jamais provider_id ni téléphone', async () => {
+  it('nominal : provider_name est public, provider_id et téléphone restent privés', async () => {
     mockDbQuery.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
       id: SERVICE_ID,
       provider_id: PROVIDER_ID,
+      provider_name: 'Clim Anjouan',
+      phone: '+2699999999',
       title: 'Installation climatiseur',
       description: 'Pose et raccordement',
       zone: 'Moroni',
@@ -100,17 +102,19 @@ describe('GET /api/providers-services/services/:id', () => {
       zone: 'Moroni',
       market_id: MARKET_ID,
       image_ref: '/media/installateur.webp',
+      provider_name: 'Clim Anjouan',
     });
     expect(res.body.provider_id).toBeUndefined();
-    expect(JSON.stringify(res.body)).not.toMatch(/phone|téléphone/i);
+    expect(JSON.stringify(res.body)).not.toMatch(/phone|téléphone|2699999999/i);
   });
 
-  it('image_ref absent devient null dans le contrat public', async () => {
+  it('champs optionnels absents deviennent null dans le contrat public', async () => {
     mockDbQuery.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({ id: SERVICE_ID, title: 'X', description: null, zone: null, market_id: MARKET_ID });
     const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
     expect(res.body.image_ref).toBeNull();
+    expect(res.body.provider_name).toBeNull();
   });
 
   it('résout le code en UUID réel avant isServiceExposable', async () => {
@@ -142,12 +146,14 @@ describe('GET /api/providers-services/physical-offers/:id', () => {
     expect(mockGetPhysicalOffer).not.toHaveBeenCalled();
   });
 
-  it('nominal : Samboussas exposé avec image_ref, champs publics uniquement', async () => {
+  it('nominal : Samboussas expose le nom public du producteur, jamais son identité technique', async () => {
     mockDbQuery.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
       id: OFFER_ID,
       provider_id: PROVIDER_ID,
+      provider_name: 'Saveurs d Anjouan',
+      phone: '+2698888888',
       title: 'Samboussas mariage',
       description: 'Plateau de 50, préparation sur commande',
       zone: 'Moroni',
@@ -166,8 +172,10 @@ describe('GET /api/providers-services/physical-offers/:id', () => {
       zone: 'Moroni',
       market_id: MARKET_ID,
       image_ref: '/media/samboussas.webp',
+      provider_name: 'Saveurs d Anjouan',
     });
     expect(res.body.provider_id).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toMatch(/phone|2698888888/i);
   });
 
   it('résout le code en UUID réel avant isPhysicalOfferExposable', async () => {

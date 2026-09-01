@@ -88,6 +88,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/121_exceptional_pickup_authorization.sql',
+      'migrations/158_market_operator_user_role.sql',
     ],
       tests: [
       'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js',

@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/discovery-api.js
  * @purpose       Frontière frontend de lecture vers les contrats Discovery locale.
  * @impact-areas  boutique, pdp, discovery-rail
- * @version       2026-08
+ * @version       2026-09
  */
 'use strict';
 
@@ -61,8 +61,10 @@ export function fetchLocalStockAvailability(productId) {
 
 /**
  * Champs publics d'un service tiers exposable, ou null.
+ * `provider_name` est le seul signal d'identité provider exposé ici : jamais
+ * provider_id ni téléphone.
  * @param {string} serviceId
- * @returns {Promise<{id: string, title: string, description: string|null, zone: string|null}|null>}
+ * @returns {Promise<{id: string, title: string, description: string|null, zone: string|null, image_ref: string|null, provider_name: string|null}|null>}
  */
 export function fetchServiceCard(serviceId) {
   if (!serviceId) return Promise.resolve(null);
@@ -74,8 +76,9 @@ export function fetchServiceCard(serviceId) {
 
 /**
  * Champs publics d'une offre physique tierce exposable, ou null.
+ * `provider_name` humanise la fiche sans ouvrir de profil provider public.
  * @param {string} physicalOfferId
- * @returns {Promise<{id: string, title: string, description: string|null, zone: string|null}|null>}
+ * @returns {Promise<{id: string, title: string, description: string|null, zone: string|null, image_ref: string|null, provider_name: string|null}|null>}
  */
 export function fetchPhysicalOfferCard(physicalOfferId) {
   if (!physicalOfferId) return Promise.resolve(null);

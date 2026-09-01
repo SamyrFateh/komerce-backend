@@ -44,7 +44,7 @@ beforeEach(() => {
   mockRequestDiscovery.mockClear();
 });
 
-test('rend une offre physique dans le slot du shell modal canonique', () => {
+test('rend une offre physique dans le slot du shell modal canonique avec timing facultatif', () => {
   const rendered = renderDiscoveryModalDetail({
     kind: 'physical_offer',
     ref: 'offer-1',
@@ -63,11 +63,28 @@ test('rend une offre physique dans le slot du shell modal canonique', () => {
   expect(slot.dataset.discoveryKind).toBe('physical_offer');
   expect(slot.textContent).toContain('Samboussas au bœuf');
   expect(slot.textContent).toContain('Saveurs d Anjouan');
+  expect(slot.textContent).toContain('Pour quand ?');
+  expect(slot.textContent).toContain('facultatif');
   expect(slot.textContent).toContain('Commander');
+  const input = slot.querySelector('[data-discovery-requested-window]');
+  expect(input).not.toBeNull();
+  expect(input.maxLength).toBe(160);
+  expect(input.placeholder).toBe('Ex. vendredi soir');
   expect(slot.querySelector('[data-discovery-ref="offer-1"]')).not.toBeNull();
 });
 
-test('le CTA poursuit le parcours Komerce via Inquiry après fermeture contrôlée du même modal', () => {
+test('service utilise un wording intervention sans créer de scheduler', () => {
+  renderDiscoveryModalDetail({
+    kind: 'service',
+    ref: 'svc-label',
+    detail: { title: 'Installation climatiseur', zone: 'Mutsamudu' },
+  });
+  const slot = document.getElementById('k-modal-discovery-detail');
+  expect(slot.textContent).toContain('Quand souhaitez-vous l’intervention ?');
+  expect(slot.querySelector('[data-discovery-requested-window]').placeholder).toBe('Ex. samedi matin');
+});
+
+test('le CTA transporte la précision vers Inquiry après fermeture contrôlée du même modal', () => {
   setupDiscoveryModalDetail();
   listeners['modal:discovery-opened']({
     kind: 'service',
@@ -75,6 +92,7 @@ test('le CTA poursuit le parcours Komerce via Inquiry après fermeture contrôl�
     detail: { title: 'Installation climatiseur', zone: 'Mutsamudu' },
   });
 
+  document.querySelector('[data-discovery-requested-window]').value = '  Samedi matin  ';
   document.querySelector('[data-discovery-modal-action="service"]').click();
 
   expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
@@ -82,6 +100,7 @@ test('le CTA poursuit le parcours Komerce via Inquiry après fermeture contrôl�
     'service',
     'svc-1',
     expect.any(HTMLElement),
+    'Samedi matin',
   );
   expect(mockEmit).not.toHaveBeenCalledWith('discovery:request', expect.anything());
 });
