@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports, server_market_scope_is_authority
  * @impact-areas  admin-dashboard, finance, economic-engine, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -30,7 +30,7 @@
   const FINANCE_SCHEMA = Object.freeze({
     id: 'finance',
     title: 'Finance',
-    description: 'Lire l’argent réellement encaissé, les coûts réels, la marge et les écarts à traiter.',
+    description: 'Lire l’argent encaissé, la vérité des coûts, la marge et les écarts à traiter.',
     filters: [
       {
         key: 'period',
@@ -56,6 +56,66 @@
       ],
     },
     sections: [
+      {
+        id: 'trajectoire-financiere',
+        title: 'Trajectoire financière',
+        description: 'CA encaissé, coût réel et marge consolidée par période. La couverture indique la part des commandes dont le coût est complet.',
+        type: 'table',
+        source: 'finance.trend',
+        columns: [
+          { key: 'periode', label: 'Période' },
+          { key: 'commandes', label: 'Cmds payées', align: 'right' },
+          { key: 'ca', label: 'CA', align: 'right' },
+          { key: 'cout', label: 'Coût réel', align: 'right' },
+          { key: 'marge', label: 'Marge consolidée', align: 'right' },
+          { key: 'couverture', label: 'Couverture', align: 'right' },
+        ],
+        emptyText: 'Aucune trajectoire financière sur la période.',
+      },
+      {
+        id: 'verite-costing',
+        title: 'Vérité du costing',
+        description: 'Les niveaux de coût et de marge produits par les autorités métier, sans recalcul dans le navigateur.',
+        type: 'table',
+        source: 'finance.costing-summary',
+        columns: [
+          { key: 'indicateur', label: 'Indicateur' },
+          { key: 'valeur', label: 'Valeur', align: 'right' },
+          { key: 'couverture', label: 'Données', align: 'right' },
+          { key: 'qualite', label: 'Qualité' },
+        ],
+        emptyText: 'Aucune donnée de costing.',
+      },
+      {
+        id: 'variances-costing',
+        title: 'Variances récentes',
+        description: 'Écart entre coût estimé et coût réel sur les commandes de la période. Une marge consolidée n’est affichable que quand le coût est complet.',
+        type: 'table',
+        source: 'finance.costing-orders',
+        columns: [
+          { key: 'commande', label: 'Commande' },
+          { key: 'costing', label: 'Costing' },
+          { key: 'vente', label: 'Vente', align: 'right' },
+          { key: 'estime', label: 'Estimé', align: 'right' },
+          { key: 'reel', label: 'Réel', align: 'right' },
+          { key: 'variance', label: 'Variance', align: 'right' },
+          { key: 'marge', label: 'Marge réelle', align: 'right' },
+        ],
+        emptyText: 'Aucune commande à comparer sur la période.',
+      },
+      {
+        id: 'couts-par-famille',
+        title: 'Coût réel par famille',
+        description: 'Répartition des allocations réelles par type de coût sur le périmètre autorisé.',
+        type: 'table',
+        source: 'finance.cost-families',
+        columns: [
+          { key: 'famille', label: 'Famille' },
+          { key: 'commandes', label: 'Commandes', align: 'right' },
+          { key: 'montant', label: 'Montant', align: 'right' },
+        ],
+        emptyText: 'Aucun coût réel alloué sur la période.',
+      },
       {
         id: 'modes-paiement',
         title: 'Encaissements par mode',
@@ -83,24 +143,10 @@
         ],
         emptyText: 'Aucun remboursement finalisé sur la période.',
       },
-      {
-        id: 'couts-incomplets',
-        title: 'Commandes à coût incomplet',
-        description: 'Commandes dont la chaîne de coût réel n’est pas encore complète.',
-        type: 'table',
-        source: 'finance.incomplete-costs',
-        columns: [
-          { key: 'commande', label: 'Commande' },
-          { key: 'statut', label: 'Statut' },
-          { key: 'paiement', label: 'Paiement' },
-          { key: 'montant', label: 'Montant', align: 'right' },
-          { key: 'cree', label: 'Créée le' },
-        ],
-        emptyText: 'Toutes les commandes de la période ont leurs coûts complets.',
-      },
     ],
     drill: [
       { id: 'accounting-workspace', label: 'Comptabilité & encaissements', href: '/admin/workspaces/accounting' },
+      { id: 'pricing-workspace', label: 'Pricing & coûts', href: '/admin/workspaces/pricing' },
     ],
   });
 
@@ -112,6 +158,13 @@
     cmds_cout_incomplet: 'cout-incomplet',
     paiements_en_attente: 'paiement-attente',
     remboursements: 'remboursements',
+  });
+
+  const COST_STATUS_LABELS = Object.freeze({
+    actual: 'Réel complet',
+    partial_real: 'Réel partiel',
+    estimated: 'Estimé',
+    incomplete: 'Incomplet',
   });
 
   function normalizePeriod(value) {
@@ -126,7 +179,16 @@
   }
 
   function formatKmf(value) {
+    if (value == null || value === '') return '—';
     return `${formatNumber(value, 0)} KMF`;
+  }
+
+  function formatSignedKmf(value) {
+    if (value == null || value === '') return '—';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '—';
+    const prefix = numeric > 0 ? '+' : '';
+    return `${prefix}${formatNumber(numeric, 0)} KMF`;
   }
 
   function formatDate(value) {
@@ -177,6 +239,54 @@
     return projected;
   }
 
+  function projectTrend(payload) {
+    return (Array.isArray(payload && payload.trend) ? payload.trend : []).map(row => ({
+      periode: formatDate(row.bucket),
+      commandes: formatNumber(row.paid_orders, 0),
+      ca: formatKmf(row.revenue_kmf),
+      cout: formatKmf(row.real_cost_kmf),
+      marge: formatKmf(row.consolidated_margin_kmf),
+      couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
+    }));
+  }
+
+  function projectCostingSummary(payload) {
+    return (Array.isArray(payload && payload.costing_kpis) ? payload.costing_kpis : []).map(metric => {
+      const quality = metric && metric.data_quality ? metric.data_quality : {};
+      const total = quality.items_total;
+      const withData = quality.items_with_data;
+      const coverage = total == null || withData == null
+        ? '—'
+        : `${formatNumber(withData, 0)}/${formatNumber(total, 0)}`;
+      return {
+        indicateur: metric.label || metric.key || '—',
+        valeur: metricValue(metric),
+        couverture: coverage,
+        qualite: quality.warning || quality.completeness || '—',
+      };
+    });
+  }
+
+  function projectCostingOrders(payload) {
+    return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : []).map(row => ({
+      commande: row.reference || '—',
+      costing: COST_STATUS_LABELS[row.cost_status] || row.cost_status || '—',
+      vente: formatKmf(row.sale_total_kmf),
+      estime: formatKmf(row.estimated_cost_kmf),
+      reel: formatKmf(row.real_cost_kmf),
+      variance: formatSignedKmf(row.variance_kmf),
+      marge: formatKmf(row.consolidated_margin_kmf),
+    }));
+  }
+
+  function projectCostFamilies(payload) {
+    return (Array.isArray(payload && payload.cost_families) ? payload.cost_families : []).map(row => ({
+      famille: row.cost_type || '—',
+      commandes: formatNumber(row.orders, 0),
+      montant: formatKmf(row.amount_kmf),
+    }));
+  }
+
   function projectPaymentMix(payload) {
     return (Array.isArray(payload && payload.payment_mix) ? payload.payment_mix : []).map(row => ({
       mode: row.payment_mode || '—',
@@ -197,22 +307,15 @@
     }));
   }
 
-  function projectIncompleteCosts(payload) {
-    return (Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : []).map(row => ({
-      commande: row.reference || '—',
-      statut: row.status || '—',
-      paiement: row.payment_status || '—',
-      montant: formatKmf(row.total_kmf),
-      cree: formatDate(row.created_at),
-    }));
-  }
-
   function resolveSources(payload) {
     return Object.freeze({
       'finance.metrics': projectMetrics(payload),
+      'finance.trend': projectTrend(payload),
+      'finance.costing-summary': projectCostingSummary(payload),
+      'finance.costing-orders': projectCostingOrders(payload),
+      'finance.cost-families': projectCostFamilies(payload),
       'finance.payment-mix': projectPaymentMix(payload),
       'finance.refunds': projectRefunds(payload),
-      'finance.incomplete-costs': projectIncompleteCosts(payload),
     });
   }
 
@@ -282,14 +385,19 @@
     PERIODS,
     FINANCE_SCHEMA,
     KPI_KEYS,
+    COST_STATUS_LABELS,
     normalizePeriod,
     formatNumber,
     formatKmf,
+    formatSignedKmf,
     formatDate,
     projectMetrics,
+    projectTrend,
+    projectCostingSummary,
+    projectCostingOrders,
+    projectCostFamilies,
     projectPaymentMix,
     projectRefunds,
-    projectIncompleteCosts,
     resolveSources,
     endpointForContext,
     jsonRequest,

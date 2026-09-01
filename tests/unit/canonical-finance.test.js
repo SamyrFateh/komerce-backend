@@ -21,6 +21,22 @@ function payloadFixture() {
       { key: 'paiements_en_attente', value: 1, unit: 'count', data_quality: {} },
       { key: 'remboursements', value: 1500, unit: 'KMF', data_quality: { warning: '2 remboursement(s) sur la période' } },
     ],
+    costing_kpis: [
+      { key: 'cout_estime', label: 'Coût estimé', value: 68000, unit: 'KMF', data_quality: { completeness: 'complete', items_total: 4, items_with_data: 4 } },
+      { key: 'cout_reel', label: 'Coût réel', value: 70000, unit: 'KMF', data_quality: { completeness: 'partial', items_total: 4, items_with_data: 3, warning: 'Réel partiel' } },
+      { key: 'marge_estimee', label: 'Marge estimée', value: 52000, unit: 'KMF', data_quality: { completeness: 'complete', items_total: 4, items_with_data: 4 } },
+      { key: 'marge_variable_reelle', label: 'Marge variable réelle', value: 56000, unit: 'KMF', data_quality: { completeness: 'partial', items_total: 4, items_with_data: 3 } },
+      { key: 'marge_consolidee', label: 'Marge consolidée', value: 50000, unit: 'KMF', data_quality: { completeness: 'partial', items_total: 4, items_with_data: 3 } },
+    ],
+    trend: [
+      { bucket: '2026-08-18T00:00:00.000Z', paid_orders: 4, revenue_kmf: 120000, real_cost_kmf: 70000, consolidated_margin_kmf: 50000, actual_orders: 3, cost_coverage_pct: 75 },
+    ],
+    cost_families: [
+      { cost_type: 'product_purchase', orders: 4, amount_kmf: 40000 },
+    ],
+    costing_orders: [
+      { reference: 'CMD-C', sale_total_kmf: 20000, estimated_cost_kmf: 11000, real_cost_kmf: 12000, variance_kmf: 1000, consolidated_margin_kmf: 8000, cost_status: 'actual' },
+    ],
     payment_mix: [
       { payment_mode: 'stripe_eur', orders: 3, total_kmf: 90000 },
       { payment_mode: 'cash_relais', orders: 1, total_kmf: 30000 },
@@ -32,9 +48,6 @@ function payloadFixture() {
         { order_reference: 'CMD-R', refund_method: 'stripe', amount_kmf: 1000, completed_at: '2026-08-23T00:00:00.000Z' },
       ],
     },
-    incomplete_cost_orders: [
-      { reference: 'CMD-C', status: 'confirmed', payment_status: 'paid', total_kmf: 20000, created_at: '2026-08-20T00:00:00.000Z' },
-    ],
   };
 }
 
@@ -53,14 +66,21 @@ function marketContext() {
 }
 
 describe('LOT 2F-CANON — Finance vivant', () => {
-  test('le schéma Finance respecte DashboardSchema', () => {
+  test('le schéma Finance respecte DashboardSchema et remplace la file coût incomplet par la vérité costing', () => {
     const schema = schemaContract.validateDashboardSchema(finance.FINANCE_SCHEMA);
     expect(schema.id).toBe('finance');
     expect(schema.metrics.source).toBe('finance.metrics');
     expect(schema.sections.map(section => section.source)).toEqual([
+      'finance.trend',
+      'finance.costing-summary',
+      'finance.costing-orders',
+      'finance.cost-families',
       'finance.payment-mix',
       'finance.refunds',
-      'finance.incomplete-costs',
+    ]);
+    expect(schema.drill.map(item => item.href)).toEqual([
+      '/admin/workspaces/accounting',
+      '/admin/workspaces/pricing',
     ]);
   });
 
@@ -68,9 +88,28 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     const sources = finance.resolveSources(payloadFixture());
     expect(sources['finance.metrics']['ca-encaisse'].value).toBe('120 000 KMF');
     expect(sources['finance.metrics'].completude).toEqual(expect.objectContaining({ value: '80 %', tone: 'warning' }));
+    expect(sources['finance.trend'][0]).toEqual(expect.objectContaining({
+      commandes: '4',
+      ca: '120 000 KMF',
+      cout: '70 000 KMF',
+      marge: '50 000 KMF',
+      couverture: '75 %',
+    }));
+    expect(sources['finance.costing-summary'][1]).toEqual(expect.objectContaining({
+      indicateur: 'Coût réel',
+      valeur: '70 000 KMF',
+      couverture: '3/4',
+      qualite: 'Réel partiel',
+    }));
+    expect(sources['finance.costing-orders'][0]).toEqual(expect.objectContaining({
+      commande: 'CMD-C',
+      costing: 'Réel complet',
+      variance: '+1 000 KMF',
+      marge: '8 000 KMF',
+    }));
+    expect(sources['finance.cost-families'][0]).toEqual({ famille: 'product_purchase', commandes: '4', montant: '40 000 KMF' });
     expect(sources['finance.payment-mix'][0]).toEqual({ mode: 'stripe_eur', commandes: '3', montant: '90 000 KMF' });
     expect(sources['finance.refunds'][0]).toEqual(expect.objectContaining({ commande: 'CMD-R', methode: 'stripe', montant: '1 000 KMF' }));
-    expect(sources['finance.incomplete-costs'][0]).toEqual(expect.objectContaining({ commande: 'CMD-C', montant: '20 000 KMF' }));
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
@@ -109,7 +148,10 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(result.period).toBe('7');
     expect(render).toHaveBeenNthCalledWith(1, root, finance.FINANCE_SCHEMA, expect.objectContaining({ state: 'loading' }));
     expect(render).toHaveBeenNthCalledWith(2, root, finance.FINANCE_SCHEMA, expect.objectContaining({
-      data: expect.objectContaining({ 'finance.metrics': expect.any(Object) }),
+      data: expect.objectContaining({
+        'finance.metrics': expect.any(Object),
+        'finance.costing-orders': expect.any(Array),
+      }),
       filters: { period: '7' },
     }));
   });
