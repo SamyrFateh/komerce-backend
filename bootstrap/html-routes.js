@@ -273,11 +273,12 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4Q — ControlTowerView est lecture seule et ses besoins légitimes sont
-  // déjà répartis entre Pilotage, Opérations et Action Center. Son pathname
-  // normal converge donc vers Pilotage ; ?legacy=1 garde le témoin historique.
+  // LOT 4Q / 4S — anciennes vues de lecture dont les besoins sont maintenant
+  // absorbés par les dashboards Canonical. Le pathname normal converge ;
+  // ?legacy=1 conserve le témoin historique pendant la fenêtre de rollback.
   const LEGACY_CANONICAL_REDIRECTS = Object.freeze({
     '/admin/control-tower': '/admin/pilotage',
+    '/admin/costing': '/admin/finance',
   });
 
   // Legacy 1 reste accessible pour les témoins et les capacités non encore

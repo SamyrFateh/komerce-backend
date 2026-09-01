@@ -76,9 +76,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 365 | 365 | 0 |
+| backend | 29 | 29 | 388 | 383 | 5 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 92 | 92 | 0 |
+| boutique | 16 | 16 | 97 | 97 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -1594,11 +1594,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (0)
+### DETTE / DRIFT ACTIONNABLE (5)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- none
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/radar-alerts/cash-reconciliation-signals.js — nœud technique "services/radar-alerts/cash-reconciliation-signals.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/radar-alerts/commerce-signals.js — nœud technique "services/radar-alerts/commerce-signals.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/radar-alerts/logistics-signals.js — nœud technique "services/radar-alerts/logistics-signals.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/radar-alerts/payment-signals.js — nœud technique "services/radar-alerts/payment-signals.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/radar-alerts/treasury-signals.js — nœud technique "services/radar-alerts/treasury-signals.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1654,7 +1658,11 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- none
+- services/radar-alerts/cash-reconciliation-signals.js
+- services/radar-alerts/commerce-signals.js
+- services/radar-alerts/logistics-signals.js
+- services/radar-alerts/payment-signals.js
+- services/radar-alerts/treasury-signals.js
 
 ## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
 

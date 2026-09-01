@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports, server_market_scope_is_authority
  * @impact-areas  admin-dashboard, commerce, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -66,6 +66,23 @@
           { key: 'ca', label: 'CA', align: 'right' },
         ],
         emptyText: 'Aucune vente encaissée sur la période.',
+      },
+      {
+        id: 'rentabilite-produits',
+        title: 'Rentabilité produits',
+        description: 'CA et marge par produit. La marge réelle n’est affichée que sur les commandes dont le costing est complet.',
+        type: 'table',
+        source: 'commerce.product-profitability',
+        columns: [
+          { key: 'produit', label: 'Produit' },
+          { key: 'categorie', label: 'Catégorie' },
+          { key: 'commandes', label: 'Cmds', align: 'right' },
+          { key: 'ca', label: 'CA', align: 'right' },
+          { key: 'marge-estimee', label: 'Marge estimée', align: 'right' },
+          { key: 'marge-reelle', label: 'Marge réelle', align: 'right' },
+          { key: 'couverture', label: 'Couverture', align: 'right' },
+        ],
+        emptyText: 'Aucune rentabilité produit calculable sur la période.',
       },
       {
         id: 'categories',
@@ -122,6 +139,7 @@
   }
 
   function formatKmf(value) {
+    if (value == null || value === '') return '—';
     return `${formatNumber(value, 0)} KMF`;
   }
 
@@ -174,6 +192,18 @@
     }));
   }
 
+  function projectProductProfitability(payload) {
+    return (Array.isArray(payload && payload.product_profitability) ? payload.product_profitability : []).map(row => ({
+      produit: row.name || row.product_ref || '—',
+      categorie: row.category || '—',
+      commandes: formatNumber(row.orders, 0),
+      ca: formatKmf(row.revenue_kmf),
+      'marge-estimee': formatKmf(row.estimated_margin_kmf),
+      'marge-reelle': formatKmf(row.consolidated_margin_kmf),
+      couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
+    }));
+  }
+
   function projectCategories(payload) {
     return (Array.isArray(payload && payload.categories) ? payload.categories : []).map(row => ({
       categorie: row.category || '—',
@@ -198,6 +228,7 @@
     return Object.freeze({
       'commerce.metrics': projectMetrics(payload),
       'commerce.top-products': projectTopProducts(payload),
+      'commerce.product-profitability': projectProductProfitability(payload),
       'commerce.categories': projectCategories(payload),
       'commerce.funnel': projectFunnel(payload),
     });
@@ -274,6 +305,7 @@
     formatKmf,
     projectMetrics,
     projectTopProducts,
+    projectProductProfitability,
     projectCategories,
     projectFunnel,
     resolveSources,

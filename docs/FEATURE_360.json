@@ -2463,7 +2463,7 @@
               {
                 "declared": "js/market-hydration.js",
                 "resolvedPath": "public/boutique/js/market-hydration.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/product-store.js",
@@ -2828,22 +2828,22 @@
               {
                 "declared": "services/product-sellable-service.js",
                 "resolvedPath": "services/product-sellable-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/product-sku-service.js",
                 "resolvedPath": "services/product-sku-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/product-stock-service.js",
                 "resolvedPath": "services/product-stock-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/product-variant-service.js",
                 "resolvedPath": "services/product-variant-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/prompts/catalog-enrichment.prompt.js",
@@ -2908,7 +2908,7 @@
               {
                 "declared": "services/suppliers/media-normalizer.js",
                 "resolvedPath": "services/suppliers/media-normalizer.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/suppliers/normalized-product.js",
@@ -2918,17 +2918,17 @@
               {
                 "declared": "services/suppliers/pipeline-constants.js",
                 "resolvedPath": "services/suppliers/pipeline-constants.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/suppliers/promotion-classifier.js",
                 "resolvedPath": "services/suppliers/promotion-classifier.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/suppliers/source-product-normalizer.js",
                 "resolvedPath": "services/suppliers/source-product-normalizer.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -11936,27 +11936,27 @@
               {
                 "declared": "services/pickup-code-helpers.js",
                 "resolvedPath": "services/pickup-code-helpers.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-collection-recorder.js",
                 "resolvedPath": "services/pickup-collection-recorder.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-collection-service.js",
                 "resolvedPath": "services/pickup-collection-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-exceptional-collection-service.js",
                 "resolvedPath": "services/pickup-exceptional-collection-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-secret-access-service.js",
                 "resolvedPath": "services/pickup-secret-access-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-secret-service.js",
@@ -14383,17 +14383,17 @@
               {
                 "declared": "services/order-checkout-item-resolution.js",
                 "resolvedPath": "services/order-checkout-item-resolution.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-checkout-persistence.js",
                 "resolvedPath": "services/order-checkout-persistence.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-checkout-service.js",
                 "resolvedPath": "services/order-checkout-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-cost-snapshot.js",
@@ -14423,7 +14423,7 @@
               {
                 "declared": "services/order-post-commit-hooks.js",
                 "resolvedPath": "services/order-post-commit-hooks.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-service.js",
@@ -17229,12 +17229,12 @@
               {
                 "declared": "js/discovery-inquiry.js",
                 "resolvedPath": "public/boutique/js/discovery-inquiry.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/providers-services-api.js",
                 "resolvedPath": "public/boutique/js/providers-services-api.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -18027,7 +18027,7 @@
               {
                 "declared": "services/discovery-rail-service.js",
                 "resolvedPath": "services/discovery-rail-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
