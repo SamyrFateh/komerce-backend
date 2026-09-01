@@ -8,7 +8,7 @@
  * @outputs       canonical_finance_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -327,6 +327,87 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
   });
 }
 
+async function getRelayProfitability(filters = {}) {
+  const { where, params } = buildFiltersClause(filters, 'o');
+  const expectedIndex = params.length + 1;
+  const queryParams = [...params, EXPECTED_COST_TYPES];
+  const expectedCount = EXPECTED_COST_TYPES.length;
+
+  const { rows } = await db.query(`
+    WITH scoped_orders AS (
+      SELECT o.id, o.relais_id, o.total_kmf
+      FROM orders o
+      WHERE ${where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')
+        AND o.relais_id IS NOT NULL
+    ),
+    cost_truth AS (
+      SELECT
+        so.*,
+        (SELECT SUM(imp.estimated_business_complete_cost_kmf)
+         FROM order_item_cost_imputations imp
+         WHERE imp.order_id = so.id) AS estimated_cost_kmf,
+        (SELECT SUM(alc.amount_kmf)
+         FROM order_item_real_cost_allocations alc
+         WHERE alc.order_id = so.id
+           AND alc.is_actual = TRUE) AS real_cost_kmf,
+        EXISTS (
+          SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
+        ) AS has_imputation,
+        (
+          SELECT COUNT(DISTINCT alc.cost_type::text)
+          FROM order_item_real_cost_allocations alc
+          WHERE alc.order_id = so.id
+            AND alc.is_actual = TRUE
+            AND alc.cost_type::text = ANY($${expectedIndex}::text[])
+        )::int AS expected_cost_types
+      FROM scoped_orders so
+    )
+    SELECT
+      r.name AS relais_name,
+      COUNT(*)::int AS orders,
+      COALESCE(SUM(ct.total_kmf), 0)::bigint AS revenue_kmf,
+      SUM(ct.estimated_cost_kmf)::bigint AS estimated_cost_kmf,
+      COUNT(*) FILTER (
+        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+      )::int AS actual_orders,
+      SUM(ct.total_kmf) FILTER (
+        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+      )::bigint AS actual_revenue_kmf,
+      SUM(ct.real_cost_kmf) FILTER (
+        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+      )::bigint AS real_cost_kmf
+    FROM cost_truth ct
+    JOIN relais r ON r.id = ct.relais_id
+    GROUP BY r.id, r.name
+    ORDER BY revenue_kmf DESC, r.name ASC
+  `, queryParams);
+
+  return rows.map(row => {
+    const orders = Number(row.orders) || 0;
+    const actualOrders = Number(row.actual_orders) || 0;
+    const revenue = Number(row.revenue_kmf) || 0;
+    const estimatedCost = row.estimated_cost_kmf == null ? null : Number(row.estimated_cost_kmf);
+    const actualRevenue = row.actual_revenue_kmf == null ? null : Number(row.actual_revenue_kmf);
+    const realCost = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
+
+    return Object.freeze({
+      relais_name: row.relais_name || 'Relais',
+      orders,
+      revenue_kmf: revenue,
+      estimated_cost_kmf: estimatedCost,
+      estimated_margin_kmf: estimatedCost == null ? null : revenue - estimatedCost,
+      real_cost_kmf: actualOrders > 0 ? realCost : null,
+      consolidated_margin_kmf: actualOrders > 0 && actualRevenue != null && realCost != null
+        ? actualRevenue - realCost
+        : null,
+      actual_orders: actualOrders,
+      cost_coverage_pct: orders > 0 ? Number(((actualOrders / orders) * 100).toFixed(1)) : null,
+    });
+  });
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date());
@@ -348,6 +429,7 @@ async function buildFinance(query = {}, options = {}) {
     trend,
     costFamilies,
     costingOrders,
+    relayProfitability,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -365,6 +447,7 @@ async function buildFinance(query = {}, options = {}) {
     getFinanceTrend(window.filters, window.period),
     getCostFamilyBreakdown(window.filters),
     getRecentCostingOrders(window.filters, { limit: 20 }),
+    getRelayProfitability(window.filters),
   ]);
 
   return Object.freeze({
@@ -389,6 +472,7 @@ async function buildFinance(query = {}, options = {}) {
     trend: Object.freeze(trend),
     cost_families: Object.freeze(costFamilies),
     costing_orders: Object.freeze(costingOrders),
+    relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
       ...refunds.summary,
@@ -409,6 +493,7 @@ async function buildFinance(query = {}, options = {}) {
         orders: 'orders.created_at',
         refunds: 'refunds.completed_at',
       }),
+      relay_real_margin_basis: 'actual_cost_orders_only',
       economic_global_engine_consumed: false,
       source_tables: Object.freeze([
         'orders',
@@ -416,6 +501,7 @@ async function buildFinance(query = {}, options = {}) {
         'order_items',
         'order_item_cost_imputations',
         'order_item_real_cost_allocations',
+        'relais',
       ]),
     }),
   });
@@ -434,5 +520,6 @@ module.exports = {
   getFinanceTrend,
   getCostFamilyBreakdown,
   getRecentCostingOrders,
+  getRelayProfitability,
   buildFinance,
 };
