@@ -93,8 +93,8 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
       categorie: 'Électronique',
       commandes: '3',
       ca: '90 000 KMF',
-      marge_estimee: '36 000 KMF',
-      marge_reelle: '25 000 KMF',
+      'marge-estimee': '36 000 KMF',
+      'marge-reelle': '25 000 KMF',
       couverture: '66,7 %',
     });
     expect(sources['commerce.funnel'][1]).toEqual({
@@ -106,7 +106,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
 
   test('une marge réelle absente reste explicitement inconnue', () => {
     const sources = commerce.resolveSources({ product_profitability: [{ name: 'X', orders: 2, revenue_kmf: 10000, estimated_margin_kmf: 2000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
-    expect(sources['commerce.product-profitability'][0].marge_reelle).toBe('—');
+    expect(sources['commerce.product-profitability'][0]['marge-reelle']).toBe('—');
   });
 
   test('résout l’endpoint uniquement depuis AdminContext', () => {
