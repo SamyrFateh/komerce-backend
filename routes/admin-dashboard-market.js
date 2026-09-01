@@ -38,7 +38,8 @@ const log = require('../utils/logger').child({ module: 'admin-dashboard-market' 
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'agent_transitaire']);
+const requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire']);
+const requireMarketDashboardReadRole = requireRole(['admin', 'market_operator']);
 
 function rejectClientMarketId(req, res, next) {
   if (Object.prototype.hasOwnProperty.call(req.query || {}, 'market_id')) {
@@ -134,7 +135,7 @@ router.get(
 router.get(
   '/unified/market/:marketCode',
   authenticate,
-  requireAdmin,
+  requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
   attachAuthorizedMarkets,
@@ -155,7 +156,7 @@ router.get(
 router.get(
   '/commerce/market/:marketCode',
   authenticate,
-  requireAdmin,
+  requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
   attachAuthorizedMarkets,
@@ -175,7 +176,7 @@ router.get(
 router.get(
   '/operations/market/:marketCode',
   authenticate,
-  requireAdmin,
+  requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
   attachAuthorizedMarkets,
@@ -195,7 +196,7 @@ router.get(
 router.get(
   '/finance/market/:marketCode',
   authenticate,
-  requireAdmin,
+  requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
   attachAuthorizedMarkets,

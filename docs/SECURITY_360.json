@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-31T00:43:38.443Z",
+  "generatedAt": "2026-09-01T21:57:35.847Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
     "total": 560,
@@ -680,7 +680,8 @@
       "key": "GET /api/admin/dashboard/commerce/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -695,6 +696,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
+        "market_operator",
         "agent_hub",
         "agent_relais",
         "agent_transitaire"
@@ -718,7 +720,8 @@
       "key": "GET /api/admin/dashboard/finance/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -739,7 +742,8 @@
       "key": "GET /api/admin/dashboard/operations/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -753,7 +757,8 @@
       "key": "GET /api/admin/dashboard/unified/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {

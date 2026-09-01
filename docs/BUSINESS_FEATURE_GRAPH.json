@@ -998,6 +998,13 @@
       },
       {
         "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/158_market_operator_user_role.sql",
+        "resolvedPath": "migrations/158_market_operator_user_role.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
         "category": "tests",
         "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
         "resolvedPath": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
