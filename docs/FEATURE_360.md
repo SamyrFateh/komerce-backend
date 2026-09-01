@@ -1649,19 +1649,20 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : production
 
-**Service** : Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.
+**Service** : Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.
 
 **Perimeter** :
 - _in_ :
-  - création puis publication immuable, fermeture et annulation de la liste partagée
+  - création puis publication immuable, fermeture explicite ou automatique et annulation de la liste partagée
   - lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)
+  - réconciliation de complétion : dernière ligne réclamée => OPEN -> CLOSED
 - _out_ :
   - paiement carte/PayPal/cash (feature payments, consommée en sortie)
   - arbitrage de la réclamation d'un article (index unique order_items.shared_cart_item_id, migration 123 — feature orders)
   - création de la commande (feature orders)
   - crédit wallet (feature wallet)
 
-**Authority** : backend-core — tout changement de statut (open/closed/cancelled) doit être validé par le propriétaire de shared-cart-lifecycle.js
+**Authority** : backend-core — le domaine shared-cart est seul autorisé à écrire son lifecycle : close/cancel explicites via shared-cart-lifecycle.js ; fermeture automatique de complétion via la frontière cross-feature cart-share-service.js appelée par orders.
 
 **Invariants** :
 - une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable
@@ -1670,14 +1671,17 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - une sélection de liste est locale, ne réserve rien et passe toujours par récapitulatif puis checkout canonique
 - une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux
 - un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)
+- dès que toutes les lignes possèdent un order_items.shared_cart_item_id, la liste passe automatiquement OPEN -> CLOSED ; aucun état observable 100% réclamé + OPEN
 - aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items
 - lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)
 - annulation de liste (cancel) n'effectue jamais de remboursement — aucune contribution n'y transite
 
 **Owns** : `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
 
-**Exposes** : 1 internal API(s), 16 HTTP interface(s)
+**Exposes** : 3 internal API(s), 16 HTTP interface(s)
+  - `closeCompletedSharedCartForOrderItems` (services/cart-share-service.js) — resolved
   - `deleteUserBasketData` (services/shared-cart-user-cleanup.js) — resolved
+  - `markShareConvertedToOrder` (services/cart-share-service.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
@@ -1692,10 +1696,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 56 fichier(s) déclaré(s), boutique: 18 fichier(s)
+**Implementation** : 57 fichier(s) déclaré(s), boutique: 18 fichier(s)
   - boutique : 10
   - dash : 1
-  - migrations : 19
+  - migrations : 20
   - routes : 4
   - services : 9
   - tests : 13

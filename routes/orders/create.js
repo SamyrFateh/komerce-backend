@@ -6,22 +6,22 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       middleware/auth.js, services/order-checkout-service.js
+ * @depends       middleware/auth.js, services/order-checkout-service.js,
+ *                services/cart-share-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       none
  * @db-write      none
  * @db-write-via:order-checkout-service order_items, order_status_history, orders, recipients
+ * @db-write-via:cart-share-service shared_carts, shared_cart_events
  * @doctrine-note l'orchestration checkout (validation → pricing → shared-cart →
- *                transport → wallet → INSERT) et les hooks post-commit vivent
- *                désormais dans services/order-checkout-service.js et
- *                services/order-post-commit-hooks.js (domaine 4/5, refactoring
- *                classe A) — cette route n'est plus qu'une façade fine qui
- *                traduit le résultat structuré de l'orchestrateur en réponse
- *                HTTP.
+ *                transport → wallet → INSERT) vit dans order-checkout-service ;
+ *                après son COMMIT, la façade demande au boundary shared-cart
+ *                de réconcilier la complétion avant de rendre le HTTP 201.
+ *                La route n'écrit jamais directement les tables shared-cart.
  * @db-txn        delegated_to_service
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout, shared-cart
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -38,6 +38,7 @@ const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest'
 const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
+const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
 
 router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req, res, next) => {
   let result;
@@ -52,6 +53,15 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
   }
 
   const { order, creditApplied, relais } = result;
+
+  // Régression 2026-09 : une liste entièrement réclamée restait OPEN et
+  // continuait à proposer « Clôturer la liste » malgré 4/4 achetés / reste 0.
+  // La commande est déjà commitée à ce stade. On attend donc la projection
+  // owner shared-cart AVANT le 201 afin qu'un rafraîchissement immédiat du
+  // side-cart lise déjà CLOSED. Le boundary est fail-safe : s'il rencontre
+  // une erreur, il la journalise et renvoie false sans transformer une
+  // commande déjà créée en faux échec client.
+  await closeCompletedSharedCartForOrderItems(req.body.items, order.id);
 
   return res.status(201).json({
     discount_pct: order.discount_pct || 0,

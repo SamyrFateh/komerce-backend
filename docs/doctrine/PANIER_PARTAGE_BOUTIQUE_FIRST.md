@@ -1,6 +1,6 @@
 # Komerce — Doctrine canonique de la liste partagée
 
-> **Version normative : 2026-08-09**  
+> **Version normative : 2026-09-01**  
 > **Statut : source de vérité métier**  
 > Cette version remplace les doctrines antérieures « liste active = panier unique », achat direct par ligne et « payer tout / acheter le reste ».
 
@@ -89,11 +89,17 @@ Le bouton **×** du panneau partagé signifie **quitter cet affichage** :
 
 | État | Signification | Side-cart | Achat |
 |---|---|---|---|
-| **OPEN** | snapshot publié et encore achetable | oui, s'il est affiché | oui |
-| **CLOSED** | liste terminée par l'organisateur | jamais | non |
+| **OPEN** | snapshot publié avec au moins une ligne encore achetable | oui, s'il est affiché | oui |
+| **CLOSED** | liste terminée explicitement ou entièrement achetée | jamais | non |
 | **CANCELLED** | liste annulée | jamais | non |
 
-**Fermer la liste** est une action métier réservée à l'organisateur : OPEN → CLOSED.
+**Fermer la liste** est une action métier réservée à l'organisateur : OPEN → CLOSED tant qu'il souhaite arrêter la liste avant sa complétion.
+
+**La complétion ferme automatiquement la liste** : dès que la dernière ligne disponible est réclamée avec succès par une commande, la liste passe de OPEN à CLOSED. L'organisateur n'a aucune action « Clôturer la liste » à effectuer après 100 % d'articles achetés.
+
+La vérité de complétion vient des claims canoniques `order_items.shared_cart_item_id`. La fermeture automatique est réconciliée côté backend immédiatement après le commit de la commande et avant la réponse de création ; elle écrit `shared_carts.status = closed`, `closed_at` et un événement `cart_closed` de raison `all_items_claimed`. Elle est idempotente et sûre face à deux derniers achats concurrents.
+
+L'invariant métier est donc : **une liste dont toutes les lignes sont réclamées ne doit pas rester OPEN dans l'état observable rendu au client.**
 
 **Quitter l'affichage** est une action locale disponible à toute personne : elle ne change aucun statut.
 
@@ -188,6 +194,8 @@ En cas de conflit :
 - l'organisateur peut voir **Déjà acheté par [Prénom]** ;
 - le participant voit seulement **Déjà acheté**.
 
+Après chaque commande issue d'une liste, le backend vérifie la complétion. La commande qui rend la dernière ligne réclamée déclenche la fermeture automatique ; deux commandes concurrentes ne peuvent produire ni double fermeture ni double événement `cart_closed`.
+
 ## 11. Mes listes
 
 **Mes listes** référence :
@@ -212,6 +220,7 @@ Ne pas réintroduire :
 - checkout collectif parallèle ;
 - cagnotte, contribution, montant libre ou objectif de financement ;
 - liste CLOSED/CANCELLED résidente dans le side-cart ;
+- maintien d'une liste 100 % réclamée au statut OPEN ;
 - choix de destinataire du code sans effet réel côté serveur.
 
 ## 13. Test décisif
