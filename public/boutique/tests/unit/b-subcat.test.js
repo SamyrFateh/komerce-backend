@@ -254,7 +254,7 @@ describe('_renderFlatSubcat', () => {
     expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-header');
     expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-tabs');
     expect(state._flatSubcatHeaderHtml).toContain('data-flat-sub="fruits"');
-    expect(state._flatSubcatHeaderHtml).toContain('k-shelf-emoji-fallback');
+    expect(state._flatSubcatHeaderHtml).toContain('k-shelf-media-placeholder');
     expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-tab-icon');
   });
 

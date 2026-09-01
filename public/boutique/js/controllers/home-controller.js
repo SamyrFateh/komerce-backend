@@ -35,10 +35,9 @@
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import {
-  getShelfSubcategoryProductImage,
+  bindShelfMediaFallbacks,
   getShelfSubcategoryVisual,
-  renderShelfProductPhoto,
-  renderShelfUse,
+  renderShelfSubcategoryMedia,
 } from '../render/category-shelf-visuals.js';
 import { getSubcategories, getRailCategories, getCategorySectionEmoji, getCategoryLabel } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
@@ -149,17 +148,15 @@ export function renderSubcatRail(catKey, opts = {}) {
       ...subcats.map((sub) => {
         const key = escapeHtml(sub.key);
         const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
-        const icon = escapeHtml(sub.icon || '✨');
-        const photo = getShelfSubcategoryProductImage(state.products, catKey, sub.key);
         const visual = getShelfSubcategoryVisual(catKey, sub.key);
-        const object = photo
-          ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory')
-          : visual
-            ? renderShelfUse(visual, 'k-shelf-object--subcategory')
-            : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
+        const object = renderShelfSubcategoryMedia(
+          state.products,
+          catKey,
+          sub.key,
+          'k-shelf-object--subcategory'
+        );
         const active = activeSubcat === sub.key ? ' active' : '';
-        const mediaAttr = photo ? ' data-shelf-media="product"' : '';
-        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}${mediaAttr}>
+        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}>
           <span class="k-subcutout-icon" aria-hidden="true">${object}</span>
           <span class="k-subcutout-label">${lbl}</span>
         </button>`;
@@ -169,6 +166,7 @@ export function renderSubcatRail(catKey, opts = {}) {
   }
 
   wrap.innerHTML = header + rail;
+  bindShelfMediaFallbacks(wrap);
 
   const backBtn = wrap.querySelector('[data-back-all="1"]');
   if (backBtn) {

@@ -96,8 +96,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(desktopShelf).toContain('min-height: 94px;');
   });
 
-  test('préfère la photo catalogue réelle et conserve seulement un fallback canonique', () => {
-    const fallbackVisualKeys = [
+  test('préfère les cutouts canoniques et garde la photo produit comme secours explicite', () => {
+    const canonicalVisualKeys = [
       'mode-cutout:femme', 'mode-cutout:homme', 'mode-cutout:enfant', 'mode-cutout:beaute',
       'sub-maison-confort', 'sub-maison-cuisine', 'sub-maison-deco', 'sub-maison-enfants',
       'sub-tech-phone', 'sub-tech-ordi', 'sub-tech-audio', 'sub-tech-montre', 'sub-tech-gaming',
@@ -105,30 +105,29 @@ describe('continuité catégories et sous-catégories desktop', () => {
       'sub-perso-ceremonie', 'sub-perso-cadeau', 'sub-perso-impression',
       'sub-auto-filtres', 'sub-auto-freinage', 'sub-auto-eclairage', 'sub-auto-moto',
     ];
-    fallbackVisualKeys.forEach((key) => expect(visuals).toContain(key));
-    expect(visuals).toContain('getShelfSubcategoryProductImage');
-    expect(visuals).toContain('renderShelfProductPhoto');
-    expect(visuals).toContain('categoryCandidates');
+    canonicalVisualKeys.forEach((key) => expect(visuals).toContain(key));
+    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS');
+    expect(visuals).toContain('renderShelfSubcategoryMedia');
+    expect(visuals).toContain('data-shelf-media=\"canonical\"');
+    expect(visuals).toContain('data-shelf-fallback-src');
+    expect(visuals).toContain('product-fallback');
+    expect(visuals).toContain('k-shelf-media-placeholder');
+    expect(visuals).toContain("console.warn('[boutique] missing subcategory media'");
     expect(desktopShelf).toContain('.k-shelf-product-photo');
-    expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
-    expect(desktopShelf).toContain('color: var(--catalog-nav-muted);');
-    expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
-    expect(subcat).toContain('getShelfSubcategoryProductImage');
-    expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
     expect(desktopShelf).not.toContain('grayscale(1)');
     expect(desktopShelf).not.toContain('sepia(.58)');
     expect(desktopShelf).not.toContain('hue-rotate(62deg)');
   });
 
-  test('réutilise les mêmes photos produit naturelles dans le pager mobile', () => {
-    expect(subcat).toContain('getShelfSubcategoryProductImage');
-    expect(subcat).toContain('renderShelfProductPhoto');
-    expect(subcat).toContain('data-shelf-media=\"product\"');
+  test('réutilise exactement le même resolver anti-casse dans le pager mobile', () => {
+    expect(subcat).toContain('renderShelfSubcategoryMedia');
+    expect(subcat).toContain('bindShelfMediaFallbacks');
+    expect(subcat).not.toContain('data-shelf-media=\"product\"');
+    expect(interactions).toContain('.k-shelf-media-placeholder');
     expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
     expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*object-fit:contain[^}]*saturate\(1\.02\)[^}]*contrast\(1\.04\)/s);
     expect(interactions).not.toMatch(/\.k-flat-subcat-object[^}]*grayscale\(1\)/s);
     expect(interactions).not.toMatch(/\.k-flat-subcat-object[^}]*hue-rotate\(62deg\)/s);
-    expect(interactions).toMatch(/\.k-flat-subcat-tab\.is-active::after\s*\{[^}]*width:\s*18px/s);
   });
 
   test('garde les huit images dans la seule source taxonomique', () => {

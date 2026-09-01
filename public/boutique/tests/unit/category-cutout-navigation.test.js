@@ -22,10 +22,7 @@ const tokens = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const swRefresh = fs.readFileSync(path.join(ROOT, 'js/b-service-worker-refresh.js'), 'utf8');
 const sw = fs.readFileSync(path.resolve(ROOT, '../sw.js'), 'utf8');
-const modeFemme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-femme-v4.svg'), 'utf8');
-const modeHomme = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-homme-v4.svg'), 'utf8');
-const modeEnfant = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-enfant-v4.svg'), 'utf8');
-const modeBeaute = fs.readFileSync(path.join(ROOT, 'categories/sub-mode-beaute-v4.svg'), 'utf8');
+const subcutoutManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'categories/subcutouts/manifest.json'), 'utf8'));
 
 describe('Komerce Shelf category navigation contract', () => {
   it('conserve k-chip pour le comportement et ajoute un modifier visuel dédié', () => {
@@ -78,33 +75,21 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/data-cat="Auto"[^}]*--k-optical-y:\s*-1px/s);
   });
 
-  it('porte les huit cutouts HD dans le registre visuel unique', () => {
-    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=3'");
-    expect(visuals).toContain("all: '/boutique/categories/cat-all-v3.webp?v=1'");
-    expect(visuals).toContain("soldes: '/boutique/categories/cat-soldes-v3.webp?v=1'");
-    expect(visuals).toContain("mode: '/boutique/categories/cat-mode-v3.webp?v=1'");
-    expect(visuals).toContain("maison: '/boutique/categories/cat-maison-v3.webp?v=1'");
-    expect(visuals).toContain("tech: '/boutique/categories/cat-tech-v3.webp?v=1'");
-    expect(visuals).toContain("bricolage: '/boutique/categories/cat-bricolage-v3.webp?v=1'");
-    expect(visuals).toContain("perso: '/boutique/categories/cat-perso-v3.webp?v=1'");
-    expect(visuals).toContain("auto: '/boutique/categories/cat-auto-v3.webp?v=1'");
-    expect(visuals).toContain("'Mode & Beauté': 'cutout:mode'");
-    expect(visuals).toContain("'Créations personnelles': 'cutout:perso'");
-    expect(visuals).toContain("__all: 'showcase-mode:0:0'");
-    expect(visuals).toContain("Femme: 'mode-cutout:femme'");
-    expect(visuals).toContain("Homme: 'mode-cutout:homme'");
-    expect(visuals).toContain("Enfant: 'mode-cutout:enfant'");
-    expect(visuals).toContain("Beauté: 'mode-cutout:beaute'");
-    expect(visuals).toContain('renderAtlasCell');
-    expect(visuals).toContain('renderCategoryCutout');
-    expect(visuals).toContain('renderModeSubcategoryCutout');
-    expect(visuals).toContain("femme: '/boutique/categories/sub-mode-femme-v4.svg?v=1'");
-    expect(visuals).toContain("homme: '/boutique/categories/sub-mode-homme-v4.svg?v=1'");
-    expect(visuals).toContain("enfant: '/boutique/categories/sub-mode-enfant-v4.svg?v=1'");
-    expect(visuals).toContain("beaute: '/boutique/categories/sub-mode-beaute-v4.svg?v=1'");
-    expect(visuals).toContain('k-shelf-cutout-image');
+  it('porte les 23 cutouts de sous-catégorie dans le registre visuel unique', () => {
+    const businessAssets = subcutoutManifest.filter((item) => item.slug);
+    expect(businessAssets).toHaveLength(23);
+    expect(businessAssets.filter((item) => item.provenance === 'komerce-catalog')).toHaveLength(22);
+    expect(businessAssets.filter((item) => item.provenance === 'cc-by-2.0')).toHaveLength(1);
+    businessAssets.forEach((item) => {
+      expect(fs.existsSync(path.join(ROOT, 'categories/subcutouts', item.asset))).toBe(true);
+    });
+    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS');
+    expect(visuals).toContain("'sub-maison-cuisine': '/boutique/categories/subcutouts/sub-maison-cuisine-v1.webp?v=1'");
+    expect(visuals).toContain("'sub-tech-ordi': '/boutique/categories/subcutouts/sub-tech-ordi-v1.webp?v=1'");
+    expect(visuals).toContain("'sub-tech-gaming': '/boutique/categories/subcutouts/sub-tech-gaming-v1.webp?v=1'");
+    expect(visuals).toContain('renderSubcategoryCutout');
+    expect(visuals).toContain('renderShelfSubcategoryMedia');
     expect(sprite).toContain('symbol id="cat-all"');
-    expect(sprite).toContain('symbol id="cat-soldes"');
     expect(sprite).toContain('symbol id="sub-auto-moto"');
   });
 
@@ -115,7 +100,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).toContain('data-atlas-col');
     expect(visuals).toContain('data-atlas-row');
     expect(visuals).toContain("visual.startsWith('cutout:')");
-    expect(visuals).toContain("visual.startsWith('mode-cutout:')");
+    expect(visuals).toContain('KOMERCE_SUBCATEGORY_CUTOUTS[visual]');
     expect(visuals).toContain("visual.startsWith('showcase-mode:')");
     expect(visuals).not.toContain("visual.startsWith('showcase-main:')");
     expect(visuals).not.toContain('<image href=');
@@ -127,17 +112,12 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).not.toMatch(/@media \(max-width: 899px\)[\s\S]*\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*position:\s*relative/s);
   });
 
-  it('garde quatre palettes Mode distinctes sans vert de marque dans les objets', () => {
-    expect(modeFemme).toContain('#D51F3E');
-    expect(modeHomme).toContain('#203C68');
-    expect(modeEnfant).toContain('#2388E8');
-    expect(modeEnfant).toContain('#FFD84D');
-    expect(modeBeaute).toContain('#F6B691');
-    expect(modeBeaute).toContain('#FF4057');
-    [modeFemme, modeHomme, modeEnfant, modeBeaute].forEach((asset) => {
-      expect(asset).toContain('<svg');
-      expect(asset).not.toMatch(/#2A7A3E|#64AF5A|green/i);
-    });
+  it('documente la provenance du seul cutout externe Ordi', () => {
+    const ordi = subcutoutManifest.find((item) => item.slug === 'tech-ordi');
+    const attribution = subcutoutManifest.find((item) => item._attribution);
+    expect(ordi.provenance).toBe('cc-by-2.0');
+    expect(ordi.source_url).toContain('wikimedia.org');
+    expect(attribution._license_url).toBe('https://creativecommons.org/licenses/by/2.0/');
   });
 
   it('utilise un contraste gris franc et les cutouts dans les titres de section', () => {

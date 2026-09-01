@@ -2351,30 +2351,20 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 .k-discovery-rail {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 9px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 1px 1px 5px;
-  margin: 0 -1px;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.k-discovery-rail::-webkit-scrollbar {
-  display: none;
+  padding: 1px 0 5px;
 }
 
 .k-discovery-card {
-  flex: 0 0 168px;
   min-width: 0;
   background: var(--sand);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--elev-1);
-  scroll-snap-align: start;
+  cursor: pointer;
   transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
 
@@ -2455,6 +2445,25 @@ html.k-mobile-premium-v1 .k-chip-label {
   overflow: hidden;
 }
 
+.k-discovery-price {
+  margin-top: 4px;
+  color: var(--ocean-dark);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.k-discovery-provider {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .k-discovery-cta {
   width: 100%;
   min-height: 32px;
@@ -2472,6 +2481,20 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 .k-discovery-cta:active {
   transform: scale(.98);
+}
+
+/* ── CTA differentiation by kind ──────────────────────────────────── */
+
+.k-discovery-card[data-discovery-kind="physical_offer"] .k-discovery-cta {
+  background: var(--terracotta-bg);
+  color: var(--terracotta-dark);
+  border-color: var(--border-terra-22);
+}
+
+.k-discovery-card[data-discovery-kind="service"] .k-discovery-cta {
+  background: var(--cta-green-10);
+  color: var(--cta-green);
+  border-color: var(--border-sage-22);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2503,40 +2526,160 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-discovery-rail {
+    display: flex;
     gap: 12px;
     padding-bottom: 5px;
   }
 
-  /*
-   * Work visual pass — 4 cartes doivent réellement occuper le terrain.
-   * flex-grow absorbe l'espace disponible jusqu'à 340px, tout en gardant
-   * 5 cartes possibles à 1280px et un overflow horizontal naturel au-delà.
-   * La hauteur média est découplée de la largeur pour gagner en densité :
-   * élargir les cartes ne repousse donc pas le catalogue sous le fold.
-   */
+  .k-discovery-rail::-webkit-scrollbar {
+    display: none;
+  }
+
   .k-discovery-card {
-    flex: 1 0 230px;
-    max-width: 340px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 220px;
   }
 
   .k-discovery-media {
-    height: 156px;
+    height: 130px;
     aspect-ratio: auto;
   }
 
   .k-discovery-info {
-    min-height: 104px;
-    padding: 10px;
+    min-height: 96px;
+    padding: 8px 9px;
   }
 
   .k-discovery-name {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .k-discovery-subtitle,
   .k-discovery-status,
   .k-discovery-cta {
-    font-size: 11px;
+    font-size: 10px;
+  }
+}
+
+/* ── Discovery detail sheet ──────────────────────────────────────────── */
+
+.k-discovery-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: end center;
+  background: rgba(0, 0, 0, .35);
+  animation: k-discovery-fade-in .2s ease;
+}
+
+@keyframes k-discovery-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.k-discovery-detail-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--sand);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, .12);
+  animation: k-discovery-slide-up .25s ease;
+}
+
+@keyframes k-discovery-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.k-discovery-detail-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-sand-94);
+  color: var(--ocean-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.k-discovery-detail-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 18px 18px 0 0;
+}
+
+.k-discovery-detail-body {
+  padding: 14px 16px 20px;
+}
+
+.k-discovery-detail-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ocean-dark);
+  line-height: 1.25;
+}
+
+.k-discovery-detail-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-sand-94);
+  color: var(--ocean-dark);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.k-discovery-detail-provider {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.k-discovery-detail-desc {
+  margin: 0 0 12px;
+  color: var(--ocean-dark);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.k-discovery-detail-cta {
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* Desktop: centered panel instead of bottom sheet */
+@media (min-width: 900px) {
+  .k-discovery-detail-overlay {
+    place-items: center;
+  }
+
+  .k-discovery-detail-panel {
+    border-radius: 18px;
+    max-width: 480px;
+    animation: k-discovery-scale-in .2s ease;
+  }
+
+  @keyframes k-discovery-scale-in {
+    from { transform: scale(.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 }
 
@@ -9993,6 +10136,25 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-flat-subcat-object           { width:40px; height:36px; object-fit:contain; object-position:center; filter:drop-shadow(0 3px 5px var(--border-text-08)) saturate(1.02) contrast(1.04); }
 .k-flat-subcat-tab.is-active .k-flat-subcat-object { filter:drop-shadow(0 4px 6px var(--border-text-08)) saturate(1.06) contrast(1.06); transform:translateY(-1px); }
 .k-flat-subcat-tab-icon .k-shelf-emoji-fallback { display:block; filter:none; }
+
+/* Canonical subcategory media: final fallback is explicit, neutral and never broken. */
+.k-shelf-media-placeholder {
+  display:grid;
+  place-items:center;
+  color:var(--catalog-nav-muted);
+  opacity:.46;
+  filter:none;
+}
+.k-shelf-media-placeholder svg {
+  width:58%;
+  height:58%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 .k-flat-subcat-tab-label        { max-width:60px; overflow:hidden; text-overflow:ellipsis; color:currentColor; font-size:10.5px; font-weight:620; line-height:1.1; }
 .k-flat-subcat-tab.is-active .k-flat-subcat-tab-label { font-weight:780; }
 
