@@ -1,0 +1,168 @@
+[
+  {
+    "slug": "mode-femme",
+    "asset": "sub-mode-femme-v1.webp",
+    "source_ref": "SHOWCASE-V2-0001",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0001/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "mode-homme",
+    "asset": "sub-mode-homme-v1.webp",
+    "source_ref": "SHOWCASE-V2-0036",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0036/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "mode-enfant",
+    "asset": "sub-mode-enfant-v1.webp",
+    "source_ref": "SHOWCASE-V2-0061",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0061/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "mode-beaute",
+    "asset": "sub-mode-beaute-v1.webp",
+    "source_ref": "SHOWCASE-V2-0086",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0086/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "maison-confort",
+    "asset": "sub-maison-confort-v1.webp",
+    "source_ref": "SHOWCASE-V2-0131",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0131/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "maison-cuisine",
+    "asset": "sub-maison-cuisine-v1.webp",
+    "source_ref": "SHOWCASE-V2-0156",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0156/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "maison-deco",
+    "asset": "sub-maison-deco-v1.webp",
+    "source_ref": "SHOWCASE-V2-0181",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0181/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "maison-enfants",
+    "asset": "sub-maison-enfants-v1.webp",
+    "source_ref": "SHOWCASE-V2-0201",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0201/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "tech-phones",
+    "asset": "sub-tech-phones-v1.webp",
+    "source_ref": "SHOWCASE-V2-0221",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0221/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "tech-ordi",
+    "asset": "sub-tech-ordi-v1.webp",
+    "source_ref": "WIKIMEDIA-MACBOOK-PRO-TRANSPARENCY",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/MacBook_Pro_transparency.png",
+    "provenance": "cc-by-2.0"
+  },
+  {
+    "slug": "tech-audio",
+    "asset": "sub-tech-audio-v1.webp",
+    "source_ref": "SHOWCASE-V2-0251",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0251/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "tech-montres",
+    "asset": "sub-tech-montres-v1.webp",
+    "source_ref": "SHOWCASE-V2-0281",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0281/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "tech-gaming",
+    "asset": "sub-tech-gaming-v1.webp",
+    "source_ref": "SHOWCASE-V2-0255",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0255/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "brico-outillage",
+    "asset": "sub-brico-outillage-v1.webp",
+    "source_ref": "SHOWCASE-V2-0311",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0311/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "brico-electricite",
+    "asset": "sub-brico-electricite-v1.webp",
+    "source_ref": "SHOWCASE-V2-0336",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0336/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "brico-securite",
+    "asset": "sub-brico-securite-v1.webp",
+    "source_ref": "SHOWCASE-V2-0361",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0361/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "perso-ceremonie",
+    "asset": "sub-perso-ceremonie-v1.webp",
+    "source_ref": "SHOWCASE-V2-0381",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0381/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "perso-cadeau",
+    "asset": "sub-perso-cadeau-v1.webp",
+    "source_ref": "SHOWCASE-V2-0401",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0401/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "perso-impression",
+    "asset": "sub-perso-impression-v1.webp",
+    "source_ref": "SHOWCASE-V2-0421",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0421/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "auto-filtres",
+    "asset": "sub-auto-filtres-v1.webp",
+    "source_ref": "SHOWCASE-V2-0436",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0436/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "auto-freinage",
+    "asset": "sub-auto-freinage-v1.webp",
+    "source_ref": "SHOWCASE-V2-0456",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0456/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "auto-eclairage",
+    "asset": "sub-auto-eclairage-v1.webp",
+    "source_ref": "SHOWCASE-V2-0471",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0471/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "slug": "auto-moto",
+    "asset": "sub-auto-moto-v1.webp",
+    "source_ref": "SHOWCASE-V2-0486",
+    "source_url": "https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2/showcase-v2-0486/hero.jpg",
+    "provenance": "komerce-catalog"
+  },
+  {
+    "_attribution": "Tech/Ordi: MacBook Pro transparency.png, derived from a photograph by Jarkko Laine; CC BY 2.0; resized/normalized by Komerce.",
+    "_license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "_source_page": "https://commons.wikimedia.org/wiki/File:MacBook_Pro_transparency.png"
+  }
+]
