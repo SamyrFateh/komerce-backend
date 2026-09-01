@@ -105,6 +105,12 @@ const SERVICES = Object.freeze([
     description: 'Besoin ponctuel de transport ou manutention locale. Donnée staging.',
     zone: 'Anjouan', imageRef: STAGING_MEDIA.GENERAL,
   },
+  {
+    id: 'd15c2000-0000-4000-8000-000000000007', providerId: PROVIDERS[1].id,
+    title: 'Installation climatiseur',
+    description: 'Installation et mise en service de climatiseur. Donnée staging.',
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
+  },
 ]);
 
 const DISCOVERY_CANDIDATES = Object.freeze([
@@ -118,6 +124,7 @@ const DISCOVERY_CANDIDATES = Object.freeze([
   `physical_offer:${PHYSICAL_OFFERS[3].id}`,
   `service:${SERVICES[4].id}`,
   `service:${SERVICES[5].id}`,
+  `service:${SERVICES[6].id}`,
 ]);
 
 function isTruthy(value) {
