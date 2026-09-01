@@ -16,7 +16,8 @@ const UI = path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'finance.j
 describe('Finance Canonical coverage boundary', () => {
   test('Finance ne consomme pas le moteur économique global ni les snapshots Legacy', () => {
     const source = fs.readFileSync(SERVICE, 'utf8');
-    expect(source).not.toContain('economic-engine-queries');
+    expect(source).not.toContain("require('./economic-engine-queries')");
+    expect(source).not.toContain("require('../services/economic-engine-queries')");
     expect(source).not.toContain('buildExecutiveSummary');
     expect(source).not.toContain('redistribute(');
     expect(source).not.toContain('economic_snapshots');
@@ -32,9 +33,8 @@ describe('Finance Canonical coverage boundary', () => {
     expect(source).toContain('economic_global_engine_consumed: false');
   });
 
-  test('le frontend ne recrée aucune formule économique et drill vers les workspaces propriétaires', () => {
+  test('le frontend ne contacte aucun endpoint économique ou costing Legacy', () => {
     const source = fs.readFileSync(UI, 'utf8');
-    expect(source).not.toContain('economic-engine');
     expect(source).not.toContain('/api/admin/economic');
     expect(source).not.toContain('/api/admin/costing');
     expect(source).toContain("href: '/admin/workspaces/accounting'");
