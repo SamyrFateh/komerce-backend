@@ -14,7 +14,7 @@
  * @db-txn        delegated_to_service
  * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
  * @impact-areas  providers-services, boutique, discovery-rail
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -72,6 +72,7 @@ router.get('/services/:id', async (req, res, next) => {
       zone: service.zone,
       market_id: service.market_id,
       image_ref: service.image_ref || null,
+      provider_name: service.provider_name || null,
     });
   } catch (err) {
     next(err);
@@ -96,6 +97,7 @@ router.get('/physical-offers/:id', async (req, res, next) => {
       zone: offer.zone,
       market_id: offer.market_id,
       image_ref: offer.image_ref || null,
+      provider_name: offer.provider_name || null,
     });
   } catch (err) {
     next(err);
