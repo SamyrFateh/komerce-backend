@@ -46,15 +46,15 @@
   },
   "summary": {
     "features": 33,
-    "healthy": 33,
-    "attention": 0,
+    "healthy": 32,
+    "attention": 1,
     "blocked": 0,
-    "businessDependencies": 234,
+    "businessDependencies": 235,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 0,
+    "debtItemsTotal": 1,
     "gateHealthy": 33,
     "gateBlocked": 0
   },
@@ -11615,6 +11615,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17468,6 +17475,13 @@
           ]
         },
         {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17501,12 +17515,14 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 0,
-        "declaredNotObservedEvidence": []
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "catalog"
+        ]
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -17526,8 +17542,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
