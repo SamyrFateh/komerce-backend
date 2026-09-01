@@ -63,7 +63,7 @@ async function productCard(productId, marketId) {
   if (!exposable) return null;
 
   const { rows } = await db.query(
-    'SELECT id, name, image_url FROM products WHERE id = $1 AND is_active = true',
+    'SELECT id, name, image_url, price_kmf FROM products WHERE id = $1 AND is_active = true',
     [productId]
   );
   if (!rows.length) return null;
@@ -76,6 +76,10 @@ async function productCard(productId, marketId) {
     cta_label: CTA_LABEL[CARD_KIND.PRODUCT],
     cta_action_ref: p.id,
     image_ref: p.image_url,
+    price: p.price_kmf != null ? Number(p.price_kmf) : null,
+    zone: null,
+    provider_name: null,
+    description: null,
   };
 }
 
@@ -93,6 +97,10 @@ async function physicalOfferCard(physicalOfferId, marketId) {
     cta_label: CTA_LABEL[CARD_KIND.PHYSICAL_OFFER],
     cta_action_ref: offer.id,
     image_ref: offer.image_ref || null,
+    price: null,
+    zone: offer.zone || null,
+    provider_name: offer.provider_name || null,
+    description: offer.description || null,
   };
 }
 
@@ -110,6 +118,10 @@ async function serviceCard(serviceId, marketId) {
     cta_label: CTA_LABEL[CARD_KIND.SERVICE],
     cta_action_ref: service.id,
     image_ref: service.image_ref || null,
+    price: null,
+    zone: service.zone || null,
+    provider_name: service.provider_name || null,
+    description: service.description || null,
   };
 }
 

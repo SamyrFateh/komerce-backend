@@ -196,7 +196,13 @@ async function createService({ providerId, title, description = null, marketId, 
 }
 
 async function getService(serviceId) {
-  const { rows } = await db.query('SELECT * FROM services WHERE id = $1', [serviceId]);
+  const { rows } = await db.query(
+    `SELECT s.*, p.name AS provider_name
+       FROM services s
+       JOIN providers p ON p.id = s.provider_id
+      WHERE s.id = $1`,
+    [serviceId]
+  );
   return rows[0] || null;
 }
 
@@ -293,7 +299,13 @@ async function createPhysicalOffer({ providerId, title, description = null, mark
 }
 
 async function getPhysicalOffer(physicalOfferId) {
-  const { rows } = await db.query('SELECT * FROM physical_offers WHERE id = $1', [physicalOfferId]);
+  const { rows } = await db.query(
+    `SELECT po.*, p.name AS provider_name
+       FROM physical_offers po
+       JOIN providers p ON p.id = po.provider_id
+      WHERE po.id = $1`,
+    [physicalOfferId]
+  );
   return rows[0] || null;
 }
 
