@@ -46,15 +46,15 @@
   },
   "summary": {
     "features": 33,
-    "healthy": 32,
-    "attention": 1,
+    "healthy": 33,
+    "attention": 0,
     "blocked": 0,
     "businessDependencies": 235,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 1,
+    "debtItemsTotal": 0,
     "gateHealthy": 33,
     "gateBlocked": 0
   },
@@ -17515,14 +17515,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "catalog"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -17542,14 +17540,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

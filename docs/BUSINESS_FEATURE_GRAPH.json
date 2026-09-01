@@ -16532,12 +16532,6 @@
       },
       {
         "from": "providers-services",
-        "to": "catalog",
-        "raw": "catalog — Golden Product canonique utilisé par le seed Discovery staging via son owner officiel",
-        "resolved": true
-      },
-      {
-        "from": "providers-services",
         "to": "local-stock",
         "raw": "local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner",
         "resolved": true
