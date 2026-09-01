@@ -69,3 +69,4 @@ Le dépôt dispose encore de `migrations/AUD-10_rename_tracking_fix.sql`, qui do
 - COLLISION: `119` = 119_drop_orders_pickup_code.sql, 119_economic_variables_to_finance_config.sql
 - COLLISION: `128` = 128_shared_cart_items_sellable_unit.sql, 128_shared_list_pickup_code_recipient.sql
 - COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql
+- COLLISION: `157` = 157_local_stock_exposure_and_allocations.sql, 157_providers_services_media.sql

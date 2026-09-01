@@ -67,8 +67,8 @@ test('staging opt-in écrit le jeu déterministe et ses image_ref dans une trans
   expect(result.market).toBe('KM');
   expect(result.providers).toBe(5);
   expect(result.physicalOffers).toBe(4);
-  expect(result.services).toBe(6);
-  expect(result.candidates.split(',')).toHaveLength(10);
+  expect(result.services).toBe(7);
+  expect(result.candidates.split(',')).toHaveLength(11);
   expect(db.query).toHaveBeenCalledWith(
     'SELECT id FROM markets WHERE code = $1 AND is_active = true',
     ['KM']
@@ -111,5 +111,6 @@ test('les UUID et l’ordre éditorial sont stables et compatibles Discovery', (
     `physical_offer:${PHYSICAL_OFFERS[3].id}`,
     `service:${SERVICES[4].id}`,
     `service:${SERVICES[5].id}`,
+    `service:${SERVICES[6].id}`,
   ]);
 });
