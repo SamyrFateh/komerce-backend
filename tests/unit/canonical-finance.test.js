@@ -37,6 +37,9 @@ function payloadFixture() {
     costing_orders: [
       { reference: 'CMD-C', sale_total_kmf: 20000, estimated_cost_kmf: 11000, real_cost_kmf: 12000, variance_kmf: 1000, consolidated_margin_kmf: 8000, cost_status: 'actual' },
     ],
+    relay_profitability: [
+      { relais_name: 'Relais Centre', orders: 4, revenue_kmf: 120000, estimated_margin_kmf: 50000, consolidated_margin_kmf: 38000, cost_coverage_pct: 75 },
+    ],
     payment_mix: [
       { payment_mode: 'stripe_eur', orders: 3, total_kmf: 90000 },
       { payment_mode: 'cash_relais', orders: 1, total_kmf: 30000 },
@@ -66,7 +69,7 @@ function marketContext() {
 }
 
 describe('LOT 2F-CANON — Finance vivant', () => {
-  test('le schéma Finance respecte DashboardSchema et remplace la file coût incomplet par la vérité costing', () => {
+  test('le schéma Finance respecte DashboardSchema et couvre la rentabilité relais', () => {
     const schema = schemaContract.validateDashboardSchema(finance.FINANCE_SCHEMA);
     expect(schema.id).toBe('finance');
     expect(schema.metrics.source).toBe('finance.metrics');
@@ -75,6 +78,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       'finance.costing-summary',
       'finance.costing-orders',
       'finance.cost-families',
+      'finance.relay-profitability',
       'finance.payment-mix',
       'finance.refunds',
     ]);
@@ -89,27 +93,30 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(sources['finance.metrics']['ca-encaisse'].value).toBe('120 000 KMF');
     expect(sources['finance.metrics'].completude).toEqual(expect.objectContaining({ value: '80 %', tone: 'warning' }));
     expect(sources['finance.trend'][0]).toEqual(expect.objectContaining({
-      commandes: '4',
-      ca: '120 000 KMF',
-      cout: '70 000 KMF',
-      marge: '50 000 KMF',
-      couverture: '75 %',
+      commandes: '4', ca: '120 000 KMF', cout: '70 000 KMF', marge: '50 000 KMF', couverture: '75 %',
     }));
     expect(sources['finance.costing-summary'][1]).toEqual(expect.objectContaining({
-      indicateur: 'Coût réel',
-      valeur: '70 000 KMF',
-      couverture: '3/4',
-      qualite: 'Réel partiel',
+      indicateur: 'Coût réel', valeur: '70 000 KMF', couverture: '3/4', qualite: 'Réel partiel',
     }));
     expect(sources['finance.costing-orders'][0]).toEqual(expect.objectContaining({
-      commande: 'CMD-C',
-      costing: 'Réel complet',
-      variance: '+1 000 KMF',
-      marge: '8 000 KMF',
+      commande: 'CMD-C', costing: 'Réel complet', variance: '+1 000 KMF', marge: '8 000 KMF',
     }));
     expect(sources['finance.cost-families'][0]).toEqual({ famille: 'product_purchase', commandes: '4', montant: '40 000 KMF' });
+    expect(sources['finance.relay-profitability'][0]).toEqual({
+      relais: 'Relais Centre',
+      commandes: '4',
+      ca: '120 000 KMF',
+      marge_estimee: '50 000 KMF',
+      marge_reelle: '38 000 KMF',
+      couverture: '75 %',
+    });
     expect(sources['finance.payment-mix'][0]).toEqual({ mode: 'stripe_eur', commandes: '3', montant: '90 000 KMF' });
     expect(sources['finance.refunds'][0]).toEqual(expect.objectContaining({ commande: 'CMD-R', methode: 'stripe', montant: '1 000 KMF' }));
+  });
+
+  test('une marge réelle relais absente reste explicitement inconnue', () => {
+    const sources = finance.resolveSources({ relay_profitability: [{ relais_name: 'R', orders: 1, revenue_kmf: 10000, estimated_margin_kmf: 1000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
+    expect(sources['finance.relay-profitability'][0].marge_reelle).toBe('—');
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
@@ -151,6 +158,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       data: expect.objectContaining({
         'finance.metrics': expect.any(Object),
         'finance.costing-orders': expect.any(Array),
+        'finance.relay-profitability': expect.any(Array),
       }),
       filters: { period: '7' },
     }));
