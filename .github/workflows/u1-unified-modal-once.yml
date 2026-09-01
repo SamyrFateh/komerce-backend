@@ -1,0 +1,100 @@
+name: U1 unified Komerce modal once
+
+on:
+  push:
+    branches:
+      - feat/u1-unified-komerce-detail-modal
+
+permissions:
+  contents: write
+
+concurrency:
+  group: u1-unified-komerce-detail-modal
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      JWT_SECRET: u1-unified-modal-ci-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/u1-unified-komerce-detail-modal
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Apply U1 source finalizer
+        run: |
+          node scripts/u1-unified-modal-finalize-once.js
+          rm -f scripts/u1-unified-modal-finalize-once.js
+
+      - name: Rebuild governed projections
+        run: |
+          npm run feature:registry
+          npm run arch:gen
+          npm run boutique:360
+          npm run business-graph:gen
+          npm run meta:graph
+          npm run gate:findings:gen
+          npm run feature:360:gen
+          npm run agent:remediation:gen
+
+      - name: Prove U1 targeted behavior
+        run: |
+          npm --prefix public/boutique test -- --runInBand \
+            tests/unit/discovery-modal-detail.test.js \
+            tests/unit/discovery-rail.test.js \
+            tests/unit/main.test.js \
+            tests/unit/b-modal-core.test.js \
+            tests/unit/b-modal-core-active-flows.test.js
+
+      - name: Prove Boutique source contracts
+        run: |
+          node scripts/code-quality-gate.js --strict
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+          node public/boutique/scripts/check-imports.js --strict
+          node public/boutique/scripts/check-dom-contract.js --strict
+          node public/boutique/scripts/check-body-class-contract.js --strict
+          node public/boutique/scripts/boutique-arch-check.js
+
+      - name: Prove governance remains Debt Zero
+        run: |
+          git diff --exit-code -- governance/business-graph-drift-baseline.json
+          npm run business-graph:ratchet-check
+          npm run business-graph:disposition-check
+          npm run boutique:360:check
+          npm run feature:360:check
+          npm run agent:remediation:check
+
+      - name: Persist qualified U1 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo '::error::U1 produced no governed change'
+            exit 1
+          fi
+          git commit --no-verify -m "feat(discovery): unify local detail in Komerce modal"
+          git push origin HEAD:feat/u1-unified-komerce-detail-modal
