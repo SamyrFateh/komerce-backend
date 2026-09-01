@@ -12,6 +12,8 @@ jobs:
   fix:
     if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-static-contract-generation-secret-market-pricing-2026
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +45,7 @@ jobs:
           npm run business-graph:gen
           node scripts/gen-feature-360.js
           npm run security:360
+          npm run business-graph:ratchet-check
       - name: Commit governance fix
         run: |
           git config user.name "github-actions[bot]"
