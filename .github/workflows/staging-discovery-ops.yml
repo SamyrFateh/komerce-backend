@@ -1,0 +1,232 @@
+name: Staging Discovery operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Opération staging autorisée'
+        required: true
+        type: choice
+        default: discovery-check
+        options:
+          - discovery-check
+          - discovery-seed
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-discovery-ops
+  cancel-in-progress: false
+
+jobs:
+  discovery-ops:
+    name: Discovery staging — bounded operation
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] discovery-seed' ||
+        github.event.issue.title == '[staging-op] discovery-check'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KOMERCE_ENV: staging
+      DISCOVERY_STAGING_SEED_ENABLED: 'true'
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE_NAME: ${{ secrets.RAILWAY_SERVICE_NAME }}
+      RAILWAY_ENVIRONMENT_NAME: ${{ secrets.RAILWAY_ENVIRONMENT_NAME }}
+
+    steps:
+      - name: Resolve bounded operation
+        id: operation
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title || '' }}
+          DISPATCH_OPERATION: ${{ inputs.operation || '' }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            operation="$DISPATCH_OPERATION"
+          else
+            case "$ISSUE_TITLE" in
+              '[staging-op] discovery-seed') operation='discovery-seed' ;;
+              '[staging-op] discovery-check') operation='discovery-check' ;;
+              *) echo '::error::Opération non autorisée'; exit 1 ;;
+            esac
+          fi
+
+          case "$operation" in
+            discovery-seed|discovery-check) ;;
+            *) echo '::error::Opération non autorisée'; exit 1 ;;
+          esac
+
+          echo "operation=$operation" >> "$GITHUB_OUTPUT"
+          echo "Operation: $operation"
+
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require staging database secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo '::error::RAILWAY_DATABASE_URL manque dans les secrets GitHub'
+            exit 1
+          fi
+
+      - name: Seed Discovery staging
+        if: steps.operation.outputs.operation == 'discovery-seed'
+        id: seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(node scripts/seed-discovery-staging.js)"
+          printf '%s\n' "$output"
+
+          candidates="$(printf '%s\n' "$output" | sed -n 's/^DISCOVERY_RAIL_CANDIDATES=//p' | tail -n 1)"
+          if [ -z "$candidates" ]; then
+            echo '::error::Le seed n’a pas produit DISCOVERY_RAIL_CANDIDATES'
+            exit 1
+          fi
+
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+          echo "candidate_count=$(printf '%s' "$candidates" | awk -F',' '{print NF}')" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Discovery staging data
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const db = require('./db');
+
+          async function main() {
+            const { rows: [market] } = await db.query(
+              `SELECT id FROM markets WHERE code = 'KM' AND is_active = true LIMIT 1`
+            );
+            if (!market) throw new Error('market KM actif introuvable');
+
+            const { rows: products } = await db.query(
+              `SELECT p.product_ref, ls.qty_physical, ls.commercial_exposure
+                 FROM local_stock ls
+                 JOIN products p ON p.id = ls.product_id
+                WHERE ls.market_id = $1
+                  AND ls.commercial_exposure = 'ENABLED'
+                  AND (p.product_ref = 'GOLDEN-ELITE-PRO' OR p.product_ref LIKE 'SHOWCASE-V2-%')
+                ORDER BY p.product_ref`,
+              [market.id]
+            );
+
+            const { rows: [thirdParty] } = await db.query(
+              `SELECT
+                 (SELECT COUNT(*)::int FROM physical_offers WHERE market_id = $1 AND status = 'active' AND commercial_exposure = 'ENABLED') AS physical_offers,
+                 (SELECT COUNT(*)::int FROM services WHERE market_id = $1 AND status = 'active' AND commercial_exposure = 'ENABLED') AS services`,
+              [market.id]
+            );
+
+            const proof = {
+              market: 'KM',
+              local_products: products.length,
+              product_refs: products.map(row => row.product_ref),
+              physical_offers: thirdParty.physical_offers,
+              services: thirdParty.services,
+            };
+            console.log(JSON.stringify(proof, null, 2));
+
+            if (process.env.GITHUB_OUTPUT) {
+              require('fs').appendFileSync(process.env.GITHUB_OUTPUT,
+                `local_products=${proof.local_products}\nphysical_offers=${proof.physical_offers}\nservices=${proof.services}\n`);
+            }
+          }
+
+          main()
+            .catch(err => { console.error(err); process.exitCode = 1; })
+            .finally(() => db.pool.end());
+          NODE
+
+      - name: Sync rail variables to Railway staging when access is configured
+        if: steps.operation.outputs.operation == 'discovery-seed'
+        id: railway
+        shell: bash
+        env:
+          CANDIDATES: ${{ steps.seed.outputs.candidates }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${RAILWAY_TOKEN:-}" ] || [ -z "${RAILWAY_SERVICE_NAME:-}" ]; then
+            echo 'runtime_sync=not-configured' >> "$GITHUB_OUTPUT"
+            echo '::notice::DB seed terminé. Pour synchroniser automatiquement les variables runtime, ajouter les secrets RAILWAY_TOKEN et RAILWAY_SERVICE_NAME.'
+            exit 0
+          fi
+
+          target_env="${RAILWAY_ENVIRONMENT_NAME:-staging}"
+          npm install --global @railway/cli
+
+          railway variable set \
+            "DISCOVERY_RAIL_ENABLED=true" \
+            "DISCOVERY_RAIL_CANDIDATES=$CANDIDATES" \
+            --service "$RAILWAY_SERVICE_NAME" \
+            --environment "$target_env"
+
+          echo 'runtime_sync=updated' >> "$GITHUB_OUTPUT"
+          echo "Railway runtime variables updated for environment: $target_env"
+
+      - name: Write operation summary
+        if: always()
+        shell: bash
+        env:
+          OPERATION: ${{ steps.operation.outputs.operation }}
+          LOCAL_PRODUCTS: ${{ steps.verify.outputs.local_products }}
+          PHYSICAL_OFFERS: ${{ steps.verify.outputs.physical_offers }}
+          SERVICES: ${{ steps.verify.outputs.services }}
+          CANDIDATE_COUNT: ${{ steps.seed.outputs.candidate_count }}
+          RUNTIME_SYNC: ${{ steps.railway.outputs.runtime_sync }}
+        run: |
+          {
+            echo '## Komerce staging Discovery'
+            echo
+            echo "- operation: ${OPERATION:-unknown}"
+            echo "- local products: ${LOCAL_PRODUCTS:-unknown}"
+            echo "- physical offers: ${PHYSICAL_OFFERS:-unknown}"
+            echo "- services: ${SERVICES:-unknown}"
+            if [ "$OPERATION" = 'discovery-seed' ]; then
+              echo "- candidates: ${CANDIDATE_COUNT:-unknown}"
+              echo "- Railway runtime sync: ${RUNTIME_SYNC:-unknown}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OPERATION: ${{ steps.operation.outputs.operation }}
+          RUNTIME_SYNC: ${{ steps.railway.outputs.runtime_sync }}
+        run: |
+          set -euo pipefail
+          note="Staging operation \`$OPERATION\` completed successfully."
+          if [ "$OPERATION" = 'discovery-seed' ]; then
+            note="$note Railway runtime sync: ${RUNTIME_SYNC:-unknown}."
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body "$note"
+          gh issue close "$ISSUE_NUMBER" --reason completed
