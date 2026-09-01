@@ -34,9 +34,13 @@ jobs:
       - name: Regenerate governed projections
         run: |
           npm run business-graph:gen
+          # Transport-only workflow: do not let it become an application source
+          # in Gate Findings / Feature 360 while generating canonical projections.
+          rm -f .github/workflows/u2-governance-refresh-once.yml
           npm run gate:findings:gen
           npm run feature:360:gen
           npm run agent:remediation:gen
+          git checkout -- .github/workflows/u2-governance-refresh-once.yml
 
       - name: Commit generated projections
         run: |
