@@ -149,7 +149,7 @@ Le client n’a pas besoin de connaître les mots internes :
 
 source = source.slice(0, sectionStart) + section7 + source.slice(sectionEnd);
 
-const antiPatternAnchor = '15. activer toutes les familles d’offre en même temps.';
+const antiPatternAnchor = "15. activer toutes les familles d'offre en même temps.";
 mustContain(antiPatternAnchor, 'anti-pattern tail');
 source = source.replace(
   antiPatternAnchor,
