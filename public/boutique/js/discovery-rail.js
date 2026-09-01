@@ -10,11 +10,10 @@
  */
 'use strict';
 
-import { bus } from './b-bus.js';
+import { requestDiscovery } from './discovery-actions.js';
 import { openModal } from './b-modal.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
-import { openDiscoveryDetail, closeDiscoveryDetail } from './render/render-discovery-detail.js';
 
 let _installed = false;
 
@@ -64,11 +63,11 @@ function handleDiscoveryClick(event) {
       return;
     }
 
-    bus.emit('discovery:request', { kind, ref, source: button });
+    requestDiscovery(kind, ref, button);
     return;
   }
 
-  // Card click (non-button) — product → PDP, others → detail (future L2)
+  // Card click (non-button) — all kinds open the same Komerce modal shell.
   const card = event.target.closest('.k-discovery-card[data-discovery-kind][data-discovery-ref]');
   if (!card) return;
 
@@ -87,8 +86,7 @@ async function openCardDetail(kind, ref) {
   const fetcher = kind === 'service' ? fetchServiceCard : fetchPhysicalOfferCard;
   const detail = await fetcher(ref);
   if (!detail) return;
-  // Enrich with kind for the detail renderer
-  openDiscoveryDetail({ ...detail, kind });
+  openModal(ref, { kind, detail });
 }
 
 export function setupDiscoveryRail() {
@@ -100,16 +98,6 @@ export function setupDiscoveryRail() {
 
   shell.addEventListener('click', handleDiscoveryClick);
 
-  // CTA dans le detail sheet (injecté dans body, pas dans le shell)
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('#k-discovery-detail-sheet [data-discovery-action][data-discovery-ref]');
-    if (!btn || !btn.matches('button')) return;
-    const kind = btn.dataset.discoveryAction;
-    const ref = btn.dataset.discoveryRef;
-    if (!kind || !ref) return;
-    closeDiscoveryDetail();
-    bus.emit('discovery:request', { kind, ref, source: btn });
-  });
 
   refreshDiscoveryRail().catch(() => {
     shell.innerHTML = '';

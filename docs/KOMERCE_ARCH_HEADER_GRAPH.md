@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 486
+- Scanned code files: 487
 - Files with full headers: 449
-- Files with lite headers: 37
-- Files with any headers: 486
+- Files with lite headers: 38
+- Files with any headers: 487
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1066
-- Edges: 5589
+- Graph nodes: 1067
+- Edges: 5593
 - DB tables: 124
 - Doctrines: 287
 - Impact areas: 169
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 88
+- catalog: 89
 - checkout: 2
 - customs: 6
 - dashboard: 27
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-bootstrap: 4
 - ui-boundary: 1
 - ui-component: 40
-- ui-controller: 2
+- ui-controller: 3
 - ui-enhancer: 3
 - ui-infrastructure: 1
 - ui-page: 5
@@ -436,6 +436,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
 - public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
 - public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
+- public/boutique/js/b-modal-discovery-detail.js -> owner public/boutique/js/discovery-rail.js (catalog-modal-discovery-detail)
 - public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
 - public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
 - public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
@@ -445,6 +446,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-share-cart.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
 - public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
+- public/boutique/js/discovery-actions.js -> owner public/boutique/js/discovery-actions.js (catalog-discovery-actions)
 - public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
 - public/boutique/js/discovery-inquiry.js -> owner public/boutique/js/discovery-inquiry.js (providers-services-discovery-inquiry)
 - public/boutique/js/discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-discovery-rail)
@@ -458,7 +460,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/providers-services-api.js -> owner public/boutique/js/providers-services-api.js (providers-services-api)
 - public/boutique/js/render/category-shelf-visuals.js -> owner public/boutique/js/render/render-categories.js (category-shelf-visual-registry)
 - public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
-- public/boutique/js/render/render-discovery-detail.js -> owner public/boutique/js/discovery-rail.js (catalog-render-discovery-detail)
 - public/boutique/js/render/render-discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-render-discovery-rail)
 - public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
 - public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)

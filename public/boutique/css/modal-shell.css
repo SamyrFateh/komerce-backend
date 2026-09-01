@@ -1370,3 +1370,130 @@
     grid-row: 4;
   }
 }
+
+/* ── U1 — Discovery detail inside the canonical Komerce modal ───────── */
+
+.k-modal-discovery-detail {
+  display: none;
+}
+
+.k-modal.k-modal--discovery .k-modal-product-zone {
+  display: block;
+}
+
+.k-modal.k-modal--discovery .k-modal-img-wrap,
+.k-modal.k-modal--discovery .k-modal-right-rail,
+.k-modal.k-modal--discovery .k-modal-long-details,
+.k-modal.k-modal--discovery .k-modal-enriched-content,
+.k-modal.k-modal--discovery .k-modal-suggestions,
+.k-modal.k-modal--discovery .k-modal-cart-slot,
+.k-modal.k-modal--discovery .k-modal-actions {
+  display: none;
+}
+
+.k-modal.k-modal--discovery .k-modal-discovery-detail:not([hidden]) {
+  display: block;
+}
+
+.k-modal-discovery-shell {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 10px 12px 28px;
+}
+
+.k-modal-discovery-media {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
+  box-shadow: var(--elev-1);
+}
+
+.k-modal-discovery-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.k-modal-discovery-media-fallback {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: var(--ocean-dark);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.k-modal-discovery-body {
+  padding: 16px 2px 0;
+}
+
+.k-modal-discovery-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sand-94);
+  color: var(--ocean-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.k-modal-discovery-title {
+  margin: 10px 0 4px;
+  color: var(--ocean-dark);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.k-modal-discovery-provider {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.k-modal-discovery-desc {
+  margin: 12px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.k-modal-discovery-cta {
+  margin-top: 18px;
+  min-height: 42px;
+}
+
+.k-modal-discovery-detail[data-discovery-kind="physical_offer"] .k-modal-discovery-cta {
+  background: var(--terracotta-bg);
+  color: var(--terracotta-dark);
+  border-color: var(--border-terra-22);
+}
+
+.k-modal-discovery-detail[data-discovery-kind="service"] .k-modal-discovery-cta {
+  background: var(--cta-green-10);
+  color: var(--cta-green);
+  border-color: var(--border-sage-22);
+}
+
+@media (min-width: 900px) {
+  .k-modal-discovery-shell {
+    padding: 18px 22px 34px;
+  }
+
+  .k-modal-discovery-img {
+    aspect-ratio: 16 / 9;
+    max-height: 430px;
+  }
+
+  .k-modal-discovery-body {
+    padding-top: 18px;
+  }
+
+  .k-modal-discovery-title {
+    font-size: 26px;
+  }
+}

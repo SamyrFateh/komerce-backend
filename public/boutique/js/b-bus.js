@@ -51,6 +51,7 @@
  *   komerce:show { focus } — ouvrir Mon Komerce après authentification ; focus=wallet depuis le checkout [b-checkout.js → b-nav.js/b-komerce.js, LOT4B]
  *   nav:goto-komerce-wallet — ouvrir Mon Komerce focalisé sur le wallet depuis le checkout [b-checkout.js → b-nav.js, LOT4B]
  *   modal:opened     { product }        — fait : la modal vient de s'ouvrir sur ce produit (≠ modal:open, qui est la commande d'ouverture)
+ *   modal:discovery-opened { kind, ref, detail } — fait : le shell modal Komerce vient de s'ouvrir sur une offre/service Discovery
  *   modal:closed     —                  — fait : la modal vient de se fermer (≠ modal:close, qui est la commande de fermeture)
  *   modal:composition-synced —          — fait : la composition responsive de la modal ouverte vient d'être réconciliée après un resize
  *   cart-snapshot:render { context, items, actions } — rendre le snapshot liste
@@ -75,15 +76,17 @@
  * gen-boutique-360.js. Ne couvre que les événements listés ici — les autres
  * événements actifs ci-dessus restent hors du périmètre de cette validation :
  *   modal:opened               owner=modal-product producer=b-modal-core.js payload=value
+ *   modal:discovery-opened     owner=catalog producer=b-modal-core.js payload=value
  *   modal:closed                owner=modal-product producer=b-modal-core.js payload=none
  *   modal:composition-synced    owner=modal-product producer=b-modal-product-detail-bootstrap.js payload=none
- *   discovery:request           owner=catalog producer=discovery-rail.js payload=value
+ *   discovery:request           owner=catalog producer=discovery-actions.js payload=value
  *
  * Consommateurs déclarés (P3b) — tout écouteur observé hors de cette liste remonte
  * en ATTENTION comme consommateur non déclaré (un ajout légitime doit d'abord être
  * ajouté ici, pas seulement câblé) :
  *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
- *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js, group-side-cart.js
+ *   modal:discovery-opened : b-modal-discovery-detail.js
+ *   modal:closed     : b-modal-product-detail-bootstrap.js, b-modal-discovery-detail.js, b-pager.js, group-side-cart.js
  *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js
  *   discovery:request : discovery-inquiry.js
  *

@@ -80,7 +80,9 @@ import { _syncModalQtyUI, setupModalCart, resetAddCartButtonState }   from './b-
 bus.on('modal:close', function() { closeModal(); });
 
 // Receive open-modal signal; relays pushHistory so navigateModal(false) is preserved
-bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushHistory); });
+bus.on('modal:open', function({ id, pushHistory, kind, detail }) {
+  openModal(String(id), { pushHistory, kind, detail });
+});
 
 
   // ║  §9 · MODAL — Fiche produit, carousel, suggestions, subcat       ║
@@ -189,8 +191,113 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   });
 
 
-    function openModal(id, pushHistory) {
-    const product = state.products.find(p => String(p.id) === String(id));
+    function _lockModalBodyScroll() {
+      state._savedCatalogScrollY = getScrollY();
+      document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
+      document.body.classList.add('modal-open');
+    }
+
+    function _normalizeModalOpenOptions(value) {
+      if (typeof value === 'boolean') {
+        return { kind: 'product', pushHistory: value, detail: null };
+      }
+      if (!value || typeof value !== 'object') {
+        return { kind: 'product', pushHistory: undefined, detail: null };
+      }
+      return {
+        kind: value.kind || 'product',
+        pushHistory: value.pushHistory,
+        detail: value.detail || null,
+      };
+    }
+
+    function _openDiscoveryModal(id, options) {
+      const kind = options.kind;
+      const detail = options.detail;
+      if ((kind !== 'service' && kind !== 'physical_offer') || !detail || !detail.title) return;
+      if (!dom.modalOverlay || !dom.modal) return;
+
+      if (!dom.modalOverlay.classList.contains('open')) {
+        state._savedCatalogScrollY = getScrollY();
+        if (!_modalHistoryPushed) {
+          history.pushState({ kModal: true }, '');
+          _modalHistoryPushed = true;
+        }
+      }
+
+      state.modalKind = kind;
+      state.modalRef = String(id);
+      state.modalDetail = detail;
+      state.modalProduct = null;
+      state.modalHistory = [];
+      state.modalSubcatFilter = null;
+
+      dom.modal.classList.add('k-modal--discovery');
+      if (dom.modalBackLabel) dom.modalBackLabel.textContent = 'Catalogue';
+      updateCartBadge();
+
+      dom.modalOverlay.classList.add('open');
+      const scrollEl = dom.modal.querySelector('.k-modal-scroll');
+      if (scrollEl) scrollEl.scrollTop = 0;
+      requestAnimationFrame(function() {
+        const liveScrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+        if (liveScrollEl) liveScrollEl.scrollTop = 0;
+      });
+
+      // Generic modal lifecycle is active before the catalog-owned renderer paints.
+      state.modalOpen = true;
+      bus.emit('modal:discovery-opened', { kind, ref: String(id), detail });
+
+      document.body.classList.remove('modal-has-cart');
+      _lockModalBodyScroll();
+
+      // Same mobile scroll guards as Product modal; no second overlay/lifecycle.
+      if (window.innerWidth < 900) {
+        const pageScroll = dom.pageScroll;
+        if (pageScroll) {
+          state._savedPagerInlineStyles = {
+            position: pageScroll.style.position,
+            top: pageScroll.style.top,
+            left: pageScroll.style.left,
+            right: pageScroll.style.right,
+            bottom: pageScroll.style.bottom,
+            width: pageScroll.style.width,
+            height: pageScroll.style.height,
+            overflow: pageScroll.style.overflow,
+            overflowX: pageScroll.style.overflowX,
+            overflowY: pageScroll.style.overflowY,
+          };
+          pageScroll.style.position = '';
+          pageScroll.style.top = '';
+          pageScroll.style.left = '';
+          pageScroll.style.right = '';
+          pageScroll.style.bottom = '';
+          pageScroll.style.width = '';
+          pageScroll.style.height = '';
+          pageScroll.style.overflow = '';
+          pageScroll.style.overflowX = '';
+          pageScroll.style.overflowY = '';
+        }
+
+        const grid = document.getElementById('k-grid');
+        if (grid && grid.classList.contains('k-grid-flat-subcat')) {
+          state._savedGridScrollLeft = grid.scrollLeft;
+          grid.style.scrollSnapType = 'none';
+          grid.scrollLeft = 0;
+        }
+      }
+
+      hideModalFAB();
+    }
+
+    function openModal(id, optionsOrPushHistory) {
+      const openOptions = _normalizeModalOpenOptions(optionsOrPushHistory);
+      if (openOptions.kind !== 'product') {
+        _openDiscoveryModal(id, openOptions);
+        return;
+      }
+      const pushHistory = openOptions.pushHistory;
+      const product = state.products.find(p => String(p.id) === String(id));
     if (!product) return;
 
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
@@ -207,6 +314,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       state.modalHistory.push(state.modalProduct.id);
     }
 
+    state.modalKind = 'product';
+    state.modalRef = String(id);
+    state.modalDetail = null;
+    if (dom.modal) dom.modal.classList.remove('k-modal--discovery');
     state.modalProduct = product;
 
     // FIX: Stepper = panier direct. Affiche la quantité déjà dans le panier.
@@ -306,9 +417,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // exclusivement du contrat détail (delivery_options), rendues par le
     // renderer PDC après le fetch /detail.
     // Lock body scroll — CSS handles layout via body.modal-open
-    state._savedCatalogScrollY = getScrollY();
-    document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
-    document.body.classList.add('modal-open');
+    _lockModalBodyScroll();
     // Signaler au CSS si le side-cart est visible (pour ajuster la largeur de la modal)
     if (document.getElementById('k-side-cart')?.classList.contains('has-items')) {
       document.body.classList.add('modal-has-cart');
@@ -426,6 +535,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       _modalHistoryPushed = false;
     }
     dom.modalOverlay.classList.remove('open');
+    if (dom.modal) dom.modal.classList.remove('k-modal--discovery');
     // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
     document.body.classList.remove('modal-open');
@@ -484,6 +594,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     scrollToPosition(scrollY);
     state.modalProduct = null;
+    state.modalKind = 'product';
+    state.modalRef = null;
+    state.modalDetail = null;
     state.modalHistory = [];
     // Réinitialiser le choix de livraison — ne pas conserver entre deux produits
     state.modalDeliverySelection = { requested_transport_rail: null };

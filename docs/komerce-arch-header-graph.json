@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 486,
+    "scannedCodeFiles": 487,
     "filesWithFullHeaders": 449,
-    "filesWithLiteHeaders": 37,
-    "filesWithAnyHeaders": 486,
+    "filesWithLiteHeaders": 38,
+    "filesWithAnyHeaders": 487,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1066,
-    "edges": 5589,
+    "graphNodes": 1067,
+    "edges": 5593,
     "dbTables": 124,
     "doctrines": 287,
     "impactAreas": 169,
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 88,
+    "catalog": 89,
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 2,
@@ -82,7 +82,7 @@
     "ui-page": 5,
     "ui-service": 5,
     "view-model": 7,
-    "ui-controller": 2,
+    "ui-controller": 3,
     "ui-state": 1,
     "util-ui": 1,
     "ui-infrastructure": 1,
@@ -111,7 +111,7 @@
     "critical": 68,
     "medium": 121,
     "high": 252,
-    "low": 45
+    "low": 46
   },
   "nodes": [
     {
@@ -2588,6 +2588,33 @@
       "version": "2026-07 — Lot Content, commit 4 (contenu enrichi partagé)"
     },
     {
+      "id": "public/boutique/js/b-modal-discovery-detail.js",
+      "file": "public/boutique/js/b-modal-discovery-detail.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "catalog-modal-discovery-detail",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "low",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal sans les convertir en Product.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "product-discovery",
+        "discovery-rail",
+        "modal-layout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/b-modal-image-ux.js",
       "file": "public/boutique/js/b-modal-image-ux.js",
       "type": "file",
@@ -3996,6 +4023,33 @@
       "version": "2026-08"
     },
     {
+      "id": "public/boutique/js/discovery-actions.js",
+      "file": "public/boutique/js/discovery-actions.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "catalog-discovery-actions",
+      "domain": "catalog",
+      "layer": "ui-controller",
+      "criticality": "low",
+      "owner": "public/boutique/js/discovery-actions.js",
+      "purpose": "Posséder l'unique émission de la commande discovery:request, quel que soit le point d'entrée Boutique.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "product-discovery",
+        "discovery-rail",
+        "modal-layout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/discovery-api.js",
       "file": "public/boutique/js/discovery-api.js",
       "type": "file-lite",
@@ -4771,33 +4825,6 @@
         "boutique"
       ],
       "version": "2026-08"
-    },
-    {
-      "id": "public/boutique/js/render/render-discovery-detail.js",
-      "file": "public/boutique/js/render/render-discovery-detail.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "catalog-render-discovery-detail",
-      "domain": "catalog",
-      "layer": "ui-renderer",
-      "criticality": "low",
-      "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Panneau de détail léger pour offres physiques et services Discovery.",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "home",
-        "discovery-rail",
-        "providers-services"
-      ],
-      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/render/render-discovery-rail.js",
@@ -25293,6 +25320,11 @@
       "area": "product-content"
     },
     {
+      "id": "impact:discovery-rail",
+      "type": "impact-area",
+      "area": "discovery-rail"
+    },
+    {
       "id": "impact:single-ownership",
       "type": "impact-area",
       "area": "single-ownership"
@@ -25431,11 +25463,6 @@
       "id": "impact:pdp",
       "type": "impact-area",
       "area": "pdp"
-    },
-    {
-      "id": "impact:discovery-rail",
-      "type": "impact-area",
-      "area": "discovery-rail"
     },
     {
       "id": "impact:providers-services",
@@ -29498,6 +29525,30 @@
       "label": "product-content"
     },
     {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "public/boutique/js/discovery-rail.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/discovery-rail.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "impact:modal-layout",
+      "type": "impact",
+      "label": "modal-layout"
+    },
+    {
       "from": "public/boutique/js/b-modal-image-ux.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -31472,6 +31523,30 @@
       "label": "desktop-catalog"
     },
     {
+      "from": "public/boutique/js/discovery-actions.js",
+      "to": "public/boutique/js/discovery-actions.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/discovery-actions.js"
+    },
+    {
+      "from": "public/boutique/js/discovery-actions.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/discovery-actions.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/discovery-actions.js",
+      "to": "impact:modal-layout",
+      "type": "impact",
+      "label": "modal-layout"
+    },
+    {
       "from": "public/boutique/js/discovery-api.js",
       "to": "public/boutique/js/discovery-api.js",
       "type": "owned-by",
@@ -32334,30 +32409,6 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
-    },
-    {
-      "from": "public/boutique/js/render/render-discovery-detail.js",
-      "to": "public/boutique/js/discovery-rail.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/discovery-rail.js"
-    },
-    {
-      "from": "public/boutique/js/render/render-discovery-detail.js",
-      "to": "impact:home",
-      "type": "impact",
-      "label": "home"
-    },
-    {
-      "from": "public/boutique/js/render/render-discovery-detail.js",
-      "to": "impact:discovery-rail",
-      "type": "impact",
-      "label": "discovery-rail"
-    },
-    {
-      "from": "public/boutique/js/render/render-discovery-detail.js",
-      "to": "impact:providers-services",
-      "type": "impact",
-      "label": "providers-services"
     },
     {
       "from": "public/boutique/js/render/render-discovery-rail.js",
@@ -62120,6 +62171,32 @@
         "public/boutique/js/view-models/product-content-model.js"
       ]
     },
+    "public/boutique/js/b-modal-discovery-detail.js": {
+      "role": "catalog-modal-discovery-detail",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal sans les convertir en Product.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "product-discovery",
+        "discovery-rail",
+        "modal-layout"
+      ],
+      "mustCheck": [
+        "impact:discovery-rail",
+        "impact:modal-layout",
+        "impact:product-discovery",
+        "public/boutique/js/discovery-rail.js"
+      ]
+    },
     "public/boutique/js/b-modal-image-ux.js": {
       "role": "product-modal-image-ux",
       "domain": "shared-cart-modal",
@@ -63583,6 +63660,34 @@
         "public/boutique/js/shop-schema.js"
       ]
     },
+    "public/boutique/js/discovery-actions.js": {
+      "role": "catalog-discovery-actions",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/discovery-actions.js",
+      "purpose": "Posséder l'unique émission de la commande discovery:request, quel que soit le point d'entrée Boutique.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [
+        "public/boutique/js/discovery-actions.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "product-discovery",
+        "discovery-rail",
+        "modal-layout"
+      ],
+      "mustCheck": [
+        "impact:discovery-rail",
+        "impact:modal-layout",
+        "impact:product-discovery",
+        "public/boutique/js/discovery-actions.js"
+      ]
+    },
     "public/boutique/js/discovery-api.js": {
       "role": "boutique-discovery-api",
       "domain": "catalog",
@@ -63652,8 +63757,8 @@
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
+        "public/boutique/js/b-modal-discovery-detail.js",
         "public/boutique/js/discovery-rail.js",
-        "public/boutique/js/render/render-discovery-detail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ],
       "dbRead": [],
@@ -63669,8 +63774,8 @@
         "impact:discovery-rail",
         "impact:home",
         "impact:product-discovery",
+        "public/boutique/js/b-modal-discovery-detail.js",
         "public/boutique/js/discovery-rail.js",
-        "public/boutique/js/render/render-discovery-detail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ]
     },
@@ -64353,32 +64458,6 @@
         "impact:boutique",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/render/category-shelf-visuals.js"
-      ]
-    },
-    "public/boutique/js/render/render-discovery-detail.js": {
-      "role": "catalog-render-discovery-detail",
-      "domain": "catalog",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Panneau de détail léger pour offres physiques et services Discovery.",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [],
-      "impactAreas": [
-        "home",
-        "discovery-rail",
-        "providers-services"
-      ],
-      "mustCheck": [
-        "impact:discovery-rail",
-        "impact:home",
-        "impact:providers-services",
-        "public/boutique/js/discovery-rail.js"
       ]
     },
     "public/boutique/js/render/render-discovery-rail.js": {

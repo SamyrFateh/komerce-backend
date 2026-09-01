@@ -246,6 +246,26 @@ Le client n'a pas besoin de connaître les mots internes :
 
 > **Le système sait. Le client agit.**
 
+### Une seule surface de détail Komerce
+
+La carte Discovery n'ouvre jamais une marketplace, une page artisan ni un second système de modale.
+
+`Product`, `Physical Offer` et `Service` restent des vérités métier distinctes, mais utilisent le **même shell de détail Komerce**. La nature métier détermine les capacités affichées et l'interaction finale, pas une nouvelle expérience.
+
+```text
+Carte Komerce
+      ↓
+#k-modal
+      ↓
+Product        → Acheter
+Physical Offer → Commander
+Service        → Demander / Contacter
+```
+
+Les blocs de détail (média, fournisseur, variantes, livraison, références, contact autorisé) sont optionnels et apparaissent uniquement lorsque leur domaine source possède réellement la donnée. Discovery ne les invente jamais.
+
+> **Une seule expérience de découverte et de détail Komerce ; seule la nature de l'interaction finale change.**
+
 ---
 
 ## 8. Discovery est une projection de lecture

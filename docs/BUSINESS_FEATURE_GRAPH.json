@@ -17492,8 +17492,8 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
-        "declared": "../js/render/render-discovery-detail.js",
-        "resolvedPath": "public/boutique/js/render/render-discovery-detail.js",
+        "declared": "../js/b-modal-discovery-detail.js",
+        "resolvedPath": "public/boutique/js/b-modal-discovery-detail.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17502,6 +17502,14 @@
         "category": "js",
         "declared": "../js/discovery-rail.js",
         "resolvedPath": "public/boutique/js/discovery-rail.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/discovery-actions.js",
+        "resolvedPath": "public/boutique/js/discovery-actions.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17734,6 +17742,22 @@
         "category": "tests",
         "declared": "../tests/unit/discovery-rail.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-rail.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/discovery-modal-detail.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-modal-detail.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/discovery-actions.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-actions.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20668,11 +20692,15 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
-                "sourceFileId": "public/boutique/js/render/render-discovery-detail.js",
+                "sourceFileId": "public/boutique/js/b-modal-discovery-detail.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-discovery-detail.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
-                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "sourceFileId": "public/boutique/js/discovery-actions.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               },
               {
@@ -20801,6 +20829,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-subcat.js",
+                "targetFile": "public/boutique/js/b-modal.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-discovery-detail.js",
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
@@ -27237,6 +27269,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-modal-discovery-detail.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-greeting.js"
               },
               {
@@ -29528,7 +29564,7 @@
         "filesObserved": 1005
       },
       "boutique": {
-        "filesObserved": 186,
+        "filesObserved": 189,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -31723,8 +31759,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 98,
-        "technicalNodesOwned": 98,
+        "technicalNodesTotal": 99,
+        "technicalNodesOwned": 99,
         "technicalOrphans": 0
       }
     },
