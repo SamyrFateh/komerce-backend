@@ -5,8 +5,9 @@
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
+ *                Shell commun par carte, contenu spécialisé par kind.
  * @impact-areas  home, product-discovery, discovery-rail
- * @version       2026-08
+ * @version       2026-09
  */
 'use strict';
 
@@ -30,6 +31,11 @@ function fallbackIcon(kind) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z"/></svg>';
 }
 
+/**
+ * Normalise un objet carte brut du backend en objet exploitable par le renderer.
+ * Les champs enrichis (price, zone, provider_name, description) sont optionnels
+ * pour rester backward-compatible avec un backend pré-L0.
+ */
 function normalizeCard(card) {
   if (!card || !CARD_KIND.has(card.kind)) return null;
   if (!card.title || !card.cta_action_ref) return null;
@@ -41,27 +47,79 @@ function normalizeCard(card) {
     ctaLabel: card.cta_label ? String(card.cta_label) : FALLBACK_CTA[card.kind],
     actionRef: String(card.cta_action_ref),
     imageRef: card.image_ref ? String(card.image_ref) : '',
+    price: card.price != null ? Number(card.price) : null,
+    zone: card.zone ? String(card.zone) : null,
+    providerName: card.provider_name ? String(card.provider_name) : null,
+    description: card.description ? String(card.description) : null,
   };
 }
+
+function formatPrice(price) {
+  if (price == null) return '';
+  return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(price) + ' KMF';
+}
+
+// ── Contenu spécialisé par kind ─────────────────────────────────────────
+
+function renderProductInfo(card) {
+  const priceHtml = card.price != null
+    ? `<div class="k-discovery-price">${formatPrice(card.price)}</div>`
+    : '';
+  return `
+    <div class="k-discovery-name">${sanitize(card.title)}</div>
+    ${priceHtml}
+    ${card.subtitle ? `<div class="k-discovery-subtitle">${sanitize(card.subtitle)}</div>` : ''}`;
+}
+
+function renderOfferInfo(card) {
+  const providerHtml = card.providerName
+    ? `<div class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</div>`
+    : '';
+  return `
+    <div class="k-discovery-name">${sanitize(card.title)}</div>
+    ${card.subtitle ? `<div class="k-discovery-subtitle">${sanitize(card.subtitle)}</div>` : ''}
+    ${providerHtml}`;
+}
+
+function renderServiceInfo(card) {
+  const providerHtml = card.providerName
+    ? `<div class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</div>`
+    : '';
+  return `
+    <div class="k-discovery-name">${sanitize(card.title)}</div>
+    ${card.subtitle ? `<div class="k-discovery-subtitle">${sanitize(card.subtitle)}</div>` : ''}
+    ${providerHtml}`;
+}
+
+const INFO_RENDERER = Object.freeze({
+  product: renderProductInfo,
+  physical_offer: renderOfferInfo,
+  service: renderServiceInfo,
+});
+
+// ── Shell commun ────────────────────────────────────────────────────────
 
 function renderCard(card) {
   const image = card.imageRef
     ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${sanitize(card.title)}" loading="lazy" decoding="async">`
     : `<div class="k-discovery-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
 
+  const infoRenderer = INFO_RENDERER[card.kind] || renderProductInfo;
+
   return `
-    <article class="k-discovery-card" data-discovery-kind="${card.kind}" role="listitem">
+    <article class="k-discovery-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
       <div class="k-discovery-media">
         ${image}
         ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
       </div>
       <div class="k-discovery-info">
-        <div class="k-discovery-name">${sanitize(card.title)}</div>
-        ${card.subtitle ? `<div class="k-discovery-subtitle">${sanitize(card.subtitle)}</div>` : ''}
+        ${infoRenderer(card)}
         <button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
       </div>
     </article>`;
 }
+
+// ── Render public ───────────────────────────────────────────────────────
 
 export function renderDiscoveryRail(container, cards, options = {}) {
   if (!container) return 0;
@@ -90,3 +148,5 @@ export function renderDiscoveryRail(container, cards, options = {}) {
   container.hidden = false;
   return normalized.length;
 }
+
+export { normalizeCard, renderCard, formatPrice };

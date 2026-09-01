@@ -23,19 +23,22 @@ describe('renderDiscoveryRail', () => {
     expect(target().innerHTML).toBe('');
   });
 
-  it('rend dans un seul rail les trois intentions avec leurs verbes et médias', () => {
+  it('rend dans un seul rail les trois intentions avec contenu spécialisé par kind', () => {
     const cards = [
       {
         kind: 'product', title: 'Climatiseur', subtitle: 'Disponible maintenant',
         cta_label: 'Acheter', cta_action_ref: 'p-1', image_ref: '/images/product.webp',
+        price: 195000,
       },
       {
         kind: 'physical_offer', title: 'Samboussas mariage', subtitle: 'Préparation sur commande',
         cta_label: 'Commander', cta_action_ref: 'o-1', image_ref: '/images/samboussas.webp',
+        provider_name: 'Fatima Traiteur', zone: 'Moroni',
       },
       {
         kind: 'service', title: 'Plomberie', subtitle: 'Sur demande',
         cta_label: 'Demander', cta_action_ref: 's-1', image_ref: '/images/plombier.webp',
+        provider_name: 'Ali Plomberie', zone: 'Mutsamudu',
       },
     ];
 
@@ -52,6 +55,24 @@ describe('renderDiscoveryRail', () => {
 
     const labels = Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent);
     expect(labels).toEqual(['Acheter', 'Commander', 'Demander']);
+
+    // V2 — contenu spécialisé
+    expect(target().querySelector('.k-discovery-price')?.textContent).toContain('195');
+    expect(target().querySelector('.k-discovery-price')?.textContent).toContain('KMF');
+
+    const providers = Array.from(target().querySelectorAll('.k-discovery-provider')).map(el => el.textContent);
+    expect(providers).toHaveLength(2);
+    expect(providers[0]).toContain('Fatima Traiteur');
+    expect(providers[0]).toContain('Moroni');
+    expect(providers[1]).toContain('Ali Plomberie');
+    expect(providers[1]).toContain('Mutsamudu');
+
+    // product card must NOT show provider
+    const productCard = target().querySelector('[data-discovery-kind="product"]');
+    expect(productCard.querySelector('.k-discovery-provider')).toBeNull();
+
+    // cards are now clickable via data-discovery-ref on article
+    expect(target().querySelector('.k-discovery-card[data-discovery-ref="p-1"]')).not.toBeNull();
   });
 
   it('ignore un kind inconnu au lieu de créer une nouvelle taxonomie implicite', () => {
