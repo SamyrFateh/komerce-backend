@@ -46,15 +46,15 @@
   },
   "summary": {
     "features": 33,
-    "healthy": 33,
-    "attention": 0,
+    "healthy": 32,
+    "attention": 1,
     "blocked": 0,
-    "businessDependencies": 235,
+    "businessDependencies": 234,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 0,
+    "debtItemsTotal": 1,
     "gateHealthy": 33,
     "gateBlocked": 0
   },
@@ -5155,7 +5155,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 29,
             "files": [
               {
                 "declared": "services/client-360.js",
@@ -5260,6 +5260,36 @@
               {
                 "declared": "services/product-360.js",
                 "resolvedPath": "services/product-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/cash-reconciliation-signals.js",
+                "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/commerce-signals.js",
+                "resolvedPath": "services/radar-alerts/commerce-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/logistics-signals.js",
+                "resolvedPath": "services/radar-alerts/logistics-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/payment-signals.js",
+                "resolvedPath": "services/radar-alerts/payment-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/treasury-signals.js",
+                "resolvedPath": "services/radar-alerts/treasury-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-queries.js",
+                "resolvedPath": "services/radar-queries.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5600,7 +5630,7 @@
             ]
           }
         },
-        "totalFiles": 212,
+        "totalFiles": 218,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5977,7 +6007,6 @@
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "data-read"
           ]
         },
@@ -6373,13 +6402,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "provider": "logistics",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
         }
       ],
       "consumedBy": [
@@ -6394,7 +6416,6 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "data-read"
           ]
         }
@@ -6409,12 +6430,14 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 0,
-        "declaredNotObservedEvidence": []
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "logistics"
+        ]
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -6434,8 +6457,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -12758,13 +12787,6 @@
             "static-code",
             "data-read",
             "data-write"
-          ]
-        },
-        {
-          "consumer": "decision-signals",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
           ]
         },
         {
