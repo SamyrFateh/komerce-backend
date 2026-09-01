@@ -195,6 +195,33 @@ async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION,
 // ── Exposition ───────────────────────────────────────────────────────────
 
 /**
+ * Met à jour le commercial_exposure d'une ligne local_stock existante.
+ * La ligne doit déjà exister (créée via setLocalStock) — pas de création implicite.
+ *
+ * @param {string} productId
+ * @param {string} marketId
+ * @param {'ENABLED'|'DISABLED'} exposure
+ * @param {string} [location]
+ * @returns {Promise<object>} la ligne local_stock mise à jour
+ */
+async function setLocalStockExposure(productId, marketId, exposure, location = DEFAULT_LOCATION) {
+  if (!['ENABLED', 'DISABLED'].includes(exposure)) {
+    throw new Error(`setLocalStockExposure: exposure invalide (${exposure})`);
+  }
+  const { rows } = await db.query(
+    `UPDATE local_stock
+        SET commercial_exposure = $1, updated_at = now()
+      WHERE product_id = $2 AND market_id = $3 AND location = $4
+      RETURNING *`,
+    [exposure, productId, marketId, location]
+  );
+  if (!rows.length) {
+    throw new Error(`setLocalStockExposure: ligne local_stock introuvable (${productId}, ${marketId}, ${location})`);
+  }
+  return rows[0];
+}
+
+/**
  * Même patron que isServiceExposable/isPhysicalOfferExposable
  * (providers-service.js) : exposable seulement si l'exposition est activée
  * ET qu'une quantité réellement disponible existe (allocations actives
@@ -369,6 +396,7 @@ module.exports = {
   getLocalStock,
   getAvailability,
   setLocalStock,
+  setLocalStockExposure,
   isStockExposable,
   allocateForOrderItem,
   consumeAllocationsForOrder,
