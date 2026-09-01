@@ -1,0 +1,215 @@
+name: Discovery live experience diagnostic
+
+on:
+  push:
+    branches:
+      - diag/discovery-live-experience
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ephemeral Playwright
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Probe live Komerce Discovery
+        env:
+          TARGET_URL: https://komerce.co/
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+
+          const target = process.env.TARGET_URL;
+          const failures = [];
+          const networkErrors = [];
+          const consoleErrors = [];
+
+          function spread(values) {
+            if (!values.length) return null;
+            return Math.max(...values) - Math.min(...values);
+          }
+
+          async function metrics(page) {
+            return page.evaluate(() => {
+              const cards = [...document.querySelectorAll('#k-discovery-local .k-discovery-card')];
+              return cards.map((card) => {
+                const rect = (selector) => {
+                  const el = card.querySelector(selector);
+                  if (!el) return null;
+                  const r = el.getBoundingClientRect();
+                  return {
+                    top: +r.top.toFixed(2),
+                    bottom: +r.bottom.toFixed(2),
+                    height: +r.height.toFixed(2),
+                    width: +r.width.toFixed(2),
+                  };
+                };
+                const r = card.getBoundingClientRect();
+                return {
+                  kind: card.dataset.discoveryKind,
+                  ref: card.dataset.discoveryRef,
+                  card: {
+                    top: +r.top.toFixed(2),
+                    bottom: +r.bottom.toFixed(2),
+                    height: +r.height.toFixed(2),
+                    width: +r.width.toFixed(2),
+                  },
+                  media: rect('.k-discovery-media'),
+                  title: rect('.k-discovery-name'),
+                  primary: rect('.k-discovery-primary-slot'),
+                  context: rect('.k-discovery-context-slot'),
+                  cta: rect('.k-discovery-cta'),
+                };
+              });
+            });
+          }
+
+          async function modalSnapshot(page) {
+            return page.evaluate(() => {
+              const overlay = document.querySelector('#k-modal-overlay');
+              const modal = document.querySelector('#k-modal');
+              const discovery = document.querySelector('#k-modal-discovery-detail');
+              const productZone = document.querySelector('#k-modal .k-modal-product-zone');
+              return {
+                overlayOpen: Boolean(overlay?.classList.contains('open')),
+                modalClasses: modal?.className || null,
+                discoveryHidden: discovery ? discovery.hidden : null,
+                discoveryText: discovery && !discovery.hidden
+                  ? discovery.textContent.replace(/\s+/g, ' ').trim().slice(0, 260)
+                  : null,
+                productZoneDisplay: productZone ? getComputedStyle(productZone).display : null,
+              };
+            });
+          }
+
+          async function closeModal(page) {
+            const close = page.locator('#k-modal .k-modal-close, #k-modal-close').first();
+            if (await close.count()) {
+              await close.click().catch(() => {});
+            } else {
+              await page.keyboard.press('Escape').catch(() => {});
+            }
+            await page.waitForFunction(() => !document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 5000 }).catch(() => {});
+          }
+
+          async function openByCard(page, kind) {
+            const card = page.locator(`#k-discovery-local .k-discovery-card[data-discovery-kind="${kind}"]`).first();
+            if (!(await card.count())) return { kind, found: false, opened: false };
+            const ref = await card.getAttribute('data-discovery-ref');
+            await card.locator('.k-discovery-media').click();
+            const opened = await page.waitForFunction(() => document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 8000 })
+              .then(() => true).catch(() => false);
+            const snapshot = await modalSnapshot(page);
+            await closeModal(page);
+            return { kind, ref, found: true, opened, snapshot };
+          }
+
+          async function openServiceByRailCta(page) {
+            const cta = page.locator('#k-discovery-local .k-discovery-card[data-discovery-kind="service"] .k-discovery-cta').first();
+            if (!(await cta.count())) return { found: false, opened: false };
+            await cta.click();
+            const opened = await page.waitForFunction(() => document.querySelector('#k-modal-overlay')?.classList.contains('open'), null, { timeout: 8000 })
+              .then(() => true).catch(() => false);
+            const snapshot = await modalSnapshot(page);
+            await closeModal(page);
+            return { found: true, opened, snapshot };
+          }
+
+          async function bootPage(browser, viewport) {
+            const page = await browser.newPage({ viewport });
+            page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
+            page.on('console', (msg) => {
+              if (msg.type() === 'error') consoleErrors.push(`console: ${msg.text()}`);
+            });
+            page.on('response', (response) => {
+              if (response.status() >= 400 && /\/api\//.test(response.url())) {
+                networkErrors.push(`${response.status()} ${response.url()}`);
+              }
+            });
+
+            await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.waitForSelector('#k-discovery-local .k-discovery-card', { state: 'visible', timeout: 30000 });
+            await page.waitForTimeout(2000);
+            return page;
+          }
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            try {
+              const desktop = await bootPage(browser, { width: 1728, height: 900 });
+              const desktopCards = await metrics(desktop);
+              const heights = desktopCards.map((c) => c.card.height);
+              const ctaBottoms = desktopCards.map((c) => c.cta?.bottom).filter(Number.isFinite);
+              const cardTops = desktopCards.map((c) => c.card.top);
+
+              console.log('DESKTOP_CARDS=' + JSON.stringify(desktopCards, null, 2));
+              console.log('DESKTOP_GEOMETRY=' + JSON.stringify({
+                count: desktopCards.length,
+                cardHeightSpread: spread(heights),
+                cardTopSpread: spread(cardTops),
+                ctaBottomSpread: spread(ctaBottoms),
+              }));
+
+              if (desktopCards.length < 3) failures.push(`desktop card count=${desktopCards.length}`);
+              if ((spread(heights) ?? 999) > 2) failures.push(`desktop card heights diverge by ${spread(heights)}px`);
+              if ((spread(ctaBottoms) ?? 999) > 2) failures.push(`desktop CTA bottoms diverge by ${spread(ctaBottoms)}px`);
+
+              const product = await openByCard(desktop, 'product');
+              const offer = await openByCard(desktop, 'physical_offer');
+              const service = await openByCard(desktop, 'service');
+              const serviceCta = await openServiceByRailCta(desktop);
+              console.log('DESKTOP_MODAL_PRODUCT=' + JSON.stringify(product, null, 2));
+              console.log('DESKTOP_MODAL_OFFER=' + JSON.stringify(offer, null, 2));
+              console.log('DESKTOP_MODAL_SERVICE=' + JSON.stringify(service, null, 2));
+              console.log('DESKTOP_MODAL_SERVICE_CTA=' + JSON.stringify(serviceCta, null, 2));
+
+              for (const result of [product, offer, service]) {
+                if (!result.found) failures.push(`${result.kind} card missing`);
+                else if (!result.opened) failures.push(`${result.kind} card did not open modal`);
+              }
+              if (!serviceCta.found || !serviceCta.opened) failures.push('service rail CTA did not open modal');
+              if (service.snapshot?.discoveryHidden !== false) failures.push('service modal did not render discovery detail');
+              if (offer.snapshot?.discoveryHidden !== false) failures.push('physical offer modal did not render discovery detail');
+              if (product.snapshot?.modalClasses?.includes('k-modal--discovery')) failures.push('product opened in discovery modal mode');
+
+              await desktop.close();
+
+              const mobile = await bootPage(browser, { width: 390, height: 844 });
+              const mobileCards = await metrics(mobile);
+              console.log('MOBILE_CARDS=' + JSON.stringify(mobileCards, null, 2));
+              console.log('MOBILE_GEOMETRY=' + JSON.stringify({
+                count: mobileCards.length,
+                cardHeightSpread: spread(mobileCards.map((c) => c.card.height)),
+                ctaBottomsByRow: mobileCards.map((c) => c.cta?.bottom),
+              }));
+              if (mobileCards.length > 4) failures.push(`mobile exposes ${mobileCards.length} cards (>4)`);
+              const mobileService = await openByCard(mobile, 'service');
+              console.log('MOBILE_MODAL_SERVICE=' + JSON.stringify(mobileService, null, 2));
+              if (mobileService.found && !mobileService.opened) failures.push('mobile service card did not open modal');
+              await mobile.close();
+
+              console.log('API_ERRORS=' + JSON.stringify(networkErrors, null, 2));
+              console.log('CONSOLE_ERRORS=' + JSON.stringify(consoleErrors, null, 2));
+              console.log('FAILURES=' + JSON.stringify(failures, null, 2));
+
+              if (failures.length) process.exitCode = 1;
+            } finally {
+              await browser.close();
+            }
+          })().catch((err) => {
+            console.error(err);
+            process.exitCode = 2;
+          });
+          NODE
