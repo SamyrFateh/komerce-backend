@@ -22,6 +22,30 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Fix focused Jest mock harness
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/tmp-market-pricing-patch.py')
+          s = p.read_text(encoding='utf-8')
+          replacements = [
+              ("let role = 'market_operator';", "let mockRole = 'market_operator';"),
+              ("let authorized = new Set(['market-cm']);", "let mockAuthorized = new Set(['market-cm']);"),
+              ("let centralPricing = false;", "let mockCentralPricing = false;"),
+              ("role }; next();", "role: mockRole }; next();"),
+              ("new Set(authorized)", "new Set(mockAuthorized)"),
+              ("async () => centralPricing", "async () => mockCentralPricing"),
+              ("=> centralPricing ? next()", "=> mockCentralPricing ? next()"),
+              ("  role = 'market_operator';", "  mockRole = 'market_operator';"),
+              ("  authorized = new Set(['market-cm']);", "  mockAuthorized = new Set(['market-cm']);"),
+              ("  centralPricing = false;", "  mockCentralPricing = false;"),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'missing mock harness anchor: {old}')
+              s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Apply market pricing patch
         run: python scripts/tmp-market-pricing-patch.py
       - name: Focused market pricing tests
