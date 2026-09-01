@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/render/render-categories.js
  * @purpose       Registre de présentation unique des objets visuels de la navigation Komerce Shelf.
  * @impact-areas  category-navigation, subcategory-navigation
- * @version       2026-08
+ * @version       2026-09
  */
 'use strict';
 
@@ -24,6 +24,13 @@ export const KOMERCE_CATEGORY_CUTOUTS = Object.freeze({
   auto: '/boutique/categories/cat-auto-v3.webp?v=1',
 });
 
+export const KOMERCE_MODE_SUBCATEGORY_CUTOUTS = Object.freeze({
+  femme: '/boutique/categories/sub-mode-femme-v4.svg?v=1',
+  homme: '/boutique/categories/sub-mode-homme-v4.svg?v=1',
+  enfant: '/boutique/categories/sub-mode-enfant-v4.svg?v=1',
+  beaute: '/boutique/categories/sub-mode-beaute-v4.svg?v=1',
+});
+
 const CATEGORY_VISUALS = {
   all: 'cutout:all',
   Soldes: 'cutout:soldes',
@@ -38,10 +45,10 @@ const CATEGORY_VISUALS = {
 const SUBCATEGORY_VISUALS = {
   'Mode & Beauté': {
     __all: 'showcase-mode:0:0',
-    Femme: 'showcase-mode:1:0',
-    Homme: 'showcase-mode:2:0',
-    Enfant: 'showcase-mode:0:1',
-    Beauté: 'showcase-mode:1:1',
+    Femme: 'mode-cutout:femme',
+    Homme: 'mode-cutout:homme',
+    Enfant: 'mode-cutout:enfant',
+    Beauté: 'mode-cutout:beaute',
   },
   Maison: {
     Confort: 'sub-maison-confort',
@@ -79,9 +86,8 @@ const SHOWCASE_ATLASES = {
 };
 
 /**
- * Rend une cellule photo d'un atlas 3 × 2 sans encapsuler le raster dans un
- * SVG. Le crop reste pris en charge par le contrat CSS déjà validé desktop et
- * mobile ; seules la famille d'asset et la cellule changent ici.
+ * Rend la cellule neutre « Tout voir » de l'atlas historique. Les sous-catégories
+ * Mode exposées utilisent désormais chacune leur propre cutout direct.
  */
 function renderAtlasCell(visual, extraClass = '') {
   const match = /^(showcase-mode):(\d):(\d)$/.exec(visual);
@@ -102,6 +108,14 @@ function renderCategoryCutout(visual, extraClass = '') {
   return `<img class="k-shelf-object${cls} k-shelf-cutout-image" src="${src}" alt="" aria-hidden="true" loading="eager" decoding="async" width="512" height="512">`;
 }
 
+function renderModeSubcategoryCutout(visual, extraClass = '') {
+  const key = visual.slice('mode-cutout:'.length);
+  const src = KOMERCE_MODE_SUBCATEGORY_CUTOUTS[key];
+  if (!src) return '';
+  const cls = extraClass ? ` ${extraClass}` : '';
+  return `<img class="k-shelf-object${cls} k-shelf-cutout-image k-mode-subcategory-cutout" src="${src}" alt="" aria-hidden="true" loading="eager" decoding="async" width="512" height="512">`;
+}
+
 export function getShelfCategoryVisual(categoryKey) {
   return CATEGORY_VISUALS[categoryKey] || null;
 }
@@ -114,6 +128,9 @@ export function renderShelfUse(visual, extraClass = '') {
   if (!visual) return '';
   if (visual.startsWith('cutout:')) {
     return renderCategoryCutout(visual, extraClass);
+  }
+  if (visual.startsWith('mode-cutout:')) {
+    return renderModeSubcategoryCutout(visual, extraClass);
   }
   if (visual.startsWith('showcase-mode:')) {
     return renderAtlasCell(visual, extraClass);
