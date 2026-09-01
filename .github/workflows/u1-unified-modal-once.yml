@@ -43,8 +43,7 @@ jobs:
         run: |
           node scripts/u1-unified-modal-finalize-once.js
           rm -f scripts/u1-unified-modal-finalize-once.js
-          # The qualification workflow is only a transport harness. Keep it out
-          # of the governed working tree so it cannot manufacture an orphan.
+          # Qualification transport only: keep it out of governance scans.
           rm -f .github/workflows/u1-unified-modal-once.yml
 
       - name: Rebuild governed projections
@@ -67,18 +66,25 @@ jobs:
             tests/unit/b-modal-core.test.js \
             tests/unit/b-modal-core-active-flows.test.js
 
-      - name: Prove Boutique source contracts
+      - name: Prove current Boutique source contracts
         run: |
+          # Mirrors the active PR-enforcement Boutique gates for the affected JS/CSS/HTML scope.
           node scripts/code-quality-gate.js --strict
           node public/boutique/scripts/check-important.js --strict
           node public/boutique/scripts/check-breakpoints.js --strict
           node public/boutique/scripts/check-css-vars.js --strict
           node public/boutique/scripts/check-zindex-contract.js --strict
           node public/boutique/scripts/check-sticky-integrity.js --strict
-          node public/boutique/scripts/check-imports.js --strict
-          node public/boutique/scripts/check-dom-contract.js --strict
-          node public/boutique/scripts/check-body-class-contract.js --strict
-          node public/boutique/scripts/boutique-arch-check.js
+          node public/boutique/scripts/check-js-imports.js
+          node public/boutique/scripts/check-no-css-injection.js
+          node public/boutique/scripts/check-html-balance.js
+          node public/boutique/scripts/check-body-classes.js
+          node public/boutique/scripts/audit-boutique-arch.js
+          node scripts/arch-doctrine-sanitize-check.js --diff=origin/main
+          node scripts/boutique-ownership-full-check.js --strict
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/check-runtime-css-var-ownership.js
+          node scripts/check-agent-remediation-contract.js --scope=boutique
 
       - name: Prove governance remains Debt Zero
         run: |
