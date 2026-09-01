@@ -112,6 +112,11 @@ export const state = {
    *  AVANT le fix : déclaré nulle part, lu 3 fois → garde inerte → scroll
    *  horizontal automatique parasite après fermeture de modal. */
   modalOpen: false,
+  /** Surface de détail active dans l'unique shell #k-modal. */
+  modalKind: 'product', // product | physical_offer | service
+  modalRef: null,
+  /** Projection de lecture pour Physical Offer / Service ; jamais un faux Product. */
+  modalDetail: null,
   modalProduct: null,
   modalSubcatFilter: null,
   modalQty: 1,
