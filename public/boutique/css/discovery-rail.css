@@ -299,3 +299,124 @@
     font-size: 11px;
   }
 }
+
+/* ── Discovery detail sheet ──────────────────────────────────────────── */
+
+.k-discovery-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: end center;
+  background: rgba(0, 0, 0, .35);
+  animation: k-discovery-fade-in .2s ease;
+}
+
+@keyframes k-discovery-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.k-discovery-detail-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--sand);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, .12);
+  animation: k-discovery-slide-up .25s ease;
+}
+
+@keyframes k-discovery-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.k-discovery-detail-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-sand-94);
+  color: var(--ocean-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.k-discovery-detail-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 18px 18px 0 0;
+}
+
+.k-discovery-detail-body {
+  padding: 14px 16px 20px;
+}
+
+.k-discovery-detail-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ocean-dark);
+  line-height: 1.25;
+}
+
+.k-discovery-detail-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-sand-94);
+  color: var(--ocean-dark);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.k-discovery-detail-provider {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.k-discovery-detail-desc {
+  margin: 0 0 12px;
+  color: var(--ocean-dark);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.k-discovery-detail-cta {
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* Desktop: centered panel instead of bottom sheet */
+@media (min-width: 900px) {
+  .k-discovery-detail-overlay {
+    place-items: center;
+  }
+
+  .k-discovery-detail-panel {
+    border-radius: 18px;
+    max-width: 480px;
+    animation: k-discovery-scale-in .2s ease;
+  }
+
+  @keyframes k-discovery-scale-in {
+    from { transform: scale(.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
