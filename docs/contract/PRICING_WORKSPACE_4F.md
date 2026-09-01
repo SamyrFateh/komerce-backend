@@ -155,3 +155,24 @@ LOT 4F ne :
 - expose pas de hard-delete `cost_components` ;
 - réécrit pas `pricing-engine`, `pricing-recommend`, `pricing-apply` ou `pricing-strategy-service` ;
 - supprime pas les vues Legacy avant preuve runtime.
+
+
+## LOT 4T — Economic + Pilotage Financier cutover
+
+### Legacy needs audit
+
+`EconomicView` mixed four reads: catalogue pricing, executive economic model, charges and coherence. The catalogue/pricing part was already absorbed by Pricing 4F. LOT 4T adds the remaining **global economic model**, **economic variables** and **economic charges** to the same Pricing Workspace by delegating directly to `services/economic-engine-queries.js`.
+
+`PilotageFinView` does not own a valid independent financial time series: it expects `history.months/data`, while `/api/admin/economic/history` actually returns `{ snapshots }` of the economic model. Its legitimate financial KPIs and trajectory are already owned by Canonical Finance, and category performance is already owned by Canonical Commerce. The broken Legacy projection is not ported.
+
+### Authorization boundary
+
+Economic configuration is global, not market-scoped. Canonical therefore exposes it only through `/api/admin/workspaces/pricing`, already protected by `requirePricingGlobalAuthority`. The browser does **not** call `/api/admin/economic/*` and never supplies a market identifier.
+
+### Stable URL convergence
+
+- `/admin/economic` → `/admin/workspaces/pricing`
+- `/admin/pilotage-fin` → `/admin/finance`
+- `?legacy=1` remains the explicit Legacy 1 rollback for both paths.
+
+The Legacy API and UI files remain present for rollback/forensic purposes; LOT 4T changes the normal navigation path, not historical evidence.

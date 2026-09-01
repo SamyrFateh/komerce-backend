@@ -326,6 +326,127 @@
     slot.appendChild(form);
   }
 
+  function formatEconomicValue(value, unit) {
+    if (value == null || value === '') return '—';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    if (unit === 'KMF' || unit === 'kmf') return formatKmf(numeric);
+    if (unit === '%' || unit === 'pct') {
+      return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(numeric)} %`;
+    }
+    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(numeric)}${unit ? ` ${unit}` : ''}`;
+  }
+
+  function renderEconomicModel(rootNode, ui, doc, payload) {
+    const slot = section(rootNode, ui, 'Santé économique globale', 'Seuil, pression des charges et profit du moteur économique global. Cette surface est réservée à l’autorité Pricing centrale.');
+    const executive = payload.economic && payload.economic.executive;
+    if (!executive) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Modèle économique indisponible.'));
+      return;
+    }
+
+    const status = doc.createElement('div');
+    status.className = 'kmc-workspace-detail';
+    status.appendChild(text(doc, 'strong', 'kmc-workspace-detail-title', `${executive.status_emoji || ''} ${executive.status_label || executive.status || 'État du modèle'}`.trim()));
+    status.appendChild(text(doc, 'p', 'kmc-workspace-note', `Source : moteur économique global · génération ${executive.generated_at ? new Date(executive.generated_at).toLocaleString('fr-FR') : '—'}`));
+    slot.appendChild(status);
+
+    const modelMetrics = (executive.kpis || []).map(metric => ({
+      key: metric.key || 'economic',
+      label: metric.label || metric.key || 'Indicateur',
+      value: formatEconomicValue(metric.value, metric.unit),
+      tone: metric.key === 'net_profit_per_order' && Number(metric.value) < 0
+        ? 'critical'
+        : (metric.key === 'safety_ratio' && Number(metric.value) < 15 ? 'warning' : 'neutral'),
+    }));
+    if (modelMetrics.length) slot.appendChild(ui.KpiStrip.create(modelMetrics).element);
+
+    const alerts = executive.alerts || [];
+    if (alerts.length) {
+      const alertHost = doc.createElement('div');
+      alertHost.className = 'kmc-workspace-actions-grid';
+      alerts.forEach(alert => {
+        const card = doc.createElement('div');
+        card.className = 'kmc-workspace-action-card';
+        card.appendChild(text(doc, 'strong', '', alert.message || alert.category || 'Alerte'));
+        if (alert.detail) card.appendChild(text(doc, 'small', '', alert.detail));
+        alertHost.appendChild(card);
+      });
+      slot.appendChild(alertHost);
+    }
+    if (executive.recommendation && executive.recommendation.text) {
+      slot.appendChild(text(doc, 'p', 'kmc-workspace-note', `Recommandation : ${executive.recommendation.text}`));
+    }
+  }
+
+  function renderEconomicVariables(rootNode, ui, doc, payload) {
+    const slot = section(rootNode, ui, 'Variables économiques', 'Hypothèses et projections globales. economic_variables reste un stockage Legacy en lecture ; finance_config est la vérité des entrées configurables.');
+    const categories = payload.economic && payload.economic.variables && payload.economic.variables.categories;
+    const rows = [];
+    Object.entries(categories || {}).forEach(([categoryKey, category]) => {
+      (category.variables || []).forEach(variable => rows.push({
+        category: category.label || categoryKey,
+        ...variable,
+      }));
+    });
+    if (!rows.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune variable économique disponible.'));
+      return;
+    }
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Variable</th><th>Catégorie</th><th>Valeur</th><th>Source</th><th>Nature</th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    rows.forEach(row => {
+      const tr = doc.createElement('tr');
+      tr.appendChild(td(doc, row.label || row.key));
+      tr.appendChild(td(doc, row.category));
+      tr.appendChild(td(doc, formatEconomicValue(row.value_used, row.unit)));
+      tr.appendChild(td(doc, row.source_used || '—'));
+      tr.appendChild(td(doc, row.is_computed ? 'Calculée' : 'Configurée'));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
+  function renderEconomicCharges(rootNode, ui, doc, payload) {
+    const slot = section(rootNode, ui, 'Charges économiques', 'Charges globales utilisées par le modèle. Elles sont affichées ici comme vérité moteur, sans dupliquer leur logique dans le navigateur.');
+    const families = payload.economic && payload.economic.charges && payload.economic.charges.families;
+    const rows = [];
+    Object.entries(families || {}).forEach(([familyKey, family]) => {
+      (family.charges || []).forEach(charge => rows.push({
+        family: family.label || familyKey,
+        ...charge,
+      }));
+    });
+    if (!rows.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune charge économique disponible.'));
+      return;
+    }
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Charge</th><th>Famille</th><th>Montant</th><th>Récurrence</th><th>État</th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    rows.forEach(row => {
+      const tr = doc.createElement('tr');
+      tr.appendChild(td(doc, row.name));
+      tr.appendChild(td(doc, row.family));
+      tr.appendChild(td(doc, formatKmf(row.amount_kmf)));
+      tr.appendChild(td(doc, row.recurrence_period || (row.is_recurring ? 'récurrente' : 'ponctuelle')));
+      tr.appendChild(td(doc, row.is_active === false ? 'Inactive' : 'Active'));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
   async function action(context, url, body, success, method = 'POST') {
     setFeedback(context.root, 'Action en cours…');
     try {
@@ -429,9 +550,12 @@
       rootNode.replaceChildren();
       rootNode.appendChild(header(context.document));
       rootNode.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element);
+      renderEconomicModel(rootNode, context.ui, context.document, payload);
       renderProducts(rootNode, context.ui, context.document, payload, context);
       renderStrategy(rootNode, context.ui, context.document, context);
       renderCosts(rootNode, context.ui, context.document, payload, context);
+      renderEconomicVariables(rootNode, context.ui, context.document, payload);
+      renderEconomicCharges(rootNode, context.ui, context.document, payload);
       bind(rootNode, context);
       return payload;
     }
@@ -439,5 +563,5 @@
     return load();
   }
 
-  return { ENDPOINT, mount, jsonRequest, metrics, recommendationByRef };
+  return { ENDPOINT, mount, jsonRequest, metrics, recommendationByRef, formatEconomicValue };
 });

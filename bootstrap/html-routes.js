@@ -273,12 +273,14 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4Q / 4S — anciennes vues de lecture dont les besoins sont maintenant
-  // absorbés par les dashboards Canonical. Le pathname normal converge ;
+  // LOT 4Q / 4S / 4T — anciennes vues de lecture dont les besoins sont maintenant
+  // absorbés par les dashboards/workspaces Canonical. Le pathname normal converge ;
   // ?legacy=1 conserve le témoin historique pendant la fenêtre de rollback.
   const LEGACY_CANONICAL_REDIRECTS = Object.freeze({
     '/admin/control-tower': '/admin/pilotage',
     '/admin/costing': '/admin/finance',
+    '/admin/economic': '/admin/workspaces/pricing',
+    '/admin/pilotage-fin': '/admin/finance',
   });
 
   // Legacy 1 reste accessible pour les témoins et les capacités non encore
