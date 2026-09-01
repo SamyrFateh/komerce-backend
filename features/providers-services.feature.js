@@ -115,6 +115,7 @@ module.exports = {
       'auth-identity — requireIdentity() côté Boutique avant mutation',
       'platform-ops — bus et showToast comme primitives UI transverses',
       'market — référentiel markets, résolution code -> id côté serveur',
+      'local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner',
       'infrastructure — dépendance technique db.js et résolution KOMERCE_ENV',
     ],
   },

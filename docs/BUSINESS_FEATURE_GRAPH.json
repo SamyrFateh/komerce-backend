@@ -16532,6 +16532,12 @@
       },
       {
         "from": "providers-services",
+        "to": "local-stock",
+        "raw": "local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner",
+        "resolved": true
+      },
+      {
+        "from": "providers-services",
         "to": "infrastructure",
         "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
         "resolved": true
@@ -27771,6 +27777,26 @@
               {
                 "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "providers-services",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/seed-discovery-staging.js",
+                "targetFile": "services/local-stock-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
+                "targetFile": "services/local-stock-service.js"
               }
             ]
           }

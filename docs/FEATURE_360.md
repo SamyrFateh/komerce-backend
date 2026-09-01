@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **33**
 - Attention : **0**
 - Blocked : **0**
-- Business dependencies : **234**
+- Business dependencies : **235**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -43,7 +43,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟢 HEALTHY | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet | 0 |
 | inventory | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inventory_items | auth, catalog, infrastructure, logistics, orders | admin-dashboard, dashboard, infrastructure | 0 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
-| local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, market | orders, recommendations | 0 |
+| local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, market | orders, providers-services, recommendations | 0 |
 | logistics | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, documents, incident-management, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, auth-identity, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, notifications, orders, payments, platform-ops, purchasing, recommendations | 0 |
 | loyalty | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, economic-engine, infrastructure, notifications, orders | auth-identity, economic-engine, logistics, orders, payments | 0 |
 | market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | currency_parities, markets, operator_market_scopes | infrastructure | dashboard, local-stock, orders, providers-services, recommendations | 0 |
@@ -52,7 +52,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, auth-identity, business-rules, documents, incident-management, infrastructure, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, dashboard, infrastructure, logistics, orders | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models, store_credits | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
-| providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, market, platform-ops | recommendations | 0 |
+| providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops | recommendations | 0 |
 | purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | product_suppliers, purchase_orders, suppliers | auth, catalog, infrastructure, logistics, notifications, orders | dashboard, logistics, orders, payments, platform-ops | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, orders, platform-ops, providers-services | infrastructure, shared-cart | 0 |
 | refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | refunds | documents, infrastructure, orders, wallet | documents, economic-engine, logistics, orders, payments | 0 |
@@ -923,7 +923,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
 **Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED)
-**Consumed by** : orders (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+**Consumed by** : orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1467,7 +1467,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
 **Consumed by** : recommendations (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_

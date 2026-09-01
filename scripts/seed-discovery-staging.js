@@ -5,11 +5,13 @@
  * @layer         tooling
  * @criticality   low
  * @inputs        KOMERCE_ENV, DISCOVERY_STAGING_SEED_ENABLED, market KM
- * @outputs       deterministic staging providers, services, physical_offers
- * @depends       db, middleware/require-non-production.js
+ * @outputs       deterministic staging providers, services, physical_offers, local_stock
+ * @depends       db, middleware/require-non-production.js,
+ *                scripts/seed-golden-product.js, services/local-stock-service.js,
+ *                tests/fixtures/catalog/golden-elite-pro.js
  * @used-by       manual staging operations
- * @db-read       markets
- * @db-write      providers, services, physical_offers
+ * @db-read       markets, products, local_stock
+ * @db-write      providers, services, physical_offers, local_stock
  * @db-txn        write
  * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
  * @impact-areas  staging, discovery-rail, providers-services
@@ -19,6 +21,9 @@
 
 const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
+const { seedGoldenProduct } = require('./seed-golden-product');
+const { setLocalStock, setLocalStockExposure } = require('../services/local-stock-service');
+const goldenFixture = require('../tests/fixtures/catalog/golden-elite-pro');
 
 const FLAG = 'DISCOVERY_STAGING_SEED_ENABLED';
 const MARKET_CODE = 'KM';
@@ -31,6 +36,16 @@ const STAGING_MEDIA = Object.freeze({
   BUILDING: '/boutique/categories/cat-bricolage-v3.webp',
   AUTO: '/boutique/categories/cat-auto-v3.webp',
   GENERAL: '/boutique/categories/cat-all-v3.webp',
+});
+
+// ── Product Komerce local (Golden Product canonique) ──────────────────────
+// Pas de fake catalogue parallèle : on réutilise le Golden Product officiel
+// (owner: catalog domain via seed-golden-product.js), puis on l'expose en
+// local-stock via les primitives du domaine local-stock.
+const GOLDEN_PRODUCT = Object.freeze({
+  id: goldenFixture.productRow().id,
+  location: 'KM_MAIN',
+  qtyPhysical: 25,
 });
 
 const PROVIDERS = Object.freeze([
@@ -114,6 +129,7 @@ const SERVICES = Object.freeze([
 ]);
 
 const DISCOVERY_CANDIDATES = Object.freeze([
+  `product:${GOLDEN_PRODUCT.id}`,
   `physical_offer:${PHYSICAL_OFFERS[0].id}`,
   `service:${SERVICES[1].id}`,
   `physical_offer:${PHYSICAL_OFFERS[2].id}`,
@@ -200,6 +216,21 @@ async function seedDiscoveryStaging() {
   const marketId = market.rows[0]?.id;
   if (!marketId) throw new Error('[seed:discovery] active market KM not found');
 
+  // 1. Golden Product (owner: catalog domain)
+  await seedGoldenProduct();
+
+  // 2. Local stock for the Golden Product (owner: local-stock domain)
+  await setLocalStock({
+    productId: GOLDEN_PRODUCT.id,
+    marketId,
+    location: GOLDEN_PRODUCT.location,
+    qtyPhysical: GOLDEN_PRODUCT.qtyPhysical,
+  });
+  await setLocalStockExposure(
+    GOLDEN_PRODUCT.id, marketId, 'ENABLED', GOLDEN_PRODUCT.location
+  );
+
+  // 3. Providers, physical offers, services
   await db.withTransaction(async client => {
     for (const provider of PROVIDERS) await upsertProvider(client, marketId, provider);
     for (const offer of PHYSICAL_OFFERS) await upsertPhysicalOffer(client, marketId, offer);
@@ -209,6 +240,7 @@ async function seedDiscoveryStaging() {
   return {
     seeded: true,
     market: MARKET_CODE,
+    product: GOLDEN_PRODUCT.id,
     providers: PROVIDERS.length,
     physicalOffers: PHYSICAL_OFFERS.length,
     services: SERVICES.length,
@@ -222,7 +254,7 @@ async function runCli() {
     console.log(`[seed:discovery] skipped (${result.reason})`);
     return;
   }
-  console.log(`[seed:discovery] ✅ ${result.providers} providers, ${result.physicalOffers} physical offers, ${result.services} services`);
+  console.log(`[seed:discovery] ✅ product ${result.product}, ${result.providers} providers, ${result.physicalOffers} physical offers, ${result.services} services`);
   console.log('[seed:discovery] Set staging env:');
   console.log('DISCOVERY_RAIL_ENABLED=true');
   console.log(`DISCOVERY_RAIL_CANDIDATES=${result.candidates}`);

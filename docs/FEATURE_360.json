@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 234,
+    "businessDependencies": 235,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -11615,6 +11615,13 @@
           ]
         },
         {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -17462,6 +17469,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

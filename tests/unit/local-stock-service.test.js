@@ -454,3 +454,32 @@ describe('releaseAllocationsForOrder — annulation/échec, ne touche JAMAIS qty
     expect(count).toBe(0);
   });
 });
+
+// ── setLocalStockExposure ────────────────────────────────────────────────
+
+describe('setLocalStockExposure', () => {
+  it('nominal : met à jour commercial_exposure sur une ligne existante', async () => {
+    const row = { id: 'ls-1', commercial_exposure: 'ENABLED' };
+    mockQuery = jest.fn().mockResolvedValue({ rows: [row] });
+    const svc = loadService();
+    const result = await svc.setLocalStockExposure('p1', 'm1', 'ENABLED', 'KM_MAIN');
+    expect(result).toEqual(row);
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/UPDATE local_stock/);
+    expect(sql).toMatch(/commercial_exposure/);
+  });
+
+  it('ligne introuvable → throw', async () => {
+    mockQuery = jest.fn().mockResolvedValue({ rows: [] });
+    const svc = loadService();
+    await expect(svc.setLocalStockExposure('p1', 'm1', 'ENABLED'))
+      .rejects.toThrow(/introuvable/);
+  });
+
+  it('exposure invalide → throw', async () => {
+    const svc = loadService();
+    await expect(svc.setLocalStockExposure('p1', 'm1', 'MAYBE'))
+      .rejects.toThrow(/invalide/);
+  });
+});
