@@ -115,10 +115,6 @@ export function setupDiscoveryRail() {
     shell.innerHTML = '';
     shell.hidden = true;
   });
-
-  // Contrat explicite pour une future vraie commutation market. Aujourd'hui
-  // MarketContext reste KM par défaut ; ce signal est sans émetteur runtime.
-  bus.on('market:changed', refreshDiscoveryRail);
 }
 
 export { refreshDiscoveryRail };

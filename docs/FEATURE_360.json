@@ -46,24 +46,24 @@
   },
   "summary": {
     "features": 33,
-    "healthy": 32,
-    "attention": 1,
+    "healthy": 33,
+    "attention": 0,
     "blocked": 0,
-    "businessDependencies": 234,
+    "businessDependencies": 235,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 1,
-    "gateHealthy": 33,
+    "debtItemsTotal": 0,
+    "gateHealthy": 32,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
-    "gateFindingsVersion": "GF-2.1",
+    "gateFindingsVersion": "GF-3.0",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 0,
-    "attributedFindings": 0,
+    "totalFindings": 2,
+    "attributedFindings": 2,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -5155,7 +5155,7 @@
             ]
           },
           "services": {
-            "count": 29,
+            "count": 23,
             "files": [
               {
                 "declared": "services/client-360.js",
@@ -5260,36 +5260,6 @@
               {
                 "declared": "services/product-360.js",
                 "resolvedPath": "services/product-360.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/cash-reconciliation-signals.js",
-                "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/commerce-signals.js",
-                "resolvedPath": "services/radar-alerts/commerce-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/logistics-signals.js",
-                "resolvedPath": "services/radar-alerts/logistics-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/payment-signals.js",
-                "resolvedPath": "services/radar-alerts/payment-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/treasury-signals.js",
-                "resolvedPath": "services/radar-alerts/treasury-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-queries.js",
-                "resolvedPath": "services/radar-queries.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5630,7 +5600,7 @@
             ]
           }
         },
-        "totalFiles": 218,
+        "totalFiles": 212,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6007,6 +5977,7 @@
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -6259,11 +6230,36 @@
             ]
           },
           "services": {
-            "count": 4,
+            "count": 9,
             "files": [
               {
                 "declared": "services/action-center-workspace.js",
                 "resolvedPath": "services/action-center-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/cash-reconciliation-signals.js",
+                "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/commerce-signals.js",
+                "resolvedPath": "services/radar-alerts/commerce-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/logistics-signals.js",
+                "resolvedPath": "services/radar-alerts/logistics-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/payment-signals.js",
+                "resolvedPath": "services/radar-alerts/payment-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/treasury-signals.js",
+                "resolvedPath": "services/radar-alerts/treasury-signals.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -6284,7 +6280,7 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 13,
             "files": [
               {
                 "declared": "tests/unit/action-center-migration-contract.test.js",
@@ -6299,6 +6295,26 @@
               {
                 "declared": "tests/unit/admin-action-center-route.test.js",
                 "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-logistics-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-logistics-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-payment-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-payment-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6334,7 +6350,7 @@
             ]
           }
         },
-        "totalFiles": 17,
+        "totalFiles": 26,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6402,6 +6418,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -6416,6 +6439,7 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         }
@@ -6430,14 +6454,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "logistics"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -6457,14 +6479,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -9055,7 +9071,7 @@
             ]
           },
           "ci": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -9175,6 +9191,11 @@
               {
                 "declared": ".github/workflows/showcase-v2-media-realism.yml",
                 "resolvedPath": ".github/workflows/showcase-v2-media-realism.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-discovery-ops.yml",
+                "resolvedPath": ".github/workflows/staging-discovery-ops.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -9725,7 +9746,7 @@
             ]
           },
           "scripts": {
-            "count": 89,
+            "count": 90,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -9935,6 +9956,11 @@
               {
                 "declared": "scripts/feature-guard.js",
                 "resolvedPath": "scripts/feature-guard.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/feature-invariant-check.js",
+                "resolvedPath": "scripts/feature-invariant-check.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10305,7 +10331,7 @@
             ]
           }
         },
-        "totalFiles": 277,
+        "totalFiles": 279,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11481,7 +11507,7 @@
           "test": "tests/unit/local-stock-service.test.js"
         },
         {
-          "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (shadow frontend strict, y compris après D2)",
+          "statement": "Boutique ne lit jamais une ligne local_stock ni le service owner directement : elle ne consomme que la projection publique availability/exposable via la frontière Discovery, et le checkout conserve les mutations allocate/consume/release via les services owners",
           "test": "tests/unit/shadow-domains-boundary.test.js"
         },
         {
@@ -12787,6 +12813,13 @@
             "static-code",
             "data-read",
             "data-write"
+          ]
+        },
+        {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -14246,11 +14279,30 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 2,
+        "gatesReporting": [
+          "check:imports"
+        ],
+        "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 0,

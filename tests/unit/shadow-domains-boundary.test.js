@@ -6,12 +6,12 @@
  * @test-requires none
  */
 /**
- * Boundary test — Vague 1 Shadow (PR A + PR B)
+ * Boundary test — Vague 2 governed exposure
  *
  * Objectif : empêcher une régression SILENCIEUSE où local-stock ou
  * providers-services deviendraient joignables depuis un chemin HTTP ou
- * un fichier Boutique SANS décision explicite de Vague 2 (exposition
- * graduelle, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §9).
+ * un fichier Boutique EN DEHORS des frontières Vague 2 explicitement
+ * revues (Discovery read-only + Inquiry canonique).
  *
  * Ce n'est pas un test sur le COMPORTEMENT des services (déjà couvert par
  * local-stock-service.test.js / providers-service.test.js) — c'est un test
@@ -114,27 +114,15 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
   // directement la décision délibérée de cette vague. Remplacé par les deux
   // tests D6 ci-dessous (montage confirmé + GET-only + market résolu serveur).
 
-  test('aucun fichier Boutique (JS) ne référence les services shadow ou leurs tables', () => {
-    // Vague 2 D6 : discovery-api.js mentionne légitimement l'URL /api/
-    // providers-services (route réelle, pluriel) — qui contient
-    // "providers-service" (singulier, SHADOW_SERVICES) comme sous-chaîne
-    // par pure coïncidence de nommage, pas une fuite vers le fichier
-    // service backend lui-même (que le frontend ne peut de toute façon
-    // jamais require() — ce test protège contre une mention textuelle
-    // accidentelle, pas contre un vrai import impossible en navigateur).
-    const ALLOWED_URL_MENTION_FILES = [
-      'public/boutique/js/discovery-api.js',
-    ];
+  test('Boutique ne peut jamais importer directement les services backend owners', () => {
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
-    const featureFiles = walk(path.join(ROOT, 'public', 'boutique', 'features'), ['.js']);
     const offenders = [];
-    for (const file of [...boutiqueFiles, ...featureFiles]) {
-      const rel = path.relative(ROOT, file).split(path.sep).join('/');
-      if (ALLOWED_URL_MENTION_FILES.includes(rel)) continue;
-      const src = fs.readFileSync(file, 'utf8');
-      for (const svc of SHADOW_SERVICES) {
-        if (src.includes(svc)) offenders.push(`${rel} → ${svc}`);
-      }
+    for (const candidate of boutiqueFiles) {
+      const rel = path.relative(ROOT, candidate).split(path.sep).join('/');
+      const text = fs.readFileSync(candidate, 'utf8');
+      const importsLocalStockOwner = text.includes('/services/local-stock-service');
+      const importsProviderOwner = text.includes('/services/providers-service');
+      if (importsLocalStockOwner || importsProviderOwner) offenders.push(rel);
     }
     expect(offenders).toEqual([]);
   });
@@ -154,6 +142,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     // api.js pour un fetch direct serait détecté ici.
     const ALLOWED_FRONTEND_URL_CONSUMERS = [
       'public/boutique/js/discovery-api.js',
+      'public/boutique/js/providers-services-api.js',
     ];
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
@@ -185,6 +174,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     // ci-dessus), pas une fuite vers la table providers elle-même.
     const ALLOWED_URL_MENTION_FILES = [
       'public/boutique/js/discovery-api.js',
+      'public/boutique/js/providers-services-api.js',
     ];
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];
@@ -262,28 +252,27 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     expect(providersServices.status).toBe('staging');
   });
 
-  test('Vague 2 D6 — routes/local-stock.js et routes/providers-services.js sont désormais montées dans bootstrap/api-routes.js, exclusivement en lecture', () => {
-    // Ère D4 : "jamais montées" (routes shadow, inaccessibles). Ère D6 :
-    // le montage EST la décision explicite de cette vague — capability !=
-    // exposure, l'invisibilité vient de commercial_exposure=DISABLED et de
-    // l'absence de candidats réels, jamais de l'absence de route. Ce test
-    // remplace l'ancien "jamais montées" par sa preuve inverse, et vérifie
-    // que le montage reste strictement GET-only (aucune mutation possible
-    // via ces deux chemins, même une fois montés).
+  test("Vague 2 — local-stock reste GET-only et providers-services n'autorise que l'Inquiry POST canonique", () => {
     expect(fs.existsSync(path.join(ROOT, 'routes', 'local-stock.js'))).toBe(true);
     expect(fs.existsSync(path.join(ROOT, 'routes', 'providers-services.js'))).toBe(true);
     expect(() => require('../../routes/local-stock.js')).not.toThrow();
     expect(() => require('../../routes/providers-services.js')).not.toThrow();
 
     const bootstrapSrc = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes.js'), 'utf8');
-    expect(bootstrapSrc).toMatch(/app\.use\(\s*['"]\/api\/local-stock['"]\s*,\s*localStockRouter\s*\)/);
-    expect(bootstrapSrc).toMatch(/app\.use\(\s*['"]\/api\/providers-services['"]\s*,\s*providersServicesRouter\s*\)/);
+    expect(bootstrapSrc).toContain("app.use('/api/local-stock', localStockRouter)");
+    expect(bootstrapSrc).toContain("app.use('/api/providers-services', providersServicesRouter)");
 
     const localStockSrc = fs.readFileSync(path.join(ROOT, 'routes', 'local-stock.js'), 'utf8');
-    const providersServicesSrc = fs.readFileSync(path.join(ROOT, 'routes', 'providers-services.js'), 'utf8');
-    for (const src of [localStockSrc, providersServicesSrc]) {
-      expect(src).not.toMatch(/router\.(post|put|patch|delete)\(/);
+    for (const verb of ['post', 'put', 'patch', 'delete']) {
+      expect(localStockSrc.includes('router.' + verb)).toBe(false);
     }
+
+    const providersServicesSrc = fs.readFileSync(path.join(ROOT, 'routes', 'providers-services.js'), 'utf8');
+    for (const verb of ['put', 'patch', 'delete']) {
+      expect(providersServicesSrc.includes('router.' + verb)).toBe(false);
+    }
+    expect(providersServicesSrc.split('router.post').length - 1).toBe(1);
+    expect(providersServicesSrc).toContain("router.post('/inquiries'");
   });
 
   test('Vague 2 D6 — les deux routes montées ne font jamais confiance à un market_id brut, market reste un CODE résolu serveur', () => {

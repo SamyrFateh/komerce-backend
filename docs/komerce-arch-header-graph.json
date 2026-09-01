@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 485,
+    "scannedCodeFiles": 486,
     "filesWithFullHeaders": 449,
-    "filesWithLiteHeaders": 36,
-    "filesWithAnyHeaders": 485,
+    "filesWithLiteHeaders": 37,
+    "filesWithAnyHeaders": 486,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1065,
-    "edges": 5579,
+    "graphNodes": 1066,
+    "edges": 5589,
     "dbTables": 124,
     "doctrines": 287,
     "impactAreas": 169,
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 87,
+    "catalog": 88,
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 2,
@@ -78,7 +78,7 @@
     "ui-bootstrap": 4,
     "ui-component": 40,
     "ui-enhancer": 3,
-    "ui-renderer": 10,
+    "ui-renderer": 11,
     "ui-page": 5,
     "ui-service": 5,
     "view-model": 7,
@@ -111,7 +111,7 @@
     "critical": 68,
     "medium": 121,
     "high": 252,
-    "low": 44
+    "low": 45
   },
   "nodes": [
     {
@@ -4773,6 +4773,33 @@
       "version": "2026-08"
     },
     {
+      "id": "public/boutique/js/render/render-discovery-detail.js",
+      "file": "public/boutique/js/render/render-discovery-detail.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "catalog-render-discovery-detail",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "low",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Panneau de détail léger pour offres physiques et services Discovery.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "home",
+        "discovery-rail",
+        "providers-services"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/render/render-discovery-rail.js",
       "file": "public/boutique/js/render/render-discovery-rail.js",
       "type": "file-lite",
@@ -4797,7 +4824,7 @@
         "product-discovery",
         "discovery-rail"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/render/render-home-sections.js",
@@ -12950,7 +12977,8 @@
         "refunds",
         "order_items",
         "order_item_cost_imputations",
-        "order_item_real_cost_allocations"
+        "order_item_real_cost_allocations",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17691,6 +17719,7 @@
       ],
       "outputs": [
         "canonical_pricing_projection",
+        "global_economic_projection",
         "delegated_mutation_results"
       ],
       "depends": [
@@ -17700,14 +17729,19 @@
         "services/pricing-rates.js",
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js",
-        "services/cost-component-admin-service.js"
+        "services/cost-component-admin-service.js",
+        "services/economic-engine-queries.js"
       ],
       "usedBy": [
         "routes/admin-pricing-workspace.js"
       ],
       "dbRead": [
         "products",
-        "competitor_prices"
+        "competitor_prices",
+        "charges",
+        "economic_variables",
+        "economic_snapshots",
+        "finance_config"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -32302,6 +32336,30 @@
       "label": "boutique"
     },
     {
+      "from": "public/boutique/js/render/render-discovery-detail.js",
+      "to": "public/boutique/js/discovery-rail.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/discovery-rail.js"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-detail.js",
+      "to": "impact:home",
+      "type": "impact",
+      "label": "home"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-detail.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-detail.js",
+      "to": "impact:providers-services",
+      "type": "impact",
+      "label": "providers-services"
+    },
+    {
       "from": "public/boutique/js/render/render-discovery-rail.js",
       "to": "public/boutique/js/discovery-rail.js",
       "type": "owned-by",
@@ -43980,6 +44038,12 @@
     },
     {
       "from": "services/dashboard-finance-canonical.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/dashboard-finance-canonical.js",
       "to": "doctrine:dashboard_no_business_recompute",
       "type": "doctrine",
       "label": "dashboard_no_business_recompute"
@@ -51653,6 +51717,12 @@
       "label": "services/cost-component-admin-service.js"
     },
     {
+      "from": "services/pricing-workspace.js",
+      "to": "services/economic-engine-queries.js",
+      "type": "depends",
+      "label": "services/economic-engine-queries.js"
+    },
+    {
       "from": "routes/admin-pricing-workspace.js",
       "to": "services/pricing-workspace.js",
       "type": "uses",
@@ -51669,6 +51739,30 @@
       "to": "db:competitor_prices",
       "type": "db-read",
       "label": "competitor_prices"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:economic_variables",
+      "type": "db-read",
+      "label": "economic_variables"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:economic_snapshots",
+      "type": "db-read",
+      "label": "economic_snapshots"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
     },
     {
       "from": "services/pricing-workspace.js",
@@ -63559,6 +63653,7 @@
       "directUsedBy": [],
       "ownedFiles": [
         "public/boutique/js/discovery-rail.js",
+        "public/boutique/js/render/render-discovery-detail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ],
       "dbRead": [],
@@ -63575,6 +63670,7 @@
         "impact:home",
         "impact:product-discovery",
         "public/boutique/js/discovery-rail.js",
+        "public/boutique/js/render/render-discovery-detail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ]
     },
@@ -64257,6 +64353,32 @@
         "impact:boutique",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/render/category-shelf-visuals.js"
+      ]
+    },
+    "public/boutique/js/render/render-discovery-detail.js": {
+      "role": "catalog-render-discovery-detail",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Panneau de détail léger pour offres physiques et services Discovery.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "home",
+        "discovery-rail",
+        "providers-services"
+      ],
+      "mustCheck": [
+        "impact:discovery-rail",
+        "impact:home",
+        "impact:providers-services",
+        "public/boutique/js/discovery-rail.js"
       ]
     },
     "public/boutique/js/render/render-discovery-rail.js": {
@@ -72098,7 +72220,8 @@
         "refunds",
         "order_items",
         "order_item_cost_imputations",
-        "order_item_real_cost_allocations"
+        "order_item_real_cost_allocations",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -72119,6 +72242,7 @@
         "db:order_items",
         "db:orders",
         "db:refunds",
+        "db:relais",
         "doctrine:dashboard_no_business_recompute",
         "doctrine:finance_event_date_is_authoritative",
         "doctrine:server_market_scope_is_authority",
@@ -73035,6 +73159,7 @@
         "impact:pricing",
         "routes/economic.js",
         "services/economic-config.js",
+        "services/pricing-workspace.js",
         "utils/eco-bridge.js",
         "utils/logger.js"
       ]
@@ -76816,7 +76941,8 @@
         "services/pricing-rates.js",
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js",
-        "services/cost-component-admin-service.js"
+        "services/cost-component-admin-service.js",
+        "services/economic-engine-queries.js"
       ],
       "directUsedBy": [
         "routes/admin-pricing-workspace.js"
@@ -76824,7 +76950,11 @@
       "ownedFiles": [],
       "dbRead": [
         "products",
-        "competitor_prices"
+        "competitor_prices",
+        "charges",
+        "economic_variables",
+        "economic_snapshots",
+        "finance_config"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -76839,7 +76969,11 @@
         "catalog"
       ],
       "mustCheck": [
+        "db:charges",
         "db:competitor_prices",
+        "db:economic_snapshots",
+        "db:economic_variables",
+        "db:finance_config",
         "db:products",
         "doctrine:browser_business_refs_only",
         "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -76849,6 +76983,7 @@
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
         "services/cost-component-admin-service.js",
+        "services/economic-engine-queries.js",
         "services/pricing-apply.js",
         "services/pricing-engine.js",
         "services/pricing-rates.js",

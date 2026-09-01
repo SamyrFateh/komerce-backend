@@ -1,7 +1,7 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-08-31",
+  "generatedAt": "2026-09-01",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
@@ -541,7 +541,7 @@
     }
   },
   "gateFindings": {
-    "sourceVersion": "GF-2.1",
+    "sourceVersion": "GF-3.0",
     "sources": [
       {
         "gate": "gate:feature-registry-check",
@@ -583,7 +583,7 @@
         "scope": "boutique",
         "status": "ok",
         "errorCount": 0,
-        "warningCount": 0
+        "warningCount": 2
       },
       {
         "gate": "check:body-classes",
@@ -670,7 +670,7 @@
         "warningCount": 0
       }
     ],
-    "currentFindings": 0
+    "currentFindings": 2
   },
   "catalog": {
     "BACKEND-ARCH": {
