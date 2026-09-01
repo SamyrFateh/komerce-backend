@@ -11,9 +11,9 @@
  * @db-read       shared_carts
  * @db-write      shared_cart_events, shared_carts
  * @db-txn        required_for_state_transition
- * @doctrine      domaine_minimal_boutique_first, panier_ouvert_ferme
- * @impact-areas  creator-flow
- * @version       2026-08
+ * @doctrine      domaine_minimal_boutique_first, panier_ouvert_ferme, auto_close_when_fully_claimed
+ * @impact-areas  creator-flow, shared-cart-lifecycle
+ * @version       2026-09
  */
 
 'use strict';
@@ -23,14 +23,21 @@
  *
  * Migration 124 : plus de fenêtre de paiement, plus de conversion en
  * commande unique (convertSharedCartToOrder), plus de machine à états
- * automatique (runSharedCartStateMachineTick / T1-T5, déjà démontée côté
+ * temporelle (runSharedCartStateMachineTick / T1-T5, déjà démontée côté
  * cron au Lot 3). Chaque participant réclame un article en achetant
  * individuellement via POST /api/orders (migration 123) — la liste
  * partagée elle-même n'orchestre plus aucun paiement.
  *
- * Il ne reste que 2 transitions, toutes deux déclenchées par le créateur :
- *   OPEN            → CLOSED     (close)
- *   OPEN ou CLOSED  → CANCELLED  (cancel)
+ * Le cycle minimal conserve néanmoins une transition automatique métier :
+ *   OPEN            → CLOSED     (close manuel par le créateur)
+ *   OPEN            → CLOSED     (automatique quand toutes les lignes sont réclamées)
+ *   OPEN ou CLOSED  → CANCELLED  (cancel manuel par le créateur)
+ *
+ * La fermeture automatique est déclenchée par orders après le COMMIT de la
+ * commande, via la frontière owner services/cart-share-service.js. Elle
+ * vérifie la vérité canonique order_items.shared_cart_item_id puis écrit
+ * shared_carts + shared_cart_events atomiquement. Ce fichier reste le point
+ * d'entrée du close/cancel EXPLICITE ; il n'est pas dupliqué dans orders.
  *
  * cancelSharedCart n'effectue aucun remboursement : aucune contribution
  * n'est jamais stockée sur la liste elle-même (le seul argent qui bouge
