@@ -119,6 +119,50 @@ function renderCard(card) {
     </article>`;
 }
 
+// ── Surface policies ────────────────────────────────────────────────────
+// Policies are HOME V1 exposure rules, not structural constants.
+// The backend sends the full editorial pool; the renderer selects.
+
+const COMMERCE_KINDS = new Set(['product', 'physical_offer']);
+const SERVICE_KINDS = new Set(['service']);
+
+/**
+ * Mobile: 4 items, alternating commerce/service for diversity.
+ * @param {object[]} cards — normalized pool
+ * @returns {object[]}
+ */
+function selectMobile(cards) {
+  const commerce = cards.filter(c => COMMERCE_KINDS.has(c.kind));
+  const services = cards.filter(c => SERVICE_KINDS.has(c.kind));
+  const result = [];
+  const maxPairs = 2; // 2 commerce + 2 services = 4
+  for (let i = 0; i < maxPairs; i++) {
+    if (commerce[i]) result.push(commerce[i]);
+    if (services[i]) result.push(services[i]);
+  }
+  // If one pool is short, fill from the other up to 4 total
+  if (result.length < 4) {
+    const used = new Set(result);
+    for (const c of [...commerce, ...services]) {
+      if (result.length >= 4) break;
+      if (!used.has(c)) { result.push(c); used.add(c); }
+    }
+  }
+  return result;
+}
+
+/**
+ * Desktop: full pool (up to 12), editorial order preserved.
+ * L4 will refine this into 75/25 composition.
+ */
+function selectDesktop(cards) {
+  return cards;
+}
+
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < 900;
+}
+
 // ── Render public ───────────────────────────────────────────────────────
 
 export function renderDiscoveryRail(container, cards, options = {}) {
@@ -134,6 +178,14 @@ export function renderDiscoveryRail(container, cards, options = {}) {
     return 0;
   }
 
+  const selected = isMobileViewport() ? selectMobile(normalized) : selectDesktop(normalized);
+
+  if (selected.length === 0) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return 0;
+  }
+
   const marketLabel = options.marketLabel ? String(options.marketLabel) : '';
   container.innerHTML = `
     <div class="k-discovery-header">
@@ -143,10 +195,10 @@ export function renderDiscoveryRail(container, cards, options = {}) {
       </div>
     </div>
     <div class="k-discovery-rail" role="list" aria-label="Offres disponibles près de vous">
-      ${normalized.map(renderCard).join('')}
+      ${selected.map(renderCard).join('')}
     </div>`;
   container.hidden = false;
   return normalized.length;
 }
 
-export { normalizeCard, renderCard, formatPrice };
+export { normalizeCard, renderCard, formatPrice, selectMobile, selectDesktop };

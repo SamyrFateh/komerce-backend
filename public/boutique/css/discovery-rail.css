@@ -55,30 +55,19 @@
 }
 
 .k-discovery-rail {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 9px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 1px 1px 5px;
-  margin: 0 -1px;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.k-discovery-rail::-webkit-scrollbar {
-  display: none;
+  padding: 1px 0 5px;
 }
 
 .k-discovery-card {
-  flex: 0 0 168px;
   min-width: 0;
   background: var(--sand);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--elev-1);
-  scroll-snap-align: start;
   cursor: pointer;
   transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
@@ -227,8 +216,16 @@
   }
 
   .k-discovery-rail {
+    display: flex;
     gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 5px;
+    scrollbar-width: none;
+  }
+
+  .k-discovery-rail::-webkit-scrollbar {
+    display: none;
   }
 
   /*

@@ -111,3 +111,49 @@ describe('renderDiscoveryRail', () => {
     expect(target().textContent).toContain('<img src=x onerror=alert(1)>');
   });
 });
+
+// ── selectMobile policy tests ───────────────────────────────────────────
+
+const { selectMobile, normalizeCard } = require('../../js/render/render-discovery-rail.js');
+
+describe('selectMobile — surface policy HOME V1', () => {
+  function card(kind, id) {
+    return normalizeCard({
+      kind, title: `${kind}-${id}`, cta_action_ref: id, cta_label: 'Test',
+    });
+  }
+
+  it('alternates 2 commerce + 2 services from a mixed pool', () => {
+    const pool = [
+      card('product', 'p1'), card('product', 'p2'), card('product', 'p3'),
+      card('physical_offer', 'o1'),
+      card('service', 's1'), card('service', 's2'), card('service', 's3'),
+    ];
+    const result = selectMobile(pool);
+    expect(result).toHaveLength(4);
+    expect(result.map(c => c.kind)).toEqual(['product', 'service', 'product', 'service']);
+  });
+
+  it('fills from commerce if fewer than 2 services', () => {
+    const pool = [
+      card('product', 'p1'), card('product', 'p2'), card('physical_offer', 'o1'),
+      card('service', 's1'),
+    ];
+    const result = selectMobile(pool);
+    expect(result).toHaveLength(4);
+    // p1, s1 (first pair), p2 (second commerce, no second service), then backfill o1
+    expect(result[0].kind).toBe('product');
+    expect(result[1].kind).toBe('service');
+  });
+
+  it('returns fewer than 4 if pool is small', () => {
+    const pool = [card('product', 'p1'), card('service', 's1')];
+    const result = selectMobile(pool);
+    expect(result).toHaveLength(2);
+  });
+
+  it('never exceeds 4', () => {
+    const pool = Array.from({ length: 12 }, (_, i) => card('product', `p${i}`));
+    expect(selectMobile(pool)).toHaveLength(4);
+  });
+});
