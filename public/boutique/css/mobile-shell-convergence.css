@@ -4,7 +4,7 @@
  * @domain        boutique
  * @layer         css
  * @owner         public/boutique/css/layout.css
- * @purpose       Aligne le shell mobile sur la toile blanche fluide desktop : header et bottom-nav ouverts, recherche compacte au repos puis déployée à la demande.
+ * @purpose       Aligne le shell mobile sur la toile blanche fluide desktop : header et bottom-nav ouverts, recherche réduite à une loupe puis déployée hors flux sous le header.
  * @impact-areas  mobile, header, search, bottom-nav
  * @version       2026-09
  */
@@ -18,22 +18,29 @@
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
 
-  /* Mobile V2.4 — la recherche reste disponible sans monopoliser le header.
-     Au repos : loupe compacte. Au focus : le champ reprend l'espace central
-     et conserve le moteur de recherche / dropdown existant. */
+  /* Mobile V2.5 — la recherche ne consomme plus le centre du header.
+     Au repos : loupe compacte. Le champ invisible couvre la loupe et reçoit
+     directement le tap. Au focus : le même composant sort du flux et devient
+     une barre fixe sous le header ; le moteur et le dropdown restent inchangés. */
   .k-search {
     flex: 0 0 34px;
     width: 34px;
+    height: 34px;
     margin-left: auto;
-    background: var(--surface-sand-97);
-    border: 1px solid var(--border-text-08);
+    border-radius: 999px;
+    background: transparent;
+    border: 0;
     box-shadow: none;
-    transition: flex-basis .16s ease, width .16s ease, background .16s ease, border-color .16s ease;
+    transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
   }
 
   .k-search input {
-    padding-left: 30px;
-    padding-right: 4px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 34px;
+    padding: 0;
+    opacity: 0;
     color: transparent;
     caret-color: transparent;
     cursor: pointer;
@@ -44,21 +51,34 @@
   }
 
   .k-search .k-search-icon {
-    left: 7px;
+    left: 8px;
+    width: 18px;
+    height: 18px;
   }
 
+  /* La barre est déplacée sous le header, en overlay : aucune hauteur
+     permanente n'est ajoutée au hero, aux catégories ou au catalogue. */
   .k-search:focus-within {
-    flex: 1 1 auto;
+    position: fixed;
+    top: calc(var(--header-h, 44px) + env(safe-area-inset-top, 0px) + 8px);
+    left: 12px;
+    right: 12px;
     width: auto;
-    margin-left: 0;
+    height: 40px;
+    margin: 0;
+    z-index: 190;
+    border-radius: 20px;
     background: var(--white);
-    border-color: rgba(42,122,62,.30);
-    box-shadow: 0 0 0 3px rgba(100,175,90,.08);
+    border: 1px solid rgba(42,122,62,.24);
+    box-shadow: 0 8px 24px var(--border-text-10);
   }
 
   .k-search:focus-within input {
-    padding-left: 36px;
-    padding-right: 12px;
+    position: static;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px 0 38px;
+    opacity: 1;
     color: var(--text);
     caret-color: auto;
     cursor: text;
@@ -70,6 +90,13 @@
 
   .k-search:focus-within .k-search-icon {
     left: 14px;
+  }
+
+  .k-search:focus-within .k-search-dropdown {
+    top: calc(100% + 6px);
+    max-height: min(50vh, 360px);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px var(--border-text-10);
   }
 
   .k-bnav {
