@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spike — Mobile Vertical vs Pager Temu</title>
+<link rel="stylesheet" href="./shell.css">
+</head>
+<body>
+
+<!-- Bandeau spike : métriques live. N'existe QUE dans le harness. -->
+<div id="spike-hud">
+  <strong id="spike-shell-name">—</strong>
+  <span>scroll owner: <b id="spike-owner">—</b></span>
+  <span>cat active: <b id="spike-cat">—</b></span>
+  <span>mémo Y: <b id="spike-memo">—</b></span>
+  <a href="?shell=pager">A·Pager</a>
+  <a href="?shell=vertical">B·Vertical</a>
+</div>
+
+<!-- Le shell est monté ici par shell.js selon ?shell= -->
+<div id="spike-root"></div>
+
+<!-- Modale partagée (même cycle pour A et B) -->
+<div id="spike-modal" hidden>
+  <div class="spike-modal-overlay" data-close></div>
+  <div class="spike-modal-panel" role="dialog" aria-modal="true">
+    <button class="spike-modal-close" data-close aria-label="Fermer">✕</button>
+    <div class="spike-modal-media"></div>
+    <div class="spike-modal-body">
+      <h2 class="spike-modal-title"></h2>
+      <div class="spike-modal-price"></div>
+      <p class="spike-modal-desc"></p>
+      <button class="spike-modal-cta">Ajouter au panier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Panier partagé (même cycle pour A et B) -->
+<div id="spike-cart" hidden>
+  <div class="spike-cart-overlay" data-cart-close></div>
+  <aside class="spike-cart-panel">
+    <div class="spike-cart-head">Mon panier <button data-cart-close>✕</button></div>
+    <div class="spike-cart-items"></div>
+  </aside>
+</div>
+
+<script type="module" src="./data.js"></script>
+<script type="module" src="./shell.js"></script>
+</body>
+</html>
