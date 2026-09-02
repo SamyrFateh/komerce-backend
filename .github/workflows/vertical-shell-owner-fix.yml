@@ -1,0 +1,81 @@
+name: Canonicalize vertical shell CSS ownership
+
+on:
+  pull_request:
+    branches: [main]
+    types: [reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  canonicalize:
+    if: github.event.pull_request.head.ref == 'test/mobile-vertical-main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/mobile-vertical-main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Move critical selector rules into canonical owners and bundle spike CSS
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function edit(path, fn) {
+            const before = fs.readFileSync(path, 'utf8');
+            const after = fn(before);
+            if (after === before) throw new Error(`No change applied to ${path}`);
+            fs.writeFileSync(path, after, 'utf8');
+          }
+
+          edit('public/boutique/scripts/css-bundles.js', s => {
+            const needle = "'categories', 'category-cutout-navigation', 'products', 'discovery-rail', 'modal-shell'";
+            if (!s.includes(needle)) throw new Error('css-bundles anchor not found');
+            return s.replace(needle, "'categories', 'category-cutout-navigation', 'products', 'discovery-rail', 'spike-vertical-shell', 'modal-shell'");
+          });
+
+          edit('public/boutique/css/hero.css', s => {
+            const needle = ".k-hero-cats-sticky::after { content: ''; display: block; }";
+            if (!s.includes(needle)) throw new Error('hero owner anchor not found');
+            return s.replace(needle, `${needle}\n\n/* Temporary validation shell: sticky category navigation remains owned here. */\nbody.spike-shell-vertical .k-hero-cats-sticky {\n  position: sticky;\n  top: 0;\n  z-index: 500;\n}`);
+          });
+
+          edit('public/boutique/css/products.css', s => {
+            const needle = `.k-grid,\n.k-sec-grid {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 8px;\n  padding: 4px 12px 12px;\n}`;
+            if (!s.includes(needle)) throw new Error('products owner anchor not found');
+            return s.replace(needle, `${needle}\n\n/* Temporary validation shell: section product grid remains owned by products.css. */\nbody.spike-shell-vertical .k-sec-grid {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 9px;\n}`);
+          });
+
+          edit('public/boutique/css/spike-vertical-shell.css', s => {
+            const gridNeedle = `body.spike-shell-vertical .k-cat-section .k-sec-grid,\nbody.spike-shell-vertical .k-cat-section .k-grid-inner {`;
+            const stickyNeedle = `body.spike-shell-vertical #k-sticky-bar,\nbody.spike-shell-vertical .k-hero-cats-sticky {`;
+            if (!s.includes(gridNeedle) || !s.includes(stickyNeedle)) throw new Error('spike CSS owner anchors not found');
+            return s
+              .replace(gridNeedle, `body.spike-shell-vertical .k-cat-section .k-grid-inner {`)
+              .replace(stickyNeedle, `body.spike-shell-vertical #k-sticky-bar {`);
+          });
+
+          edit('public/boutique/js/spike-vertical-shell.js', s => {
+            const fn = `function injectSpikeCss() {\n  if (document.getElementById('spike-vertical-css')) return;\n  const link = document.createElement('link');\n  link.id = 'spike-vertical-css';\n  link.rel = 'stylesheet';\n  link.href = '/boutique/css/spike-vertical-shell.css';\n  document.head.appendChild(link);\n}\n\n`;
+            if (!s.includes(fn) || !s.includes('  injectSpikeCss();\n')) throw new Error('dynamic CSS injection anchors not found');
+            return s.replace(fn, '').replace('  injectSpikeCss();\n', '');
+          });
+          NODE
+
+          node public/boutique/scripts/deploy-css.js
+
+      - name: Remove temporary workflow and commit canonical outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/vertical-shell-owner-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(boutique): canonicalize vertical shell CSS ownership"
+          git push origin HEAD:test/mobile-vertical-main
