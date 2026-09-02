@@ -1,0 +1,43 @@
+name: Vertical shell governance regeneration
+
+on:
+  push:
+    branches:
+      - test/mobile-vertical-main
+    paths:
+      - '.github/workflows/vertical-shell-regenerate-governance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/mobile-vertical-main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Regenerate canonical governed projections
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Remove temporary workflow and commit generated projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/vertical-shell-regenerate-governance.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(governance): regenerate projections for vertical shell validation"
+          git push origin HEAD:test/mobile-vertical-main
