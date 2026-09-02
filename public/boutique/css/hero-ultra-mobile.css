@@ -11,24 +11,24 @@
  */
 
 /*
- * HERO ULTRA MOBILE — KOMERCE V2.8 COMPACT BRAND SIGNATURE
- * Cible : 80–90 px de hauteur utile.
+ * HERO ULTRA MOBILE — KOMERCE COMPACT BRAND SIGNATURE
+ * Cible : 72–82 px de hauteur utile.
  *
- * Contrat UX : le hero reste identifiable et désirable, sans redevenir un
- * étage entier. La recherche n'est plus superposée dessus ; il peut donc
- * reprendre un peu de présence avant catégories, local et catalogue.
+ * Contrat UX : le hero reste immédiatement reconnaissable mais ne retarde pas
+ * l'accès aux catégories et au local. Les personnages sont remontés dans leur
+ * cadre pour conserver visages, coiffures et téléphone avec moins de hauteur.
  */
 @media (max-width: 899px) {
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(80px, 22vw, 90px);
+    height: clamp(72px, 20vw, 82px);
     margin-top: 0;
     margin-bottom: 0;
   }
 
   .k-hero-media .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    background-size: auto 101%;
-    background-position: 71% 7%;
+    background-size: auto 108%;
+    background-position: 71% -6%;
     -webkit-mask-image: none;
     mask-image: none;
   }
@@ -36,7 +36,7 @@
   .k-hero-media .k-hero-mini-slogan--premium {
     inset: 0 auto 0 0;
     width: 36%;
-    padding: 7px 0 0 9px;
+    padding: 4px 0 0 9px;
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
@@ -44,12 +44,12 @@
 
   .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
     font-size: clamp(11px, 3vw, 13px);
-    line-height: 1.03;
+    line-height: 1.02;
   }
 
   .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
     margin-top: 1px;
     font-size: clamp(11px, 3.1vw, 13px);
-    line-height: 1.03;
+    line-height: 1.02;
   }
 }

@@ -27,9 +27,7 @@ describe('mobile shell convergence', () => {
     expect(css).not.toContain('var(--pager-top, 190px)');
   });
 
-  test('rend un launcher de recherche visible dans le flux de Tout', () => {
-    expect(css).toMatch(/\.k-home-search-launcher\s*\{[^}]*width:\s*100%[^}]*min-height:\s*38px[^}]*margin:\s*8px 0 10px[^}]*border-radius:\s*20px/s);
-    expect(css).toContain('.k-home-search-launcher::before');
-    expect(css).toContain('.k-home-search-launcher::after');
+  test('ne définit plus de seconde barre de recherche dans le flux mobile', () => {
+    expect(css).not.toContain('.k-home-search-launcher');
   });
 });
