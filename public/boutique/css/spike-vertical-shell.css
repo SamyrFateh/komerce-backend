@@ -12,28 +12,28 @@
  * Le rail catégories devient sticky. Un seul scroll owner : le document.
  */
 
-/* ── Neutraliser toute trace de cage (défense : b-catalog ne pose pas
-   k-pager-active en mode vertical, mais on garantit l'absence de cage même
-   si un résidu de classe traîne). ── */
+/* ── Neutraliser toute trace de cage. En mode vertical, b-catalog ne pose pas
+   k-pager-active ; la spécificité body.spike-shell-vertical + l'injection tardive
+   suffisent sans créer de dette !important. ── */
 body.spike-shell-vertical #k-page-scroll {
-  position: static !important;
-  top: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  right: auto !important;
-  width: auto !important;
-  height: auto !important;
-  overflow: visible !important;
+  position: static;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
 }
 
 body.spike-shell-vertical #k-catalog-section {
-  height: auto !important;
-  overflow: visible !important;
+  height: auto;
+  overflow: visible;
 }
 
 /* Réafficher le footer (masqué par la cage en mode pager) */
 body.spike-shell-vertical .k-footer {
-  display: block !important;
+  display: block;
 }
 
 /* ── Grid en mode sections verticales ── */
@@ -43,11 +43,11 @@ body.spike-shell-vertical .k-grid-vertical-sections {
 
 /* Chaque catégorie = section verticale successive dans le flux */
 body.spike-shell-vertical .k-cat-section {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  flex: none !important;
-  overflow: visible !important;
+  display: block;
+  width: 100%;
+  height: auto;
+  flex: none;
+  overflow: visible;
   /* Offset de scroll pour scrollIntoView sous le rail sticky */
   scroll-margin-top: 100px;
 }
