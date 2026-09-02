@@ -4,7 +4,7 @@
  * @domain        boutique
  * @layer         css
  * @owner         public/boutique/css/layout.css
- * @purpose       Aligne le shell mobile sur une composition compacte : header ouvert, recherche visible sous le rail catégories, bottom-nav légère.
+ * @purpose       Aligne le shell mobile sur une composition compacte : header ouvert, loupe globale légère, recherche visible dans le flux de Tout, bottom-nav légère.
  * @impact-areas  mobile, header, search, bottom-nav
  * @version       2026-09
  */
@@ -18,27 +18,60 @@
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
 
-  /* Mobile V2.6 — la recherche quitte visuellement le header sans changer de
-     composant ni de moteur. Elle reste fixe juste SOUS le chrome Temu
-     (hero + catégories), suit --pager-top lors du collapse du hero et ne
-     coupe donc plus la signature de marque. */
+  /* V2.8 — au repos, le moteur canonique redevient une simple loupe globale
+     dans le header. Le launcher visible dans la page "Tout" donne le focus
+     à ce même input : aucun moteur dupliqué, aucun élément permanent posé sur
+     le hero ou sur les cartes locales. */
   .k-search {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    margin-left: auto;
+    position: relative;
+    border-radius: 50%;
+    background: var(--surface-white-96);
+    border: 1px solid var(--border-text-08);
+    box-shadow: none;
+  }
+
+  .k-search input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+    caret-color: transparent;
+  }
+
+  .k-search .k-search-icon {
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    color: var(--ocean-dark-deep);
+  }
+
+  /* Pendant la recherche seulement, le champ occupe le header lui-même.
+     Il ne coupe donc jamais le hero ; le dropdown peut ensuite se déployer
+     temporairement sous le header comme tout résultat de recherche. */
+  .k-search:focus-within {
     position: fixed;
-    top: calc(var(--pager-top, 190px) + 4px);
+    top: calc(env(safe-area-inset-top, 0px) + 5px);
     left: 12px;
     right: 12px;
     width: auto;
     height: 34px;
     margin: 0;
-    z-index: 70;
+    z-index: 190;
     border-radius: 17px;
-    background: rgba(255,255,255,.97);
-    border: 1px solid var(--border-text-08);
-    box-shadow: 0 4px 14px var(--border-text-08);
-    transition: top .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
+    background: var(--white);
+    border-color: rgba(42,122,62,.28);
+    box-shadow: 0 7px 20px var(--border-text-10), 0 0 0 3px rgba(100,175,90,.06);
   }
 
-  .k-search input {
+  .k-search:focus-within input {
     position: static;
     width: 100%;
     height: 34px;
@@ -49,20 +82,9 @@
     cursor: text;
   }
 
-  .k-search input::placeholder {
-    color: var(--overlay-black-lg);
-  }
-
-  .k-search .k-search-icon {
+  .k-search:focus-within .k-search-icon {
     left: 13px;
-    width: 17px;
-    height: 17px;
-  }
-
-  .k-search:focus-within {
-    background: var(--white);
-    border-color: rgba(42,122,62,.28);
-    box-shadow: 0 7px 20px var(--border-text-10), 0 0 0 3px rgba(100,175,90,.06);
+    transform: translateY(-50%);
   }
 
   .k-search:focus-within .k-search-dropdown {
@@ -70,6 +92,52 @@
     max-height: min(50vh, 360px);
     border-radius: 14px;
     box-shadow: 0 12px 30px var(--border-text-10);
+  }
+
+  /* Launcher de recherche réellement dans le flux de la page Tout. */
+  .k-home-search-launcher {
+    width: 100%;
+    min-height: 38px;
+    margin: 8px 0 10px;
+    padding: 0 14px 0 38px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-text-08);
+    border-radius: 20px;
+    background: var(--surface-white-96);
+    color: var(--overlay-black-lg);
+    box-shadow: var(--elev-1);
+    font: inherit;
+    font-size: 16px;
+    text-align: left;
+    cursor: text;
+  }
+
+  .k-home-search-launcher::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    transform: translateY(-58%);
+    box-sizing: border-box;
+  }
+
+  .k-home-search-launcher::after {
+    content: '';
+    position: absolute;
+    left: 26px;
+    top: 22px;
+    width: 6px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    transform-origin: left center;
   }
 
   .k-bnav {
