@@ -7381,7 +7381,7 @@
               {
                 "declared": "services/cost-component-market-service.js",
                 "resolvedPath": "services/cost-component-market-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/dashboard-finance-metrics.js",

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 487
-- Files with full headers: 449
-- Files with lite headers: 38
-- Files with any headers: 487
+- Scanned code files: 489
+- Files with full headers: 450
+- Files with lite headers: 39
+- Files with any headers: 489
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1067
-- Edges: 5593
-- DB tables: 124
-- Doctrines: 287
+- Graph nodes: 1072
+- Edges: 5613
+- DB tables: 126
+- Doctrines: 288
 - Impact areas: 169
-- Unresolved code edges: 558
+- Unresolved code edges: 560
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -32,13 +32,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 89
+- catalog: 90
 - checkout: 2
 - customs: 6
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 46
+- economic-engine: 47
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 206
+- service: 207
 - state: 1
 - state-store: 1
 - ui-adapter: 1
@@ -91,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-component: 40
 - ui-controller: 3
 - ui-enhancer: 3
-- ui-infrastructure: 1
+- ui-infrastructure: 2
 - ui-page: 5
 - ui-renderer: 11
 - ui-service: 5
@@ -315,6 +315,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
+- services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
 - services/dashboard-admin-context.js — canonical-admin-context-resolver (admin-dashboard, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
@@ -462,6 +463,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
 - public/boutique/js/render/render-discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-render-discovery-rail)
 - public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
+- public/boutique/js/spike-vertical-shell.js -> owner public/boutique/js/spike-vertical-shell.js (catalog-spike-vertical-shell)
 - public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
 - public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
 - public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
@@ -519,6 +521,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pricing-strategy-service.js -> competitor_prices
 - WRITE routes/pricing.js -> cost_benchmarks
 - WRITE services/cost-component-admin-service.js -> cost_component_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_override_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_overrides
 - WRITE services/cost-component-admin-service.js -> cost_components
 - WRITE routes/admin-customs-categories.js -> customs_categories
 - WRITE routes/orders/status.js -> customs_history
@@ -586,8 +590,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/cancel.js -> order_status_history
 - WRITE services/order-checkout-persistence.js -> order_status_history
 - WRITE services/order-checkout-service.js -> order_status_history
-- WRITE services/order-status-machine.js -> order_status_history
-- WRITE routes/admin-customs-shipments.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
