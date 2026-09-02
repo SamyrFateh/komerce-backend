@@ -17814,6 +17814,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "tests",
+        "declared": "../tests/unit/discovery-rail-mount.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-rail-mount.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
         "declared": "../tests/unit/discovery-modal-detail.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-modal-detail.test.js",
         "exists": true,
@@ -17872,6 +17880,14 @@
         "category": "tests",
         "declared": "../tests/unit/mobile-catalog-convergence.test.js",
         "resolvedPath": "public/boutique/tests/unit/mobile-catalog-convergence.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/e2e/discovery-mobile-scroll.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/discovery-mobile-scroll.spec.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -29662,7 +29678,7 @@
         "filesObserved": 1008
       },
       "boutique": {
-        "filesObserved": 189,
+        "filesObserved": 191,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
