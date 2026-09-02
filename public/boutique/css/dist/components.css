@@ -2314,6 +2314,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   padding: 4px 12px 12px;
 }
 
+/* Dans le pager Temu mobile, la page catégorie possède déjà son padding et
+   reste l'unique scroll owner vertical. Discovery vit dans cette page : aucun
+   padding horizontal doublé, aucun nouveau conteneur de scroll. */
+.k-cat-section > .k-discovery-shell {
+  padding-inline: 0;
+}
+
 .k-discovery-header {
   display: flex;
   align-items: baseline;

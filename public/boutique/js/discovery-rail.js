@@ -15,21 +15,72 @@ import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
 
 let _installed = false;
+let _cards = null;
+let _marketLabel = '';
+let _mountObserver = null;
+let _mountRaf = 0;
+
+const MOBILE_BREAKPOINT = 900;
+
+function isMobile() {
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+function bindShell(shell) {
+  if (!shell || shell.dataset.discoveryClickBound === '1') return;
+  shell.dataset.discoveryClickBound = '1';
+  shell.addEventListener('click', handleDiscoveryClick);
+}
 
 function ensureMount() {
   let shell = document.getElementById('k-discovery-local');
-  if (shell) return shell;
-
   const catalog = document.getElementById('k-desktop-catalog-wrap');
   if (!catalog) return null;
 
-  shell = document.createElement('section');
-  shell.id = 'k-discovery-local';
-  shell.className = 'k-discovery-shell';
-  shell.hidden = true;
-  shell.setAttribute('aria-labelledby', 'k-discovery-local-title');
-  catalog.insertAdjacentElement('beforebegin', shell);
+  // Le pager Temu mobile confine #k-page-scroll en overflow:hidden. Son seul
+  // propriétaire de scroll vertical est la page .k-cat-section active : tout
+  // contenu placé comme frère du pager devient donc visible mais impossible à
+  // faire défiler. Discovery appartient à la page "Tout" sur mobile.
+  const mobile = isMobile();
+  const mobilePage = mobile
+    ? document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])')
+    : null;
+  if (mobile && !mobilePage) return null;
+
+  if (!shell) {
+    shell = document.createElement('section');
+    shell.id = 'k-discovery-local';
+    shell.className = 'k-discovery-shell';
+    shell.dataset.pagerStatic = 'true';
+    shell.hidden = true;
+    shell.setAttribute('aria-labelledby', 'k-discovery-local-title');
+  }
+
+  if (mobilePage) {
+    if (shell.parentElement !== mobilePage || mobilePage.firstElementChild !== shell) {
+      mobilePage.prepend(shell);
+    }
+  } else if (shell.nextElementSibling !== catalog) {
+    catalog.insertAdjacentElement('beforebegin', shell);
+  }
+
+  bindShell(shell);
   return shell;
+}
+
+function renderCachedDiscoveryRail() {
+  if (!_cards) return 0;
+  const shell = ensureMount();
+  if (!shell) return 0;
+  return renderDiscoveryRail(shell, _cards, { marketLabel: _marketLabel });
+}
+
+function scheduleMount() {
+  if (_mountRaf) cancelAnimationFrame(_mountRaf);
+  _mountRaf = requestAnimationFrame(() => {
+    _mountRaf = 0;
+    renderCachedDiscoveryRail();
+  });
 }
 
 function getMarketLabel() {
@@ -41,12 +92,11 @@ function getMarketLabel() {
 }
 
 async function refreshDiscoveryRail() {
-  const shell = ensureMount();
-  if (!shell) return 0;
-
   const payload = await fetchDiscoveryRail();
   const cards = Array.isArray(payload) ? payload : payload?.cards;
-  return renderDiscoveryRail(shell, cards, { marketLabel: getMarketLabel() });
+  _cards = Array.isArray(cards) ? cards : [];
+  _marketLabel = getMarketLabel();
+  return renderCachedDiscoveryRail();
 }
 
 /**
@@ -92,15 +142,30 @@ export function setupDiscoveryRail() {
   if (_installed) return;
   _installed = true;
 
-  const shell = ensureMount();
-  if (!shell) return;
-
-  shell.addEventListener('click', handleDiscoveryClick);
+  // renderGrid() remplace les pages du pager par innerHTML. Observer uniquement
+  // les enfants directs du grid permet de remonter le shell dans la nouvelle
+  // page "Tout" sans observer les mutations internes du rail lui-même.
+  const grid = document.getElementById('k-grid');
+  if (grid && window.MutationObserver) {
+    _mountObserver = new MutationObserver(scheduleMount);
+    _mountObserver.observe(grid, { childList: true });
+  }
+  window.addEventListener('resize', scheduleMount, { passive: true });
 
   refreshDiscoveryRail().catch(() => {
-    shell.innerHTML = '';
-    shell.hidden = true;
+    _cards = [];
+    const shell = ensureMount();
+    if (shell) {
+      shell.innerHTML = '';
+      shell.hidden = true;
+    }
   });
 }
 
-export { refreshDiscoveryRail, openDiscoveryDetail, handleDiscoveryClick };
+export {
+  ensureMount,
+  renderCachedDiscoveryRail,
+  refreshDiscoveryRail,
+  openDiscoveryDetail,
+  handleDiscoveryClick,
+};

@@ -228,6 +228,22 @@ describe('_setupInfiniteLoop', () => {
     expect(last.getAttribute('data-ghost')).toBe('true');
   });
 
+  it('exclut du ghost les surfaces statiques montées dans la vraie page Tout', () => {
+    isDesktop.mockReturnValue(false);
+    const grid = makeGrid({ cats: ['all', 'alimentation'] });
+    const discovery = document.createElement('section');
+    discovery.id = 'k-discovery-local';
+    discovery.dataset.pagerStatic = 'true';
+    grid.querySelector('.k-cat-section[data-cat="all"]').prepend(discovery);
+    document.body.appendChild(grid);
+
+    _setupInfiniteLoop();
+
+    expect(grid.querySelector('.k-cat-section[data-cat="all"]:not([data-ghost]) #k-discovery-local')).not.toBeNull();
+    expect(grid.querySelector('[data-ghost] #k-discovery-local')).toBeNull();
+    expect(grid.querySelectorAll('#k-discovery-local')).toHaveLength(1);
+  });
+
   it('desktop : ne crée pas de ghost', () => {
     isDesktop.mockReturnValue(true);
     const grid = makeGrid({ cats: ['all'] });

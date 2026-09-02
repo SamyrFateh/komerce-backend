@@ -194,6 +194,10 @@ function _setupInfiniteLoop() {
 
   // Cloner la page Tout et l'ajouter à la fin
   const ghost = toutPage.cloneNode(true);
+  // Les surfaces asynchrones montées dans le vrai "Tout" (Discovery, demain
+  // d'autres blocs statiques) ne doivent pas être clonées dans la page ghost :
+  // elles dupliqueraient leurs ids et leurs handlers sans appartenir à la boucle.
+  ghost.querySelectorAll('[data-pager-static]').forEach(node => node.remove());
   ghost.setAttribute('data-ghost', 'true');
   ghost.dataset.cat = 'all';
   grid.appendChild(ghost);

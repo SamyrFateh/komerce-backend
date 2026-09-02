@@ -104,6 +104,7 @@ module.exports = {
       '../tests/unit/render-home-sections.test.js',
       '../tests/unit/render-categories.test.js',
       '../tests/unit/discovery-rail.test.js',
+      '../tests/unit/discovery-rail-mount.test.js',
       '../tests/unit/discovery-modal-detail.test.js',
       '../tests/unit/discovery-actions.test.js',
       '../tests/unit/hero-desktop-panorama.test.js',
@@ -112,6 +113,7 @@ module.exports = {
       '../tests/unit/products.test.js',
       '../tests/unit/runtime-csp-contract.test.js',
       '../tests/unit/mobile-catalog-convergence.test.js',
+      '../tests/e2e/discovery-mobile-scroll.spec.js',
     ],
   },
 
@@ -165,6 +167,7 @@ module.exports = {
     'la vue Favoris conserve sur desktop une composition intentionnelle pour les états vide et un seul produit',
     'le rail Discovery local est absent si aucune DiscoveryCard exposable n’est fournie ; aucune carte locale factice n’est reconstruite côté frontend',
     'sur desktop, le rail Discovery conserve tout le pool éditorial borné par le backend et le rend horizontalement accessible ; le renderer ne tronque jamais silencieusement les candidats valides',
+    'sur mobile, Discovery est monté dans la page Tout du pager Temu, seul propriétaire du scroll vertical ; il ne peut jamais devenir un frère bloqué par la cage fixe',
     'le kind Discovery ne crée jamais une taxonomie ou une navigation client parallèle ; seuls subtitle et CTA portent la nuance',
     'sur une même surface Discovery, Product, Physical Offer et Service partagent la même géométrie de carte ; les données optionnelles occupent des slots réservés et ne déplacent jamais le CTA',
     'sur le rail Discovery, clic carte et CTA utilisent le même openDiscoveryDetail ; aucune Inquiry ni mutation métier ne part directement du rail',
