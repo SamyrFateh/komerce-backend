@@ -200,3 +200,10 @@ calcul du CDR.
 Dans ce lot, les partenaires pays peuvent modifier les hypothèses de coûts existantes et les activer /
 désactiver localement. Ils ne peuvent pas créer de nouvelles catégories de composants, modifier le prix
 catalogue global, la stratégie globale ou les variables économiques centrales.
+
+### Invariant de contrat généré
+
+Les quatre routes market-scoped de LOT 4U font partie de l'inventaire OpenAPI généré. Après l'introspection
+runtime et les écritures synchrones du contrat, `contract-generate.js` termine explicitement le process :
+la génération est déterministe en local comme en CI et ne reste pas suspendue sur des timers ouverts par
+les modules chargés pendant l'introspection.
