@@ -1,0 +1,208 @@
+name: Temu V2 foundation
+
+on:
+  pull_request:
+    types: [reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'feat/mobile-temu-v2-foundation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/mobile-temu-v2-foundation
+          fetch-depth: 0
+      - name: Apply Temu V2.1 foundation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          catalog = Path('public/boutique/js/b-catalog.js')
+          s = catalog.read_text()
+          for line in [
+              '  _setupSectionAutoAdvance,\n',
+              '  _scrollPagerToGhost,\n',
+              '  _reshuffleToutInDOM,\n',
+              '  _setupInfiniteLoop,\n',
+          ]:
+              s = s.replace(line, '')
+
+          old = '''        _recalcPagerVars();        // mesure APRÈS que le DOM (hero fixe + chips) soit stabilisé
+        _setupInfiniteLoop();      // ghost loop : clone Tout à la fin — DOIT être avant _setupMobilePager
+        _setupMobilePager();       // listeners scroll/touch — DOM ghost déjà stabilisé
+        _setupSectionAutoAdvance(); // bounce bas → catégorie suivante
+'''
+          new = '''        // TEMU V2.1 — le swipe horizontal reste la grammaire de changement
+        // d'univers. Le scroll vertical appartient à la catégorie et ne décide
+        // plus à la place de l'utilisateur : aucun ghost, aucun auto-advance.
+        _recalcPagerVars();        // mesure APRÈS stabilisation du hero + chips
+        _setupMobilePager();       // swipe horizontal + sync chip + mémoire scroll par catégorie
+'''
+          if old not in s:
+              raise SystemExit('b-catalog Temu pager block not found')
+          s = s.replace(old, new)
+          catalog.write_text(s)
+
+          pager = Path('public/boutique/js/b-pager.js')
+          s = pager.read_text()
+          s = s.replace(' * @outputs       horizontal_pager_state, active_chip_sync, section_auto_advance\n',
+                        ' * @outputs       horizontal_pager_state, active_chip_sync, category_scroll_memory\n')
+          s = s.replace(' * 2. Ghost loop — après la dernière catégorie, une page clone de "Tout"\n *    → swipe dessus → téléportation silencieuse vers le vrai "Tout" (idx 0)\n * 3. Bounce vertical — en bas d\'une page → scroll automatique vers la suivante\n * 4. Sync chips — au scroll natif, chip active = page visible\n',
+                        ' * 2. Scroll vertical indépendant par catégorie, position mémorisée\n * 3. Sync chips — au swipe natif, chip active = page visible\n *\n * Temu V2.1 : le pager ne boucle plus artificiellement et le bas d\'une page\n * ne change jamais de catégorie sans geste horizontal explicite.\n')
+
+          marker = '// ── Ghost loop ────────────────────────────────────────────────────\n'
+          if marker not in s:
+              raise SystemExit('b-pager insertion marker not found')
+          memory = '''// ── Mémoire verticale par catégorie — Temu V2.1 ──────────────────
+// Chaque univers garde sa propre position même si renderGrid() remplace les
+// pages. Horizontal = changement de contexte ; vertical = exploration locale.
+const _pageScrollByCat = new Map();
+
+function _setupPageScrollMemory(grid) {
+  _getPages(grid).forEach(page => {
+    const cat = page.dataset.cat;
+    if (!cat || page.dataset.ghost) return;
+
+    if (page._pagerVerticalScrollH) {
+      page.removeEventListener('scroll', page._pagerVerticalScrollH);
+    }
+
+    const saved = _pageScrollByCat.get(cat);
+    if (Number.isFinite(saved)) page.scrollTop = saved;
+
+    page._pagerVerticalScrollH = () => {
+      _pageScrollByCat.set(cat, page.scrollTop);
+    };
+    page.addEventListener('scroll', page._pagerVerticalScrollH, { passive: true });
+  });
+}
+
+'''
+          s = s.replace(marker, memory + marker, 1)
+
+          old_setup = '    _recalcPagerVars();\n    _setupScrollSync(grid);\n'
+          new_setup = '    _recalcPagerVars();\n    _setupPageScrollMemory(grid);\n    _setupScrollSync(grid);\n'
+          if old_setup not in s:
+              raise SystemExit('b-pager setup block not found')
+          s = s.replace(old_setup, new_setup, 1)
+
+          old_cleanup = '''    _getPages(grid).forEach(p => {
+      if (p._bounceH) { p.removeEventListener('scroll', p._bounceH); p._bounceH = null; }
+'''
+          new_cleanup = '''    _getPages(grid).forEach(p => {
+      if (p._pagerVerticalScrollH) {
+        p.removeEventListener('scroll', p._pagerVerticalScrollH);
+        p._pagerVerticalScrollH = null;
+      }
+      if (p._bounceH) { p.removeEventListener('scroll', p._bounceH); p._bounceH = null; }
+'''
+          if old_cleanup not in s:
+              raise SystemExit('b-pager destroy page cleanup block not found')
+          s = s.replace(old_cleanup, new_cleanup, 1)
+          pager.write_text(s)
+
+          test = Path('public/boutique/tests/unit/temu-v2-scroll-memory.test.js')
+          test.write_text(r'''\'use strict\';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ *
+ * Temu V2.1 invariant : horizontal = changement de catégorie ; vertical =
+ * exploration locale. Chaque catégorie retrouve sa position après un re-render.
+ */
+
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(() => false),
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+  clearInlinePagerStyles: jest.fn(),
+  DESKTOP_BREAKPOINT: 900,
+}));
+
+const { dom } = require('../../js/b-store.js');
+const { _setupMobilePager, destroyMobilePager } = require('../../js/b-pager.js');
+
+function mountGrid(cats) {
+  const grid = document.createElement('div');
+  grid.id = 'k-grid';
+  grid.scrollTo = jest.fn();
+  cats.forEach((cat) => {
+    const page = document.createElement('section');
+    page.className = 'k-cat-section';
+    page.dataset.cat = cat;
+    grid.appendChild(page);
+  });
+  document.body.appendChild(grid);
+  return grid;
+}
+
+beforeEach(() => {
+  document.body.innerHTML = '';
+  dom.pageScroll = document.createElement('div');
+  document.body.appendChild(dom.pageScroll);
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+});
+
+afterEach(() => {
+  destroyMobilePager();
+});
+
+test('restaure la position verticale d\'une catégorie après remplacement du DOM', () => {
+  let grid = mountGrid(['temu-memory-a', 'temu-memory-b']);
+  _setupMobilePager();
+
+  const firstModePage = grid.querySelector('[data-cat="temu-memory-b"]');
+  firstModePage.scrollTop = 428;
+  firstModePage.dispatchEvent(new Event('scroll'));
+
+  destroyMobilePager();
+  grid.remove();
+
+  grid = mountGrid(['temu-memory-a', 'temu-memory-b']);
+  _setupMobilePager();
+
+  expect(grid.querySelector('[data-cat="temu-memory-b"]').scrollTop).toBe(428);
+});
+
+test('mémorise indépendamment la position de chaque univers', () => {
+  let grid = mountGrid(['temu-memory-c', 'temu-memory-d']);
+  _setupMobilePager();
+
+  const pageC = grid.querySelector('[data-cat="temu-memory-c"]');
+  const pageD = grid.querySelector('[data-cat="temu-memory-d"]');
+  pageC.scrollTop = 116;
+  pageC.dispatchEvent(new Event('scroll'));
+  pageD.scrollTop = 733;
+  pageD.dispatchEvent(new Event('scroll'));
+
+  destroyMobilePager();
+  grid.remove();
+
+  grid = mountGrid(['temu-memory-c', 'temu-memory-d']);
+  _setupMobilePager();
+
+  expect(grid.querySelector('[data-cat="temu-memory-c"]').scrollTop).toBe(116);
+  expect(grid.querySelector('[data-cat="temu-memory-d"]').scrollTop).toBe(733);
+});
+''')
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/js/b-catalog.js public/boutique/js/b-pager.js public/boutique/tests/unit/temu-v2-scroll-memory.test.js
+          git commit -m "feat(boutique): simplify Temu category navigation" || true
+          git push origin HEAD:feat/mobile-temu-v2-foundation
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git pull --rebase origin feat/mobile-temu-v2-foundation || true
+          git rm -f .github/workflows/temu-v2-foundation.yml
+          git commit -m "chore: remove Temu V2 bootstrap workflow" || true
+          git push origin HEAD:feat/mobile-temu-v2-foundation
