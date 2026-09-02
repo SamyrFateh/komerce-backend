@@ -1,0 +1,782 @@
+{
+  "generated": "2026-09-02T09:54:57.547Z",
+  "runs": [
+    {
+      "shell": "pager",
+      "viewport": "360",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 3,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        }
+      ],
+      "findings": [
+        "ℹ️ baseline pager — overflow max 3, pager-active sur 11 étapes",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    },
+    {
+      "shell": "vertical",
+      "viewport": "360",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 1200,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 333,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 5478,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 2,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 6337,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 5645,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Bricolage",
+          "bodyShellVertical": true
+        }
+      ],
+      "findings": [
+        "✅ k-pager-active jamais posé en vertical",
+        "✅ 1 seul scroll owner catalogue (le document) — le +1 en PDP est le scroll modal légitime",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    },
+    {
+      "shell": "pager",
+      "viewport": "390",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 3,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        }
+      ],
+      "findings": [
+        "ℹ️ baseline pager — overflow max 3, pager-active sur 11 étapes",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    },
+    {
+      "shell": "vertical",
+      "viewport": "390",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 1200,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 333,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 5795,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 2,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 6637,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Créations personnelles",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 5945,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Bricolage",
+          "bodyShellVertical": true
+        }
+      ],
+      "findings": [
+        "✅ k-pager-active jamais posé en vertical",
+        "✅ 1 seul scroll owner catalogue (le document) — le +1 en PDP est le scroll modal légitime",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    },
+    {
+      "shell": "pager",
+      "viewport": "430",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 3,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": true,
+          "scrollOwner": "cage",
+          "overflowVertical": 2,
+          "activeCat": null,
+          "bodyShellVertical": false
+        }
+      ],
+      "findings": [
+        "ℹ️ baseline pager — overflow max 3, pager-active sur 11 étapes",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    },
+    {
+      "shell": "vertical",
+      "viewport": "430",
+      "log": [
+        {
+          "step": "1-accueil",
+          "scrollY": 0,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "2-scroll-profond",
+          "scrollY": 1200,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "3-discovery",
+          "scrollY": 333,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "all",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "4-categorie-via-rail",
+          "scrollY": 6175,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "5-scroll-manuel",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "6-pdp-ouverte",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 2,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7-pdp-fermee",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "7b-derive-pdp",
+          "driftPx": 0
+        },
+        {
+          "step": "8-back-navigateur",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "8b-derive-back",
+          "driftPx": 0
+        },
+        {
+          "step": "9-panier-ouvert",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "10-panier-ferme",
+          "scrollY": 7031,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Auto",
+          "bodyShellVertical": true
+        },
+        {
+          "step": "11-autre-categorie",
+          "scrollY": 6345,
+          "pageScrollTop": 0,
+          "pagerActive": false,
+          "scrollOwner": "document",
+          "overflowVertical": 1,
+          "activeCat": "Bricolage",
+          "bodyShellVertical": true
+        }
+      ],
+      "findings": [
+        "✅ k-pager-active jamais posé en vertical",
+        "✅ 1 seul scroll owner catalogue (le document) — le +1 en PDP est le scroll modal légitime",
+        "✅ 7b-derive-pdp: 0px",
+        "✅ 8b-derive-back: 0px"
+      ]
+    }
+  ]
+}
