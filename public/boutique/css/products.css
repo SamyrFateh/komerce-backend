@@ -930,3 +930,61 @@ body.spike-shell-vertical .k-sec-grid {
     transform: scale(.97);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   TEMU V2.2 — DENSITÉ MOBILE
+   La carte sert à parcourir / choisir ; la modale porte le détail et la
+   validation. On maximise donc la surface de découverte sans miniaturiser
+   le CTA commerce ni modifier le contrat desktop.
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+  html.k-mobile-premium-v1 #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat)
+    > .k-cat-section > .k-sec-grid,
+  html.k-mobile-premium-v1 .k-sec-grid {
+    gap: 6px;
+  }
+
+  html.k-mobile-premium-v1 .k-card {
+    border-radius: 15px;
+  }
+
+  html.k-mobile-premium-v1 .k-card-img-wrap {
+    aspect-ratio: 6 / 5;
+  }
+
+  html.k-mobile-premium-v1 .k-card-img {
+    object-fit: contain;
+  }
+
+  html.k-mobile-premium-v1 .k-card-info {
+    padding: 7px 9px 8px;
+  }
+
+  /* Le détail descriptif appartient à la PDP/modale ; sur la carte, image,
+     titre, prix et CTA suffisent pour scanner rapidement l'offre. */
+  html.k-mobile-premium-v1 .k-card-desc {
+    display: none;
+    min-height: 0;
+    margin-top: 0;
+  }
+
+  html.k-mobile-premium-v1 .k-card-bottom {
+    margin-top: 3px;
+    gap: 4px;
+    padding-right: 39px;
+  }
+
+  html.k-mobile-premium-v1 .k-card-price {
+    font-size: 18px;
+    line-height: 1.04;
+    letter-spacing: -.025em;
+  }
+
+  html.k-mobile-premium-v1 .k-card-price-col {
+    min-height: 34px;
+  }
+
+  html.k-mobile-premium-v1 .k-card-price-eur {
+    font-size: 12px;
+  }
+}
