@@ -92,6 +92,8 @@ import {
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
+// SPIKE Phase 2 (branche isolée) — no-op sauf ?shell=vertical.
+import { initVerticalShellSpike } from './spike-vertical-shell.js';
 import { install as installShareCart } from './b-share-cart.js';
 import './b-group-banner.js'; // chargé pour init auto si token actif
 import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
@@ -418,6 +420,7 @@ function init() {
   document.body.classList.add('k-view-shop');
 
   installScrollOwner();
+  initVerticalShellSpike(bus); // SPIKE — no-op sauf ?shell=vertical
   updateCartBadge();
   setupCats();
   setupCatSwipeNav();

@@ -51,6 +51,8 @@ module.exports = {
       '../js/card-config.js',
       '../js/hero-bootstrap.js',
       '../js/b-pager.js',
+      // SPIKE Phase 2 (branche isolée, jamais mergé) — shell vertical no-op sauf ?shell=vertical
+      '../js/spike-vertical-shell.js',
       '../js/b-product-open-contract.js',
       '../js/b-subcat.js',
       '../js/controllers/home-controller.js',
@@ -78,6 +80,8 @@ module.exports = {
       '../css/categories.css',
       '../css/products.css',
       '../css/discovery-rail.css',
+      // SPIKE Phase 2 (branche isolée) — inerte sauf body.spike-shell-vertical
+      '../css/spike-vertical-shell.css',
       '../css/category-cutout-navigation.css',
       '../css/category-cutout-navigation-desktop.css',
       '../css/mobile-catalog-convergence.css',
@@ -101,6 +105,7 @@ module.exports = {
       '../tests/unit/render-home-sections.test.js',
       '../tests/unit/render-categories.test.js',
       '../tests/unit/discovery-rail.test.js',
+      '../tests/unit/spike-vertical-shell.test.js',
       '../tests/unit/hero-desktop-panorama.test.js',
       '../tests/unit/category-subcategory-continuity.test.js',
       '../tests/unit/category-cutout-assets-integrity.test.js',
