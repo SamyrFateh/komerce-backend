@@ -41,12 +41,8 @@
 
   /* V2.7 — carte = scan rapide ; la modale porte description et validation.
      Gain visé : encore ~10–15 % de hauteur utile par carte sans toucher au
-     nombre de colonnes ni réduire le CTA commerce. */
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section > .k-sec-grid,
-  .k-sec-grid {
-    gap: 5px;
-  }
-
+     nombre de colonnes ni réduire le CTA commerce. La gouttière .k-sec-grid
+     reste volontairement dans products.css, son owner canonique. */
   .k-card-img-wrap {
     aspect-ratio: 4 / 3;
   }
