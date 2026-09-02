@@ -5,7 +5,7 @@
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
- *                Shell commun par carte, contenu spécialisé par kind sans variation de géométrie.
+ *                Réutilise le shell visuel canonique k-card ; le kind n'ajoute que des capacités.
  * @impact-areas  home, product-discovery, discovery-rail
  * @version       2026-09
  */
@@ -60,38 +60,50 @@ function formatPrice(price) {
 }
 
 function renderPrimarySlot(card) {
-  if (card.kind === 'product' && card.price != null) {
-    return `<span class="k-discovery-price">${formatPrice(card.price)}</span>`;
-  }
-  return '';
+  const value = card.kind === 'product' && card.price != null
+    ? `<span class="k-card-price k-discovery-price">${formatPrice(card.price)}</span>`
+    : '';
+  return `<div class="k-card-price-col k-discovery-primary-slot">${value}</div>`;
 }
 
 function renderContextSlot(card) {
-  if (!card.providerName) return '';
-  return `<span class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</span>`;
+  const value = card.providerName
+    ? `${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}`
+    : '';
+  return `<div class="k-card-desc k-discovery-context-slot"${value ? '' : ' aria-hidden="true"'}>${value ? `<span class="k-discovery-provider">${value}</span>` : ''}</div>`;
 }
 
-// ── Shell commun ────────────────────────────────────────────────────────
-// Le kind ne peut changer que le contenu des slots, jamais leur géométrie.
-// Le subtitle est porté une seule fois par le badge de promesse.
+function renderActionSlot(card) {
+  return `
+    <div class="k-card-add k-discovery-action-slot" data-discovery-action-kind="${card.kind}">
+      <button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+    </div>`;
+}
+
+// ── Shell canonique Komerce ─────────────────────────────────────────────
+// Discovery ne possède jamais un second modèle visuel de carte. Le hook
+// .k-discovery-card sert au comportement/data ; la géométrie vient de k-card,
+// k-card-img-wrap, k-card-info, k-card-name, k-card-bottom et k-card-add.
 
 function renderCard(card) {
   const image = card.imageRef
-    ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${sanitize(card.title)}" loading="lazy" decoding="async">`
+    ? `<img class="k-card-img k-discovery-img" src="${sanitize(card.imageRef)}" alt="${sanitize(card.title)}" loading="lazy" decoding="async">`
     : `<div class="k-discovery-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
 
   return `
-    <article class="k-discovery-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
-      <div class="k-discovery-media">
+    <article class="k-card k-discovery-card k-card--discovery" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
+      <div class="k-card-img-wrap">
         ${image}
         ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
       </div>
-      <div class="k-discovery-info">
-        <div class="k-discovery-name">${sanitize(card.title)}</div>
-        <div class="k-discovery-primary-slot">${renderPrimarySlot(card)}</div>
-        <div class="k-discovery-context-slot">${renderContextSlot(card)}</div>
-        <button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+      <div class="k-card-info">
+        <div class="k-card-name k-discovery-name">${sanitize(card.title)}</div>
+        ${renderContextSlot(card)}
+        <div class="k-card-bottom k-card-prices-row k-discovery-bottom">
+          ${renderPrimarySlot(card)}
+        </div>
       </div>
+      ${renderActionSlot(card)}
     </article>`;
 }
 
@@ -129,8 +141,7 @@ function selectMobile(cards) {
 
 /**
  * Desktop: flat mixed rail, full editorial pool preserved.
- * All kinds at the same level — same density, same card size.
- * The kind difference is carried by badge + CTA + provider line only.
+ * All kinds at the same level and reuse the canonical Komerce card shell.
  * The API already bounds the pool to 12 items; horizontal overflow belongs
  * to the rail instead of silently discarding valid editorial candidates.
  */
@@ -141,8 +152,6 @@ function selectDesktop(cards) {
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 900;
 }
-
-// ── Render ──────────────────────────────────────────────────────────────
 
 function renderRail(selected, marketLabel) {
   return `
@@ -156,8 +165,6 @@ function renderRail(selected, marketLabel) {
       ${selected.map(renderCard).join('')}
     </div>`;
 }
-
-// ── Render public ───────────────────────────────────────────────────────
 
 export function renderDiscoveryRail(container, cards, options = {}) {
   if (!container) return 0;
