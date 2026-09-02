@@ -4,9 +4,9 @@
  * @domain        catalog
  * @layer         css
  * @owner         public/boutique/css/products.css
- * @purpose       Prolonge sur mobile la toile blanche fluide desktop : hero ouvert, rail sans filet et accents catalogue plus lisibles sans reprendre l'ownership des cartes produit.
+ * @purpose       Prolonge sur mobile la toile blanche fluide et densifie la surface de scan catalogue sans reprendre l'ownership racine des cartes produit.
  * @impact-areas  mobile, hero, category-navigation, product-cards
- * @version       2026-08
+ * @version       2026-09
  */
 
 @media (max-width: 899px) {
@@ -32,7 +32,55 @@
     background: var(--cta-green);
   }
 
+  /* V2.6 — la recherche fixe vit juste sous le rail catégories. Chaque page
+     Temu réserve sa hauteur dans SON scroll local, sans modifier la cage ni
+     le calcul --pager-top. */
+  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section {
+    padding-top: 42px;
+  }
+
+  /* V2.7 — carte = scan rapide ; la modale porte description et validation.
+     Gain visé : encore ~10–15 % de hauteur utile par carte sans toucher au
+     nombre de colonnes ni réduire le CTA commerce. La gouttière .k-sec-grid
+     reste volontairement dans products.css, son owner canonique. */
+  .k-card-img-wrap {
+    aspect-ratio: 4 / 3;
+  }
+
+  .k-card-info {
+    padding: 6px 8px 7px;
+  }
+
   .k-card-name {
+    font-size: 13px;
     font-weight: 500;
+    line-height: 1.18;
+    min-height: 1.18em;
+  }
+
+  .k-card-desc {
+    display: none;
+    min-height: 0;
+    margin-top: 0;
+  }
+
+  .k-card-bottom {
+    margin-top: 2px;
+    gap: 3px;
+    padding-right: 38px;
+  }
+
+  .k-card-price {
+    font-size: 17px;
+    line-height: 1.02;
+    letter-spacing: -.025em;
+  }
+
+  .k-card-price-col {
+    min-height: 30px;
+  }
+
+  .k-card-price-eur {
+    font-size: 11px;
   }
 }
