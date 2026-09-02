@@ -183,7 +183,7 @@ export function initVerticalShellSpike(bus) {
   if (!isVerticalShell()) {
     // Contrat body-class : l'état du shell doit être réversible, notamment
     // après navigation/bfcache ou retour vers l'URL sans le flag de spike.
-    document.body?.classList.remove('spike-shell-vertical');
+    document.body.classList.remove('spike-shell-vertical');
     return;
   }
   injectSpikeCss();
