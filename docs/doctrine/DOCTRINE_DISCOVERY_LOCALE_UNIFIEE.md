@@ -231,17 +231,30 @@ Sur demande
 
 ### Invariant UX — One Card Contract
 
-Sur une même surface Discovery, `Product`, `Physical Offer` et `Service` partagent **la même géométrie de carte**.
+Sur une même surface Discovery, `Product`, `Physical Offer` et `Service` ne créent pas un nouveau modèle de carte : ils **réutilisent le shell visuel canonique de la Boutique Komerce**.
 
-Le kind métier peut modifier le contenu d’un slot ; il ne peut jamais modifier le squelette de la carte.
+La référence est le Product Display Contract existant :
 
 ```text
-DiscoveryCard
-├── media slot
-├── title slot
-├── primary meta slot
-├── context slot
-└── action slot
+ProductCardViewModel
+      ↓
+renderProductCard()
+      ↓
+k-card / products.css
+```
+
+Discovery peut ajouter des capacités et des hooks de comportement, mais ne peut jamais devenir propriétaire d’un second cadre visuel. `.k-discovery-card` est donc un hook de projection / interaction ; sa géométrie appartient au shell `k-card`.
+
+Le kind métier peut modifier le contenu d’un slot ; il ne peut jamais modifier le squelette ni recréer `background / border / radius / media ratio / info padding / title geometry / action placement` dans un shell parallèle.
+
+```text
+k-card
+├── k-card-img-wrap   ← media + badge de promesse
+├── k-card-info
+│   ├── k-card-name
+│   ├── context capability
+│   └── k-card-bottom
+└── k-card-add        ← Acheter / Commander / Demander
 ```
 
 Les slots structurels restent présents même lorsque leur donnée est absente. Une donnée optionnelle ne doit donc jamais :
@@ -255,6 +268,8 @@ Les slots structurels restent présents même lorsque leur donnée est absente. 
 Le `subtitle` reste obligatoire. Il porte la nuance de promesse dans le badge et évite d’ajouter une nouvelle taxonomie visuelle.
 
 > **Même expérience ne veut pas dire même métier. Même expérience veut dire même contrat de présentation.**
+
+> **Unification signifie réemploi du modèle Komerce existant, pas création d’un modèle Discovery cohérent avec lui-même.**
 
 ### Invariant UX — One Open Contract
 
@@ -775,7 +790,7 @@ Ne pas :
 13. disperser les flags métier dans le frontend ;
 14. construire payout / settlement avant preuve de valeur ;
 15. activer toutes les familles d'offre en même temps.
-16. varier la géométrie de carte selon le kind ou isoler les services dans une composition dédiée ;
+16. créer un second shell visuel de carte Discovery, redéfinir la géométrie de `.k-discovery-card`, varier la géométrie selon le kind ou isoler les services dans une composition dédiée ;
 17. déclencher une Inquiry ou une autre mutation métier directement depuis le rail ;
 18. créer un opener, un overlay ou un shell de détail parallèle pour un kind Discovery.
 
@@ -793,7 +808,7 @@ Ne pas :
 
 > **Le backend et le frontend peuvent être construits en avance. L'exposition est activée séquentiellement lorsque les données, l'exploitation et la promesse client sont suffisamment fiables.**
 
-> **Une même surface Discovery impose une géométrie de carte commune : le kind change les données disponibles et l’action finale, jamais le squelette de présentation.**
+> **Une même surface Discovery réutilise le shell visuel canonique `k-card` : le kind change les données disponibles et l’action finale, jamais le modèle de présentation.**
 
 > **Carte et CTA de rail partagent une seule entrée de détail ; aucune mutation métier ne part directement du rail.**
 
