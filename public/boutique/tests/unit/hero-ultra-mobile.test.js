@@ -16,28 +16,29 @@ const heroCss = fs.readFileSync(heroCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
-  test('reste strictement mobile et devient une signature plus tendue', () => {
+  test('reste strictement mobile et tend le masthead sans réduire le header tactile', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(72px, 20vw, 82px);');
+    expect(css).toContain('height: clamp(54px, 15vw, 62px);');
+    expect(css).toContain('header 44 px + hero 78 px');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('remonte les personnages tout en préservant coiffures et téléphone', () => {
+  test('recadre les personnages vers le haut dans la boîte raccourcie', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 108%;');
-    expect(css).toContain('background-position: 71% -6%;');
+    expect(css).toContain('background-size: auto 125%;');
+    expect(css).toContain('background-position: 70% -12%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
   });
 
-  test('garde le slogan visible dans la réserve blanche gauche', () => {
+  test('garde le slogan visible mais plus compact dans la réserve gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('inset: 0 auto 0 0;');
-    expect(css).toContain('width: 36%;');
-    expect(css).toContain('padding: 4px 0 0 9px;');
+    expect(css).toContain('width: 35%;');
+    expect(css).toContain('padding: 2px 0 0 9px;');
     expect(css).toContain('text-align: left;');
-    expect(css).toContain('font-size: clamp(11px, 3.1vw, 13px);');
+    expect(css).toContain('font-size: clamp(10px, 2.8vw, 12px);');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });
