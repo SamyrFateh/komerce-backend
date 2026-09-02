@@ -1,0 +1,89 @@
+name: Playwright masthead branch audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-masthead-v281
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+      - name: Install Chromium
+        run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Start static Boutique
+        run: |
+          cd public/boutique
+          npx serve . -l 4173 >/tmp/komerce-serve.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/komerce-serve.log
+          exit 1
+      - name: Measure branch masthead
+        working-directory: public/boutique
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+              serviceWorkers: 'block'
+            });
+            const page = await context.newPage();
+            await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForTimeout(3000);
+            const metrics = await page.evaluate(() => {
+              const q = (sel) => document.querySelector(sel);
+              const box = (sel) => {
+                const el = q(sel);
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+              };
+              return {
+                viewport: { w: innerWidth, h: innerHeight },
+                header: box('.k-header'),
+                search: box('.k-search'),
+                heroMedia: box('.k-hero .k-hero-inner .k-hero-media'),
+                heroFigures: box('.k-hero-media .k-hero-figures'),
+                heroSlogan: box('.k-hero-mini-slogan--premium'),
+                categoryRail: box('.k-shelf-rail'),
+                stickyBar: box('#k-sticky-bar'),
+                heroWrap: box('#k-hero-fixed-wrap'),
+                pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+                searchLauncherExists: !!q('#k-home-search-launcher'),
+                bodyScrollWidth: document.body.scrollWidth,
+                horizontalOverflow: document.body.scrollWidth > innerWidth + 1
+              };
+            });
+            console.log('MASTHEAD_AUDIT=' + JSON.stringify(metrics));
+            fs.writeFileSync('playwright-masthead-audit.json', JSON.stringify(metrics, null, 2));
+            await page.screenshot({ path: 'playwright-masthead-branch.png', fullPage: false });
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-masthead-branch-audit
+          path: |
+            public/boutique/playwright-masthead-audit.json
+            public/boutique/playwright-masthead-branch.png
