@@ -16,16 +16,16 @@ const heroCss = fs.readFileSync(heroCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
-  test('reste strictement mobile et devient une signature compacte mais lisible', () => {
+  test('reste strictement mobile et devient une signature plus tendue', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(80px, 22vw, 90px);');
+    expect(css).toContain('height: clamp(72px, 20vw, 82px);');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('préserve les coiffures et le téléphone dans la boîte compacte', () => {
+  test('remonte les personnages tout en préservant coiffures et téléphone', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 101%;');
-    expect(css).toContain('background-position: 71% 7%;');
+    expect(css).toContain('background-size: auto 108%;');
+    expect(css).toContain('background-position: 71% -6%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
@@ -35,7 +35,7 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('inset: 0 auto 0 0;');
     expect(css).toContain('width: 36%;');
-    expect(css).toContain('padding: 7px 0 0 9px;');
+    expect(css).toContain('padding: 4px 0 0 9px;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(11px, 3.1vw, 13px);');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
