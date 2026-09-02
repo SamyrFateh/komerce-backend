@@ -118,7 +118,7 @@ test('arriver en bas ne câble aucun changement automatique de catégorie', () =
 
   expect(page._bounceH).toBeNull();
   expect(page._bounceTouchEnd).toBeNull();
-  expect(page._bounceTimer).toBeNull();
+  expect(page._bounceTimer).toBeUndefined();
 });
 
 test('tap catégorie conserve la navigation horizontale explicite', () => {
