@@ -25,6 +25,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createPricingWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/pricing';
 
+  function endpointFor(context) {
+    return context && context.requestedMarket
+      ? `${ENDPOINT}/market/${encodeURIComponent(context.requestedMarket)}`
+      : ENDPOINT;
+  }
+
   function text(doc, tag, className, value) {
     const node = doc.createElement(tag);
     if (className) node.className = className;
@@ -82,13 +88,16 @@
     return node;
   }
 
-  function header(doc) {
+  function header(doc, context) {
     const node = doc.createElement('header');
     node.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · PRICING'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Comprendre, simuler et décider le prix'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Surface centrale · moteur économique global · aucune autorité pays dans le navigateur'));
+    const marketMode = Boolean(context && context.requestedMarket);
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', marketMode ? `Modèle de coûts · ${context.requestedMarket}` : 'Comprendre, simuler et décider le prix'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', marketMode
+      ? 'Atelier pays · héritage du modèle central · seules les surcharges de ce marché sont modifiables'
+      : 'Surface centrale · moteur économique global'));
     node.appendChild(copy);
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
@@ -281,13 +290,23 @@
   }
 
   function renderCosts(rootNode, ui, doc, payload, context) {
-    const slot = section(rootNode, ui, 'Atelier des coûts', 'Une seule autorité cost_components alimente Legacy et Canonical. La clé du composant est l’identifiant navigateur stable.');
+    const marketMode = Boolean(context && context.requestedMarket);
+    const slot = section(
+      rootNode,
+      ui,
+      'Atelier des coûts',
+      marketMode
+        ? 'Chaque ligne hérite du modèle central tant qu’aucune surcharge locale n’est définie. Reset restaure immédiatement l’héritage global.'
+        : 'Autorité centrale cost_components. Les marchés peuvent surcharger valeur et activation sans modifier cette base.'
+    );
     const rows = payload.cost_components || [];
     const wrap = doc.createElement('div');
     wrap.className = 'kmc-workspace-table-wrap';
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur</th><th>Unité</th><th>Scope</th><th>État</th><th></th></tr></thead>';
+    table.innerHTML = marketMode
+      ? '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur effective</th><th>Base globale</th><th>Unité</th><th>Origine</th><th>État</th><th></th></tr></thead>'
+      : '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur</th><th>Unité</th><th>Scope</th><th>État</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
@@ -297,13 +316,21 @@
       const valueCell = doc.createElement('td');
       const input = doc.createElement('input');
       input.type = 'number';
+      input.min = '0';
       input.step = '0.01';
       input.value = row.default_value == null ? '' : row.default_value;
       input.dataset.costValue = row.key;
       valueCell.appendChild(input);
       tr.appendChild(valueCell);
+      if (marketMode) {
+        tr.appendChild(td(doc, row.base_default_value));
+      }
       tr.appendChild(td(doc, row.unit));
-      tr.appendChild(td(doc, row.scope));
+      if (marketMode) {
+        tr.appendChild(td(doc, row.inherited ? 'Global hérité' : 'Override pays'));
+      } else {
+        tr.appendChild(td(doc, row.scope));
+      }
       tr.appendChild(td(doc, row.is_active ? 'Actif' : 'Inactif'));
       const actions = doc.createElement('td');
       const save = button(doc, 'Enregistrer', 'save-cost', true);
@@ -312,6 +339,11 @@
       const toggle = button(doc, row.is_active ? 'Désactiver' : 'Activer', 'toggle-cost', true);
       toggle.dataset.key = row.key;
       actions.appendChild(toggle);
+      if (marketMode && row.inherited === false) {
+        const reset = button(doc, 'Revenir au global', 'reset-cost', true);
+        reset.dataset.key = row.key;
+        actions.appendChild(reset);
+      }
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
@@ -319,11 +351,13 @@
     wrap.appendChild(table);
     slot.appendChild(wrap);
 
-    const form = doc.createElement('form');
-    form.className = 'kmc-workspace-inline-form';
-    form.dataset.pricingCostForm = '';
-    form.innerHTML = '<input name="key" required placeholder="clé"><input name="label" required placeholder="Libellé"><select name="family"><option value="landed_relay">landed_relay</option><option value="business">business</option><option value="exceptional">exceptional</option></select><input name="category" required placeholder="catégorie"><input name="default_value" type="number" step="0.01" required placeholder="valeur"><select name="unit"><option value="kmf">kmf</option><option value="pct">pct</option><option value="kmf_per_kg">kmf_per_kg</option><option value="kmf_per_m3">kmf_per_m3</option></select><button class="kmc-workspace-action" type="submit">Créer composant</button>';
-    slot.appendChild(form);
+    if (!marketMode) {
+      const form = doc.createElement('form');
+      form.className = 'kmc-workspace-inline-form';
+      form.dataset.pricingCostForm = '';
+      form.innerHTML = '<input name="key" required placeholder="clé"><input name="label" required placeholder="Libellé"><select name="family"><option value="landed_relay">landed_relay</option><option value="business">business</option><option value="exceptional">exceptional</option></select><input name="category" required placeholder="catégorie"><input name="default_value" type="number" min="0" step="0.01" required placeholder="valeur"><select name="unit"><option value="kmf">kmf</option><option value="pct">pct</option><option value="kmf_per_kg">kmf_per_kg</option><option value="kmf_per_m3">kmf_per_m3</option></select><button class="kmc-workspace-action" type="submit">Créer composant</button>';
+      slot.appendChild(form);
+    }
   }
 
   function formatEconomicValue(value, unit) {
@@ -466,48 +500,53 @@
       const act = target.dataset.pricingAction;
       if (act === 'simulate-product') {
         const productRef = target.dataset.productRef;
-        const result = await action(context, `${ENDPOINT}/simulate`, { product_ref: productRef }, 'Simulation calculée.');
+        const result = await action(context, `${endpointFor(context)}/simulate`, { product_ref: productRef }, 'Simulation calculée.');
         if (result) renderSimulationResult(context.document, rootNode, result.result, `Simulation · ${productRef}`);
       }
       if (act === 'apply-recommended') {
         const productRef = target.dataset.productRef;
         const price = Number(target.dataset.price);
         const survival = Number(target.dataset.survival) || 0;
-        const result = await action(context, `${ENDPOINT}/products/${encodeURIComponent(productRef)}/apply-price`, { price_kmf: price, survival_price_kmf: survival, source: 'canonical_pricing_workspace' }, 'Prix appliqué.');
+        const result = await action(context, `${endpointFor(context)}/products/${encodeURIComponent(productRef)}/apply-price`, { price_kmf: price, survival_price_kmf: survival, source: 'canonical_pricing_workspace' }, 'Prix appliqué.');
         if (result) await context.reload();
       }
       if (act === 'load-strategy') {
         const productRef = target.dataset.productRef;
         try {
-          const payload = await jsonRequest(context.fetch, `${ENDPOINT}/strategy?product_ref=${encodeURIComponent(productRef)}`);
+          const payload = await jsonRequest(context.fetch, `${endpointFor(context)}/strategy?product_ref=${encodeURIComponent(productRef)}`);
           renderStrategyDetail(context.document, rootNode, payload, productRef, context);
           setFeedback(context.root, 'Stratégie chargée.', 'positive');
         } catch (error) { setFeedback(context.root, error.message, 'critical'); }
       }
       if (act === 'apply-strategy') {
         const body = { product_ref: target.dataset.productRef, strategy_type: target.dataset.strategyType, final_price_kmf: Number(target.dataset.price) };
-        const result = await action(context, `${ENDPOINT}/strategy/apply`, body, 'Stratégie appliquée.');
+        const result = await action(context, `${endpointFor(context)}/strategy/apply`, body, 'Stratégie appliquée.');
         if (result) await context.reload();
       }
       if (act === 'deactivate-competitor') {
         const ref = target.dataset.competitorRef;
         const productRef = target.dataset.productRef;
         if (!ref) return;
-        const result = await action(context, `${ENDPOINT}/competitors/${encodeURIComponent(ref)}/deactivate`, {}, 'Observation désactivée.');
+        const result = await action(context, `${endpointFor(context)}/competitors/${encodeURIComponent(ref)}/deactivate`, {}, 'Observation désactivée.');
         if (result) {
-          const payload = await jsonRequest(context.fetch, `${ENDPOINT}/strategy?product_ref=${encodeURIComponent(productRef)}`);
+          const payload = await jsonRequest(context.fetch, `${endpointFor(context)}/strategy?product_ref=${encodeURIComponent(productRef)}`);
           renderStrategyDetail(context.document, rootNode, payload, productRef, context);
         }
       }
       if (act === 'save-cost') {
         const key = target.dataset.key;
         const input = Array.from(rootNode.querySelectorAll('[data-cost-value]')).find(node => node.dataset.costValue === key);
-        const result = await action(context, `${ENDPOINT}/cost-components/${encodeURIComponent(key)}/update`, { default_value: Number(input?.value || 0), source: 'manual' }, 'Composant mis à jour.');
+        const result = await action(context, `${endpointFor(context)}/cost-components/${encodeURIComponent(key)}/update`, { default_value: Number(input?.value || 0), source: 'manual' }, 'Composant mis à jour.');
         if (result) await context.reload();
       }
       if (act === 'toggle-cost') {
         const key = target.dataset.key;
-        const result = await action(context, `${ENDPOINT}/cost-components/${encodeURIComponent(key)}/toggle`, {}, 'État du composant modifié.');
+        const result = await action(context, `${endpointFor(context)}/cost-components/${encodeURIComponent(key)}/toggle`, {}, 'État du composant modifié.');
+        if (result) await context.reload();
+      }
+      if (act === 'reset-cost') {
+        const key = target.dataset.key;
+        const result = await action(context, `${endpointFor(context)}/cost-components/${encodeURIComponent(key)}/reset`, {}, 'Override supprimé · héritage global restauré.');
         if (result) await context.reload();
       }
     });
@@ -518,9 +557,9 @@
         const form = event.target;
         const data = new FormData(form);
         const productRef = form.dataset.productRef;
-        const result = await action(context, `${ENDPOINT}/competitors`, { product_ref: productRef, competitor_name: data.get('competitor_name'), price_kmf: Number(data.get('price_kmf')), notes: data.get('notes') || null, source: 'manual' }, 'Observation concurrente ajoutée.');
+        const result = await action(context, `${endpointFor(context)}/competitors`, { product_ref: productRef, competitor_name: data.get('competitor_name'), price_kmf: Number(data.get('price_kmf')), notes: data.get('notes') || null, source: 'manual' }, 'Observation concurrente ajoutée.');
         if (result) {
-          const payload = await jsonRequest(context.fetch, `${ENDPOINT}/strategy?product_ref=${encodeURIComponent(productRef)}`);
+          const payload = await jsonRequest(context.fetch, `${endpointFor(context)}/strategy?product_ref=${encodeURIComponent(productRef)}`);
           renderStrategyDetail(context.document, rootNode, payload, productRef, context);
         }
       }
@@ -529,7 +568,7 @@
         const data = new FormData(event.target);
         const body = Object.fromEntries(data.entries());
         body.default_value = Number(body.default_value);
-        const result = await action(context, `${ENDPOINT}/cost-components`, body, 'Composant créé.');
+        const result = await action(context, `${endpointFor(context)}/cost-components`, body, 'Composant créé.');
         if (result) await context.reload();
       }
     });
@@ -542,20 +581,26 @@
       document: options.document,
       fetch: options.fetch,
       ui: options.ui,
+      adminContext: options.adminContext || null,
+      requestedMarket: options.requestedMarket || null,
       reload: null,
     };
     async function load() {
-      const payload = await jsonRequest(context.fetch, ENDPOINT);
+      const payload = await jsonRequest(context.fetch, endpointFor(context));
       const rootNode = context.root;
       rootNode.replaceChildren();
-      rootNode.appendChild(header(context.document));
+      rootNode.appendChild(header(context.document, context));
       rootNode.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element);
-      renderEconomicModel(rootNode, context.ui, context.document, payload);
-      renderProducts(rootNode, context.ui, context.document, payload, context);
-      renderStrategy(rootNode, context.ui, context.document, context);
-      renderCosts(rootNode, context.ui, context.document, payload, context);
-      renderEconomicVariables(rootNode, context.ui, context.document, payload);
-      renderEconomicCharges(rootNode, context.ui, context.document, payload);
+      if (context.requestedMarket) {
+        renderCosts(rootNode, context.ui, context.document, payload, context);
+      } else {
+        renderEconomicModel(rootNode, context.ui, context.document, payload);
+        renderProducts(rootNode, context.ui, context.document, payload, context);
+        renderStrategy(rootNode, context.ui, context.document, context);
+        renderCosts(rootNode, context.ui, context.document, payload, context);
+        renderEconomicVariables(rootNode, context.ui, context.document, payload);
+        renderEconomicCharges(rootNode, context.ui, context.document, payload);
+      }
       bind(rootNode, context);
       return payload;
     }
@@ -563,5 +608,5 @@
     return load();
   }
 
-  return { ENDPOINT, mount, jsonRequest, metrics, recommendationByRef, formatEconomicValue };
+  return { ENDPOINT, endpointFor, mount, jsonRequest, metrics, recommendationByRef, formatEconomicValue };
 });

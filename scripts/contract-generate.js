@@ -232,6 +232,11 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute', method: 'post', schema: null },
+  // LOT 4U — Market-scoped Pricing cost workshop
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset', method: 'post', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -2261,3 +2266,7 @@ fs.writeFileSync(debtFile, [
 console.log(`✅ Contrat généré : ${outFile}`);
 console.log(`   ${Object.keys(openapi.paths).length} routes · ${unknownCount} réponses UNKNOWN`);
 console.log(`   Dette documentée dans : ${debtFile}`);
+
+// Runtime route introspection loads modules that may keep timers/handles alive.
+// All contract writes above are synchronous, so terminate deterministically here.
+process.exit(0); // contract generation is fully synchronous above

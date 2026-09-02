@@ -72,6 +72,7 @@ module.exports = {
     services: [
       'services/pricing-apply.js',
       'services/cost-component-admin-service.js',
+      'services/cost-component-market-service.js',
       'services/pricing-workspace.js',
       'services/pricing-dashboard.js',
       'services/pricing-recommend.js',
@@ -140,6 +141,7 @@ module.exports = {
       'migrations/103_cost_benchmarks.sql',
       'migrations/119_economic_variables_to_finance_config.sql',
       'migrations/152_pricing_workspace_global_authority.sql',
+      'migrations/159_cost_component_market_overrides.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -193,6 +195,8 @@ module.exports = {
       'tests/unit/economic-variables-readonly-1a4.test.js',
       'tests/unit/pricing-apply.test.js',
       'tests/unit/admin-pricing-workspace-route.test.js',
+      'tests/unit/admin-pricing-workspace-market-route.test.js',
+      'tests/unit/cost-component-market-service.test.js',
       'tests/unit/pricing-workspace.test.js',
       'tests/unit/require-pricing-global-authority.test.js',
       'tests/unit/pricing-chain.test.js',
@@ -247,6 +251,8 @@ module.exports = {
       'competitor_prices: RW',
       'cost_benchmarks: RW',
       'cost_component_events: RW',
+      'cost_component_market_override_events: RW!',
+      'cost_component_market_overrides: RW!',
       'cost_components: RW',
       'customs_categories: R',
       'customs_shipment_parcels: R',
@@ -303,6 +309,10 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/cost-components',
       'POST /api/admin/workspaces/pricing/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',
+      'GET /api/admin/workspaces/pricing/market/:marketCode',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset',
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
       // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/cost-components',
@@ -392,6 +402,7 @@ module.exports = {
       'customs (dépendance data cross-feature observée et gouvernée par O5)',
       'business-rules (dépendance data cross-feature observée et gouvernée par O5)',
       'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
+      'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
 'catalog (donnees produit source)',

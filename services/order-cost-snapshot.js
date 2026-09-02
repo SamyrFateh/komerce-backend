@@ -96,8 +96,9 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
   const itemsRes = await dbClient.query(
     `SELECT oi.id AS order_item_id, oi.product_id, oi.quantity, oi.price_kmf,
             p.category, p.weight_kg, p.cost_kmf AS product_cost_kmf,
-            p.volume_m3
+            p.volume_m3, o.market_id
      FROM order_items oi
+     JOIN orders o ON o.id = oi.order_id
      LEFT JOIN products p ON p.id = oi.product_id
      WHERE oi.order_id = $1
      ORDER BY oi.created_at`,
@@ -116,7 +117,10 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
   }
 
   // 2. Charger UNE fois la config (couteux)
-  const config = await pricingEngine.loadGlobalConfig();
+  const orderMarketId = itemsRes.rows[0]?.market_id || null;
+  const config = orderMarketId
+    ? await pricingEngine.loadGlobalConfig({ marketId: orderMarketId })
+    : await pricingEngine.loadGlobalConfig();
 
   // 3. Pour chaque item, appeler recommend() et inserer
   let inserted = 0;

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-01T21:57:35.847Z",
+  "generatedAt": "2026-09-02T05:24:17.436Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 560,
-    "protected": 510,
+    "total": 564,
+    "protected": 514,
     "public": 7,
     "unprotected": 41,
     "admin_no_guard": 0,
@@ -1776,14 +1776,16 @@
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/toggle",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/update",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -1798,6 +1800,38 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
       ]
     },
     {

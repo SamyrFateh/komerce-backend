@@ -263,16 +263,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 3
 - middleware: 1
-- services: 29
+- services: 30
 - routes: 13
-- migrations: 20
+- migrations: 21
 - dash: 6
-- tests: 55
-- tables owned (lifecycle): 17 — `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_snapshots`, `finance_config`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
-- tables written: 17
-- interfaces exposed: 84
+- tests: 57
+- tables owned (lifecycle): 19 — `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_snapshots`, `finance_config`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+- tables written: 19
+- interfaces exposed: 88
 - internal APIs: 2
-- dependencies (consumes): 12 — refunds, platform-ops, customs, business-rules, auth-identity, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
+- dependencies (consumes): 13 — refunds, platform-ops, customs, business-rules, auth-identity, market, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 9 — catalog, customs, dashboard, infrastructure, loyalty, orders, platform-ops, sourcing, admin-dashboard
 
 ### incident-management _(business-transversal)_
@@ -399,7 +399,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 1 — infrastructure
-- consumers: 5 — dashboard, local-stock, orders, providers-services, recommendations
+- consumers: 6 — dashboard, economic-engine, local-stock, orders, providers-services, recommendations
 
 ### notifications _(business-transversal)_
 
@@ -635,6 +635,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `competitor_prices` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_benchmarks` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_component_events` | `economic-engine` | single-writer | economic-engine | — |
+| `cost_component_market_override_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `cost_component_market_overrides` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `cost_components` | `economic-engine` | single-writer | economic-engine | — |
 | `currency_parities` | `market` | declared-table-owner | market | — |
 | `customs_categories` | `customs` | single-writer | customs | economic-engine |
@@ -908,6 +910,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/cost-components` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `GET /api/admin/cost-components/_meta` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
@@ -1424,6 +1430,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | economic-engine | customs (`customs (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | economic-engine | business-rules (`business-rules (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | economic-engine | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | market (`market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)`) | ✔ |
 | economic-engine | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | economic-engine | logistics (`logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)`) | ✔ |
 | economic-engine | catalog (`catalog (donnees produit source)`) | ✔ |
@@ -1663,7 +1670,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1005 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1008 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 189 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1762,9 +1769,10 @@ Meta Graph monté : oui.
 | economic-engine | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | customs | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| economic-engine | infrastructure | static-code | 78 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 82 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |

@@ -176,3 +176,34 @@ Economic configuration is global, not market-scoped. Canonical therefore exposes
 - `?legacy=1` remains the explicit Legacy 1 rollback for both paths.
 
 The Legacy API and UI files remain present for rollback/forensic purposes; LOT 4T changes the normal navigation path, not historical evidence.
+
+
+## LOT 4U — Atelier des coûts par marché
+
+Le rôle `market_operator` ne reçoit jamais `pricing_global_access_grants`. Il agit uniquement sur
+`/api/admin/workspaces/pricing/market/:marketCode`, après résolution serveur du marché et vérification
+de `operator_market_scopes`.
+
+Le modèle global `cost_components` reste la base structurelle. `cost_component_market_overrides`
+porte uniquement les différences pays : `default_value` et `is_active`. Absence d'override = héritage
+du global. Un reset supprime l'override courant et journalise l'événement ; il ne modifie jamais le
+composant global.
+
+La granularité `scope` du composant (`category`, `product`, `relay`, etc.) reste une dimension métier
+interne. Le marché est une frontière d'autorisation et de modèle économique distincte ; les deux axes
+ne sont jamais confondus.
+
+Le snapshot de coût d'une commande consomme le modèle effectif à partir de `orders.market_id`, déjà
+résolu/fixé côté serveur. Aucun `market_id` ou `marketCode` de body/query navigateur n'entre dans le
+calcul du CDR.
+
+Dans ce lot, les partenaires pays peuvent modifier les hypothèses de coûts existantes et les activer /
+désactiver localement. Ils ne peuvent pas créer de nouvelles catégories de composants, modifier le prix
+catalogue global, la stratégie globale ou les variables économiques centrales.
+
+### Invariant de contrat généré
+
+Les quatre routes market-scoped de LOT 4U font partie de l'inventaire OpenAPI généré. Après l'introspection
+runtime et les écritures synchrones du contrat, `contract-generate.js` termine explicitement le process :
+la génération est déterministe en local comme en CI et ne reste pas suspendue sur des timers ouverts par
+les modules chargés pendant l'introspection.

@@ -4247,6 +4247,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/cost-component-market-service.js",
+        "resolvedPath": "services/cost-component-market-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-workspace.js",
         "resolvedPath": "services/pricing-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -4666,6 +4673,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/159_cost_component_market_overrides.sql",
+        "resolvedPath": "migrations/159_cost_component_market_overrides.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -4998,6 +5012,20 @@
         "category": "tests",
         "declared": "tests/unit/admin-pricing-workspace-route.test.js",
         "resolvedPath": "tests/unit/admin-pricing-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-market-route.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-market-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/cost-component-market-service.test.js",
+        "resolvedPath": "tests/unit/cost-component-market-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12300,6 +12328,38 @@
       },
       {
         "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
         "entry": "GET /api/admin/cost-components",
         "method": "GET",
         "path": "/api/admin/cost-components",
@@ -15976,6 +16036,12 @@
         "from": "economic-engine",
         "to": "auth-identity",
         "raw": "auth-identity (dépendance data cross-feature observée et gouvernée par O5)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "market",
+        "raw": "market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)",
         "resolved": true
       },
       {
@@ -22659,6 +22725,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/cost-component-market-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/pricing-workspace.js",
                 "targetFile": "db.js"
               },
@@ -22795,6 +22865,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin-pricing-matrices.js",
                 "targetFile": "db.js"
               },
@@ -22915,6 +22989,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/admin-pricing-workspace-market-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cost-component-market-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/pricing-dashboard-truth.test.js",
                 "targetFile": "db.js"
               },
@@ -23002,6 +23084,22 @@
               {
                 "sourceFileId": "routes/admin-finance-config.js",
                 "targetFile": "services/loyalty-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "middleware/require-market-scope.js"
               }
             ]
           }
@@ -29561,7 +29659,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1005
+        "filesObserved": 1008
       },
       "boutique": {
         "filesObserved": 189,
@@ -30954,6 +31052,32 @@
       "readers": [],
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
+    },
+    "cost_component_market_override_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "cost_component_market_overrides": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "cost_components": {
       "writers": [
