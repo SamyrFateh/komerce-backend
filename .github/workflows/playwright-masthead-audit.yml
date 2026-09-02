@@ -23,12 +23,12 @@ jobs:
         run: npm --prefix public/boutique ci
       - name: Install Chromium
         run: npx --prefix public/boutique playwright install --with-deps chromium
-      - name: Start static Boutique
+      - name: Start production-like static root
         run: |
           cd public/boutique
-          npx serve . -l 4173 >/tmp/komerce-serve.log 2>&1 &
+          npx serve .. -l 4173 >/tmp/komerce-serve.log 2>&1 &
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            if curl -fsS http://127.0.0.1:4173/boutique/ >/dev/null; then exit 0; fi
             sleep 1
           done
           cat /tmp/komerce-serve.log
@@ -49,15 +49,19 @@ jobs:
               serviceWorkers: 'block'
             });
             const page = await context.newPage();
-            await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await page.waitForTimeout(3000);
+            await page.goto('http://127.0.0.1:4173/boutique/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForTimeout(5000);
             const metrics = await page.evaluate(() => {
               const q = (sel) => document.querySelector(sel);
               const box = (sel) => {
                 const el = q(sel);
                 if (!el) return null;
                 const r = el.getBoundingClientRect();
-                return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+                const cs = getComputedStyle(el);
+                return {
+                  x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1),
+                  display:cs.display, position:cs.position, visibility:cs.visibility, opacity:cs.opacity
+                };
               };
               return {
                 viewport: { w: innerWidth, h: innerHeight },
@@ -72,7 +76,8 @@ jobs:
                 pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
                 searchLauncherExists: !!q('#k-home-search-launcher'),
                 bodyScrollWidth: document.body.scrollWidth,
-                horizontalOverflow: document.body.scrollWidth > innerWidth + 1
+                horizontalOverflow: document.body.scrollWidth > innerWidth + 1,
+                loadedCss: Array.from(document.styleSheets).map(s => s.href).filter(Boolean)
               };
             });
             console.log('MASTHEAD_AUDIT=' + JSON.stringify(metrics));
@@ -84,6 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: playwright-masthead-branch-audit
+          overwrite: true
           path: |
             public/boutique/playwright-masthead-audit.json
             public/boutique/playwright-masthead-branch.png
