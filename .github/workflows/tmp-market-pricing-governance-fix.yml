@@ -25,19 +25,33 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Declare economic-engine dependency on market
+      - name: Repair contract generation and declare market dependency
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('features/economic-engine.feature.js')
-          s = p.read_text(encoding='utf-8')
+
+          feature = Path('features/economic-engine.feature.js')
+          s = feature.read_text(encoding='utf-8')
           anchor = "      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',\n"
           addition = anchor + "      'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',\n"
           if "'market (autorité serveur des modèles Pricing pays" not in s:
               if anchor not in s:
                   raise SystemExit('economic-engine consumes anchor missing')
               s = s.replace(anchor, addition, 1)
-          p.write_text(s, encoding='utf-8')
+          feature.write_text(s, encoding='utf-8')
+
+          generator = Path('scripts/contract-generate.js')
+          g = generator.read_text(encoding='utf-8')
+          tail = "console.log(`   Dette documentée dans : ${debtFile}`);"
+          if 'process.exit(0); // contract generation is fully synchronous above' not in g:
+              if tail not in g:
+                  raise SystemExit('contract generator tail anchor missing')
+              g = g.replace(
+                  tail,
+                  tail + "\n\n// Runtime route introspection loads modules that may keep timers/handles alive.\n// All contract writes above are synchronous, so terminate deterministically here.\nprocess.exit(0); // contract generation is fully synchronous above",
+                  1,
+              )
+          generator.write_text(g, encoding='utf-8')
           PY
       - name: Regenerate OpenAPI contract
         run: npm run contract:generate
@@ -46,12 +60,16 @@ jobs:
           npm run business-graph:gen
           node scripts/gen-feature-360.js
           npm run security:360
+      - name: Verify repaired governance
+        run: |
+          node scripts/feature-guard.js --strict
           npm run business-graph:ratchet-check
-      - name: Commit governance fix
+      - name: Commit governance fix and remove temporary workflow
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add features/economic-engine.feature.js docs/contract/openapi.json docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md docs/SECURITY_360.json docs/SECURITY_360.md
+          git rm --ignore-unmatch .github/workflows/tmp-market-pricing-governance-fix.yml
+          git add features/economic-engine.feature.js scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md docs/SECURITY_360.json docs/SECURITY_360.md
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "fix(governance): declare market pricing dependency and contract"
+          git commit -m "fix(governance): finalize market pricing contract"
           git push origin HEAD:feat/market-operator-provisioning
