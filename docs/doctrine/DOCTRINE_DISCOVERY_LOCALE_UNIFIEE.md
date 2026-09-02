@@ -1,7 +1,7 @@
 # Doctrine — Discovery locale unifiée Komerce
 
 > **Statut** : doctrine active  
-> **Date** : 2026-08-28  
+> **Date** : 2026-09-02
 > **Portée** : Boutique, `catalog`, `local-stock`, `providers-services`, `recommendations`, activation progressive et futur parcours de prescription.  
 > **Hiérarchie** : complète `AGENTS.md` et `docs/doctrine/FEATURE_DOCTRINE.md`. En cas de conflit, ces documents de niveau supérieur font foi.
 
@@ -205,15 +205,15 @@ offer_type + offer_id
 
 est interdite, car elle sacrifie l'intégrité référentielle Postgres.
 
-Le CTA `Commander` sur une offre physique V0 crée une `inquiry`, **pas** une ligne dans `orders`.
+L’action finale `Commander`, déclenchée depuis le détail Komerce d’une offre physique V0, crée une `inquiry`, **pas** une ligne dans `orders`. Le rail lui-même ne déclenche aucune mutation métier.
 
 ---
 
-## 7. Un rail, trois verbes
+## 7. Un rail, un contrat de carte, un détail Komerce, trois actions
 
 Le rail local reste unique.
 
-La différence métier n'est pas portée par une taxonomie visible, mais par le verbe et le sous-titre.
+La différence métier n’est pas portée par une taxonomie ou une composition différente, mais par la promesse affichée et l’action finale.
 
 ```text
 Product Komerce
@@ -229,11 +229,97 @@ Sur demande
 [Demander]
 ```
 
-### Invariant UX
+### Invariant UX — One Card Contract
 
-Le `subtitle` de la carte Discovery est obligatoire. Il porte la nuance de promesse et évite d'ajouter une nouvelle taxonomie visuelle.
+Sur une même surface Discovery, `Product`, `Physical Offer` et `Service` partagent **la même géométrie de carte**.
 
-Le client n'a pas besoin de connaître les mots internes :
+Le kind métier peut modifier le contenu d’un slot ; il ne peut jamais modifier le squelette de la carte.
+
+```text
+DiscoveryCard
+├── media slot
+├── title slot
+├── primary meta slot
+├── context slot
+└── action slot
+```
+
+Les slots structurels restent présents même lorsque leur donnée est absente. Une donnée optionnelle ne doit donc jamais :
+
+- déplacer le CTA ;
+- changer la hauteur du squelette ;
+- créer une mini-carte dédiée ;
+- créer une colonne ou une pile réservée à un kind ;
+- modifier l’ordre structurel entre mobile et desktop.
+
+Le `subtitle` reste obligatoire. Il porte la nuance de promesse dans le badge et évite d’ajouter une nouvelle taxonomie visuelle.
+
+> **Même expérience ne veut pas dire même métier. Même expérience veut dire même contrat de présentation.**
+
+### Invariant UX — One Open Contract
+
+Une carte Discovery possède un seul contrat d’ouverture :
+
+```text
+clic carte ─┐
+            ├──> openDiscoveryDetail(kind, ref)
+CTA rail ───┘
+                    ↓
+                 #k-modal
+```
+
+Le CTA visible dans le rail exprime l’intention de l’utilisateur ; il ne déclenche pas directement une mutation métier.
+
+Donc :
+
+- le rail ne crée jamais une `Inquiry` ;
+- le rail ne crée jamais une `Order` ;
+- aucun kind ne possède un opener parallèle ;
+- aucun second overlay ou second système de modale n’est autorisé.
+
+> **Discover ≠ Act : la carte et son CTA ouvrent le détail ; l’action métier finale appartient au détail Komerce.**
+
+### Une seule surface de détail Komerce
+
+La carte Discovery n’ouvre jamais une marketplace, une page artisan ni un second système de modale.
+
+`Product`, `Physical Offer` et `Service` restent des vérités métier distinctes, mais utilisent le **même shell de détail Komerce**. La nature métier détermine les capacités affichées et l’interaction finale, pas une nouvelle expérience.
+
+```text
+Carte Komerce
+      ↓
+openDiscoveryDetail(kind, ref)
+      ↓
+#k-modal
+      ↓
+Product        → Acheter
+Physical Offer → Commander
+Service        → Demander / Contacter
+```
+
+Les blocs de détail (média, fournisseur, variantes, livraison, références, contact autorisé) sont optionnels et apparaissent uniquement lorsque leur domaine source possède réellement la donnée. Discovery ne les invente jamais.
+
+### Capability-driven, geometry-stable
+
+La richesse future d’une fiche ne doit pas remettre en cause le contrat d’expérience.
+
+Une capacité supplémentaire peut alimenter un slot ou un bloc optionnel :
+
+```text
+provider
+variants
+quantity / format
+fulfillment
+livraison
+références
+contact autorisé
+```
+
+mais elle ne crée ni nouveau kind d’interface, ni nouvelle navigation, ni nouveau shell.
+
+Le système peut donc devenir plus riche sans devenir plus fragmenté.
+
+Le client n’a pas besoin de connaître les mots internes :
 
 - Provider ;
 - Service table ;
@@ -246,25 +332,7 @@ Le client n'a pas besoin de connaître les mots internes :
 
 > **Le système sait. Le client agit.**
 
-### Une seule surface de détail Komerce
-
-La carte Discovery n'ouvre jamais une marketplace, une page artisan ni un second système de modale.
-
-`Product`, `Physical Offer` et `Service` restent des vérités métier distinctes, mais utilisent le **même shell de détail Komerce**. La nature métier détermine les capacités affichées et l'interaction finale, pas une nouvelle expérience.
-
-```text
-Carte Komerce
-      ↓
-#k-modal
-      ↓
-Product        → Acheter
-Physical Offer → Commander
-Service        → Demander / Contacter
-```
-
-Les blocs de détail (média, fournisseur, variantes, livraison, références, contact autorisé) sont optionnels et apparaissent uniquement lorsque leur domaine source possède réellement la donnée. Discovery ne les invente jamais.
-
-> **Une seule expérience de découverte et de détail Komerce ; seule la nature de l'interaction finale change.**
+> **Une seule expérience de découverte et de détail Komerce ; seule la nature de l’interaction finale change.**
 
 ---
 
@@ -707,6 +775,9 @@ Ne pas :
 13. disperser les flags métier dans le frontend ;
 14. construire payout / settlement avant preuve de valeur ;
 15. activer toutes les familles d'offre en même temps.
+16. varier la géométrie de carte selon le kind ou isoler les services dans une composition dédiée ;
+17. déclencher une Inquiry ou une autre mutation métier directement depuis le rail ;
+18. créer un opener, un overlay ou un shell de détail parallèle pour un kind Discovery.
 
 ---
 
@@ -721,3 +792,9 @@ Ne pas :
 > **`providers-services` porte `services`, `physical_offers` et leur mécanique de demande ; `local-stock` porte la vérité de stock vendable Komerce ; `recommendations` compose uniquement en lecture.**
 
 > **Le backend et le frontend peuvent être construits en avance. L'exposition est activée séquentiellement lorsque les données, l'exploitation et la promesse client sont suffisamment fiables.**
+
+> **Une même surface Discovery impose une géométrie de carte commune : le kind change les données disponibles et l’action finale, jamais le squelette de présentation.**
+
+> **Carte et CTA de rail partagent une seule entrée de détail ; aucune mutation métier ne part directement du rail.**
+
+> **Product, Physical Offer et Service utilisent un seul shell de détail Komerce. La richesse future s’ajoute par capacités optionnelles, pas par multiplication des expériences.**
