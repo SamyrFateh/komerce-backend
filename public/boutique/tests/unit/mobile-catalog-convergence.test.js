@@ -22,7 +22,7 @@ describe('mobile catalog convergence', () => {
 
   test('ne réserve plus une bande artificielle pour la recherche fixe', () => {
     expect(css).not.toMatch(/#k-grid\.k-grid-cat-pager:not\(\.k-grid-flat-subcat\) > \.k-cat-section\s*\{[^}]*padding-top:\s*42px/s);
-    expect(css).toContain('la recherche visible vit désormais réellement dans le flux');
+    expect(css).toContain('visible vit désormais réellement dans le flux de la page Tout');
   });
 
   test('densifie la carte de scan sans reprendre son owner racine', () => {
