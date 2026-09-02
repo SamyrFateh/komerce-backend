@@ -1,0 +1,130 @@
+name: Playwright live mobile audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-live-mobile-v28
+    paths:
+      - .github/workflows/playwright-live-mobile-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique test dependencies
+        run: npm --prefix public/boutique ci
+      - name: Install Chromium
+        run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Run live mobile audit
+        working-directory: public/boutique
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+              serviceWorkers: 'block',
+              userAgent: 'Komerce-Playwright-Live-Audit/1.0 Mobile'
+            });
+            await context.setExtraHTTPHeaders({
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            });
+            const page = await context.newPage();
+            const url = `https://komerce.co/boutique/?pw_audit=${Date.now()}`;
+            const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.waitForTimeout(7000);
+
+            const metrics = await page.evaluate(() => {
+              const q = (sel) => document.querySelector(sel);
+              const box = (sel) => {
+                const el = q(sel);
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                const cs = getComputedStyle(el);
+                return {
+                  x: Math.round(r.x * 10) / 10,
+                  y: Math.round(r.y * 10) / 10,
+                  width: Math.round(r.width * 10) / 10,
+                  height: Math.round(r.height * 10) / 10,
+                  display: cs.display,
+                  position: cs.position,
+                  visibility: cs.visibility,
+                  opacity: cs.opacity,
+                  overflowX: cs.overflowX,
+                  overflowY: cs.overflowY
+                };
+              };
+              const text = (sel) => q(sel)?.textContent?.replace(/\s+/g, ' ').trim() || null;
+              return {
+                href: location.href,
+                title: document.title,
+                readyState: document.readyState,
+                viewport: { w: innerWidth, h: innerHeight },
+                bodyScrollWidth: document.body.scrollWidth,
+                documentScrollWidth: document.documentElement.scrollWidth,
+                hasHorizontalOverflow: Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) > innerWidth + 1,
+                searchHeader: box('.k-search'),
+                searchInput: box('#k-search-input'),
+                searchLauncherExists: !!q('#k-home-search-launcher'),
+                searchLauncher: box('#k-home-search-launcher'),
+                heroMedia: box('.k-hero .k-hero-inner .k-hero-media'),
+                heroFigures: box('.k-hero-media .k-hero-figures'),
+                heroSlogan: box('.k-hero-mini-slogan--premium'),
+                categoryRail: box('.k-shelf-rail'),
+                allPage: box('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'),
+                discovery: box('#k-discovery-local'),
+                discoveryTitle: text('#k-discovery-local-title'),
+                firstCatalogHeader: box('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost]) .k-sec-header'),
+                pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+                pageScrollClass: q('#k-page-scroll')?.className || null,
+                firstAllChildren: q('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])')
+                  ? Array.from(q('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])').children).slice(0, 5).map(el => ({ id: el.id, cls: el.className, tag: el.tagName }))
+                  : []
+              };
+            });
+
+            fs.writeFileSync('playwright-live-audit.json', JSON.stringify(metrics, null, 2));
+            console.log('PLAYWRIGHT_AUDIT=' + JSON.stringify(metrics));
+            await page.screenshot({ path: 'playwright-live-mobile.png', fullPage: false });
+
+            const discovery = page.locator('#k-discovery-local');
+            if (await discovery.count()) {
+              await discovery.scrollIntoViewIfNeeded();
+              await page.waitForTimeout(500);
+              await page.screenshot({ path: 'playwright-live-discovery.png', fullPage: false });
+            }
+
+            await browser.close();
+
+            if (!response || response.status() >= 400) process.exitCode = 2;
+          })().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-live-mobile-audit
+          path: |
+            public/boutique/playwright-live-audit.json
+            public/boutique/playwright-live-mobile.png
+            public/boutique/playwright-live-discovery.png
+          if-no-files-found: warn
