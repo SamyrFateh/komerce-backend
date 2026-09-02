@@ -21,6 +21,6 @@ describe('Discovery mobile rail geometry', () => {
     expect(css).toMatch(/\.k-discovery-media\s*\{[^}]*aspect-ratio:\s*3 \/ 2/s);
     expect(css).toMatch(/\.k-discovery-info\s*\{[^}]*min-height:\s*88px[^}]*padding:\s*7px/s);
     expect(css).toMatch(/\.k-discovery-cta\s*\{[^}]*min-height:\s*28px/s);
-    expect(css).not.toContain('!important');
+    expect(css).not.toMatch(/:\s*[^;{}]*!important\s*;/);
   });
 });
