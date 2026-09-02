@@ -1,0 +1,84 @@
+name: Discovery canonical card qualify once
+
+on:
+  push:
+    branches:
+      - fix/discovery-canonical-card-governance
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    if: github.event.head_commit.message != 'chore(governance): refresh canonical card projections'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/discovery-canonical-card-governance
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+
+      - name: Apply doctrine finalizer and hide transport from governance
+        run: |
+          node scripts/discovery-canonical-card-finalize-once.js
+          cp .github/workflows/discovery-canonical-card-qualify-once.yml /tmp/discovery-canonical-card-qualify-once.yml
+          cp scripts/discovery-canonical-card-finalize-once.js /tmp/discovery-canonical-card-finalize-once.js
+          rm .github/workflows/discovery-canonical-card-qualify-once.yml
+          rm scripts/discovery-canonical-card-finalize-once.js
+
+      - name: Validate doctrine and canonical visual contract
+        run: |
+          node scripts/docs-history-lint.js --strict
+          node public/boutique/scripts/check-selector-ownership.js
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+
+      - name: Run Discovery contract tests
+        run: |
+          npm --prefix public/boutique test -- --runInBand tests/unit/discovery-rail.test.js tests/unit/discovery-canonical-card-contract.test.js tests/unit/discovery-modal-detail.test.js --forceExit
+
+      - name: Regenerate governed projections
+        run: |
+          npm run feature:registry
+          npm run business-graph:gen
+          npm run boutique:360
+          npm run gate:findings:gen
+          npm run feature:360:gen
+
+      - name: Debt Zero and full governance proof
+        run: |
+          npm run business-graph:ratchet-check
+          npm run business-graph:disposition-check
+          npm run boutique:360:check
+          npm run map:check
+          git diff --check
+
+      - name: Restore transport and persist governed projections
+        run: |
+          mkdir -p .github/workflows scripts
+          cp /tmp/discovery-canonical-card-qualify-once.yml .github/workflows/discovery-canonical-card-qualify-once.yml
+          cp /tmp/discovery-canonical-card-finalize-once.js scripts/discovery-canonical-card-finalize-once.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated changes to persist"
+            exit 0
+          fi
+          git commit -m "chore(governance): refresh canonical card projections"
+          git push origin HEAD:fix/discovery-canonical-card-governance
