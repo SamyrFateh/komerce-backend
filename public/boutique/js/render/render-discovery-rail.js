@@ -128,12 +128,14 @@ function selectMobile(cards) {
 }
 
 /**
- * Desktop: flat mixed rail, 6 items max, editorial order preserved.
+ * Desktop: flat mixed rail, full editorial pool preserved.
  * All kinds at the same level — same density, same card size.
  * The kind difference is carried by badge + CTA + provider line only.
+ * The API already bounds the pool to 12 items; horizontal overflow belongs
+ * to the rail instead of silently discarding valid editorial candidates.
  */
 function selectDesktop(cards) {
-  return cards.slice(0, 6);
+  return cards;
 }
 
 function isMobileViewport() {
@@ -171,12 +173,6 @@ export function renderDiscoveryRail(container, cards, options = {}) {
   }
 
   const selected = isMobileViewport() ? selectMobile(normalized) : selectDesktop(normalized);
-  if (selected.length === 0) {
-    container.innerHTML = '';
-    container.hidden = true;
-    return 0;
-  }
-
   const marketLabel = options.marketLabel ? String(options.marketLabel) : '';
   container.innerHTML = renderRail(selected, marketLabel);
   container.hidden = false;
