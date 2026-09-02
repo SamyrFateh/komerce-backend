@@ -15,20 +15,67 @@ import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
 
 let _installed = false;
+let _lastCards = null;
+let _gridObserver = null;
+let _mountSyncScheduled = false;
 
-function ensureMount() {
-  let shell = document.getElementById('k-discovery-local');
-  if (shell) return shell;
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < 900;
+}
 
-  const catalog = document.getElementById('k-desktop-catalog-wrap');
-  if (!catalog) return null;
+function bindShell(shell) {
+  if (!shell || shell.dataset.discoveryBound === '1') return shell;
+  shell.dataset.discoveryBound = '1';
+  shell.addEventListener('click', handleDiscoveryClick);
+  return shell;
+}
 
-  shell = document.createElement('section');
+function createShell() {
+  const shell = document.createElement('section');
   shell.id = 'k-discovery-local';
   shell.className = 'k-discovery-shell';
   shell.hidden = true;
   shell.setAttribute('aria-labelledby', 'k-discovery-local-title');
-  catalog.insertAdjacentElement('beforebegin', shell);
+  return bindShell(shell);
+}
+
+/**
+ * Mobile + pager Temu : « Près de vous » doit vivre DANS la page verticale
+ * "Tout". #k-page-scroll.k-pager-active est une cage fixed overflow:hidden ;
+ * placer Discovery comme sibling du catalogue dans cette cage crée du contenu
+ * sans scroll owner et réduit/masque #k-catalog-section.
+ *
+ * Desktop : on conserve la composition éditoriale validée, juste avant le
+ * wrapper catalogue.
+ */
+function ensureMount() {
+  let shell = document.getElementById('k-discovery-local');
+
+  if (isMobileViewport()) {
+    const allPage = document.querySelector(
+      '#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'
+    );
+    if (!allPage) return null;
+
+    if (!shell) shell = createShell();
+    bindShell(shell);
+
+    // Discovery est le premier contenu scrollable de la home mobile : juste
+    // après le rail catégories fixe, puis viennent le header "Tout" + produits.
+    if (shell.parentElement !== allPage || shell !== allPage.firstElementChild) {
+      allPage.insertBefore(shell, allPage.firstElementChild);
+    }
+    return shell;
+  }
+
+  const catalog = document.getElementById('k-desktop-catalog-wrap');
+  if (!catalog) return null;
+
+  if (!shell) shell = createShell();
+  bindShell(shell);
+  if (shell.nextElementSibling !== catalog) {
+    catalog.insertAdjacentElement('beforebegin', shell);
+  }
   return shell;
 }
 
@@ -40,13 +87,38 @@ function getMarketLabel() {
   }
 }
 
-async function refreshDiscoveryRail() {
+function syncMountAndRender() {
   const shell = ensureMount();
   if (!shell) return 0;
+  if (_lastCards === null) return 0;
+  return renderDiscoveryRail(shell, _lastCards, { marketLabel: getMarketLabel() });
+}
 
+function scheduleMountSync() {
+  if (_mountSyncScheduled) return;
+  _mountSyncScheduled = true;
+  Promise.resolve().then(() => {
+    _mountSyncScheduled = false;
+    syncMountAndRender();
+  });
+}
+
+function installGridObserver() {
+  if (_gridObserver || typeof MutationObserver === 'undefined') return;
+  const grid = document.getElementById('k-grid');
+  if (!grid) return;
+
+  // renderGrid() remplace les .k-cat-section enfants directs. Le shell mobile,
+  // volontairement monté dans la page "Tout", disparaît donc avec l'ancien
+  // rendu. On le remonte depuis le cache Discovery au prochain microtask.
+  _gridObserver = new MutationObserver(scheduleMountSync);
+  _gridObserver.observe(grid, { childList: true });
+}
+
+async function refreshDiscoveryRail() {
   const payload = await fetchDiscoveryRail();
-  const cards = Array.isArray(payload) ? payload : payload?.cards;
-  return renderDiscoveryRail(shell, cards, { marketLabel: getMarketLabel() });
+  _lastCards = Array.isArray(payload) ? payload : payload?.cards;
+  return syncMountAndRender();
 }
 
 /**
@@ -92,14 +164,19 @@ export function setupDiscoveryRail() {
   if (_installed) return;
   _installed = true;
 
-  const shell = ensureMount();
-  if (!shell) return;
+  installGridObserver();
+  window.addEventListener('resize', scheduleMountSync, { passive: true });
 
-  shell.addEventListener('click', handleDiscoveryClick);
-
+  // Le fetch ne dépend plus de l'existence immédiate du mount mobile : au boot,
+  // le catalogue peut encore être en train de rendre ses pages. Les cartes sont
+  // gardées en mémoire puis projetées dès que la page "Tout" existe.
   refreshDiscoveryRail().catch(() => {
-    shell.innerHTML = '';
-    shell.hidden = true;
+    _lastCards = [];
+    const shell = ensureMount();
+    if (shell) {
+      shell.innerHTML = '';
+      shell.hidden = true;
+    }
   });
 }
 
