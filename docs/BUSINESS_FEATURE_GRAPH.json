@@ -2629,48 +2629,6 @@
       },
       {
         "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-queries.js",
-        "resolvedPath": "services/radar-queries.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-alerts/cash-reconciliation-signals.js",
-        "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-alerts/commerce-signals.js",
-        "resolvedPath": "services/radar-alerts/commerce-signals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-alerts/logistics-signals.js",
-        "resolvedPath": "services/radar-alerts/logistics-signals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-alerts/payment-signals.js",
-        "resolvedPath": "services/radar-alerts/payment-signals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/radar-alerts/treasury-signals.js",
-        "resolvedPath": "services/radar-alerts/treasury-signals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
         "category": "routes",
         "declared": "routes/admin/dashboard.js",
         "resolvedPath": "routes/admin/dashboard.js",
@@ -6440,6 +6398,13 @@
         "category": "ci",
         "declared": ".github/workflows/schema-refresh.yml",
         "resolvedPath": ".github/workflows/schema-refresh.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/staging-discovery-ops.yml",
+        "resolvedPath": ".github/workflows/staging-discovery-ops.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10792,6 +10757,41 @@
       {
         "feature": "decision-signals",
         "category": "services",
+        "declared": "services/radar-alerts/cash-reconciliation-signals.js",
+        "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/radar-alerts/commerce-signals.js",
+        "resolvedPath": "services/radar-alerts/commerce-signals.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/radar-alerts/logistics-signals.js",
+        "resolvedPath": "services/radar-alerts/logistics-signals.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/radar-alerts/payment-signals.js",
+        "resolvedPath": "services/radar-alerts/payment-signals.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/radar-alerts/treasury-signals.js",
+        "resolvedPath": "services/radar-alerts/treasury-signals.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
         "declared": "services/signal-service.js",
         "resolvedPath": "services/signal-service.js",
         "status": "resolved-in-technical-graph"
@@ -10836,6 +10836,34 @@
         "category": "tests",
         "declared": "tests/unit/radar-queries.test.js",
         "resolvedPath": "tests/unit/radar-queries.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+        "resolvedPath": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/radar-alerts-logistics-signals.test.js",
+        "resolvedPath": "tests/unit/radar-alerts-logistics-signals.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/radar-alerts-payment-signals.test.js",
+        "resolvedPath": "tests/unit/radar-alerts-payment-signals.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
+        "resolvedPath": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15843,7 +15871,7 @@
       {
         "from": "dashboard",
         "to": "decision-signals",
-        "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js)",
+        "raw": "decision-signals",
         "resolved": true
       },
       {
@@ -21163,6 +21191,19 @@
         "to": "decision-signals",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-radar.js",
+                "targetFile": "services/radar-queries.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-radar.test.js",
+                "targetFile": "services/radar-queries.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
@@ -22015,6 +22056,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/radar-queries.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
                 "sourceFileId": "tests/unit/radar-queries.test.js",
                 "targetFile": "utils/rules.js"
               }
@@ -22032,6 +22077,10 @@
             "evidence": [
               {
                 "sourceFileId": "middleware/require-decision-signal-global-authority.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/radar-queries.js",
                 "targetFile": "db.js"
               },
               {
@@ -22053,6 +22102,22 @@
               {
                 "sourceFileId": "tests/unit/radar-queries.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/radar-queries.js",
+                "targetFile": "utils/parcels.js"
               }
             ]
           }
@@ -29350,40 +29415,7 @@
       }
     ],
     "localManifestDependenciesWithoutCanonicalConsumer": [],
-    "ambiguousOwners": [
-      {
-        "fileId": "services/radar-queries.js",
-        "candidates": [
-          "dashboard",
-          "decision-signals"
-        ],
-        "role": "consumer"
-      },
-      {
-        "fileId": "services/radar-queries.js",
-        "candidates": [
-          "dashboard",
-          "decision-signals"
-        ],
-        "role": "provider"
-      },
-      {
-        "fileId": "services/radar-queries.js",
-        "candidates": [
-          "dashboard",
-          "decision-signals"
-        ],
-        "role": "provider"
-      },
-      {
-        "fileId": "services/radar-queries.js",
-        "candidates": [
-          "dashboard",
-          "decision-signals"
-        ],
-        "role": "provider"
-      }
-    ],
+    "ambiguousOwners": [],
     "ambiguousInterfaceProviders": [],
     "interfaceConsumerUnresolved": [],
     "dynamicUnresolvedByScope": {
@@ -29474,7 +29506,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1000
+        "filesObserved": 1004
       },
       "boutique": {
         "filesObserved": 186,
@@ -31672,8 +31704,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 97,
-        "technicalNodesOwned": 97,
+        "technicalNodesTotal": 98,
+        "technicalNodesOwned": 98,
         "technicalOrphans": 0
       }
     },
@@ -31750,50 +31782,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (consumer)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : consumer)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      }
-    ],
-    "debt": [
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (consumer)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : consumer)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      },
-      {
-        "type": "AMBIGUOUS-FILE-OWNER",
-        "ref": "services/radar-queries.js (provider)",
-        "msg": "\"services/radar-queries.js\" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)"
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -32019,11 +32009,11 @@
       }
     ],
     "summary": {
-      "signals": 4,
-      "debt": 4,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 32,
       "generatorLimitations": 12,
-      "classifiedCandidates": 48
+      "classifiedCandidates": 44
     }
   }
 }

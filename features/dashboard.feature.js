@@ -208,7 +208,7 @@ module.exports = {
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
-      'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
+      'decision-signals',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
     ],
   },
@@ -322,12 +322,6 @@ module.exports = {
       'services/order-360.js',
       'services/product-360.js',
       'services/shipping-customs-workspace.js',
-      'services/radar-queries.js',
-      'services/radar-alerts/cash-reconciliation-signals.js',
-      'services/radar-alerts/commerce-signals.js',
-      'services/radar-alerts/logistics-signals.js',
-      'services/radar-alerts/payment-signals.js',
-      'services/radar-alerts/treasury-signals.js',
     ],
     routes: [
       'routes/admin/dashboard.js',

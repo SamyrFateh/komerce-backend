@@ -248,6 +248,7 @@ module.exports = {
       '.github/workflows/pr-enforcement.yml',
       '.github/workflows/showcase-v2-media-realism.yml',
       '.github/workflows/schema-refresh.yml',
+      '.github/workflows/staging-discovery-ops.yml',
       // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.
       // `.github/workflows-disabled/README.md`) : conservés dans Git mais
       // inactifs, réactivés individuellement après revue (chantier CI cible :

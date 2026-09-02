@@ -78,7 +78,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 29 | 29 | 388 | 388 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 97 | 97 | 0 |
+| boutique | 16 | 16 | 98 | 98 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -213,7 +213,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 29
+- services: 23
 - routes: 24
 - migrations: 2
 - dash: 98
@@ -230,10 +230,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Detecter et qualifier des signaux operationnels (cash, colis, incidents) a partir des donnees produites par plusieurs features, pour l'aide a la decision admin.
 
 - middleware: 1
-- services: 4
+- services: 9
 - routes: 2
 - migrations: 1
-- tests: 9
+- tests: 13
 - tables owned (lifecycle): 1 — `signals`
 - tables written: 1
 - interfaces exposed: 5
@@ -299,7 +299,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 8
 - scripts: 89
 - docs: 60
-- ci: 24
+- ci: 25
 - assets: 29
 - db: 16
 - routes: 1
@@ -1408,7 +1408,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | dashboard | notifications (`notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)`) | ✔ |
 | dashboard | purchasing (`purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)`) | ✔ |
 | dashboard | business-rules (`business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)`) | ✔ |
-| dashboard | decision-signals (`decision-signals (services/radar-queries.js — routes/admin-radar.js)`) | ✔ |
+| dashboard | decision-signals (`decision-signals`) | ✔ |
 | dashboard | market (`market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)`) | ✔ |
 | documents | logistics (`logistics (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | documents | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
@@ -1595,14 +1595,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (4)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[AMBIGUOUS-FILE-OWNER]** _[ACTIONABLE_DRIFT]_ services/radar-queries.js (consumer) — "services/radar-queries.js" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : consumer)
-- **[AMBIGUOUS-FILE-OWNER]** _[ACTIONABLE_DRIFT]_ services/radar-queries.js (provider) — "services/radar-queries.js" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)
-- **[AMBIGUOUS-FILE-OWNER]** _[ACTIONABLE_DRIFT]_ services/radar-queries.js (provider) — "services/radar-queries.js" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)
-- **[AMBIGUOUS-FILE-OWNER]** _[ACTIONABLE_DRIFT]_ services/radar-queries.js (provider) — "services/radar-queries.js" est revendiqué par 2 feature(s) (dashboard, decision-signals) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : provider)
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1666,7 +1663,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1000 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1004 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 186 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1731,7 +1728,7 @@ Meta Graph monté : oui.
 | dashboard | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | customs | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| dashboard | decision-signals | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | decision-signals | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | documents | static-code, data-write, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
@@ -1747,8 +1744,9 @@ Meta Graph monté : oui.
 | dashboard | shared-cart | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | wallet | data-write | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| decision-signals | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| decision-signals | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| decision-signals | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | documents | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | documents | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -1959,7 +1957,7 @@ Meta Graph monté : oui.
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
-- `decision-signals` → `logistics` (déclaré : `logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)`)
+- none
 
 ### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)
 
@@ -1971,10 +1969,7 @@ Meta Graph monté : oui.
 
 ### Ambiguous owners / providers (jamais collapsés arbitrairement)
 
-- `services/radar-queries.js` (consumer) revendiqué par : dashboard, decision-signals
-- `services/radar-queries.js` (provider) revendiqué par : dashboard, decision-signals
-- `services/radar-queries.js` (provider) revendiqué par : dashboard, decision-signals
-- `services/radar-queries.js` (provider) revendiqué par : dashboard, decision-signals
+- none
 
 ### Interface consumer unresolved (canal D)
 

@@ -46,15 +46,15 @@
   },
   "summary": {
     "features": 33,
-    "healthy": 32,
-    "attention": 1,
+    "healthy": 33,
+    "attention": 0,
     "blocked": 0,
-    "businessDependencies": 234,
+    "businessDependencies": 235,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 1,
+    "debtItemsTotal": 0,
     "gateHealthy": 33,
     "gateBlocked": 0
   },
@@ -5155,7 +5155,7 @@
             ]
           },
           "services": {
-            "count": 29,
+            "count": 23,
             "files": [
               {
                 "declared": "services/client-360.js",
@@ -5260,36 +5260,6 @@
               {
                 "declared": "services/product-360.js",
                 "resolvedPath": "services/product-360.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/cash-reconciliation-signals.js",
-                "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/commerce-signals.js",
-                "resolvedPath": "services/radar-alerts/commerce-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/logistics-signals.js",
-                "resolvedPath": "services/radar-alerts/logistics-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/payment-signals.js",
-                "resolvedPath": "services/radar-alerts/payment-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-alerts/treasury-signals.js",
-                "resolvedPath": "services/radar-alerts/treasury-signals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/radar-queries.js",
-                "resolvedPath": "services/radar-queries.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5630,7 +5600,7 @@
             ]
           }
         },
-        "totalFiles": 218,
+        "totalFiles": 212,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6007,6 +5977,7 @@
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -6259,11 +6230,36 @@
             ]
           },
           "services": {
-            "count": 4,
+            "count": 9,
             "files": [
               {
                 "declared": "services/action-center-workspace.js",
                 "resolvedPath": "services/action-center-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/cash-reconciliation-signals.js",
+                "resolvedPath": "services/radar-alerts/cash-reconciliation-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/commerce-signals.js",
+                "resolvedPath": "services/radar-alerts/commerce-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/logistics-signals.js",
+                "resolvedPath": "services/radar-alerts/logistics-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/payment-signals.js",
+                "resolvedPath": "services/radar-alerts/payment-signals.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/radar-alerts/treasury-signals.js",
+                "resolvedPath": "services/radar-alerts/treasury-signals.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -6284,7 +6280,7 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 13,
             "files": [
               {
                 "declared": "tests/unit/action-center-migration-contract.test.js",
@@ -6299,6 +6295,26 @@
               {
                 "declared": "tests/unit/admin-action-center-route.test.js",
                 "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-logistics-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-logistics-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-payment-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-payment-signals.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
+                "resolvedPath": "tests/unit/radar-alerts-treasury-commerce-signals.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6334,7 +6350,7 @@
             ]
           }
         },
-        "totalFiles": 17,
+        "totalFiles": 26,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6402,6 +6418,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -6416,6 +6439,7 @@
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         }
@@ -6430,14 +6454,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "logistics"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -6457,14 +6479,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -9055,7 +9071,7 @@
             ]
           },
           "ci": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -9175,6 +9191,11 @@
               {
                 "declared": ".github/workflows/showcase-v2-media-realism.yml",
                 "resolvedPath": ".github/workflows/showcase-v2-media-realism.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-discovery-ops.yml",
+                "resolvedPath": ".github/workflows/staging-discovery-ops.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -10305,7 +10326,7 @@
             ]
           }
         },
-        "totalFiles": 277,
+        "totalFiles": 278,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12787,6 +12808,13 @@
             "static-code",
             "data-read",
             "data-write"
+          ]
+        },
+        {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
