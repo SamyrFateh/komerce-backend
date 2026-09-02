@@ -289,6 +289,10 @@
     align-items: stretch;
     gap: 12px;
     padding-bottom: 5px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
   }
 
   .k-discovery-rail::-webkit-scrollbar {
@@ -296,9 +300,10 @@
   }
 
   .k-discovery-card {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 0 0 calc((100% - 60px) / 6);
+    min-width: 190px;
     max-width: 220px;
+    scroll-snap-align: start;
   }
 
   .k-discovery-media {
