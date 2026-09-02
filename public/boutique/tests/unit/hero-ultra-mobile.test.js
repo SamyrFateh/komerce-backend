@@ -16,16 +16,16 @@ const heroCss = fs.readFileSync(heroCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
-  test('reste strictement mobile et devient une signature compacte', () => {
+  test('reste strictement mobile et devient une signature compacte mais lisible', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(68px, 19vw, 80px);');
+    expect(css).toContain('height: clamp(80px, 22vw, 90px);');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
   test('préserve les coiffures et le téléphone dans la boîte compacte', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 104%;');
-    expect(css).toContain('background-position: 72% 5%;');
+    expect(css).toContain('background-size: auto 101%;');
+    expect(css).toContain('background-position: 71% 7%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
@@ -34,10 +34,10 @@ describe('hero ultra mobile contract', () => {
   test('garde le slogan visible dans la réserve blanche gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('inset: 0 auto 0 0;');
-    expect(css).toContain('width: 35%;');
-    expect(css).toContain('padding: 6px 0 0 9px;');
+    expect(css).toContain('width: 36%;');
+    expect(css).toContain('padding: 7px 0 0 9px;');
     expect(css).toContain('text-align: left;');
-    expect(css).toContain('font-size: clamp(11px, 3vw, 13px);');
+    expect(css).toContain('font-size: clamp(11px, 3.1vw, 13px);');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });

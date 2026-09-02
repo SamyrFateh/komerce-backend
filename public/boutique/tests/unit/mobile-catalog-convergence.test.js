@@ -20,8 +20,9 @@ describe('mobile catalog convergence', () => {
     expect(css).toMatch(/\.k-shelf-rail\s*\{[^}]*background:\s*var\(--white\)[^}]*box-shadow:\s*none/s);
   });
 
-  test('réserve la recherche sous les catégories dans chaque page Temu', () => {
-    expect(css).toMatch(/#k-grid\.k-grid-cat-pager:not\(\.k-grid-flat-subcat\) > \.k-cat-section\s*\{[^}]*padding-top:\s*42px/s);
+  test('ne réserve plus une bande artificielle pour la recherche fixe', () => {
+    expect(css).not.toMatch(/#k-grid\.k-grid-cat-pager:not\(\.k-grid-flat-subcat\) > \.k-cat-section\s*\{[^}]*padding-top:\s*42px/s);
+    expect(css).toContain('visible vit désormais réellement dans le flux de la page Tout');
   });
 
   test('densifie la carte de scan sans reprendre son owner racine', () => {

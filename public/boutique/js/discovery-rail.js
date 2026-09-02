@@ -40,11 +40,50 @@ function createShell() {
 }
 
 /**
+ * Le champ de recherche réel reste dans le header : renderGrid() remplace les
+ * pages Temu et arracherait un input monté directement dans "Tout" pendant la
+ * frappe. La home porte donc un launcher visuel, dans le flux, qui donne le
+ * focus au moteur canonique sans dupliquer sa logique ni son état.
+ */
+function ensureMobileSearchLauncher(allPage) {
+  if (!allPage) return null;
+
+  let launcher = document.getElementById('k-home-search-launcher');
+  if (!launcher) {
+    launcher = document.createElement('button');
+    launcher.id = 'k-home-search-launcher';
+    launcher.className = 'k-home-search-launcher';
+    launcher.type = 'button';
+    launcher.textContent = 'Rechercher un produit, un service…';
+    launcher.setAttribute('aria-label', 'Rechercher dans Komerce');
+    launcher.addEventListener('click', () => {
+      const input = document.getElementById('k-search-input');
+      if (!input) return;
+      try {
+        input.focus({ preventScroll: true });
+      } catch (e) {
+        input.focus();
+      }
+      const end = input.value.length;
+      if (typeof input.setSelectionRange === 'function') {
+        input.setSelectionRange(end, end);
+      }
+    });
+  }
+
+  if (launcher.parentElement !== allPage || launcher !== allPage.firstElementChild) {
+    allPage.insertBefore(launcher, allPage.firstElementChild);
+  }
+  return launcher;
+}
+
+/**
  * Mobile + pager Temu : « Près de vous » doit vivre DANS la page verticale
  * "Tout". #k-page-scroll.k-pager-active est une cage fixed overflow:hidden ;
  * placer Discovery comme sibling du catalogue dans cette cage crée du contenu
  * sans scroll owner et réduit/masque #k-catalog-section.
  *
+ * Composition mobile V2.8 : recherche dans le flux → Près de vous → catalogue.
  * Desktop : on conserve la composition éditoriale validée, juste avant le
  * wrapper catalogue.
  */
@@ -57,16 +96,22 @@ function ensureMount() {
     );
     if (!allPage) return null;
 
+    const searchLauncher = ensureMobileSearchLauncher(allPage);
+
     if (!shell) shell = createShell();
     bindShell(shell);
 
-    // Discovery est le premier contenu scrollable de la home mobile : juste
-    // après le rail catégories fixe, puis viennent le header "Tout" + produits.
-    if (shell.parentElement !== allPage || shell !== allPage.firstElementChild) {
-      allPage.insertBefore(shell, allPage.firstElementChild);
+    // Le local est le premier contenu marchand de la home, juste après l'outil
+    // de recherche dans le flux. Le reste du catalogue vient ensuite.
+    if (shell.parentElement !== allPage || shell.previousElementSibling !== searchLauncher) {
+      if (searchLauncher) searchLauncher.insertAdjacentElement('afterend', shell);
+      else allPage.insertBefore(shell, allPage.firstElementChild);
     }
     return shell;
   }
+
+  const mobileLauncher = document.getElementById('k-home-search-launcher');
+  if (mobileLauncher) mobileLauncher.remove();
 
   const catalog = document.getElementById('k-desktop-catalog-wrap');
   if (!catalog) return null;
@@ -108,9 +153,9 @@ function installGridObserver() {
   const grid = document.getElementById('k-grid');
   if (!grid) return;
 
-  // renderGrid() remplace les .k-cat-section enfants directs. Le shell mobile,
-  // volontairement monté dans la page "Tout", disparaît donc avec l'ancien
-  // rendu. On le remonte depuis le cache Discovery au prochain microtask.
+  // renderGrid() remplace les .k-cat-section enfants directs. Le shell mobile
+  // et le launcher search, volontairement montés dans "Tout", disparaissent
+  // donc avec l'ancien rendu. On les remonte depuis le cache au microtask.
   _gridObserver = new MutationObserver(scheduleMountSync);
   _gridObserver.observe(grid, { childList: true });
 }
