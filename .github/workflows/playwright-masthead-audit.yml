@@ -21,6 +21,8 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
+      - name: Rebuild Boutique CSS from branch sources
+        run: npm --prefix public/boutique run bundle:css
       - name: Install Chromium
         run: npx --prefix public/boutique playwright install --with-deps chromium
       - name: Start production-like static root
