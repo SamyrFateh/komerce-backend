@@ -1,0 +1,88 @@
+/*
+ * spike-vertical-shell.css — PHASE 2 spike.
+ *
+ * ⚠️ SPIKE — branche isolée, jamais mergé.
+ *
+ * Toutes les règles sont préfixées par `body.spike-shell-vertical`, posée
+ * UNIQUEMENT quand ?shell=vertical. En mode pager (défaut), ce fichier n'a
+ * AUCUN effet — sélecteurs inertes.
+ *
+ * Objectif : afficher les .k-cat-section verticalement dans le flux document,
+ * sans cage fixed, sans k-pager-active (non posé par b-catalog en mode spike).
+ * Le rail catégories devient sticky. Un seul scroll owner : le document.
+ */
+
+/* ── Neutraliser toute trace de cage. En mode vertical, b-catalog ne pose pas
+   k-pager-active ; la spécificité body.spike-shell-vertical + l'injection tardive
+   suffisent sans créer de dette !important. ── */
+body.spike-shell-vertical #k-page-scroll {
+  position: static;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
+}
+
+body.spike-shell-vertical #k-catalog-section {
+  height: auto;
+  overflow: visible;
+}
+
+/* Réafficher le footer (masqué par la cage en mode pager) */
+body.spike-shell-vertical .k-footer {
+  display: block;
+}
+
+/* ── Grid en mode sections verticales ── */
+body.spike-shell-vertical .k-grid-vertical-sections {
+  display: block;
+}
+
+/* Chaque catégorie = section verticale successive dans le flux */
+body.spike-shell-vertical .k-cat-section {
+  display: block;
+  width: 100%;
+  height: auto;
+  flex: none;
+  overflow: visible;
+  /* Offset de scroll pour scrollIntoView sous le rail sticky */
+  scroll-margin-top: 100px;
+}
+
+/* Les produits d'une section restent en grille 2-col (déjà le cas) */
+body.spike-shell-vertical .k-cat-section .k-grid-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+/* ── Rail catégories sticky (au lieu de piloter la cage) ── */
+body.spike-shell-vertical #k-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+/* Rail chips réellement swipeable horizontalement (scroll-x du rail seul) */
+body.spike-shell-vertical .k-cats {
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+body.spike-shell-vertical .k-cats::-webkit-scrollbar {
+  display: none;
+}
+
+/* Discovery « Près de vous » : simple section dans le flux, aucune contrainte */
+body.spike-shell-vertical #k-discovery-local {
+  display: block;
+  width: 100%;
+}
+
+/* HUD spike : laisser de la place en bas pour ne pas masquer le dernier produit */
+body.spike-shell-vertical {
+  padding-bottom: 24px;
+}

@@ -4249,7 +4249,7 @@
         "category": "services",
         "declared": "services/cost-component-market-service.js",
         "resolvedPath": "services/cost-component-market-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -17470,6 +17470,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/spike-vertical-shell.js",
+        "resolvedPath": "public/boutique/js/spike-vertical-shell.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/b-product-open-contract.js",
         "resolvedPath": "public/boutique/js/b-product-open-contract.js",
         "exists": true,
@@ -17678,6 +17686,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "css",
+        "declared": "../css/spike-vertical-shell.css",
+        "resolvedPath": "public/boutique/css/spike-vertical-shell.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
         "declared": "../css/category-cutout-navigation.css",
         "resolvedPath": "public/boutique/css/category-cutout-navigation.css",
         "exists": true,
@@ -17808,6 +17824,14 @@
         "category": "tests",
         "declared": "../tests/unit/discovery-rail.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-rail.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/spike-vertical-shell.test.js",
+        "resolvedPath": "public/boutique/tests/unit/spike-vertical-shell.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -27390,6 +27414,10 @@
                 "targetFile": "public/boutique/js/b-pager.js"
               },
               {
+                "sourceFileId": "public/boutique/js/boutique.js",
+                "targetFile": "public/boutique/js/spike-vertical-shell.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-nav.js",
                 "targetFile": "public/boutique/js/b-catalog.js"
               },
@@ -29662,7 +29690,7 @@
         "filesObserved": 1008
       },
       "boutique": {
-        "filesObserved": 189,
+        "filesObserved": 191,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -31868,8 +31896,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 388,
-        "technicalNodesOwned": 388,
+        "technicalNodesTotal": 389,
+        "technicalNodesOwned": 389,
         "technicalOrphans": 0
       },
       "dash": {
@@ -31883,8 +31911,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 99,
-        "technicalNodesOwned": 99,
+        "technicalNodesTotal": 100,
+        "technicalNodesOwned": 100,
         "technicalOrphans": 0
       }
     },
