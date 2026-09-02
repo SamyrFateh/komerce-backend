@@ -2266,3 +2266,7 @@ fs.writeFileSync(debtFile, [
 console.log(`✅ Contrat généré : ${outFile}`);
 console.log(`   ${Object.keys(openapi.paths).length} routes · ${unknownCount} réponses UNKNOWN`);
 console.log(`   Dette documentée dans : ${debtFile}`);
+
+// Runtime route introspection loads modules that may keep timers/handles alive.
+// All contract writes above are synchronous, so terminate deterministically here.
+process.exit(0); // contract generation is fully synchronous above

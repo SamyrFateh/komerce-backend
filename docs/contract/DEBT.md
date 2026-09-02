@@ -9,5 +9,9 @@ puis relancer `npm run contract:generate`.
 - `GET /api/loyalty`
 - `POST /api/pickup/verify`
 - `POST /api/pickup/collect`
+- `GET /api/admin/workspaces/pricing/market/{marketCode}`
+- `POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update`
+- `POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle`
+- `POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset`
 - `GET /api/dashboard`
 - `POST /api/hub-dash/start-prep/{id}`

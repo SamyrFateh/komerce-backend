@@ -8467,7 +8467,7 @@
         },
         {
           "provider": "market",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -13622,7 +13622,7 @@
         },
         {
           "consumer": "economic-engine",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]

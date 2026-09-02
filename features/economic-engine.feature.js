@@ -402,6 +402,7 @@ module.exports = {
       'customs (dépendance data cross-feature observée et gouvernée par O5)',
       'business-rules (dépendance data cross-feature observée et gouvernée par O5)',
       'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
+      'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
 'catalog (donnees produit source)',

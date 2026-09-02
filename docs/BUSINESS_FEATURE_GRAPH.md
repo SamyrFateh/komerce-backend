@@ -272,7 +272,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 19
 - interfaces exposed: 88
 - internal APIs: 2
-- dependencies (consumes): 12 — refunds, platform-ops, customs, business-rules, auth-identity, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
+- dependencies (consumes): 13 — refunds, platform-ops, customs, business-rules, auth-identity, market, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 9 — catalog, customs, dashboard, infrastructure, loyalty, orders, platform-ops, sourcing, admin-dashboard
 
 ### incident-management _(business-transversal)_
@@ -399,7 +399,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 1 — infrastructure
-- consumers: 5 — dashboard, local-stock, orders, providers-services, recommendations
+- consumers: 6 — dashboard, economic-engine, local-stock, orders, providers-services, recommendations
 
 ### notifications _(business-transversal)_
 
@@ -910,10 +910,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/cost-components` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
-| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | — (not-in-openapi-contract) |
+| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `GET /api/admin/cost-components/_meta` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
@@ -1430,6 +1430,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | economic-engine | customs (`customs (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | economic-engine | business-rules (`business-rules (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | economic-engine | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | market (`market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)`) | ✔ |
 | economic-engine | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | economic-engine | logistics (`logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)`) | ✔ |
 | economic-engine | catalog (`catalog (donnees produit source)`) | ✔ |
@@ -1601,15 +1602,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (5)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / GET /api/admin/workspaces/pricing/market/{id} — "GET /api/admin/workspaces/pricing/market/{id}" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update — "POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ economic-engine -> market — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "economic-engine" vers "market"
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1775,7 +1772,7 @@ Meta Graph monté : oui.
 | economic-engine | infrastructure | static-code | 82 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market | static-code | 1 | **OBSERVED_UNDECLARED** |
+| economic-engine | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -1945,7 +1942,6 @@ Meta Graph monté : oui.
 ### Observed undeclared dependencies
 
 - `dashboard` → `loyalty` (canaux: static-code)
-- `economic-engine` → `market` (canaux: static-code)
 - `infrastructure` → `auth-identity` (canaux: static-code)
 - `infrastructure` → `auth-passkey` (canaux: static-code)
 - `infrastructure` → `business-rules` (canaux: static-code)
@@ -2008,10 +2004,10 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
-| BUSINESS_FEATURE_INTERFACE | 1 | business-dependency-declare-candidate |
+| BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **22** | |
+| **TOTAL** | **21** | |
 
 ### Projection dependencies
 
@@ -2072,7 +2068,7 @@ require() direct d'un fichier d'une autre business-feature — couture à casser
 
 Consommation d'une business-feature via interface/http — candidat `contract.consumes`.
 
-- `economic-engine` → `market` — technical-primitive, RUNTIME_ONLY
+- _none_
 
 ### Piloting capability dependencies
 
