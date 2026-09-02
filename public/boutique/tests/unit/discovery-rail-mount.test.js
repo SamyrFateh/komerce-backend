@@ -9,6 +9,10 @@
  * du catalogue dans #k-page-scroll. En mode pager mobile, ce parent est une
  * cage fixed + overflow:hidden : le bloc vertical consommait la hauteur de la
  * cage sans posséder de scroll, jusqu'à étouffer le pager Temu.
+ *
+ * V2.8 : la page Tout porte désormais, dans cet ordre, le launcher de
+ * recherche puis Discovery puis le catalogue. Les deux mounts doivent survivre
+ * aux remplacements de pages effectués par renderGrid().
  */
 
 jest.mock('../../js/b-modal.js', () => ({
@@ -51,9 +55,10 @@ async function flushDomWork() {
   await new Promise(resolve => setTimeout(resolve, 0));
 }
 
-test('mobile: Discovery vit dans la page Tout, survit au re-render, puis revient avant le catalogue desktop', async () => {
+test('mobile: recherche puis Discovery vivent dans Tout, survivent au re-render, puis Discovery revient avant le catalogue desktop', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
+    <header><div class="k-search"><input id="k-search-input" type="search"></div></header>
     <div id="k-page-scroll" class="k-pager-active">
       <div id="k-desktop-catalog-wrap">
         <section id="k-catalog-section">
@@ -68,31 +73,40 @@ test('mobile: Discovery vit dans la page Tout, survit au re-render, puis revient
   await flushDomWork();
 
   let shell = document.getElementById('k-discovery-local');
+  let launcher = document.getElementById('k-home-search-launcher');
   let allPage = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]');
 
+  expect(launcher).not.toBeNull();
   expect(shell).not.toBeNull();
+  expect(launcher.parentElement).toBe(allPage);
   expect(shell.parentElement).toBe(allPage);
-  expect(allPage.firstElementChild).toBe(shell);
+  expect(allPage.firstElementChild).toBe(launcher);
+  expect(launcher.nextElementSibling).toBe(shell);
   expect(document.querySelector('#k-page-scroll > #k-discovery-local')).toBeNull();
   expect(shell.hidden).toBe(false);
   expect(shell.textContent).toContain('Près de vous');
   expect(shell.textContent).toContain('Climatiseur local');
 
+  launcher.click();
+  expect(document.activeElement).toBe(document.getElementById('k-search-input'));
+
   // renderGrid() remplace les pages : le MutationObserver doit remonter
-  // Discovery dans la nouvelle page Tout sans refaire de fetch.
+  // recherche + Discovery dans la nouvelle page Tout sans refaire de fetch.
   const grid = document.getElementById('k-grid');
   grid.innerHTML = mobileCatalogMarkup('rerender');
   await flushDomWork();
 
   shell = document.getElementById('k-discovery-local');
+  launcher = document.getElementById('k-home-search-launcher');
   allPage = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]');
   expect(allPage.dataset.render).toBe('rerender');
-  expect(shell.parentElement).toBe(allPage);
-  expect(allPage.firstElementChild).toBe(shell);
+  expect(allPage.firstElementChild).toBe(launcher);
+  expect(launcher.nextElementSibling).toBe(shell);
   expect(shell.textContent).toContain('Climatiseur local');
 
   // Desktop conserve la composition validée : Discovery redevient sibling
-  // immédiatement avant #k-desktop-catalog-wrap.
+  // immédiatement avant #k-desktop-catalog-wrap. Le launcher mobile disparaît
+  // avec la prochaine reconstruction de la home et n'est jamais monté desktop.
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
   window.dispatchEvent(new Event('resize'));
   await flushDomWork();
