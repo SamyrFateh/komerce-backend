@@ -110,6 +110,9 @@ function ensureMount() {
     return shell;
   }
 
+  const mobileLauncher = document.getElementById('k-home-search-launcher');
+  if (mobileLauncher) mobileLauncher.remove();
+
   const catalog = document.getElementById('k-desktop-catalog-wrap');
   if (!catalog) return null;
 
