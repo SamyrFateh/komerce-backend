@@ -53,7 +53,6 @@ body.spike-shell-vertical .k-cat-section {
 }
 
 /* Les produits d'une section restent en grille 2-col (déjà le cas) */
-body.spike-shell-vertical .k-cat-section .k-sec-grid,
 body.spike-shell-vertical .k-cat-section .k-grid-inner {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -61,8 +60,7 @@ body.spike-shell-vertical .k-cat-section .k-grid-inner {
 }
 
 /* ── Rail catégories sticky (au lieu de piloter la cage) ── */
-body.spike-shell-vertical #k-sticky-bar,
-body.spike-shell-vertical .k-hero-cats-sticky {
+body.spike-shell-vertical #k-sticky-bar {
   position: sticky;
   top: 0;
   z-index: 500;

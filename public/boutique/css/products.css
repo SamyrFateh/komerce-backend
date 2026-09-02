@@ -13,6 +13,13 @@
   padding: 4px 12px 12px;
 }
 
+/* Temporary validation shell: section product grid remains owned by products.css. */
+body.spike-shell-vertical .k-sec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
 /* ── CARTE ───────────────────────────────────────────────────── */
 .k-card {
   background: var(--sand);

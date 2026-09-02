@@ -170,15 +170,6 @@ export function installVerticalNavigation() {
 
 // ── Bootstrap spike ──────────────────────────────────────────────────────
 
-function injectSpikeCss() {
-  if (document.getElementById('spike-vertical-css')) return;
-  const link = document.createElement('link');
-  link.id = 'spike-vertical-css';
-  link.rel = 'stylesheet';
-  link.href = '/boutique/css/spike-vertical-shell.css';
-  document.head.appendChild(link);
-}
-
 export function initVerticalShellSpike(bus) {
   if (!isVerticalShell()) {
     // Contrat body-class : l'état du shell doit être réversible, notamment
@@ -186,7 +177,6 @@ export function initVerticalShellSpike(bus) {
     document.body.classList.remove('spike-shell-vertical');
     return;
   }
-  injectSpikeCss();
   document.body.classList.add('spike-shell-vertical');
   installHud();
 
