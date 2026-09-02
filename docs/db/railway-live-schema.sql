@@ -243,7 +243,8 @@ CREATE TYPE public.user_role AS ENUM (
     'agent_relais',
     'agent_hub',
     'agent_transitaire',
-    'sourcing'
+    'sourcing',
+    'market_operator'
 );
 
 
@@ -1152,6 +1153,59 @@ CREATE TABLE public.cost_component_events (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT cost_component_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'updated'::text, 'activated'::text, 'deactivated'::text, 'deleted'::text, 'value_changed'::text, 'scope_changed'::text])))
 );
+
+
+--
+-- Name: cost_component_market_override_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cost_component_market_override_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    override_id uuid,
+    market_id uuid NOT NULL,
+    component_id uuid,
+    component_key text NOT NULL,
+    event_type text NOT NULL,
+    old_value jsonb,
+    new_value jsonb,
+    notes text,
+    triggered_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cost_component_market_override_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'updated'::text, 'reset'::text])))
+);
+
+
+--
+-- Name: TABLE cost_component_market_override_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cost_component_market_override_events IS 'Append-only audit trail for market cost model changes and resets.';
+
+
+--
+-- Name: cost_component_market_overrides; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cost_component_market_overrides (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    component_id uuid NOT NULL,
+    default_value numeric(14,4),
+    is_active boolean,
+    notes text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    updated_by uuid,
+    CONSTRAINT cost_component_market_overrides_default_value_check CHECK (((default_value IS NULL) OR (default_value >= (0)::numeric)))
+);
+
+
+--
+-- Name: TABLE cost_component_market_overrides; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cost_component_market_overrides IS 'Market-specific value/activation overrides for global cost_components. No row = inherit global.';
 
 
 --
@@ -5908,6 +5962,30 @@ ALTER TABLE ONLY public.cost_component_events
 
 
 --
+-- Name: cost_component_market_override_events cost_component_market_override_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_market_id_component_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_market_id_component_id_key UNIQUE (market_id, component_id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cost_components cost_components_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7171,6 +7249,20 @@ CREATE INDEX idx_cost_benchmarks_active ON public.cost_benchmarks USING btree (c
 --
 
 CREATE INDEX idx_cost_component_events_component ON public.cost_component_events USING btree (component_id, created_at DESC);
+
+
+--
+-- Name: idx_cost_component_market_override_events_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cost_component_market_override_events_market ON public.cost_component_market_override_events USING btree (market_id, created_at DESC);
+
+
+--
+-- Name: idx_cost_component_market_overrides_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cost_component_market_overrides_market ON public.cost_component_market_overrides USING btree (market_id, component_id);
 
 
 --
@@ -9676,6 +9768,70 @@ ALTER TABLE ONLY public.cost_component_events
 
 ALTER TABLE ONLY public.cost_component_events
     ADD CONSTRAINT cost_component_events_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_component_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_component_id_fkey FOREIGN KEY (component_id) REFERENCES public.cost_components(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_override_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_override_id_fkey FOREIGN KEY (override_id) REFERENCES public.cost_component_market_overrides(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_triggered_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_component_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_component_id_fkey FOREIGN KEY (component_id) REFERENCES public.cost_components(id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --

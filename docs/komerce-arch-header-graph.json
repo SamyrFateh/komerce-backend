@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 487,
-    "filesWithFullHeaders": 449,
+    "scannedCodeFiles": 488,
+    "filesWithFullHeaders": 450,
     "filesWithLiteHeaders": 38,
-    "filesWithAnyHeaders": 487,
+    "filesWithAnyHeaders": 488,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1067,
-    "edges": 5593,
-    "dbTables": 124,
-    "doctrines": 287,
+    "graphNodes": 1071,
+    "edges": 5609,
+    "dbTables": 126,
+    "doctrines": 288,
     "impactAreas": 169,
-    "unresolvedCodeEdges": 558,
+    "unresolvedCodeEdges": 560,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 62
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 2,
-    "economic-engine": 46,
+    "economic-engine": 47,
     "sourcing": 6,
     "logistics": 43,
     "boutique": 20,
@@ -100,7 +100,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 206,
+    "service": 207,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -110,7 +110,7 @@
   "byCriticality": {
     "critical": 68,
     "medium": 121,
-    "high": 252,
+    "high": 253,
     "low": 46
   },
   "nodes": [
@@ -1538,7 +1538,7 @@
       "impactAreas": [
         "boutique"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/b-cart-core.js",
@@ -4074,7 +4074,7 @@
         "pdp",
         "discovery-rail"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/discovery-inquiry.js",
@@ -4102,7 +4102,7 @@
         "providers-services",
         "auth"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/discovery-rail.js",
@@ -4129,7 +4129,7 @@
         "product-discovery",
         "discovery-rail"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/group/group-api.js",
@@ -6134,38 +6134,45 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "authenticated_admin",
-        "pricing_global_grant",
+        "authenticated_pricing_operator",
+        "resolved_market_code",
         "business_refs",
         "pricing_payload"
       ],
       "outputs": [
         "canonical_pricing_projection",
+        "market_cost_projection",
         "action_results"
       ],
       "depends": [
+        "db.js",
         "middleware/auth.js",
         "middleware/require-pricing-global-authority.js",
+        "middleware/require-market-scope.js",
         "services/pricing-workspace.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "pricing_global_access_grants"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "global_pricing_authority",
-        "browser_business_refs_only",
-        "no_market_authority"
+        "global_pricing_authority_or_server_market_scope",
+        "browser_business_refs_only"
       ],
       "impactAreas": [
         "pricing",
         "economic-engine",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin-product-360.js",
@@ -10028,7 +10035,7 @@
         "boutique",
         "discovery-rail"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/purchasing.js",
@@ -12596,6 +12603,56 @@
         "admin-dashboard"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/cost-component-market-service.js",
+      "file": "services/cost-component-market-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-market-cost-component-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "resolved_market_id",
+        "component_key",
+        "market_override_payload",
+        "actor_id"
+      ],
+      "outputs": [
+        "effective_market_cost_components",
+        "audited_override_mutations"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/pricing-cdr.js"
+      ],
+      "dbRead": [
+        "cost_components",
+        "cost_component_market_overrides"
+      ],
+      "dbWrite": [
+        "cost_component_market_overrides",
+        "cost_component_market_override_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "override_mutations_atomic"
+      ],
+      "doctrine": [
+        "global_model_is_base_market_override_is_effective_value"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "market-authorization"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/create-stripe-order-intent.js",
@@ -23410,6 +23467,16 @@
       "table": "cost_component_events"
     },
     {
+      "id": "db:cost_component_market_overrides",
+      "type": "db-table",
+      "table": "cost_component_market_overrides"
+    },
+    {
+      "id": "db:cost_component_market_override_events",
+      "type": "db-table",
+      "table": "cost_component_market_override_events"
+    },
+    {
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
@@ -24175,9 +24242,9 @@
       "doctrine": "lot1a_dead_editor_retired_read_only"
     },
     {
-      "id": "doctrine:global_pricing_authority",
+      "id": "doctrine:global_pricing_authority_or_server_market_scope",
       "type": "doctrine",
-      "doctrine": "global_pricing_authority"
+      "doctrine": "global_pricing_authority_or_server_market_scope"
     },
     {
       "id": "doctrine:browser_business_refs_only",
@@ -24513,6 +24580,11 @@
       "id": "doctrine:browser_uses_component_key",
       "type": "doctrine",
       "doctrine": "browser_uses_component_key"
+    },
+    {
+      "id": "doctrine:global_model_is_base_market_override_is_effective_value",
+      "type": "doctrine",
+      "doctrine": "global_model_is_base_market_override_is_effective_value"
     },
     {
       "id": "doctrine:douane_declaration_pivot",
@@ -34267,6 +34339,12 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
@@ -34276,6 +34354,12 @@
       "to": "middleware/require-pricing-global-authority.js",
       "type": "depends",
       "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/require-market-scope.js",
+      "type": "depends",
+      "label": "middleware/require-market-scope.js"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -34291,21 +34375,33 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
-      "to": "doctrine:global_pricing_authority",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db:pricing_global_access_grants",
+      "type": "db-read",
+      "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:global_pricing_authority_or_server_market_scope",
       "type": "doctrine",
-      "label": "global_pricing_authority"
+      "label": "global_pricing_authority_or_server_market_scope"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
       "to": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "label": "browser_business_refs_only"
-    },
-    {
-      "from": "routes/admin-pricing-workspace.js",
-      "to": "doctrine:no_market_authority",
-      "type": "doctrine",
-      "label": "no_market_authority"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -34324,6 +34420,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "routes/admin-product-360.js",
@@ -43497,6 +43599,72 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/cost-component-market-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-cdr.js",
+      "to": "services/cost-component-market-service.js",
+      "type": "uses",
+      "label": "services/pricing-cdr.js"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "db:cost_components",
+      "type": "db-read",
+      "label": "cost_components"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "db:cost_component_market_overrides",
+      "type": "db-read",
+      "label": "cost_component_market_overrides"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "db:cost_component_market_overrides",
+      "type": "db-write",
+      "label": "cost_component_market_overrides"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "db:cost_component_market_override_events",
+      "type": "db-write",
+      "label": "cost_component_market_override_events"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "doctrine:global_model_is_base_market_override_is_effective_value",
+      "type": "doctrine",
+      "label": "global_model_is_base_market_override_is_effective_value"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/create-stripe-order-intent.js",
@@ -60543,7 +60711,8 @@
         "db:operator_market_scopes",
         "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
         "impact:admin-authorization",
-        "impact:market"
+        "impact:market",
+        "routes/admin-pricing-workspace.js"
       ]
     },
     "middleware/require-non-production.js": {
@@ -65721,37 +65890,48 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "db.js",
         "middleware/auth.js",
         "middleware/require-pricing-global-authority.js",
+        "middleware/require-market-scope.js",
         "services/pricing-workspace.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "pricing_global_access_grants"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "global_pricing_authority",
-        "browser_business_refs_only",
-        "no_market_authority"
+        "global_pricing_authority_or_server_market_scope",
+        "browser_business_refs_only"
       ],
       "impactAreas": [
         "pricing",
         "economic-engine",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
+        "db:operator_market_scopes",
+        "db:pricing_global_access_grants",
         "doctrine:browser_business_refs_only",
-        "doctrine:global_pricing_authority",
-        "doctrine:no_market_authority",
+        "doctrine:global_pricing_authority_or_server_market_scope",
         "impact:admin-dashboard",
         "impact:economic-engine",
+        "impact:market-authorization",
         "impact:pricing",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "middleware/require-pricing-global-authority.js",
+        "services/cost-component-market-service.js",
         "services/pricing-workspace.js"
       ]
     },
@@ -71923,6 +72103,50 @@
         "services/pricing-workspace.js"
       ]
     },
+    "services/cost-component-market-service.js": {
+      "role": "economic-engine-market-cost-component-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/pricing-cdr.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "cost_components",
+        "cost_component_market_overrides"
+      ],
+      "dbWrite": [
+        "cost_component_market_overrides",
+        "cost_component_market_override_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "global_model_is_base_market_override_is_effective_value"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:cost_component_market_override_events",
+        "db:cost_component_market_overrides",
+        "db:cost_components",
+        "doctrine:global_model_is_base_market_override_is_effective_value",
+        "impact:economic-engine",
+        "impact:market-authorization",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "services/pricing-cdr.js"
+      ]
+    },
     "services/create-stripe-order-intent.js": {
       "role": "payment-create-stripe-order-intent",
       "domain": "payment",
@@ -76683,6 +76907,7 @@
         "db:risk_provisions",
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
+        "services/cost-component-market-service.js",
         "services/pricing-engine.js",
         "utils/rates.js"
       ]
@@ -83383,6 +83608,12 @@
       "label": "db.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "routes/admin-product-360.js",
       "to": "middleware/auth",
       "type": "depends",
@@ -84668,6 +84899,12 @@
     },
     {
       "from": "services/cost-component-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"

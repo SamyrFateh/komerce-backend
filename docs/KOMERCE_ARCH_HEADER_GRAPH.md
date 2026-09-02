@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 487
-- Files with full headers: 449
+- Scanned code files: 488
+- Files with full headers: 450
 - Files with lite headers: 38
-- Files with any headers: 487
+- Files with any headers: 488
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1067
-- Edges: 5593
-- DB tables: 124
-- Doctrines: 287
+- Graph nodes: 1071
+- Edges: 5609
+- DB tables: 126
+- Doctrines: 288
 - Impact areas: 169
-- Unresolved code edges: 558
+- Unresolved code edges: 560
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 46
+- economic-engine: 47
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 206
+- service: 207
 - state: 1
 - state-store: 1
 - ui-adapter: 1
@@ -315,6 +315,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
+- services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
 - services/dashboard-admin-context.js — canonical-admin-context-resolver (admin-dashboard, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
@@ -519,6 +520,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pricing-strategy-service.js -> competitor_prices
 - WRITE routes/pricing.js -> cost_benchmarks
 - WRITE services/cost-component-admin-service.js -> cost_component_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_override_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_overrides
 - WRITE services/cost-component-admin-service.js -> cost_components
 - WRITE routes/admin-customs-categories.js -> customs_categories
 - WRITE routes/orders/status.js -> customs_history
@@ -586,8 +589,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/cancel.js -> order_status_history
 - WRITE services/order-checkout-persistence.js -> order_status_history
 - WRITE services/order-checkout-service.js -> order_status_history
-- WRITE services/order-status-machine.js -> order_status_history
-- WRITE routes/admin-customs-shipments.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
