@@ -32,12 +32,8 @@
     background: var(--cta-green);
   }
 
-  /* V2.6 — la recherche fixe vit juste sous le rail catégories. Chaque page
-     Temu réserve sa hauteur dans SON scroll local, sans modifier la cage ni
-     le calcul --pager-top. */
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section {
-    padding-top: 42px;
-  }
+  /* V2.8 — aucune réserve artificielle sous le rail catégories : la recherche
+     visible vit désormais réellement dans le flux de la page Tout. */
 
   /* V2.7 — carte = scan rapide ; la modale porte description et validation.
      Gain visé : encore ~10–15 % de hauteur utile par carte sans toucher au
