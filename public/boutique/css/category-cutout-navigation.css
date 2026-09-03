@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/render/render-categories.js
  * @purpose       Komerce Shelf : objets de catégorie flottants, petit libellé dessous, zéro capsule.
  * @impact-areas  category-navigation, mobile
- * @version       2026-08
+ * @version       2026-09
  */
 
 /* Le rail reste fonctionnellement .k-cats ; k-shelf-rail porte la composition. */
@@ -324,6 +324,33 @@
     pointer-events: none;
   }
 
+  /* Voyant de position : un LED fixe, discret et lumineux indique sans ambiguïté
+   * l'univers actuellement sélectionné. Le soulignement historique reste présent. */
+  .k-shelf-rail .k-cat-cutout .k-chip-photo::after {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 1px;
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--white);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 35% 30%,
+      var(--white) 0 18%,
+      var(--ocean) 42% 100%
+    );
+    box-shadow:
+      0 0 0 1px var(--white),
+      0 0 5px var(--ocean),
+      0 0 10px var(--ocean-dark);
+    opacity: 0;
+    transform: scale(.72);
+    transition: opacity .16s var(--ease), transform .16s var(--ease);
+    pointer-events: none;
+    z-index: 3;
+  }
+
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
     transform:
       translate(var(--k-optical-x), var(--k-optical-y))
@@ -347,6 +374,11 @@
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
     opacity: .28;
+  }
+
+  .k-shelf-rail .k-cat-cutout.active .k-chip-photo::after {
+    opacity: 1;
+    transform: scale(1);
   }
 
   .k-cat-cutout .k-chip-label,
