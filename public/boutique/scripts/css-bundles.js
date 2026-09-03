@@ -39,6 +39,10 @@ const BUNDLES = [
     out: 'desktop.css',
     files: ['boutique-desktop', 'side-cart-desktop-polish', 'category-cutout-navigation-desktop'],
   },
+  {
+    out: 'checkout-desktop-v2.css',
+    files: ['checkout-desktop-v2'],
+  },
 ];
 
 module.exports = { BUNDLES };
