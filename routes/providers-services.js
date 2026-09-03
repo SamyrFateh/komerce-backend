@@ -4,13 +4,13 @@
  * @domain        providers-services
  * @layer         route
  * @criticality   medium
- * @inputs        id (params), market (query — code KM|YT|CM|CG, résolu serveur), inquiry target
+ * @inputs        id (params), market (query — code KM|YT|CM|CG, résolu serveur), inquiry target, intent, requester_note
  * @outputs       service_public_fields, physical_offer_public_fields, inquiry_public_result
- * @depends       services/providers-service.js, services/providers-interaction-policy.js, middleware/auth-guest.js, db (résolution code marché + contact public)
+ * @depends       services/providers-service.js, services/providers-inquiry-service.js, services/providers-interaction-policy.js, middleware/auth-guest.js, db (résolution code marché)
  * @used-by       bootstrap/api-routes.js, public/boutique/js/discovery-api.js
- * @db-read       markets, providers
+ * @db-read       markets
  * @db-write      none
- * @db-write-via:providers-service inquiries
+ * @db-write-via:providers-inquiry-service inquiries
  * @db-txn        delegated_to_service
  * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
  * @impact-areas  providers-services, boutique, discovery-rail
@@ -24,14 +24,11 @@ const router  = express.Router();
 const db = require('../db');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const {
-  createInquiry,
   getService, isServiceExposable,
   getPhysicalOffer, isPhysicalOfferExposable,
 } = require('../services/providers-service');
-const {
-  normalizeActions,
-  buildPublicInteraction,
-} = require('../services/providers-interaction-policy');
+const { createContextualInquiry } = require('../services/providers-inquiry-service');
+const { buildPublicInteraction } = require('../services/providers-interaction-policy');
 
 async function resolveMarketId(marketCode) {
   if (!marketCode) return null;
@@ -58,25 +55,27 @@ function readRequestedWindow(value) {
   return { ok: true, value: normalized };
 }
 
-async function resolvePublicInteraction(row) {
-  const actions = normalizeActions(row?.actions_enabled);
-  const needsPhone = actions.includes('call');
-  const needsWhatsapp = actions.includes('whatsapp');
+function readInquiryIntent(value) {
+  if (value == null || value === '') return { ok: true, value: 'request' };
+  if (typeof value !== 'string') return { ok: false, value: null };
+  const normalized = value.trim().toLowerCase();
+  // Compat déploiement : `quote` a brièvement existé côté UI ; il converge
+  // vers la demande contextualisée sans créer une troisième interaction.
+  if (normalized === 'quote') return { ok: true, value: 'request' };
+  if (!['request', 'callback'].includes(normalized)) return { ok: false, value: null };
+  return { ok: true, value: normalized };
+}
 
-  if (!needsPhone && !needsWhatsapp) {
-    return buildPublicInteraction({ actionsEnabled: actions });
-  }
+function readRequesterNote(value) {
+  if (value == null || value === '') return { ok: true, value: null };
+  if (typeof value !== 'string') return { ok: false, value: null };
+  const normalized = value.trim();
+  if (!normalized || normalized.length > 600) return { ok: false, value: null };
+  return { ok: true, value: normalized };
+}
 
-  const { rows } = await db.query(
-    'SELECT public_phone, public_whatsapp FROM providers WHERE id = $1',
-    [row.provider_id]
-  );
-  const provider = rows[0] || {};
-  return buildPublicInteraction({
-    actionsEnabled: actions,
-    publicPhone: provider.public_phone || null,
-    publicWhatsapp: provider.public_whatsapp || null,
-  });
+function resolvePublicInteraction(row) {
+  return buildPublicInteraction({ actionsEnabled: row?.actions_enabled });
 }
 
 router.get('/services/:id', async (req, res, next) => {
@@ -90,7 +89,7 @@ router.get('/services/:id', async (req, res, next) => {
     if (!exposable) return res.status(404).json({ error: 'Service introuvable' });
 
     const service = await getService(req.params.id);
-    const interaction = await resolvePublicInteraction(service);
+    const interaction = resolvePublicInteraction(service);
     res.json({
       id: service.id,
       title: service.title,
@@ -100,7 +99,7 @@ router.get('/services/:id', async (req, res, next) => {
       image_ref: service.image_ref || null,
       provider_name: service.provider_name || null,
       actions: interaction.actions,
-      public_contact: interaction.public_contact,
+      public_contact: null,
     });
   } catch (err) {
     next(err);
@@ -118,7 +117,7 @@ router.get('/physical-offers/:id', async (req, res, next) => {
     if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
     const offer = await getPhysicalOffer(req.params.id);
-    const interaction = await resolvePublicInteraction(offer);
+    const interaction = resolvePublicInteraction(offer);
     res.json({
       id: offer.id,
       title: offer.title,
@@ -128,7 +127,7 @@ router.get('/physical-offers/:id', async (req, res, next) => {
       image_ref: offer.image_ref || null,
       provider_name: offer.provider_name || null,
       actions: interaction.actions,
-      public_contact: interaction.public_contact,
+      public_contact: null,
     });
   } catch (err) {
     next(err);
@@ -151,9 +150,13 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
     }
 
     const requestedWindow = readRequestedWindow(req.body?.requested_window);
-    if (!requestedWindow.ok) {
-      return res.status(400).json({ error: 'requested_window invalide' });
-    }
+    if (!requestedWindow.ok) return res.status(400).json({ error: 'requested_window invalide' });
+
+    const intent = readInquiryIntent(req.body?.intent);
+    if (!intent.ok) return res.status(400).json({ error: 'intent invalide' });
+
+    const requesterNote = readRequesterNote(req.body?.requester_note);
+    if (!requesterNote.ok) return res.status(400).json({ error: 'requester_note invalide' });
 
     const requesterPhone = String(req.user?.phone || '').trim();
     if (!requesterPhone) {
@@ -163,20 +166,22 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
     const exposable = target.serviceId
       ? await isServiceExposable(target.serviceId, marketId)
       : await isPhysicalOfferExposable(target.physicalOfferId, marketId);
-
     if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
-    const inquiry = await createInquiry({
+    const inquiry = await createContextualInquiry({
       serviceId: target.serviceId,
       physicalOfferId: target.physicalOfferId,
       requesterPhone,
       requestedWindow: requestedWindow.value,
+      intent: intent.value,
+      requesterNote: requesterNote.value,
     });
 
     return res.status(201).json({
       inquiry: {
         id: inquiry.id,
         status: inquiry.status,
+        intent: inquiry.intent,
         target_kind: target.serviceId ? 'service' : 'physical_offer',
       },
     });
