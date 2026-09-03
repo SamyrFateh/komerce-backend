@@ -1,0 +1,208 @@
+name: Playwright hero sticky V2.9.1 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-hero-sticky-v291
+    paths:
+      - .github/workflows/playwright-hero-sticky-v291.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique test dependencies
+        run: npm --prefix public/boutique ci
+      - name: Build branch CSS bundles
+        run: npm --prefix public/boutique run bundle:css
+      - name: Install Chromium
+        run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Serve branch Boutique
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/komerce-v291-http.log 2>&1 &
+          echo $! > /tmp/komerce-v291-http.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4173/boutique/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/komerce-v291-http.log
+          exit 1
+      - name: Navigate branch with touch swipes
+        working-directory: public/boutique
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+              serviceWorkers: 'block',
+              userAgent: 'Komerce-Playwright-Branch-V291/1.0 Mobile'
+            });
+            const page = await context.newPage();
+
+            await page.route('http://127.0.0.1:4173/api/**', async route => {
+              const req = route.request();
+              const u = new URL(req.url());
+              const liveUrl = `https://komerce.co${u.pathname}${u.search}`;
+              try {
+                const response = await route.fetch({ url: liveUrl, timeout: 30000 });
+                await route.fulfill({ response });
+              } catch (error) {
+                console.error('API_PROXY_FAIL', liveUrl, error.message);
+                await route.abort();
+              }
+            });
+
+            const response = await page.goto(`http://127.0.0.1:4173/boutique/?pw_branch_v291=${Date.now()}`, {
+              waitUntil: 'domcontentloaded', timeout: 60000
+            });
+            await page.waitForFunction(() => document.querySelectorAll('#k-grid > .k-cat-section:not([data-ghost])').length >= 2, null, { timeout: 30000 });
+            await page.waitForTimeout(5000);
+
+            const cdp = await context.newCDPSession(page);
+            async function swipeLeft() {
+              const y = 520;
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 330, y }] });
+              for (let i = 1; i <= 8; i++) {
+                const x = 330 - ((280 / 8) * i);
+                await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
+                await page.waitForTimeout(18);
+              }
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+              await page.waitForTimeout(650);
+            }
+
+            const rect = async (selector) => page.evaluate((selector) => {
+              const el = document.querySelector(selector);
+              if (!el) return null;
+              const r = el.getBoundingClientRect();
+              return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+            }, selector);
+
+            async function snap(label) {
+              return page.evaluate((label) => {
+                const grid = document.getElementById('k-grid');
+                const pages = grid ? Array.from(grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])')) : [];
+                const active = document.querySelector('#k-cats .k-chip.active')?.dataset.cat || null;
+                const activePage = pages.find(p => p.dataset.cat === active) || null;
+                const shell = activePage?.querySelector(':scope > .k-discovery-shell') || null;
+                const box = (el) => {
+                  if (!el) return null;
+                  const r = el.getBoundingClientRect();
+                  return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+                };
+                const wrap = document.getElementById('k-hero-fixed-wrap');
+                const hero = document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+                const figures = document.querySelector('.k-hero-media .k-hero-figures');
+                const cats = document.querySelector('.k-shelf-rail');
+                const cs = figures ? getComputedStyle(figures) : null;
+                return {
+                  label,
+                  active,
+                  pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+                  gridScrollLeft: grid?.scrollLeft ?? null,
+                  realPageCount: pages.length,
+                  ghostCount: grid?.querySelectorAll(':scope > .k-cat-section[data-ghost="right"]').length || 0,
+                  wrap: box(wrap),
+                  wrapTransform: wrap ? getComputedStyle(wrap).transform : null,
+                  hero: box(hero),
+                  categories: box(cats),
+                  figurePosition: cs?.backgroundPosition || null,
+                  figureSize: cs?.backgroundSize || null,
+                  activePageScrollTop: activePage?.scrollTop ?? null,
+                  discovery: box(shell),
+                  discoveryHidden: shell ? shell.hidden : null,
+                  discoveryTitle: shell?.querySelector('.k-discovery-title')?.textContent?.trim() || null
+                };
+              }, label);
+            }
+
+            const states = [];
+            states.push(await snap('initial-all'));
+            await page.screenshot({ path:'v291-01-initial-all.png' });
+
+            await page.evaluate(() => {
+              const all = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              if (all) all.scrollTop = 320;
+            });
+            await page.waitForTimeout(450);
+            states.push(await snap('all-after-vertical-scroll'));
+            await page.screenshot({ path:'v291-02-after-vertical-scroll.png' });
+
+            const cats = await page.evaluate(() => Array.from(document.querySelectorAll('#k-grid > .k-cat-section:not([data-ghost])')).map(p => p.dataset.cat));
+            for (let i = 1; i < cats.length; i++) {
+              await swipeLeft();
+              const state = await snap(`swipe-${i}`);
+              states.push(state);
+              if (i <= 3 || i === cats.length - 1) {
+                await page.screenshot({ path:`v291-${String(i + 2).padStart(2,'0')}-${(state.active || 'unknown').replace(/[^a-z0-9]+/gi,'-')}.png` });
+              }
+            }
+
+            const beforeGhost = await snap('before-ghost');
+            states.push(beforeGhost);
+            await swipeLeft();
+            const afterGhost = await snap('after-ghost');
+            states.push(afterGhost);
+            await page.screenshot({ path:'v291-99-after-ghost.png' });
+
+            const initial = states[0];
+            const afterVertical = states[1];
+            const failures = [];
+            const expectedPagerTop = parseFloat(initial.pagerTop);
+
+            if (!response || response.status() >= 400) failures.push(`HTTP ${response?.status()}`);
+            if (initial.figureSize !== 'auto 118%' || initial.figurePosition !== '70% 44%') {
+              failures.push(`Hero crop mismatch: ${initial.figureSize} / ${initial.figurePosition}`);
+            }
+            if (afterVertical.wrapTransform !== 'none') failures.push(`Hero transformed after vertical scroll: ${afterVertical.wrapTransform}`);
+            if (Math.abs(parseFloat(afterVertical.pagerTop) - expectedPagerTop) > 0.5) failures.push(`pagerTop changed after vertical scroll: ${afterVertical.pagerTop}`);
+            if (Math.abs((afterVertical.hero?.y ?? 0) - (initial.hero?.y ?? 0)) > 0.5) failures.push('Hero moved vertically after page scroll');
+            if (Math.abs((afterVertical.categories?.y ?? 0) - (initial.categories?.y ?? 0)) > 0.5) failures.push('Category rail moved vertically after page scroll');
+
+            for (const state of states.filter(s => s.label.startsWith('swipe-'))) {
+              if (state.activePageScrollTop !== 0) failures.push(`${state.active} entered at scrollTop=${state.activePageScrollTop}`);
+              if (state.discovery && !state.discoveryHidden && state.discoveryTitle === 'Disponible ici') {
+                if (Math.abs(state.discovery.y - expectedPagerTop) > 1) failures.push(`${state.active} Disponible ici y=${state.discovery.y}, pagerTop=${expectedPagerTop}`);
+              }
+              if (state.wrapTransform !== 'none') failures.push(`${state.active} hero transform=${state.wrapTransform}`);
+            }
+
+            if (afterGhost.active !== 'all') failures.push(`Ghost did not return to all: ${afterGhost.active}`);
+            if (afterGhost.activePageScrollTop !== 0) failures.push(`Tout after ghost scrollTop=${afterGhost.activePageScrollTop}`);
+            if (Math.abs(afterGhost.gridScrollLeft) > 1) failures.push(`Ghost residual scrollLeft=${afterGhost.gridScrollLeft}`);
+            if (!afterGhost.discovery || afterGhost.discoveryHidden || afterGhost.discoveryTitle !== 'Disponible ici') failures.push('Disponible ici missing after ghost');
+            if (afterGhost.discovery && Math.abs(afterGhost.discovery.y - expectedPagerTop) > 1) failures.push(`Disponible ici after ghost y=${afterGhost.discovery.y}`);
+            if (afterGhost.wrapTransform !== 'none') failures.push(`Hero transformed after ghost: ${afterGhost.wrapTransform}`);
+
+            const result = { responseStatus: response?.status() || null, categories: cats, states, failures };
+            fs.writeFileSync('playwright-v291-audit.json', JSON.stringify(result, null, 2));
+            console.log('PLAYWRIGHT_V291_AUDIT=' + JSON.stringify(result));
+            await browser.close();
+            if (failures.length) process.exit(1);
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-hero-sticky-v291
+          path: |
+            public/boutique/playwright-v291-audit.json
+            public/boutique/v291-*.png
+          if-no-files-found: error
