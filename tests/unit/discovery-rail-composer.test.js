@@ -56,11 +56,18 @@ describe('productCard', () => {
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
   });
 
-  it('nominal : champs exacts et image catalogue', async () => {
+  it('projette la catégorie catalog et Soldes quand le produit est en promo', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
-      rows: [{ id: PRODUCT_ID, name: 'Climatiseur 12000 BTU', image_url: 'https://cdn/clim.jpg', price_kmf: 195000 }],
+      rows: [{
+        id: PRODUCT_ID,
+        name: 'Climatiseur 12000 BTU',
+        image_url: 'https://cdn/clim.jpg',
+        price_kmf: 195000,
+        category: 'Tech',
+        promo_pct: 10,
+      }],
     });
 
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toEqual({
@@ -74,6 +81,7 @@ describe('productCard', () => {
       zone: null,
       provider_name: null,
       description: null,
+      category_keys: ['Tech', 'Soldes'],
     });
   });
 });
@@ -86,7 +94,7 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
     expect(mockGetPhysicalOffer).not.toHaveBeenCalled();
   });
 
-  it('projette image_ref, zone, provider_name depuis providers-services, jamais provider_id', async () => {
+  it('projette les vérités providers-services sans inventer la catégorie', async () => {
     const c = loadComposer();
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
@@ -111,6 +119,7 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
       zone: 'Moroni',
       provider_name: 'Fatima Traiteur',
       description: 'Plateau de 50 pièces',
+      category_keys: [],
     });
     expect(card.provider_id).toBeUndefined();
   });
@@ -123,6 +132,7 @@ describe('physicalOfferCard — cas de vérité samboussas', () => {
     expect(card.image_ref).toBeNull();
     expect(card.zone).toBeNull();
     expect(card.provider_name).toBeNull();
+    expect(card.category_keys).toEqual([]);
   });
 });
 
@@ -134,7 +144,7 @@ describe('serviceCard', () => {
     expect(mockGetService).not.toHaveBeenCalled();
   });
 
-  it('projette image_ref, zone, provider_name depuis providers-services, jamais provider_id ni téléphone', async () => {
+  it('projette providers-services sans inventer de catégorie ni exposer provider_id/téléphone', async () => {
     const c = loadComposer();
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
@@ -160,6 +170,7 @@ describe('serviceCard', () => {
       zone: 'Mutsamudu',
       provider_name: 'Bâtir Anjouan',
       description: 'Pose et mise en service',
+      category_keys: [],
     });
     expect(card).not.toHaveProperty('provider_id');
     expect(card).not.toHaveProperty('phone');
@@ -184,11 +195,18 @@ describe('composeDiscoveryRail', () => {
     expect(await c.composeDiscoveryRail({ marketId: MARKET_ID, productIds: [PRODUCT_ID] })).toEqual([]);
   });
 
-  it('rail mixte conserve les trois verbes, les médias source et les champs enrichis', async () => {
+  it('rail mixte conserve les verbes, médias et contexte catégorie source', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
-      rows: [{ id: PRODUCT_ID, name: 'Climatiseur', image_url: '/p.webp', price_kmf: 195000 }],
+      rows: [{
+        id: PRODUCT_ID,
+        name: 'Climatiseur',
+        image_url: '/p.webp',
+        price_kmf: 195000,
+        category: 'Tech',
+        promo_pct: 0,
+      }],
     });
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
@@ -220,18 +238,17 @@ describe('composeDiscoveryRail', () => {
       service: '/s.webp',
     });
 
-    // Enriched fields
-    const product = rail.find(c => c.kind === 'product');
+    const product = rail.find(card => card.kind === 'product');
     expect(product.price).toBe(195000);
     expect(product.provider_name).toBeNull();
+    expect(product.category_keys).toEqual(['Tech']);
 
-    const offer = rail.find(c => c.kind === 'physical_offer');
-    expect(offer.zone).toBe('Moroni');
+    const offer = rail.find(card => card.kind === 'physical_offer');
+    expect(offer.category_keys).toEqual([]);
     expect(offer.provider_name).toBe('Fatima');
-    expect(offer.description).toBe('Plateau');
 
-    const service = rail.find(c => c.kind === 'service');
-    expect(service.zone).toBe('Anjouan');
+    const service = rail.find(card => card.kind === 'service');
+    expect(service.category_keys).toEqual([]);
     expect(service.provider_name).toBe('Ali');
   });
 });
