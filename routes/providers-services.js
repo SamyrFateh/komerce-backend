@@ -6,9 +6,9 @@
  * @criticality   medium
  * @inputs        id (params), market (query — code KM|YT|CM|CG, résolu serveur), inquiry target
  * @outputs       service_public_fields, physical_offer_public_fields, inquiry_public_result
- * @depends       services/providers-service.js, middleware/auth-guest.js, db (résolution code marché)
+ * @depends       services/providers-service.js, services/providers-interaction-policy.js, middleware/auth-guest.js, db (résolution code marché + contact public)
  * @used-by       bootstrap/api-routes.js, public/boutique/js/discovery-api.js
- * @db-read       markets
+ * @db-read       markets, providers
  * @db-write      none
  * @db-write-via:providers-service inquiries
  * @db-txn        delegated_to_service
@@ -28,6 +28,10 @@ const {
   getService, isServiceExposable,
   getPhysicalOffer, isPhysicalOfferExposable,
 } = require('../services/providers-service');
+const {
+  normalizeActions,
+  buildPublicInteraction,
+} = require('../services/providers-interaction-policy');
 
 async function resolveMarketId(marketCode) {
   if (!marketCode) return null;
@@ -54,6 +58,27 @@ function readRequestedWindow(value) {
   return { ok: true, value: normalized };
 }
 
+async function resolvePublicInteraction(row) {
+  const actions = normalizeActions(row?.actions_enabled);
+  const needsPhone = actions.includes('call');
+  const needsWhatsapp = actions.includes('whatsapp');
+
+  if (!needsPhone && !needsWhatsapp) {
+    return buildPublicInteraction({ actionsEnabled: actions });
+  }
+
+  const { rows } = await db.query(
+    'SELECT public_phone, public_whatsapp FROM providers WHERE id = $1',
+    [row.provider_id]
+  );
+  const provider = rows[0] || {};
+  return buildPublicInteraction({
+    actionsEnabled: actions,
+    publicPhone: provider.public_phone || null,
+    publicWhatsapp: provider.public_whatsapp || null,
+  });
+}
+
 router.get('/services/:id', async (req, res, next) => {
   try {
     const { market } = req.query;
@@ -65,6 +90,7 @@ router.get('/services/:id', async (req, res, next) => {
     if (!exposable) return res.status(404).json({ error: 'Service introuvable' });
 
     const service = await getService(req.params.id);
+    const interaction = await resolvePublicInteraction(service);
     res.json({
       id: service.id,
       title: service.title,
@@ -73,6 +99,8 @@ router.get('/services/:id', async (req, res, next) => {
       market_id: service.market_id,
       image_ref: service.image_ref || null,
       provider_name: service.provider_name || null,
+      actions: interaction.actions,
+      public_contact: interaction.public_contact,
     });
   } catch (err) {
     next(err);
@@ -90,6 +118,7 @@ router.get('/physical-offers/:id', async (req, res, next) => {
     if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
     const offer = await getPhysicalOffer(req.params.id);
+    const interaction = await resolvePublicInteraction(offer);
     res.json({
       id: offer.id,
       title: offer.title,
@@ -98,6 +127,8 @@ router.get('/physical-offers/:id', async (req, res, next) => {
       market_id: offer.market_id,
       image_ref: offer.image_ref || null,
       provider_name: offer.provider_name || null,
+      actions: interaction.actions,
+      public_contact: interaction.public_contact,
     });
   } catch (err) {
     next(err);
