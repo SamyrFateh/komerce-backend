@@ -221,6 +221,50 @@ describe('checkoutSharedListSelection — CheckoutSelection', () => {
     });
   });
 
+  it('complète nom et image depuis le snapshot sans remplacer le prix catalogue', () => {
+    checkoutSharedListSelection([{
+      shared_cart_item_id: 'sci-1',
+      product: { id: 42, price_kmf: 7200 },
+      quantity: 1,
+      shared_list_context: {
+        snapshot_unit_price_kmf: 6500,
+        snapshot_name: 'Riz parfumé',
+        snapshot_image_url: 'https://cdn.example.test/riz.jpg',
+      },
+    }]);
+
+    const [lines] = buildCheckoutSelection.mock.calls[0];
+
+    expect(lines[0].product).toEqual(expect.objectContaining({
+      id: 42,
+      name: 'Riz parfumé',
+      image_url: 'https://cdn.example.test/riz.jpg',
+      price_kmf: 7200,
+    }));
+    expect(lines[0].product.price_kmf).not.toBe(6500);
+  });
+
+  it('conserve la présentation catalogue quand elle existe déjà', () => {
+    checkoutSharedListSelection([{
+      shared_cart_item_id: 'sci-1',
+      product: {
+        id: 42,
+        name: 'Nom catalogue',
+        image_url: 'https://cdn.example.test/current.jpg',
+      },
+      quantity: 1,
+      shared_list_context: {
+        snapshot_name: 'Ancien nom',
+        snapshot_image_url: 'https://cdn.example.test/snapshot.jpg',
+      },
+    }]);
+
+    const [lines] = buildCheckoutSelection.mock.calls[0];
+
+    expect(lines[0].product.name).toBe('Nom catalogue');
+    expect(lines[0].product.image_url).toBe('https://cdn.example.test/current.jpg');
+  });
+
   it('n’invente aucun shared_list_context absent', () => {
     checkoutSharedListSelection([{
       shared_cart_item_id: 'sci-1',
