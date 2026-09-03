@@ -173,8 +173,7 @@ test('le CTA Inquiry transporte la précision et son intention après fermeture 
   expect(mockEmit).not.toHaveBeenCalledWith('discovery:request', expect.anything());
 });
 
-test('un lien direct ferme le cycle modal sans créer d Inquiry', () => {
-  setupDiscoveryModalDetail();
+test('un lien direct est une mise en relation et ne porte aucun contrat Inquiry', () => {
   renderDiscoveryModalDetail({
     kind: 'service',
     ref: 'svc-call',
@@ -185,8 +184,10 @@ test('un lien direct ferme le cycle modal sans créer d Inquiry', () => {
     },
   });
 
-  document.querySelector('[data-discovery-direct-action="call"]').click();
-  expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
+  const link = document.querySelector('[data-discovery-direct-action="call"]');
+  expect(link).not.toBeNull();
+  expect(link.getAttribute('href')).toBe('tel:+2693210000');
+  expect(link.hasAttribute('data-discovery-modal-action')).toBe(false);
   expect(mockRequestDiscovery).not.toHaveBeenCalled();
 });
 
