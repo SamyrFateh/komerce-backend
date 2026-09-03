@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
  *                Shell commun par carte, contenu spécialisé par kind sans variation de géométrie.
- * @impact-areas  home, product-discovery, discovery-rail
+ * @impact-areas  home, product-discovery, discovery-rail, category-navigation
  * @version       2026-09
  */
 'use strict';
@@ -31,10 +31,18 @@ function fallbackIcon(kind) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z"/></svg>';
 }
 
+function normalizeCategoryKeys(values) {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values
+    .map(value => String(value || '').trim())
+    .filter(Boolean))];
+}
+
 /**
  * Normalise un objet carte brut du backend en objet exploitable par le renderer.
- * Les champs enrichis (price, zone, provider_name, description) sont optionnels
- * pour rester backward-compatible avec un backend pré-L0.
+ * Les champs enrichis restent optionnels. `category_keys` est uniquement une
+ * projection de contexte fournie par recommendations ; le renderer ne l'invente
+ * jamais et ne l'utilise pas pour reclasser les cartes.
  */
 function normalizeCard(card) {
   if (!card || !CARD_KIND.has(card.kind)) return null;
@@ -51,6 +59,7 @@ function normalizeCard(card) {
     zone: card.zone ? String(card.zone) : null,
     providerName: card.provider_name ? String(card.provider_name) : null,
     description: card.description ? String(card.description) : null,
+    categoryKeys: normalizeCategoryKeys(card.category_keys),
   };
 }
 
@@ -70,10 +79,6 @@ function renderContextSlot(card) {
   if (!card.providerName) return '';
   return `<span class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</span>`;
 }
-
-// ── Shell commun ────────────────────────────────────────────────────────
-// Le kind ne peut changer que le contenu des slots, jamais leur géométrie.
-// Le subtitle est porté une seule fois par le badge de promesse.
 
 function renderCard(card) {
   const image = card.imageRef
@@ -95,28 +100,18 @@ function renderCard(card) {
     </article>`;
 }
 
-// ── Surface policies ────────────────────────────────────────────────────
-// Policies are HOME V1 exposure rules, not structural constants.
-// The backend sends the full editorial pool; the renderer selects.
-
 const COMMERCE_KINDS = new Set(['product', 'physical_offer']);
 const SERVICE_KINDS = new Set(['service']);
 
-/**
- * Mobile: 4 items, alternating commerce/service for diversity.
- * @param {object[]} cards — normalized pool
- * @returns {object[]}
- */
 function selectMobile(cards) {
   const commerce = cards.filter(c => COMMERCE_KINDS.has(c.kind));
   const services = cards.filter(c => SERVICE_KINDS.has(c.kind));
   const result = [];
-  const maxPairs = 2; // 2 commerce + 2 services = 4
+  const maxPairs = 2;
   for (let i = 0; i < maxPairs; i++) {
     if (commerce[i]) result.push(commerce[i]);
     if (services[i]) result.push(services[i]);
   }
-  // If one pool is short, fill from the other up to 4 total
   if (result.length < 4) {
     const used = new Set(result);
     for (const c of [...commerce, ...services]) {
@@ -127,13 +122,6 @@ function selectMobile(cards) {
   return result;
 }
 
-/**
- * Desktop: flat mixed rail, full editorial pool preserved.
- * All kinds at the same level — same density, same card size.
- * The kind difference is carried by badge + CTA + provider line only.
- * The API already bounds the pool to 12 items; horizontal overflow belongs
- * to the rail instead of silently discarding valid editorial candidates.
- */
 function selectDesktop(cards) {
   return cards;
 }
@@ -142,22 +130,20 @@ function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 900;
 }
 
-// ── Render ──────────────────────────────────────────────────────────────
-
-function renderRail(selected, marketLabel) {
+function renderRail(selected, marketLabel, options = {}) {
+  const titleId = options.titleId || 'k-discovery-local-title';
+  const title = options.title || 'Disponible ici';
   return `
     <div class="k-discovery-header">
       <div class="k-discovery-heading">
-        <h2 id="k-discovery-local-title" class="k-discovery-title">Près de vous</h2>
+        <h2 id="${sanitize(titleId)}" class="k-discovery-title">${sanitize(title)}</h2>
         ${marketLabel ? `<span class="k-discovery-market">${sanitize(marketLabel)}</span>` : ''}
       </div>
     </div>
-    <div class="k-discovery-rail" role="list" aria-label="Offres disponibles près de vous">
+    <div class="k-discovery-rail" role="list" aria-label="Offres disponibles ici">
       ${selected.map(renderCard).join('')}
     </div>`;
 }
-
-// ── Render public ───────────────────────────────────────────────────────
 
 export function renderDiscoveryRail(container, cards, options = {}) {
   if (!container) return 0;
@@ -174,9 +160,9 @@ export function renderDiscoveryRail(container, cards, options = {}) {
 
   const selected = isMobileViewport() ? selectMobile(normalized) : selectDesktop(normalized);
   const marketLabel = options.marketLabel ? String(options.marketLabel) : '';
-  container.innerHTML = renderRail(selected, marketLabel);
+  container.innerHTML = renderRail(selected, marketLabel, options);
   container.hidden = false;
   return normalized.length;
 }
 
-export { normalizeCard, renderCard, formatPrice, selectMobile, selectDesktop };
+export { normalizeCard, normalizeCategoryKeys, renderCard, formatPrice, selectMobile, selectDesktop };

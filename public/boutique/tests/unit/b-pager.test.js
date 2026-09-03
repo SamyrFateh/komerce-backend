@@ -5,9 +5,9 @@
  * @test-runner jest
  * @test-requires none
  *
- * Temu V2 — invariants utiles :
+ * Temu V2.9 — invariants utiles :
  * - swipe horizontal explicite entre catégories ;
- * - aucun ghost loop ;
+ * - un ghost droite inerte de Tout pour la continuité dernière catégorie → Tout ;
  * - aucun auto-advance vertical ;
  * - position verticale mémorisée indépendamment par univers ;
  * - cage mobile nettoyable sans effet desktop.
@@ -28,6 +28,7 @@ const pager = require('../../js/b-pager.js');
 function makeGrid(cats = ['all', 'Mode']) {
   const grid = document.createElement('div');
   grid.id = 'k-grid';
+  Object.defineProperty(grid, 'clientWidth', { configurable: true, value: 390 });
   grid.scrollTo = jest.fn(({ left }) => {
     grid.scrollLeft = Number(left) || 0;
   });
@@ -37,6 +38,11 @@ function makeGrid(cats = ['all', 'Mode']) {
     page.dataset.cat = cat;
     const inner = document.createElement('div');
     inner.className = 'k-sec-grid';
+    inner.id = `grid-${cat}`;
+    const button = document.createElement('button');
+    button.id = `button-${cat}`;
+    button.textContent = cat;
+    inner.appendChild(button);
     page.appendChild(inner);
     grid.appendChild(page);
   });
@@ -86,24 +92,41 @@ test('desktop : détruit la cage mobile', () => {
   expect(document.documentElement.style.getPropertyValue('--pager-w')).toBe('');
 });
 
-test('setup mobile : installe le swipe horizontal sans créer de ghost', () => {
+test('setup mobile : installe le swipe horizontal avec un unique ghost droite de Tout', () => {
   const grid = makeGrid(['all', 'Mode', 'Maison']);
+  pager._setupInfiniteLoop();
   pager._setupMobilePager();
+
   expect(typeof grid._pagerScrollH).toBe('function');
-  expect(grid.querySelector('[data-ghost]')).toBeNull();
+  expect(grid.querySelectorAll(':scope > [data-ghost="right"]')).toHaveLength(1);
+  const ghost = grid.lastElementChild;
+  expect(ghost.dataset.ghost).toBe('right');
+  expect(ghost.dataset.cat).toBe('all');
+  expect(ghost.getAttribute('aria-hidden')).toBe('true');
+  expect(ghost.hasAttribute('inert')).toBe(true);
+  expect(ghost.style.pointerEvents).toBe('none');
+  expect(ghost.querySelector('[id]')).toBeNull();
+  expect(ghost.querySelector('button').getAttribute('tabindex')).toBe('-1');
+  expect(grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])')).toHaveLength(3);
 });
 
-test('_setupInfiniteLoop nettoie un éventuel ghost legacy au lieu d en créer', () => {
+test('_setupInfiniteLoop remplace un ghost existant par un snapshot frais sans dupliquer les ids', () => {
   const grid = makeGrid(['all', 'Mode']);
-  const ghost = grid.firstElementChild.cloneNode(true);
-  ghost.dataset.ghost = 'true';
-  grid.appendChild(ghost);
-  expect(grid.querySelectorAll('[data-ghost]').length).toBe(1);
+  pager._setupInfiniteLoop();
+  const firstGhost = grid.querySelector('[data-ghost="right"]');
+  expect(firstGhost).not.toBeNull();
 
+  const realTout = grid.querySelector('[data-cat="all"]:not([data-ghost])');
+  realTout.querySelector('button').textContent = 'Tout actualisé';
   pager._setupInfiniteLoop();
 
-  expect(grid.querySelectorAll('[data-ghost]').length).toBe(0);
-  expect(grid.querySelectorAll('.k-cat-section').length).toBe(2);
+  const ghosts = grid.querySelectorAll('[data-ghost="right"]');
+  expect(ghosts).toHaveLength(1);
+  expect(ghosts[0]).not.toBe(firstGhost);
+  expect(ghosts[0].textContent).toContain('Tout actualisé');
+  expect(ghosts[0].querySelector('[id]')).toBeNull();
+  expect(document.querySelectorAll('#grid-all')).toHaveLength(1);
+  expect(document.querySelectorAll('#button-all')).toHaveLength(1);
 });
 
 test('arriver en bas ne câble aucun changement automatique de catégorie', () => {
@@ -121,8 +144,9 @@ test('arriver en bas ne câble aucun changement automatique de catégorie', () =
   expect(page._bounceTimer).toBeUndefined();
 });
 
-test('tap catégorie conserve la navigation horizontale explicite', () => {
+test('tap catégorie conserve la navigation horizontale explicite et ignore le ghost', () => {
   const grid = makeGrid(['all', 'Mode', 'Maison']);
+  pager._setupInfiniteLoop();
   const ok = pager._scrollPagerToCat('Maison', 'smooth');
   expect(ok).toBe(true);
   expect(grid.scrollTo).toHaveBeenCalledWith({ left: 780, behavior: 'smooth' });
@@ -130,6 +154,7 @@ test('tap catégorie conserve la navigation horizontale explicite', () => {
 
 test('catégorie absente : ne navigue pas', () => {
   const grid = makeGrid(['all']);
+  pager._setupInfiniteLoop();
   expect(pager._scrollPagerToCat('Tech')).toBe(false);
   expect(grid.scrollTo).not.toHaveBeenCalled();
 });
@@ -170,14 +195,17 @@ test('mémorise indépendamment chaque univers', () => {
   expect(grid.querySelector('[data-cat="temu-v2-d"]').scrollTop).toBe(733);
 });
 
-test('destroy nettoie classes et variables pager mais conserve la mémoire métier locale', () => {
+test('destroy nettoie ghost, classes et variables pager mais conserve la mémoire locale', () => {
   const grid = makeGrid(['all', 'Mode']);
   grid.classList.add('k-grid-cat-pager');
   dom.pageScroll.classList.add('k-pager-active');
+  pager._setupInfiniteLoop();
   pager._setupMobilePager();
 
+  expect(grid.querySelector('[data-ghost]')).not.toBeNull();
   pager.destroyMobilePager();
 
+  expect(grid.querySelector('[data-ghost]')).toBeNull();
   expect(grid.classList.contains('k-grid-cat-pager')).toBe(false);
   expect(dom.pageScroll.classList.contains('k-pager-active')).toBe(false);
   expect(document.documentElement.style.getPropertyValue('--pager-w')).toBe('');

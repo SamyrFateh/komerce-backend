@@ -12,9 +12,9 @@
  * @db-read-via:discovery-rail-composer products, local_stock, local_stock_allocations, services, physical_offers, providers
  * @db-write      none
  * @db-txn        read_mostly
- * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13
- * @impact-areas  recommendations, boutique, discovery-rail
- * @version       2026-08
+ * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
+ * @impact-areas  recommendations, boutique, discovery-rail, category-navigation
+ * @version       2026-09
  */
 'use strict';
 
@@ -24,14 +24,19 @@
  * Capability != exposure : le frontend ne possède aucun flag. Tant que
  * DISCOVERY_RAIL_ENABLED n'est pas explicitement activé, le résultat est [].
  *
- * La sélection éditoriale est elle aussi explicite et serveur-owned :
+ * La sélection éditoriale est explicite et server-owned :
  *
  *   DISCOVERY_RAIL_CANDIDATES=
- *     physical_offer:<uuid>,service:<uuid>,product:<uuid>,service:<uuid>
+ *     product:<uuid>,physical_offer:<uuid>@Bricolage,service:<uuid>@Maison|Bricolage
  *
- * L'ordre de cette liste EST l'ordre d'affichage. Le composeur conserve son
- * invariant : il ne sélectionne jamais lui-même ses candidats et ne fait que
- * projeter les vérités des features sources.
+ * Le suffixe `@Catégorie|Autre catégorie` est optionnel. Il ne prétend pas
+ * devenir une vérité métier de l'objet : il exprime uniquement les contextes
+ * de navigation dans lesquels `recommendations` est autorisé à projeter ce
+ * candidat. Pour Product, la taxonomie source du catalog est également
+ * projetée par le composeur.
+ *
+ * L'ordre de la liste EST l'ordre d'affichage. Le frontend peut prendre le
+ * sous-ensemble correspondant à la page catégorie, mais ne re-ranke jamais.
  */
 
 const db = require('../db');
@@ -45,25 +50,47 @@ function isEnabled() {
   return raw === '1' || raw === 'true' || raw === 'yes';
 }
 
+function normalizeCategoryKeys(raw) {
+  if (!raw) return [];
+  return [...new Set(String(raw)
+    .split('|')
+    .map(value => value.trim().slice(0, 80))
+    .filter(Boolean))];
+}
+
 function parseEditorialCandidates(raw = process.env.DISCOVERY_RAIL_CANDIDATES) {
   if (!raw) return [];
 
-  const seen = new Set();
   const candidates = [];
+  const byKey = new Map();
 
-  for (const token of String(raw).split(',')) {
-    const [kindRaw, idRaw] = token.split(':');
+  for (const tokenRaw of String(raw).split(',')) {
+    const token = tokenRaw.trim();
+    if (!token) continue;
+
+    const scopeSeparator = token.indexOf('@');
+    const identity = scopeSeparator >= 0 ? token.slice(0, scopeSeparator) : token;
+    const scopeRaw = scopeSeparator >= 0 ? token.slice(scopeSeparator + 1) : '';
+    const [kindRaw, idRaw, extra] = identity.split(':');
     const kind = String(kindRaw || '').trim();
     const id = String(idRaw || '').trim();
-    if (!ALLOWED_KINDS.has(kind) || !UUID_RE.test(id)) continue;
+    if (extra !== undefined || !ALLOWED_KINDS.has(kind) || !UUID_RE.test(id)) continue;
 
     const key = `${kind}:${id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    candidates.push({ kind, id, key });
+    const categoryKeys = normalizeCategoryKeys(scopeRaw);
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.categoryKeys = [...new Set([...existing.categoryKeys, ...categoryKeys])];
+      continue;
+    }
+
+    if (candidates.length >= 12) continue;
+    const candidate = { kind, id, key, categoryKeys };
+    candidates.push(candidate);
+    byKey.set(key, candidate);
   }
 
-  return candidates.slice(0, 12);
+  return candidates;
 }
 
 async function resolveMarketId(marketCode) {
@@ -88,6 +115,14 @@ function cardKey(card) {
   return `${card.kind}:${card.cta_action_ref}`;
 }
 
+function mergeCategoryKeys(card, candidate) {
+  const source = Array.isArray(card?.category_keys) ? card.category_keys : [];
+  const editorial = Array.isArray(candidate?.categoryKeys) ? candidate.categoryKeys : [];
+  return [...new Set([...source, ...editorial]
+    .map(value => String(value || '').trim())
+    .filter(Boolean))];
+}
+
 /**
  * @param {{marketCode: string}} params
  * @returns {Promise<object[]>}
@@ -106,15 +141,25 @@ async function getDiscoveryRail({ marketCode }) {
     ...groupCandidateIds(candidates),
   });
 
-  // composeDiscoveryRail groupe ses appels par source pour rester simple.
-  // Le service recommendations réapplique ici la politique éditoriale
-  // explicite ; aucune vérité métier n'est modifiée.
+  // Le composeur groupe ses appels par source. recommendations réapplique
+  // l'ordre éditorial et ajoute uniquement son metadata de contexte catégorie.
+  // Aucune vérité d'exposabilité ou de disponibilité n'est modifiée.
   const byKey = new Map(cards.map(card => [cardKey(card), card]));
-  return candidates.map(candidate => byKey.get(candidate.key)).filter(Boolean);
+  return candidates
+    .map(candidate => {
+      const card = byKey.get(candidate.key);
+      if (!card) return null;
+      return {
+        ...card,
+        category_keys: mergeCategoryKeys(card, candidate),
+      };
+    })
+    .filter(Boolean);
 }
 
 module.exports = {
   isEnabled,
+  normalizeCategoryKeys,
   parseEditorialCandidates,
   resolveMarketId,
   getDiscoveryRail,

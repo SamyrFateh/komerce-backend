@@ -51,7 +51,7 @@ describe('discovery-rail-service — activation', () => {
 });
 
 describe('discovery-rail-service — politique éditoriale', () => {
-  it('filtre les kinds/UUID invalides, déduplique et conserve l’ordre', () => {
+  it('filtre les kinds/UUID invalides et conserve ordre + compatibilité sans scope', () => {
     const parsed = parseEditorialCandidates([
       `physical_offer:${OFFER_ID}`,
       'marketplace_item:44444444-4444-4444-4444-444444444444',
@@ -66,21 +66,39 @@ describe('discovery-rail-service — politique éditoriale', () => {
       `service:${SERVICE_ID}`,
       `product:${PRODUCT_ID}`,
     ]);
+    expect(parsed.every(candidate => candidate.categoryKeys.length === 0)).toBe(true);
   });
 
-  it('réapplique exactement l’ordre éditorial après composition multi-source', async () => {
+  it('fusionne les scopes catégorie d un même candidat sans dupliquer son ordre', () => {
+    const parsed = parseEditorialCandidates([
+      `service:${SERVICE_ID}@Maison|Bricolage`,
+      `product:${PRODUCT_ID}`,
+      `service:${SERVICE_ID}@Tech|Maison`,
+    ].join(','));
+
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0]).toEqual(expect.objectContaining({
+      kind: 'service',
+      id: SERVICE_ID,
+      key: `service:${SERVICE_ID}`,
+      categoryKeys: ['Maison', 'Bricolage', 'Tech'],
+    }));
+    expect(parsed[1].categoryKeys).toEqual([]);
+  });
+
+  it('réapplique exactement l ordre éditorial et fusionne contexte source + contexte recommendations', async () => {
     process.env.DISCOVERY_RAIL_ENABLED = '1';
     process.env.DISCOVERY_RAIL_CANDIDATES = [
-      `physical_offer:${OFFER_ID}`,
-      `service:${SERVICE_ID}`,
+      `physical_offer:${OFFER_ID}@Maison`,
+      `service:${SERVICE_ID}@Tech|Maison`,
       `product:${PRODUCT_ID}`,
     ].join(',');
 
     db.query.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
     composeDiscoveryRail.mockResolvedValue([
-      { kind: 'product', cta_action_ref: PRODUCT_ID, title: 'Climatiseur' },
-      { kind: 'physical_offer', cta_action_ref: OFFER_ID, title: 'Samboussas' },
-      { kind: 'service', cta_action_ref: SERVICE_ID, title: 'Maçon' },
+      { kind: 'product', cta_action_ref: PRODUCT_ID, title: 'Climatiseur', category_keys: ['Tech'] },
+      { kind: 'physical_offer', cta_action_ref: OFFER_ID, title: 'Samboussas', category_keys: [] },
+      { kind: 'service', cta_action_ref: SERVICE_ID, title: 'Installation', category_keys: ['Bricolage'] },
     ]);
 
     const cards = await getDiscoveryRail({ marketCode: 'KM' });
@@ -96,6 +114,9 @@ describe('discovery-rail-service — politique éditoriale', () => {
       serviceIds: [SERVICE_ID],
     });
     expect(cards.map(card => card.kind)).toEqual(['physical_offer', 'service', 'product']);
+    expect(cards[0].category_keys).toEqual(['Maison']);
+    expect(cards[1].category_keys).toEqual(['Bricolage', 'Tech', 'Maison']);
+    expect(cards[2].category_keys).toEqual(['Tech']);
   });
 
   it('market inconnu -> [] sans composition', async () => {

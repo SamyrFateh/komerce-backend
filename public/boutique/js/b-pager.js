@@ -7,32 +7,31 @@
  * @inputs        category_sections, scroll_state, viewport, modal_events
  * @outputs       horizontal_pager_state, active_chip_sync, category_scroll_memory
  * @depends       b-bus.js, b-scroll-owner.js, b-store.js
- * @used-by       b-catalog.js, b-subcat.js, b-nav.js
- * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, mobile_desktop_coherence
- * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid
+ * @used-by       b-catalog.js, b-subcat.js, b-nav.js, discovery-rail.js
+ * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, mobile_desktop_coherence, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
+ * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid, discovery-rail
  * @version       2026-09
  */
 'use strict';
 
 /**
- * b-pager.js — Temu V2 : pager horizontal des catégories principales mobile.
+ * b-pager.js — Temu V2.9 : pager horizontal des catégories principales mobile.
  *
  * Grammaire :
  * - horizontal = changement explicite d'univers (swipe ou tap sur le rail) ;
  * - vertical   = exploration locale de l'univers courant ;
  * - chaque univers conserve sa position verticale ;
  * - aucun changement de catégorie n'est déclenché par l'arrivée en bas de page ;
- * - aucune page ghost n'est créée pour simuler une boucle infinie.
+ * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
- * Les exports historiques ghost/auto-advance restent présents comme compatibilité
- * temporaire pour ne pas multiplier les changements d'appelants dans ce lot.
+ * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,
+ * pas d'ID dupliqué, pas d'interaction. Une fois visible, le pager se recale
+ * silencieusement sur la vraie page Tout.
  */
 
 import { bus } from './b-bus.js';
 import { state, dom, setActiveCatState } from './b-store.js';
 import { isDesktop } from './b-scroll-owner.js';
-
-// ── Mesure de la cage pager ───────────────────────────────────────
 
 let _stabilizationHooksInstalled = false;
 let _recalcRaf = 0;
@@ -116,8 +115,6 @@ function _recalcPagerVars() {
   _installStabilizationHooks();
 }
 
-// ── Pages / état actif ────────────────────────────────────────────
-
 function _getGrid() {
   return document.getElementById('k-grid');
 }
@@ -126,6 +123,12 @@ function _getPages(grid) {
   const target = grid || _getGrid();
   if (!target) return [];
   return Array.from(target.querySelectorAll(':scope > .k-cat-section:not([data-ghost])'));
+}
+
+function _getPagerPages(grid) {
+  const target = grid || _getGrid();
+  if (!target) return [];
+  return Array.from(target.querySelectorAll(':scope > .k-cat-section'));
 }
 
 function _getCurrentIndex(grid) {
@@ -161,8 +164,6 @@ function _scrollToIndex(grid, idx, behavior = 'smooth') {
   }, behavior === 'instant' ? 32 : 100);
 }
 
-// ── Mémoire verticale locale par univers ─────────────────────────
-
 function _teardownPageScrollMemory(grid, persist = true) {
   _getPages(grid).forEach((page) => {
     const cat = page.dataset.cat;
@@ -188,12 +189,34 @@ function _setupPageScrollMemory(grid) {
 
     page._pagerVerticalScrollH = () => {
       _pageScrollByCat.set(cat, page.scrollTop);
+      if (cat === 'all') {
+        const ghost = grid.querySelector(':scope > .k-cat-section[data-ghost="right"]');
+        if (ghost) ghost.scrollTop = page.scrollTop;
+      }
     };
     page.addEventListener('scroll', page._pagerVerticalScrollH, { passive: true });
   });
 }
 
-// ── Sync swipe horizontal → catégorie active ─────────────────────
+function _teleportRightGhost(grid) {
+  const realTout = grid.querySelector(':scope > .k-cat-section[data-cat="all"]:not([data-ghost])');
+  if (!realTout) return;
+
+  _isProgrammaticScroll = true;
+  clearTimeout(_programmaticScrollTimer);
+
+  const previousSnap = grid.style.scrollSnapType;
+  grid.style.scrollSnapType = 'none';
+  grid.scrollLeft = 0;
+  _syncChip('all');
+
+  requestAnimationFrame(() => {
+    grid.style.scrollSnapType = previousSnap;
+    _programmaticScrollTimer = setTimeout(() => {
+      _isProgrammaticScroll = false;
+    }, 32);
+  });
+}
 
 function _setupScrollSync(grid) {
   if (grid._pagerScrollH) grid.removeEventListener('scroll', grid._pagerScrollH);
@@ -204,10 +227,17 @@ function _setupScrollSync(grid) {
     if (_isProgrammaticScroll || state.modalOpen) return;
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      const pages = _getPages(grid);
+      const pages = _getPagerPages(grid);
       const idx = _getCurrentIndex(grid);
       const page = pages[idx];
       if (!page) return;
+
+      if (page.dataset.ghost === 'right') {
+        lastIdx = -1;
+        _teleportRightGhost(grid);
+        return;
+      }
+
       const cat = page.dataset.cat;
       if (cat && idx !== lastIdx) {
         lastIdx = idx;
@@ -218,8 +248,6 @@ function _setupScrollSync(grid) {
 
   grid.addEventListener('scroll', grid._pagerScrollH, { passive: true });
 }
-
-// ── Setup principal ───────────────────────────────────────────────
 
 function _handlePagerResize() {
   if (isDesktop()) {
@@ -241,9 +269,6 @@ function _setupMobilePager() {
     const grid = _getGrid();
     if (!grid || grid.classList.contains('k-grid-flat-subcat')) return;
 
-    // Nettoyage défensif d'un DOM restauré depuis l'ancien Temu.
-    grid.querySelectorAll('[data-ghost]').forEach((ghost) => ghost.remove());
-
     _recalcPagerVars();
     _setupPageScrollMemory(grid);
     _setupScrollSync(grid);
@@ -255,8 +280,6 @@ function _setupMobilePager() {
     _isSettingUpMobilePager = false;
   }
 }
-
-// ── Navigation externe (tap chip) ────────────────────────────────
 
 function _scrollPagerToCat(cat, behavior = 'smooth') {
   const grid = _getGrid();
@@ -270,15 +293,46 @@ function _scrollPagerToCat(cat, behavior = 'smooth') {
   return true;
 }
 
-// ── Compat historique : Temu V2 n'utilise plus ces automatismes ─
-
+/**
+ * Crée un unique ghost DROITE : clone visuel inerte de Tout.
+ * Les event listeners ne sont pas clonés par cloneNode(); tous les IDs sont
+ * retirés et les descendants interactifs neutralisés. Le snapshot conserve le
+ * scroll vertical de Tout pour rendre le wrap imperceptible.
+ */
 function _setupInfiniteLoop() {
   const grid = _getGrid();
-  if (grid) grid.querySelectorAll('[data-ghost]').forEach((ghost) => ghost.remove());
+  if (!grid || isDesktop() || grid.classList.contains('k-grid-flat-subcat')) return;
+
+  const realPagesBefore = _getPages(grid);
+  const currentIdx = _getCurrentIndex(grid);
+  if (currentIdx >= realPagesBefore.length && realPagesBefore.length > 0) {
+    grid.scrollLeft = 0;
+    _syncChip('all');
+  }
+
+  grid.querySelectorAll(':scope > .k-cat-section[data-ghost]').forEach((ghost) => ghost.remove());
+
+  const realPages = _getPages(grid);
+  if (realPages.length < 2) return;
+  const toutPage = grid.querySelector(':scope > .k-cat-section[data-cat="all"]:not([data-ghost])');
+  if (!toutPage) return;
+
+  const ghost = toutPage.cloneNode(true);
+  ghost.dataset.ghost = 'right';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.setAttribute('inert', '');
+  ghost.style.pointerEvents = 'none';
+  ghost.style.userSelect = 'none';
+  ghost.removeAttribute('id');
+  ghost.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+  ghost.querySelectorAll('a, button, input, select, textarea, [tabindex]')
+    .forEach(node => node.setAttribute('tabindex', '-1'));
+
+  grid.appendChild(ghost);
+  ghost.scrollTop = toutPage.scrollTop;
 }
 
 function _setupSectionAutoAdvance() {
-  // Nettoie seulement d'éventuels handlers restaurés depuis une ancienne page.
   _getPages().forEach((page) => {
     if (page._bounceH) {
       page.removeEventListener('scroll', page._bounceH);
@@ -304,7 +358,7 @@ function _scrollPagerToGhost() {
 
 function _reshuffleToutInDOM() {
   const grid = _getGrid();
-  const sec = grid?.querySelector('.k-cat-section[data-cat="all"]');
+  const sec = grid?.querySelector('.k-cat-section[data-cat="all"]:not([data-ghost])');
   const sg = sec?.querySelector('.k-sec-grid');
   if (!sg) return;
   const cards = [...sg.children];
@@ -314,8 +368,6 @@ function _reshuffleToutInDOM() {
   }
   sg.append(...cards);
 }
-
-// ── Destroy ───────────────────────────────────────────────────────
 
 function destroyMobilePager() {
   _isProgrammaticScroll = false;
@@ -353,8 +405,6 @@ function destroyMobilePager() {
   window.removeEventListener('resize', _setupMobilePager);
   window.removeEventListener('resize', _handlePagerResize);
 }
-
-// ── Stubs compatibilité ───────────────────────────────────────────
 
 function _setupHorizontalWrap() {}
 function _syncChipToScroll() {}
