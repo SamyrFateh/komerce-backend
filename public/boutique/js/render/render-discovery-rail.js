@@ -5,7 +5,7 @@
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
- *                Shell commun par carte, contenu spécialisé par kind sans variation de géométrie.
+ *                Mobile conserve sa géométrie 2×2 ; desktop réutilise le shell k-card canonique.
  * @impact-areas  home, product-discovery, discovery-rail, category-navigation
  * @version       2026-09
  */
@@ -80,6 +80,10 @@ function renderContextSlot(card) {
   return `<span class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</span>`;
 }
 
+/**
+ * Renderer historique mobile. Il reste volontairement inchangé : le pager
+ * garde son 2×2 vertical et aucun geste horizontal interne n'est réintroduit.
+ */
 function renderCard(card) {
   const image = card.imageRef
     ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${sanitize(card.title)}" loading="lazy" decoding="async">`
@@ -96,6 +100,45 @@ function renderCard(card) {
         <div class="k-discovery-primary-slot">${renderPrimarySlot(card)}</div>
         <div class="k-discovery-context-slot">${renderContextSlot(card)}</div>
         <button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+      </div>
+    </article>`;
+}
+
+/**
+ * Desktop One Card Contract.
+ *
+ * Le cadre est celui du Product Display Contract (`k-card`, `k-card-img-wrap`,
+ * `k-card-info`, `k-card-name`, `k-card-bottom`, `k-card-add`). Discovery ne
+ * possède que des hooks de capacité. Le CSS Discovery n'a donc jamais besoin
+ * de redéfinir le shell canonique `.k-card`.
+ */
+function renderDesktopCard(card) {
+  const safeTitle = sanitize(card.title);
+  const image = card.imageRef
+    ? `<img class="k-discovery-canonical-img" src="${sanitize(card.imageRef)}" alt="${safeTitle}" loading="lazy" decoding="async">`
+    : `<div class="k-discovery-fallback k-discovery-canonical-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
+  const context = card.providerName
+    ? `${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}`
+    : (card.description ? sanitize(card.description) : '');
+  const price = card.kind === 'product' && card.price != null
+    ? `<span class="k-card-price k-discovery-canonical-price">${formatPrice(card.price)}</span>`
+    : '<span class="k-discovery-canonical-price-placeholder" aria-hidden="true"></span>';
+
+  return `
+    <article class="k-card k-discovery-canonical-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
+      <div class="k-card-img-wrap k-discovery-canonical-media">
+        ${image}
+        ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
+      </div>
+      <div class="k-card-info">
+        <div class="k-card-name">${safeTitle}</div>
+        <div class="k-card-desc k-discovery-canonical-context">${context}</div>
+        <div class="k-card-bottom k-card-prices-row">
+          <div class="k-card-price-col k-discovery-canonical-price-col">${price}</div>
+          <div class="k-card-add k-discovery-canonical-action-slot" role="group" aria-label="Action pour ${safeTitle}">
+            <button class="k-discovery-canonical-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+          </div>
+        </div>
       </div>
     </article>`;
 }
@@ -133,6 +176,7 @@ function isMobileViewport() {
 function renderRail(selected, marketLabel, options = {}) {
   const titleId = options.titleId || 'k-discovery-local-title';
   const title = options.title || 'Disponible ici';
+  const renderSelectedCard = isMobileViewport() ? renderCard : renderDesktopCard;
   return `
     <div class="k-discovery-header">
       <div class="k-discovery-heading">
@@ -141,7 +185,7 @@ function renderRail(selected, marketLabel, options = {}) {
       </div>
     </div>
     <div class="k-discovery-rail" role="list" aria-label="Offres disponibles ici">
-      ${selected.map(renderCard).join('')}
+      ${selected.map(renderSelectedCard).join('')}
     </div>`;
 }
 
@@ -165,4 +209,12 @@ export function renderDiscoveryRail(container, cards, options = {}) {
   return normalized.length;
 }
 
-export { normalizeCard, normalizeCategoryKeys, renderCard, formatPrice, selectMobile, selectDesktop };
+export {
+  normalizeCard,
+  normalizeCategoryKeys,
+  renderCard,
+  renderDesktopCard,
+  formatPrice,
+  selectMobile,
+  selectDesktop,
+};
