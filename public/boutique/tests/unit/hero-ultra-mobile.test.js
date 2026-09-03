@@ -19,14 +19,16 @@ describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et tend le masthead sans réduire le header tactile', () => {
     expect(css).toContain('@media (max-width: 899px)');
     expect(css).toContain('height: clamp(50px, 14vw, 58px);');
-    expect(css).toContain('header 44 px + hero 58.5 px');
+    expect(css).toContain('hero 54.6 px');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('utilise la réserve blanche haute pour remonter la mini-scène', () => {
+  test('garde les coiffures dans le crop sans réagrandir la scène', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 118%;');
-    expect(css).toContain('background-position: 70% 92%;');
+    expect(css).toContain('background-size: auto 100%;');
+    expect(css).toContain('background-position: 70% 0%;');
+    expect(css).not.toContain('background-size: auto 118%;');
+    expect(css).not.toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
