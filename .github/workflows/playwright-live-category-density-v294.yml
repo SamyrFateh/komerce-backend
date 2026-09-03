@@ -1,0 +1,73 @@
+name: Playwright live category density V2.9.4 audit
+on:
+  push:
+    branches: [audit/playwright-live-category-density-v294]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Verify deployed geometry
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs=require('fs');
+          const { chromium }=require('@playwright/test');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+            await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
+            const page=await context.newPage();
+            const r=await page.goto(`https://komerce.co/boutique/?pw_live_category_density_v294=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForFunction(()=>document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'),null,{timeout:30000});
+            await page.waitForTimeout(7000);
+            const snap=async label=>page.evaluate(label=>{
+              const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}};
+              const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const fig=document.querySelector('.k-hero-media .k-hero-figures');
+              const rail=document.querySelector('.k-shelf-rail');
+              const cutout=rail?.querySelector('.k-cat-cutout');
+              const photo=cutout?.querySelector('.k-chip-photo');
+              const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              const disc=all?.querySelector(':scope > .k-discovery-shell');
+              const wrap=document.getElementById('k-hero-fixed-wrap');
+              const fcs=fig?getComputedStyle(fig):null;
+              return {label,hero:box(hero),rail:box(rail),cutout:box(cutout),photo:box(photo),discovery:box(disc),wrapTransform:wrap?getComputedStyle(wrap).transform:null,pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),figureSize:fcs?.backgroundSize||null,figurePosition:fcs?.backgroundPosition||null,allScrollTop:all?.scrollTop??null,bodyScrollWidth:document.body.scrollWidth,viewportWidth:innerWidth};
+            },label);
+            const initial=await snap('initial');
+            await page.screenshot({path:'live-category-density-v294.png'});
+            await page.evaluate(()=>{const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');if(all)all.scrollTop=250;});
+            await page.waitForTimeout(400);
+            const scrolled=await snap('scrolled');
+            const failures=[];
+            if(!r||r.status()>=400)failures.push(`HTTP ${r?.status()}`);
+            if(Math.abs((initial.hero?.height||0)-54.6)>.8)failures.push(`hero=${initial.hero?.height}`);
+            if(Math.abs((initial.rail?.height||0)-61)>1)failures.push(`rail=${initial.rail?.height}`);
+            if(Math.abs((initial.cutout?.width||0)-56)>.7||Math.abs((initial.cutout?.height||0)-56)>.7)failures.push(`cutout=${JSON.stringify(initial.cutout)}`);
+            if(Math.abs((initial.photo?.width||0)-46)>.7||Math.abs((initial.photo?.height||0)-30)>.7)failures.push(`photo=${JSON.stringify(initial.photo)}`);
+            if((initial.discovery?.y??999)>168)failures.push(`discoveryY=${initial.discovery?.y}`);
+            if(initial.figureSize!=='auto 100%'||initial.figurePosition!=='70% 0%')failures.push(`figure=${initial.figureSize}/${initial.figurePosition}`);
+            if(scrolled.wrapTransform!=='none')failures.push(`transform=${scrolled.wrapTransform}`);
+            if(scrolled.pagerTop!==initial.pagerTop)failures.push(`pagerTop ${initial.pagerTop}->${scrolled.pagerTop}`);
+            if(initial.bodyScrollWidth>initial.viewportWidth+1)failures.push(`bodyOverflow=${initial.bodyScrollWidth}/${initial.viewportWidth}`);
+            const result={responseStatus:r?.status()||null,initial,scrolled,failures};
+            fs.writeFileSync('live-category-density-v294.json',JSON.stringify(result,null,2));
+            console.log('LIVE_CATEGORY_DENSITY_V294='+JSON.stringify(result));
+            await browser.close();
+            if(failures.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-live-category-density-v294
+          path: |
+            public/boutique/live-category-density-v294.json
+            public/boutique/live-category-density-v294.png
+          if-no-files-found: error
