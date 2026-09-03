@@ -38,8 +38,8 @@ const {
   kindLabelFor,
   normalizeActions,
   actionLabelFor,
-  telHref,
-  whatsappHref,
+  subjectFor,
+  publicActionFor,
 } = require('../../js/b-modal-discovery-detail.js');
 
 beforeEach(() => {
@@ -49,154 +49,143 @@ beforeEach(() => {
   mockRequestDiscovery.mockClear();
 });
 
-test('rend une offre physique legacy avec le parcours Commander historique', () => {
+test('offre locale expose Demander + Être rappelé et garde le sujet connu', () => {
   const rendered = renderDiscoveryModalDetail({
     kind: 'physical_offer',
-    ref: 'offer-1',
+    ref: 'offer-cement',
     detail: {
-      title: 'Samboussas au bœuf',
-      provider_name: 'Saveurs d Anjouan',
+      title: 'Ciment 42,5R — sac 50 kg',
+      provider_name: 'Bâtir Anjouan',
       zone: 'Mutsamudu',
-      description: 'Préparés sur commande',
-      image_ref: '/images/samboussas.webp',
+      description: 'Stock local indicatif.',
+      image_ref: '/images/ciment.webp',
+      actions: ['request', 'callback'],
     },
   });
 
   const slot = document.getElementById('k-modal-discovery-detail');
   expect(rendered).toBe(true);
-  expect(slot.hidden).toBe(false);
-  expect(slot.dataset.discoveryKind).toBe('physical_offer');
-  expect(slot.textContent).toContain('Produit local');
-  expect(slot.textContent).toContain('Préparation sur commande');
-  expect(slot.textContent).toContain('Samboussas au bœuf');
-  expect(slot.textContent).toContain('Saveurs d Anjouan');
-  expect(slot.textContent).toContain('Mutsamudu');
-  expect(slot.textContent).toContain('Préparés sur commande');
-  expect(slot.querySelector('.k-modal-discovery-img')?.getAttribute('src')).toBe('/images/samboussas.webp');
-  expect(slot.textContent).toContain('Pour quand ?');
-  expect(slot.textContent).toContain('facultatif');
-  expect(slot.textContent).toContain('Commander');
-  const input = slot.querySelector('[data-discovery-requested-window]');
-  expect(input).not.toBeNull();
-  expect(input.maxLength).toBe(160);
-  expect(input.placeholder).toBe('Ex. vendredi soir');
-  expect(slot.querySelector('[data-discovery-modal-action="request"][data-discovery-ref="offer-1"]')).not.toBeNull();
+  expect(slot.textContent).toContain('Offre locale');
+  expect(slot.textContent).toContain('Disponible ici');
+  expect(slot.textContent).toContain('Demander cette offre');
+  expect(slot.textContent).toContain('Être rappelé');
+  expect(slot.querySelector('.k-modal-discovery-img')?.getAttribute('src')).toBe('/images/ciment.webp');
+  expect(slot.querySelector('[data-discovery-action-form="request"]').hidden).toBe(true);
+  expect(slot.querySelector('[data-discovery-action-form="callback"]').hidden).toBe(true);
+  expect(slot.textContent).toContain('Ciment 42,5R — sac 50 kg · Bâtir Anjouan');
 });
 
-test('service local utilise un wording intervention sans créer de scheduler', () => {
+test('service sérieux pièce auto garde request/callback dans le même shell', () => {
   renderDiscoveryModalDetail({
     kind: 'service',
-    ref: 'svc-label',
+    ref: 'svc-auto',
     detail: {
-      title: 'Installation climatiseur',
+      title: 'Recherche et sourcing de pièces auto',
       provider_name: 'Atelier Mutsamudu',
-      zone: 'Mutsamudu',
-      description: 'Pose et mise en service',
+      zone: 'Mutsamudu / Anjouan',
+      description: 'Indiquez marque, modèle, année et pièce recherchée.',
+      actions: ['request', 'callback'],
     },
   });
   const slot = document.getElementById('k-modal-discovery-detail');
-  expect(slot.textContent).toContain('Service local');
+  expect(slot.textContent).toContain('Service');
   expect(slot.textContent).toContain('Sur demande');
-  expect(slot.textContent).toContain('Atelier Mutsamudu');
-  expect(slot.textContent).toContain('Pose et mise en service');
-  expect(slot.textContent).toContain('Quand souhaitez-vous l’intervention ?');
-  expect(slot.querySelector('[data-discovery-requested-window]').placeholder).toBe('Ex. samedi matin');
+  expect(slot.textContent).toContain('Demander ce service');
+  expect(slot.textContent).toContain('Être rappelé');
+  expect(slot.textContent).toContain('Recherche et sourcing de pièces auto · Atelier Mutsamudu');
 });
 
-test('une fiche peut cumuler rappel, appel et WhatsApp sans exposer le téléphone privé', () => {
+test('les anciennes capacités quote/call/whatsapp convergent sans contact direct', () => {
+  expect(normalizeActions({ actions: ['quote', 'call', 'whatsapp', 'callback'] }))
+    .toEqual(['request', 'callback']);
+  expect(publicActionFor('quote')).toBe('request');
+  expect(publicActionFor('call')).toBe('callback');
+  expect(publicActionFor('whatsapp')).toBe('callback');
+
   renderDiscoveryModalDetail({
     kind: 'service',
-    ref: 'svc-moto',
+    ref: 'svc-legacy',
     detail: {
-      title: 'Réparation moto',
-      actions: ['callback', 'call', 'whatsapp'],
-      public_contact: {
-        phone: '+269 321 00 00',
-        whatsapp: '00269 321 00 01',
-      },
+      title: 'Diagnostic',
+      actions: ['call', 'whatsapp'],
+      public_contact: { phone: '+2693210000', whatsapp: '+2693210001' },
     },
   });
-
   const slot = document.getElementById('k-modal-discovery-detail');
   expect(slot.textContent).toContain('Être rappelé');
-  expect(slot.textContent).toContain('Appeler');
-  expect(slot.textContent).toContain('WhatsApp');
-  expect(slot.querySelector('[data-discovery-modal-action="callback"]')).not.toBeNull();
-  expect(slot.querySelector('[data-discovery-direct-action="call"]')?.getAttribute('href')).toBe('tel:+2693210000');
-  expect(slot.querySelector('[data-discovery-direct-action="whatsapp"]')?.getAttribute('href')).toBe('https://wa.me/2693210001');
-  expect(slot.textContent).not.toContain('+269 321 00 00');
-});
-
-test('une action directe sans coordonnée publique explicite est supprimée, jamais remplacée par un téléphone privé', () => {
-  expect(normalizeActions({ actions: ['call', 'whatsapp'], public_contact: null })).toEqual([]);
-  renderDiscoveryModalDetail({
-    kind: 'service',
-    ref: 'svc-no-contact',
-    detail: { title: 'Diagnostic', actions: ['call'] },
-  });
-  const slot = document.getElementById('k-modal-discovery-detail');
-  expect(slot.textContent).toContain('Contact momentanément indisponible');
+  expect(slot.textContent).not.toContain('Appeler');
+  expect(slot.textContent).not.toContain('WhatsApp');
   expect(slot.querySelector('a[href^="tel:"]')).toBeNull();
-  expect(slot.querySelector('[data-discovery-requested-window]')).toBeNull();
+  expect(slot.querySelector('a[href*="wa.me"]')).toBeNull();
 });
 
-test('labels et liens métier restent des projections déterministes', () => {
-  expect(kindLabelFor('physical_offer')).toBe('Produit local');
-  expect(kindLabelFor('service')).toBe('Service local');
-  expect(actionLabelFor('request', 'physical_offer')).toBe('Commander');
-  expect(actionLabelFor('request', 'service')).toBe('Demander');
-  expect(actionLabelFor('quote', 'service')).toBe('Demander un devis');
+test('labels et sujet métier sont déterministes', () => {
+  expect(kindLabelFor('physical_offer')).toBe('Offre locale');
+  expect(kindLabelFor('service')).toBe('Service');
+  expect(actionLabelFor('request', 'physical_offer')).toBe('Demander cette offre');
+  expect(actionLabelFor('request', 'service')).toBe('Demander ce service');
   expect(actionLabelFor('callback', 'service')).toBe('Être rappelé');
-  expect(telHref('+269 321-00-00')).toBe('tel:+2693210000');
-  expect(whatsappHref('00 269 321 00 01')).toBe('https://wa.me/2693210001');
+  expect(subjectFor({ title: 'Recherche pièce auto', provider_name: 'Garage Nurdine' }))
+    .toBe('Recherche pièce auto · Garage Nurdine');
 });
 
-test('le CTA Inquiry transporte la précision et son intention après fermeture contrôlée du même modal', () => {
+test('sélectionner Demander déploie le formulaire sans fermer ni envoyer', () => {
   setupDiscoveryModalDetail();
   listeners['modal:discovery-opened']({
-    kind: 'service',
-    ref: 'svc-1',
-    detail: { title: 'Installation climatiseur', zone: 'Mutsamudu', actions: ['callback'] },
+    kind: 'service', ref: 'svc-1',
+    detail: { title: 'Recherche pièce auto', provider_name: 'Garage Nurdine', actions: ['request', 'callback'] },
   });
 
-  document.querySelector('[data-discovery-requested-window]').value = '  Samedi matin  ';
-  document.querySelector('[data-discovery-modal-action="callback"]').click();
-
-  expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
-  expect(mockRequestDiscovery).toHaveBeenCalledWith(
-    'service',
-    'svc-1',
-    expect.any(HTMLElement),
-    'Samedi matin',
-    'callback',
-  );
-  expect(mockEmit).not.toHaveBeenCalledWith('discovery:request', expect.anything());
-});
-
-test('un lien direct est une mise en relation et ne porte aucun contrat Inquiry', () => {
-  renderDiscoveryModalDetail({
-    kind: 'service',
-    ref: 'svc-call',
-    detail: {
-      title: 'Dépannage',
-      actions: ['call'],
-      public_contact: { phone: '+2693210000' },
-    },
-  });
-
-  const link = document.querySelector('[data-discovery-direct-action="call"]');
-  expect(link).not.toBeNull();
-  expect(link.getAttribute('href')).toBe('tel:+2693210000');
-  expect(link.hasAttribute('data-discovery-modal-action')).toBe(false);
+  const select = document.querySelector('[data-discovery-select-action="request"]');
+  select.click();
+  const form = document.querySelector('[data-discovery-action-form="request"]');
+  expect(form.hidden).toBe(false);
+  expect(form.textContent).toContain('Votre demande concerne');
+  expect(form.textContent).toContain('Recherche pièce auto · Garage Nurdine');
+  expect(mockCloseModal).not.toHaveBeenCalled();
   expect(mockRequestDiscovery).not.toHaveBeenCalled();
 });
 
-test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
-  renderDiscoveryModalDetail({
-    kind: 'service',
-    ref: 'svc-2',
-    detail: { title: 'Plomberie maison' },
+test('submit request transporte besoin + timing après fermeture contrôlée', () => {
+  setupDiscoveryModalDetail();
+  listeners['modal:discovery-opened']({
+    kind: 'service', ref: 'svc-1',
+    detail: { title: 'Recherche pièce auto', provider_name: 'Garage Nurdine', actions: ['request', 'callback'] },
   });
+  document.querySelector('[data-discovery-select-action="request"]').click();
+  const form = document.querySelector('[data-discovery-action-form="request"]');
+  form.querySelector('[data-discovery-requester-note]').value = '  Toyota Hilux 2012, phare avant droit  ';
+  form.querySelector('[data-discovery-requested-window]').value = '  Cette semaine  ';
+  form.querySelector('[data-discovery-submit-action="request"]').click();
+
+  expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
+  expect(mockRequestDiscovery).toHaveBeenCalledWith(
+    'service', 'svc-1', expect.any(HTMLElement), 'Cette semaine', 'request',
+    'Toyota Hilux 2012, phare avant droit'
+  );
+});
+
+test('submit callback garde le propos connu et ajoute seulement une précision', () => {
+  setupDiscoveryModalDetail();
+  listeners['modal:discovery-opened']({
+    kind: 'physical_offer', ref: 'offer-1',
+    detail: { title: 'Ciment 42,5R', provider_name: 'Bâtir Anjouan', actions: ['callback'] },
+  });
+  document.querySelector('[data-discovery-select-action="callback"]').click();
+  const form = document.querySelector('[data-discovery-action-form="callback"]');
+  expect(form.textContent).toContain('Objet du rappel');
+  expect(form.textContent).toContain('Ciment 42,5R · Bâtir Anjouan');
+  form.querySelector('[data-discovery-requester-note]').value = 'Confirmer le stock pour 50 sacs';
+  form.querySelector('[data-discovery-submit-action="callback"]').click();
+
+  expect(mockRequestDiscovery).toHaveBeenCalledWith(
+    'physical_offer', 'offer-1', expect.any(HTMLElement), null, 'callback',
+    'Confirmer le stock pour 50 sacs'
+  );
+});
+
+test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
+  renderDiscoveryModalDetail({ kind: 'service', ref: 'svc-2', detail: { title: 'Plomberie maison' } });
   clearDiscoveryModalDetail();
   const slot = document.getElementById('k-modal-discovery-detail');
   expect(slot.hidden).toBe(true);
@@ -208,12 +197,8 @@ test('contrat Discovery : un seul shell et aucune mutation métier directe depui
   const rail = fs.readFileSync(path.join(root, 'js/discovery-rail.js'), 'utf8');
   const core = fs.readFileSync(path.join(root, 'js/b-modal-core.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-
-  expect(rail).not.toMatch(/render-discovery-detail/);
   expect(rail).not.toMatch(/requestDiscovery/);
   expect(rail).toMatch(/async function openDiscoveryDetail\(kind, ref\)/);
-  expect(rail).toMatch(/openDiscoveryDetail\(kind, ref\)/);
-  expect(rail).toMatch(/openModal\(ref, \{ kind, detail \}\)/);
   expect(core).toMatch(/modal:discovery-opened/);
   expect((html.match(/id="k-modal-overlay"/g) || [])).toHaveLength(1);
   expect(html).toMatch(/id="k-modal-discovery-detail"/);
