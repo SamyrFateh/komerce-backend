@@ -1,0 +1,81 @@
+name: Playwright live hero lift V2.9.2 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-live-hero-lift-v292
+    paths:
+      - .github/workflows/playwright-live-hero-lift-v292.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Verify deployed geometry
+        working-directory: public/boutique
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const context = await browser.newContext({
+              viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,
+              serviceWorkers:'block',userAgent:'Komerce-Playwright-Live-Hero-Lift-V292/1.0 Mobile'
+            });
+            await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
+            const page = await context.newPage();
+            const response = await page.goto(`https://komerce.co/boutique/?pw_live_hero_lift_v292=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForFunction(() => document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'),null,{timeout:30000});
+            await page.waitForTimeout(7000);
+            const snap = async label => page.evaluate(label => {
+              const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}};
+              const wrap=document.getElementById('k-hero-fixed-wrap');
+              const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const figures=document.querySelector('.k-hero-media .k-hero-figures');
+              const cats=document.querySelector('.k-shelf-rail');
+              const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              const discovery=all?.querySelector(':scope > .k-discovery-shell')||null;
+              const cs=figures?getComputedStyle(figures):null;
+              return {label,pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),wrap:box(wrap),wrapTransform:wrap?getComputedStyle(wrap).transform:null,hero:box(hero),categories:box(cats),discovery:box(discovery),figurePosition:cs?.backgroundPosition||null,figureSize:cs?.backgroundSize||null,allScrollTop:all?.scrollTop??null};
+            },label);
+            const initial=await snap('initial');
+            await page.screenshot({path:'live-hero-lift-v292-initial.png'});
+            await page.evaluate(()=>{const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');if(all)all.scrollTop=320;});
+            await page.waitForTimeout(500);
+            const scrolled=await snap('scrolled');
+            const failures=[];
+            if(!response||response.status()>=400)failures.push(`HTTP ${response?.status()}`);
+            if(initial.figurePosition!=='70% 92%')failures.push(`position=${initial.figurePosition}`);
+            if(Math.abs((initial.hero?.height??0)-54.6)>0.7)failures.push(`heroHeight=${initial.hero?.height}`);
+            if((initial.categories?.y??999)>=104)failures.push(`categoriesY=${initial.categories?.y}`);
+            if((initial.discovery?.y??999)>=174)failures.push(`discoveryY=${initial.discovery?.y}`);
+            if(scrolled.wrapTransform!=='none')failures.push(`transform=${scrolled.wrapTransform}`);
+            if(scrolled.pagerTop!==initial.pagerTop)failures.push(`pagerTop ${initial.pagerTop}->${scrolled.pagerTop}`);
+            const result={responseStatus:response?.status()||null,initial,scrolled,failures};
+            fs.writeFileSync('playwright-live-hero-lift-v292.json',JSON.stringify(result,null,2));
+            console.log('LIVE_HERO_LIFT_V292='+JSON.stringify(result));
+            await browser.close();
+            if(failures.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-live-hero-lift-v292
+          path: |
+            public/boutique/playwright-live-hero-lift-v292.json
+            public/boutique/live-hero-lift-v292-initial.png
+          if-no-files-found: error
