@@ -54,7 +54,7 @@ function buildDetailHTML(kind, ref, detail) {
       <div class="k-modal-discovery-media">${image}</div>
       <div class="k-modal-discovery-body">
         <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
-          <span class="k-modal-discovery-kind">${sanitize(kindLabelFor(kind))}</span>
+          <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor(kind))}</span>
           <span class="k-modal-discovery-badge">${sanitize(statusFor(kind))}</span>
         </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
