@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 492
+- Scanned code files: 493
 - Files with full headers: 450
-- Files with lite headers: 42
-- Files with any headers: 492
+- Files with lite headers: 43
+- Files with any headers: 493
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1076
-- Edges: 5638
+- Graph nodes: 1077
+- Edges: 5642
 - DB tables: 126
 - Doctrines: 288
 - Impact areas: 170
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 11
 - orders: 29
 - payment: 17
-- providers-services: 5
+- providers-services: 6
 - purchasing: 8
 - recommendations: 6
 - refunds: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 207
+- service: 208
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -471,6 +471,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
 - public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
 - public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
+- services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
 - services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 
 ## DB Write Edges
@@ -615,7 +616,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/reconciliation-service.js -> incidents (via incident-write-service)
 - WRITE services/scan-engine.js -> incidents (via incident-write-service)
 - WRITE services/shipping-customs-workspace.js -> incidents (via scan-engine)
-- WRITE routes/providers-services.js -> inquiries (via providers-service)
+- WRITE routes/providers-services.js -> inquiries (via providers-inquiry-service)
 - WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
 - WRITE services/shipping-customs-workspace.js -> order_item_real_cost_allocations (via customs-shipment-service)
 - WRITE routes/orders/create.js -> order_items (via order-checkout-service)

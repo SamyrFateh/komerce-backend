@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 492,
+    "scannedCodeFiles": 493,
     "filesWithFullHeaders": 450,
-    "filesWithLiteHeaders": 42,
-    "filesWithAnyHeaders": 492,
+    "filesWithLiteHeaders": 43,
+    "filesWithAnyHeaders": 493,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1076,
-    "edges": 5638,
+    "graphNodes": 1077,
+    "edges": 5642,
     "dbTables": 126,
     "doctrines": 288,
     "impactAreas": 170,
@@ -51,7 +51,7 @@
     "payment": 17,
     "tracking": 1,
     "wallet": 4,
-    "providers-services": 5,
+    "providers-services": 6,
     "customs": 6,
     "dashboard": 27,
     "loyalty": 3,
@@ -101,7 +101,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 207,
+    "service": 208,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
     "critical": 68,
     "medium": 121,
     "high": 253,
-    "low": 50
+    "low": 51
   },
   "nodes": [
     {
@@ -2599,7 +2599,7 @@
       "layer": "ui-renderer",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal et projeter plusieurs actions autorisées sans déduire l'interaction du kind.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -2613,7 +2613,8 @@
         "product-discovery",
         "discovery-rail",
         "modal-layout",
-        "desktop"
+        "desktop",
+        "mobile"
       ],
       "version": "2026-09"
     },
@@ -4065,7 +4066,7 @@
       "layer": "ui-controller",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-actions.js",
-      "purpose": "Posséder l'unique émission de la commande discovery:request, quel que soit le point d'entrée Boutique.",
+      "purpose": "Posséder l'unique émission de la commande discovery:request depuis la fiche Komerce contextualisée.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4146,7 +4147,7 @@
       "layer": "ui-service",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer demander/rappel depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4835,7 +4836,7 @@
         "discovery-rail",
         "providers-services"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/render/category-shelf-visuals.js",
@@ -10086,7 +10087,9 @@
         "id (params)",
         "market (query — code KM|YT|CM|CG",
         "résolu serveur)",
-        "inquiry target"
+        "inquiry target",
+        "intent",
+        "requester_note"
       ],
       "outputs": [
         "service_public_fields",
@@ -10095,22 +10098,22 @@
       ],
       "depends": [
         "services/providers-service.js",
+        "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché + contact public)"
+        "db (résolution code marché)"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
         "public/boutique/js/discovery-api.js"
       ],
       "dbRead": [
-        "markets",
-        "providers"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [
         {
-          "via": "providers-service",
+          "via": "providers-inquiry-service",
           "tables": [
             "inquiries"
           ]
@@ -18371,6 +18374,32 @@
       "version": "2026-08"
     },
     {
+      "id": "services/providers-inquiry-service.js",
+      "file": "services/providers-inquiry-service.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "providers-services-contextual-inquiry",
+      "domain": "providers-services",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "services/providers-service.js",
+      "purpose": "Créer une Inquiry contextualisée par une cible canonique, une intention request|callback et une précision facultative.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "providers-services",
+        "discovery-modal"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/providers-interaction-policy.js",
       "file": "services/providers-interaction-policy.js",
       "type": "file-lite",
@@ -18380,7 +18409,7 @@
       "layer": "service-policy",
       "criticality": "low",
       "owner": "services/providers-service.js",
-      "purpose": "Normaliser les actions cumulatives d'une offre et n'exposer que les coordonnées explicitement publiques nécessaires à ces actions.",
+      "purpose": "Normaliser les capacités historiques d'une offre vers les deux interactions publiques Komerce : demander ou être rappelé.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -23460,11 +23489,6 @@
       "table": "cost_benchmarks"
     },
     {
-      "id": "db:providers",
-      "type": "db-table",
-      "table": "providers"
-    },
-    {
       "id": "db:inquiries",
       "type": "db-table",
       "table": "inquiries"
@@ -23668,6 +23692,11 @@
       "id": "db:pricing_strategy_history",
       "type": "db-table",
       "table": "pricing_strategy_history"
+    },
+    {
+      "id": "db:providers",
+      "type": "db-table",
+      "table": "providers"
     },
     {
       "id": "db:services",
@@ -29753,6 +29782,12 @@
       "to": "impact:desktop",
       "type": "impact",
       "label": "desktop"
+    },
+    {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "impact:mobile",
+      "type": "impact",
+      "label": "mobile"
     },
     {
       "from": "public/boutique/js/b-modal-image-ux.js",
@@ -40066,6 +40101,12 @@
     },
     {
       "from": "routes/providers-services.js",
+      "to": "services/providers-inquiry-service.js",
+      "type": "depends",
+      "label": "services/providers-inquiry-service.js"
+    },
+    {
+      "from": "routes/providers-services.js",
       "to": "services/providers-interaction-policy.js",
       "type": "depends",
       "label": "services/providers-interaction-policy.js"
@@ -40078,9 +40119,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché + contact public)",
+      "to": "db (résolution code marché)",
       "type": "depends",
-      "label": "db (résolution code marché + contact public)"
+      "label": "db (résolution code marché)"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -40102,16 +40143,10 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db:providers",
-      "type": "db-read",
-      "label": "providers"
-    },
-    {
-      "from": "routes/providers-services.js",
       "to": "db:inquiries",
       "type": "db-write-via",
       "label": "inquiries",
-      "via": "providers-service"
+      "via": "providers-inquiry-service"
     },
     {
       "from": "routes/providers-services.js",
@@ -52931,6 +52966,24 @@
       "label": "catalog"
     },
     {
+      "from": "services/providers-inquiry-service.js",
+      "to": "services/providers-service.js",
+      "type": "owned-by",
+      "label": "services/providers-service.js"
+    },
+    {
+      "from": "services/providers-inquiry-service.js",
+      "to": "impact:providers-services",
+      "type": "impact",
+      "label": "providers-services"
+    },
+    {
+      "from": "services/providers-inquiry-service.js",
+      "to": "impact:discovery-modal",
+      "type": "impact",
+      "label": "discovery-modal"
+    },
+    {
       "from": "services/providers-interaction-policy.js",
       "to": "services/providers-service.js",
       "type": "owned-by",
@@ -62650,7 +62703,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal et projeter plusieurs actions autorisées sans déduire l'interaction du kind.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -62662,11 +62715,13 @@
         "product-discovery",
         "discovery-rail",
         "modal-layout",
-        "desktop"
+        "desktop",
+        "mobile"
       ],
       "mustCheck": [
         "impact:desktop",
         "impact:discovery-rail",
+        "impact:mobile",
         "impact:modal-layout",
         "impact:product-discovery",
         "public/boutique/js/discovery-rail.js"
@@ -64173,7 +64228,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-actions.js",
-      "purpose": "Posséder l'unique émission de la commande discovery:request, quel que soit le point d'entrée Boutique.",
+      "purpose": "Posséder l'unique émission de la commande discovery:request depuis la fiche Komerce contextualisée.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -64256,7 +64311,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer demander/rappel depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -69977,9 +70032,10 @@
       "purpose": null,
       "directDependsOn": [
         "services/providers-service.js",
+        "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché + contact public)"
+        "db (résolution code marché)"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -69987,13 +70043,12 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets",
-        "providers"
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [
         {
-          "via": "providers-service",
+          "via": "providers-inquiry-service",
           "tables": [
             "inquiries"
           ]
@@ -70011,13 +70066,13 @@
         "bootstrap/api-routes.js",
         "db:inquiries",
         "db:markets",
-        "db:providers",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
         "impact:boutique",
         "impact:discovery-rail",
         "impact:providers-services",
         "middleware/auth-guest.js",
         "public/boutique/js/discovery-api.js",
+        "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js",
         "services/providers-service.js"
       ]
@@ -78122,13 +78177,38 @@
         "services/catalog-enrichment.js"
       ]
     },
+    "services/providers-inquiry-service.js": {
+      "role": "providers-services-contextual-inquiry",
+      "domain": "providers-services",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "services/providers-service.js",
+      "purpose": "Créer une Inquiry contextualisée par une cible canonique, une intention request|callback et une précision facultative.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "providers-services",
+        "discovery-modal"
+      ],
+      "mustCheck": [
+        "impact:discovery-modal",
+        "impact:providers-services",
+        "routes/providers-services.js",
+        "services/providers-service.js"
+      ]
+    },
     "services/providers-interaction-policy.js": {
       "role": "providers-services-interaction-policy",
       "domain": "providers-services",
       "criticality": "low",
       "headerType": "lite",
       "owner": "services/providers-service.js",
-      "purpose": "Normaliser les actions cumulatives d'une offre et n'exposer que les coordonnées explicitement publiques nécessaires à ces actions.",
+      "purpose": "Normaliser les capacités historiques d'une offre vers les deux interactions publiques Komerce : demander ou être rappelé.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -78164,6 +78244,7 @@
         "appel direct scripts/tests dans cette PR)"
       ],
       "ownedFiles": [
+        "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js"
       ],
       "dbRead": [
@@ -78196,6 +78277,7 @@
         "impact:providers-services",
         "routes/providers-services.js",
         "services/discovery-rail-composer.js",
+        "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js"
       ]
     },
@@ -84934,9 +85016,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché + contact public)",
+      "to": "db (résolution code marché)",
       "type": "depends",
-      "label": "db (résolution code marché + contact public)"
+      "label": "db (résolution code marché)"
     },
     {
       "from": "routes/purchasing.js",

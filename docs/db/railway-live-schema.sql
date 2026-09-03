@@ -1988,7 +1988,11 @@ CREATE TABLE public.inquiries (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     physical_offer_id uuid,
-    CONSTRAINT inquiries_exactly_one_target CHECK ((num_nonnulls(service_id, physical_offer_id) = 1))
+    intent text DEFAULT 'request'::text NOT NULL,
+    requester_note text,
+    CONSTRAINT inquiries_exactly_one_target CHECK ((num_nonnulls(service_id, physical_offer_id) = 1)),
+    CONSTRAINT inquiries_intent_allowed CHECK ((intent = ANY (ARRAY['request'::text, 'callback'::text]))),
+    CONSTRAINT inquiries_requester_note_valid CHECK (((requester_note IS NULL) OR ((length(btrim(requester_note)) > 0) AND (length(requester_note) <= 600))))
 );
 
 
@@ -2011,6 +2015,20 @@ COMMENT ON COLUMN public.inquiries.service_id IS 'Nullable depuis la migration 1
 --
 
 COMMENT ON COLUMN public.inquiries.status IS 'Cycle linéaire : sent (demande envoyée) -> answered (le provider a réagi, éventuellement via proposed_window pour un autre créneau, sans encore trancher) -> accepted | declined (terminal). answered_at capture le délai de réponse, mesure clé du shadow test (temps moyen de confirmation, cf. CHALLENGE_SERVICES_TWO_TRACK §9-bis).';
+
+
+--
+-- Name: COLUMN inquiries.intent; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.inquiries.intent IS 'Intention publique Komerce : request ou callback. Le propos reste toujours connu par service_id XOR physical_offer_id.';
+
+
+--
+-- Name: COLUMN inquiries.requester_note; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.inquiries.requester_note IS 'Précision libre facultative du demandeur, 600 caractères maximum. Elle enrichit la cible et ne la remplace jamais.';
 
 
 --
