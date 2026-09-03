@@ -66,19 +66,3 @@ COMMENT ON COLUMN public.services.actions_enabled IS
   'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind décrit ce que l objet est ; ce tableau décrit ce que le client peut faire.';
 COMMENT ON COLUMN public.physical_offers.actions_enabled IS
   'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind ne choisit jamais seul l interaction.';
-
-ALTER TABLE public.inquiries
-  ADD COLUMN IF NOT EXISTS request_intent text NOT NULL DEFAULT 'request';
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'inquiries_request_intent_allowed'
-  ) THEN
-    ALTER TABLE public.inquiries
-      ADD CONSTRAINT inquiries_request_intent_allowed
-      CHECK (request_intent IN ('request', 'quote', 'callback'));
-  END IF;
-END $$;
-
-COMMENT ON COLUMN public.inquiries.request_intent IS
-  'Intention de la demande dans la fiche multi-actions. request conserve le comportement historique ; quote et callback restent des Inquiry canoniques, jamais des orders.';
