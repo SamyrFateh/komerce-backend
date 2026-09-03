@@ -4,12 +4,13 @@
  * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Monter « Disponible ici » dans chaque contexte catégorie mobile et déléguer l'exposition au backend.
- * @impact-areas  home, product-discovery, discovery-rail, category-navigation
+ * @purpose       Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.
+ * @impact-areas  home, product-discovery, discovery-rail, category-navigation, desktop
  * @version       2026-09
  */
 'use strict';
 
+import { bus } from './b-bus.js';
 import { openModal } from './b-modal.js';
 import { _setupInfiniteLoop } from './b-pager.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
@@ -19,9 +20,15 @@ let _installed = false;
 let _lastCards = null;
 let _gridObserver = null;
 let _mountSyncScheduled = false;
+let _activeDesktopCategory = 'all';
 
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 900;
+}
+
+function activeCategoryFromDom() {
+  const chip = document.querySelector('.k-chip.active[data-cat]');
+  return chip?.dataset.cat || 'all';
 }
 
 function bindShell(shell) {
@@ -139,7 +146,7 @@ function syncMountAndRender() {
 
   const shell = ensureDesktopMount();
   if (!shell) return 0;
-  return renderDiscoveryRail(shell, _lastCards, {
+  return renderDiscoveryRail(shell, cardsForCategory(_lastCards, _activeDesktopCategory), {
     marketLabel,
     titleId: 'k-discovery-local-title',
     title: 'Disponible ici',
@@ -173,6 +180,11 @@ function installGridObserver() {
     if (realPageMutation) scheduleMountSync();
   });
   _gridObserver.observe(grid, { childList: true });
+}
+
+function handleCatalogCategoryChanged(category) {
+  _activeDesktopCategory = category || 'all';
+  if (!isMobileViewport()) syncMountAndRender();
 }
 
 async function refreshDiscoveryRail() {
@@ -224,10 +236,12 @@ export function setupDiscoveryRail() {
   if (_installed) return;
   _installed = true;
 
+  _activeDesktopCategory = activeCategoryFromDom();
   installGridObserver();
   window.addEventListener('resize', scheduleMountSync, { passive: true });
+  bus.on('catalog:cat-changed', handleCatalogCategoryChanged);
 
-  // Un seul fetch alimente toutes les pages. category_keys vient du backend ;
+  // Un seul fetch alimente mobile et desktop. category_keys vient du backend ;
   // le frontend ne fait qu'en prendre le sous-ensemble sans modifier l'ordre.
   refreshDiscoveryRail().catch(() => {
     _lastCards = [];
@@ -240,4 +254,5 @@ export {
   openDiscoveryDetail,
   handleDiscoveryClick,
   cardsForCategory,
+  activeCategoryFromDom,
 };
