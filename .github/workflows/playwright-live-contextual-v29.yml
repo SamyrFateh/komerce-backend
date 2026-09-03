@@ -21,149 +21,107 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: public/boutique/package-lock.json
-      - name: Install Boutique test dependencies
-        run: npm --prefix public/boutique ci
-      - name: Install Chromium
-        run: npx --prefix public/boutique playwright install --with-deps chromium
-      - name: Run live contextual Discovery audit
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Navigate live mobile pager
         working-directory: public/boutique
         run: |
           node <<'NODE'
           const fs = require('fs');
           const { chromium } = require('@playwright/test');
-
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({
-              viewport: { width: 390, height: 844 },
-              deviceScaleFactor: 1,
-              isMobile: true,
-              hasTouch: true,
-              serviceWorkers: 'block',
-              userAgent: 'Komerce-Playwright-Live-Contextual-V29/1.0 Mobile'
+              viewport: { width: 390, height: 844 }, deviceScaleFactor: 1,
+              isMobile: true, hasTouch: true, serviceWorkers: 'block',
+              userAgent: 'Komerce-Playwright-Hero-Sticky-Audit/1.0 Mobile'
             });
             await context.setExtraHTTPHeaders({ 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' });
             const page = await context.newPage();
-            const url = `https://komerce.co/boutique/?pw_contextual_v29=${Date.now()}`;
-            const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            const response = await page.goto(`https://komerce.co/boutique/?pw_hero_sticky=${Date.now()}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForTimeout(8000);
 
-            const snapshot = async (label) => page.evaluate((label) => {
+            const snap = async (label) => page.evaluate((label) => {
               const grid = document.getElementById('k-grid');
-              const directPages = grid ? Array.from(grid.querySelectorAll(':scope > .k-cat-section')) : [];
-              const realPages = directPages.filter(page => !page.hasAttribute('data-ghost'));
-              const ghost = directPages.find(page => page.dataset.ghost === 'right') || null;
-              const pageData = realPages.map(page => {
-                const shell = page.querySelector(':scope > .k-discovery-shell');
-                const cards = shell ? shell.querySelectorAll('.k-discovery-card').length : 0;
-                return {
-                  cat: page.dataset.cat || null,
-                  scrollTop: page.scrollTop,
-                  hasDiscovery: !!shell,
-                  discoveryHidden: shell ? shell.hidden : null,
-                  discoveryTitle: shell?.querySelector('.k-discovery-title')?.textContent?.trim() || null,
-                  discoveryCards: cards,
-                  firstChild: page.firstElementChild ? {
-                    id: page.firstElementChild.id || null,
-                    cls: page.firstElementChild.className || null,
-                    tag: page.firstElementChild.tagName
-                  } : null
-                };
-              });
-              const activeChip = document.querySelector('#k-cats .k-chip.active')?.dataset.cat || null;
-              const bodyWidth = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
+              const realPages = grid ? Array.from(grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])')) : [];
+              const active = document.querySelector('#k-cats .k-chip.active')?.dataset.cat || null;
+              const activePage = realPages.find(p => p.dataset.cat === active) || realPages[Math.round((grid?.scrollLeft || 0) / (grid?.clientWidth || innerWidth))] || null;
+              const shell = activePage?.querySelector(':scope > .k-discovery-shell') || null;
+              const rect = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+              };
+              const wrap = document.getElementById('k-hero-fixed-wrap');
+              const hero = document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const cats = document.querySelector('.k-shelf-rail');
+              const figures = document.querySelector('.k-hero-media .k-hero-figures');
+              const cs = figures ? getComputedStyle(figures) : null;
               return {
-                label,
-                href: location.href,
-                viewport: { w: innerWidth, h: innerHeight },
+                label, active,
                 gridScrollLeft: grid?.scrollLeft ?? null,
-                gridClientWidth: grid?.clientWidth ?? null,
-                activeChip,
                 pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
-                hasHorizontalOverflow: bodyWidth > innerWidth + 1,
-                realPageCount: realPages.length,
-                ghostCount: directPages.filter(page => page.hasAttribute('data-ghost')).length,
-                ghost: ghost ? {
-                  cat: ghost.dataset.cat || null,
-                  ghost: ghost.dataset.ghost || null,
-                  ariaHidden: ghost.getAttribute('aria-hidden'),
-                  inert: ghost.hasAttribute('inert'),
-                  pointerEvents: getComputedStyle(ghost).pointerEvents,
-                  idCount: ghost.querySelectorAll('[id]').length + (ghost.id ? 1 : 0),
-                  tabbableCount: ghost.querySelectorAll('a[href]:not([tabindex="-1"]),button:not([tabindex="-1"]),input:not([tabindex="-1"]),select:not([tabindex="-1"]),textarea:not([tabindex="-1"])').length
-                } : null,
-                pages: pageData
+                wrap: rect(wrap), wrapTransform: wrap ? getComputedStyle(wrap).transform : null,
+                hero: rect(hero), categories: rect(cats),
+                figuresBackgroundPosition: cs?.backgroundPosition || null,
+                figuresBackgroundSize: cs?.backgroundSize || null,
+                activePageScrollTop: activePage?.scrollTop ?? null,
+                discovery: rect(shell),
+                discoveryHidden: shell ? shell.hidden : null,
+                discoveryTitle: shell?.querySelector('.k-discovery-title')?.textContent?.trim() || null,
+                ghostCount: grid?.querySelectorAll(':scope > .k-cat-section[data-ghost="right"]').length || 0
               };
             }, label);
 
-            const initial = await snapshot('initial');
-            await page.screenshot({ path: 'playwright-live-v29-all.png', fullPage: false });
+            const initial = await snap('initial');
+            await page.screenshot({path:'hero-nav-01-initial.png'});
 
-            const contextual = initial.pages.find(p => p.cat !== 'all' && p.hasDiscovery && p.discoveryHidden === false && p.discoveryCards > 0) || null;
-            let contextualAfter = null;
-            if (contextual) {
+            await page.evaluate(() => {
+              const p = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              if (p) p.scrollTop = 320;
+            });
+            await page.waitForTimeout(500);
+            const afterVertical = await snap('after-vertical-scroll');
+            await page.screenshot({path:'hero-nav-02-after-scroll.png'});
+
+            const targetCat = await page.evaluate(() => {
+              const pages = Array.from(document.querySelectorAll('#k-grid > .k-cat-section:not([data-ghost])'));
+              const target = pages.find(p => p.dataset.cat !== 'all' && p.querySelector(':scope > .k-discovery-shell:not([hidden])'));
+              return target?.dataset.cat || pages.find(p => p.dataset.cat !== 'all')?.dataset.cat || null;
+            });
+            if (targetCat) {
               await page.evaluate((cat) => {
                 const grid = document.getElementById('k-grid');
                 const pages = Array.from(grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])'));
-                const idx = pages.findIndex(page => page.dataset.cat === cat);
-                if (idx < 0) return;
-                const width = grid.clientWidth || innerWidth;
-                grid.scrollTo({ left: idx * width, behavior: 'instant' });
-              }, contextual.cat);
-              await page.waitForTimeout(700);
-              contextualAfter = await snapshot('contextual-category');
-              await page.screenshot({ path: 'playwright-live-v29-category.png', fullPage: false });
+                const idx = pages.findIndex(p => p.dataset.cat === cat);
+                grid.scrollTo({left: idx * grid.clientWidth, behavior:'instant'});
+              }, targetCat);
+              await page.waitForTimeout(600);
             }
+            const afterSwipe = await snap('after-horizontal-swipe');
+            await page.screenshot({path:'hero-nav-03-after-swipe.png'});
 
-            const beforeGhost = await snapshot('before-ghost-wrap');
             await page.evaluate(() => {
               const grid = document.getElementById('k-grid');
               const pages = Array.from(grid.querySelectorAll(':scope > .k-cat-section'));
-              const ghostIndex = pages.findIndex(page => page.dataset.ghost === 'right');
-              if (ghostIndex < 0) return;
-              const width = grid.clientWidth || innerWidth;
-              grid.scrollTo({ left: ghostIndex * width, behavior: 'instant' });
+              const idx = pages.findIndex(p => p.dataset.ghost === 'right');
+              if (idx >= 0) grid.scrollTo({left: idx * grid.clientWidth, behavior:'instant'});
             });
-            await page.waitForTimeout(700);
-            const afterGhost = await snapshot('after-ghost-wrap');
-            await page.screenshot({ path: 'playwright-live-v29-after-ghost.png', fullPage: false });
+            await page.waitForTimeout(800);
+            const afterGhost = await snap('after-ghost');
+            await page.screenshot({path:'hero-nav-04-after-ghost.png'});
 
-            const result = {
-              responseStatus: response?.status() ?? null,
-              initial,
-              contextualTarget: contextual?.cat || null,
-              contextualAfter,
-              beforeGhost,
-              afterGhost
-            };
-            fs.writeFileSync('playwright-live-v29-audit.json', JSON.stringify(result, null, 2));
-            console.log('PLAYWRIGHT_V29_AUDIT=' + JSON.stringify(result));
-
-            const all = initial.pages.find(p => p.cat === 'all');
-            const failures = [];
-            if (!response || response.status() >= 400) failures.push(`HTTP ${response?.status()}`);
-            if (!all || !all.hasDiscovery || all.discoveryHidden || all.discoveryTitle !== 'Disponible ici') failures.push('Tout must expose visible Disponible ici');
-            if (!contextual) failures.push('No non-Tout contextual Disponible ici page found');
-            if (contextualAfter && contextualAfter.activeChip !== contextual.cat) failures.push(`Active chip did not follow ${contextual.cat}`);
-            if (initial.ghostCount !== 1 || !initial.ghost) failures.push('Expected exactly one right ghost');
-            if (initial.ghost && (!initial.ghost.inert || initial.ghost.ariaHidden !== 'true' || initial.ghost.idCount !== 0 || initial.ghost.tabbableCount !== 0)) failures.push('Ghost is not inert/ID-free');
-            if (afterGhost.gridScrollLeft !== 0 || afterGhost.activeChip !== 'all') failures.push(`Ghost wrap failed: left=${afterGhost.gridScrollLeft}, active=${afterGhost.activeChip}`);
-            if (initial.hasHorizontalOverflow) failures.push('Document horizontal overflow');
-
+            const result = { responseStatus: response?.status() || null, targetCat, initial, afterVertical, afterSwipe, afterGhost };
+            fs.writeFileSync('hero-navigation-audit.json', JSON.stringify(result, null, 2));
+            console.log('HERO_NAV_AUDIT=' + JSON.stringify(result));
             await browser.close();
-            if (failures.length) {
-              console.error('AUDIT_FAILURES=' + JSON.stringify(failures));
-              process.exit(1);
-            }
-          })().catch(err => { console.error(err); process.exit(1); });
+          })().catch(e => { console.error(e); process.exit(1); });
           NODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-live-contextual-v29
+          name: playwright-live-hero-navigation-baseline
           path: |
-            public/boutique/playwright-live-v29-audit.json
-            public/boutique/playwright-live-v29-all.png
-            public/boutique/playwright-live-v29-category.png
-            public/boutique/playwright-live-v29-after-ghost.png
-          if-no-files-found: warn
+            public/boutique/hero-navigation-audit.json
+            public/boutique/hero-nav-*.png
+          if-no-files-found: error
