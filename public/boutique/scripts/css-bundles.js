@@ -43,6 +43,10 @@ const BUNDLES = [
     out: 'checkout-desktop-v2.css',
     files: ['checkout-desktop-v2'],
   },
+  {
+    out: 'discovery-desktop-v2.css',
+    files: ['discovery-desktop-v2'],
+  },
 ];
 
 module.exports = { BUNDLES };
