@@ -51,8 +51,23 @@
     color: var(--ocean-dark-deep);
   }
 
-  /* Pendant la recherche seulement, le champ occupe le header lui-même.
-     Le hero, les catégories et Discovery ne sont jamais recouverts au repos. */
+  /* Le focus est un vrai état du HEADER, pas une surface flottante au-dessus
+     de la Boutique. Le chrome habituel disparaît temporairement, le header
+     devient opaque, mais sa hauteur reste strictement inchangée : Hero,
+     catégories, Discovery et pager gardent donc exactement leur géométrie. */
+  .k-header:has(.k-search:focus-within) {
+    background: var(--white);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .k-header:has(.k-search:focus-within) .k-header-inner > .k-logo,
+  .k-header:has(.k-search:focus-within) .k-header-inner > .k-header-actions {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .k-search:focus-within {
     position: fixed;
     top: calc(env(safe-area-inset-top, 0px) + 5px);
@@ -65,7 +80,7 @@
     border-radius: 17px;
     background: var(--white);
     border-color: rgba(42,122,62,.28);
-    box-shadow: 0 7px 20px var(--border-text-10), 0 0 0 3px rgba(100,175,90,.06);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.06);
   }
 
   .k-search:focus-within input {
@@ -84,6 +99,8 @@
     transform: translateY(-50%);
   }
 
+  /* Seul le résultat de recherche est autorisé à recouvrir la Boutique :
+     cette superposition intervient après une intention explicite de recherche. */
   .k-search:focus-within .k-search-dropdown {
     top: calc(100% + 5px);
     max-height: min(50vh, 360px);

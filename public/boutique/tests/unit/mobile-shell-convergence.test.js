@@ -19,11 +19,14 @@ describe('mobile shell convergence', () => {
     expect(css).toMatch(/\.k-bnav\s*\{[^}]*background:\s*rgba\(255,255,255,\.96\)[^}]*border-top:\s*0/s);
   });
 
-  test('garde une loupe globale compacte et ne déploie le vrai champ que dans le header', () => {
+  test('garde une loupe globale compacte et transforme le focus en vrai état du header', () => {
     expect(css).toMatch(/\.k-search\s*\{[^}]*flex:\s*0 0 34px[^}]*width:\s*34px[^}]*height:\s*34px[^}]*margin-left:\s*auto/s);
     expect(css).toMatch(/\.k-search input\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*opacity:\s*0[^}]*cursor:\s*pointer/s);
-    expect(css).toMatch(/\.k-search:focus-within\s*\{[^}]*position:\s*fixed[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 5px\)[^}]*left:\s*12px[^}]*right:\s*12px[^}]*height:\s*34px[^}]*z-index:\s*190/s);
+    expect(css).toMatch(/\.k-header:has\(\.k-search:focus-within\)\s*\{[^}]*background:\s*var\(--white\)[^}]*backdrop-filter:\s*none/s);
+    expect(css).toMatch(/\.k-header:has\(\.k-search:focus-within\) \.k-header-inner > \.k-logo,[\s\S]*\.k-header-actions\s*\{[^}]*opacity:\s*0[^}]*visibility:\s*hidden[^}]*pointer-events:\s*none/s);
+    expect(css).toMatch(/\.k-search:focus-within\s*\{[^}]*position:\s*fixed[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 5px\)[^}]*left:\s*12px[^}]*right:\s*12px[^}]*height:\s*34px[^}]*z-index:\s*190[^}]*box-shadow:\s*0 0 0 3px/s);
     expect(css).toMatch(/\.k-search:focus-within input\s*\{[^}]*position:\s*static[^}]*opacity:\s*1[^}]*color:\s*var\(--text\)[^}]*cursor:\s*text/s);
+    expect(css).not.toContain('0 7px 20px');
     expect(css).not.toContain('var(--pager-top, 190px)');
   });
 
