@@ -6,11 +6,11 @@
  * @criticality   medium
  * @inputs        id (params), market (query — code KM|YT|CM|CG, résolu serveur), inquiry target, intent, requester_note
  * @outputs       service_public_fields, physical_offer_public_fields, inquiry_public_result
- * @depends       services/providers-service.js, services/providers-interaction-policy.js, middleware/auth-guest.js, db (résolution code marché)
+ * @depends       services/providers-service.js, services/providers-inquiry-service.js, services/providers-interaction-policy.js, middleware/auth-guest.js, db (résolution code marché)
  * @used-by       bootstrap/api-routes.js, public/boutique/js/discovery-api.js
  * @db-read       markets
  * @db-write      none
- * @db-write-via:providers-service inquiries
+ * @db-write-via:providers-inquiry-service inquiries
  * @db-txn        delegated_to_service
  * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
  * @impact-areas  providers-services, boutique, discovery-rail
@@ -24,13 +24,11 @@ const router  = express.Router();
 const db = require('../db');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const {
-  createInquiry,
   getService, isServiceExposable,
   getPhysicalOffer, isPhysicalOfferExposable,
 } = require('../services/providers-service');
-const {
-  buildPublicInteraction,
-} = require('../services/providers-interaction-policy');
+const { createContextualInquiry } = require('../services/providers-inquiry-service');
+const { buildPublicInteraction } = require('../services/providers-interaction-policy');
 
 async function resolveMarketId(marketCode) {
   if (!marketCode) return null;
@@ -61,8 +59,8 @@ function readInquiryIntent(value) {
   if (value == null || value === '') return { ok: true, value: 'request' };
   if (typeof value !== 'string') return { ok: false, value: null };
   const normalized = value.trim().toLowerCase();
-  // `quote` a été exposé brièvement avant la convergence V2. Il reste accepté
-  // comme alias de request afin qu'un ancien client ne casse pas au déploiement.
+  // Compat déploiement : `quote` a brièvement existé côté UI ; il converge
+  // vers la demande contextualisée sans créer une troisième interaction.
   if (normalized === 'quote') return { ok: true, value: 'request' };
   if (!['request', 'callback'].includes(normalized)) return { ok: false, value: null };
   return { ok: true, value: normalized };
@@ -152,19 +150,13 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
     }
 
     const requestedWindow = readRequestedWindow(req.body?.requested_window);
-    if (!requestedWindow.ok) {
-      return res.status(400).json({ error: 'requested_window invalide' });
-    }
+    if (!requestedWindow.ok) return res.status(400).json({ error: 'requested_window invalide' });
 
     const intent = readInquiryIntent(req.body?.intent);
-    if (!intent.ok) {
-      return res.status(400).json({ error: 'intent invalide' });
-    }
+    if (!intent.ok) return res.status(400).json({ error: 'intent invalide' });
 
     const requesterNote = readRequesterNote(req.body?.requester_note);
-    if (!requesterNote.ok) {
-      return res.status(400).json({ error: 'requester_note invalide' });
-    }
+    if (!requesterNote.ok) return res.status(400).json({ error: 'requester_note invalide' });
 
     const requesterPhone = String(req.user?.phone || '').trim();
     if (!requesterPhone) {
@@ -174,10 +166,9 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
     const exposable = target.serviceId
       ? await isServiceExposable(target.serviceId, marketId)
       : await isPhysicalOfferExposable(target.physicalOfferId, marketId);
-
     if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
-    const inquiry = await createInquiry({
+    const inquiry = await createContextualInquiry({
       serviceId: target.serviceId,
       physicalOfferId: target.physicalOfferId,
       requesterPhone,
