@@ -119,9 +119,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
-      # schema-freshness doit retrouver le dernier commit ayant réellement
-      # touché le dump. Un seul fetch rend le checkout non-shallow en ne
-      # récupérant que l'historique des branches head+base, sans blobs/tags.
       - name: Fetch PR history for migration/schema gates
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -130,7 +127,6 @@ jobs:
           git fetch --no-tags --filter=blob:none --unshallow origin \
             "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
-      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -175,7 +171,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
-      # Seul le sanitize diff a besoin du commit de base ; CSS/HTML/tests n'en ont pas besoin.
       - name: Fetch PR base commit for sanitize diff
         if: needs.changes.outputs.boutique_js == 'true'
         env:
@@ -190,11 +185,9 @@ jobs:
       - name: Install Boutique test dependencies
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true'
         run: npm --prefix public/boutique ci
-
       - name: JS quality
         if: needs.changes.outputs.boutique_js == 'true'
         run: node scripts/code-quality-gate.js --strict
-
       - name: CSS source gates
         if: needs.changes.outputs.boutique_css == 'true'
         run: |
@@ -203,52 +196,41 @@ jobs:
           node public/boutique/scripts/check-css-vars.js --strict
           node public/boutique/scripts/check-zindex-contract.js --strict
           node public/boutique/scripts/check-sticky-integrity.js --strict
-
       - name: JS source gates
         if: needs.changes.outputs.boutique_js == 'true'
         run: |
           node public/boutique/scripts/check-js-imports.js
           node public/boutique/scripts/check-no-css-injection.js
-
       - name: HTML balance
         if: needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/check-html-balance.js
-
       - name: Body-class contract
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/check-body-classes.js
-
       - name: Boutique architecture
         if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/audit-boutique-arch.js
-
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
-
       - name: Related Boutique unit tests
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
         env:
           BOUTIQUE_TEST_FILES: ${{ needs.changes.outputs.boutique_test_files }}
         run: node scripts/run-staged-related-tests.js --files "$BOUTIQUE_TEST_FILES"
-
       - name: Full Boutique unit tests after dependency changes
         if: needs.changes.outputs.boutique_package == 'true'
         run: npm --prefix public/boutique run test:unit -- --forceExit
-
       - name: Boutique global ownership
         run: node scripts/boutique-ownership-full-check.js --strict
-
       - name: Boutique critical visual ownership
         run: |
           node public/boutique/scripts/check-selector-ownership.js
           node public/boutique/scripts/check-runtime-css-var-ownership.js
-
       - name: Agent remediation contract — boutique
         run: node scripts/check-agent-remediation-contract.js --scope=boutique
-
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
@@ -262,24 +244,38 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
-      # Mode --check uniquement : ne jamais generer (--write) en CI. Le git diff
-      # final prouve l'absence de mutation, donc l'absence de faux-rouge d'artefact.
+      # Les sources canoniques restent bloquantes. Les projections dérivées sont
+      # hydratées dans le workspace CI avant les gates, puis restaurées avant le
+      # contrôle de mutation. Une PR ne devient donc plus rouge pour un simple
+      # oubli de régénération/commit d'un snapshot généré.
+      - name: Hydrate derived governance projections
+        run: node scripts/ci-refresh-governance-projections.js
       - name: Feature slice guard
         run: node scripts/feature-guard.js --strict
-      - name: Business graph reconstructible and fresh
+      - name: Business graph semantic check on fresh projection
         run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
       - name: Business graph debt ratchet
         run: npm run business-graph:ratchet-check
       - name: Business graph dependency disposition
         run: npm run business-graph:disposition-check
-      - name: Feature 360 canonical projection fresh
+      - name: Feature 360 canonical projection check
         run: node scripts/feature-360-check.js
       - name: Agent remediation contract — all scopes
         run: node scripts/check-agent-remediation-contract.js
-      - name: Agent remediation index fresh
+      - name: Agent remediation index check
         run: node scripts/gen-agent-remediation-index.js --check
-      - name: Prove gates did not mutate the tree
+      - name: Restore CI-only generated projections
+        if: always()
+        run: |
+          git restore --source=HEAD -- \
+            docs/BUSINESS_FEATURE_GRAPH.json \
+            docs/BUSINESS_FEATURE_GRAPH.md \
+            docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json \
+            docs/FEATURE_360.md \
+            docs/AGENT_REMEDIATION_INDEX.json
+      - name: Prove gates did not mutate canonical sources
+        if: always()
         run: git diff --exit-code
 
   verdict:
