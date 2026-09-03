@@ -21,16 +21,17 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   service: 'Classer et suggérer des produits boutique selon un moteur de ranking dédié. ' +
-    'Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product ' +
-    'Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale ' +
-    'd’activation serveur, sans jamais posséder ni cloner les données sources.',
+    'Compose aussi en mémoire une Discovery locale mixte (DiscoveryCard — Product ' +
+    'Komerce, produit physique tiers, service tiers), porte sa politique éditoriale ' +
+    'd’activation, d’ordre et de contexte catégorie, sans jamais posséder ni cloner les données sources.',
 
   perimeter: {
     in: [
       'moteur de classement boutique',
       'endpoint de suggestions',
       'DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée',
-      'politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre',
+      'category_keys — metadata de contexte de navigation projetée à la volée, jamais vérité métier persistée',
+      'politique éditoriale serveur explicite de Discovery : activation globale, candidats, ordre et contextes catégorie',
       'surface read-only surface=local sur la façade /api/boutique/suggestions',
     ],
     out: [
@@ -39,6 +40,7 @@ module.exports = {
       'vérité d’exposabilité stock/service/offre physique (local-stock / providers-services)',
       'cycle Inquiry, paiement, réservation ou settlement',
       'taxonomie ou navigation frontend parallèle pour le local',
+      'formule V2.9 définitive de distance/disponibilité tant que les cas réels ne sont pas arbitrés',
     ],
   },
 
@@ -62,6 +64,7 @@ module.exports = {
   docs: [
     'docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md',
     'docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md',
+    'docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md',
   ],
 
   db: {
@@ -77,10 +80,10 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/boutique/suggestions — ranking produit historique',
-      'GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes',
+      'GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only avec category_keys contextuels, [] si activation ou données absentes',
     ],
     consumes: [
-      'catalog (lecture produit)',
+      'catalog (lecture produit + taxonomie source pour Product local)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (DB et composition root)',
       'logistics',
@@ -101,8 +104,8 @@ module.exports = {
       'un code marché de navigation ; le service le résout côté serveur avant composition.',
   },
 
-  authority: 'backend-core — recommendations possède le ranking et l’ordre éditorial du rail ; ' +
-    'les features sources possèdent seules leur vérité métier et leur exposabilité.',
+  authority: 'backend-core — recommendations possède le ranking, l’ordre éditorial et les contextes ' +
+    'de projection Discovery ; les features sources possèdent seules leur vérité métier et leur exposabilité.',
 
   invariants: [
     'le ranking ne modifie jamais les données produit, lecture seule sur catalog',
@@ -120,7 +123,7 @@ module.exports = {
       'serveur explicite ; aucun flag d’exposition n’est détenu par le frontend',
       test: 'tests/unit/discovery-rail-service.test.js' },
     { statement: 'l’ordre du rail suit exactement la liste éditoriale serveur, y compris lorsqu’elle ' +
-      'mélange product, physical_offer et service',
+      'mélange product, physical_offer et service ; category_keys enrichit le contexte sans reclasser',
       test: 'tests/unit/discovery-rail-service.test.js' },
   ],
 
@@ -140,7 +143,7 @@ module.exports = {
       'service actif identifiable (classer/suggérer), pas une projection d’une autre feature',
       'moteur de ranking dédié avec invariant lecture-seule sur catalog',
       'DiscoveryCard est une projection composée à la volée, jamais une table ni un clone',
-      'la politique d’activation/ordre est une responsabilité de sélection de recommendations, ' +
+      'la politique d’activation/ordre/contexte est une responsabilité de sélection de recommendations, ' +
         'distincte des règles métier d’exposabilité conservées dans les features sources',
     ],
   },
@@ -149,5 +152,7 @@ module.exports = {
   // 2026-08-30 — V2 native Boutique : activation serveur OFF par défaut,
   // sélection éditoriale explicite et façade surface=local ; le frontend reste
   // absent lorsque cards=[] (capability != exposure).
+  // 2026-09-03 — V2.9 : contexte catégorie server-owned via category_keys ;
+  // « Disponible ici » devient natif de chaque page du pager, sans filtre client.
 
 };
