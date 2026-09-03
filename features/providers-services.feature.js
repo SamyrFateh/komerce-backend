@@ -85,7 +85,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/157_providers_services_media.sql',
-      'migrations/158_providers_services_interaction_actions.sql',
+      'migrations/160_providers_services_interaction_actions.sql',
     ],
     tests: [
       'tests/unit/providers-service.test.js',
