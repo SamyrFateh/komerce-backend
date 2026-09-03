@@ -14,7 +14,7 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
       - run: npm --prefix public/boutique ci
       - run: npx --prefix public/boutique playwright install --with-deps chromium
-      - name: Capture crop candidates
+      - name: Capture top-aligned crop candidates
         run: |
           cd public/boutique
           node <<'NODE'
@@ -24,27 +24,27 @@ jobs:
             const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
             await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
             const page=await context.newPage();
-            await page.goto(`https://komerce.co/boutique/?pw_crop_matrix=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.goto(`https://komerce.co/boutique/?pw_crop_matrix2=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
             await page.waitForFunction(()=>document.querySelector('.k-hero-media .k-hero-figures'),null,{timeout:30000});
             await page.waitForTimeout(5000);
             const candidates=[
               ['current','118%','92%'],
-              ['a','112%','42%'],
-              ['b','110%','45%'],
-              ['c','108%','50%'],
-              ['d','108%','65%'],
-              ['e','105%','70%']
+              ['f108top','108%','0%'],
+              ['g105top','105%','0%'],
+              ['h102top','102%','0%'],
+              ['i100top','100%','0%'],
+              ['j105low','105%','12%']
             ];
             for(const [name,size,y] of candidates){
               await page.addStyleTag({content:`@media(max-width:899px){.k-hero-media .k-hero-figures{background-size:auto ${size};background-position:70% ${y};}}`});
               await page.waitForTimeout(150);
-              await page.screenshot({path:`hero-crop-${name}.png`,clip:{x:0,y:36,width:390,height:155}});
+              await page.screenshot({path:`hero-crop2-${name}.png`,clip:{x:0,y:36,width:390,height:155}});
             }
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
       - uses: actions/upload-artifact@v4
         with:
-          name: playwright-hero-crop-matrix-v293
-          path: public/boutique/hero-crop-*.png
+          name: playwright-hero-crop-matrix-v293-top
+          path: public/boutique/hero-crop2-*.png
           if-no-files-found: error
