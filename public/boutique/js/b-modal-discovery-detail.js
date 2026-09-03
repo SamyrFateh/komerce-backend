@@ -93,23 +93,24 @@ function buildActionHTML(kind, ref, detail, actions) {
   return actions.map((action, index) => {
     const label = sanitize(actionLabelFor(action, kind));
     const priorityClass = index === 0 ? ' is-primary' : ' is-secondary';
+    const sharedClass = `k-discovery-cta k-modal-discovery-cta k-modal-discovery-action${priorityClass}`;
 
     if (action === 'call') {
       const href = telHref(contact.phone);
       if (!href) return '';
-      return `<a class="k-modal-discovery-action${priorityClass}" href="${sanitize(href)}"
+      return `<a class="${sharedClass}" href="${sanitize(href)}"
         data-discovery-direct-action="call">${label}</a>`;
     }
 
     if (action === 'whatsapp') {
       const href = whatsappHref(contact.whatsapp);
       if (!href) return '';
-      return `<a class="k-modal-discovery-action${priorityClass}" href="${sanitize(href)}"
+      return `<a class="${sharedClass}" href="${sanitize(href)}"
         target="_blank" rel="noopener noreferrer"
         data-discovery-direct-action="whatsapp">${label}</a>`;
     }
 
-    return `<button class="k-modal-discovery-action${priorityClass}" type="button"
+    return `<button class="${sharedClass}" type="button"
       data-discovery-modal-action="${sanitize(action)}"
       data-discovery-kind="${sanitize(kind)}"
       data-discovery-ref="${sanitize(ref)}">${label}</button>`;
