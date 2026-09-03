@@ -1,0 +1,87 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — checkout-desktop-v2.css
+   Généré par deploy-css.js — éditer les sources CSS.
+   ═══════════════════════════════════════════════════════════════ */
+/* ── checkout-desktop-v2.css ─────────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          checkout-desktop-v2-skin
+ * @domain        checkout
+ * @layer         ui-style
+ * @owner         public/boutique/js/checkout-desktop-style.js
+ * @purpose       Rééquilibrer la page transactionnelle desktop sans modifier le contrat mobile.
+ * @impact-areas  checkout, shared-cart, payment-ui, desktop-layout
+ * @version       2026-09
+ */
+
+/*
+ * Desktop V2 — le checkout est une page, pas un panneau latéral.
+ * Le corps global reste l'unique propriétaire du scroll vertical.
+ * La colonne récap garde une largeur utile et la décision transactionnelle
+ * reçoit la majorité de l'espace disponible.
+ */
+@media (min-width: 900px) {
+  .k-order-overlay.open .k-order-modal {
+    --ck-desktop-max: 1280px;
+    --ck-desktop-gap: 28px;
+  }
+
+  .k-order-overlay.open .k-order-body--checkout {
+    overflow-y: auto;
+    padding: 28px 28px 40px;
+  }
+
+  .ck-checkout-layout {
+    grid-template-columns:
+      minmax(320px, .8fr)
+      minmax(0, 1.2fr);
+  }
+
+  .ck-checkout-primary {
+    align-self: start;
+    padding: 22px 24px 24px;
+  }
+
+  /*
+   * Suppression du second scroll : identité, relais, carte, paiement et code
+   * de retrait suivent le flux naturel de la page transactionnelle.
+   */
+  .ck-checkout-aside {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 20px 22px 24px;
+    scrollbar-width: auto;
+  }
+
+  .ck-checkout-desktop-heading {
+    margin-bottom: 14px;
+  }
+
+  .ck-recap-items {
+    border-top: 1px solid rgba(31,48,36,.08);
+  }
+
+  .ck-recap-item {
+    min-height: 72px;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .ck-recap-item-img,
+  .ck-recap-item-img--empty {
+    width: 56px;
+    height: 56px;
+  }
+
+  .ck-recap-item-name {
+    font-size: .86rem;
+    font-weight: 700;
+  }
+
+  .ck-recap-item-price {
+    font-size: .86rem;
+    font-weight: 800;
+  }
+}
