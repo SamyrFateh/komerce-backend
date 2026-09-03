@@ -32,6 +32,7 @@ import {
   buildCheckoutSelection,
   checkoutCart,
 } from '../b-checkout.js';
+import { ensureCheckoutDesktopV2Stylesheet } from '../checkout-desktop-style.js';
 import {
   computePriceVariations,
   buildPriceVariationSummary,
@@ -141,6 +142,9 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
   });
 
   try {
+    // Le chargement reste un acte de présentation checkout ; aucune règle CSS
+    // n'est construite dans ce module et le mobile conserve son bundle actuel.
+    ensureCheckoutDesktopV2Stylesheet();
     checkoutCart(selection);
     return true;
   } catch (err) {
