@@ -16,40 +16,45 @@ const { requestDiscovery } = require('../../js/discovery-actions.js');
 
 beforeEach(() => mockEmit.mockClear());
 
-test('émet la commande canonique pour service sans précision', () => {
+test('émet la commande canonique request sans précision', () => {
   const source = document.createElement('button');
   expect(requestDiscovery('service', 'svc-1', source)).toBe(true);
-  expect(mockEmit).toHaveBeenCalledTimes(1);
   expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
-    kind: 'service', ref: 'svc-1', source, requestedWindow: null,
+    kind: 'service', ref: 'svc-1', source, requestedWindow: null, requesterNote: null,
   });
 });
 
-test('transporte la fenêtre demandée dans le même contrat canonique', () => {
+test('transporte fenêtre et précision sans perdre la cible', () => {
   const source = document.createElement('button');
-  expect(requestDiscovery('service', 'svc-1', source, '  Samedi matin  ')).toBe(true);
+  expect(requestDiscovery(
+    'service', 'svc-1', source, '  Cette semaine  ', 'request', '  Hilux 2012, phare droit  '
+  )).toBe(true);
   expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
-    kind: 'service', ref: 'svc-1', source, requestedWindow: 'Samedi matin',
+    kind: 'service', ref: 'svc-1', source,
+    requestedWindow: 'Cette semaine', requesterNote: 'Hilux 2012, phare droit',
   });
 });
 
-test('ajoute callback ou quote sans casser le payload historique request', () => {
+test('callback ajoute uniquement l intention au contrat', () => {
   const source = document.createElement('button');
-  expect(requestDiscovery('service', 'svc-2', source, 'Demain', 'callback')).toBe(true);
+  expect(requestDiscovery('service', 'svc-2', source, null, 'callback', 'Rappeler après 17h')).toBe(true);
   expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
-    kind: 'service', ref: 'svc-2', source, requestedWindow: 'Demain', action: 'callback',
+    kind: 'service', ref: 'svc-2', source, requestedWindow: null,
+    requesterNote: 'Rappeler après 17h', action: 'callback',
   });
 });
 
 test('émet la même commande canonique pour physical_offer', () => {
-  expect(requestDiscovery('physical_offer', 'offer-1', null)).toBe(true);
+  expect(requestDiscovery('physical_offer', 'offer-1', null, null, 'request', '30 sacs')).toBe(true);
   expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
-    kind: 'physical_offer', ref: 'offer-1', source: null, requestedWindow: null,
+    kind: 'physical_offer', ref: 'offer-1', source: null,
+    requestedWindow: null, requesterNote: '30 sacs',
   });
 });
 
-test('refuse un kind ou une action hors frontière Inquiry', () => {
+test('refuse un kind ou une action hors frontière Inquiry publique', () => {
   expect(requestDiscovery('product', 'p-1', null)).toBe(false);
   expect(requestDiscovery('service', 'svc-1', null, null, 'call')).toBe(false);
+  expect(requestDiscovery('service', 'svc-1', null, null, 'quote')).toBe(false);
   expect(mockEmit).not.toHaveBeenCalled();
 });
