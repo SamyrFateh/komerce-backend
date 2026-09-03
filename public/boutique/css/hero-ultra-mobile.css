@@ -12,27 +12,27 @@
 
 /*
  * HERO ULTRA MOBILE — KOMERCE COMPACT BRAND MASTHEAD
- * Cible : 54–62 px de hauteur utile sous le header 44 px.
+ * Cible : 50–58 px de hauteur utile sous le header 44 px.
  *
- * Mesure Playwright live V2.9 (390x844) :
+ * Mesure Playwright live V2.9.1 (390x844) avant ce recadrage :
  * header 44 px + hero 58.5 px + respiration => catégories à y=106.5.
- * Le hero reste désormais stable pendant le scroll des pages catégories :
- * aucune translation verticale ne doit modifier cette géométrie.
+ * La réserve blanche haute de l'asset permet de remonter la mini-scène et de
+ * rendre quelques pixels au contenu sans réintroduire le collapse au scroll.
  */
 @media (max-width: 899px) {
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(54px, 15vw, 62px);
+    height: clamp(50px, 14vw, 58px);
     margin-top: 0;
     margin-bottom: 0;
   }
 
   .k-hero-media .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    /* Mini-scène plus lisible : personnages légèrement plus petits et surtout
-       cadrés plus haut pour occuper la réserve supérieure et conserver davantage
-       du geste/téléphone dans les 58–62 px disponibles. */
+    /* La scène utilise maintenant presque toute la réserve verticale disponible :
+       le blanc supérieur est rogné, les personnages remontent et le téléphone
+       reste lisible malgré un masthead légèrement plus court. */
     background-size: auto 118%;
-    background-position: 70% 44%;
+    background-position: 70% 92%;
     -webkit-mask-image: none;
     mask-image: none;
   }
