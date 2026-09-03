@@ -4,6 +4,7 @@ const {
   normalizeActions,
   buildPublicInteraction,
   isInquiryAction,
+  publicActionForStoredAction,
 } = require('../../services/providers-interaction-policy');
 
 describe('providers interaction policy', () => {
@@ -12,32 +13,34 @@ describe('providers interaction policy', () => {
     expect(normalizeActions(null)).toEqual(['request']);
   });
 
-  test('les actions sont cumulatives, ordonnées et dédupliquées', () => {
-    expect(normalizeActions(['callback', 'call', 'callback', 'whatsapp', 'unknown']))
-      .toEqual(['callback', 'call', 'whatsapp']);
+  test('quote converge vers request et call/whatsapp vers callback', () => {
+    expect(normalizeActions(['quote', 'call', 'whatsapp', 'callback', 'request']))
+      .toEqual(['request', 'callback']);
+    expect(publicActionForStoredAction('quote')).toBe('request');
+    expect(publicActionForStoredAction('call')).toBe('callback');
+    expect(publicActionForStoredAction('whatsapp')).toBe('callback');
   });
 
-  test('un contact direct n est exposé que si une coordonnée publique explicite existe', () => {
+  test('la projection publique n expose jamais une coordonnée provider', () => {
     expect(buildPublicInteraction({
-      actionsEnabled: ['callback', 'call', 'whatsapp'],
+      actionsEnabled: ['request', 'call', 'whatsapp'],
       publicPhone: '+269 321 00 00',
-      publicWhatsapp: null,
+      publicWhatsapp: '+269 321 00 01',
     })).toEqual({
-      actions: ['callback', 'call'],
-      public_contact: { phone: '+269 321 00 00' },
+      actions: ['request', 'callback'],
+      public_contact: null,
     });
   });
 
-  test('providers.phone privé ne peut pas être reconstruit par fallback', () => {
-    expect(buildPublicInteraction({
-      actionsEnabled: ['call', 'whatsapp'],
-    })).toEqual({ actions: [], public_contact: null });
+  test('un ancien jeu uniquement direct devient un rappel contextualisé', () => {
+    expect(buildPublicInteraction({ actionsEnabled: ['call', 'whatsapp'] }))
+      .toEqual({ actions: ['callback'], public_contact: null });
   });
 
-  test('seules request quote callback partent vers Inquiry', () => {
+  test('seules request et callback sont des intentions Inquiry publiques', () => {
     expect(isInquiryAction('request')).toBe(true);
-    expect(isInquiryAction('quote')).toBe(true);
     expect(isInquiryAction('callback')).toBe(true);
+    expect(isInquiryAction('quote')).toBe(false);
     expect(isInquiryAction('call')).toBe(false);
     expect(isInquiryAction('whatsapp')).toBe(false);
   });
