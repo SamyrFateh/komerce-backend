@@ -1,0 +1,182 @@
+name: Staging Discovery modal V2 operations
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-discovery-modal-v2
+  cancel-in-progress: false
+
+jobs:
+  seed-modal-v2:
+    name: Discovery modal V2 — bounded staging seed
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] discovery-modal-v2-seed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DISCOVERY_STAGING_SEED_ENABLED: 'true'
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_GRAPHQL_URL: 'https://backboard.railway.com/graphql/v2'
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Verify bounded Railway access
+        id: railway_access
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_TOKEN missing'; exit 1; }
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL missing'; exit 1; }
+
+          response="$RUNNER_TEMP/railway-project-token.json"
+          payload='{"query":"query { projectToken { projectId environmentId } }"}'
+          http_code="$(curl --silent --show-error \
+            --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
+
+          test "$http_code" = '200' || { echo "::error::Railway API HTTP $http_code"; exit 1; }
+          jq -e '.errors and (.errors | length > 0)' "$response" >/dev/null && {
+            echo '::error::Railway project token rejected'; exit 1;
+          }
+
+          project_id="$(jq -r '.data.projectToken.projectId // empty' "$response")"
+          environment_id="$(jq -r '.data.projectToken.environmentId // empty' "$response")"
+          test "$project_id" = "$RAILWAY_PROJECT_ID" || { echo '::error::Wrong Railway project'; exit 1; }
+          test "$environment_id" = "$RAILWAY_ENVIRONMENT_ID" || { echo '::error::Wrong Railway environment'; exit 1; }
+          echo 'railway_access=ok' >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Seed contextual modal V2 examples
+        id: seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 90s node scripts/seed-discovery-modal-v2-staging.js)"
+          printf '%s\n' "$output"
+          candidates="$(printf '%s\n' "$output" | sed -n 's/^DISCOVERY_RAIL_CANDIDATES=//p' | tail -n 1)"
+          test -n "$candidates" || { echo '::error::No Discovery candidates produced'; exit 1; }
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+
+      - name: Verify serious examples in Railway staging
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 45s node - <<'NODE'
+          const db = require('./db');
+          async function main() {
+            const { rows } = await db.query(`
+              SELECT 'service' AS kind, title, actions_enabled
+                FROM services
+               WHERE title IN (
+                 'Recherche et sourcing de pièces auto',
+                 'Plomberie maison — diagnostic et dépannage',
+                 'Diagnostic électrique bâtiment'
+               )
+              UNION ALL
+              SELECT 'physical_offer' AS kind, title, actions_enabled
+                FROM physical_offers
+               WHERE title IN (
+                 'Ciment 42,5R — sac 50 kg',
+                 'Plateau de samboussas pour réception'
+               )
+              ORDER BY kind, title
+            `);
+            console.log(JSON.stringify(rows, null, 2));
+            if (rows.length !== 5) throw new Error(`expected 5 modal V2 examples, got ${rows.length}`);
+            const expected = new Set([
+              'Recherche et sourcing de pièces auto',
+              'Plomberie maison — diagnostic et dépannage',
+              'Diagnostic électrique bâtiment',
+              'Ciment 42,5R — sac 50 kg',
+              'Plateau de samboussas pour réception',
+            ]);
+            for (const row of rows) {
+              if (!expected.delete(row.title)) throw new Error(`unexpected example: ${row.title}`);
+              const actions = row.actions_enabled || [];
+              if (!actions.every(action => ['request', 'callback'].includes(action))) {
+                throw new Error(`legacy/direct action still present on ${row.title}: ${actions.join(',')}`);
+              }
+            }
+            if (expected.size) throw new Error(`missing examples: ${[...expected].join(', ')}`);
+            if (process.env.GITHUB_OUTPUT) {
+              require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `examples=${rows.length}\n`);
+            }
+          }
+          main().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Sync Discovery rail variables through Railway API
+        id: railway
+        shell: bash
+        env:
+          CANDIDATES: ${{ steps.seed.outputs.candidates }}
+        run: |
+          set -euo pipefail
+          response="$RUNNER_TEMP/railway-variable-upsert.json"
+          payload="$(jq -n \
+            --arg projectId "$RAILWAY_PROJECT_ID" \
+            --arg environmentId "$RAILWAY_ENVIRONMENT_ID" \
+            --arg serviceId "$RAILWAY_SERVICE_ID" \
+            --arg candidates "$CANDIDATES" \
+            '{query:"mutation variableCollectionUpsert($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",variables:{input:{projectId:$projectId,environmentId:$environmentId,serviceId:$serviceId,variables:{DISCOVERY_RAIL_ENABLED:"true",DISCOVERY_RAIL_CANDIDATES:$candidates}}}}')"
+
+          http_code="$(curl --silent --show-error \
+            --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
+          test "$http_code" = '200' || { echo "::error::Railway variable API HTTP $http_code"; exit 1; }
+          jq -e '.errors and (.errors | length > 0)' "$response" >/dev/null && {
+            echo '::error::Railway variable update failed'; exit 1;
+          }
+          echo 'runtime_sync=accepted' >> "$GITHUB_OUTPUT"
+
+      - name: Close successful command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RAILWAY_ACCESS: ${{ steps.railway_access.outputs.railway_access }}
+          EXAMPLES: ${{ steps.verify.outputs.examples }}
+          RUNTIME_SYNC: ${{ steps.railway.outputs.runtime_sync }}
+        run: |
+          set -euo pipefail
+          note="Discovery modal V2 staging seed completed successfully. Railway access: ${RAILWAY_ACCESS:-unknown}. Examples: ${EXAMPLES:-unknown}. Variable update: ${RUNTIME_SYNC:-unknown}."
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
