@@ -30,7 +30,7 @@ describe('discovery desktop V2 stylesheet loader', () => {
     expect(first.tagName).toBe('LINK');
     expect(first.rel).toBe('stylesheet');
     expect(first.media).toBe('(min-width: 900px)');
-    expect(first.getAttribute('href')).toBe('/boutique/css/dist/discovery-desktop-v2.css?v=1');
+    expect(first.getAttribute('href')).toBe('/boutique/css/dist/discovery-desktop-v2.css?v=2');
     expect(document.querySelectorAll('#k-discovery-desktop-v2-style')).toHaveLength(1);
   });
 

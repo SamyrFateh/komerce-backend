@@ -11,7 +11,7 @@
 'use strict';
 
 const STYLE_ID = 'k-discovery-desktop-v2-style';
-const STYLE_HREF = '/boutique/css/dist/discovery-desktop-v2.css?v=1';
+const STYLE_HREF = '/boutique/css/dist/discovery-desktop-v2.css?v=2';
 
 export function ensureDiscoveryDesktopV2Stylesheet() {
   if (typeof document === 'undefined' || typeof window === 'undefined') return null;

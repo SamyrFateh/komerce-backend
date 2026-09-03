@@ -11,16 +11,56 @@
 
 /*
  * Desktop One Card Contract.
- * Le shell visuel appartient à products.css via les classes k-card canoniques.
- * Ce fichier ne possède que les capacités Discovery : largeur éditoriale,
- * média simple, contexte local et verbe d'action.
+ * Même langage que le catalogue, gabarit de rail plus compact :
+ * - même shell k-card, mêmes fontes, mêmes tokens, même hiérarchie ;
+ * - seules les capacités locales (statut, contexte, verbe) distinguent Discovery ;
+ * - le gabarit 4:3 et le peek horizontal gardent le rail secondaire au catalogue.
  */
 @media (min-width: 900px) {
+  .k-discovery-header {
+    align-items: center;
+    padding: 16px 0 10px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid var(--sand-dark);
+  }
+
+  .k-discovery-title {
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+  }
+
+  .k-discovery-market {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--sand-dark);
+    color: var(--text-muted);
+    font-size: .75rem;
+    font-weight: 600;
+  }
+
+  .k-discovery-rail {
+    gap: 16px;
+    padding: 0 0 8px;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0;
+  }
+
   .k-discovery-canonical-card {
-    flex: 0 0 clamp(260px, calc((100% - 48px) / 5), 320px);
-    min-width: 260px;
-    max-width: 320px;
+    flex: 0 0 clamp(236px, calc((100% - 64px) / 5.2), 288px);
+    min-width: 236px;
+    max-width: 288px;
     scroll-snap-align: start;
+  }
+
+  /* Variante rail du média canonique : même langage, moins de hauteur que la
+     grille catalogue carrée. Cela évite qu'une surface locale secondaire
+     prenne visuellement le dessus sur le catalogue principal. */
+  .k-discovery-canonical-media {
+    aspect-ratio: 4 / 3;
   }
 
   .k-discovery-canonical-img {
@@ -35,12 +75,12 @@
   }
 
   .k-discovery-canonical-context {
-    min-height: 32px;
-    margin-top: 3px;
+    min-height: 1.28em;
+    margin-top: 4px;
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
   }
 
   .k-discovery-canonical-price-col {
@@ -52,16 +92,13 @@
     min-height: 18px;
   }
 
-  /*
-   * Le slot reste le slot k-card-add canonique ; seul son contenu Discovery
-   * devient un petit verbe lisible. Aucune géométrie du shell k-card n'est
-   * redéfinie ici.
-   */
+  /* Le slot reste le slot k-card-add canonique ; le contenu verbal est la
+     seule différence nécessaire pour exprimer Acheter / Commander / Demander. */
   .k-discovery-canonical-action-slot {
     width: auto;
-    min-width: 84px;
-    max-width: 104px;
-    min-height: 34px;
+    min-width: 82px;
+    max-width: 102px;
+    min-height: 32px;
     padding: 0;
     overflow: hidden;
     border: 1px solid var(--action-commerce-border);
@@ -72,8 +109,8 @@
 
   .k-discovery-canonical-cta {
     width: 100%;
-    min-height: 32px;
-    padding: 0 11px;
+    min-height: 30px;
+    padding: 0 10px;
     border: 0;
     background: transparent;
     color: var(--action-commerce-text);
