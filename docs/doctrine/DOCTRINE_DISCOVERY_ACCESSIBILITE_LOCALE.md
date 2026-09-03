@@ -2,7 +2,7 @@
 
 > **Statut** : doctrine active  
 > **Date** : 2026-09-03  
-> **Portée** : Boutique mobile, `recommendations` / Discovery, projection des vérités `local-stock` et `providers-services`.  
+> **Portée** : Boutique mobile, pager catégories, `recommendations` / Discovery, projection des vérités `local-stock` et `providers-services`.  
 > **Hiérarchie** : complète `DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md`, `FEATURE_DOCTRINE.md` et `AGENTS.md`. En cas de conflit, les documents de niveau supérieur font foi.  
 > **Important** : cette doctrine fige l'expérience et les responsabilités. Elle **ne fige pas encore la formule mathématique ni les poids exacts du ranking V2.9**.
 
@@ -12,13 +12,13 @@
 
 La Discovery locale doit rendre vraie cette promesse :
 
-> **Komerce sait ce qui est réellement accessible près de toi et te le montre en premier, sans que tu aies à chercher.**
+> **L'utilisateur choisit un univers. Komerce lui montre d'abord ce qui est disponible ici, puis le reste de l'offre.**
 
-L'utilisateur ne doit pas avoir à construire lui-même un tri `catégorie × disponibilité × distance` pour comprendre ce qu'il peut obtenir.
+L'utilisateur ne doit pas construire lui-même un tri `catégorie × disponibilité × distance`.
 
 La plateforme absorbe cette complexité.
 
-Conséquence : la disponibilité locale est d'abord une **logique de composition et de ranking**, pas une nouvelle navigation.
+La disponibilité locale est donc une **logique de composition dans chaque contexte catégorie**, pas une nouvelle navigation.
 
 ---
 
@@ -34,15 +34,15 @@ Elle répond à :
 
 > **Qu'est-ce que je cherche ?**
 
-`Près de vous` répond à une autre question :
+Dans la page catégorie courante, `Disponible ici` répond à :
 
-> **Qu'est-ce que je peux obtenir ou faire réaliser avec le moins de friction ici ?**
+> **Qu'est-ce que Komerce peut déjà me proposer localement dans cet univers ?**
 
-Ces deux questions ne doivent pas devenir deux rails de navigation concurrents.
+Ces deux questions ne deviennent jamais deux navigations concurrentes.
 
 ### Invariant UX
 
-Ne pas ajouter sous `Près de vous` :
+Ne pas ajouter :
 
 ```text
 Tout | Maintenant | Bientôt | Sur commande
@@ -54,58 +54,145 @@ Ne pas ajouter non plus un sélecteur permanent :
 Disponibilité ▾
 ```
 
-Le client découvre d'abord un rail déjà correctement ordonné.
+Le client choisit uniquement son univers ; Komerce compose le reste.
 
 ---
 
-## 3. `Près de vous` appartient à `Tout`
+## 3. Chaque page catégorie est un contexte complet
 
-`Près de vous` reste visible directement dans l'univers `Tout`.
+Le pager horizontal est conservé parce qu'il porte désormais un contexte complet.
 
 Composition mobile de référence :
 
 ```text
-Header compact
-Hero / signature Komerce
-Rail catégories Temu
-Près de vous · <market>
-Rail horizontal Discovery
-Catalogue Komerce
+Header compact                  ← fixe
+Hero / signature Komerce        ← fixe
+Rail catégories Temu            ← fixe
+────────────────────────────────────────
+Disponible ici                  ← swipe avec la page
+Rail horizontal Discovery       ← swipe avec la page
+Catalogue de la catégorie       ← swipe avec la page
 ```
 
-Le local est donc visible sans geste supplémentaire, mais il ne devient ni un onglet `Local`, ni une marketplace séparée.
-
-### Swipe vers une catégorie
+Quand l'utilisateur swipe :
 
 ```text
 Tout → Maison → Mode → Tech
 ```
 
-Dans `Maison`, `Mode`, `Tech`, l'utilisateur entre dans l'univers catégorie correspondant. Le rail transversal `Près de vous` n'y est pas automatiquement projeté.
+**tout le contenu sous le rail catégories glisse ensemble** : `Disponible ici` et le catalogue associé.
 
-Si un jour une catégorie possède assez de profondeur locale pour justifier une expérience spécifique (`Mode locale`, par exemple), cette expérience sera un **enrichissement propriétaire de la catégorie**, pas une duplication automatique du rail transversal.
+Le rail local n'est donc jamais un bloc fixe qui se recompose au-dessus du pager.
+
+### Exemple
+
+```text
+MAISON
+Disponible ici
+[ciment local] [meuble local] [peintre]
+
+Catalogue Maison
+[canapé] [lampe] […]
+```
+
+Puis :
+
+```text
+TECH
+Disponible ici
+[clim en stock] [installation clim]
+
+Catalogue Tech
+[smartphone] [TV] […]
+```
 
 ### Invariant
 
-> **Pas de matrice implicite `catégorie × disponibilité locale`.**
+> **Une page = un univers complet : local pertinent d'abord, catalogue de cet univers ensuite.**
 
 ---
 
-## 4. Ranking par accessibilité réelle
+## 4. `Tout` reste la vitrine transversale
+
+Dans `Tout`, `Disponible ici` agrège le meilleur pool local exposable sans imposer de catégorie.
+
+```text
+TOUT
+Disponible ici
+[samboussas] [clim en stock] [plombier] […]
+
+Catalogue
+[…]
+```
+
+Dans une catégorie réelle, le pool local est contextuel à cette catégorie.
+
+Le local reste donc transversal dans sa nature, mais **contextuel dans sa présentation**.
+
+Il ne devient ni un onglet `Local`, ni une marketplace séparée.
+
+---
+
+## 5. Si aucune offre locale n'existe, ne rien afficher
+
+Une page catégorie sans offre locale pertinente commence directement par son catalogue.
+
+```text
+MODE
+Catalogue Mode
+[…]
+```
+
+Ne pas afficher :
+
+- `Aucune offre locale` ;
+- un rail vide ;
+- un placeholder ;
+- un compteur à zéro.
+
+L'absence est silencieuse.
+
+Le seuil futur à partir duquel un pool mérite son rail n'est pas figé ici. Une carte réellement utile ne doit pas être masquée uniquement pour satisfaire un quota visuel arbitraire.
+
+---
+
+## 6. La formulation client est `Disponible ici`
+
+La formulation visible de référence est :
+
+> **Disponible ici**
+
+`Accessibilité locale`, `local-stock`, `provider`, `physical_offer` et autres notions internes restent des concepts d'architecture.
+
+Le client voit ensuite la promesse précise sur chaque carte :
+
+```text
+Disponible maintenant
+Préparation sur commande
+Sur demande
+Bientôt disponible
+```
+
+Le titre du rail dit **où** l'offre est accessible ; le badge dit **comment / quand** elle l'est.
+
+---
+
+## 7. Ranking par accessibilité réelle
 
 Le rail n'est pas un ordre esthétique arbitraire.
 
 Il doit tendre vers la réponse :
 
-> **Qu'est-ce qui est le plus facile à obtenir ou à faire réaliser pour cet utilisateur, dans ce market, maintenant ?**
+> **Qu'est-ce qui est le plus facile à obtenir ou à faire réaliser pour cet utilisateur, dans ce market et dans cet univers, maintenant ?**
 
-Le ranking combine au minimum trois familles de signaux :
+Le ranking combine au minimum :
 
 1. **proximité / pertinence géographique réelle** ;
 2. **promesse de disponibilité / délai d'accès réel** ;
-3. **pertinence et diversité de la composition**.
+3. **pertinence dans la catégorie courante** ;
+4. **diversité utile de la composition**.
 
-### Important — ne pas figer trop tôt un ordre lexicographique
+### Ne pas figer trop tôt un ordre lexicographique
 
 La doctrine ne dit pas encore :
 
@@ -126,118 +213,86 @@ A — disponible maintenant à 8 km
 B — sur commande à 1 km
 ```
 
-Le système doit optimiser **l'accessibilité réelle**, pas appliquer mécaniquement une règle qui produirait une expérience absurde.
+Le système doit optimiser **l'accessibilité réelle**, pas appliquer mécaniquement une règle absurde.
 
-Les poids, seuils, rayons et fonctions de score seront donc validés sur des cas concrets avant d'être figés.
-
----
-
-## 5. Les promesses visibles restent explicites sur les cartes
-
-Le ranking est invisible ; la promesse de chaque carte ne l'est pas.
-
-Les cartes doivent expliquer pourquoi l'objet est accessible avec des libellés simples, issus d'une vérité métier réelle.
-
-Promesses de référence :
-
-```text
-Disponible maintenant
-Préparation sur commande
-Sur demande
-Bientôt disponible
-```
-
-Exemples :
-
-```text
-Product Komerce + stock local réel
-→ Disponible maintenant
-
-Physical Offer tierce
-→ Préparation sur commande
-
-Service actif
-→ Sur demande
-
-Stock / offre réellement annoncé en arrivée
-→ Bientôt disponible
-```
-
-Ces libellés sont des **projections de vérités sources**. Discovery ne doit jamais inventer une disponibilité qu'un domaine propriétaire ne peut pas garantir.
-
-Un produit catalogue standard sans promesse locale vérifiable reste dans le catalogue Komerce classique ; il n'entre pas artificiellement dans `Près de vous` pour remplir le rail.
+Les poids, seuils, rayons et fonctions de score seront validés sur des cas concrets.
 
 ---
 
-## 6. Ownership du ranking
+## 8. Ownership : vérité source, placement recommendations
 
-La doctrine Feature First existante reste inchangée :
+La doctrine Feature First reste inchangée :
 
 - `local-stock` possède la vérité de stock Komerce et sa disponibilité calculée ;
 - `providers-services` possède les services, offres physiques et leur capacité réelle d'exécution ;
-- `catalog` possède le Product Komerce ;
-- `recommendations` / Discovery **compose et ordonne en lecture**.
+- `catalog` possède le Product Komerce et sa taxonomie ;
+- `recommendations` / Discovery **compose, contextualise et ordonne en lecture**.
 
 ### Invariant
 
-> **Les features sources possèdent la vérité ; `recommendations` possède la politique de sélection et d'ordre ; le frontend affiche l'ordre reçu.**
+> **Les features sources possèdent la vérité ; `recommendations` possède la politique de sélection, d'appartenance aux contextes de Discovery et d'ordre ; le frontend conserve l'ordre reçu.**
 
-Le frontend ne doit donc pas :
+Le frontend peut sélectionner la projection correspondant à la page active à partir des `category_keys` fournis par le backend, mais il ne doit jamais :
 
-- recalculer la distance métier ;
-- reclasser les cartes par disponibilité ;
-- inventer un score local ;
+- calculer une distance métier ;
+- reclasser par disponibilité ;
+- inventer une appartenance catégorie ;
 - posséder un flag d'exposition métier ;
-- corriger un ranking backend par une liste codée en dur.
+- corriger le ranking par une liste codée en dur.
 
 ---
 
-## 7. Diversité sans mensonge
+## 9. Le ghost est une mécanique de navigation, pas une page métier
 
-Un ranking purement numérique peut produire un rail inutilement monotone : six produits presque identiques peuvent masquer une offre physique ou un service pertinent.
+Le pager peut conserver un ghost de `Tout` à la fin du rail afin de rendre la boucle `dernière catégorie → Tout` fluide.
 
-`recommendations` peut donc appliquer une politique de diversité **après éligibilité métier**, afin de montrer la richesse réelle de l'écosystème local.
+### Conditions obligatoires
 
-Cette diversité :
+Le ghost :
 
-- ne rend jamais visible un objet non exposable ;
-- ne falsifie jamais sa disponibilité ;
-- ne crée pas une géométrie différente par `kind` ;
-- ne doit pas faire remonter une offre manifestement moins accessible uniquement pour remplir un quota visuel.
+- est un **snapshot DOM visuel** du vrai `Tout` ;
+- ne fetch jamais ;
+- ne ranke jamais ;
+- ne monte aucun module Discovery ;
+- ne possède aucun ID DOM dupliqué ;
+- ne déclenche aucune mutation ;
+- n'est pas interactif ;
+- se recale silencieusement sur le vrai `Tout` après la transition.
 
-La diversité est un signal de composition, pas une nouvelle vérité métier.
+`Disponible ici` présent dans le ghost est donc uniquement le snapshot du rail déjà rendu dans le vrai `Tout`.
+
+### Invariant
+
+> **Le ghost simule une continuité de geste ; il ne crée aucune seconde vérité.**
 
 ---
 
-## 8. Pas de filtre tant que le produit peut décider correctement
+## 10. Pas de filtre tant que le produit peut décider correctement
 
-La règle par défaut est :
+La règle reste :
 
 > **Ne pas demander au client de classer ce que Komerce peut déjà classer correctement pour lui.**
 
-Donc, dans la surface principale :
+Donc :
 
 - pas de deuxième rail de chips ;
 - pas de dropdown `Disponibilité` ;
-- pas de tri `distance / prix / popularité` ;
-- pas de compteur transformant le rail en inventaire à administrer ;
-- pas de persistance de filtre entre catégories, puisqu'aucun filtre primaire n'existe.
+- pas d'onglet `Local` ;
+- pas de page `/local`, `/artisans` ou `/services` comme second univers Boutique ;
+- pas de tri visible `distance / prix / popularité` ;
+- pas de persistance de filtre entre catégories.
 
-Cette simplicité n'interdit pas une profondeur future. Elle interdit seulement de l'exposer avant que le besoin soit prouvé.
+Le swipe de catégorie est le seul choix de contexte nécessaire.
 
 ---
 
-## 9. Quand le pool local devient profond
+## 11. Quand le pool local devient profond
 
-Si la quantité d'offres locales devient trop importante pour qu'un rail horizontal suffise, la première extension autorisée est une action secondaire de type :
+Si la profondeur d'un pool local devient trop importante pour le rail horizontal, une action secondaire `Voir tout →` pourra être ajoutée.
 
-```text
-Près de vous · Comores                Voir tout →
-```
+Elle ne doit pas créer une marketplace parallèle.
 
-Cette action ne doit pas créer une marketplace parallèle.
-
-La vue développée doit conserver la même expérience Komerce et peut regrouper naturellement les cartes par promesse :
+Une vue développée peut regrouper naturellement :
 
 ```text
 Disponible maintenant
@@ -253,27 +308,24 @@ Bientôt disponible
 [cartes]
 ```
 
-Il s'agit d'un **groupement de lecture**, pas d'une obligation de filtrer avant de voir les résultats.
+Il s'agit d'un **groupement de lecture**, pas d'un filtre préalable.
 
-### Non figé à ce stade
-
-Le seuil exact déclenchant `Voir tout` n'est pas défini par cette doctrine. Il sera choisi à partir de la profondeur réelle du pool, de la télémétrie et des tests UX.
+Le seuil exact reste volontairement non figé.
 
 ---
 
-## 10. Ce que V2.9 devra décider avec des cas concrets
+## 12. V2.9 : données et cas à éprouver
 
-La prochaine étape ne consiste pas à inventer immédiatement un score définitif.
+V2.9 doit éprouver :
 
-V2.9 devra tester au minimum :
-
-- disponible maintenant proche vs disponible maintenant plus loin ;
+- la projection explicite `category_keys` pour Product, Physical Offer et Service ;
+- une offre pertinente dans plusieurs univers ;
+- une catégorie sans local ;
+- disponible maintenant proche vs plus loin ;
 - disponible maintenant plus loin vs sur commande très proche ;
 - service sur demande vs offre physique sur commande ;
-- absence de coordonnées fines mais market connu ;
-- utilisateur sans permission de géolocalisation ;
+- utilisateur sans géolocalisation fine ;
 - plusieurs îles / villes dans un même market ;
-- quantité limitée de résultats disponibles maintenant ;
 - forte concentration d'un même `kind` ;
 - objets `Bientôt disponible` avec délais différents.
 
@@ -281,44 +333,46 @@ V2.9 devra tester au minimum :
 
 - la formule de score ;
 - les poids ;
-- les seuils de distance ;
-- les fallbacks géographiques ;
-- la règle de diversité ;
-- la télémétrie nécessaire.
+- les seuils géographiques ;
+- les fallbacks ;
+- les règles de diversité ;
+- la télémétrie.
 
 ---
 
-## 11. Anti-patterns spécifiques
+## 13. Anti-patterns spécifiques
 
 Ne pas construire :
 
-1. un second rail `Maintenant / Bientôt / Sur commande` ;
-2. un dropdown permanent `Disponibilité` ;
-3. un onglet Temu `Local` servant de marketplace parallèle ;
-4. une page `/local`, `/artisans` ou `/services` comme second univers de Boutique ;
-5. un filtre croisé automatique `catégorie × local × disponibilité` ;
+1. un `Disponible ici` fixe au-dessus du pager qui se recompose à chaque swipe ;
+2. un second rail `Maintenant / Bientôt / Sur commande` ;
+3. un dropdown permanent `Disponibilité` ;
+4. un onglet Temu `Local` ;
+5. une page locale parallèle ;
 6. un ranking frontend distinct du ranking backend ;
-7. un champ persistant Discovery qui clone la vérité de disponibilité des domaines sources ;
-8. un faux `Disponible maintenant` sans garantie backend ;
-9. un remplissage artificiel du rail avec du sourcing distant sans promesse locale ;
-10. une formule de ranking figée avant d'avoir confronté les cas métier réels.
+7. un mapping catégorie inventé dans le renderer ;
+8. un ghost actif ou fetchant ses propres données ;
+9. un faux `Disponible maintenant` sans garantie backend ;
+10. une formule de ranking figée avant les cas métier réels.
 
 ---
 
-## 12. Invariants finaux
+## 14. Invariants finaux
 
-> **Komerce montre le local avant de demander au client de le chercher.**
+> **L'utilisateur choisit un univers ; Komerce montre d'abord ce qui est disponible ici, puis le reste de l'offre.**
 
-> **Le local est un axe transversal de disponibilité, pas une catégorie.**
+> **Chaque page catégorie est un contexte complet qui swipe ensemble : `Disponible ici` + catalogue.**
 
-> **`Près de vous` reste immédiatement visible dans `Tout` et ne crée aucune seconde navigation primaire.**
+> **`Tout` agrège le meilleur du local ; les autres pages ne montrent que le local pertinent pour leur univers.**
 
-> **Le rail est ordonné automatiquement par accessibilité réelle ; les cartes rendent leur promesse explicite par des badges issus des vérités métier.**
+> **S'il n'existe rien de pertinent localement, le rail est absent sans message.**
 
-> **Les domaines sources possèdent la vérité ; `recommendations` possède la composition et le ranking ; le frontend conserve l'ordre reçu.**
+> **`Disponible ici` est la formulation client ; les badges expliquent la promesse précise.**
 
-> **Aucun sélecteur de disponibilité n'est nécessaire tant que le ranking peut résoudre correctement le besoin.**
+> **Les domaines sources possèdent la vérité ; `recommendations` possède la composition, le contexte et l'ordre ; le frontend ne re-ranke jamais.**
 
-> **Quand la profondeur locale le justifiera, `Voir tout` pourra développer la même expérience par groupements de disponibilité, sans créer une marketplace parallèle.**
+> **Le ghost est un snapshot visuel inerte de `Tout`, jamais une seconde page métier.**
 
-> **La doctrine de ranking est fixée dans son intention ; sa formule mathématique reste volontairement ouverte jusqu'au challenge V2.9.**
+> **Aucun sélecteur de disponibilité n'est nécessaire tant que Komerce peut résoudre correctement le besoin.**
+
+> **La doctrine de ranking est fixée dans son intention ; sa formule mathématique reste ouverte jusqu'aux cas V2.9.**
