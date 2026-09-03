@@ -85,6 +85,18 @@ async function updatePhysicalOffer(example) {
   );
 }
 
+function buildModalV2Candidates(baseCandidates) {
+  const priority = [
+    MODAL_V2_EXAMPLES.autoParts.id,
+    MODAL_V2_EXAMPLES.cement.id,
+    MODAL_V2_EXAMPLES.plumbing.id,
+    MODAL_V2_EXAMPLES.callbackOnly.id,
+    MODAL_V2_EXAMPLES.reception.id,
+  ];
+  const existing = String(baseCandidates || '').split(',').map(value => value.trim()).filter(Boolean);
+  return [...new Set([...priority, ...existing])].join(',');
+}
+
 async function seedDiscoveryModalV2Staging() {
   const base = await seedDiscoveryStaging();
   if (!base.seeded) return base;
@@ -97,6 +109,7 @@ async function seedDiscoveryModalV2Staging() {
 
   return {
     ...base,
+    candidates: buildModalV2Candidates(base.candidates),
     modalV2Examples: Object.values(MODAL_V2_EXAMPLES).map(example => example.id),
   };
 }
@@ -122,5 +135,6 @@ if (require.main === module) {
 
 module.exports = {
   MODAL_V2_EXAMPLES,
+  buildModalV2Candidates,
   seedDiscoveryModalV2Staging,
 };
