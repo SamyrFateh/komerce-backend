@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 489,
+    "scannedCodeFiles": 492,
     "filesWithFullHeaders": 450,
-    "filesWithLiteHeaders": 39,
-    "filesWithAnyHeaders": 489,
+    "filesWithLiteHeaders": 42,
+    "filesWithAnyHeaders": 492,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1072,
-    "edges": 5613,
+    "graphNodes": 1076,
+    "edges": 5638,
     "dbTables": 126,
     "doctrines": 288,
-    "impactAreas": 169,
+    "impactAreas": 170,
     "unresolvedCodeEdges": 560,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 62
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 90,
+    "catalog": 91,
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 2,
@@ -42,7 +42,7 @@
     "sourcing": 6,
     "logistics": 43,
     "boutique": 20,
-    "checkout": 2,
+    "checkout": 3,
     "shared-cart": 25,
     "account": 2,
     "shared-cart-modal": 7,
@@ -51,7 +51,7 @@
     "payment": 17,
     "tracking": 1,
     "wallet": 4,
-    "providers-services": 4,
+    "providers-services": 5,
     "customs": 6,
     "dashboard": 27,
     "loyalty": 3,
@@ -90,6 +90,7 @@
     "util": 32,
     "domain-helper": 1,
     "adapter": 6,
+    "ui-runtime": 2,
     "controller": 1,
     "api-client": 2,
     "presenter": 1,
@@ -104,6 +105,7 @@
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
+    "service-policy": 1,
     "data-service": 1,
     "validators": 1
   },
@@ -111,7 +113,7 @@
     "critical": 68,
     "medium": 121,
     "high": 253,
-    "low": 47
+    "low": 50
   },
   "nodes": [
     {
@@ -2597,7 +2599,7 @@
       "layer": "ui-renderer",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal sans les convertir en Product.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal et projeter plusieurs actions autorisées sans déduire l'interaction du kind.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -2610,7 +2612,8 @@
       "impactAreas": [
         "product-discovery",
         "discovery-rail",
-        "modal-layout"
+        "modal-layout",
+        "desktop"
       ],
       "version": "2026-09"
     },
@@ -3077,7 +3080,7 @@
       "outputs": [
         "horizontal_pager_state",
         "active_chip_sync",
-        "section_auto_advance"
+        "category_scroll_memory"
       ],
       "depends": [
         "b-bus.js",
@@ -3087,7 +3090,8 @@
       "usedBy": [
         "b-catalog.js",
         "b-subcat.js",
-        "b-nav.js"
+        "b-nav.js",
+        "discovery-rail.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -3096,15 +3100,17 @@
       "doctrine": [
         "navigation_sans_friction",
         "categorie_souscategorie_switch_fluide",
-        "mobile_desktop_coherence"
+        "mobile_desktop_coherence",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "mobile-navigation",
         "category-navigation",
         "scroll-ownership",
-        "product-grid"
+        "product-grid",
+        "discovery-rail"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/b-passkey-enrollment.js",
@@ -3975,6 +3981,33 @@
       "version": null
     },
     {
+      "id": "public/boutique/js/checkout-desktop-style.js",
+      "file": "public/boutique/js/checkout-desktop-style.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "checkout-desktop-style-loader",
+      "domain": "checkout",
+      "layer": "ui-runtime",
+      "criticality": "low",
+      "owner": "public/boutique/js/b-checkout.js",
+      "purpose": "Charger le bundle desktop du checkout sans injecter de règles CSS depuis JavaScript.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "checkout",
+        "shared-cart",
+        "desktop-layout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/controllers/home-controller.js",
       "file": "public/boutique/js/controllers/home-controller.js",
       "type": "file",
@@ -4077,6 +4110,33 @@
       "version": "2026-09"
     },
     {
+      "id": "public/boutique/js/discovery-desktop-style.js",
+      "file": "public/boutique/js/discovery-desktop-style.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "discovery-desktop-style-loader",
+      "domain": "catalog",
+      "layer": "ui-runtime",
+      "criticality": "low",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Charger le bundle desktop One Card sans injecter de règles CSS depuis JavaScript.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "discovery-rail",
+        "product-discovery",
+        "desktop"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/discovery-inquiry.js",
       "file": "public/boutique/js/discovery-inquiry.js",
       "type": "file-lite",
@@ -4086,7 +4146,7 @@
       "layer": "ui-service",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer l'intention Commander/Demander du rail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4114,7 +4174,7 @@
       "layer": "ui-component",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter le rail « Près de vous » dans la home Boutique et déléguer l'exposition au backend.",
+      "purpose": "Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4127,7 +4187,9 @@
       "impactAreas": [
         "home",
         "product-discovery",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation",
+        "desktop"
       ],
       "version": "2026-09"
     },
@@ -4503,7 +4565,7 @@
       "layer": "ui-bootstrap",
       "criticality": "low",
       "owner": "public/boutique/js/b-home-premium-v1.js",
-      "purpose": "Hero mobile repliable au scroll, sticky bar desktop (IntersectionObserver),",
+      "purpose": "Hero mobile stable sous le header, sticky bar desktop (IntersectionObserver),",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4519,7 +4581,7 @@
         "mobile",
         "desktop"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/komerce-api.js",
@@ -4849,7 +4911,8 @@
       "impactAreas": [
         "home",
         "product-discovery",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
       "version": "2026-09"
     },
@@ -10032,15 +10095,17 @@
       ],
       "depends": [
         "services/providers-service.js",
+        "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché)"
+        "db (résolution code marché + contact public)"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
         "public/boutique/js/discovery-api.js"
       ],
       "dbRead": [
-        "markets"
+        "markets",
+        "providers"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -13587,14 +13652,16 @@
         "single_statement_sufficient"
       ],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md"
+        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/discovery-rail-service.js",
@@ -13630,14 +13697,16 @@
         "read_mostly"
       ],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13"
+        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/documents/customs-invoice.js",
@@ -18300,6 +18369,33 @@
         "catalog"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/providers-interaction-policy.js",
+      "file": "services/providers-interaction-policy.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "providers-services-interaction-policy",
+      "domain": "providers-services",
+      "layer": "service-policy",
+      "criticality": "low",
+      "owner": "services/providers-service.js",
+      "purpose": "Normaliser les actions cumulatives d'une offre et n'exposer que les coordonnées explicitement publiques nécessaires à ces actions.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "providers-services",
+        "discovery-modal",
+        "boutique"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/providers-service.js",
@@ -23364,6 +23460,11 @@
       "table": "cost_benchmarks"
     },
     {
+      "id": "db:providers",
+      "type": "db-table",
+      "table": "providers"
+    },
+    {
       "id": "db:inquiries",
       "type": "db-table",
       "table": "inquiries"
@@ -23567,11 +23668,6 @@
       "id": "db:pricing_strategy_history",
       "type": "db-table",
       "table": "pricing_strategy_history"
-    },
-    {
-      "id": "db:providers",
-      "type": "db-table",
-      "table": "providers"
     },
     {
       "id": "db:services",
@@ -23907,6 +24003,11 @@
       "id": "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
       "type": "doctrine",
       "doctrine": "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
     },
     {
       "id": "doctrine:post_sensitive_otp_enrollment",
@@ -24622,11 +24723,6 @@
       "id": "doctrine:finance_event_date_is_authoritative",
       "type": "doctrine",
       "doctrine": "finance_event_date_is_authoritative"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13"
     },
     {
       "id": "doctrine:finance_config_single_runtime_truth",
@@ -25837,6 +25933,11 @@
       "id": "impact:auth-identity",
       "type": "impact-area",
       "area": "auth-identity"
+    },
+    {
+      "id": "impact:discovery-modal",
+      "type": "impact-area",
+      "area": "discovery-modal"
     },
     {
       "id": "impact:admin-debug",
@@ -29648,6 +29749,12 @@
       "label": "modal-layout"
     },
     {
+      "from": "public/boutique/js/b-modal-discovery-detail.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
+    },
+    {
       "from": "public/boutique/js/b-modal-image-ux.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -30290,6 +30397,12 @@
       "label": "b-nav.js"
     },
     {
+      "from": "public/boutique/js/discovery-rail.js",
+      "to": "public/boutique/js/b-pager.js",
+      "type": "uses",
+      "label": "discovery-rail.js"
+    },
+    {
       "from": "public/boutique/js/b-pager.js",
       "to": "doctrine:navigation_sans_friction",
       "type": "doctrine",
@@ -30306,6 +30419,12 @@
       "to": "doctrine:mobile_desktop_coherence",
       "type": "doctrine",
       "label": "mobile_desktop_coherence"
+    },
+    {
+      "from": "public/boutique/js/b-pager.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
     },
     {
       "from": "public/boutique/js/b-pager.js",
@@ -30330,6 +30449,12 @@
       "to": "impact:product-grid",
       "type": "impact",
       "label": "product-grid"
+    },
+    {
+      "from": "public/boutique/js/b-pager.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
     },
     {
       "from": "public/boutique/js/b-passkey-enrollment.js",
@@ -31556,6 +31681,30 @@
       "label": "feature_first_public_boundary"
     },
     {
+      "from": "public/boutique/js/checkout-desktop-style.js",
+      "to": "public/boutique/js/b-checkout.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/b-checkout.js"
+    },
+    {
+      "from": "public/boutique/js/checkout-desktop-style.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "public/boutique/js/checkout-desktop-style.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/checkout-desktop-style.js",
+      "to": "impact:desktop-layout",
+      "type": "impact",
+      "label": "desktop-layout"
+    },
+    {
       "from": "public/boutique/js/controllers/home-controller.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -31670,6 +31819,30 @@
       "label": "discovery-rail"
     },
     {
+      "from": "public/boutique/js/discovery-desktop-style.js",
+      "to": "public/boutique/js/discovery-rail.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/discovery-rail.js"
+    },
+    {
+      "from": "public/boutique/js/discovery-desktop-style.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/discovery-desktop-style.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/discovery-desktop-style.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
+    },
+    {
       "from": "public/boutique/js/discovery-inquiry.js",
       "to": "public/boutique/js/discovery-inquiry.js",
       "type": "owned-by",
@@ -31722,6 +31895,18 @@
       "to": "impact:discovery-rail",
       "type": "impact",
       "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/discovery-rail.js",
+      "to": "impact:category-navigation",
+      "type": "impact",
+      "label": "category-navigation"
+    },
+    {
+      "from": "public/boutique/js/discovery-rail.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
     },
     {
       "from": "public/boutique/js/group/group-api.js",
@@ -32532,6 +32717,12 @@
       "to": "impact:discovery-rail",
       "type": "impact",
       "label": "discovery-rail"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-rail.js",
+      "to": "impact:category-navigation",
+      "type": "impact",
+      "label": "category-navigation"
     },
     {
       "from": "public/boutique/js/render/render-home-sections.js",
@@ -39875,15 +40066,21 @@
     },
     {
       "from": "routes/providers-services.js",
+      "to": "services/providers-interaction-policy.js",
+      "type": "depends",
+      "label": "services/providers-interaction-policy.js"
+    },
+    {
+      "from": "routes/providers-services.js",
       "to": "middleware/auth-guest.js",
       "type": "depends",
       "label": "middleware/auth-guest.js"
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché)",
+      "to": "db (résolution code marché + contact public)",
       "type": "depends",
-      "label": "db (résolution code marché)"
+      "label": "db (résolution code marché + contact public)"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -39902,6 +40099,12 @@
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db:providers",
+      "type": "db-read",
+      "label": "providers"
     },
     {
       "from": "routes/providers-services.js",
@@ -45166,6 +45369,12 @@
     },
     {
       "from": "services/discovery-rail-composer.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
       "to": "impact:recommendations",
       "type": "impact",
       "label": "recommendations"
@@ -45181,6 +45390,12 @@
       "to": "impact:discovery-rail",
       "type": "impact",
       "label": "discovery-rail"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
+      "to": "impact:category-navigation",
+      "type": "impact",
+      "label": "category-navigation"
     },
     {
       "from": "services/discovery-rail-service.js",
@@ -45208,9 +45423,15 @@
     },
     {
       "from": "services/discovery-rail-service.js",
-      "to": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13",
+      "to": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
       "type": "doctrine",
-      "label": "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13"
+      "label": "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md"
+    },
+    {
+      "from": "services/discovery-rail-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
     },
     {
       "from": "services/discovery-rail-service.js",
@@ -45229,6 +45450,12 @@
       "to": "impact:discovery-rail",
       "type": "impact",
       "label": "discovery-rail"
+    },
+    {
+      "from": "services/discovery-rail-service.js",
+      "to": "impact:category-navigation",
+      "type": "impact",
+      "label": "category-navigation"
     },
     {
       "from": "services/documents/customs-invoice.js",
@@ -52702,6 +52929,30 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/providers-interaction-policy.js",
+      "to": "services/providers-service.js",
+      "type": "owned-by",
+      "label": "services/providers-service.js"
+    },
+    {
+      "from": "services/providers-interaction-policy.js",
+      "to": "impact:providers-services",
+      "type": "impact",
+      "label": "providers-services"
+    },
+    {
+      "from": "services/providers-interaction-policy.js",
+      "to": "impact:discovery-modal",
+      "type": "impact",
+      "label": "discovery-modal"
+    },
+    {
+      "from": "services/providers-interaction-policy.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
     },
     {
       "from": "services/providers-service.js",
@@ -61706,7 +61957,8 @@
         "public/boutique/js/b-share-cart.js"
       ],
       "ownedFiles": [
-        "public/boutique/js/b-paypal.js"
+        "public/boutique/js/b-paypal.js",
+        "public/boutique/js/checkout-desktop-style.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -61749,6 +62001,7 @@
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
+        "public/boutique/js/checkout-desktop-style.js",
         "public/boutique/js/group/group-checkout-adapter.js",
         "routes/orders.js",
         "routes/payments.js",
@@ -62397,7 +62650,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal sans les convertir en Product.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal et projeter plusieurs actions autorisées sans déduire l'interaction du kind.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -62408,9 +62661,11 @@
       "impactAreas": [
         "product-discovery",
         "discovery-rail",
-        "modal-layout"
+        "modal-layout",
+        "desktop"
       ],
       "mustCheck": [
+        "impact:desktop",
         "impact:discovery-rail",
         "impact:modal-layout",
         "impact:product-discovery",
@@ -62883,7 +63138,8 @@
       "directUsedBy": [
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-subcat.js",
-        "public/boutique/js/b-nav.js"
+        "public/boutique/js/b-nav.js",
+        "public/boutique/js/discovery-rail.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -62892,19 +63148,23 @@
       "doctrines": [
         "navigation_sans_friction",
         "categorie_souscategorie_switch_fluide",
-        "mobile_desktop_coherence"
+        "mobile_desktop_coherence",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "mobile-navigation",
         "category-navigation",
         "scroll-ownership",
-        "product-grid"
+        "product-grid",
+        "discovery-rail"
       ],
       "mustCheck": [
         "doctrine:categorie_souscategorie_switch_fluide",
+        "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
         "doctrine:mobile_desktop_coherence",
         "doctrine:navigation_sans_friction",
         "impact:category-navigation",
+        "impact:discovery-rail",
         "impact:mobile-navigation",
         "impact:product-grid",
         "impact:scroll-ownership",
@@ -62913,7 +63173,8 @@
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-subcat.js"
+        "public/boutique/js/b-subcat.js",
+        "public/boutique/js/discovery-rail.js"
       ]
     },
     "public/boutique/js/b-passkey-enrollment.js": {
@@ -63836,6 +64097,32 @@
         "public/boutique/js/cart-product-summary.js"
       ]
     },
+    "public/boutique/js/checkout-desktop-style.js": {
+      "role": "checkout-desktop-style-loader",
+      "domain": "checkout",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/b-checkout.js",
+      "purpose": "Charger le bundle desktop du checkout sans injecter de règles CSS depuis JavaScript.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "checkout",
+        "shared-cart",
+        "desktop-layout"
+      ],
+      "mustCheck": [
+        "impact:checkout",
+        "impact:desktop-layout",
+        "impact:shared-cart",
+        "public/boutique/js/b-checkout.js"
+      ]
+    },
     "public/boutique/js/controllers/home-controller.js": {
       "role": "boutique-home-navigation-controller",
       "domain": "catalog",
@@ -63937,13 +64224,39 @@
         "routes/providers-services.js"
       ]
     },
+    "public/boutique/js/discovery-desktop-style.js": {
+      "role": "discovery-desktop-style-loader",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/discovery-rail.js",
+      "purpose": "Charger le bundle desktop One Card sans injecter de règles CSS depuis JavaScript.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "discovery-rail",
+        "product-discovery",
+        "desktop"
+      ],
+      "mustCheck": [
+        "impact:desktop",
+        "impact:discovery-rail",
+        "impact:product-discovery",
+        "public/boutique/js/discovery-rail.js"
+      ]
+    },
     "public/boutique/js/discovery-inquiry.js": {
       "role": "providers-services-discovery-inquiry",
       "domain": "providers-services",
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer l'intention Commander/Demander du rail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -63973,11 +64286,12 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter le rail « Près de vous » dans la home Boutique et déléguer l'exposition au backend.",
+      "purpose": "Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
         "public/boutique/js/b-modal-discovery-detail.js",
+        "public/boutique/js/discovery-desktop-style.js",
         "public/boutique/js/discovery-rail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ],
@@ -63988,13 +64302,19 @@
       "impactAreas": [
         "home",
         "product-discovery",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation",
+        "desktop"
       ],
       "mustCheck": [
+        "impact:category-navigation",
+        "impact:desktop",
         "impact:discovery-rail",
         "impact:home",
         "impact:product-discovery",
         "public/boutique/js/b-modal-discovery-detail.js",
+        "public/boutique/js/b-pager.js",
+        "public/boutique/js/discovery-desktop-style.js",
         "public/boutique/js/discovery-rail.js",
         "public/boutique/js/render/render-discovery-rail.js"
       ]
@@ -64351,7 +64671,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/b-home-premium-v1.js",
-      "purpose": "Hero mobile repliable au scroll, sticky bar desktop (IntersectionObserver),",
+      "purpose": "Hero mobile stable sous le header, sticky bar desktop (IntersectionObserver),",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -64697,9 +65017,11 @@
       "impactAreas": [
         "home",
         "product-discovery",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
       "mustCheck": [
+        "impact:category-navigation",
         "impact:discovery-rail",
         "impact:home",
         "impact:product-discovery",
@@ -69655,8 +69977,9 @@
       "purpose": null,
       "directDependsOn": [
         "services/providers-service.js",
+        "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché)"
+        "db (résolution code marché + contact public)"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -69664,7 +69987,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets"
+        "markets",
+        "providers"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -69687,12 +70011,14 @@
         "bootstrap/api-routes.js",
         "db:inquiries",
         "db:markets",
+        "db:providers",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
         "impact:boutique",
         "impact:discovery-rail",
         "impact:providers-services",
         "middleware/auth-guest.js",
         "public/boutique/js/discovery-api.js",
+        "services/providers-interaction-policy.js",
         "services/providers-service.js"
       ]
     },
@@ -73104,17 +73430,21 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md"
+        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
       "mustCheck": [
         "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
         "impact:boutique",
+        "impact:category-navigation",
         "impact:discovery-rail",
         "impact:recommendations",
         "services/discovery-rail-service.js",
@@ -73143,17 +73473,21 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13"
+        "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
-        "discovery-rail"
+        "discovery-rail",
+        "category-navigation"
       ],
       "mustCheck": [
         "db:markets",
-        "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md §8-§13",
+        "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+        "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
         "impact:boutique",
+        "impact:category-navigation",
         "impact:discovery-rail",
         "impact:recommendations",
         "routes/boutique-suggestions.js",
@@ -77788,6 +78122,33 @@
         "services/catalog-enrichment.js"
       ]
     },
+    "services/providers-interaction-policy.js": {
+      "role": "providers-services-interaction-policy",
+      "domain": "providers-services",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "services/providers-service.js",
+      "purpose": "Normaliser les actions cumulatives d'une offre et n'exposer que les coordonnées explicitement publiques nécessaires à ces actions.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "providers-services",
+        "discovery-modal",
+        "boutique"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:discovery-modal",
+        "impact:providers-services",
+        "routes/providers-services.js",
+        "services/providers-service.js"
+      ]
+    },
     "services/providers-service.js": {
       "role": "providers-services-providers-service",
       "domain": "providers-services",
@@ -77802,7 +78163,9 @@
         "(aucun — shadow",
         "appel direct scripts/tests dans cette PR)"
       ],
-      "ownedFiles": [],
+      "ownedFiles": [
+        "services/providers-interaction-policy.js"
+      ],
       "dbRead": [
         "providers",
         "services",
@@ -77832,7 +78195,8 @@
         "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services",
         "impact:providers-services",
         "routes/providers-services.js",
-        "services/discovery-rail-composer.js"
+        "services/discovery-rail-composer.js",
+        "services/providers-interaction-policy.js"
       ]
     },
     "services/purchasing-admin-service.js": {
@@ -84570,9 +84934,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché)",
+      "to": "db (résolution code marché + contact public)",
       "type": "depends",
-      "label": "db (résolution code marché)"
+      "label": "db (résolution code marché + contact public)"
     },
     {
       "from": "routes/purchasing.js",
