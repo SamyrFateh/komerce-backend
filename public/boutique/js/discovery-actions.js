@@ -12,16 +12,25 @@
 
 import { bus } from './b-bus.js';
 
-export function requestDiscovery(kind, ref, source, requestedWindow = null) {
+const INQUIRY_ACTIONS = Object.freeze(['request', 'quote', 'callback']);
+
+export function requestDiscovery(kind, ref, source, requestedWindow = null, action = 'request') {
   if ((kind !== 'service' && kind !== 'physical_offer') || !ref) return false;
+  const normalizedAction = String(action || 'request').trim().toLowerCase();
+  if (!INQUIRY_ACTIONS.includes(normalizedAction)) return false;
+
   const normalizedWindow = typeof requestedWindow === 'string'
     ? (requestedWindow.trim() || null)
     : null;
-  bus.emit('discovery:request', {
+  const payload = {
     kind,
     ref: String(ref),
     source,
     requestedWindow: normalizedWindow,
-  });
+  };
+  // Compatibilité du contrat historique : l'action request par défaut ne
+  // rajoute aucun champ au signal existant. quote/callback sont additifs.
+  if (normalizedAction !== 'request') payload.action = normalizedAction;
+  bus.emit('discovery:request', payload);
   return true;
 }
