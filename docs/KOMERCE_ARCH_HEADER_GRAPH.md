@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 489
+- Scanned code files: 492
 - Files with full headers: 450
-- Files with lite headers: 39
-- Files with any headers: 489
+- Files with lite headers: 42
+- Files with any headers: 492
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1072
-- Edges: 5613
+- Graph nodes: 1076
+- Edges: 5638
 - DB tables: 126
 - Doctrines: 288
-- Impact areas: 169
+- Impact areas: 170
 - Unresolved code edges: 560
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 7
@@ -32,8 +32,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 90
-- checkout: 2
+- catalog: 91
+- checkout: 3
 - customs: 6
 - dashboard: 27
 - decision-signals: 12
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 11
 - orders: 29
 - payment: 17
-- providers-services: 4
+- providers-services: 5
 - purchasing: 8
 - recommendations: 6
 - refunds: 2
@@ -83,6 +83,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route-manifest: 1
 - schema: 1
 - service: 207
+- service-policy: 1
 - state: 1
 - state-store: 1
 - ui-adapter: 1
@@ -94,6 +95,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-infrastructure: 2
 - ui-page: 5
 - ui-renderer: 11
+- ui-runtime: 2
 - ui-service: 5
 - ui-state: 1
 - util: 32
@@ -447,8 +449,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-share-cart.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
 - public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
+- public/boutique/js/checkout-desktop-style.js -> owner public/boutique/js/b-checkout.js (checkout-desktop-style-loader)
 - public/boutique/js/discovery-actions.js -> owner public/boutique/js/discovery-actions.js (catalog-discovery-actions)
 - public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
+- public/boutique/js/discovery-desktop-style.js -> owner public/boutique/js/discovery-rail.js (discovery-desktop-style-loader)
 - public/boutique/js/discovery-inquiry.js -> owner public/boutique/js/discovery-inquiry.js (providers-services-discovery-inquiry)
 - public/boutique/js/discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-discovery-rail)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-share-cart.js (shared-cart-group-state)
@@ -467,6 +471,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
 - public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
 - public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
+- services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 
 ## DB Write Edges
 

@@ -243,7 +243,8 @@ CREATE TYPE public.user_role AS ENUM (
     'agent_relais',
     'agent_hub',
     'agent_transitaire',
-    'sourcing'
+    'sourcing',
+    'market_operator'
 );
 
 
@@ -1152,6 +1153,59 @@ CREATE TABLE public.cost_component_events (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT cost_component_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'updated'::text, 'activated'::text, 'deactivated'::text, 'deleted'::text, 'value_changed'::text, 'scope_changed'::text])))
 );
+
+
+--
+-- Name: cost_component_market_override_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cost_component_market_override_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    override_id uuid,
+    market_id uuid NOT NULL,
+    component_id uuid,
+    component_key text NOT NULL,
+    event_type text NOT NULL,
+    old_value jsonb,
+    new_value jsonb,
+    notes text,
+    triggered_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cost_component_market_override_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'updated'::text, 'reset'::text])))
+);
+
+
+--
+-- Name: TABLE cost_component_market_override_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cost_component_market_override_events IS 'Append-only audit trail for market cost model changes and resets.';
+
+
+--
+-- Name: cost_component_market_overrides; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cost_component_market_overrides (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    component_id uuid NOT NULL,
+    default_value numeric(14,4),
+    is_active boolean,
+    notes text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    updated_by uuid,
+    CONSTRAINT cost_component_market_overrides_default_value_check CHECK (((default_value IS NULL) OR (default_value >= (0)::numeric)))
+);
+
+
+--
+-- Name: TABLE cost_component_market_overrides; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cost_component_market_overrides IS 'Market-specific value/activation overrides for global cost_components. No row = inherit global.';
 
 
 --
@@ -3205,6 +3259,8 @@ CREATE TABLE public.physical_offers (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     image_ref text,
+    actions_enabled text[] DEFAULT ARRAY['request'::text] NOT NULL,
+    CONSTRAINT physical_offers_actions_enabled_allowed CHECK (((cardinality(actions_enabled) > 0) AND (actions_enabled <@ ARRAY['request'::text, 'quote'::text, 'callback'::text, 'call'::text, 'whatsapp'::text]))),
     CONSTRAINT physical_offers_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
     CONSTRAINT physical_offers_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text)))
 );
@@ -3229,6 +3285,13 @@ COMMENT ON COLUMN public.physical_offers.commercial_exposure IS 'Même patron qu
 --
 
 COMMENT ON COLUMN public.physical_offers.image_ref IS 'Référence média publique optionnelle pour la représentation de l''offre physique. Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
+
+
+--
+-- Name: COLUMN physical_offers.actions_enabled; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.physical_offers.actions_enabled IS 'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind ne choisit jamais seul l interaction.';
 
 
 --
@@ -4011,7 +4074,11 @@ CREATE TABLE public.providers (
     market_id uuid NOT NULL,
     status public.provider_status DEFAULT 'pending'::public.provider_status NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    public_phone text,
+    public_whatsapp text,
+    CONSTRAINT providers_public_phone_nonblank CHECK (((public_phone IS NULL) OR (length(btrim(public_phone)) > 0))),
+    CONSTRAINT providers_public_whatsapp_nonblank CHECK (((public_whatsapp IS NULL) OR (length(btrim(public_whatsapp)) > 0)))
 );
 
 
@@ -4027,6 +4094,20 @@ COMMENT ON TABLE public.providers IS 'Second principal payable (shadow, Vague 1 
 --
 
 COMMENT ON COLUMN public.providers.status IS 'pending = jamais encore actif. active = peut porter des services exposables. suspended = coupure immédiate, réversible, sans validation centrale — le seul levier de sanction disponible dans l''informel est la visibilité, jamais une pénalité financière (cf. CHALLENGE_SERVICES_TWO_TRACK.md §T2).';
+
+
+--
+-- Name: COLUMN providers.public_phone; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.providers.public_phone IS 'Coordonnée téléphonique explicitement publiable. Distincte de providers.phone, qui reste privée et ne doit jamais être projetée par défaut.';
+
+
+--
+-- Name: COLUMN providers.public_whatsapp; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.providers.public_whatsapp IS 'Coordonnée WhatsApp explicitement publiable. Distincte de providers.phone et exposée uniquement lorsqu une offre active l action whatsapp.';
 
 
 --
@@ -4357,6 +4438,8 @@ CREATE TABLE public.services (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     image_ref text,
+    actions_enabled text[] DEFAULT ARRAY['request'::text] NOT NULL,
+    CONSTRAINT services_actions_enabled_allowed CHECK (((cardinality(actions_enabled) > 0) AND (actions_enabled <@ ARRAY['request'::text, 'quote'::text, 'callback'::text, 'call'::text, 'whatsapp'::text]))),
     CONSTRAINT services_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
     CONSTRAINT services_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text)))
 );
@@ -4381,6 +4464,13 @@ COMMENT ON COLUMN public.services.commercial_exposure IS 'Patron déjà en produ
 --
 
 COMMENT ON COLUMN public.services.image_ref IS 'Référence média publique optionnelle pour la représentation du service. Chemin public /... (jamais //...) ou URL https:// uniquement. Source owner = providers-services.';
+
+
+--
+-- Name: COLUMN services.actions_enabled; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.services.actions_enabled IS 'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind décrit ce que l objet est ; ce tableau décrit ce que le client peut faire.';
 
 
 --
@@ -5908,6 +5998,30 @@ ALTER TABLE ONLY public.cost_component_events
 
 
 --
+-- Name: cost_component_market_override_events cost_component_market_override_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_market_id_component_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_market_id_component_id_key UNIQUE (market_id, component_id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cost_components cost_components_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7171,6 +7285,20 @@ CREATE INDEX idx_cost_benchmarks_active ON public.cost_benchmarks USING btree (c
 --
 
 CREATE INDEX idx_cost_component_events_component ON public.cost_component_events USING btree (component_id, created_at DESC);
+
+
+--
+-- Name: idx_cost_component_market_override_events_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cost_component_market_override_events_market ON public.cost_component_market_override_events USING btree (market_id, created_at DESC);
+
+
+--
+-- Name: idx_cost_component_market_overrides_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cost_component_market_overrides_market ON public.cost_component_market_overrides USING btree (market_id, component_id);
 
 
 --
@@ -9676,6 +9804,70 @@ ALTER TABLE ONLY public.cost_component_events
 
 ALTER TABLE ONLY public.cost_component_events
     ADD CONSTRAINT cost_component_events_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_component_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_component_id_fkey FOREIGN KEY (component_id) REFERENCES public.cost_components(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_override_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_override_id_fkey FOREIGN KEY (override_id) REFERENCES public.cost_component_market_overrides(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_override_events cost_component_market_override_events_triggered_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_override_events
+    ADD CONSTRAINT cost_component_market_override_events_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_component_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_component_id_fkey FOREIGN KEY (component_id) REFERENCES public.cost_components(id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cost_component_market_overrides cost_component_market_overrides_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_component_market_overrides
+    ADD CONSTRAINT cost_component_market_overrides_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
