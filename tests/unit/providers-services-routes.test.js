@@ -76,7 +76,7 @@ describe('GET /api/providers-services/services/:id', () => {
     expect(mockGetService).not.toHaveBeenCalled();
   });
 
-  it('nominal : provider_name est public, provider_id et téléphone restent privés', async () => {
+  it('nominal legacy : provider_name est public, provider_id et téléphone restent privés', async () => {
     mockDbQuery.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
@@ -103,9 +103,58 @@ describe('GET /api/providers-services/services/:id', () => {
       market_id: MARKET_ID,
       image_ref: '/media/installateur.webp',
       provider_name: 'Clim Anjouan',
+      actions: ['request'],
+      public_contact: null,
     });
     expect(res.body.provider_id).toBeUndefined();
-    expect(JSON.stringify(res.body)).not.toMatch(/phone|téléphone|2699999999/i);
+    expect(JSON.stringify(res.body)).not.toMatch(/2699999999/i);
+  });
+
+  it('projette plusieurs actions et uniquement les contacts explicitement publics nécessaires', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
+      .mockResolvedValueOnce({ rows: [{ public_phone: '+2693210000', public_whatsapp: '+2693210001' }] });
+    mockIsServiceExposable.mockResolvedValue(true);
+    mockGetService.mockResolvedValue({
+      id: SERVICE_ID,
+      provider_id: PROVIDER_ID,
+      provider_name: 'Moto Service',
+      title: 'Réparation moto',
+      description: null,
+      zone: 'Mutsamudu',
+      market_id: MARKET_ID,
+      actions_enabled: ['callback', 'call', 'whatsapp'],
+    });
+
+    const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
+    expect(res.status).toBe(200);
+    expect(res.body.actions).toEqual(['callback', 'call', 'whatsapp']);
+    expect(res.body.public_contact).toEqual({
+      phone: '+2693210000',
+      whatsapp: '+2693210001',
+    });
+    expect(res.body.provider_id).toBeUndefined();
+  });
+
+  it('supprime call/whatsapp si le provider n a pas publié les coordonnées correspondantes', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
+      .mockResolvedValueOnce({ rows: [{ public_phone: null, public_whatsapp: null }] });
+    mockIsServiceExposable.mockResolvedValue(true);
+    mockGetService.mockResolvedValue({
+      id: SERVICE_ID,
+      provider_id: PROVIDER_ID,
+      title: 'Diagnostic',
+      description: null,
+      zone: null,
+      market_id: MARKET_ID,
+      actions_enabled: ['call', 'whatsapp'],
+    });
+
+    const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
+    expect(res.status).toBe(200);
+    expect(res.body.actions).toEqual([]);
+    expect(res.body.public_contact).toBeNull();
   });
 
   it('champs optionnels absents deviennent null dans le contrat public', async () => {
@@ -115,6 +164,8 @@ describe('GET /api/providers-services/services/:id', () => {
     const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
     expect(res.body.image_ref).toBeNull();
     expect(res.body.provider_name).toBeNull();
+    expect(res.body.actions).toEqual(['request']);
+    expect(res.body.public_contact).toBeNull();
   });
 
   it('résout le code en UUID réel avant isServiceExposable', async () => {
@@ -173,9 +224,11 @@ describe('GET /api/providers-services/physical-offers/:id', () => {
       market_id: MARKET_ID,
       image_ref: '/media/samboussas.webp',
       provider_name: 'Saveurs d Anjouan',
+      actions: ['request'],
+      public_contact: null,
     });
     expect(res.body.provider_id).toBeUndefined();
-    expect(JSON.stringify(res.body)).not.toMatch(/phone|2698888888/i);
+    expect(JSON.stringify(res.body)).not.toMatch(/2698888888/i);
   });
 
   it('résout le code en UUID réel avant isPhysicalOfferExposable', async () => {
