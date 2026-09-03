@@ -4,8 +4,8 @@
  * @domain        catalog
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Rendre Physical Offer / Service dans l'unique shell #k-modal et projeter plusieurs actions autorisées sans déduire l'interaction du kind.
- * @impact-areas  product-discovery, discovery-rail, modal-layout, desktop
+ * @purpose       Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.
+ * @impact-areas  product-discovery, discovery-rail, modal-layout, desktop, mobile
  * @version       2026-09
  */
 'use strict';
@@ -16,49 +16,42 @@ import { sanitize } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
-const ALLOWED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
-const INQUIRY_ACTIONS = Object.freeze(['request', 'quote', 'callback']);
+const STORED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
+const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
 let _installed = false;
 
 function kindLabelFor(kind) {
-  return kind === 'physical_offer' ? 'Produit local' : 'Service local';
+  return kind === 'physical_offer' ? 'Offre locale' : 'Service';
 }
 
 function statusFor(kind) {
-  return kind === 'physical_offer' ? 'Préparation sur commande' : 'Sur demande';
-}
-
-function ctaFor(kind) {
-  return kind === 'physical_offer' ? 'Commander' : 'Demander';
+  return kind === 'physical_offer' ? 'Disponible ici' : 'Sur demande';
 }
 
 function requestLabelFor(kind) {
-  return kind === 'physical_offer' ? 'Pour quand ?' : 'Quand souhaitez-vous l’intervention ?';
+  return kind === 'physical_offer' ? 'Pour quand ?' : 'Pour quand ?';
 }
 
 function requestPlaceholderFor(kind) {
-  return kind === 'physical_offer' ? 'Ex. vendredi soir' : 'Ex. samedi matin';
+  return kind === 'physical_offer' ? 'Ex. vendredi soir' : 'Ex. cette semaine';
+}
+
+function publicActionFor(raw) {
+  const action = String(raw || '').trim().toLowerCase();
+  if (!STORED_ACTIONS.includes(action)) return null;
+  if (action === 'request' || action === 'quote') return 'request';
+  if (action === 'callback' || action === 'call' || action === 'whatsapp') return 'callback';
+  return null;
 }
 
 function normalizeActions(detail = {}) {
-  // Contrat legacy : une ancienne projection sans `actions` continue à suivre
-  // exactement le parcours Commander/Demander historique.
+  // Projection legacy : une ancienne fiche sans actions reste demandable.
   if (!Array.isArray(detail.actions)) return ['request'];
-
-  const phone = typeof detail.public_contact?.phone === 'string'
-    ? detail.public_contact.phone.trim()
-    : '';
-  const whatsapp = typeof detail.public_contact?.whatsapp === 'string'
-    ? detail.public_contact.whatsapp.trim()
-    : '';
   const seen = new Set();
   const actions = [];
-
   for (const raw of detail.actions) {
-    const action = String(raw || '').trim().toLowerCase();
-    if (!ALLOWED_ACTIONS.includes(action) || seen.has(action)) continue;
-    if (action === 'call' && !phone) continue;
-    if (action === 'whatsapp' && !whatsapp) continue;
+    const action = publicActionFor(raw);
+    if (!action || seen.has(action)) continue;
     seen.add(action);
     actions.push(action);
   }
@@ -66,55 +59,79 @@ function normalizeActions(detail = {}) {
 }
 
 function actionLabelFor(action, kind) {
-  if (action === 'quote') return 'Demander un devis';
   if (action === 'callback') return 'Être rappelé';
-  if (action === 'call') return 'Appeler';
-  if (action === 'whatsapp') return 'WhatsApp';
-  return ctaFor(kind);
+  return kind === 'physical_offer' ? 'Demander cette offre' : 'Demander ce service';
 }
 
-function telHref(value) {
-  const normalized = String(value || '').trim().replace(/[^\d+]/g, '');
-  return normalized ? `tel:${normalized}` : null;
+function subjectFor(detail = {}) {
+  const parts = [detail.title, detail.provider_name].filter(Boolean);
+  return parts.join(' · ');
 }
 
-function whatsappHref(value) {
-  let digits = String(value || '').replace(/\D/g, '');
-  if (digits.startsWith('00')) digits = digits.slice(2);
-  return digits ? `https://wa.me/${digits}` : null;
+function requestNotePlaceholderFor(kind) {
+  return kind === 'physical_offer'
+    ? 'Ex. quantité souhaitée, lieu de livraison, précision utile…'
+    : 'Ex. véhicule, panne, dimensions, besoin précis…';
 }
 
-function buildActionHTML(kind, ref, detail, actions) {
+function callbackNotePlaceholderFor(detail = {}) {
+  return detail.title
+    ? `Ex. Je souhaite échanger à propos de « ${detail.title} »…`
+    : 'Ajoutez une précision pour le rappel…';
+}
+
+function buildActionChooserHTML(kind, ref, actions) {
   if (!actions.length) {
-    return '<p class="k-modal-discovery-no-action">Contact momentanément indisponible.</p>';
+    return '<p class="k-modal-discovery-no-action">Demande momentanément indisponible.</p>';
   }
-
-  const contact = detail.public_contact || {};
   return actions.map((action, index) => {
     const label = sanitize(actionLabelFor(action, kind));
     const priorityClass = index === 0 ? ' is-primary' : ' is-secondary';
-    const sharedClass = `k-discovery-cta k-modal-discovery-cta k-modal-discovery-action${priorityClass}`;
-
-    if (action === 'call') {
-      const href = telHref(contact.phone);
-      if (!href) return '';
-      return `<a class="${sharedClass}" href="${sanitize(href)}"
-        data-discovery-direct-action="call">${label}</a>`;
-    }
-
-    if (action === 'whatsapp') {
-      const href = whatsappHref(contact.whatsapp);
-      if (!href) return '';
-      return `<a class="${sharedClass}" href="${sanitize(href)}"
-        target="_blank" rel="noopener noreferrer"
-        data-discovery-direct-action="whatsapp">${label}</a>`;
-    }
-
-    return `<button class="${sharedClass}" type="button"
-      data-discovery-modal-action="${sanitize(action)}"
+    return `<button class="k-discovery-cta k-modal-discovery-cta k-modal-discovery-action${priorityClass}" type="button"
+      data-discovery-select-action="${sanitize(action)}"
       data-discovery-kind="${sanitize(kind)}"
-      data-discovery-ref="${sanitize(ref)}">${label}</button>`;
+      data-discovery-ref="${sanitize(ref)}"
+      aria-expanded="false">${label}</button>`;
   }).join('');
+}
+
+function buildContextFormHTML(kind, ref, detail, action) {
+  const isCallback = action === 'callback';
+  const subject = subjectFor(detail);
+  const noteLabel = isCallback ? 'Une précision pour le rappel' : 'Précisez votre besoin';
+  const notePlaceholder = isCallback
+    ? callbackNotePlaceholderFor(detail)
+    : requestNotePlaceholderFor(kind);
+  const timing = isCallback ? '' : `
+    <label class="k-modal-discovery-request">
+      <span class="k-modal-discovery-request-label">${sanitize(requestLabelFor(kind))} <span>· facultatif</span></span>
+      <input class="k-modal-discovery-request-input" type="text" maxlength="160"
+        autocomplete="off" spellcheck="true"
+        data-discovery-requested-window
+        placeholder="${sanitize(requestPlaceholderFor(kind))}">
+    </label>`;
+
+  return `<section class="k-modal-discovery-context-form"
+      data-discovery-action-form="${sanitize(action)}" hidden>
+    <div class="k-modal-discovery-request">
+      <span class="k-modal-discovery-request-label">${isCallback ? 'Objet du rappel' : 'Votre demande concerne'}</span>
+      <div class="k-modal-discovery-provider" data-discovery-known-subject>${sanitize(subject)}</div>
+    </div>
+    <label class="k-modal-discovery-request">
+      <span class="k-modal-discovery-request-label">${sanitize(noteLabel)} <span>· facultatif</span></span>
+      <textarea class="k-modal-discovery-request-input" rows="3" maxlength="600"
+        autocomplete="off" spellcheck="true"
+        data-discovery-requester-note
+        placeholder="${sanitize(notePlaceholder)}"></textarea>
+    </label>
+    ${timing}
+    <button class="k-discovery-cta k-modal-discovery-cta is-primary" type="button"
+      data-discovery-submit-action="${sanitize(action)}"
+      data-discovery-kind="${sanitize(kind)}"
+      data-discovery-ref="${sanitize(ref)}">
+      ${isCallback ? 'Demander à être rappelé' : 'Envoyer ma demande'}
+    </button>
+  </section>`;
 }
 
 function buildDetailHTML(kind, ref, detail) {
@@ -128,16 +145,6 @@ function buildDetailHTML(kind, ref, detail) {
     ? `<p class="k-modal-discovery-desc">${sanitize(detail.description)}</p>`
     : '';
   const actions = normalizeActions(detail);
-  const hasInquiryAction = actions.some(action => INQUIRY_ACTIONS.includes(action));
-  const requestField = hasInquiryAction
-    ? `<label class="k-modal-discovery-request">
-        <span class="k-modal-discovery-request-label">${sanitize(requestLabelFor(kind))} <span>· facultatif</span></span>
-        <input class="k-modal-discovery-request-input" type="text" maxlength="160"
-          autocomplete="off" spellcheck="true"
-          data-discovery-requested-window
-          placeholder="${sanitize(requestPlaceholderFor(kind))}">
-      </label>`
-    : '';
 
   return `
     <div class="k-modal-discovery-shell">
@@ -150,10 +157,13 @@ function buildDetailHTML(kind, ref, detail) {
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
         ${description}
-        ${requestField}
-        <div class="k-modal-discovery-actions" aria-label="Actions disponibles">
-          ${buildActionHTML(kind, ref, detail, actions)}
+        <div class="k-modal-discovery-request">
+          <span class="k-modal-discovery-request-label">Que souhaitez-vous faire ?</span>
+          <div class="k-modal-discovery-actions" aria-label="Actions disponibles">
+            ${buildActionChooserHTML(kind, ref, actions)}
+          </div>
         </div>
+        ${actions.map(action => buildContextFormHTML(kind, ref, detail, action)).join('')}
       </div>
     </div>`;
 }
@@ -178,28 +188,45 @@ export function clearDiscoveryModalDetail() {
   delete slot.dataset.discoveryKind;
 }
 
-function handleAction(event) {
-  const direct = event.target.closest('[data-discovery-direct-action]');
-  if (direct) {
-    closeModal({ skipHistoryBack: true });
-    return;
-  }
+function selectAction(button) {
+  const shell = button.closest('.k-modal-discovery-shell');
+  if (!shell) return;
+  const action = button.dataset.discoverySelectAction;
+  if (!INQUIRY_ACTIONS.includes(action)) return;
 
-  const button = event.target.closest('[data-discovery-modal-action][data-discovery-kind][data-discovery-ref]');
-  if (!button || !button.matches('button')) return;
-  const action = button.dataset.discoveryModalAction;
+  shell.querySelectorAll('[data-discovery-select-action]').forEach(candidate => {
+    candidate.setAttribute('aria-expanded', candidate === button ? 'true' : 'false');
+  });
+  shell.querySelectorAll('[data-discovery-action-form]').forEach(form => {
+    form.hidden = form.dataset.discoveryActionForm !== action;
+  });
+  const activeForm = shell.querySelector(`[data-discovery-action-form="${action}"]`);
+  activeForm?.querySelector('textarea, input')?.focus();
+}
+
+function submitAction(button) {
+  const action = button.dataset.discoverySubmitAction;
   const kind = button.dataset.discoveryKind;
   const ref = button.dataset.discoveryRef;
   if (!INQUIRY_ACTIONS.includes(action) || !kind || !ref) return;
 
-  const detailShell = button.closest('.k-modal-discovery-shell');
-  const requestInput = detailShell?.querySelector('[data-discovery-requested-window]');
-  const requestedWindow = requestInput?.value?.trim() || null;
+  const form = button.closest('[data-discovery-action-form]');
+  const requestedWindow = form?.querySelector('[data-discovery-requested-window]')?.value?.trim() || null;
+  const requesterNote = form?.querySelector('[data-discovery-requester-note]')?.value?.trim() || null;
 
-  // Continue inside Komerce: close the detail lifecycle without browser-back,
-  // then hand the business action to the canonical Inquiry path.
   closeModal({ skipHistoryBack: true });
-  requestDiscovery(kind, ref, button, requestedWindow, action);
+  requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
+}
+
+function handleAction(event) {
+  const selector = event.target.closest('[data-discovery-select-action]');
+  if (selector?.matches('button')) {
+    selectAction(selector);
+    return;
+  }
+
+  const submit = event.target.closest('[data-discovery-submit-action][data-discovery-kind][data-discovery-ref]');
+  if (submit?.matches('button')) submitAction(submit);
 }
 
 export function setupDiscoveryModalDetail() {
@@ -217,6 +244,6 @@ export {
   kindLabelFor,
   normalizeActions,
   actionLabelFor,
-  telHref,
-  whatsappHref,
+  subjectFor,
+  publicActionFor,
 };
