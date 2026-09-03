@@ -4,7 +4,7 @@
  * @domain        providers-services
  * @layer         ui-service
  * @owner         public/boutique/js/discovery-inquiry.js
- * @purpose       Consommer l'intention Commander/Demander du rail Discovery et créer l'Inquiry canonique après identité Komerce.
+ * @purpose       Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.
  * @impact-areas  boutique, discovery-rail, providers-services, auth
  * @version       2026-09
  */
@@ -18,7 +18,9 @@ import { createProviderInquiry } from './providers-services-api.js';
 let _installed = false;
 const _pending = new Set();
 
-function successMessage(kind) {
+function successMessage(kind, action = 'request') {
+  if (action === 'callback') return 'Demande de rappel envoyée';
+  if (action === 'quote') return 'Demande de devis envoyée';
   return kind === 'physical_offer'
     ? 'Demande de commande envoyée'
     : 'Demande envoyée';
@@ -41,17 +43,24 @@ function setSourcePending(source, pending) {
 }
 
 async function handleDiscoveryRequest(payload = {}) {
-  const { kind, ref, source = null, requestedWindow = null } = payload;
+  const {
+    kind,
+    ref,
+    source = null,
+    requestedWindow = null,
+    action = 'request',
+  } = payload;
   if (!ref || !['service', 'physical_offer'].includes(kind)) return false;
+  if (!['request', 'quote', 'callback'].includes(action)) return false;
 
-  const key = `${kind}:${ref}`;
+  const key = `${kind}:${ref}:${action}`;
   if (_pending.has(key)) return false;
   _pending.add(key);
   setSourcePending(source, true);
 
   try {
     const identity = await requireIdentity({
-      reason: 'envoyer votre demande',
+      reason: action === 'callback' ? 'demander à être rappelé' : 'envoyer votre demande',
       title: 'Confirmer votre WhatsApp',
       returnFocusTo: source instanceof HTMLElement ? source : null,
     });
@@ -63,7 +72,7 @@ async function handleDiscoveryRequest(payload = {}) {
       return false;
     }
 
-    showToast(successMessage(kind), 'success', 3200);
+    showToast(successMessage(kind, action), 'success', 3200);
     return true;
   } finally {
     setSourcePending(source, false);

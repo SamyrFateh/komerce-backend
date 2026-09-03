@@ -33,6 +33,14 @@ test('transporte la fenêtre demandée dans le même contrat canonique', () => {
   });
 });
 
+test('ajoute callback ou quote sans casser le payload historique request', () => {
+  const source = document.createElement('button');
+  expect(requestDiscovery('service', 'svc-2', source, 'Demain', 'callback')).toBe(true);
+  expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
+    kind: 'service', ref: 'svc-2', source, requestedWindow: 'Demain', action: 'callback',
+  });
+});
+
 test('émet la même commande canonique pour physical_offer', () => {
   expect(requestDiscovery('physical_offer', 'offer-1', null)).toBe(true);
   expect(mockEmit).toHaveBeenCalledWith('discovery:request', {
@@ -40,7 +48,8 @@ test('émet la même commande canonique pour physical_offer', () => {
   });
 });
 
-test('refuse un kind hors frontière Discovery actionnable', () => {
+test('refuse un kind ou une action hors frontière Inquiry', () => {
   expect(requestDiscovery('product', 'p-1', null)).toBe(false);
+  expect(requestDiscovery('service', 'svc-1', null, null, 'call')).toBe(false);
   expect(mockEmit).not.toHaveBeenCalled();
 });

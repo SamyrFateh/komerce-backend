@@ -162,11 +162,25 @@ test('staging opt-in seeds 8 produits locaux + providers in transaction', async 
   expect(sql).toMatch(/INSERT INTO physical_offers/);
   expect(sql).toMatch(/INSERT INTO services/);
   expect(sql).toMatch(/image_ref/);
+  expect(sql).toMatch(/public_phone/);
+  expect(sql).toMatch(/public_whatsapp/);
+  expect(sql).toMatch(/actions_enabled/);
   expect(sql).toMatch(/commercial_exposure = 'ENABLED'/);
 
   expect(PHYSICAL_OFFERS.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
   expect(SERVICES.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
   expect(Object.values(STAGING_MEDIA).every(x => x.endsWith('.webp'))).toBe(true);
+});
+
+test('le dataset staging éprouve réellement les combinaisons cumulatives', () => {
+  const mechanic = SERVICES.find(service => service.title === 'Mécanique automobile');
+  expect(mechanic.actions).toEqual(['quote', 'callback', 'call', 'whatsapp']);
+
+  const samboussas = PHYSICAL_OFFERS.find(offer => offer.title === 'Samboussas au bœuf');
+  expect(samboussas.actions).toEqual(['request', 'call', 'whatsapp']);
+
+  expect(PROVIDERS.some(provider => provider.publicPhone && provider.publicWhatsapp)).toBe(true);
+  expect(PROVIDERS.some(provider => !provider.publicPhone && !provider.publicWhatsapp)).toBe(true);
 });
 
 test('les refs Showcase couvrent plusieurs univers et restent stables', () => {
