@@ -10,11 +10,13 @@
  */
 
 /*
- * Desktop One Card Contract.
- * Même langage que le catalogue, gabarit de rail plus compact :
- * - même shell k-card, mêmes fontes, mêmes tokens, même hiérarchie ;
- * - seules les capacités locales (statut, contexte, verbe) distinguent Discovery ;
- * - le gabarit 4:3 et le peek horizontal gardent le rail secondaire au catalogue.
+ * Desktop One Card Contract — convergence stricte.
+ * L'oeil doit lire la même famille de cartes que le catalogue avant de lire
+ * la nuance locale. La géométrie de carte n'est donc plus une variante :
+ * - même largeur de colonne que la grille catalogue 4 colonnes ;
+ * - même média carré 1:1 ;
+ * - mêmes shell, fontes, tokens et rythme ;
+ * - seules les capacités locales (statut, contexte, verbe) distinguent Discovery.
  */
 @media (min-width: 900px) {
   .k-discovery-header {
@@ -49,18 +51,17 @@
     scroll-padding-inline: 0;
   }
 
+  /* Même module horizontal que .k-sec-grid : 4 colonnes, 3 gaps de 16px. */
   .k-discovery-canonical-card {
-    flex: 0 0 clamp(236px, calc((100% - 64px) / 5.2), 288px);
-    min-width: 236px;
-    max-width: 288px;
+    flex: 0 0 calc((100% - 48px) / 4);
+    min-width: calc((100% - 48px) / 4);
+    max-width: none;
     scroll-snap-align: start;
   }
 
-  /* Variante rail du média canonique : même langage, moins de hauteur que la
-     grille catalogue carrée. Cela évite qu'une surface locale secondaire
-     prenne visuellement le dessus sur le catalogue principal. */
+  /* Même ratio média que la carte catalogue desktop. */
   .k-discovery-canonical-media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
   }
 
   .k-discovery-canonical-img {
