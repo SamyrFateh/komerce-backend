@@ -1,0 +1,166 @@
+name: Playwright mobile search header state V2.9.6 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-search-header-state-v296
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Verify branch CSS on live DOM
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              isMobile: true,
+              hasTouch: true,
+              serviceWorkers: 'block',
+            });
+            await context.setExtraHTTPHeaders({ 'Cache-Control': 'no-cache', Pragma: 'no-cache' });
+            const page = await context.newPage();
+            const cdp = await context.newCDPSession(page);
+            const response = await page.goto(`https://komerce.co/boutique/?pw_search_header_v296=${Date.now()}`, {
+              waitUntil: 'domcontentloaded', timeout: 60000,
+            });
+            await page.waitForFunction(() =>
+              document.querySelector('.k-search input') &&
+              document.querySelector('.k-logo') &&
+              document.querySelector('.k-header-actions') &&
+              document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'),
+              null, { timeout: 30000 }
+            );
+            await page.waitForTimeout(6000);
+
+            const branchCss = fs.readFileSync('css/mobile-shell-convergence.css', 'utf8');
+            await page.addStyleTag({ content: branchCss });
+            await page.waitForTimeout(150);
+
+            const snapshot = async (label) => page.evaluate((label) => {
+              const rect = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+              };
+              const header = document.querySelector('.k-header');
+              const logo = document.querySelector('.k-header-inner > .k-logo');
+              const actions = document.querySelector('.k-header-inner > .k-header-actions');
+              const search = document.querySelector('.k-search');
+              const input = search?.querySelector('input');
+              const hero = document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const rail = document.querySelector('.k-shelf-rail');
+              const grid = document.getElementById('k-grid');
+              const realTout = grid?.querySelector(':scope > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              const discovery = realTout?.querySelector(':scope > .k-discovery-shell');
+              const hcs = header ? getComputedStyle(header) : null;
+              const lcs = logo ? getComputedStyle(logo) : null;
+              const acs = actions ? getComputedStyle(actions) : null;
+              const scs = search ? getComputedStyle(search) : null;
+              const activeChip = document.querySelector('#k-cats .k-chip.active');
+              const ghost = grid?.querySelector(':scope > .k-cat-section[data-ghost="right"]');
+              return {
+                label,
+                header: rect(header),
+                headerBackground: hcs?.backgroundColor || null,
+                headerBackdrop: hcs?.backdropFilter || hcs?.webkitBackdropFilter || null,
+                logoOpacity: lcs?.opacity || null,
+                logoVisibility: lcs?.visibility || null,
+                actionsOpacity: acs?.opacity || null,
+                actionsVisibility: acs?.visibility || null,
+                search: rect(search),
+                searchShadow: scs?.boxShadow || null,
+                inputOpacity: input ? getComputedStyle(input).opacity : null,
+                inputFocused: input === document.activeElement,
+                hero: rect(hero), rail: rect(rail), discovery: rect(discovery),
+                gridScrollLeft: grid ? +grid.scrollLeft.toFixed(1) : null,
+                realPages: grid ? grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])').length : 0,
+                ghostCount: grid ? grid.querySelectorAll(':scope > .k-cat-section[data-ghost="right"]').length : 0,
+                ghostInert: ghost?.hasAttribute('inert') || false,
+                activeCat: activeChip?.dataset.cat || null,
+                allScrollTop: realTout?.scrollTop ?? null,
+                pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+              };
+            }, label);
+
+            const initial = await snapshot('initial');
+            await page.screenshot({ path: 'search-header-v296-01-initial.png' });
+
+            const searchBox = await page.locator('.k-search').boundingBox();
+            await page.touchscreen.tap(searchBox.x + searchBox.width / 2, searchBox.y + searchBox.height / 2);
+            await page.waitForTimeout(300);
+            const focused = await snapshot('focused');
+            await page.screenshot({ path: 'search-header-v296-02-focused.png' });
+
+            await page.evaluate(() => document.querySelector('.k-search input')?.blur());
+            await page.waitForTimeout(220);
+            const blurred = await snapshot('blurred');
+
+            // Verify the ghost loop is unchanged after opening/closing search.
+            await page.evaluate(() => {
+              const all = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              if (all) all.scrollTop = 220;
+            });
+            await page.waitForTimeout(150);
+
+            async function swipeLeft() {
+              const y = 360, x1 = 340, x2 = 40;
+              await cdp.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{x:x1,y}], modifiers:0 });
+              for (let i=1;i<=8;i++) {
+                const x = x1 + (x2-x1)*i/8;
+                await cdp.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{x,y}], modifiers:0 });
+                await new Promise(r => setTimeout(r, 18));
+              }
+              await cdp.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[], modifiers:0 });
+              await page.waitForTimeout(500);
+            }
+            for (let i=0;i<initial.realPages;i++) await swipeLeft();
+            await page.waitForTimeout(250);
+            const afterGhost = await snapshot('after-ghost');
+            await page.screenshot({ path: 'search-header-v296-03-after-ghost.png' });
+
+            const failures = [];
+            if (!response || response.status() >= 400) failures.push(`HTTP ${response?.status()}`);
+            if (Math.abs((initial.search?.width||0)-34) > 1 || Math.abs((initial.search?.height||0)-34) > 1) failures.push(`compact=${JSON.stringify(initial.search)}`);
+            if (!focused.inputFocused || focused.inputOpacity !== '1') failures.push(`focus=${focused.inputFocused}/${focused.inputOpacity}`);
+            if ((focused.search?.x ?? 999) > 13 || (focused.search?.width ?? 0) < 360) failures.push(`expanded=${JSON.stringify(focused.search)}`);
+            if (focused.headerBackground !== 'rgb(255, 255, 255)') failures.push(`headerBg=${focused.headerBackground}`);
+            if (focused.headerBackdrop !== 'none') failures.push(`backdrop=${focused.headerBackdrop}`);
+            if (focused.logoOpacity !== '0' || focused.logoVisibility !== 'hidden') failures.push(`logo=${focused.logoOpacity}/${focused.logoVisibility}`);
+            if (focused.actionsOpacity !== '0' || focused.actionsVisibility !== 'hidden') failures.push(`actions=${focused.actionsOpacity}/${focused.actionsVisibility}`);
+            if ((focused.searchShadow || '').includes('7px 20px')) failures.push(`floatingShadow=${focused.searchShadow}`);
+            if (focused.hero?.y !== initial.hero?.y || focused.rail?.y !== initial.rail?.y || focused.discovery?.y !== initial.discovery?.y) failures.push(`geometry changed during focus`);
+            if (blurred.logoVisibility !== 'visible' || blurred.actionsVisibility !== 'visible' || blurred.inputOpacity !== '0') failures.push(`restore=${blurred.logoVisibility}/${blurred.actionsVisibility}/${blurred.inputOpacity}`);
+            if (afterGhost.activeCat !== 'all' || Math.abs(afterGhost.gridScrollLeft || 0) > 1 || afterGhost.allScrollTop !== 0) failures.push(`ghostReturn=${afterGhost.activeCat}/${afterGhost.gridScrollLeft}/${afterGhost.allScrollTop}`);
+            if (afterGhost.ghostCount !== 1 || !afterGhost.ghostInert) failures.push(`ghost=${afterGhost.ghostCount}/${afterGhost.ghostInert}`);
+            if (afterGhost.hero?.y !== initial.hero?.y || afterGhost.rail?.y !== initial.rail?.y) failures.push(`fixed geometry changed after ghost`);
+
+            const result = { initial, focused, blurred, afterGhost, failures };
+            fs.writeFileSync('search-header-v296.json', JSON.stringify(result, null, 2));
+            console.log('SEARCH_HEADER_V296=' + JSON.stringify(result));
+            await browser.close();
+            if (failures.length) process.exit(1);
+          })().catch((err) => { console.error(err); process.exit(1); });
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-search-header-state-v296
+          path: |
+            public/boutique/search-header-v296.json
+            public/boutique/search-header-v296-*.png
+          if-no-files-found: warn
