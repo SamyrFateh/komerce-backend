@@ -19,20 +19,20 @@ describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et tend le masthead sans réduire le header tactile', () => {
     expect(css).toContain('@media (max-width: 899px)');
     expect(css).toContain('height: clamp(54px, 15vw, 62px);');
-    expect(css).toContain('header 44 px + hero 78 px');
+    expect(css).toContain('header 44 px + hero 58.5 px');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('recadre les personnages vers le haut dans la boîte raccourcie', () => {
+  test('remonte la mini-scène personnages dans la boîte raccourcie', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 125%;');
-    expect(css).toContain('background-position: 70% -12%;');
+    expect(css).toContain('background-size: auto 118%;');
+    expect(css).toContain('background-position: 70% 44%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
   });
 
-  test('garde le slogan visible mais plus compact dans la réserve gauche', () => {
+  test('garde le slogan visible mais compact dans la réserve gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('inset: 0 auto 0 0;');
     expect(css).toContain('width: 35%;');
@@ -47,15 +47,15 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toContain('k-hero-moon');
   });
 
-  test('replie le hero au scroll mobile et libère réellement la cage produits', () => {
-    expect(heroBootstrap).toContain('const HERO_COLLAPSE_THRESHOLD = 24;');
-    expect(heroBootstrap).toContain('const HERO_EXPAND_THRESHOLD = 4;');
-    expect(heroBootstrap).toContain("page.classList.contains('k-cat-section')");
-    expect(heroBootstrap).toContain("document.addEventListener('scroll', onMobileCategoryScroll, true);");
-    expect(heroBootstrap).toContain('translate3d(0, -${collapseDistance}px, 0)');
-    expect(heroBootstrap).toContain("style.setProperty('--pager-top', nextTop + 'px')");
-    expect(heroBootstrap).toContain('st >= HERO_COLLAPSE_THRESHOLD');
-    expect(heroBootstrap).toContain('st <= HERO_EXPAND_THRESHOLD');
+  test('le hero mobile reste stable : aucun collapse au scroll catégorie', () => {
+    expect(heroBootstrap).toContain('Hero mobile stable sous le header');
+    expect(heroBootstrap).toContain('clearMobileHeroInlineState');
+    expect(heroBootstrap).not.toContain('HERO_COLLAPSE_THRESHOLD');
+    expect(heroBootstrap).not.toContain('HERO_EXPAND_THRESHOLD');
+    expect(heroBootstrap).not.toContain('onMobileCategoryScroll');
+    expect(heroBootstrap).not.toContain("document.addEventListener('scroll'");
+    expect(heroBootstrap).not.toContain('translate3d(0, -${collapseDistance}px, 0)');
+    expect(heroBootstrap).not.toContain("style.setProperty('--pager-top', nextTop + 'px')");
   });
 
   test('n’introduit ni priorité forcée ni couleur hexadécimale', () => {

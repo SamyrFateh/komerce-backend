@@ -5,11 +5,13 @@
  * @test-runner jest
  * @test-requires none
  *
- * Temu V2.9 — invariants utiles :
+ * Temu V2.9.1 — invariants utiles :
  * - swipe horizontal explicite entre catégories ;
+ * - toute entrée horizontale repart en haut pour exposer `Disponible ici` ;
  * - un ghost droite inerte de Tout pour la continuité dernière catégorie → Tout ;
  * - aucun auto-advance vertical ;
- * - position verticale mémorisée indépendamment par univers ;
+ * - mémoire verticale locale conservée pour les remplacements DOM, jamais comme
+ *   position d'entrée lors d'un changement horizontal ;
  * - cage mobile nettoyable sans effet desktop.
  */
 
@@ -129,6 +131,17 @@ test('_setupInfiniteLoop remplace un ghost existant par un snapshot frais sans d
   expect(document.querySelectorAll('#button-all')).toHaveLength(1);
 });
 
+test('le ghost représente toujours Tout en haut, jamais son ancien scroll vertical', () => {
+  const grid = makeGrid(['all', 'Mode']);
+  const realTout = grid.querySelector('[data-cat="all"]');
+  realTout.scrollTop = 320;
+
+  pager._setupInfiniteLoop();
+
+  expect(realTout.scrollTop).toBe(320);
+  expect(grid.querySelector('[data-ghost="right"]').scrollTop).toBe(0);
+});
+
 test('arriver en bas ne câble aucun changement automatique de catégorie', () => {
   const grid = makeGrid(['all', 'Mode']);
   const page = grid.querySelector('[data-cat="Mode"]');
@@ -144,11 +157,16 @@ test('arriver en bas ne câble aucun changement automatique de catégorie', () =
   expect(page._bounceTimer).toBeUndefined();
 });
 
-test('tap catégorie conserve la navigation horizontale explicite et ignore le ghost', () => {
+test('tap catégorie navigue horizontalement et repart en haut de la page cible', () => {
   const grid = makeGrid(['all', 'Mode', 'Maison']);
   pager._setupInfiniteLoop();
+  const maison = grid.querySelector('[data-cat="Maison"]');
+  maison.scrollTop = 517;
+
   const ok = pager._scrollPagerToCat('Maison', 'smooth');
+
   expect(ok).toBe(true);
+  expect(maison.scrollTop).toBe(0);
   expect(grid.scrollTo).toHaveBeenCalledWith({ left: 780, behavior: 'smooth' });
 });
 
@@ -175,7 +193,7 @@ test('restaure la position verticale après remplacement du DOM', () => {
   expect(grid.querySelector('[data-cat="temu-v2-b"]').scrollTop).toBe(428);
 });
 
-test('mémorise indépendamment chaque univers', () => {
+test('mémorise indépendamment chaque univers entre remplacements DOM', () => {
   let grid = makeGrid(['temu-v2-c', 'temu-v2-d']);
   pager._setupMobilePager();
 

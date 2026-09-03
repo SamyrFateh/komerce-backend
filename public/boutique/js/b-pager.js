@@ -15,18 +15,19 @@
 'use strict';
 
 /**
- * b-pager.js — Temu V2.9 : pager horizontal des catégories principales mobile.
+ * b-pager.js — Temu V2.9.1 : pager horizontal des catégories principales mobile.
  *
  * Grammaire :
  * - horizontal = changement explicite d'univers (swipe ou tap sur le rail) ;
  * - vertical   = exploration locale de l'univers courant ;
- * - chaque univers conserve sa position verticale ;
+ * - toute entrée horizontale dans un univers repart en haut afin que
+ *   `Disponible ici`, lorsqu'il existe, soit immédiatement visible ;
  * - aucun changement de catégorie n'est déclenché par l'arrivée en bas de page ;
  * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
  * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,
  * pas d'ID dupliqué, pas d'interaction. Une fois visible, le pager se recale
- * silencieusement sur la vraie page Tout.
+ * silencieusement sur la vraie page Tout, elle aussi repositionnée en haut.
  */
 
 import { bus } from './b-bus.js';
@@ -164,6 +165,19 @@ function _scrollToIndex(grid, idx, behavior = 'smooth') {
   }, behavior === 'instant' ? 32 : 100);
 }
 
+function _resetPageToTop(page, grid) {
+  if (!page) return;
+  const cat = page.dataset.cat;
+  page.scrollTop = 0;
+  if (cat) _pageScrollByCat.set(cat, 0);
+
+  if (cat === 'all') {
+    const target = grid || _getGrid();
+    const ghost = target?.querySelector(':scope > .k-cat-section[data-ghost="right"]');
+    if (ghost) ghost.scrollTop = 0;
+  }
+}
+
 function _teardownPageScrollMemory(grid, persist = true) {
   _getPages(grid).forEach((page) => {
     const cat = page.dataset.cat;
@@ -204,14 +218,19 @@ function _teleportRightGhost(grid) {
 
   _isProgrammaticScroll = true;
   clearTimeout(_programmaticScrollTimer);
+  _resetPageToTop(realTout, grid);
 
   const previousSnap = grid.style.scrollSnapType;
+  const previousBehavior = grid.style.scrollBehavior;
   grid.style.scrollSnapType = 'none';
+  grid.style.scrollBehavior = 'auto';
   grid.scrollLeft = 0;
   _syncChip('all');
 
   requestAnimationFrame(() => {
     grid.style.scrollSnapType = previousSnap;
+    grid.style.scrollBehavior = previousBehavior;
+    grid.scrollLeft = 0;
     _programmaticScrollTimer = setTimeout(() => {
       _isProgrammaticScroll = false;
     }, 32);
@@ -240,6 +259,7 @@ function _setupScrollSync(grid) {
 
       const cat = page.dataset.cat;
       if (cat && idx !== lastIdx) {
+        _resetPageToTop(page, grid);
         lastIdx = idx;
         _syncChip(cat);
       }
@@ -288,6 +308,7 @@ function _scrollPagerToCat(cat, behavior = 'smooth') {
   const idx = pages.findIndex((page) => page.dataset.cat === cat);
   if (idx < 0) return false;
 
+  _resetPageToTop(pages[idx], grid);
   _syncChip(cat);
   _scrollToIndex(grid, idx, behavior);
   return true;
@@ -296,8 +317,8 @@ function _scrollPagerToCat(cat, behavior = 'smooth') {
 /**
  * Crée un unique ghost DROITE : clone visuel inerte de Tout.
  * Les event listeners ne sont pas clonés par cloneNode(); tous les IDs sont
- * retirés et les descendants interactifs neutralisés. Le snapshot conserve le
- * scroll vertical de Tout pour rendre le wrap imperceptible.
+ * retirés et les descendants interactifs neutralisés. Le ghost représente
+ * toujours l'entrée de Tout en haut de page, jamais son ancien scroll vertical.
  */
 function _setupInfiniteLoop() {
   const grid = _getGrid();
@@ -306,6 +327,8 @@ function _setupInfiniteLoop() {
   const realPagesBefore = _getPages(grid);
   const currentIdx = _getCurrentIndex(grid);
   if (currentIdx >= realPagesBefore.length && realPagesBefore.length > 0) {
+    const toutBefore = realPagesBefore.find(page => page.dataset.cat === 'all');
+    _resetPageToTop(toutBefore, grid);
     grid.scrollLeft = 0;
     _syncChip('all');
   }
@@ -329,7 +352,7 @@ function _setupInfiniteLoop() {
     .forEach(node => node.setAttribute('tabindex', '-1'));
 
   grid.appendChild(ghost);
-  ghost.scrollTop = toutPage.scrollTop;
+  ghost.scrollTop = 0;
 }
 
 function _setupSectionAutoAdvance() {
