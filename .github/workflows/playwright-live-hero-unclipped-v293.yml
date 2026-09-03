@@ -1,0 +1,59 @@
+name: Playwright live hero unclipped V2.9.3 audit
+on:
+  push:
+    branches: [audit/playwright-live-hero-unclipped-v293]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Verify deployed crop
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs=require('fs');
+          const { chromium }=require('@playwright/test');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+            await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
+            const page=await context.newPage();
+            const r=await page.goto(`https://komerce.co/boutique/?pw_live_unclipped_v293=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForFunction(()=>document.querySelector('.k-hero-media .k-hero-figures'),null,{timeout:30000});
+            await page.waitForTimeout(7000);
+            const state=await page.evaluate(()=>{
+              const fig=document.querySelector('.k-hero-media .k-hero-figures');
+              const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const cats=document.querySelector('.k-shelf-rail');
+              const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              const disc=all?.querySelector(':scope > .k-discovery-shell');
+              const cs=getComputedStyle(fig);
+              const box=el=>{const r=el?.getBoundingClientRect();return r?{x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}:null};
+              return {figureSize:cs.backgroundSize,figurePosition:cs.backgroundPosition,hero:box(hero),categories:box(cats),discovery:box(disc),pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim()};
+            });
+            await page.screenshot({path:'live-hero-unclipped-v293.png'});
+            const failures=[];
+            if(!r||r.status()>=400)failures.push(`HTTP ${r?.status()}`);
+            if(state.figureSize!=='auto 100%')failures.push(`size=${state.figureSize}`);
+            if(state.figurePosition!=='70% 0%')failures.push(`position=${state.figurePosition}`);
+            if(Math.abs((state.hero?.height||0)-54.6)>.8)failures.push(`hero=${state.hero?.height}`);
+            fs.writeFileSync('live-hero-unclipped-v293.json',JSON.stringify({state,failures},null,2));
+            console.log('LIVE_UNCLIPPED_V293='+JSON.stringify({state,failures}));
+            await browser.close();
+            if(failures.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-live-hero-unclipped-v293
+          path: |
+            public/boutique/live-hero-unclipped-v293.png
+            public/boutique/live-hero-unclipped-v293.json
+          if-no-files-found: error
