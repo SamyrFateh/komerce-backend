@@ -1,0 +1,127 @@
+name: Playwright live hero sticky V2.9.1 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-live-hero-sticky-v291
+    paths:
+      - .github/workflows/playwright-live-hero-sticky-v291.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Navigate deployed mobile pager with touch swipes
+        working-directory: public/boutique
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const context = await browser.newContext({
+              viewport:{width:390,height:844}, deviceScaleFactor:1,
+              isMobile:true, hasTouch:true, serviceWorkers:'block',
+              userAgent:'Komerce-Playwright-Live-V291/1.0 Mobile'
+            });
+            await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
+            const page = await context.newPage();
+            const response = await page.goto(`https://komerce.co/boutique/?pw_live_v291=${Date.now()}`, {waitUntil:'domcontentloaded', timeout:60000});
+            await page.waitForFunction(() => document.querySelectorAll('#k-grid > .k-cat-section:not([data-ghost])').length >= 2, null, {timeout:30000});
+            await page.waitForTimeout(7000);
+
+            const cdp = await context.newCDPSession(page);
+            async function swipeLeft(){
+              const y=520;
+              await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:330,y}]});
+              for(let i=1;i<=8;i++){
+                await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:330-(280/8)*i,y}]});
+                await page.waitForTimeout(18);
+              }
+              await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+              await page.waitForTimeout(650);
+            }
+            async function snap(label){
+              return page.evaluate(label=>{
+                const grid=document.getElementById('k-grid');
+                const pages=grid?Array.from(grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])')):[];
+                const active=document.querySelector('#k-cats .k-chip.active')?.dataset.cat||null;
+                const activePage=pages.find(p=>p.dataset.cat===active)||null;
+                const shell=activePage?.querySelector(':scope > .k-discovery-shell')||null;
+                const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}};
+                const wrap=document.getElementById('k-hero-fixed-wrap');
+                const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+                const figures=document.querySelector('.k-hero-media .k-hero-figures');
+                const cats=document.querySelector('.k-shelf-rail');
+                const cs=figures?getComputedStyle(figures):null;
+                return {label,active,pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),gridScrollLeft:grid?.scrollLeft??null,realPageCount:pages.length,ghostCount:grid?.querySelectorAll(':scope > .k-cat-section[data-ghost="right"]').length||0,wrap:box(wrap),wrapTransform:wrap?getComputedStyle(wrap).transform:null,hero:box(hero),categories:box(cats),figurePosition:cs?.backgroundPosition||null,figureSize:cs?.backgroundSize||null,activePageScrollTop:activePage?.scrollTop??null,discovery:box(shell),discoveryHidden:shell?shell.hidden:null,discoveryTitle:shell?.querySelector('.k-discovery-title')?.textContent?.trim()||null};
+              },label);
+            }
+
+            const states=[];
+            states.push(await snap('initial-all'));
+            await page.screenshot({path:'live-v291-01-initial.png'});
+            await page.evaluate(()=>{const all=document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');if(all)all.scrollTop=320;});
+            await page.waitForTimeout(450);
+            states.push(await snap('all-after-scroll'));
+            await page.screenshot({path:'live-v291-02-after-scroll.png'});
+
+            const categories=await page.evaluate(()=>Array.from(document.querySelectorAll('#k-grid > .k-cat-section:not([data-ghost])')).map(p=>p.dataset.cat));
+            for(let i=1;i<categories.length;i++){
+              await swipeLeft();
+              const s=await snap(`swipe-${i}`);states.push(s);
+              if(i<=3||i===categories.length-1)await page.screenshot({path:`live-v291-${String(i+2).padStart(2,'0')}-${(s.active||'unknown').replace(/[^a-z0-9]+/gi,'-')}.png`});
+            }
+            states.push(await snap('before-ghost'));
+            await swipeLeft();
+            const afterGhost=await snap('after-ghost');states.push(afterGhost);
+            await page.screenshot({path:'live-v291-99-after-ghost.png'});
+
+            const failures=[];
+            const initial=states[0], scrolled=states[1];
+            const top=parseFloat(initial.pagerTop);
+            if(!response||response.status()>=400)failures.push(`HTTP ${response?.status()}`);
+            if(initial.figureSize!=='auto 118%'||initial.figurePosition!=='70% 44%')failures.push(`deployment crop mismatch ${initial.figureSize}/${initial.figurePosition}`);
+            if(scrolled.wrapTransform!=='none')failures.push(`hero collapsed ${scrolled.wrapTransform}`);
+            if(Math.abs(parseFloat(scrolled.pagerTop)-top)>.5)failures.push(`pagerTop changed ${scrolled.pagerTop}`);
+            if(Math.abs((scrolled.hero?.y??0)-(initial.hero?.y??0))>.5)failures.push('hero moved after vertical scroll');
+            if(Math.abs((scrolled.categories?.y??0)-(initial.categories?.y??0))>.5)failures.push('categories moved after vertical scroll');
+            for(const s of states.filter(x=>x.label.startsWith('swipe-'))){
+              if(s.activePageScrollTop!==0)failures.push(`${s.active} entered at ${s.activePageScrollTop}`);
+              if(s.discovery&&!s.discoveryHidden&&s.discoveryTitle==='Disponible ici'&&Math.abs(s.discovery.y-top)>1)failures.push(`${s.active} discovery y=${s.discovery.y}`);
+              if(s.wrapTransform!=='none')failures.push(`${s.active} hero transform=${s.wrapTransform}`);
+            }
+            if(afterGhost.active!=='all')failures.push(`ghost active=${afterGhost.active}`);
+            if(afterGhost.activePageScrollTop!==0)failures.push(`ghost Tout top=${afterGhost.activePageScrollTop}`);
+            if(Math.abs(afterGhost.gridScrollLeft)>1)failures.push(`ghost left=${afterGhost.gridScrollLeft}`);
+            if(!afterGhost.discovery||afterGhost.discoveryHidden||afterGhost.discoveryTitle!=='Disponible ici')failures.push('ghost Disponible ici missing');
+            if(afterGhost.discovery&&Math.abs(afterGhost.discovery.y-top)>1)failures.push(`ghost discovery y=${afterGhost.discovery.y}`);
+            if(afterGhost.wrapTransform!=='none')failures.push(`ghost hero transform=${afterGhost.wrapTransform}`);
+
+            const result={responseStatus:response?.status()||null,categories,states,failures};
+            fs.writeFileSync('playwright-live-v291-audit.json',JSON.stringify(result,null,2));
+            console.log('PLAYWRIGHT_LIVE_V291='+JSON.stringify(result));
+            await browser.close();
+            if(failures.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-live-hero-sticky-v291
+          path: |
+            public/boutique/playwright-live-v291-audit.json
+            public/boutique/live-v291-*.png
+          if-no-files-found: error
