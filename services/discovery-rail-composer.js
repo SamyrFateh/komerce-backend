@@ -13,9 +13,9 @@
  * @db-read-via:providers-service services, physical_offers, providers
  * @db-write      none
  * @db-txn        single_statement_sufficient
- * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md
- * @impact-areas  recommendations, boutique, discovery-rail
- * @version       2026-08
+ * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
+ * @impact-areas  recommendations, boutique, discovery-rail, category-navigation
+ * @version       2026-09
  */
 
 'use strict';
@@ -28,6 +28,11 @@
  *
  * DiscoveryCard est une projection. `kind` route l'interaction frontend ;
  * aucune règle métier d'exposabilité n'est décidée ici.
+ *
+ * `category_keys` est également une projection de lecture :
+ * - Product Komerce : dérivé de la taxonomie catalog source ;
+ * - Service / Physical Offer : vide ici, puis complété par la politique
+ *   éditoriale owner `recommendations` dans discovery-rail-service.js.
  *
  * Les candidats sont fournis explicitement par l'appelant. Tout objet non
  * exposable est silencieusement omis.
@@ -58,12 +63,20 @@ const SUBTITLE = Object.freeze({
   [CARD_KIND.SERVICE]:        'Sur demande',
 });
 
+function compactCategoryKeys(values = []) {
+  return [...new Set(values
+    .map(value => String(value || '').trim())
+    .filter(Boolean))];
+}
+
 async function productCard(productId, marketId) {
   const exposable = await isStockExposable(productId, marketId);
   if (!exposable) return null;
 
   const { rows } = await db.query(
-    'SELECT id, name, image_url, price_kmf FROM products WHERE id = $1 AND is_active = true',
+    `SELECT id, name, image_url, price_kmf, category, promo_pct
+       FROM products
+      WHERE id = $1 AND is_active = true`,
     [productId]
   );
   if (!rows.length) return null;
@@ -80,6 +93,10 @@ async function productCard(productId, marketId) {
     zone: null,
     provider_name: null,
     description: null,
+    category_keys: compactCategoryKeys([
+      p.category,
+      Number(p.promo_pct || 0) > 0 ? 'Soldes' : null,
+    ]),
   };
 }
 
@@ -101,6 +118,7 @@ async function physicalOfferCard(physicalOfferId, marketId) {
     zone: offer.zone || null,
     provider_name: offer.provider_name || null,
     description: offer.description || null,
+    category_keys: [],
   };
 }
 
@@ -122,6 +140,7 @@ async function serviceCard(serviceId, marketId) {
     zone: service.zone || null,
     provider_name: service.provider_name || null,
     description: service.description || null,
+    category_keys: [],
   };
 }
 
@@ -146,6 +165,7 @@ async function composeDiscoveryRail({
 
 module.exports = {
   CARD_KIND,
+  compactCategoryKeys,
   productCard,
   physicalOfferCard,
   serviceCard,
