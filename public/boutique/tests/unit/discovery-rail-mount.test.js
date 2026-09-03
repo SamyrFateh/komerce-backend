@@ -31,6 +31,14 @@ const mockFetchDiscoveryRail = jest.fn(async () => ({
       category_keys: ['Tech'],
     },
     {
+      kind: 'product',
+      title: 'Ventilateur local en solde',
+      subtitle: 'Disponible maintenant',
+      cta_action_ref: 'p-soldes',
+      cta_label: 'Acheter',
+      category_keys: ['Tech', 'Soldes'],
+    },
+    {
       kind: 'physical_offer',
       title: 'Ciment local',
       subtitle: 'Préparation sur commande',
@@ -63,6 +71,10 @@ function mobileCatalogMarkup(label = 'initial') {
       <div class="k-sec-header" data-cat="all"><span>Tout</span></div>
       <div class="k-sec-grid"></div>
     </div>
+    <div class="k-cat-section" data-cat="Soldes">
+      <div class="k-sec-header" data-cat="Soldes"><span>Soldes</span></div>
+      <div class="k-sec-grid"></div>
+    </div>
     <div class="k-cat-section" data-cat="Tech">
       <div class="k-sec-header" data-cat="Tech"><span>Tech</span></div>
       <div class="k-sec-grid"></div>
@@ -89,7 +101,7 @@ function shellFor(cat) {
   );
 }
 
-test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survit au re-render', async () => {
+test('mobile: Disponible ici suit chaque page, inclut Soldes, reste silencieux si vide et survit au re-render', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
     <div id="k-page-scroll" class="k-pager-active">
@@ -111,6 +123,7 @@ test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survi
   expect(document.querySelector('#k-page-scroll > #k-discovery-local')).toBeNull();
 
   const allShell = shellFor('all');
+  const soldesShell = shellFor('Soldes');
   const techShell = shellFor('Tech');
   const maisonShell = shellFor('Maison');
   const modeShell = shellFor('Mode');
@@ -120,12 +133,21 @@ test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survi
   expect(allShell.hidden).toBe(false);
   expect(allShell.textContent).toContain('Disponible ici');
   expect(allShell.textContent).toContain('Climatiseur local');
+  expect(allShell.textContent).toContain('Ventilateur local en solde');
   expect(allShell.textContent).toContain('Ciment local');
   expect(allShell.textContent).toContain('Installation clim');
+
+  expect(soldesShell.parentElement.firstElementChild).toBe(soldesShell);
+  expect(soldesShell.hidden).toBe(false);
+  expect(soldesShell.textContent).toContain('Disponible ici');
+  expect(soldesShell.textContent).toContain('Ventilateur local en solde');
+  expect(soldesShell.textContent).not.toContain('Climatiseur local');
+  expect(soldesShell.textContent).not.toContain('Ciment local');
 
   expect(techShell.parentElement.firstElementChild).toBe(techShell);
   expect(techShell.hidden).toBe(false);
   expect(techShell.textContent).toContain('Climatiseur local');
+  expect(techShell.textContent).toContain('Ventilateur local en solde');
   expect(techShell.textContent).toContain('Installation clim');
   expect(techShell.textContent).not.toContain('Ciment local');
 
@@ -150,6 +172,7 @@ test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survi
   const rerenderedAll = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]');
   expect(rerenderedAll.dataset.render).toBe('rerender');
   expect(rerenderedAll.firstElementChild).toBe(shellFor('all'));
+  expect(shellFor('Soldes').textContent).toContain('Ventilateur local en solde');
   expect(shellFor('Tech').textContent).toContain('Installation clim');
   expect(shellFor('Mode').hidden).toBe(true);
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
