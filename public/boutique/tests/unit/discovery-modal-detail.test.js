@@ -35,6 +35,7 @@ const {
   setupDiscoveryModalDetail,
   renderDiscoveryModalDetail,
   clearDiscoveryModalDetail,
+  kindLabelFor,
 } = require('../../js/b-modal-discovery-detail.js');
 
 beforeEach(() => {
@@ -44,7 +45,7 @@ beforeEach(() => {
   mockRequestDiscovery.mockClear();
 });
 
-test('rend une offre physique dans le slot du shell modal canonique avec timing facultatif', () => {
+test('rend une offre physique dans le slot canonique avec identité, données manuelles et timing facultatif', () => {
   const rendered = renderDiscoveryModalDetail({
     kind: 'physical_offer',
     ref: 'offer-1',
@@ -61,8 +62,13 @@ test('rend une offre physique dans le slot du shell modal canonique avec timing 
   expect(rendered).toBe(true);
   expect(slot.hidden).toBe(false);
   expect(slot.dataset.discoveryKind).toBe('physical_offer');
+  expect(slot.textContent).toContain('Produit local');
+  expect(slot.textContent).toContain('Préparation sur commande');
   expect(slot.textContent).toContain('Samboussas au bœuf');
   expect(slot.textContent).toContain('Saveurs d Anjouan');
+  expect(slot.textContent).toContain('Mutsamudu');
+  expect(slot.textContent).toContain('Préparés sur commande');
+  expect(slot.querySelector('.k-modal-discovery-img')?.getAttribute('src')).toBe('/images/samboussas.webp');
   expect(slot.textContent).toContain('Pour quand ?');
   expect(slot.textContent).toContain('facultatif');
   expect(slot.textContent).toContain('Commander');
@@ -73,15 +79,29 @@ test('rend une offre physique dans le slot du shell modal canonique avec timing 
   expect(slot.querySelector('[data-discovery-ref="offer-1"]')).not.toBeNull();
 });
 
-test('service utilise un wording intervention sans créer de scheduler', () => {
+test('service local utilise un wording intervention sans créer de scheduler', () => {
   renderDiscoveryModalDetail({
     kind: 'service',
     ref: 'svc-label',
-    detail: { title: 'Installation climatiseur', zone: 'Mutsamudu' },
+    detail: {
+      title: 'Installation climatiseur',
+      provider_name: 'Atelier Mutsamudu',
+      zone: 'Mutsamudu',
+      description: 'Pose et mise en service',
+    },
   });
   const slot = document.getElementById('k-modal-discovery-detail');
+  expect(slot.textContent).toContain('Service local');
+  expect(slot.textContent).toContain('Sur demande');
+  expect(slot.textContent).toContain('Atelier Mutsamudu');
+  expect(slot.textContent).toContain('Pose et mise en service');
   expect(slot.textContent).toContain('Quand souhaitez-vous l’intervention ?');
   expect(slot.querySelector('[data-discovery-requested-window]').placeholder).toBe('Ex. samedi matin');
+});
+
+test('labels métier restent une projection UI stable des kinds canoniques', () => {
+  expect(kindLabelFor('physical_offer')).toBe('Produit local');
+  expect(kindLabelFor('service')).toBe('Service local');
 });
 
 test('le CTA transporte la précision vers Inquiry après fermeture contrôlée du même modal', () => {
