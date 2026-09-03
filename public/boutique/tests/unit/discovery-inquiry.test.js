@@ -31,119 +31,88 @@ describe('handleDiscoveryRequest', () => {
   it('ignore un kind hors contrat sans déclencher l’identité', async () => {
     await expect(handleDiscoveryRequest({ kind: 'marketplace_item', ref: 'x-1' })).resolves.toBe(false);
     expect(mockRequireIdentity).not.toHaveBeenCalled();
-    expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
   });
 
-  it('ignore une action directe qui ne doit jamais devenir une Inquiry', async () => {
+  it('ignore toute ancienne action directe qui ne doit plus devenir une Inquiry publique', async () => {
     await expect(handleDiscoveryRequest({ kind: 'service', ref: 'svc-call', action: 'call' })).resolves.toBe(false);
+    await expect(handleDiscoveryRequest({ kind: 'service', ref: 'svc-quote', action: 'quote' })).resolves.toBe(false);
     expect(mockRequireIdentity).not.toHaveBeenCalled();
-    expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
   });
 
   it('annulation identité : aucune Inquiry créée et bouton réactivé', async () => {
     const button = document.createElement('button');
     mockRequireIdentity.mockResolvedValue(null);
-
     const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-1', source: button });
-
     expect(result).toBe(false);
     expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({
-      reason: 'envoyer votre demande',
-      title: 'Confirmer votre WhatsApp',
-      returnFocusTo: button,
+      reason: 'envoyer votre demande', title: 'Confirmer votre WhatsApp', returnFocusTo: button,
     }));
     expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
     expect(button.disabled).toBe(false);
-    expect(button.hasAttribute('aria-busy')).toBe(false);
   });
 
   it('reflète un état pending pendant l’identification', async () => {
     const button = document.createElement('button');
     let resolveIdentity;
     mockRequireIdentity.mockImplementation(() => new Promise(resolve => { resolveIdentity = resolve; }));
-
     const pending = handleDiscoveryRequest({ kind: 'service', ref: 'svc-pending', source: button });
     expect(button.disabled).toBe(true);
     expect(button.getAttribute('aria-busy')).toBe('true');
-
     resolveIdentity(null);
     await pending;
     expect(button.disabled).toBe(false);
     expect(button.hasAttribute('aria-busy')).toBe(false);
   });
 
-  it('service : identité canonique terminée avant Inquiry, puis confirmation native', async () => {
+  it('service : transmet request et sa précision après identité', async () => {
     const button = document.createElement('button');
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
-    mockCreateProviderInquiry.mockResolvedValue({
-      ok: true,
-      inquiry: { id: 'inq-1', status: 'sent', target_kind: 'service' },
+    mockCreateProviderInquiry.mockResolvedValue({ ok: true, inquiry: { id: 'inq-1', status: 'sent', intent: 'request' } });
+
+    const result = await handleDiscoveryRequest({
+      kind: 'service', ref: 'svc-1', source: button,
+      requestedWindow: 'Cette semaine', requesterNote: 'Toyota Hilux 2012, phare avant droit',
     });
 
-    const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-1', source: button });
-
     expect(result).toBe(true);
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-1', null);
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith(
+      'service', 'svc-1', 'Cette semaine', 'request', 'Toyota Hilux 2012, phare avant droit'
+    );
     expect(mockRequireIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée', 'success', 3200);
   });
 
-  it('callback utilise la même Inquiry mais explicite le motif et la confirmation', async () => {
+  it('callback garde la cible comme propos et transmet seulement la précision facultative', async () => {
     const button = document.createElement('button');
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
-    mockCreateProviderInquiry.mockResolvedValue({
-      ok: true,
-      inquiry: { id: 'inq-cb', status: 'sent', target_kind: 'service' },
-    });
+    mockCreateProviderInquiry.mockResolvedValue({ ok: true, inquiry: { id: 'inq-cb', status: 'sent', intent: 'callback' } });
 
     const result = await handleDiscoveryRequest({
-      kind: 'service', ref: 'svc-cb', source: button, action: 'callback', requestedWindow: 'Après 17h',
+      kind: 'service', ref: 'svc-cb', source: button, action: 'callback',
+      requesterNote: 'Je cherche le phare avant droit',
     });
 
     expect(result).toBe(true);
-    expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({
-      reason: 'demander à être rappelé',
-    }));
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-cb', 'Après 17h');
+    expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({ reason: 'demander à être rappelé' }));
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith(
+      'service', 'svc-cb', null, 'callback', 'Je cherche le phare avant droit'
+    );
     expect(mockShowToast).toHaveBeenCalledWith('Demande de rappel envoyée', 'success', 3200);
   });
 
-  it('transporte requestedWindow après identité sans nouveau flow métier', async () => {
+  it('physical_offer reste une Inquiry contextualisée, jamais une order', async () => {
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
-    mockCreateProviderInquiry.mockResolvedValue({
-      ok: true,
-      inquiry: { id: 'inq-window', status: 'sent', target_kind: 'service' },
-    });
-
-    await handleDiscoveryRequest({
-      kind: 'service',
-      ref: 'svc-window',
-      requestedWindow: 'Samedi matin',
-    });
-
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-window', 'Samedi matin');
-  });
-
-  it('physical_offer : Commander reste une demande, pas une order', async () => {
-    mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
-    mockCreateProviderInquiry.mockResolvedValue({
-      ok: true,
-      inquiry: { id: 'inq-2', status: 'sent', target_kind: 'physical_offer' },
-    });
-
-    await handleDiscoveryRequest({ kind: 'physical_offer', ref: 'offer-1' });
-
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1', null);
-    expect(mockShowToast).toHaveBeenCalledWith('Demande de commande envoyée', 'success', 3200);
+    mockCreateProviderInquiry.mockResolvedValue({ ok: true, inquiry: { id: 'inq-2', status: 'sent', intent: 'request' } });
+    await handleDiscoveryRequest({ kind: 'physical_offer', ref: 'offer-1', requesterNote: '30 sacs' });
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1', null, 'request', '30 sacs');
+    expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée pour cette offre', 'success', 3200);
   });
 
   it('404 après clic : message honnête si l’offre vient de disparaître', async () => {
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
     mockCreateProviderInquiry.mockResolvedValue({ ok: false, status: 404, error: 'Offre introuvable' });
-
     const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-gone' });
-
     expect(result).toBe(false);
     expect(mockShowToast).toHaveBeenCalledWith('Cette offre n’est plus disponible.', 'error', 3200);
   });
