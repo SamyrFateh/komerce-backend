@@ -54,30 +54,21 @@
   margin-right: 4px;
 }
 
-/* Mobile V2.8 — vrai rail de proximité : ~2 cartes + amorce de la suivante.
-   Le local est exploré horizontalement ; le catalogue Komerce reste une grille
-   verticale. Deux gestes différents pour deux niveaux de découverte. */
+/* Mobile V2.9.7 — Disponible ici appartient au scroll vertical de la page
+   catégorie. Le pager #k-grid reste l'unique propriétaire du geste horizontal :
+   aucun overflow-x ni scroll-snap imbriqué ne doit concurrencer le swipe entre
+   univers. Les offres locales, produits et services s'empilent donc 2 par 2. */
 .k-discovery-rail {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 8px;
   padding: 1px 0 5px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.k-discovery-rail::-webkit-scrollbar {
-  display: none;
 }
 
 .k-discovery-card {
-  flex: 0 0 148px;
-  min-width: 148px;
-  max-width: 154px;
+  min-width: 0;
+  max-width: none;
   display: flex;
   flex-direction: column;
   background: var(--sand);
@@ -86,7 +77,6 @@
   overflow: hidden;
   box-shadow: var(--elev-1);
   cursor: pointer;
-  scroll-snap-align: start;
   transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
 
@@ -300,15 +290,30 @@
     font-size: 12px;
   }
 
+  /* Desktop conserve le rail horizontal éditorial : le conflit de gestes
+     n'existe que dans le pager tactile mobile. */
   .k-discovery-rail {
+    display: flex;
+    align-items: stretch;
     gap: 12px;
     padding-bottom: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .k-discovery-rail::-webkit-scrollbar {
+    display: none;
   }
 
   .k-discovery-card {
     flex: 0 0 calc((100% - 60px) / 6);
     min-width: 190px;
     max-width: 220px;
+    scroll-snap-align: start;
   }
 
   .k-discovery-media {
