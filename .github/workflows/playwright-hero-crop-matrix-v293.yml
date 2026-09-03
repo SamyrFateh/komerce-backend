@@ -1,0 +1,50 @@
+name: Playwright hero crop matrix V2.9.3
+on:
+  push:
+    branches: [audit/playwright-hero-crop-matrix-v293]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Capture crop candidates
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+            await context.setExtraHTTPHeaders({'Cache-Control':'no-cache','Pragma':'no-cache'});
+            const page=await context.newPage();
+            await page.goto(`https://komerce.co/boutique/?pw_crop_matrix=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForFunction(()=>document.querySelector('.k-hero-media .k-hero-figures'),null,{timeout:30000});
+            await page.waitForTimeout(5000);
+            const candidates=[
+              ['current','118%','92%'],
+              ['a','112%','42%'],
+              ['b','110%','45%'],
+              ['c','108%','50%'],
+              ['d','108%','65%'],
+              ['e','105%','70%']
+            ];
+            for(const [name,size,y] of candidates){
+              await page.addStyleTag({content:`@media(max-width:899px){.k-hero-media .k-hero-figures{background-size:auto ${size};background-position:70% ${y};}}`});
+              await page.waitForTimeout(150);
+              await page.screenshot({path:`hero-crop-${name}.png`,clip:{x:0,y:36,width:390,height:155}});
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-hero-crop-matrix-v293
+          path: public/boutique/hero-crop-*.png
+          if-no-files-found: error
