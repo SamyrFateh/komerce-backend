@@ -1,0 +1,178 @@
+name: Playwright live search + ghost V2.9.5 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-live-search-ghost-v295
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Navigate live search and ghost
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              isMobile: true,
+              hasTouch: true,
+              serviceWorkers: 'block',
+            });
+            await context.setExtraHTTPHeaders({ 'Cache-Control': 'no-cache', Pragma: 'no-cache' });
+            const page = await context.newPage();
+            const cdp = await context.newCDPSession(page);
+
+            const response = await page.goto(
+              `https://komerce.co/boutique/?pw_live_search_ghost_v295=${Date.now()}`,
+              { waitUntil: 'domcontentloaded', timeout: 60000 }
+            );
+            await page.waitForFunction(() =>
+              document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])') &&
+              document.querySelector('.k-search input') &&
+              document.querySelector('.k-shelf-rail .k-cat-cutout'),
+              null,
+              { timeout: 30000 }
+            );
+            await page.waitForTimeout(7000);
+
+            const box = async (selector) => page.locator(selector).boundingBox();
+            const state = async (label) => page.evaluate((label) => {
+              const rect = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x:+r.x.toFixed(1), y:+r.y.toFixed(1), width:+r.width.toFixed(1), height:+r.height.toFixed(1) };
+              };
+              const grid = document.getElementById('k-grid');
+              const realTout = grid?.querySelector(':scope > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              const ghost = grid?.querySelector(':scope > .k-cat-section[data-ghost="right"]');
+              const search = document.querySelector('.k-search');
+              const input = search?.querySelector('input');
+              const hero = document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const rail = document.querySelector('.k-shelf-rail');
+              const discovery = realTout?.querySelector(':scope > .k-discovery-shell');
+              const activeChip = document.querySelector('#k-cats .k-chip.active');
+              return {
+                label,
+                search: rect(search),
+                inputOpacity: input ? getComputedStyle(input).opacity : null,
+                inputFocused: input === document.activeElement,
+                hero: rect(hero),
+                rail: rect(rail),
+                discovery: rect(discovery),
+                gridScrollLeft: grid ? +grid.scrollLeft.toFixed(1) : null,
+                gridWidth: grid?.clientWidth || null,
+                realPages: grid ? grid.querySelectorAll(':scope > .k-cat-section:not([data-ghost])').length : 0,
+                ghostCount: grid ? grid.querySelectorAll(':scope > .k-cat-section[data-ghost="right"]').length : 0,
+                ghostInert: ghost?.hasAttribute('inert') || false,
+                ghostPointerEvents: ghost ? getComputedStyle(ghost).pointerEvents : null,
+                activeCat: activeChip?.dataset.cat || null,
+                allScrollTop: realTout?.scrollTop ?? null,
+                pagerTop: getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+                wrapTransform: document.getElementById('k-hero-fixed-wrap') ? getComputedStyle(document.getElementById('k-hero-fixed-wrap')).transform : null,
+              };
+            }, label);
+
+            const initial = await state('initial');
+            await page.screenshot({ path: 'live-search-ghost-01-initial.png' });
+
+            // Tap the compact loupe and verify that the same control expands in the header.
+            const searchBox = await box('.k-search');
+            if (!searchBox) throw new Error('search box missing');
+            await page.touchscreen.tap(searchBox.x + searchBox.width / 2, searchBox.y + searchBox.height / 2);
+            await page.waitForTimeout(350);
+            const expanded = await state('expanded-search');
+            await page.screenshot({ path: 'live-search-ghost-02-search-expanded.png' });
+
+            // Close search without navigating away.
+            await page.evaluate(() => document.querySelector('.k-search input')?.blur());
+            await page.waitForTimeout(250);
+            const collapsed = await state('collapsed-search');
+
+            // Scroll Tout vertically first: the loop must still return to the top of Tout later.
+            await page.evaluate(() => {
+              const all = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])');
+              if (all) all.scrollTop = 260;
+            });
+            await page.waitForTimeout(250);
+            const afterVerticalScroll = await state('after-vertical-scroll');
+
+            async function swipeLeft() {
+              const y = 360;
+              const x1 = 340;
+              const x2 = 40;
+              await cdp.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{x:x1,y}], modifiers:0 });
+              for (let i = 1; i <= 8; i++) {
+                const x = x1 + (x2 - x1) * i / 8;
+                await cdp.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{x,y}], modifiers:0 });
+                await new Promise(r => setTimeout(r, 18));
+              }
+              await cdp.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[], modifiers:0 });
+              await page.waitForTimeout(520);
+            }
+
+            const traversed = [];
+            for (let i = 0; i < initial.realPages - 1; i++) {
+              await swipeLeft();
+              traversed.push(await state(`swipe-${i+1}`));
+            }
+            const lastReal = traversed[traversed.length - 1] || await state('last-real');
+            await page.screenshot({ path: 'live-search-ghost-03-last-real.png' });
+
+            // One more real swipe enters the inert right ghost; pager must silently normalize to real Tout.
+            await swipeLeft();
+            await page.waitForTimeout(250);
+            const afterGhost = await state('after-ghost');
+            await page.screenshot({ path: 'live-search-ghost-04-after-ghost.png' });
+
+            const failures = [];
+            if (!response || response.status() >= 400) failures.push(`HTTP ${response?.status()}`);
+            if (initial.ghostCount !== 1 || !initial.ghostInert || initial.ghostPointerEvents !== 'none') {
+              failures.push(`ghost=${initial.ghostCount}/${initial.ghostInert}/${initial.ghostPointerEvents}`);
+            }
+            if (Math.abs((initial.search?.width || 0) - 34) > 1 || Math.abs((initial.search?.height || 0) - 34) > 1) {
+              failures.push(`compactSearch=${JSON.stringify(initial.search)}`);
+            }
+            if (!expanded.inputFocused || expanded.inputOpacity !== '1') failures.push(`searchFocus=${expanded.inputFocused}/${expanded.inputOpacity}`);
+            if ((expanded.search?.x ?? 999) > 13 || (expanded.search?.width ?? 0) < 360) failures.push(`expandedSearch=${JSON.stringify(expanded.search)}`);
+            if (collapsed.inputOpacity !== '0') failures.push(`collapsedOpacity=${collapsed.inputOpacity}`);
+            if (afterVerticalScroll.wrapTransform !== 'none') failures.push(`heroTransform=${afterVerticalScroll.wrapTransform}`);
+            if (afterVerticalScroll.pagerTop !== initial.pagerTop) failures.push(`pagerTop=${initial.pagerTop}->${afterVerticalScroll.pagerTop}`);
+            if (afterGhost.activeCat !== 'all') failures.push(`activeAfterGhost=${afterGhost.activeCat}`);
+            if (Math.abs(afterGhost.gridScrollLeft || 0) > 1) failures.push(`ghostScrollLeft=${afterGhost.gridScrollLeft}`);
+            if ((afterGhost.allScrollTop ?? 999) !== 0) failures.push(`allScrollTopAfterGhost=${afterGhost.allScrollTop}`);
+            if ((afterGhost.discovery?.y ?? 999) > 170) failures.push(`discoveryYAfterGhost=${afterGhost.discovery?.y}`);
+            if (afterGhost.hero?.y !== initial.hero?.y || afterGhost.rail?.y !== initial.rail?.y) {
+              failures.push(`fixedGeometry hero ${initial.hero?.y}->${afterGhost.hero?.y}, rail ${initial.rail?.y}->${afterGhost.rail?.y}`);
+            }
+
+            const result = { responseStatus: response?.status() || null, initial, expanded, collapsed, afterVerticalScroll, lastReal, afterGhost, traversed, failures };
+            fs.writeFileSync('live-search-ghost-v295.json', JSON.stringify(result, null, 2));
+            console.log('LIVE_SEARCH_GHOST_V295=' + JSON.stringify(result));
+
+            await browser.close();
+            if (failures.length) process.exit(1);
+          })().catch((err) => { console.error(err); process.exit(1); });
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-live-search-ghost-v295
+          path: |
+            public/boutique/live-search-ghost-v295.json
+            public/boutique/live-search-ghost-*.png
+          if-no-files-found: warn
