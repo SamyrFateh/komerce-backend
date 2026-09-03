@@ -61,8 +61,18 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function getDesktopCategoryContentAnchor() {
+  const discovery = document.getElementById('k-discovery-local');
+  if (discovery && !discovery.hidden) return discovery;
+  return document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+}
+
 function scrollToCatalog() {
-  const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+  // Disponible ici appartient au contenu de la catégorie, avant le catalogue.
+  // Quand il est réellement rendu, la navigation desktop doit donc l'ancrer
+  // sous le masthead + sous-catégories au lieu de sauter directement aux
+  // produits et de laisser le rail local masqué au-dessus du viewport.
+  const catalog = getDesktopCategoryContentAnchor();
   if (!catalog) return;
   const stickyBar = document.querySelector('.k-hero-cats-sticky');
   const subcatsWrap = document.getElementById('k-subcats-wrap');
