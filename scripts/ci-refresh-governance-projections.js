@@ -18,25 +18,32 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 
-const commands = [
-  ['node', ['scripts/business-graph-gen.js', '--dash-root', 'public', '--boutique-root', 'public/boutique']],
-  ['node', ['scripts/gen-feature-360.js']],
-  ['node', ['scripts/gen-agent-remediation-index.js']],
-];
+const COMMANDS = Object.freeze([
+  Object.freeze(['node', Object.freeze(['scripts/business-graph-gen.js', '--dash-root', 'public', '--boutique-root', 'public/boutique'])]),
+  Object.freeze(['node', Object.freeze(['scripts/gen-feature-360.js'])]),
+  Object.freeze(['node', Object.freeze(['scripts/gen-agent-remediation-index.js'])]),
+]);
 
-for (const [cmd, args] of commands) {
-  const label = [cmd, ...args].join(' ');
-  process.stdout.write(`\n▶ ${label}\n`);
-  const result = spawnSync(cmd, args, {
-    cwd: ROOT,
-    stdio: 'inherit',
-    shell: false,
-    env: process.env,
-  });
-  if (result.status !== 0) {
-    console.error(`✖ Governance projection preflight failed: ${label}`);
-    process.exit(result.status || 1);
+function main() {
+  for (const [cmd, args] of COMMANDS) {
+    const label = [cmd, ...args].join(' ');
+    process.stdout.write(`\n▶ ${label}\n`);
+    const result = spawnSync(cmd, args, {
+      cwd: ROOT,
+      stdio: 'inherit',
+      shell: false,
+      env: process.env,
+    });
+    if (result.status !== 0) {
+      console.error(`✖ Governance projection preflight failed: ${label}`);
+      return result.status || 1;
+    }
   }
+
+  console.log('\n✔ Governance projections hydrated from canonical sources.');
+  return 0;
 }
 
-console.log('\n✔ Governance projections hydrated from canonical sources.');
+if (require.main === module) process.exitCode = main();
+
+module.exports = { COMMANDS, main };
