@@ -19,19 +19,21 @@ module.exports = {
   canonicalFeature: 'providers-services',
   sliceKind: 'frontend-slice',
 
-  service: 'Consumer Boutique du cycle Inquiry : reçoit l’intention Commander/Demander, ' +
+  service: 'Consumer Boutique du cycle Inquiry : reçoit une intention request/quote/callback depuis la fiche Discovery, ' +
     'réutilise l’identité Komerce et appelle exclusivement la mutation providers-services.',
 
   perimeter: {
     in: [
       'consumer du signal discovery:request pour service et physical_offer',
+      'intentions Inquiry autorisées : request, quote, callback',
       'requireIdentity() avant toute mutation Inquiry',
       'adapter POST /api/providers-services/inquiries',
-      'état pending du CTA et confirmation/erreur utilisateur',
+      'état pending du CTA et confirmation/erreur utilisateur adaptée à l’intention',
     ],
     out: [
       'rendu et ordre du rail Près de vous — catalog/recommendations',
-      'vérité d’exposabilité — backend providers-services',
+      'rendu de la fiche et des liens directs call/whatsapp — catalog ; aucune Inquiry pour ces actions',
+      'vérité d’exposabilité et actions_enabled — backend providers-services',
       'téléphone requester fourni par le client — interdit, dérivé côté serveur',
       'orders, paiement, réservation ou calendrier structuré',
     ],
@@ -59,7 +61,7 @@ module.exports = {
       'providers-services-api.js / createProviderInquiry',
     ],
     consumes: [
-      'catalog — signal discovery:request portant uniquement kind/ref et le bouton source UI',
+      'catalog — signal discovery:request portant kind/ref/source/requestedWindow et action optionnelle quote|callback',
       'auth-identity — requireIdentity() ; aucun flow OTP parallèle',
       'platform-ops — bus et showToast comme primitives transverses',
       'providers-services backend — POST /api/providers-services/inquiries?market=CODE',
@@ -70,11 +72,12 @@ module.exports = {
     'le backend providers-services reste seul owner de l’écriture et du lifecycle.',
 
   invariants: [
-    'Commander et Demander passent par la même Inquiry canonique, avec une cible XOR',
+    'request, quote et callback passent par la même Inquiry canonique, avec une cible XOR',
+    'call et whatsapp ne passent jamais par discovery:request et ne créent aucune Inquiry',
     'aucun téléphone requester n’est envoyé par le frontend',
     'une annulation d’identité ne crée aucune Inquiry',
     'le CTA est désactivé pendant le flow afin d’éviter les doubles demandes concurrentes',
     'une 404 après clic est rendue comme offre devenue indisponible, jamais comme succès',
-    'Commander une physical_offer n’appelle jamais orders ni checkout',
+    'une action Inquiry sur physical_offer n’appelle jamais orders ni checkout',
   ],
 };
