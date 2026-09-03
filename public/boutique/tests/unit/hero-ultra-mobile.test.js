@@ -18,15 +18,15 @@ const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et tend le masthead sans réduire le header tactile', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(54px, 15vw, 62px);');
+    expect(css).toContain('height: clamp(50px, 14vw, 58px);');
     expect(css).toContain('header 44 px + hero 58.5 px');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('remonte la mini-scène personnages dans la boîte raccourcie', () => {
+  test('utilise la réserve blanche haute pour remonter la mini-scène', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
     expect(css).toContain('background-size: auto 118%;');
-    expect(css).toContain('background-position: 70% 44%;');
+    expect(css).toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).not.toContain('display: none;');
