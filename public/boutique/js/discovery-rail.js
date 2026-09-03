@@ -15,6 +15,7 @@ import { openModal } from './b-modal.js';
 import { _setupInfiniteLoop } from './b-pager.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
+import { ensureDiscoveryDesktopV2Stylesheet } from './discovery-desktop-style.js';
 
 let _installed = false;
 let _lastCards = null;
@@ -88,6 +89,8 @@ function ensureDesktopMount() {
   removeMobileShells();
   const catalog = document.getElementById('k-desktop-catalog-wrap');
   if (!catalog) return null;
+
+  ensureDiscoveryDesktopV2Stylesheet();
 
   let shell = document.getElementById('k-discovery-local');
   if (!shell) {
@@ -220,7 +223,7 @@ async function openDiscoveryDetail(kind, ref) {
 
 function handleDiscoveryClick(event) {
   const target = event.target.closest(
-    '[data-discovery-action][data-discovery-ref], .k-discovery-card[data-discovery-kind][data-discovery-ref]'
+    '[data-discovery-action][data-discovery-ref], [data-discovery-kind][data-discovery-ref]'
   );
   if (!target) return;
 
@@ -237,6 +240,7 @@ export function setupDiscoveryRail() {
   _installed = true;
 
   _activeDesktopCategory = activeCategoryFromDom();
+  ensureDiscoveryDesktopV2Stylesheet();
   installGridObserver();
   window.addEventListener('resize', scheduleMountSync, { passive: true });
   bus.on('catalog:cat-changed', handleCatalogCategoryChanged);
