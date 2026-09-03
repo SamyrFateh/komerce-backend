@@ -5,10 +5,10 @@
  * @test-runner jest
  * @test-requires none
  *
- * Contrat V2.9 : chaque page catégorie mobile est un contexte complet.
- * « Disponible ici » est son premier contenu quand un sous-pool local existe,
- * puis vient le catalogue. Une catégorie sans local conserve un shell caché
- * sans slot visuel. Un seul fetch backend alimente toutes les pages.
+ * Contrat V2.9 : chaque catégorie est un contexte complet sur mobile ET
+ * desktop. « Disponible ici » est le premier contenu quand un sous-pool
+ * local existe, puis vient le catalogue. Une catégorie sans local ne réserve
+ * aucun slot visible. Un seul fetch backend alimente toutes les surfaces.
  */
 
 jest.mock('../../js/b-modal.js', () => ({
@@ -55,6 +55,7 @@ jest.mock('../../js/discovery-api.js', () => ({
   fetchPhysicalOfferCard: jest.fn(),
 }));
 
+const { bus } = require('../../js/b-bus.js');
 const { setupDiscoveryRail } = require('../../js/discovery-rail.js');
 
 function mobileCatalogMarkup(label = 'initial') {
@@ -89,9 +90,13 @@ function shellFor(cat) {
   );
 }
 
-test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survit au re-render', async () => {
+test('mobile + desktop: Disponible ici suit la catégorie, disparaît si vide et garde un seul fetch', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
+    <div class="k-chip active" data-cat="all"></div>
+    <div class="k-chip" data-cat="Tech"></div>
+    <div class="k-chip" data-cat="Maison"></div>
+    <div class="k-chip" data-cat="Mode"></div>
     <div id="k-page-scroll" class="k-pager-active">
       <div id="k-desktop-catalog-wrap">
         <section id="k-catalog-section">
@@ -154,6 +159,7 @@ test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survi
   expect(shellFor('Mode').hidden).toBe(true);
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 
+  // Desktop : même règle de composition, pilotée par la même catégorie active.
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
   window.dispatchEvent(new Event('resize'));
   await flushDomWork();
@@ -163,6 +169,28 @@ test('mobile: Disponible ici suit chaque page, reste silencieux si vide et survi
   expect(desktopShell).not.toBeNull();
   expect(catalogWrap.previousElementSibling).toBe(desktopShell);
   expect(desktopShell.parentElement).toBe(document.getElementById('k-page-scroll'));
-  expect(desktopShell.textContent).toContain('Disponible ici');
+  expect(desktopShell.textContent).toContain('Climatiseur local');
+  expect(desktopShell.textContent).toContain('Ciment local');
+  expect(desktopShell.textContent).toContain('Installation clim');
   expect(document.querySelector('.k-discovery-shell[data-discovery-category]')).toBeNull();
+
+  bus.emit('catalog:cat-changed', 'Tech');
+  await flushDomWork();
+  expect(desktopShell.hidden).toBe(false);
+  expect(desktopShell.textContent).toContain('Climatiseur local');
+  expect(desktopShell.textContent).toContain('Installation clim');
+  expect(desktopShell.textContent).not.toContain('Ciment local');
+
+  bus.emit('catalog:cat-changed', 'Maison');
+  await flushDomWork();
+  expect(desktopShell.hidden).toBe(false);
+  expect(desktopShell.textContent).toContain('Ciment local');
+  expect(desktopShell.textContent).not.toContain('Climatiseur local');
+  expect(desktopShell.textContent).not.toContain('Installation clim');
+
+  bus.emit('catalog:cat-changed', 'Mode');
+  await flushDomWork();
+  expect(desktopShell.hidden).toBe(true);
+  expect(desktopShell.innerHTML).toBe('');
+  expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 });
