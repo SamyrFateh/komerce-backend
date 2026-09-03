@@ -32,6 +32,7 @@ import {
   buildCheckoutSelection,
   checkoutCart,
 } from '../b-checkout.js';
+import { ensureCheckoutDesktopV2Stylesheet } from '../checkout-desktop-style.js';
 import {
   computePriceVariations,
   buildPriceVariationSummary,
@@ -48,8 +49,18 @@ function buildSharedCheckoutContext(checkoutContext = {}) {
 }
 
 function buildSharedCheckoutLine(item) {
+  const snapshot = item.shared_list_context || {};
+  const product = item.product || {};
   const line = {
-    product: item.product,
+    product: {
+      ...product,
+      // Une liste publiée transporte déjà son identité de présentation.
+      // Si le catalogue courant ne résout plus complètement le produit,
+      // le checkout doit rester lisible sans faire du snapshot une vérité
+      // transactionnelle : nom/image seulement, jamais prix ni disponibilité.
+      name: product.name || snapshot.snapshot_name || '',
+      image_url: product.image_url || snapshot.snapshot_image_url || '',
+    },
     qty: item.quantity || 1,
     shared_cart_item_id: item.shared_cart_item_id,
     variant_combo: item.variant_combo || null,
@@ -131,6 +142,9 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
   });
 
   try {
+    // Le chargement reste un acte de présentation checkout ; aucune règle CSS
+    // n'est construite dans ce module et le mobile conserve son bundle actuel.
+    ensureCheckoutDesktopV2Stylesheet();
     checkoutCart(selection);
     return true;
   } catch (err) {
