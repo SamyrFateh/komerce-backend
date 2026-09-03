@@ -5,7 +5,7 @@
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre Physical Offer / Service dans l'unique shell #k-modal sans les convertir en Product.
- * @impact-areas  product-discovery, discovery-rail, modal-layout
+ * @impact-areas  product-discovery, discovery-rail, modal-layout, desktop
  * @version       2026-09
  */
 'use strict';
@@ -17,6 +17,10 @@ import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
 let _installed = false;
+
+function kindLabelFor(kind) {
+  return kind === 'physical_offer' ? 'Produit local' : 'Service local';
+}
 
 function statusFor(kind) {
   return kind === 'physical_offer' ? 'Préparation sur commande' : 'Sur demande';
@@ -49,7 +53,10 @@ function buildDetailHTML(kind, ref, detail) {
     <div class="k-modal-discovery-shell">
       <div class="k-modal-discovery-media">${image}</div>
       <div class="k-modal-discovery-body">
-        <span class="k-modal-discovery-badge">${sanitize(statusFor(kind))}</span>
+        <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
+          <span class="k-modal-discovery-kind">${sanitize(kindLabelFor(kind))}</span>
+          <span class="k-modal-discovery-badge">${sanitize(statusFor(kind))}</span>
+        </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
         ${description}
@@ -114,3 +121,7 @@ export function setupDiscoveryModalDetail() {
   bus.on('modal:discovery-opened', renderDiscoveryModalDetail);
   bus.on('modal:closed', clearDiscoveryModalDetail);
 }
+
+export {
+  kindLabelFor,
+};
