@@ -1,0 +1,75 @@
+name: Playwright live mobile search header V2.9.6 audit
+
+on:
+  push:
+    branches:
+      - audit/playwright-live-search-header-v296
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Verify deployed search header state
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless:true });
+            const context = await browser.newContext({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true, serviceWorkers:'block' });
+            await context.setExtraHTTPHeaders({ 'Cache-Control':'no-cache', Pragma:'no-cache' });
+            const page = await context.newPage();
+            const response = await page.goto(`https://komerce.co/boutique/?pw_live_search_header_v296=${Date.now()}`, { waitUntil:'domcontentloaded', timeout:60000 });
+            await page.waitForFunction(() => document.querySelector('.k-search input') && document.querySelector('.k-logo') && document.querySelector('.k-header-actions') && document.querySelector('.k-shelf-rail'), null, { timeout:30000 });
+            await page.waitForTimeout(7000);
+            const snap = async label => page.evaluate(label => {
+              const rect = el => { if(!el)return null; const r=el.getBoundingClientRect(); return {x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}; };
+              const header=document.querySelector('.k-header');
+              const logo=document.querySelector('.k-header-inner > .k-logo');
+              const actions=document.querySelector('.k-header-inner > .k-header-actions');
+              const search=document.querySelector('.k-search');
+              const input=search?.querySelector('input');
+              const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              const rail=document.querySelector('.k-shelf-rail');
+              const hcs=header?getComputedStyle(header):null, lcs=logo?getComputedStyle(logo):null, acs=actions?getComputedStyle(actions):null, scs=search?getComputedStyle(search):null;
+              return { label, header:rect(header), headerBackground:hcs?.backgroundColor||null, headerBackdrop:hcs?.backdropFilter||null, logoOpacity:lcs?.opacity||null, logoVisibility:lcs?.visibility||null, actionsOpacity:acs?.opacity||null, actionsVisibility:acs?.visibility||null, search:rect(search), searchShadow:scs?.boxShadow||null, inputOpacity:input?getComputedStyle(input).opacity:null, inputFocused:input===document.activeElement, hero:rect(hero), rail:rect(rail), pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim() };
+            }, label);
+            const initial=await snap('initial');
+            const b=await page.locator('.k-search').boundingBox();
+            await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);
+            await page.waitForTimeout(300);
+            const focused=await snap('focused');
+            await page.screenshot({path:'live-search-header-v296-focused.png'});
+            const failures=[];
+            if(!response||response.status()>=400) failures.push(`HTTP ${response?.status()}`);
+            if(Math.abs((initial.search?.width||0)-34)>1) failures.push(`compact=${initial.search?.width}`);
+            if(!focused.inputFocused||focused.inputOpacity!=='1') failures.push(`focus=${focused.inputFocused}/${focused.inputOpacity}`);
+            if(focused.headerBackground!=='rgb(255, 255, 255)'||focused.headerBackdrop!=='none') failures.push(`header=${focused.headerBackground}/${focused.headerBackdrop}`);
+            if(focused.logoVisibility!=='hidden'||focused.actionsVisibility!=='hidden') failures.push(`chrome=${focused.logoVisibility}/${focused.actionsVisibility}`);
+            if((focused.search?.width||0)<360) failures.push(`expanded=${focused.search?.width}`);
+            if((focused.searchShadow||'').includes('7px 20px')) failures.push(`shadow=${focused.searchShadow}`);
+            if(focused.hero?.y!==initial.hero?.y||focused.rail?.y!==initial.rail?.y||focused.pagerTop!==initial.pagerTop) failures.push('geometry changed');
+            const result={initial,focused,failures};
+            fs.writeFileSync('live-search-header-v296.json',JSON.stringify(result,null,2));
+            console.log('LIVE_SEARCH_HEADER_V296='+JSON.stringify(result));
+            await browser.close();
+            if(failures.length) process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-live-search-header-v296
+          path: |
+            public/boutique/live-search-header-v296.json
+            public/boutique/live-search-header-v296-focused.png
+          if-no-files-found: warn
