@@ -49,8 +49,8 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 60px[^}]*height:\s*60px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*50px[\s\S]*height:\s*33px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 56px[^}]*height:\s*56px/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*46px[\s\S]*height:\s*30px/s);
     expect(mobileBlock).toContain('--k-optical-scale: .94;');
     expect(mobileBlock).toContain('--k-optical-active-scale: 1.01;');
     expect(mobileBlock).toContain('--k-optical-saturation: 1;');
@@ -60,8 +60,9 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toContain('contrast(1.10)');
     expect(mobile).toContain('color: var(--catalog-nav-muted);');
     expect(mobile).toContain('color: var(--catalog-nav-strong);');
-    expect(mobileBlock).toMatch(/padding:\s*3px 6px 4px/);
-    expect(mobileBlock).toMatch(/margin-top:\s*2px/);
+    expect(mobileBlock).toMatch(/padding:\s*2px 6px 3px/);
+    expect(mobileBlock).toMatch(/margin-top:\s*1px/);
+    expect(mobileBlock).toMatch(/font-size:\s*9\.5px/);
     expect(mobileBlock).toMatch(/background:\s*var\(--white\)/);
   });
 
