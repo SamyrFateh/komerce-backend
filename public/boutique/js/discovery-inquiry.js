@@ -4,7 +4,7 @@
  * @domain        providers-services
  * @layer         ui-service
  * @owner         public/boutique/js/discovery-inquiry.js
- * @purpose       Consommer les intentions de demande du détail Discovery et créer l'Inquiry canonique après identité Komerce.
+ * @purpose       Consommer demander/rappel depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.
  * @impact-areas  boutique, discovery-rail, providers-services, auth
  * @version       2026-09
  */
@@ -20,9 +20,8 @@ const _pending = new Set();
 
 function successMessage(kind, action = 'request') {
   if (action === 'callback') return 'Demande de rappel envoyée';
-  if (action === 'quote') return 'Demande de devis envoyée';
   return kind === 'physical_offer'
-    ? 'Demande de commande envoyée'
+    ? 'Demande envoyée pour cette offre'
     : 'Demande envoyée';
 }
 
@@ -48,10 +47,11 @@ async function handleDiscoveryRequest(payload = {}) {
     ref,
     source = null,
     requestedWindow = null,
+    requesterNote = null,
     action = 'request',
   } = payload;
   if (!ref || !['service', 'physical_offer'].includes(kind)) return false;
-  if (!['request', 'quote', 'callback'].includes(action)) return false;
+  if (!['request', 'callback'].includes(action)) return false;
 
   const key = `${kind}:${ref}:${action}`;
   if (_pending.has(key)) return false;
@@ -66,7 +66,13 @@ async function handleDiscoveryRequest(payload = {}) {
     });
     if (!identity) return false;
 
-    const result = await createProviderInquiry(kind, ref, requestedWindow);
+    const result = await createProviderInquiry(
+      kind,
+      ref,
+      requestedWindow,
+      action,
+      requesterNote,
+    );
     if (!result?.ok) {
       showToast(failureMessage(result), 'error', 3200);
       return false;
