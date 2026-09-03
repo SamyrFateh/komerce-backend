@@ -1,0 +1,70 @@
+name: Playwright mobile category density V2.9.4
+on:
+  push:
+    branches: [audit/playwright-mobile-category-density-v294]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - run: npm --prefix public/boutique ci
+      - run: npm --prefix public/boutique run bundle:css
+      - run: npx --prefix public/boutique playwright install --with-deps chromium
+      - name: Serve branch
+        run: |
+          python3 -m http.server 4173 --directory public > /tmp/komerce-v294-http.log 2>&1 &
+          echo $! > /tmp/komerce-v294-http.pid
+          sleep 2
+      - name: Audit geometry
+        run: |
+          cd public/boutique
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async()=>{
+            const browser = await chromium.launch({headless:true});
+            const context = await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+            const page = await context.newPage();
+            const r = await page.goto('http://127.0.0.1:4173/boutique/?pw_category_density_v294=1',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>document.querySelector('.k-shelf-rail .k-cat-cutout'),null,{timeout:15000});
+            await page.waitForTimeout(1500);
+            const state = await page.evaluate(()=>{
+              const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)}};
+              const rail=document.querySelector('.k-shelf-rail');
+              const cutout=rail?.querySelector('.k-cat-cutout');
+              const photo=cutout?.querySelector('.k-chip-photo');
+              const label=cutout?.querySelector('.k-chip-label');
+              const hero=document.querySelector('.k-hero .k-hero-inner .k-hero-media');
+              return {
+                hero:box(hero),rail:box(rail),cutout:box(cutout),photo:box(photo),label:box(label),
+                pagerTop:getComputedStyle(document.documentElement).getPropertyValue('--pager-top').trim(),
+                railScrollWidth:rail?.scrollWidth||null,
+                bodyScrollWidth:document.body.scrollWidth,
+                viewportWidth:innerWidth
+              };
+            });
+            const failures=[];
+            if(!r||r.status()>=400)failures.push(`HTTP ${r?.status()}`);
+            if(Math.abs((state.rail?.height||0)-61)>1)failures.push(`rail=${state.rail?.height}`);
+            if(Math.abs((state.cutout?.width||0)-56)>0.6||Math.abs((state.cutout?.height||0)-56)>0.6)failures.push(`cutout=${JSON.stringify(state.cutout)}`);
+            if(Math.abs((state.photo?.width||0)-46)>0.6||Math.abs((state.photo?.height||0)-30)>0.6)failures.push(`photo=${JSON.stringify(state.photo)}`);
+            if(state.bodyScrollWidth>state.viewportWidth+1)failures.push(`bodyOverflow=${state.bodyScrollWidth}/${state.viewportWidth}`);
+            fs.writeFileSync('playwright-category-density-v294.json',JSON.stringify({state,failures},null,2));
+            await page.screenshot({path:'playwright-category-density-v294.png'});
+            console.log('CATEGORY_DENSITY_V294='+JSON.stringify({state,failures}));
+            await browser.close();
+            if(failures.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-category-density-v294
+          path: |
+            public/boutique/playwright-category-density-v294.json
+            public/boutique/playwright-category-density-v294.png
+          if-no-files-found: error
