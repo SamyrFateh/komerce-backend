@@ -6,15 +6,25 @@
  * @test-requires none
  */
 
-const { renderDiscoveryRail } = require('../../js/render/render-discovery-rail.js');
+const {
+  renderDiscoveryRail,
+  selectMobile,
+  selectDesktop,
+  normalizeCard,
+  formatPrice,
+} = require('../../js/render/render-discovery-rail.js');
 
 function target() {
   return document.getElementById('target');
 }
 
+function setViewport(width) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+}
+
 beforeEach(() => {
   document.body.innerHTML = '<section id="target" hidden></section>';
-  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+  setViewport(1024);
 });
 
 describe('renderDiscoveryRail', () => {
@@ -26,7 +36,7 @@ describe('renderDiscoveryRail', () => {
     expect(renderDiscoveryRail(null, [])).toBe(0);
   });
 
-  it('rend Disponible ici dans un seul rail avec les trois intentions', () => {
+  it('réutilise le shell k-card canonique sur desktop pour les trois intentions', () => {
     const cards = [
       {
         kind: 'product', title: 'Climatiseur', subtitle: 'Disponible maintenant',
@@ -49,48 +59,41 @@ describe('renderDiscoveryRail', () => {
       marketLabel: 'Comores',
       titleId: 'k-discovery-local-title-test',
     })).toBe(3);
+
     expect(target().hidden).toBe(false);
-    expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(3);
-    expect(target().querySelectorAll('.k-discovery-img')).toHaveLength(3);
-    expect(Array.from(target().querySelectorAll('.k-discovery-img')).map(img => img.getAttribute('src')))
+    expect(target().querySelectorAll('.k-discovery-canonical-card')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-canonical-card.k-card')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-canonical-card .k-card-img-wrap')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-canonical-card .k-card-info')).toHaveLength(3);
+    expect(target().querySelectorAll('.k-discovery-canonical-img')).toHaveLength(3);
+    expect(Array.from(target().querySelectorAll('.k-discovery-canonical-img')).map(img => img.getAttribute('src')))
       .toEqual(['/images/product.webp', '/images/samboussas.webp', '/images/plombier.webp']);
     expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
     expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
     expect(target().querySelector('#k-discovery-local-title-test')?.textContent).toBe('Disponible ici');
     expect(target().textContent).toContain('Comores');
 
-    const labels = Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent);
+    const labels = Array.from(target().querySelectorAll('.k-discovery-canonical-cta'))
+      .map(button => button.textContent);
     expect(labels).toEqual(['Acheter', 'Commander', 'Demander']);
 
     expect(target().querySelectorAll('.k-discovery-status')).toHaveLength(3);
-    expect(target().querySelectorAll('.k-discovery-subtitle')).toHaveLength(0);
-    expect(target().querySelectorAll('.k-discovery-primary-slot')).toHaveLength(3);
-    expect(target().querySelectorAll('.k-discovery-context-slot')).toHaveLength(3);
-
-    expect(target().querySelector('.k-discovery-price')?.textContent).toContain('195');
-    expect(target().querySelector('.k-discovery-price')?.textContent).toContain('KMF');
-
-    const providers = Array.from(target().querySelectorAll('.k-discovery-provider')).map(el => el.textContent);
-    expect(providers).toHaveLength(2);
-    expect(providers[0]).toContain('Fatima Traiteur');
-    expect(providers[0]).toContain('Moroni');
-    expect(providers[1]).toContain('Ali Plomberie');
-    expect(providers[1]).toContain('Mutsamudu');
-
-    const productCard = target().querySelector('[data-discovery-kind="product"]');
-    expect(productCard.querySelector('.k-discovery-provider')).toBeNull();
-    expect(productCard.querySelector('.k-discovery-context-slot')).not.toBeNull();
-    expect(target().querySelector('.k-discovery-card[data-discovery-ref="p-1"]')).not.toBeNull();
+    expect(target().querySelector('[data-discovery-kind="product"] .k-card-price')?.textContent)
+      .toContain('KMF');
+    expect(target().querySelector('[data-discovery-kind="physical_offer"] .k-discovery-canonical-context')?.textContent)
+      .toContain('Fatima Traiteur · Moroni');
+    expect(target().querySelector('[data-discovery-kind="service"] .k-discovery-canonical-context')?.textContent)
+      .toContain('Ali Plomberie · Mutsamudu');
   });
 
-  it('ignore un kind inconnu au lieu de créer une nouvelle taxonomie implicite', () => {
+  it('ignore un kind inconnu au lieu de créer une taxonomie implicite', () => {
     const cards = [
       { kind: 'marketplace_item', title: 'Inconnu', cta_action_ref: 'x-1', cta_label: 'Voir' },
       { kind: 'service', title: 'Maçon', subtitle: 'Sur demande', cta_action_ref: 's-2', cta_label: 'Demander' },
     ];
 
     expect(renderDiscoveryRail(target(), cards)).toBe(1);
-    expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(1);
+    expect(target().querySelectorAll('.k-discovery-canonical-card')).toHaveLength(1);
     expect(target().textContent).not.toContain('Inconnu');
   });
 
@@ -99,8 +102,8 @@ describe('renderDiscoveryRail', () => {
       { kind: 'physical_offer', title: 'Samboussas', subtitle: 'Préparation sur commande', cta_action_ref: 'o-2', cta_label: 'Commander' },
     ]);
 
-    expect(target().querySelector('.k-discovery-fallback svg')).not.toBeNull();
-    expect(target().querySelector('.k-discovery-img')).toBeNull();
+    expect(target().querySelector('.k-discovery-canonical-fallback svg')).not.toBeNull();
+    expect(target().querySelector('.k-discovery-canonical-img')).toBeNull();
   });
 
   it('échappe les valeurs de projection avant insertion HTML', () => {
@@ -120,7 +123,7 @@ describe('renderDiscoveryRail', () => {
   });
 
   it('rend les 12 candidats éditoriaux sur desktop sans troncature silencieuse', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    setViewport(1280);
     const cards = Array.from({ length: 12 }, (_, index) => ({
       kind: index % 3 === 0 ? 'service' : 'product',
       title: `Carte ${index + 1}`,
@@ -130,8 +133,8 @@ describe('renderDiscoveryRail', () => {
     }));
 
     expect(renderDiscoveryRail(target(), cards, { marketLabel: 'Comores' })).toBe(12);
-    expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(12);
-    expect(target().querySelector('.k-discovery-card:last-child')?.textContent).toContain('Carte 12');
+    expect(target().querySelectorAll('.k-discovery-canonical-card')).toHaveLength(12);
+    expect(target().querySelector('.k-discovery-canonical-card:last-child')?.textContent).toContain('Carte 12');
   });
 
   it('applique les fallbacks minimaux et conserve category_keys comme metadata de contexte', () => {
@@ -158,12 +161,12 @@ describe('renderDiscoveryRail', () => {
       provider_name: 'Atelier local',
     }]);
     expect(target().querySelector('.k-discovery-status')).toBeNull();
-    expect(target().querySelector('.k-discovery-provider')?.textContent).toBe('Atelier local');
-    expect(target().querySelector('.k-discovery-cta')?.textContent).toBe('Demander');
+    expect(target().querySelector('.k-discovery-canonical-context')?.textContent).toBe('Atelier local');
+    expect(target().querySelector('.k-discovery-canonical-cta')?.textContent).toBe('Demander');
   });
 
-  it('conserve la politique mobile 2×2', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+  it('conserve strictement la politique mobile 2×2 historique', () => {
+    setViewport(390);
     const cards = [
       { kind: 'product', title: 'P1', cta_action_ref: 'p1' },
       { kind: 'product', title: 'P2', cta_action_ref: 'p2' },
@@ -174,10 +177,10 @@ describe('renderDiscoveryRail', () => {
 
     expect(renderDiscoveryRail(target(), cards)).toBe(5);
     expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(4);
+    expect(target().querySelectorAll('.k-discovery-canonical-card')).toHaveLength(0);
+    expect(target().querySelectorAll('.k-discovery-cta')).toHaveLength(4);
   });
 });
-
-const { selectMobile, selectDesktop, normalizeCard, formatPrice } = require('../../js/render/render-discovery-rail.js');
 
 describe('selectMobile — surface policy HOME V1', () => {
   function card(kind, id) {
@@ -186,7 +189,7 @@ describe('selectMobile — surface policy HOME V1', () => {
     });
   }
 
-  it('alternates 2 commerce + 2 services from a mixed pool', () => {
+  it('alterne 2 commerce + 2 services depuis un pool mixte', () => {
     const pool = [
       card('product', 'p1'), card('product', 'p2'), card('product', 'p3'),
       card('physical_offer', 'o1'),
@@ -197,7 +200,7 @@ describe('selectMobile — surface policy HOME V1', () => {
     expect(result.map(c => c.kind)).toEqual(['product', 'service', 'product', 'service']);
   });
 
-  it('fills from commerce if fewer than 2 services', () => {
+  it('complète avec le commerce si les services sont insuffisants', () => {
     const pool = [
       card('product', 'p1'), card('product', 'p2'), card('physical_offer', 'o1'),
       card('service', 's1'),
@@ -208,13 +211,12 @@ describe('selectMobile — surface policy HOME V1', () => {
     expect(result[1].kind).toBe('service');
   });
 
-  it('returns fewer than 4 if pool is small', () => {
+  it('reste sous quatre quand le pool est petit', () => {
     const pool = [card('product', 'p1'), card('service', 's1')];
-    const result = selectMobile(pool);
-    expect(result).toHaveLength(2);
+    expect(selectMobile(pool)).toHaveLength(2);
   });
 
-  it('never exceeds 4', () => {
+  it('ne dépasse jamais quatre', () => {
     const pool = Array.from({ length: 12 }, (_, i) => card('product', `p${i}`));
     expect(selectMobile(pool)).toHaveLength(4);
   });
@@ -227,7 +229,7 @@ describe('selectDesktop — flat mixed rail', () => {
     });
   }
 
-  it('preserves the complete mixed editorial pool in order', () => {
+  it('préserve le pool éditorial complet et son ordre', () => {
     const pool = [
       card('product', 'p1'), card('physical_offer', 'o1'), card('service', 's1'),
       card('product', 'p2'), card('service', 's2'), card('product', 'p3'),
@@ -240,12 +242,12 @@ describe('selectDesktop — flat mixed rail', () => {
     ]);
   });
 
-  it('keeps the 12 candidates already bounded by the backend', () => {
+  it('conserve les 12 candidats déjà bornés par le backend', () => {
     const pool = Array.from({ length: 12 }, (_, i) => card('product', `p${i}`));
     expect(selectDesktop(pool)).toHaveLength(12);
   });
 
-  it('returns fewer if pool is small', () => {
+  it('rend moins si le pool est petit', () => {
     const pool = [card('product', 'p1'), card('service', 's1')];
     expect(selectDesktop(pool)).toHaveLength(2);
   });
