@@ -36,6 +36,10 @@ const {
   renderDiscoveryModalDetail,
   clearDiscoveryModalDetail,
   kindLabelFor,
+  normalizeActions,
+  actionLabelFor,
+  telHref,
+  whatsappHref,
 } = require('../../js/b-modal-discovery-detail.js');
 
 beforeEach(() => {
@@ -45,7 +49,7 @@ beforeEach(() => {
   mockRequestDiscovery.mockClear();
 });
 
-test('rend une offre physique dans le slot canonique avec identité, données manuelles et timing facultatif', () => {
+test('rend une offre physique legacy avec le parcours Commander historique', () => {
   const rendered = renderDiscoveryModalDetail({
     kind: 'physical_offer',
     ref: 'offer-1',
@@ -76,7 +80,7 @@ test('rend une offre physique dans le slot canonique avec identité, données ma
   expect(input).not.toBeNull();
   expect(input.maxLength).toBe(160);
   expect(input.placeholder).toBe('Ex. vendredi soir');
-  expect(slot.querySelector('[data-discovery-ref="offer-1"]')).not.toBeNull();
+  expect(slot.querySelector('[data-discovery-modal-action="request"][data-discovery-ref="offer-1"]')).not.toBeNull();
 });
 
 test('service local utilise un wording intervention sans créer de scheduler', () => {
@@ -99,21 +103,64 @@ test('service local utilise un wording intervention sans créer de scheduler', (
   expect(slot.querySelector('[data-discovery-requested-window]').placeholder).toBe('Ex. samedi matin');
 });
 
-test('labels métier restent une projection UI stable des kinds canoniques', () => {
-  expect(kindLabelFor('physical_offer')).toBe('Produit local');
-  expect(kindLabelFor('service')).toBe('Service local');
+test('une fiche peut cumuler rappel, appel et WhatsApp sans exposer le téléphone privé', () => {
+  renderDiscoveryModalDetail({
+    kind: 'service',
+    ref: 'svc-moto',
+    detail: {
+      title: 'Réparation moto',
+      actions: ['callback', 'call', 'whatsapp'],
+      public_contact: {
+        phone: '+269 321 00 00',
+        whatsapp: '00269 321 00 01',
+      },
+    },
+  });
+
+  const slot = document.getElementById('k-modal-discovery-detail');
+  expect(slot.textContent).toContain('Être rappelé');
+  expect(slot.textContent).toContain('Appeler');
+  expect(slot.textContent).toContain('WhatsApp');
+  expect(slot.querySelector('[data-discovery-modal-action="callback"]')).not.toBeNull();
+  expect(slot.querySelector('[data-discovery-direct-action="call"]')?.getAttribute('href')).toBe('tel:+2693210000');
+  expect(slot.querySelector('[data-discovery-direct-action="whatsapp"]')?.getAttribute('href')).toBe('https://wa.me/2693210001');
+  expect(slot.textContent).not.toContain('+269 321 00 00');
 });
 
-test('le CTA transporte la précision vers Inquiry après fermeture contrôlée du même modal', () => {
+test('une action directe sans coordonnée publique explicite est supprimée, jamais remplacée par un téléphone privé', () => {
+  expect(normalizeActions({ actions: ['call', 'whatsapp'], public_contact: null })).toEqual([]);
+  renderDiscoveryModalDetail({
+    kind: 'service',
+    ref: 'svc-no-contact',
+    detail: { title: 'Diagnostic', actions: ['call'] },
+  });
+  const slot = document.getElementById('k-modal-discovery-detail');
+  expect(slot.textContent).toContain('Contact momentanément indisponible');
+  expect(slot.querySelector('a[href^="tel:"]')).toBeNull();
+  expect(slot.querySelector('[data-discovery-requested-window]')).toBeNull();
+});
+
+test('labels et liens métier restent des projections déterministes', () => {
+  expect(kindLabelFor('physical_offer')).toBe('Produit local');
+  expect(kindLabelFor('service')).toBe('Service local');
+  expect(actionLabelFor('request', 'physical_offer')).toBe('Commander');
+  expect(actionLabelFor('request', 'service')).toBe('Demander');
+  expect(actionLabelFor('quote', 'service')).toBe('Demander un devis');
+  expect(actionLabelFor('callback', 'service')).toBe('Être rappelé');
+  expect(telHref('+269 321-00-00')).toBe('tel:+2693210000');
+  expect(whatsappHref('00 269 321 00 01')).toBe('https://wa.me/2693210001');
+});
+
+test('le CTA Inquiry transporte la précision et son intention après fermeture contrôlée du même modal', () => {
   setupDiscoveryModalDetail();
   listeners['modal:discovery-opened']({
     kind: 'service',
     ref: 'svc-1',
-    detail: { title: 'Installation climatiseur', zone: 'Mutsamudu' },
+    detail: { title: 'Installation climatiseur', zone: 'Mutsamudu', actions: ['callback'] },
   });
 
   document.querySelector('[data-discovery-requested-window]').value = '  Samedi matin  ';
-  document.querySelector('[data-discovery-modal-action="service"]').click();
+  document.querySelector('[data-discovery-modal-action="callback"]').click();
 
   expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
   expect(mockRequestDiscovery).toHaveBeenCalledWith(
@@ -121,8 +168,26 @@ test('le CTA transporte la précision vers Inquiry après fermeture contrôlée 
     'svc-1',
     expect.any(HTMLElement),
     'Samedi matin',
+    'callback',
   );
   expect(mockEmit).not.toHaveBeenCalledWith('discovery:request', expect.anything());
+});
+
+test('un lien direct ferme le cycle modal sans créer d Inquiry', () => {
+  setupDiscoveryModalDetail();
+  renderDiscoveryModalDetail({
+    kind: 'service',
+    ref: 'svc-call',
+    detail: {
+      title: 'Dépannage',
+      actions: ['call'],
+      public_contact: { phone: '+2693210000' },
+    },
+  });
+
+  document.querySelector('[data-discovery-direct-action="call"]').click();
+  expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
+  expect(mockRequestDiscovery).not.toHaveBeenCalled();
 });
 
 test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
