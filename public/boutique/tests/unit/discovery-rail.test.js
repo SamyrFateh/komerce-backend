@@ -26,26 +26,29 @@ describe('renderDiscoveryRail', () => {
     expect(renderDiscoveryRail(null, [])).toBe(0);
   });
 
-  it('rend dans un seul rail les trois intentions avec une géométrie identique', () => {
+  it('rend Disponible ici dans un seul rail avec les trois intentions', () => {
     const cards = [
       {
         kind: 'product', title: 'Climatiseur', subtitle: 'Disponible maintenant',
         cta_label: 'Acheter', cta_action_ref: 'p-1', image_ref: '/images/product.webp',
-        price: 195000,
+        price: 195000, category_keys: ['Tech'],
       },
       {
         kind: 'physical_offer', title: 'Samboussas mariage', subtitle: 'Préparation sur commande',
         cta_label: 'Commander', cta_action_ref: 'o-1', image_ref: '/images/samboussas.webp',
-        provider_name: 'Fatima Traiteur', zone: 'Moroni',
+        provider_name: 'Fatima Traiteur', zone: 'Moroni', category_keys: ['Maison'],
       },
       {
         kind: 'service', title: 'Plomberie', subtitle: 'Sur demande',
         cta_label: 'Demander', cta_action_ref: 's-1', image_ref: '/images/plombier.webp',
-        provider_name: 'Ali Plomberie', zone: 'Mutsamudu',
+        provider_name: 'Ali Plomberie', zone: 'Mutsamudu', category_keys: ['Maison', 'Bricolage'],
       },
     ];
 
-    expect(renderDiscoveryRail(target(), cards, { marketLabel: 'Comores' })).toBe(3);
+    expect(renderDiscoveryRail(target(), cards, {
+      marketLabel: 'Comores',
+      titleId: 'k-discovery-local-title-test',
+    })).toBe(3);
     expect(target().hidden).toBe(false);
     expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(3);
     expect(target().querySelectorAll('.k-discovery-img')).toHaveLength(3);
@@ -53,17 +56,14 @@ describe('renderDiscoveryRail', () => {
       .toEqual(['/images/product.webp', '/images/samboussas.webp', '/images/plombier.webp']);
     expect(target().querySelectorAll('[role="listitem"]')).toHaveLength(3);
     expect(target().querySelector('.k-discovery-rail')?.getAttribute('role')).toBe('list');
-    expect(target().querySelector('#k-discovery-local-title')?.textContent).toBe('Près de vous');
+    expect(target().querySelector('#k-discovery-local-title-test')?.textContent).toBe('Disponible ici');
     expect(target().textContent).toContain('Comores');
 
     const labels = Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent);
     expect(labels).toEqual(['Acheter', 'Commander', 'Demander']);
 
-    // Le subtitle est la promesse du badge, jamais une ligne dupliquée dans le body.
     expect(target().querySelectorAll('.k-discovery-status')).toHaveLength(3);
     expect(target().querySelectorAll('.k-discovery-subtitle')).toHaveLength(0);
-
-    // Les slots structurels existent pour chaque kind même quand leur contenu est vide.
     expect(target().querySelectorAll('.k-discovery-primary-slot')).toHaveLength(3);
     expect(target().querySelectorAll('.k-discovery-context-slot')).toHaveLength(3);
 
@@ -77,11 +77,9 @@ describe('renderDiscoveryRail', () => {
     expect(providers[1]).toContain('Ali Plomberie');
     expect(providers[1]).toContain('Mutsamudu');
 
-    // Product garde son slot contexte mais n'invente aucun provider.
     const productCard = target().querySelector('[data-discovery-kind="product"]');
     expect(productCard.querySelector('.k-discovery-provider')).toBeNull();
     expect(productCard.querySelector('.k-discovery-context-slot')).not.toBeNull();
-
     expect(target().querySelector('.k-discovery-card[data-discovery-ref="p-1"]')).not.toBeNull();
   });
 
@@ -136,7 +134,7 @@ describe('renderDiscoveryRail', () => {
     expect(target().querySelector('.k-discovery-card:last-child')?.textContent).toContain('Carte 12');
   });
 
-  it('applique les fallbacks minimaux sans inventer de contenu optionnel', () => {
+  it('applique les fallbacks minimaux et conserve category_keys comme metadata de contexte', () => {
     expect(normalizeCard({ kind: 'service', cta_action_ref: 's-missing-title' })).toBeNull();
     expect(normalizeCard({ kind: 'service', title: 'Sans référence' })).toBeNull();
     expect(formatPrice(null)).toBe('');
@@ -147,9 +145,11 @@ describe('renderDiscoveryRail', () => {
       cta_action_ref: 's-minimal',
       provider_name: 'Atelier local',
       description: 'Diagnostic sur place',
+      category_keys: ['Maison', 'Maison', 'Bricolage'],
     });
     expect(normalized.ctaLabel).toBe('Demander');
     expect(normalized.description).toBe('Diagnostic sur place');
+    expect(normalized.categoryKeys).toEqual(['Maison', 'Bricolage']);
 
     renderDiscoveryRail(target(), [{
       kind: 'service',
