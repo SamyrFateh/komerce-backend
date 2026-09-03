@@ -200,8 +200,8 @@
     display: flex;
     align-items: flex-start;
     flex-wrap: nowrap;
-    gap: 4px;
-    padding: 3px 6px 4px;
+    gap: 3px;
+    padding: 2px 6px 3px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -224,13 +224,13 @@
     --k-optical-active-y: -2px;
     --k-optical-active-scale: 1.01;
     --k-optical-saturation: 1;
-    flex: 0 0 60px;
-    width: 60px;
-    min-width: 60px;
-    min-height: 60px;
-    height: 60px;
+    flex: 0 0 56px;
+    width: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    height: 56px;
     gap: 1px;
-    padding: 0 1px 3px;
+    padding: 0 1px 2px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -302,8 +302,8 @@
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 50px;
-    height: 33px;
+    width: 46px;
+    height: 30px;
     isolation: isolate;
   }
 
@@ -314,8 +314,8 @@
     position: absolute;
     left: 50%;
     bottom: 3px;
-    width: 36px;
-    height: 10px;
+    width: 34px;
+    height: 9px;
     border-radius: 50%;
     background: var(--sand-warm);
     opacity: .20;
@@ -351,13 +351,13 @@
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
-    max-width: 58px;
+    max-width: 54px;
     z-index: 2;
-    margin-top: 2px;
-    padding: 0 3px 3px;
+    margin-top: 1px;
+    padding: 0 2px 2px;
     background: var(--white);
     color: var(--catalog-nav-muted);
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 620;
     line-height: 1.15;
     letter-spacing: -.01em;
@@ -369,7 +369,7 @@
   }
 
   .k-cat-cutout.active .k-chip-label::after {
-    width: 18px;
+    width: 16px;
     height: 2px;
   }
 }
