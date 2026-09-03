@@ -34,6 +34,12 @@ describe('handleDiscoveryRequest', () => {
     expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
   });
 
+  it('ignore une action directe qui ne doit jamais devenir une Inquiry', async () => {
+    await expect(handleDiscoveryRequest({ kind: 'service', ref: 'svc-call', action: 'call' })).resolves.toBe(false);
+    expect(mockRequireIdentity).not.toHaveBeenCalled();
+    expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
+  });
+
   it('annulation identité : aucune Inquiry créée et bouton réactivé', async () => {
     const button = document.createElement('button');
     mockRequireIdentity.mockResolvedValue(null);
@@ -81,6 +87,26 @@ describe('handleDiscoveryRequest', () => {
     expect(mockRequireIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée', 'success', 3200);
+  });
+
+  it('callback utilise la même Inquiry mais explicite le motif et la confirmation', async () => {
+    const button = document.createElement('button');
+    mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
+    mockCreateProviderInquiry.mockResolvedValue({
+      ok: true,
+      inquiry: { id: 'inq-cb', status: 'sent', target_kind: 'service' },
+    });
+
+    const result = await handleDiscoveryRequest({
+      kind: 'service', ref: 'svc-cb', source: button, action: 'callback', requestedWindow: 'Après 17h',
+    });
+
+    expect(result).toBe(true);
+    expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'demander à être rappelé',
+    }));
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('service', 'svc-cb', 'Après 17h');
+    expect(mockShowToast).toHaveBeenCalledWith('Demande de rappel envoyée', 'success', 3200);
   });
 
   it('transporte requestedWindow après identité sans nouveau flow métier', async () => {
