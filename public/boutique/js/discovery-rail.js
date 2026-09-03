@@ -4,13 +4,14 @@
  * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Monter le rail « Près de vous » dans la home Boutique et déléguer l'exposition au backend.
- * @impact-areas  home, product-discovery, discovery-rail
+ * @purpose       Monter « Disponible ici » dans chaque contexte catégorie mobile et déléguer l'exposition au backend.
+ * @impact-areas  home, product-discovery, discovery-rail, category-navigation
  * @version       2026-09
  */
 'use strict';
 
 import { openModal } from './b-modal.js';
+import { _setupInfiniteLoop } from './b-pager.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
 
@@ -30,49 +31,65 @@ function bindShell(shell) {
   return shell;
 }
 
-function createShell() {
+function createShell(category, titleId) {
   const shell = document.createElement('section');
-  shell.id = 'k-discovery-local';
   shell.className = 'k-discovery-shell';
+  shell.dataset.discoveryCategory = category;
   shell.hidden = true;
-  shell.setAttribute('aria-labelledby', 'k-discovery-local-title');
+  shell.setAttribute('aria-labelledby', titleId);
   return bindShell(shell);
 }
 
-/**
- * Mobile + pager Temu : « Près de vous » vit DANS la page verticale "Tout".
- * #k-page-scroll.k-pager-active est une cage fixed overflow:hidden ; placer
- * Discovery comme sibling du catalogue crée du contenu sans scroll owner.
- *
- * Composition mobile : Près de vous est le premier contenu marchand après le
- * chrome Temu. La recherche globale reste accessible par la loupe du header et
- * ne réserve plus aucune bande dans le flux.
- *
- * Desktop : on conserve la composition éditoriale validée, juste avant le
- * wrapper catalogue.
- */
-function ensureMount() {
-  let shell = document.getElementById('k-discovery-local');
+function mobileShellForCategory(category) {
+  return Array.from(document.querySelectorAll('.k-discovery-shell[data-discovery-category]'))
+    .find(shell => shell.dataset.discoveryCategory === category) || null;
+}
 
-  if (isMobileViewport()) {
-    const allPage = document.querySelector(
-      '#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'
-    );
-    if (!allPage) return null;
+function removeDesktopShell() {
+  const shell = document.getElementById('k-discovery-local');
+  if (shell) shell.remove();
+}
 
-    if (!shell) shell = createShell();
+function removeMobileShells() {
+  document.querySelectorAll('.k-discovery-shell[data-discovery-category]')
+    .forEach(shell => shell.remove());
+}
+
+function ensureMobileMounts() {
+  removeDesktopShell();
+  const pages = Array.from(document.querySelectorAll(
+    '#k-grid > .k-cat-section[data-cat]:not([data-ghost])'
+  ));
+  if (pages.length === 0) return [];
+
+  return pages.map((page, index) => {
+    const category = page.dataset.cat || 'all';
+    const titleId = `k-discovery-local-title-${index}`;
+    let shell = mobileShellForCategory(category);
+    if (!shell) shell = createShell(category, titleId);
     bindShell(shell);
+    shell.setAttribute('aria-labelledby', titleId);
 
-    if (shell.parentElement !== allPage || shell !== allPage.firstElementChild) {
-      allPage.insertBefore(shell, allPage.firstElementChild);
+    if (shell.parentElement !== page || shell !== page.firstElementChild) {
+      page.insertBefore(shell, page.firstElementChild);
     }
-    return shell;
-  }
+    return { shell, category, titleId };
+  });
+}
 
+function ensureDesktopMount() {
+  removeMobileShells();
   const catalog = document.getElementById('k-desktop-catalog-wrap');
   if (!catalog) return null;
 
-  if (!shell) shell = createShell();
+  let shell = document.getElementById('k-discovery-local');
+  if (!shell) {
+    shell = document.createElement('section');
+    shell.id = 'k-discovery-local';
+    shell.className = 'k-discovery-shell';
+    shell.hidden = true;
+    shell.setAttribute('aria-labelledby', 'k-discovery-local-title');
+  }
   bindShell(shell);
   if (shell.nextElementSibling !== catalog) {
     catalog.insertAdjacentElement('beforebegin', shell);
@@ -88,11 +105,45 @@ function getMarketLabel() {
   }
 }
 
+function cardsForCategory(cards, category) {
+  const list = Array.isArray(cards) ? cards : [];
+  if (category === 'all') return list;
+  return list.filter(card =>
+    Array.isArray(card?.category_keys) && card.category_keys.includes(category)
+  );
+}
+
+function refreshGhostSnapshot() {
+  const grid = document.getElementById('k-grid');
+  if (!isMobileViewport() || !grid?.classList.contains('k-grid-cat-pager')) return;
+  _setupInfiniteLoop();
+}
+
 function syncMountAndRender() {
-  const shell = ensureMount();
-  if (!shell) return 0;
   if (_lastCards === null) return 0;
-  return renderDiscoveryRail(shell, _lastCards, { marketLabel: getMarketLabel() });
+  const marketLabel = getMarketLabel();
+
+  if (isMobileViewport()) {
+    const mounts = ensureMobileMounts();
+    let rendered = 0;
+    for (const { shell, category, titleId } of mounts) {
+      rendered += renderDiscoveryRail(
+        shell,
+        cardsForCategory(_lastCards, category),
+        { marketLabel, titleId, title: 'Disponible ici' }
+      );
+    }
+    refreshGhostSnapshot();
+    return rendered;
+  }
+
+  const shell = ensureDesktopMount();
+  if (!shell) return 0;
+  return renderDiscoveryRail(shell, _lastCards, {
+    marketLabel,
+    titleId: 'k-discovery-local-title',
+    title: 'Disponible ici',
+  });
 }
 
 function scheduleMountSync() {
@@ -109,10 +160,18 @@ function installGridObserver() {
   const grid = document.getElementById('k-grid');
   if (!grid) return;
 
-  // renderGrid() remplace les .k-cat-section enfants directs. Le shell mobile,
-  // volontairement monté dans "Tout", disparaît avec l'ancien rendu. On le
-  // remonte depuis le cache Discovery au prochain microtask.
-  _gridObserver = new MutationObserver(scheduleMountSync);
+  // renderGrid() remplace les pages réelles. Les mutations qui ne concernent
+  // que le ghost sont ignorées afin que le refresh du snapshot ne reboucle pas
+  // sur le MutationObserver.
+  _gridObserver = new MutationObserver(mutations => {
+    const realPageMutation = mutations.some(mutation => {
+      const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+      return nodes.some(node =>
+        node.nodeType === 1 && !node.matches?.('[data-ghost]')
+      );
+    });
+    if (realPageMutation) scheduleMountSync();
+  });
   _gridObserver.observe(grid, { childList: true });
 }
 
@@ -168,17 +227,17 @@ export function setupDiscoveryRail() {
   installGridObserver();
   window.addEventListener('resize', scheduleMountSync, { passive: true });
 
-  // Le fetch ne dépend plus de l'existence immédiate du mount mobile : au boot,
-  // le catalogue peut encore être en train de rendre ses pages. Les cartes sont
-  // gardées en mémoire puis projetées dès que la page "Tout" existe.
+  // Un seul fetch alimente toutes les pages. category_keys vient du backend ;
+  // le frontend ne fait qu'en prendre le sous-ensemble sans modifier l'ordre.
   refreshDiscoveryRail().catch(() => {
     _lastCards = [];
-    const shell = ensureMount();
-    if (shell) {
-      shell.innerHTML = '';
-      shell.hidden = true;
-    }
+    syncMountAndRender();
   });
 }
 
-export { refreshDiscoveryRail, openDiscoveryDetail, handleDiscoveryClick };
+export {
+  refreshDiscoveryRail,
+  openDiscoveryDetail,
+  handleDiscoveryClick,
+  cardsForCategory,
+};
