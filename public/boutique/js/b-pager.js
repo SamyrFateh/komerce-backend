@@ -221,12 +221,16 @@ function _teleportRightGhost(grid) {
   _resetPageToTop(realTout, grid);
 
   const previousSnap = grid.style.scrollSnapType;
+  const previousBehavior = grid.style.scrollBehavior;
   grid.style.scrollSnapType = 'none';
+  grid.style.scrollBehavior = 'auto';
   grid.scrollLeft = 0;
   _syncChip('all');
 
   requestAnimationFrame(() => {
     grid.style.scrollSnapType = previousSnap;
+    grid.style.scrollBehavior = previousBehavior;
+    grid.scrollLeft = 0;
     _programmaticScrollTimer = setTimeout(() => {
       _isProgrammaticScroll = false;
     }, 32);
