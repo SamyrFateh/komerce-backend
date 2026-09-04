@@ -15,15 +15,16 @@
 'use strict';
 
 /**
- * b-pager.js — Temu V2.11 : pager horizontal des catégories principales mobile.
+ * b-pager.js — Temu V2.12 : pager horizontal des catégories principales mobile.
  *
  * Grammaire :
  * - horizontal = changement explicite d'univers (swipe ou tap sur le rail) ;
  * - vertical   = exploration locale de l'univers courant ;
  * - toute entrée horizontale dans un univers repart en haut afin que
  *   `Disponible ici`, lorsqu'il existe, soit immédiatement visible ;
- * - l'arrivée verticale volontaire en bas déclenche le bump historique :
- *   passage automatique vers la catégorie suivante, repositionnée en haut ;
+ * - le premier relâchement vertical en bas déclenche le bump historique :
+ *   passage automatique sans signal intermédiaire ni second geste vers la
+ *   catégorie suivante, repositionnée en haut ;
  * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
  * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,

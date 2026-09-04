@@ -13,41 +13,57 @@
  * @version       2026-08
  */
 'use strict';
-/* global navigator, caches, location, sessionStorage */
+/* global navigator, location, sessionStorage */
 
-const ACTIVE_KOMERCE_CACHE = 'komerce-v340';
-const RELOAD_MARKER = 'kmrc_sw_reload_v340';
+const ACTIVE_KOMERCE_CACHE = 'komerce-v341';
+const RELOAD_MARKER = 'kmrc_sw_reload_v341';
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
+function setupServiceWorkerRefresh({
+  serviceWorker = navigator.serviceWorker,
+  cacheStorage = window.caches,
+  storage = sessionStorage,
+  reload = location.reload.bind(location),
+  logger = console,
+} = {}) {
+  if (!serviceWorker) return false;
+
+  serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((registration) => {
       registration.update();
     });
   });
 
-  navigator.serviceWorker.addEventListener('message', (event) => {
+  serviceWorker.addEventListener('message', (event) => {
     const isCurrentUpdate =
       event.data?.type === 'sw-updated' &&
-      event.data?.version === 'v340';
+      event.data?.version === 'v341';
 
-    if (!isCurrentUpdate || !navigator.serviceWorker.controller) return;
-    if (sessionStorage.getItem(RELOAD_MARKER) === '1') return;
+    if (!isCurrentUpdate || !serviceWorker.controller) return;
+    if (storage.getItem(RELOAD_MARKER) === '1') return;
 
-    sessionStorage.setItem(RELOAD_MARKER, '1');
-    console.log('[SW] Nouvelle version v340 → rechargement unique');
-    location.reload();
+    storage.setItem(RELOAD_MARKER, '1');
+    logger.log('[SW] Nouvelle version v341 → rechargement unique');
+    reload();
   });
 
-  if (window.caches) {
-    caches.keys().then((names) => {
+  if (cacheStorage) {
+    cacheStorage.keys().then((names) => {
       names.forEach((name) => {
         if (
           name.startsWith('komerce-') &&
           name !== ACTIVE_KOMERCE_CACHE
         ) {
-          caches.delete(name);
+          cacheStorage.delete(name);
         }
       });
     });
   }
+
+  return true;
 }
+
+if ('serviceWorker' in navigator) {
+  setupServiceWorkerRefresh();
+}
+
+export { setupServiceWorkerRefresh };
