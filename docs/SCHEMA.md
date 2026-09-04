@@ -53,8 +53,8 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
 | Index | 335 | Performance + contraintes uniques |
 | Foreign keys | 202 | Cohérence relationnelle |
-| Fonctions | 15 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 32 | Triggers présents dans le dump live Railway. |
+| Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 33 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -85,7 +85,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). |
-| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. |
+| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. **Migration 162 (2026-09-04, `intended_migration_schema`)** : + `fulfillment_source` TEXT nullable, snapshot immuable du verdict transactionnel `LOCAL_STOCK | IMPORT` pour les nouvelles lignes ; `NULL` reste réservé aux lignes historiques/synthétiques sans provenance fiable et ne vaut jamais `IMPORT`. Doctrine : `docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md`. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
@@ -122,7 +122,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 > **N4 — État vérifié code (2026-06-15)** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` et doit être appliquée sur Railway si la table est absente. Le câblage applicatif est présent : `routes/auth.js` génère un `jti`, insère le token au logout, `middleware/auth.js` vérifie `revoked_tokens`, et `bootstrap/crons.js` purge les lignes expirées via `startJwtRevocationCleanupCron()`. **Action DB live restante** : vérifier `SELECT 1 FROM revoked_tokens LIMIT 1`; appliquer la migration si absente.
 
-### 4.3 Wallet (4 tables)
+### 4.3 Wallet (5 tables)
 
 | Table | Rôle |
 |---|---|
@@ -185,7 +185,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cart_shares` | Partage de panier (token public). |
 | `shared_cart_saved_access` | Bibliothèque « Mes listes » : listes reçues qu’un utilisateur a explicitement choisi de sauvegarder. UNIQUE(user_id, shared_cart_id). Migration 127. |
 
-### 4.8 Pricing et économie (14 tables)
+### 4.8 Pricing et économie (19 tables)
 
 | Table | Rôle |
 |---|---|
@@ -201,6 +201,8 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `pricing_matrices_audit` | Audit matrices. |
 | `cost_components` | Composantes de coûts. |
 | `cost_component_events` | Événements composantes coût. |
+| `cost_component_market_overrides` | Overrides market-scoped de valeur/activation sur le modèle global `cost_components`; absence de ligne = héritage global. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
+| `cost_component_market_override_events` | Journal append-only des créations, mises à jour et resets d'overrides de composantes de coûts par marché. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `risk_provisions` | Provisions risques. |
 | `cost_benchmarks` | Seuils de part de coût attendue par famille/catégorie (`expected_share_pct`, `warn_ratio` 1.30, `alert_ratio` 1.60). Alimente les alertes d'écart coût. |
 | `charges` | Charges fixes. |
@@ -233,7 +235,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 
-### 4.11 Scans et opérations terrain (4 tables)
+### 4.11 Scans et opérations terrain (5 tables)
 
 | Table | Rôle |
 |---|---|
@@ -255,7 +257,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
 
-### 4.12 bis — Marchés, autorisations globales et Passkeys (6 tables)
+### 4.12 bis — Marchés, autorisations globales et Passkeys (9 tables)
 
 | Table | Rôle |
 |---|---|
@@ -288,7 +290,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 ### 4.14 Discovery locale — stock Komerce local & offres tierces (Vague 2)
 
-> **État Railway** : migrations 154–157 présentes dans le repo mais pas encore observées dans le dump live. Les objets restent volontairement en `schema-pending` jusqu’à confirmation Railway ; le code shadow ne transforme jamais cette intention en vérité live.
+> **État Railway** : migrations 154–157 confirmées live dans le dump Railway ; les objets `local_stock`, `providers`, `services`, `inquiries`, `physical_offers` et `local_stock_allocations` sont des vérités de schéma vérifiées, plus des intentions `schema-pending`.
 
 | Table | Rôle |
 |---|---|
@@ -400,7 +402,7 @@ Le dump Railway n'est plus jamais généré à la main. Le pipeline est entière
 À chaque merge d'une migration sur `main`, GitHub Actions lance `schema-refresh.yml` :
 
 1. `node scripts/db-snapshot.js` — se connecte à Railway via `RAILWAY_DATABASE_URL` (secret GitHub), exécute `pg_dump --schema-only`, neutralise les artefacts PG18 (`\restrict`, `transaction_timeout`), écrit atomiquement dans `docs/db/railway-live-schema.sql`.
-2. `node scripts/check-schema-freshness.js` — vérifie que toutes les colonnes déclarées dans `migrations/*.sql` sont présentes dans le dump. Bloque si le dump est partiel.
+2. `node scripts/check-schema-freshness.js` — vérifie que toutes les colonnes, tables et vues déclarées dans `migrations/*.sql` sont présentes dans le dump lorsqu'elles doivent déjà être live. Bloque si le dump est partiel.
 3. PR automatique `chore/schema-refresh-auto` créée si le dump a changé — à merger sans délai.
 
 ### Déclenchement manuel

@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires none
  *
- * Fulfillment mixte — Lot B.
+ * Fulfillment mixte — Lots B à D.
  * Le verdict local/import appartient au checkout orders, mais la décision
  * d'engageabilité locale reste exclusivement dans local-stock-service.js.
  */
@@ -185,20 +185,34 @@ describe('allocation cohérente avec commercial_exposure', () => {
   });
 });
 
-describe('wiring Feature First orders → local-stock', () => {
-  it('résout LOCAL_STOCK/IMPORT avant le pricing transport et garde le verdict transitoire par ligne', () => {
+describe('wiring Feature First orders → local-stock → transport', () => {
+  it('résout la provenance avant pricing et ne transmet que les lignes IMPORT au moteur transport', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '../../services/order-checkout-service.js'),
       'utf8'
     );
 
     const resolverCall = source.indexOf('await resolveCheckoutFulfillmentSources');
+    const importFilter = source.indexOf('const importTransportItems = items.filter');
     const pricingCall = source.indexOf('quoteTransportPriceForOrder({');
 
     expect(resolverCall).toBeGreaterThan(-1);
+    expect(importFilter).toBeGreaterThan(-1);
     expect(pricingCall).toBeGreaterThan(-1);
-    expect(resolverCall).toBeLessThan(pricingCall);
-    expect(source).toMatch(/item\._fulfillment_source/);
-    expect(source).toMatch(/FULFILLMENT_SOURCE\.IMPORT/);
+    expect(resolverCall).toBeLessThan(importFilter);
+    expect(importFilter).toBeLessThan(pricingCall);
+    expect(source).toMatch(/item\._fulfillment_source === FULFILLMENT_SOURCE\.IMPORT/);
+    expect(source).toMatch(/items: importTransportItems\.map\(item =>/);
+    expect(source).toMatch(/LOCAL_STOCK contribue exactement 0 au transport/);
+  });
+
+  it('la règle métier local-stock ne fuit pas dans transport-pricing', () => {
+    const transportSource = fs.readFileSync(
+      path.join(__dirname, '../../services/transport-pricing.js'),
+      'utf8'
+    );
+
+    expect(transportSource).not.toMatch(/LOCAL_STOCK/);
+    expect(transportSource).not.toMatch(/local_stock/);
   });
 });
