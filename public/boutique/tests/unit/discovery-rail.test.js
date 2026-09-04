@@ -73,9 +73,19 @@ describe('renderDiscoveryRail', () => {
     expect(target().querySelector('#k-discovery-local-title-test')?.textContent).toBe('Disponible ici');
     expect(target().textContent).toContain('Comores');
 
+    // Product local = Product Komerce normal : desktop retrouve le contrôle
+    // panier canonique `+`, tandis que les kinds provider gardent leur CTA.
+    const productControl = target().querySelector(
+      '[data-discovery-kind="product"] .k-card-add[data-add="p-1"]'
+    );
+    expect(productControl).not.toBeNull();
+    expect(productControl.querySelector('.k-card-add-trigger[data-action="add"]')).not.toBeNull();
+    expect(productControl.querySelector('.k-card-add-plus')?.textContent).toBe('+');
+    expect(target().querySelector('[data-discovery-kind="product"] .k-discovery-canonical-cta')).toBeNull();
+
     const labels = Array.from(target().querySelectorAll('.k-discovery-canonical-cta'))
       .map(button => button.textContent);
-    expect(labels).toEqual(['Acheter', 'Commander', 'Demander']);
+    expect(labels).toEqual(['Commander', 'Demander']);
 
     expect(target().querySelectorAll('.k-discovery-status')).toHaveLength(3);
     expect(target().querySelector('[data-discovery-kind="product"] .k-card-price')?.textContent)
