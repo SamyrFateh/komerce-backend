@@ -32,8 +32,8 @@ const DEFAULT_PAGE_SIZE = 100;
 const DEFAULT_MAX_API_CALLS = 500;
 const CJ_RESULT_CAP = 6000;
 
-function intEnv(name, fallback, min, max) {
-  const raw = process.env[name];
+function intEnv(name, fallback, min, max, env = process.env) {
+  const raw = env[name];
   if (raw == null || raw === '') return fallback;
   const n = Number.parseInt(raw, 10);
   if (!Number.isInteger(n) || n < min || n > max) {
@@ -52,8 +52,8 @@ function runtimeConfig(env = process.env) {
   }
   return {
     syncKey: String(env.KOMERCE_CJ_SYNC_KEY || DEFAULT_SYNC_KEY).trim() || DEFAULT_SYNC_KEY,
-    pageSize: intEnv('KOMERCE_CJ_SYNC_PAGE_SIZE', DEFAULT_PAGE_SIZE, 1, 100),
-    maxApiCalls: intEnv('KOMERCE_CJ_SYNC_MAX_API_CALLS', DEFAULT_MAX_API_CALLS, 1, 1000),
+    pageSize: intEnv('KOMERCE_CJ_SYNC_PAGE_SIZE', DEFAULT_PAGE_SIZE, 1, 100, env),
+    maxApiCalls: intEnv('KOMERCE_CJ_SYNC_MAX_API_CALLS', DEFAULT_MAX_API_CALLS, 1, 1000, env),
   };
 }
 
@@ -246,6 +246,7 @@ module.exports = {
   DEFAULT_PAGE_SIZE,
   DEFAULT_MAX_API_CALLS,
   CJ_RESULT_CAP,
+  intEnv,
   runtimeConfig,
   isQuotaError,
   totalPagesFor,
