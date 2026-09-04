@@ -14,12 +14,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1077
-- Edges: 5645
+- Edges: 5646
 - DB tables: 126
 - Doctrines: 288
 - Impact areas: 170
 - Unresolved code edges: 560
-- Tables multi-écrivains directs (>=2): 62
+- Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -552,6 +552,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/modules.js -> garment_models
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
+- WRITE services/providers-inquiry-service.js -> inquiries
 - WRITE services/providers-service.js -> inquiries
 - WRITE services/inventory-service.js -> inventory_items
 - WRITE routes/admin/system.js -> invoices
@@ -595,7 +596,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/users.js -> order_status_history
 - WRITE routes/orders/cancel.js -> order_status_history
 - WRITE services/order-checkout-persistence.js -> order_status_history
-- WRITE services/order-checkout-service.js -> order_status_history
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -767,6 +767,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
 - exchange_rates: 2 écrivains directs — routes/admin-finance-config.js, services/pricing-rates.js
 - incidents: 2 écrivains directs — services/incident-service.js, services/incident-write-service.js
+- inquiries: 2 écrivains directs — services/providers-inquiry-service.js, services/providers-service.js
 - loyalty_rewards: 2 écrivains directs — routes/admin-loyalty.js, services/loyalty-service.js
 - order_incidents: 2 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
@@ -781,7 +782,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
 - signals: 2 écrivains directs — services/signal-admin-service.js, services/signal-service.js
 - sourcing_candidate_events: 2 écrivains directs — services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js
-- supplier_catalog_imports: 2 écrivains directs — services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
 
 ## DB Write / Write-Via Overlap Warnings
 

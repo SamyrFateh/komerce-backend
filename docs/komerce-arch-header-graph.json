@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1077,
-    "edges": 5645,
+    "edges": 5646,
     "dbTables": 126,
     "doctrines": 288,
     "impactAreas": 170,
     "unresolvedCodeEdges": 560,
     "dbWriteViaOverlapWarnings": 7,
-    "multiWriterTables": 62
+    "multiWriterTables": 63
   },
   "byDomain": {
     "infrastructure": 20,
@@ -18392,7 +18392,9 @@
       "depends": [],
       "usedBy": [],
       "dbRead": [],
-      "dbWrite": [],
+      "dbWrite": [
+        "inquiries"
+      ],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
@@ -52994,6 +52996,12 @@
     },
     {
       "from": "services/providers-inquiry-service.js",
+      "to": "db:inquiries",
+      "type": "db-write",
+      "label": "inquiries"
+    },
+    {
+      "from": "services/providers-inquiry-service.js",
       "to": "impact:providers-services",
       "type": "impact",
       "label": "providers-services"
@@ -78215,7 +78223,9 @@
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [],
-      "dbWrite": [],
+      "dbWrite": [
+        "inquiries"
+      ],
       "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
@@ -78223,6 +78233,7 @@
         "discovery-modal"
       ],
       "mustCheck": [
+        "db:inquiries",
         "impact:discovery-modal",
         "impact:providers-services",
         "routes/providers-services.js",
@@ -83335,6 +83346,14 @@
       "writers": [
         "services/incident-service.js",
         "services/incident-write-service.js"
+      ]
+    },
+    {
+      "table": "inquiries",
+      "writerCount": 2,
+      "writers": [
+        "services/providers-inquiry-service.js",
+        "services/providers-service.js"
       ]
     },
     {

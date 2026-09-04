@@ -53,8 +53,8 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
 | Index | 335 | Performance + contraintes uniques |
 | Foreign keys | 202 | Cohérence relationnelle |
-| Fonctions | 15 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 32 | Triggers présents dans le dump live Railway. |
+| Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 33 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
