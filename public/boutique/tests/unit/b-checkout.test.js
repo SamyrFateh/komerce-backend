@@ -166,6 +166,7 @@ const {
   checkoutCart, closeOrderModal, updateWalletDisplay, checkWalletBalance,
   submitOrder, renderOrderSuccess, renderCheckout,
   buildCheckoutRecentChoices,
+  buildCheckoutFulfillmentPreviewPath, summarizeCheckoutFulfillment,
   makeInput, makePhoneInput, makeIntlPhoneInput,
   getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
@@ -222,6 +223,73 @@ describe('b-checkout', () => {
     state.viewedHistory = [];
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
+  });
+
+  describe('projection fulfillment mixte', () => {
+    it('construit une preview relay-scoped en agrégeant les quantités par produit', () => {
+      const path = buildCheckoutFulfillmentPreviewPath('relay-1', [
+        { product: { id: 'p-local' }, qty: 1 },
+        { product: { id: 'p-local' }, qty: 2 },
+        { product: { id: 'p-import' }, qty: 1 },
+        { product: { id: 'p-ignore' }, qty: 9, checkout_included: false },
+      ]);
+      const url = new URL(path, 'https://komerce.test');
+
+      expect(url.pathname).toBe('/api/local-stock/checkout-preview');
+      expect(url.searchParams.get('relais_id')).toBe('relay-1');
+      expect(url.searchParams.getAll('product_id')).toEqual(['p-local', 'p-import']);
+      expect(url.searchParams.getAll('quantity')).toEqual(['3', '1']);
+    });
+
+    it('ne projette rien sans relais ou sans ligne incluse', () => {
+      expect(buildCheckoutFulfillmentPreviewPath(null, [
+        { product: { id: 'p1' }, qty: 1 },
+      ])).toBeNull();
+      expect(buildCheckoutFulfillmentPreviewPath('relay-1', [
+        { product: { id: 'p1' }, qty: 1, checkout_included: false },
+      ])).toBeNull();
+    });
+
+    it('résume uniquement les états fournis par le serveur', () => {
+      expect(summarizeCheckoutFulfillment([
+        { product: { id: 'p1' }, qty: 2, fulfillment_preview_state: 'LOCAL_STOCK' },
+        { product: { id: 'p2' }, qty: 1, fulfillment_preview_state: 'IMPORT' },
+        { product: { id: 'p3' }, qty: 3, fulfillment_preview_state: 'REVIEW_REQUIRED' },
+        { product: { id: 'p4' }, qty: 4 },
+        { product: { id: 'p5' }, qty: 7, checkout_included: false, fulfillment_preview_state: 'IMPORT' },
+      ])).toEqual({
+        projected: true,
+        localQty: 2,
+        importQty: 1,
+        reviewQty: 3,
+        unresolvedQty: 4,
+      });
+    });
+
+    it('regroupe visuellement le récapitulatif sans modifier le total', () => {
+      apiGet.mockResolvedValue({ relais: [] });
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'personal-cart',
+          sourceId: null,
+          total: 9000,
+          items: [
+            { product: { id: 'p1', name: 'Veste locale', price_kmf: 4000 }, qty: 1, fulfillment_preview_state: 'LOCAL_STOCK' },
+            { product: { id: 'p2', name: 'Téléphone import', price_kmf: 5000 }, qty: 1, fulfillment_preview_state: 'IMPORT' },
+          ],
+        },
+      };
+
+      renderCheckout();
+
+      const titles = Array.from(
+        dom.orderBody.querySelectorAll('.ck-recap-fulfillment-title')
+      ).map(node => node.textContent);
+      expect(titles).toEqual(['Disponible maintenant', 'À venir']);
+      expect(dom.orderBody.querySelector('.ck-recap-toggle-sub').textContent)
+        .toBe('1 maintenant · 1 à venir');
+    });
   });
 
   describe('délégation téléphone (b-phone.js)', () => {

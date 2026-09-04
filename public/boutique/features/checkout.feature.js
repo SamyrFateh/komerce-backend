@@ -41,6 +41,7 @@ module.exports = {
       'présentation responsive du tunnel checkout',
       'projection desktop V2 du checkout : récapitulatif lisible, colonne transactionnelle prioritaire et scroll vertical unique',
       'localisation cartographique du relais sélectionné avant confirmation de la commande',
+      'projection relay-scoped des temporalités LOCAL_STOCK | IMPORT | REVIEW_REQUIRED dans le récapitulatif, sans décision métier côté client',
       'projection desktop des produits récemment consultés sous le récapitulatif du panier personnel',
       'projection desktop de suggestions (moteur recommendations) sous le récapitulatif d\'un checkout de liste partagée — freeze produit 22-08-2026',
     ],
@@ -92,6 +93,7 @@ module.exports = {
       'catalogue — historique local canonique state.viewedHistory et produits déjà chargés',
       'payment — b-checkout.js importe b-paypal.js ; l’encaissement reste possédé par payments',
       'wallet — b-checkout.js appelle /api/wallet',
+      'local-stock — b-checkout.js consomme GET /api/local-stock/checkout-preview après sélection du relais ; projection read-only, jamais une réservation ni l’autorité finale',
       'recommendations — b-checkout.js appelle GET /api/boutique/suggestions (signal cart_product_ids) pour le rail de suggestions du checkout de liste partagée, freeze 22-08-2026',
     ],
   },
@@ -111,6 +113,7 @@ module.exports = {
     'le rail de suggestions du checkout de liste partagée échoue silencieusement (jamais un throw, jamais un état de chargement bloquant) — une suggestion indisponible ne doit jamais dégrader le reste du tunnel checkout',
     'les CTA de récapitulatif et de paiement utilisent l accent commerce ; le chrome reste neutre et les couleurs propres aux moyens de paiement sont préservées',
     'le relais sélectionné expose avant confirmation un lien cartographique discret ; son activation ne change jamais le relais et n ouvre jamais le picker',
+    'Disponible maintenant / À venir provient uniquement de la projection serveur local-stock du relais courant ; le frontend ne déduit jamais LOCAL_STOCK depuis Discovery et POST /api/orders reste l’autorité transactionnelle finale',
   ],
 
 };
