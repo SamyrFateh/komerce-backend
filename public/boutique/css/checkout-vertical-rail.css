@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          checkout-vertical-rail-skin
  * @domain        checkout
@@ -452,6 +452,46 @@
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+.ck-recap-fulfillment-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0 4px;
+}
+
+.ck-recap-fulfillment-group {
+  min-width: 0;
+}
+
+.ck-recap-fulfillment-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0 3px;
+}
+
+.ck-recap-fulfillment-title {
+  color: var(--text);
+  font-size: .74rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.ck-recap-fulfillment-note {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.ck-recap-fulfillment-group + .ck-recap-fulfillment-group {
+  padding-top: 7px;
+  border-top: 1px solid rgba(31,48,36,.08);
 }
 
 .ck-recap-step .ck-recap-item {

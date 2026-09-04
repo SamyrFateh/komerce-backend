@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        checkout_selection, identity, phone, relais, payment_mode
  * @outputs       checkout_state, order_creation_request, payment_initialization, order_success
- * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/orders.js, routes/payments.js
+ * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/local-stock.js, routes/orders.js, routes/payments.js
  * @used-by       boutique.js, b-nav.js, b-share-cart.js
  * @doctrine      paiement_seul_acte_engageant, otp_une_fois, recap_integre_checkout, surface_transactionnelle_unique, checkout_sans_friction
  * @impact-areas  checkout, orders, payments, otp, cart, shared-cart
@@ -251,6 +251,94 @@ function _checkoutLineProductId(line) {
   return String(line?.product?.id ?? line?.id ?? '');
 }
 
+const FULFILLMENT_PREVIEW_STATES = new Set([
+  'LOCAL_STOCK',
+  'IMPORT',
+  'REVIEW_REQUIRED',
+]);
+
+/**
+ * Construit la requête de projection checkout sans inventer de vérité côté UI.
+ * Les quantités sont agrégées product-level comme la granularité local-stock
+ * actuelle ; seules les lignes réellement incluses dans CheckoutSelection
+ * participent à la projection.
+ */
+export function buildCheckoutFulfillmentPreviewPath(relaisId, items = []) {
+  const relay = String(relaisId || '').trim();
+  if (!relay) return null;
+
+  const quantityByProduct = new Map();
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    if (!_checkoutItemIncluded(item)) return;
+    const productId = _checkoutLineProductId(item);
+    const quantity = Number(item?.qty ?? item?.quantity ?? 1);
+    if (!productId || !Number.isInteger(quantity) || quantity <= 0) return;
+    quantityByProduct.set(
+      productId,
+      (quantityByProduct.get(productId) || 0) + quantity
+    );
+  });
+
+  if (!quantityByProduct.size) return null;
+
+  const params = new URLSearchParams();
+  params.set('relais_id', relay);
+  quantityByProduct.forEach((quantity, productId) => {
+    params.append('product_id', productId);
+    params.append('quantity', String(quantity));
+  });
+
+  return '/api/local-stock/checkout-preview?' + params.toString();
+}
+
+/**
+ * Résumé purement présentationnel de la projection reçue de local-stock.
+ * `projected=false` signifie : ne rien déduire côté frontend, conserver le
+ * récapitulatif classique jusqu'à réception d'une projection serveur.
+ */
+export function summarizeCheckoutFulfillment(items = []) {
+  const summary = {
+    projected: false,
+    localQty: 0,
+    importQty: 0,
+    reviewQty: 0,
+    unresolvedQty: 0,
+  };
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    if (!_checkoutItemIncluded(item)) return;
+    const quantity = Number(item?.qty ?? item?.quantity ?? 1) || 1;
+    const previewState = String(item?.fulfillment_preview_state || '');
+
+    if (previewState === 'LOCAL_STOCK') {
+      summary.projected = true;
+      summary.localQty += quantity;
+    } else if (previewState === 'IMPORT') {
+      summary.projected = true;
+      summary.importQty += quantity;
+    } else if (previewState === 'REVIEW_REQUIRED') {
+      summary.projected = true;
+      summary.reviewQty += quantity;
+    } else {
+      summary.unresolvedQty += quantity;
+    }
+  });
+
+  return summary;
+}
+
+function _checkoutFulfillmentSummaryLabel(items = []) {
+  const summary = summarizeCheckoutFulfillment(items);
+  if (!summary.projected) return _recapSelectionSummary(items);
+
+  const parts = [];
+  if (summary.localQty) parts.push(summary.localQty + ' maintenant');
+  if (summary.importQty) parts.push(summary.importQty + ' à venir');
+  if (summary.reviewQty) parts.push(summary.reviewQty + ' à revérifier');
+  if (summary.unresolvedQty) parts.push(summary.unresolvedQty + ' à confirmer');
+  return parts.join(' · ');
+}
+
 function _checkoutLineIdentity(line) {
   return [
     _checkoutLineProductId(line),
@@ -399,6 +487,7 @@ function _renderCheckoutRecentShelf(container) {
       if (!_mergeRecentCartLineIntoCheckout(cartLine)) return;
       showToast('✓ Ajouté à cette commande', 'success');
       _refreshCheckoutPrimaryProjection(container);
+      _refreshCheckoutFulfillmentPreview(state.orderData);
     },
   });
 }
@@ -516,9 +605,11 @@ async function _renderCheckoutSuggestionsShelf(body) {
   });
 }
 
-function _refreshCheckoutPrimaryProjection(container) {
+function _replaceCheckoutSummaryProjection(container) {
   const current = _currentCheckoutSelection();
   const previousSummary = container?.querySelector('#ck-order-summary');
+  const wasExpanded = previousSummary?.classList.contains('is-expanded')
+    || previousSummary?.querySelector('.ck-recap-toggle')?.getAttribute('aria-expanded') === 'true';
   const nextSummary = _buildRecapItemsBlock(
     current.items,
     current.source,
@@ -528,13 +619,101 @@ function _refreshCheckoutPrimaryProjection(container) {
   if (previousSummary && nextSummary) {
     nextSummary.id = 'ck-order-summary';
     nextSummary.classList.add('ck-recap-step--embedded');
+    if (wasExpanded) {
+      nextSummary.classList.add('is-expanded');
+      nextSummary.querySelector('.ck-recap-toggle')?.setAttribute('aria-expanded', 'true');
+    }
     previousSummary.replaceWith(nextSummary);
   }
 
+  return nextSummary;
+}
+
+function _refreshCheckoutPrimaryProjection(container) {
+  _replaceCheckoutSummaryProjection(container);
   container?.querySelector('.ck-checkout-recent')?.remove();
   _renderCheckoutRecentShelf(container);
   refreshCheckoutComputedUI();
   updateWalletDisplay();
+}
+
+let _fulfillmentPreviewAbortController = null;
+
+function _applyCheckoutFulfillmentPreview(stateByProduct = new Map()) {
+  const current = _currentCheckoutSelection();
+  if (!Array.isArray(current.items)) return false;
+
+  let changed = false;
+  const nextItems = current.items.map((item) => {
+    const productId = _checkoutLineProductId(item);
+    const nextState = _checkoutItemIncluded(item)
+      ? stateByProduct.get(productId) || null
+      : null;
+    const previousState = item?.fulfillment_preview_state || null;
+    if (previousState === nextState) return item;
+
+    changed = true;
+    const next = { ...item };
+    if (nextState) next.fulfillment_preview_state = nextState;
+    else delete next.fulfillment_preview_state;
+    return next;
+  });
+
+  if (!changed) return false;
+  state.orderData.checkoutSelection = {
+    ...current,
+    items: nextItems,
+  };
+  return true;
+}
+
+async function _refreshCheckoutFulfillmentPreview(od = state.orderData) {
+  if (_fulfillmentPreviewAbortController) {
+    _fulfillmentPreviewAbortController.abort();
+    _fulfillmentPreviewAbortController = null;
+  }
+
+  const relayId = String(od?.selectedRelaisId || '').trim();
+  const path = buildCheckoutFulfillmentPreviewPath(
+    relayId,
+    _currentCheckoutSelection().items
+  );
+  const primary = dom.orderBody?.querySelector('.ck-checkout-primary');
+
+  const cleared = _applyCheckoutFulfillmentPreview(new Map());
+  if (cleared && primary) _replaceCheckoutSummaryProjection(primary);
+
+  if (!path) return;
+
+  const controller = new AbortController();
+  _fulfillmentPreviewAbortController = controller;
+
+  try {
+    const response = await apiGet(path, { signal: controller.signal });
+    if (_fulfillmentPreviewAbortController !== controller) return;
+    if (String(od?.selectedRelaisId || '').trim() !== relayId) return;
+
+    const stateByProduct = new Map();
+    (Array.isArray(response?.items) ? response.items : []).forEach((entry) => {
+      const productId = String(entry?.product_id || '').trim();
+      const previewState = String(entry?.state || '').trim();
+      if (productId && FULFILLMENT_PREVIEW_STATES.has(previewState)) {
+        stateByProduct.set(productId, previewState);
+      }
+    });
+
+    _applyCheckoutFulfillmentPreview(stateByProduct);
+    if (primary?.isConnected) _replaceCheckoutSummaryProjection(primary);
+  } catch (error) {
+    if (error?.name === 'AbortError') return;
+    _applyCheckoutFulfillmentPreview(new Map());
+    if (primary?.isConnected) _replaceCheckoutSummaryProjection(primary);
+    console.warn('[checkout] fulfillment preview:', error);
+  } finally {
+    if (_fulfillmentPreviewAbortController === controller) {
+      _fulfillmentPreviewAbortController = null;
+    }
+  }
 }
 
 /**
@@ -666,6 +845,10 @@ export function checkoutCart(checkoutSelection = null) {
    * Ferme et détruit le modal de confirmation de commande.
    */
 export function closeOrderModal() {
+    if (_fulfillmentPreviewAbortController) {
+      _fulfillmentPreviewAbortController.abort();
+      _fulfillmentPreviewAbortController = null;
+    }
     dom.orderModal.classList.remove('open');
     _deactivateCheckoutFocus();
     document.body.classList.remove('cart-open');
@@ -737,6 +920,7 @@ async function _loadRelaisSection(container, od) {
     _ensureRelaisSelection(od, byIle, allIles);
     _renderRelaisSummary(container, od, byIle, allIles);
     setRelayStatus(od, 'ready');
+    _refreshCheckoutFulfillmentPreview(od);
   } catch(e) {
     if (e && e.name === 'AbortError') return;
     // Erreur / timeout : état erreur lisible + Réessayer.
@@ -792,6 +976,7 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
         clearRelaySelectionError();
         _renderRelaisSummary(container, od, byIle, allIles);
         refreshCheckoutComputedUI();
+        _refreshCheckoutFulfillmentPreview(od);
       });
     },
   });
@@ -1160,11 +1345,12 @@ function _setCheckoutLineIncluded(index, included) {
   const current = _currentCheckoutSelection();
   if (!Array.isArray(current.items) || !current.items[index]) return;
 
-  const nextItems = current.items.map((item, i) => (
-    i === index
-      ? { ...item, checkout_included: !!included }
-      : item
-  ));
+  const nextItems = current.items.map((item, i) => {
+    if (i !== index) return item;
+    const next = { ...item, checkout_included: !!included };
+    delete next.fulfillment_preview_state;
+    return next;
+  });
 
   state.orderData.checkoutSelection = {
     ...current,
@@ -1180,6 +1366,7 @@ function _setCheckoutLineIncluded(index, included) {
 
   refreshCheckoutComputedUI();
   updateWalletDisplay();
+  _refreshCheckoutFulfillmentPreview(state.orderData);
 }
 
 function _recapSelectionSummary(items) {
@@ -1268,7 +1455,7 @@ function _buildRecapItemsBlock(
           ? '<span class="ck-recap-origin-badge">' + sanitize(origin.badge) + '</span>'
           : '')
         + '<span class="ck-recap-toggle-sub">'
-          + _recapSelectionSummary(items)
+          + _checkoutFulfillmentSummaryLabel(items)
         + '</span>'
       + '</span>'
     + '</span>'
@@ -1280,10 +1467,11 @@ function _buildRecapItemsBlock(
   content.id = 'ck-recap-content';
   content.className = 'ck-recap-content';
 
-  const list = document.createElement('div');
-  list.className = 'ck-recap-items';
+  const indexedItems = items.map((item, index) => ({ item, index }));
 
-  items.forEach((it, index) => {
+  const appendRow = (target, entry) => {
+    const it = entry.item;
+    const index = entry.index;
     const product = it.product || {};
     const imgSrc = product.image_url
       ? optimizeImgUrl(product.image_url, 128)
@@ -1348,16 +1536,86 @@ function _buildRecapItemsBlock(
       row.classList.toggle('is-excluded', !checkbox.checked);
 
       if (toggleSub) {
-        toggleSub.textContent = _recapSelectionSummary(
+        toggleSub.textContent = _checkoutFulfillmentSummaryLabel(
           _currentCheckoutSelection().items
         );
       }
     });
 
-    list.appendChild(row);
-  });
+    target.appendChild(row);
+  };
 
-  content.appendChild(list);
+  const fulfillmentSummary = summarizeCheckoutFulfillment(items);
+  if (!fulfillmentSummary.projected) {
+    const list = document.createElement('div');
+    list.className = 'ck-recap-items';
+    indexedItems.forEach(entry => appendRow(list, entry));
+    content.appendChild(list);
+  } else {
+    const groups = document.createElement('div');
+    groups.className = 'ck-recap-fulfillment-groups';
+
+    const definitions = [
+      {
+        state: 'LOCAL_STOCK',
+        title: 'Disponible maintenant',
+        note: 'Stock déjà local · retrait dès préparation au relais',
+      },
+      {
+        state: 'IMPORT',
+        title: 'À venir',
+        note: 'Acheminement séparé vers votre relais',
+      },
+      {
+        state: 'REVIEW_REQUIRED',
+        title: 'À revérifier',
+        note: 'Le stock local a changé · disponibilité vérifiée à la confirmation',
+      },
+    ];
+
+    const appendGroup = (entries, definition) => {
+      if (!entries.length) return;
+      const group = document.createElement('section');
+      group.className = 'ck-recap-fulfillment-group';
+      group.dataset.fulfillmentState = definition.state;
+
+      const heading = document.createElement('div');
+      heading.className = 'ck-recap-fulfillment-heading';
+      heading.innerHTML =
+        '<strong class="ck-recap-fulfillment-title">'
+          + sanitize(definition.title)
+        + '</strong>'
+        + '<span class="ck-recap-fulfillment-note">'
+          + sanitize(definition.note)
+        + '</span>';
+
+      const list = document.createElement('div');
+      list.className = 'ck-recap-items';
+      entries.forEach(entry => appendRow(list, entry));
+      group.append(heading, list);
+      groups.appendChild(group);
+    };
+
+    definitions.forEach((definition) => {
+      appendGroup(
+        indexedItems.filter(({ item }) => (
+          String(item?.fulfillment_preview_state || '') === definition.state
+        )),
+        definition
+      );
+    });
+
+    const unresolved = indexedItems.filter(({ item }) => (
+      !FULFILLMENT_PREVIEW_STATES.has(String(item?.fulfillment_preview_state || ''))
+    ));
+    appendGroup(unresolved, {
+      state: 'UNRESOLVED',
+      title: 'Disponibilité à confirmer',
+      note: 'La disponibilité sera précisée si ces articles sont inclus',
+    });
+
+    content.appendChild(groups);
+  }
 
   toggle.addEventListener('click', () => {
     const expanded = toggle.getAttribute('aria-expanded') !== 'true';
