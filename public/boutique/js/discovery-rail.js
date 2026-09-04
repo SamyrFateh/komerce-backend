@@ -11,7 +11,14 @@
 'use strict';
 
 import { bus } from './b-bus.js';
+import { state } from './b-store.js';
 import { openModal } from './b-modal.js';
+import {
+  quickAdd,
+  quickRemove,
+  openCartWithHighlight,
+  markAllCartButtons,
+} from './b-cart.js';
 import { _setupInfiniteLoop } from './b-pager.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
@@ -149,11 +156,16 @@ function syncMountAndRender() {
 
   const shell = ensureDesktopMount();
   if (!shell) return 0;
-  return renderDiscoveryRail(shell, cardsForCategory(_lastCards, _activeDesktopCategory), {
+  const rendered = renderDiscoveryRail(shell, cardsForCategory(_lastCards, _activeDesktopCategory), {
     marketLabel,
     titleId: 'k-discovery-local-title',
     title: 'Disponible ici',
   });
+
+  // Un Product local reste un Product Komerce : le contrôle `+` du rail doit
+  // refléter le panier vivant exactement comme les cartes du catalogue.
+  markAllCartButtons();
+  return rendered;
 }
 
 function scheduleMountSync() {
@@ -221,7 +233,44 @@ async function openDiscoveryDetail(kind, ref) {
   return true;
 }
 
+function productHasVariants(product) {
+  return Boolean(
+    product?.has_variants
+    || product?.hasVariants
+    || product?.inventory_model === 'SKU'
+  );
+}
+
 function handleDiscoveryClick(event) {
+  // Desktop Product local : le contrôle quantité canonique est une vraie
+  // mutation panier. Il doit être intercepté AVANT le contrat d'ouverture de
+  // la carte, sinon le `+` ajouterait puis ouvrirait immédiatement la PDP.
+  const actionButton = event.target.closest(
+    '.k-discovery-canonical-card[data-discovery-kind="product"] .k-card-add [data-action]'
+  );
+  if (actionButton) {
+    const addControl = actionButton.closest('.k-card-add[data-add]');
+    const id = addControl?.dataset.add;
+    if (!id) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const action = actionButton.dataset.action;
+    if (action === 'decrement') {
+      quickRemove(id, actionButton);
+      return;
+    }
+    if (action === 'review') {
+      openCartWithHighlight(id);
+      return;
+    }
+
+    const product = state.products.find(candidate => String(candidate?.id) === String(id));
+    quickAdd(id, actionButton, { hasVariants: productHasVariants(product) });
+    return;
+  }
+
   const target = event.target.closest(
     '[data-discovery-action][data-discovery-ref], [data-discovery-kind][data-discovery-ref]'
   );
@@ -259,4 +308,5 @@ export {
   handleDiscoveryClick,
   cardsForCategory,
   activeCategoryFromDom,
+  productHasVariants,
 };
