@@ -7,6 +7,15 @@
   --kmc-line-strong: #cbd5e1;
   --kmc-navy: #0f1a2e;
   --kmc-amber: #f4b860;
+  --kmc-amber-strong: #d9901a;
+  --kmc-blue: #3b82f6;
+  --kmc-blue-soft: #eef5ff;
+  --kmc-teal: #0f9f91;
+  --kmc-teal-soft: #ecfdf8;
+  --kmc-violet: #7c5ce5;
+  --kmc-violet-soft: #f4f0ff;
+  --kmc-coral: #e45b4f;
+  --kmc-coral-soft: #fff2f0;
   --kmc-positive: #18794e;
   --kmc-positive-soft: #ecfdf3;
   --kmc-warning: #a15c00;
@@ -18,6 +27,7 @@
   --kmc-radius-md: 12px;
   --kmc-radius-lg: 16px;
   --kmc-shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.05);
+  --kmc-shadow-card-hover: 0 2px 4px rgb(15 23 42 / 0.06), 0 14px 32px rgb(15 23 42 / 0.08);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--kmc-ink);
   background: var(--kmc-paper);
@@ -28,7 +38,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--kmc-paper);
+  background:
+    radial-gradient(circle at 18% 0%, rgb(244 184 96 / 0.08), transparent 28rem),
+    var(--kmc-paper);
 }
 
 button,
@@ -80,6 +92,30 @@ select {
   text-align: center;
 }
 
+.kmc-ui-state.is-empty {
+  min-height: 112px;
+  position: relative;
+  overflow: hidden;
+  color: var(--kmc-navy);
+  background:
+    radial-gradient(circle at 50% 10%, rgb(244 184 96 / 0.14), transparent 18rem),
+    linear-gradient(180deg, #fffdfa 0%, #ffffff 100%);
+}
+
+.kmc-ui-state.is-empty::before {
+  content: "◎";
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: var(--kmc-warning);
+  background: var(--kmc-warning-soft);
+  font-size: 19px;
+  font-weight: 800;
+}
+
 .kmc-ui-state.is-error {
   color: var(--kmc-critical);
   border-color: color-mix(in srgb, var(--kmc-critical) 32%, var(--kmc-line));
@@ -109,6 +145,10 @@ select {
   box-shadow: var(--kmc-shadow-card);
 }
 
+.kmc-section {
+  overflow: hidden;
+}
+
 .kmc-section-header,
 .kmc-chart-header {
   padding: 20px 22px 0;
@@ -121,6 +161,22 @@ select {
   color: var(--kmc-navy);
   font-size: 17px;
   line-height: 1.3;
+}
+
+.kmc-section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.kmc-section-title::before {
+  content: "";
+  width: 7px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--kmc-amber), var(--kmc-amber-strong));
+  box-shadow: 0 0 0 4px rgb(244 184 96 / 0.12);
 }
 
 .kmc-section-description,
@@ -185,32 +241,106 @@ select {
 }
 
 .kmc-metric-card {
+  --metric-accent: var(--kmc-line-strong);
+  --metric-soft: #f8fafc;
   min-width: 0;
+  min-height: 104px;
+  position: relative;
   display: grid;
-  gap: 5px;
-  padding: 16px;
-  background: var(--kmc-card);
-  border: 1px solid var(--kmc-line);
+  align-content: start;
+  gap: 7px;
+  padding: 18px 18px 16px;
+  overflow: hidden;
+  background: linear-gradient(145deg, var(--metric-soft) 0%, var(--kmc-card) 58%);
+  border: 1px solid color-mix(in srgb, var(--metric-accent) 26%, var(--kmc-line));
+  border-top: 3px solid var(--metric-accent);
   border-radius: var(--kmc-radius-md);
   box-shadow: var(--kmc-shadow-card);
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
 }
 
-.kmc-metric-card.is-positive { border-top: 3px solid var(--kmc-positive); }
-.kmc-metric-card.is-warning { border-top: 3px solid var(--kmc-warning); }
-.kmc-metric-card.is-critical { border-top: 3px solid var(--kmc-critical); }
-.kmc-metric-card.is-neutral { border-top: 3px solid var(--kmc-line-strong); }
+.kmc-metric-card::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 35% 35%, rgb(255 255 255 / 0.9) 0 16%, transparent 18%),
+    linear-gradient(135deg, color-mix(in srgb, var(--metric-accent) 22%, white), color-mix(in srgb, var(--metric-accent) 8%, white));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--metric-accent) 18%, transparent);
+}
+
+.kmc-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--metric-accent) 42%, var(--kmc-line));
+  box-shadow: var(--kmc-shadow-card-hover);
+}
+
+.kmc-metric-card:nth-child(5n + 1) {
+  --metric-accent: var(--kmc-amber-strong);
+  --metric-soft: #fffaf0;
+}
+
+.kmc-metric-card:nth-child(5n + 2) {
+  --metric-accent: var(--kmc-blue);
+  --metric-soft: var(--kmc-blue-soft);
+}
+
+.kmc-metric-card:nth-child(5n + 3) {
+  --metric-accent: var(--kmc-teal);
+  --metric-soft: var(--kmc-teal-soft);
+}
+
+.kmc-metric-card:nth-child(5n + 4) {
+  --metric-accent: var(--kmc-coral);
+  --metric-soft: var(--kmc-coral-soft);
+}
+
+.kmc-metric-card:nth-child(5n + 5) {
+  --metric-accent: var(--kmc-violet);
+  --metric-soft: var(--kmc-violet-soft);
+}
+
+.kmc-metric-card.is-positive {
+  --metric-accent: var(--kmc-positive);
+  --metric-soft: var(--kmc-positive-soft);
+}
+
+.kmc-metric-card.is-warning {
+  --metric-accent: var(--kmc-warning);
+  --metric-soft: var(--kmc-warning-soft);
+}
+
+.kmc-metric-card.is-critical {
+  --metric-accent: var(--kmc-critical);
+  --metric-soft: var(--kmc-critical-soft);
+}
 
 .kmc-metric-label,
 .kmc-metric-helper {
+  max-width: calc(100% - 46px);
   color: var(--kmc-muted);
   font-size: 12px;
+}
+
+.kmc-metric-label {
+  color: color-mix(in srgb, var(--kmc-navy) 82%, var(--kmc-muted));
+  font-weight: 700;
 }
 
 .kmc-metric-value {
   color: var(--kmc-navy);
   font-size: clamp(20px, 2vw, 28px);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.kmc-metric-helper {
+  max-width: 100%;
+  line-height: 1.35;
 }
 
 .kmc-alert-panel {
@@ -302,11 +432,19 @@ select {
 
 .kmc-data-table th {
   color: var(--kmc-muted);
-  background: #f8fafc;
+  background: linear-gradient(180deg, #fbfcfe, #f7f9fc);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+}
+
+.kmc-data-table tbody tr {
+  transition: background 120ms ease;
+}
+
+.kmc-data-table tbody tr:hover {
+  background: #fbfcff;
 }
 
 .kmc-data-table tbody tr:last-child td {
@@ -367,4 +505,5 @@ select {
 
 @media (prefers-reduced-motion: reduce) {
   .kmc-spinner { animation: none; }
+  .kmc-metric-card { transition: none; }
 }
