@@ -8,18 +8,16 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
- *                services/order-checkout-persistence.js
+ *                services/order-checkout-persistence.js, services/local-stock-service.js
  * @used-by       routes/orders/create.js
  * @db-read       orders, product_skus, product_variants, products, recipients, relais, shared_cart_items, shared_carts
  * @db-write      order_items, order_status_history, orders, recipients
  * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
  *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
  * @db-txn        owns_full_transaction
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout, shared-cart
- * @version       2026-08 (refactoring checkout réel — orchestrateur transactionnel ; résolution
- *                items et persistance extraites vers order-checkout-item-resolution.js /
- *                order-checkout-persistence.js)
+ * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, resolve_before_behavior_change
+ * @impact-areas  orders, checkout, shared-cart, local-stock
+ * @version       2026-09 (résolution transactionnelle LOCAL_STOCK/IMPORT avant pricing)
  */
 
 'use strict';
@@ -40,30 +38,20 @@
  * seul acquiert/relâche le client, pose BEGIN/COMMIT/ROLLBACK, décide de
  * l'ordre global des étapes, et traduit les erreurs transactionnelles
  * finales (23505 shared_cart_item, local_stock_insufficient) en résultat.
- * Les deux sous-services reçoivent le même `client` transactionnel et ne
- * font JAMAIS de BEGIN/COMMIT/ROLLBACK eux-mêmes — sur erreur métier ils
- * renvoient { ok: false, status, body } et c'est CE fichier qui exécute le
- * ROLLBACK correspondant. Aucun contrat HTTP ni invariant métier n'a
- * changé : mêmes requêtes SQL, même ordre de contrôles, mêmes messages et
- * codes d'erreur — seul le fichier porteur de chaque étape a changé.
+ * Les sous-services reçoivent le même `client` transactionnel et ne font
+ * JAMAIS de BEGIN/COMMIT/ROLLBACK eux-mêmes.
+ *
+ * Fulfillment mixte — Lot B : après résolution canonique produit/SKU/prix,
+ * l'orchestrateur demande au owner local-stock de classifier sous verrou la
+ * quantité agrégée de chaque Product en LOCAL_STOCK ou IMPORT. Ce verdict est
+ * pour l'instant porté transitoirement sur `item._fulfillment_source` ; le
+ * snapshot DB est le Lot C. Le pricing transport reste volontairement
+ * inchangé dans ce lot (Lot D), afin de conserver des PR petites et auditables.
  *
  * Résultat renvoyé à l'appelant (jamais de res.status/res.json ici) :
- *   { ok: true, order, creditApplied, relais }   — discount_pct/discount_kmf/
- *     loyalty_label sont déjà portés par `order` (RETURNING * de l'INSERT),
- *     pas besoin de les renvoyer séparément
- *   { ok: false, status, body }   — erreur métier attendue (400/404/409)
- *   throws                       — erreur inattendue, à propager (next(err) côté route)
- *
- * Les codes d'erreur PG spécifiques (23505 sur order_items_shared_cart_item_id_unique,
- * local_stock_insufficient) sont interceptés ICI (pas dans la route) et
- * traduits en résultat { ok: false, status: 409, body } — toute autre erreur
- * est repropagée telle quelle après ROLLBACK + release.
- *
- * Exports :
- *   runOrderCheckout({ user, body })
- *     → { ok: true, order, creditApplied, relais }
- *     | { ok: false, status, body }
- *     ✗ throws sur toute erreur DB/inattendue non couverte par les codes ci-dessus
+ *   { ok: true, order, creditApplied, relais }
+ *   { ok: false, status, body }
+ *   throws sur erreur inattendue.
  */
 
 const db      = require('../db');
@@ -77,6 +65,10 @@ const { quoteTransportPriceForOrder, TransportPricingError } = require('./transp
 const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
+const {
+  FULFILLMENT_SOURCE,
+  resolveCheckoutFulfillmentSources,
+} = require('./local-stock-service');
 const {
   insertOrderRow,
   recordInitialHistory,
@@ -252,6 +244,26 @@ async function runOrderCheckout({ user, body }) {
     const { productMap, cost_estimated, pickupCodeRecipientUserId } = itemsResolved;
     let total_kmf = itemsResolved.total_kmf;
 
+    // ── Fulfillment mixte — Lot B ──────────────────────────────────────
+    // Résolution serveur, sous la transaction orders déjà ouverte. Le owner
+    // local-stock acquiert les FOR UPDATE dans un ordre déterministe et les
+    // conserve jusqu'au COMMIT/ROLLBACK. Le frontend n'est jamais autorité.
+    //
+    // Ce lot ne change PAS encore le prix transport : _fulfillment_source est
+    // un verdict transactionnel transitoire. Lot C le snapshotte dans
+    // order_items ; Lot D filtrera le pricing sur IMPORT uniquement.
+    const fulfillmentSources = await resolveCheckoutFulfillmentSources(client, {
+      marketId: relais?.market_id || null,
+      demands: items.map(item => ({
+        productId: item.product_id,
+        quantity: parseInt(item.quantity, 10) || 1,
+      })),
+    });
+    for (const item of items) {
+      item._fulfillment_source =
+        fulfillmentSources[item.product_id] || FULFILLMENT_SOURCE.IMPORT;
+    }
+
     // §8 — devis transport commercial, ajouté au total AVANT le calcul de
     // marge : cost_estimated inclut déjà le coût fret interne (fret_kmf),
     // donc ignorer le prix transport ici sous-évaluait artificiellement la
@@ -296,7 +308,6 @@ async function runOrderCheckout({ user, body }) {
       discountKmf = Math.round(total_kmf * discountPct / 100);
       total_kmf = total_kmf - discountKmf;
     }
-
     let creditApplied = 0;
 
     if (use_wallet && user?.id) {
@@ -413,10 +424,9 @@ async function runOrderCheckout({ user, body }) {
         code: 'shared_cart_item_already_claimed',
       });
     }
-    // Vague 2 D2 — stock local insuffisant au moment de l'allocation
-    // (concurrence entre checkouts, ou stock déjà épuisé). Même patron que
-    // le conflit shared_cart_item_already_claimed juste au-dessus : erreur
-    // claire, jamais un état intermédiaire.
+    // Fulfillment mixte — conflit résolu AVANT pricing/allocation si une lane
+    // locale exposée ne peut plus tenir la quantité demandée. Le même code
+    // protège aussi la revalidation d'allocation plus bas dans la transaction.
     if (err.code === 'local_stock_insufficient') {
       return fail(409, {
         error: 'Ce produit n\'est plus disponible en quantité suffisante localement.',
