@@ -1,0 +1,158 @@
+name: CJ live visual audit
+
+on:
+  push:
+    branches:
+      - audit/cj-live-visual-20260904
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Audit public API and live Boutique
+        working-directory: public/boutique
+        env:
+          BASE_URL: https://komerce.co/boutique/
+          API_URL: https://komerce.co/api/products?limit=1000&offset=0
+        run: |
+          mkdir -p audit-output
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          const BASE_URL = process.env.BASE_URL;
+          const API_URL = process.env.API_URL;
+          const expectedFamilies = [
+            'Robe femme','Chemise homme','Tenue enfant','Soin visage','Chaussons confort',
+            'Blender de cuisine','Décoration murale','Décoration chambre enfant','Accessoire smartphone',
+            'Écouteurs sans fil','Montre connectée','Perceuse sans fil','Éclairage LED','Caméra de sécurité',
+            'Décoration de cérémonie','Coffret cadeau','Mug personnalisable','Filtre à eau','Plaquettes de frein',
+            'Ampoule LED automobile','Gants moto'
+          ];
+
+          function assert(condition, message) {
+            if (!condition) throw new Error(message);
+          }
+
+          async function auditViewport(browser, name, viewport) {
+            const page = await browser.newPage({ viewport });
+            const errors = [];
+            page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
+            page.on('console', msg => { if (msg.type() === 'error') errors.push(`console: ${msg.text()}`); });
+            const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            assert(response && response.ok(), `${name}: boutique HTTP ${response && response.status()}`);
+            await page.waitForSelector('.k-card', { timeout: 30000 });
+            await page.waitForTimeout(5000);
+
+            const result = await page.evaluate(() => {
+              const cards = [...document.querySelectorAll('.k-card')];
+              const visible = cards.filter(card => {
+                const r = card.getBoundingClientRect();
+                const s = getComputedStyle(card);
+                return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
+              });
+              const inspected = visible.slice(0, Math.min(12, visible.length)).map(card => {
+                const img = card.querySelector('img');
+                return {
+                  name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
+                  imageUrl: img?.currentSrc || img?.src || '',
+                  imageComplete: !!img?.complete,
+                  naturalWidth: img?.naturalWidth || 0,
+                  naturalHeight: img?.naturalHeight || 0,
+                };
+              });
+              return {
+                cardCount: cards.length,
+                visibleCardCount: visible.length,
+                inspected,
+                viewportWidth: innerWidth,
+                scrollWidth: document.documentElement.scrollWidth,
+                bodyScrollWidth: document.body.scrollWidth,
+              };
+            });
+
+            assert(result.visibleCardCount >= 8, `${name}: seulement ${result.visibleCardCount} cartes visibles`);
+            assert(result.scrollWidth <= result.viewportWidth + 2, `${name}: overflow horizontal ${result.scrollWidth} > ${result.viewportWidth}`);
+            assert(result.inspected.length >= 8, `${name}: échantillon visuel insuffisant`);
+            for (const card of result.inspected) {
+              assert(card.imageComplete && card.naturalWidth > 0 && card.naturalHeight > 0, `${name}: image cassée pour ${card.name}`);
+            }
+
+            await page.screenshot({ path: `audit-output/${name}.png`, fullPage: true });
+            await page.close();
+            return { ...result, consoleErrors: errors };
+          }
+
+          (async () => {
+            const apiResponse = await fetch(API_URL, { headers: { accept: 'application/json' } });
+            assert(apiResponse.ok, `API produits HTTP ${apiResponse.status}`);
+            const payload = await apiResponse.json();
+            const products = payload.products || [];
+            assert(products.length >= 63, `API: ${products.length} produits seulement`);
+
+            const first63 = products.slice(0, 63);
+            assert(first63.length === 63, 'API: first63 incomplet');
+            assert(first63.every(p => p.sourcing_source === 'CJdropshipping'), 'API: les 63 premiers ne sont pas tous CJdropshipping');
+            assert(first63.every(p => /^https:\/\//i.test(p.image_url || '')), 'API: une image CJ des 63 premiers n’est pas HTTPS');
+            assert(first63.every(p => p.is_available === true), 'API: un des 63 premiers CJ n’est pas disponible');
+
+            for (const family of expectedFamilies) {
+              const names = first63.filter(p => p.name === `${family} — modèle A` || p.name === `${family} — modèle B` || p.name === `${family} — modèle C`);
+              assert(names.length === 3, `API: famille ${family} = ${names.length}/3`);
+            }
+
+            const browser = await chromium.launch({ headless: true });
+            try {
+              const desktop = await auditViewport(browser, 'desktop-1440', { width: 1440, height: 1100 });
+              const mobile = await auditViewport(browser, 'mobile-390', { width: 390, height: 844 });
+              const report = {
+                generatedAt: new Date().toISOString(),
+                api: {
+                  total: payload.total,
+                  fetched: products.length,
+                  first63CJ: first63.length,
+                  first63ImagesHttps: first63.filter(p => /^https:\/\//i.test(p.image_url || '')).length,
+                  first63Available: first63.filter(p => p.is_available === true).length,
+                },
+                desktop,
+                mobile,
+              };
+              fs.writeFileSync('audit-output/report.json', JSON.stringify(report, null, 2));
+              console.log(JSON.stringify(report, null, 2));
+              console.log('CJ_LIVE_VISUAL_AUDIT_SUCCESS');
+            } finally {
+              await browser.close();
+            }
+          })().catch(err => {
+            console.error(err.stack || err);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-live-visual-audit
+          path: public/boutique/audit-output
+          if-no-files-found: warn
