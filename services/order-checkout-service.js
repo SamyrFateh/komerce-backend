@@ -17,7 +17,7 @@
  * @db-txn        owns_full_transaction
  * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, resolve_before_behavior_change
  * @impact-areas  orders, checkout, shared-cart, local-stock
- * @version       2026-09 (résolution transactionnelle LOCAL_STOCK/IMPORT avant pricing)
+ * @version       2026-09 (LOCAL_STOCK/IMPORT + transport commercial IMPORT-only)
  */
 
 'use strict';
@@ -41,12 +41,13 @@
  * Les sous-services reçoivent le même `client` transactionnel et ne font
  * JAMAIS de BEGIN/COMMIT/ROLLBACK eux-mêmes.
  *
- * Fulfillment mixte — Lot B : après résolution canonique produit/SKU/prix,
+ * Fulfillment mixte — Lots B/C/D : après résolution canonique produit/SKU/prix,
  * l'orchestrateur demande au owner local-stock de classifier sous verrou la
- * quantité agrégée de chaque Product en LOCAL_STOCK ou IMPORT. Ce verdict est
- * pour l'instant porté transitoirement sur `item._fulfillment_source` ; le
- * snapshot DB est le Lot C. Le pricing transport reste volontairement
- * inchangé dans ce lot (Lot D), afin de conserver des PR petites et auditables.
+ * quantité agrégée de chaque Product en LOCAL_STOCK ou IMPORT. Le verdict est
+ * snapshoté sur order_items par order-checkout-persistence.js. Pour le devis
+ * commercial, seules les lignes IMPORT sont transmises à transport-pricing :
+ * LOCAL_STOCK contribue donc exactement 0 au transport international, sans
+ * introduire de connaissance local-stock dans le moteur de transport.
  *
  * Résultat renvoyé à l'appelant (jamais de res.status/res.json ici) :
  *   { ok: true, order, creditApplied, relais }
@@ -244,14 +245,12 @@ async function runOrderCheckout({ user, body }) {
     const { productMap, cost_estimated, pickupCodeRecipientUserId } = itemsResolved;
     let total_kmf = itemsResolved.total_kmf;
 
-    // ── Fulfillment mixte — Lot B ──────────────────────────────────────
+    // ── Fulfillment mixte — Lots B/C/D ────────────────────────────────
     // Résolution serveur, sous la transaction orders déjà ouverte. Le owner
     // local-stock acquiert les FOR UPDATE dans un ordre déterministe et les
     // conserve jusqu'au COMMIT/ROLLBACK. Le frontend n'est jamais autorité.
-    //
-    // Ce lot ne change PAS encore le prix transport : _fulfillment_source est
-    // un verdict transactionnel transitoire. Lot C le snapshotte dans
-    // order_items ; Lot D filtrera le pricing sur IMPORT uniquement.
+    // Le verdict est ensuite persisté sur order_items (Lot C) et sert ici à
+    // construire la seule collection éligible au transport import (Lot D).
     const fulfillmentSources = await resolveCheckoutFulfillmentSources(client, {
       marketId: relais?.market_id || null,
       demands: items.map(item => ({
@@ -264,14 +263,20 @@ async function runOrderCheckout({ user, body }) {
         fulfillmentSources[item.product_id] || FULFILLMENT_SOURCE.IMPORT;
     }
 
-    // §8 — devis transport commercial, ajouté au total AVANT le calcul de
-    // marge : cost_estimated inclut déjà le coût fret interne (fret_kmf),
-    // donc ignorer le prix transport ici sous-évaluait artificiellement la
-    // marge réelle en plus de ne jamais facturer le transport au client.
+    const importTransportItems = items.filter(
+      item => item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT
+    );
+
+    // §8 — devis transport commercial. Seules les lignes IMPORT sont
+    // transmises au moteur : LOCAL_STOCK contribue exactement 0 au transport
+    // international. `transport-pricing` reste volontairement ignorant de la
+    // notion local-stock. Les coûts d'acquisition historiques déjà présents
+    // dans cost_estimated restent inchangés : ce lot ne modifie que le prix
+    // commercial du transport de cette commande.
     let transport_price_kmf = 0;
     try {
       const transportQuote = quoteTransportPriceForOrder({
-        items: items.map(item => {
+        items: importTransportItems.map(item => {
           const product = productMap[item.product_id];
           return {
             product_id: item.product_id,
