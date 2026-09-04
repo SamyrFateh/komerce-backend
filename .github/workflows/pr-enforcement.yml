@@ -255,6 +255,8 @@ jobs:
       # oubli de régénération/commit d'un snapshot généré.
       - name: Hydrate derived governance projections
         run: node scripts/ci-refresh-governance-projections.js
+      - name: Hydrate technical architecture projection
+        run: node scripts/generate-komerce-arch-graph.js
       - name: Pre-merge architecture coherence
         run: |
           node scripts/arch-db-check.js
@@ -277,6 +279,8 @@ jobs:
         if: always()
         run: |
           git restore --source=HEAD -- \
+            docs/komerce-arch-header-graph.json \
+            docs/KOMERCE_ARCH_HEADER_GRAPH.md \
             docs/BUSINESS_FEATURE_GRAPH.json \
             docs/BUSINESS_FEATURE_GRAPH.md \
             docs/O6_INVENTORY.md \
