@@ -28,6 +28,7 @@ const PICKUP_SECRET_COLUMNS = new Set([
   'pickup_secret_blocked_until',
   'pickup_secret_channel',
   'pickup_secret_emitted_at',
+  'pickup_secret_revealed_at',
   'payment_received_at',
   'payment_received_by_agent_id',
   'payer_name',
