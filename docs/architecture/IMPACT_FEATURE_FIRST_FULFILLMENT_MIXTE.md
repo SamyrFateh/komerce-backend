@@ -1,6 +1,6 @@
 # Impact Feature First — Fulfillment mixte local / import
 
-> **Statut** : proposition à challenger avant code  
+> **Statut** : challenge repo effectué, proposition amendée avant code  
 > **Date** : 2026-09-04  
 > **Question** : comment permettre dans un seul panier / checkout des produits déjà disponibles localement et des produits à venir par import, sans créer une seconde commande ni une nouvelle feature inutile ?
 
@@ -17,213 +17,379 @@ Le client doit pouvoir :
 
 1. ajouter normalement le produit local au panier ;
 2. payer une seule fois ;
-3. comprendre dès le checkout que la commande a deux temporalités ;
-4. récupérer les articles disponibles sans attendre ceux qui arrivent plus tard ;
-5. ne pas payer de transport import sur une ligne déjà présente localement.
+3. comprendre dès le checkout que la commande a plusieurs temporalités ;
+4. récupérer un lot disponible sans attendre les lignes import ;
+5. ne pas payer de transport international sur une ligne déjà présente localement.
 
-Le système doit rester simple : **1 panier → 1 commande → 1 paiement → plusieurs états de disponibilité par ligne**.
+Le système doit rester simple :
+
+> **1 panier → 1 checkout → 1 paiement → 1 commande → état par ligne → lots physiques via parcels si nécessaire.**
 
 ---
 
-## 2. Feature First — owners déjà présents
-
-### `catalog`
-
-Rôle existant : Product Komerce et contrat de carte / fiche produit.
-
-Impact :
-
-- un Product `AVAILABLE_NOW` reste un Product ;
-- Discovery ne doit pas remplacer sa capacité panier canonique ;
-- produit simple : quick-add `+` ;
-- produit à variantes : ouverture détail avant ajout.
-
-Aucune nouvelle vérité métier dans `catalog`.
+## 2. Ce que le repo sait déjà faire
 
 ### `local-stock`
 
-Rôle existant : vérité physique locale, projection `AVAILABLE_NOW | UNAVAILABLE`, cycle transactionnel `allocate → consume | release`.
+Déjà présent :
 
-Impact :
-
-- reste seul owner de la disponibilité locale ;
-- décide si une ligne peut être engagée sur stock local ;
-- ne devient pas owner du checkout, du prix transport ni du retrait.
+- vérité physique `local_stock.qty_physical` ;
+- `commercial_exposure` ;
+- disponibilité calculée après déduction des allocations actives ;
+- allocation transactionnelle `allocateForOrderItem` ;
+- `consumeAllocationsForOrder` au paiement confirmé ;
+- `releaseAllocationsForOrder` à l'annulation ;
+- verrou `FOR UPDATE` anti-survente.
 
 ### `orders`
 
-Rôle existant : owner de `orders`, `order_items`, checkout transactionnel et projection checkout Boutique.
+Déjà présent :
 
-Capacités déjà présentes à réutiliser :
-
+- une transaction de checkout unique ;
+- `orders` / `order_items` ;
 - `order_items.availability_status` ;
 - `order_items.estimated_available_at` ;
-- service owner `order-item-availability-service.js` ;
-- création d'une seule commande et d'un seul paiement ;
-- rattachement à `local-stock` lors de l'insertion des lignes.
-
-Impact proposé :
-
-- snapshot immuable de provenance d'exécution par ligne : `LOCAL_STOCK | IMPORT` ;
-- initialisation `availability_status='available'` pour une ligne effectivement engagée sur stock local, sinon état import existant ;
-- projection checkout regroupée par disponibilité, sans créer une nouvelle commande.
+- `order-item-availability-service.js` comme boundary owner ;
+- création d'une commande unique ;
+- pricing transport avant l'insertion finale ;
+- allocation local-stock pendant la persistance des lignes.
 
 ### `logistics`
 
-Rôle existant : `parcels`, expédition partielle, backorder, statuts `available` / `collected`.
+Déjà présent :
 
-Important : le repo possède déjà un mécanisme canonique de séparation après commande via `parcels`. La route historique `GET /orders/:id/sub-orders` est aujourd'hui un redirect vers les parcels : **ne pas ressusciter `sub_orders` et ne pas créer une nouvelle table `fulfillment_groups` sans nécessité réelle**.
+- `parcels` / `parcel_items` ;
+- partial shipping / backorder ;
+- `computeOrderStatus()` avec règle explicite : au moins un parcel `collected` mais pas tous → parent `available` ;
+- synchronisation parcel → order par la machine canonique.
+
+### Limite réelle trouvée
+
+Le pickup canonique n'est **pas** encore parcel-scoped : `recordCanonicalCollection()` reçoit une commande, lance un scan `collected` sans `order_item_id`, synchronise donc tous les parcels actifs, exige un parent final `collected`, puis invalide le secret order-level.
+
+Conclusion : le modèle parcels est réutilisable, mais la remise partielle nécessite une petite extension explicite du pickup.
+
+---
+
+## 3. Feature First — owners et responsabilités
+
+### `catalog`
+
+Possède :
+
+- Product Komerce ;
+- variantes ;
+- contrat de carte / fiche ;
+- capacité panier du Product.
 
 Impact :
 
-- les parcels restent l'unité d'exécution physique lorsque des lots doivent évoluer séparément ;
-- la distinction local/import au checkout n'a pas besoin d'un nouveau domaine.
+- `AVAILABLE_NOW` ne crée pas un nouveau kind ;
+- un Product simple local retrouve le quick-add `+` canonique ;
+- un Product à variantes ouvre le détail avant ajout.
+
+### `local-stock`
+
+Possède :
+
+- disponibilité physique locale ;
+- exposition commerciale ;
+- décision "cette quantité est engageable localement" ;
+- lock / allocate / consume / release.
+
+N'est pas owner de :
+
+- checkout ;
+- transport pricing ;
+- ordre de paiement ;
+- pickup.
+
+### `orders`
+
+Possède :
+
+- orchestration transactionnelle ;
+- `order_items` ;
+- snapshot historique de provenance ;
+- filtrage des lignes envoyées au pricing transport ;
+- projection checkout ;
+- disponibilité opérationnelle des lignes.
+
+### `logistics`
+
+Possède :
+
+- lots physiques `parcels` ;
+- transitions parcel ;
+- collecte ciblée d'un parcel ;
+- recompute du statut parent.
 
 ### `payments`
 
-Aucun nouveau comportement métier : un seul paiement couvre la commande entière.
+Aucun nouveau modèle : une seule commande, un seul paiement.
 
-### `recommendations` / Discovery
+### `recommendations`
 
-Rôle existant : projection de lecture.
-
-Impact :
-
-- continue à exposer `AVAILABLE_NOW` fourni par `local-stock` ;
-- ne possède ni panier, ni commande, ni fulfillment.
+Projection de lecture uniquement. Aucun ownership panier/commande/fulfillment.
 
 ---
 
-## 3. Règles de gestion minimales proposées
+## 4. Règles de gestion V1 proposées
 
 ### R1 — Product reste Product
 
-`AVAILABLE_NOW` change la promesse logistique, jamais la nature du produit.
+`AVAILABLE_NOW` change la promesse logistique, jamais la nature du Product.
 
-### R2 — Le panier reste unique
+### R2 — Panier / checkout / paiement / commande restent uniques
 
-Un produit local et un produit import peuvent cohabiter dans `state.cart` et dans la même `CheckoutSelection`.
+Aucun split transactionnel induit par le mélange local/import.
 
-### R3 — Le serveur classe, jamais le client
+### R3 — Le serveur classe sous transaction
 
-Chaque ligne de commande reçoit une provenance d'exécution résolue côté serveur :
-
-- `LOCAL_STOCK` si le stock local est réellement engageable pour le marché / lieu ;
-- `IMPORT` sinon.
-
-Le frontend n'envoie jamais cette décision comme autorité.
-
-### R4 — Une commande, un paiement
-
-Une commande mixte ne doit pas être artificiellement scindée en deux orders.
-
-### R5 — Disponibilité par ligne
-
-La commande globale peut rester en cours tandis que certaines lignes sont déjà `available`.
-
-Le client voit deux groupes de projection :
+Chaque ligne est résolue comme :
 
 ```text
-Disponible maintenant
-- Veste
-- Savon
-
-À venir
-- Téléphone — estimation 2–3 semaines
+LOCAL_STOCK
+IMPORT
 ```
 
-Ces groupes sont des **projections**, pas une nouvelle table obligatoire.
+Règle simple :
 
-### R6 — Retrait partiel autorisé
+```text
+local_stock exposé + quantité suffisante → LOCAL_STOCK
+pas de lane locale exposée               → IMPORT
+lane locale exposée mais insuffisante    → 409
+```
 
-Une ligne locale prête peut être remise sans attendre les lignes import.
+Le frontend n'envoie jamais cette classification comme autorité.
 
-La remise physique séparée s'appuie sur le lifecycle `parcels` existant lorsqu'une unité autonome est requise.
+### R4 — Pas de race entre promesse et allocation
 
-### R7 — Transport facturé seulement quand il existe
+Le resolver local doit recevoir le client transactionnel `orders`, verrouiller la ligne `local_stock` et conserver ce verrou jusqu'au `COMMIT/ROLLBACK` qui englobe ensuite pricing, insertion de la commande et allocation.
 
-Une ligne `LOCAL_STOCK` ne contribue pas au transport international.
+### R5 — Snapshot distinct du workflow
 
-Les lignes `IMPORT` continuent à utiliser le moteur de transport existant.
+Ajouter :
 
-### R8 — Pas de fallback silencieux
+```text
+order_items.fulfillment_source
+  LOCAL_STOCK | IMPORT
+```
 
-Si une ligne affichée `Disponible maintenant` n'est plus engageable au moment atomique de la commande, le checkout renvoie un conflit clair et demande une nouvelle validation. Il ne transforme pas silencieusement la promesse en import 3 semaines.
+Ce snapshot est immuable.
+
+Ne pas détourner `availability_status`, qui reste mutable et opérationnel.
+
+### R6 — Une ligne locale n'est pas automatiquement prête au retrait
+
+Ne pas écrire `availability_status='available'` juste parce que `fulfillment_source='LOCAL_STOCK'`.
+
+`Disponible maintenant` signifie disponibilité physique locale ; `available` dans le lifecycle order item / parcel signifie prêt opérationnellement.
+
+### R7 — Transport international uniquement sur IMPORT
+
+`orders` filtre les lignes avant d'appeler `quoteTransportPriceForOrder()`.
+
+`transport-pricing` ne reçoit aucune connaissance du domaine `local-stock`.
+
+### R8 — Aucun fallback local → import silencieux
+
+Une quantité locale devenue insuffisante pendant le checkout provoque un conflit explicite.
+
+### R9 — Retrait partiel via parcels
+
+Un lot local prêt peut être collecté indépendamment d'un lot import encore en transit.
+
+Le parent reste `available` tant que tous les parcels actifs ne sont pas `collected`.
+
+### R10 — Pickup one-shot conservé
+
+Un retrait partiel cible un seul parcel et consomme le secret courant.
+
+S'il reste un parcel à retirer : nouveau secret canonique order-level généré après la remise partielle.
+
+Si tout est retiré : aucun nouveau secret.
+
+Ne pas réactiver `parcels.pickup_code` en clair comme autorité.
 
 ---
 
-## 4. Modèle minimal pressenti
+## 5. Pourquoi `fulfillment_source` est justifié
 
-Éviter un nouveau `fulfillment_groups` V1.
-
-Ajouter seulement si le challenge confirme le besoin un snapshot owner `orders` sur `order_items`, par exemple :
+`local_stock_allocations` contient aujourd'hui :
 
 ```text
-fulfillment_source = LOCAL_STOCK | IMPORT
+local_stock_id
+order_id
+quantity
 ```
 
-Pourquoi un snapshot dédié plutôt que réutiliser `availability_status` :
+mais pas `order_item_id`.
 
-- `availability_status` est mutable (`pending`, `available`, `delayed`, `backorder`...) ;
-- la provenance d'exécution est une information historique différente ;
-- une ligne import devient un jour `available` sans devenir historiquement `LOCAL_STOCK`.
+Une commande peut porter plusieurs lignes du même Product avec variantes ou rails différents. Après coup, une allocation ne permet donc pas d'identifier sans ambiguïté quelle `order_item` a été exécutée localement.
 
-Le lieu local peut rester dérivable de l'allocation tant qu'il n'existe qu'un lieu réel (`KM_MAIN`). Ne pas ajouter une FK / taxonomie de lieux avant le besoin.
+Le snapshot sur `order_items` est plus petit et plus stable qu'un nouveau groupe de fulfillment.
+
+Il ne remplace pas les allocations ; il documente la provenance de la ligne.
 
 ---
 
-## 5. Impact code probable
+## 6. Impact code probable — mesuré par owner
 
-### Frontend Discovery
+### Lot A — Discovery quick-add Product local
+
+Owner principal : `catalog` / frontend Boutique.
+
+Fichiers probables :
 
 - `public/boutique/js/render/render-discovery-rail.js`
-- owner de l'action panier canonique à réutiliser depuis `b-cart.js`
-- tests Discovery rail.
+- réutilisation de `addToCart` / `quickAdd` depuis `b-cart.js`
+- tests `discovery-rail`.
 
-### Checkout frontend (owner métier `orders`)
+Impact backend : aucun.
+
+### Lot B — Resolver transactionnel local/import
+
+Owner principal : `local-stock`, consommé par `orders`.
+
+Fichiers probables :
+
+- `services/local-stock-service.js`
+- `services/order-checkout-service.js`
+- tests `local-stock-service` + `orders checkout`.
+
+But : résoudre / verrouiller / retourner `LOCAL_STOCK | IMPORT` sans mutation frontend.
+
+### Lot C — Snapshot order item
+
+Owner principal : `orders`.
+
+Impact :
+
+- migration nouvelle après vérification du prochain numéro libre ;
+- `order_items.fulfillment_source` ;
+- `services/order-checkout-persistence.js` ;
+- projections detail/list ;
+- tests migration/schema/orders.
+
+### Lot D — Transport mixte
+
+Owner principal : `orders` comme orchestrateur ; moteur `transport-pricing` inchangé.
+
+Impact :
+
+- construire le devis à partir des seules lignes `IMPORT` ;
+- local = zéro contribution au transport international ;
+- tests commande mixte local + import.
+
+### Lot E — Projection checkout
+
+Owner métier : `orders`, rendu Boutique.
+
+Fichiers probables :
 
 - `public/boutique/js/b-checkout.js`
 - `public/boutique/js/b-checkout-render.js`
-- afficher deux blocs calculés depuis la projection serveur / sélection enrichie.
+- tests checkout.
 
-### Checkout backend
+UX :
 
-- `services/order-checkout-service.js`
-- `services/order-checkout-persistence.js`
-- éventuellement un petit resolver dédié de fulfillment par ligne ;
-- pricing transport doit ignorer les lignes réellement locales ;
-- allocation locale reste déléguée à `local-stock-service.js`.
+```text
+Disponible maintenant
+À venir
+```
 
-### Orders / tracking
+Aucun modèle persistant de groupe.
 
-- `services/order-item-availability-service.js`
-- routes de détail / liste de commande afin de projeter les disponibilités par ligne.
+### Lot F — Pickup parcel-scoped
 
-### Logistics
+Owner principal : `logistics`, avec mutations order via boundaries existantes.
 
-- réutiliser `parcels` / `parcel_items` pour les lots autonomes ;
-- ne pas modifier la state machine globale avant preuve que le retrait partiel ne peut pas être représenté par les parcels existants.
+Fichiers à challenger / probablement toucher :
 
----
+- `services/pickup-collection-recorder.js`
+- `utils/parcelSync.js` ou un boundary parcel-scoped équivalent ;
+- `services/pickup-secret-service.js`
+- pickup services/routes appelants ;
+- tests pickup + parcel sync + order status.
 
-## 6. Non-objectifs V1
+Invariants :
 
-- pas de deuxième commande ;
-- pas de deuxième paiement ;
-- pas de table `fulfillment_groups` ;
-- pas de résurrection de `sub_orders` ;
-- pas de réservation panier TTL ;
-- pas de multi-entrepôt ;
-- pas de calcul ETA dans `local-stock` ;
-- pas de fallback local → import silencieux ;
-- pas de nouveau kind Discovery.
+- un seul parcel collecté par événement ;
+- parent `available` si reliquat ;
+- parent `collected` seulement au dernier lot ;
+- secret consommé à chaque retrait ;
+- rotation si reliquat.
 
 ---
 
-## 7. Questions à challenger avant code
+## 7. Fichiers / domaines à ne pas créer ou élargir sans preuve
 
-1. Le snapshot `order_items.fulfillment_source` est-il le plus petit ajout durable, ou peut-on prouver qu'une donnée existante suffit sans ambiguïté historique ?
-2. Peut-on faire participer `LOCAL_STOCK` au calcul de transport à coût zéro sans introduire de branche métier dans `transport-pricing` qui appartiendrait au mauvais owner ?
-3. Quel est le plus petit raccord entre une ligne locale `available` et le lifecycle `parcels` pour permettre le retrait partiel sans marquer toute l'order `collected` ?
-4. Le QR/retrait actuel est-il trop order-level pour une remise partielle et, si oui, quel owner doit porter l'extension ?
-5. Quels invariants / tests Feature First doivent être ajoutés pour empêcher le frontend de décider lui-même `LOCAL_STOCK` ?
+Ne pas créer en V1 :
+
+- feature `fulfillment` ;
+- table `fulfillment_groups` ;
+- deuxième order ;
+- deuxième paiement ;
+- résurrection `sub_orders` ;
+- nouvelle state machine globale ;
+- parcel pickup code plaintext comme nouvelle vérité ;
+- TTL panier local-stock ;
+- multi-entrepôt.
+
+Ne pas faire porter à `transport-pricing` la décision local/import.
+
+Ne pas faire porter à `recommendations` ou au frontend une décision engageante de stock.
+
+---
+
+## 8. Invariants Feature First à ajouter
+
+1. `local-stock` est le seul owner de la décision engageable locale.
+2. Le client ne peut pas imposer `fulfillment_source` dans le payload order.
+3. `fulfillment_source` est immuable après insertion de `order_items`.
+4. `availability_status` et `fulfillment_source` ne sont jamais utilisés comme synonymes.
+5. Une ligne `LOCAL_STOCK` n'entre pas dans le pricing transport import.
+6. Une lane locale exposée mais insuffisante produit 409, jamais un fallback import.
+7. Une commande mixte produit une seule `orders` row.
+8. Un retrait partiel ne transitionne pas le parent à `collected` tant qu'un parcel actif reste non collecté.
+9. Le secret de retrait reste one-shot, y compris lors de retraits partiels.
+10. Discovery n'écrit ni order, ni allocation, ni source de fulfillment.
+
+---
+
+## 9. Non-objectifs V1
+
+- fallback explicite manuel "Commander quand même en import" ;
+- multi-entrepôt ;
+- livraison locale tarifée ;
+- split payment ;
+- réservation panier TTL ;
+- ETA produit par `local-stock` ;
+- optimisation fournisseur / regroupement avancé des parcels.
+
+---
+
+## 10. Verdict du challenge repo
+
+**AMENDER puis implémenter par petits lots.**
+
+Architecture retenue :
+
+```text
+catalog Product
+  ↓
+local-stock resolve + lock
+  ↓
+orders snapshot par ligne
+  ↓
+pricing IMPORT seulement
+  ↓
+1 order
+  ↓
+parcels pour l'exécution séparée
+  ↓
+pickup parcel-scoped + rotation secret si reliquat
+```
+
+Le principal trou n'est pas un manque de table de groupement ; c'est le pickup canonique encore order-level.
