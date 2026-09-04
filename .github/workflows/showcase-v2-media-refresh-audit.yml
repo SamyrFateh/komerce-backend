@@ -1,0 +1,139 @@
+name: Refresh Showcase V2 French media and audit
+
+on:
+  push:
+    branches:
+      - fix/showcase-v2-fr-media-refresh-20260904
+    paths:
+      - 'scripts/showcase-v2-media-refresh.js'
+      - 'tests/unit/showcase-v2-media-refresh.test.js'
+      - '.github/workflows/showcase-v2-media-refresh-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  KOMERCE_ALLOW_SHOWCASE_SEED: '1'
+
+jobs:
+  refresh-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require staging secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo "::error::DATABASE_URL manquant"; exit 1; }
+          test -n "${IMAGEKIT_PRIVATE_KEY:-}" || { echo "::error::IMAGEKIT_PRIVATE_KEY manquant"; exit 1; }
+
+      - name: Prove media refresh contract
+        run: |
+          node --check scripts/showcase-v2-media-refresh.js
+          npx jest tests/unit/showcase-v2-media-refresh.test.js --runInBand
+
+      - name: Refresh only SHOWCASE-V2 media with French content-versioned URLs
+        run: node scripts/showcase-v2-media-refresh.js
+
+      - name: Certify public API after media refresh
+        run: |
+          node - <<'NODE'
+          (async () => {
+            const r = await fetch('https://komerce.co/api/products?limit=1000&offset=0');
+            if (!r.ok) throw new Error(`API ${r.status}`);
+            const data = await r.json();
+            const products = Array.isArray(data.products) ? data.products : [];
+            const v1 = products.filter(p => String(p.product_ref || '').startsWith('SHOWCASE-V1-'));
+            const v2 = products.filter(p => String(p.product_ref || '').startsWith('SHOWCASE-V2-'));
+            const versioned = v2.filter(p => /\/komerce\/staging\/showcase-v2\/showcase-v2-\d{4}\/hero-[a-f0-9]{12}\.jpg(?:\?|$)/.test(String(p.image_url || '')));
+            const englishLegacy = v2.filter(p => /Printed notebook|Men's formal suit|Decorative wooden photo frame|Cricket Helmet|Feather Shuttlecock/i.test(String(p.name || '')));
+            const refs = ['SHOWCASE-V2-0424', 'SHOWCASE-V2-0393', 'SHOWCASE-V2-0414', 'SHOWCASE-V2-0434'];
+            const sample = refs.map(ref => {
+              const p = v2.find(x => x.product_ref === ref);
+              return p ? { ref, name: p.name, image_url: p.image_url } : { ref, missing: true };
+            });
+            const proof = { status: r.status, total: data.total, returned: products.length, v1: v1.length, v2: v2.length, versioned: versioned.length, englishLegacy: englishLegacy.length, sample };
+            console.log(JSON.stringify(proof, null, 2));
+            if (v1.length !== 0) throw new Error(`V1 encore public: ${v1.length}`);
+            if (v2.length !== 500) throw new Error(`V2 public inattendu: ${v2.length}`);
+            if (versioned.length !== 500) throw new Error(`Médias V2 non versionnés: ${versioned.length}/500`);
+            if (englishLegacy.length !== 0) throw new Error(`Titres legacy anglais V2: ${englishLegacy.length}`);
+            if (sample.some(x => x.missing)) throw new Error(`Échantillon V2 incomplet: ${JSON.stringify(sample)}`);
+            for (const row of sample) {
+              const img = await fetch(row.image_url, { cache: 'no-store' });
+              if (!img.ok) throw new Error(`Image ${row.ref} -> ${img.status}`);
+            }
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright smoke after French media refresh
+        working-directory: public/boutique
+        run: |
+          mkdir -p audit-output
+          node - <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const results = [];
+            try {
+              for (const viewport of [
+                { name: 'desktop', width: 1440, height: 1000 },
+                { name: 'mobile', width: 390, height: 844 },
+              ]) {
+                const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'fr-FR' });
+                const page = await context.newPage();
+                await page.goto('https://komerce.co/boutique/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+                await page.waitForSelector('.k-card', { timeout: 45000 });
+                await page.waitForTimeout(1500);
+                const cards = await page.locator('.k-card').evaluateAll(nodes => nodes.slice(0, 40).map(card => ({
+                  name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
+                  image: card.querySelector('img')?.currentSrc || card.querySelector('img')?.src || '',
+                  fallback: card.querySelector('img')?.classList.contains('is-image-fallback') || false,
+                })));
+                const v2Cards = cards.filter(c => c.image.includes('/showcase-v2/'));
+                const staleEnglish = cards.filter(c => /Cricket Helmet|Feather Shuttlecock|Printed notebook|Men's formal suit|Decorative wooden photo frame/i.test(c.name));
+                const proof = { viewport, cards: cards.length, v2Cards: v2Cards.length, fallbacks: cards.filter(c => c.fallback).length, staleEnglish: staleEnglish.length, first: cards.slice(0, 8) };
+                results.push(proof);
+                console.log(JSON.stringify(proof, null, 2));
+                if (staleEnglish.length) throw new Error(`${viewport.name}: anciens titres anglais visibles`);
+                await page.screenshot({ path: `audit-output/${viewport.name}-post-fr-media.png`, fullPage: false });
+                await context.close();
+              }
+            } finally {
+              await browser.close();
+            }
+            fs.writeFileSync('audit-output/proof.json', JSON.stringify(results, null, 2));
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-fr-media-refresh-evidence
+          path: public/boutique/audit-output/
+          retention-days: 7
