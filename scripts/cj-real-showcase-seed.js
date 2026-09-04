@@ -151,14 +151,11 @@ async function prepareAndPublish(candidate, family, familyIndex, slotIndex) {
   }
 
   const { rows: [before] } = await db.query(
-    `SELECT id, lifecycle_status, is_active, image_url
+    `SELECT id, lifecycle_status, is_active
        FROM products WHERE id = $1`,
     [productId]
   );
   if (!before) throw new Error(`Produit promu introuvable: ${productId}`);
-  if (!before.image_url || !/^https:\/\//i.test(before.image_url)) {
-    throw new Error(`Média réel absent après promotion: ${candidate.supplier_product_id}`);
-  }
 
   const fields = {
     name: frenchName(family, slotIndex),
@@ -183,6 +180,15 @@ async function prepareAndPublish(candidate, family, familyIndex, slotIndex) {
     if (editorial.status !== 200) {
       throw new Error(`Retouche FR refusée ${candidate.supplier_product_id}: ${JSON.stringify(editorial.body).slice(0, 600)}`);
     }
+  }
+
+  // PDC public list still projects products.image_url. catalog-promotion owns
+  // catalog_media, but does not rewrite the legacy public hero column. Once
+  // the product is active through canonical approval, project the supplier
+  // hero through product-admin-service (single product mutation authority).
+  const mediaProjection = await productAdmin.setMainImage(db, productId, candidate.image_url);
+  if (mediaProjection.status !== 200) {
+    throw new Error(`Projection hero refusée ${candidate.supplier_product_id}: ${JSON.stringify(mediaProjection.body).slice(0, 600)}`);
   }
 
   const finalUpdate = await productAdmin.updateProduct(
