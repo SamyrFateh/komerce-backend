@@ -1,0 +1,248 @@
+name: Showcase V2 visual audit
+
+on:
+  push:
+    branches:
+      - audit/showcase-v2-visual-20260904
+
+permissions:
+  contents: read
+
+jobs:
+  visual-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_URL: https://komerce.co/boutique/
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Audit current Boutique desktop and mobile
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-output
+          cat > audit-output/run-audit.cjs <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+
+          const target = process.env.TARGET_URL || 'https://komerce.co/boutique/';
+          const outDir = 'audit-output';
+          const viewports = [
+            { name: 'desktop', width: 1440, height: 1000 },
+            { name: 'mobile', width: 390, height: 844 },
+          ];
+
+          const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+          async function auditViewport(browser, vp) {
+            const context = await browser.newContext({
+              viewport: { width: vp.width, height: vp.height },
+              locale: 'fr-FR',
+              deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            const consoleErrors = [];
+            const requestFailures = [];
+            page.on('console', msg => {
+              if (msg.type() === 'error') consoleErrors.push(msg.text());
+            });
+            page.on('requestfailed', req => {
+              requestFailures.push({ url: req.url(), error: req.failure()?.errorText || 'unknown' });
+            });
+
+            const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+            await page.waitForSelector('.k-card', { timeout: 45000 });
+            await wait(1500);
+
+            await page.screenshot({ path: `${outDir}/${vp.name}-home-top.png`, fullPage: false });
+
+            const apiProbe = await page.evaluate(async () => {
+              try {
+                const r = await fetch('/api/products?limit=1000', { credentials: 'same-origin' });
+                const data = await r.json();
+                const products = Array.isArray(data?.products) ? data.products : [];
+                const v2 = products.filter(p => String(p.product_ref || '').startsWith('SHOWCASE-V2-'));
+                const sample = v2.slice(0, 8).map(p => ({
+                  ref: p.product_ref,
+                  name: p.name,
+                  description: p.description,
+                  image_url: p.image_url,
+                  images: p.images,
+                  category: p.category,
+                  subcategory: p.subcategory,
+                }));
+                return {
+                  ok: r.ok,
+                  status: r.status,
+                  total: Number(data?.total ?? products.length),
+                  returned: products.length,
+                  showcaseV2: v2.length,
+                  sample,
+                };
+              } catch (err) {
+                return { ok: false, error: String(err) };
+              }
+            });
+
+            const cards = await page.locator('.k-card').count();
+            const cardAudit = await page.locator('.k-card').evaluateAll((nodes, viewport) => {
+              return nodes.slice(0, 20).map((card, index) => {
+                const rect = card.getBoundingClientRect();
+                const img = card.querySelector('img');
+                const name = card.querySelector('.k-card-name')?.textContent?.trim() || '';
+                const description = card.querySelector('.k-card-desc')?.textContent?.trim() || '';
+                return {
+                  index,
+                  name,
+                  description,
+                  rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+                  inInitialViewport: rect.bottom > 0 && rect.top < viewport.height,
+                  image: img ? {
+                    src: img.currentSrc || img.src,
+                    complete: img.complete,
+                    naturalWidth: img.naturalWidth,
+                    naturalHeight: img.naturalHeight,
+                    alt: img.alt,
+                  } : null,
+                };
+              });
+            }, { height: vp.height });
+
+            const layout = await page.evaluate(() => {
+              const all = [...document.querySelectorAll('.k-card')].slice(0, 40)
+                .map(el => el.getBoundingClientRect())
+                .filter(r => r.width > 0 && r.height > 0);
+              const xs = [...new Set(all.map(r => Math.round(r.x)))].sort((a,b) => a-b);
+              const body = document.body.getBoundingClientRect();
+              const headings = [...document.querySelectorAll('h1,h2,h3')]
+                .filter(el => {
+                  const r = el.getBoundingClientRect();
+                  const s = getComputedStyle(el);
+                  return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
+                })
+                .slice(0, 20)
+                .map(el => el.textContent.trim())
+                .filter(Boolean);
+              return {
+                bodyWidth: body.width,
+                bodyHeight: body.height,
+                scrollWidth: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+                horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+                approximateColumns: xs.length,
+                cardXs: xs,
+                headings,
+              };
+            });
+
+            const firstCard = page.locator('.k-card').first();
+            await firstCard.scrollIntoViewIfNeeded();
+            await wait(500);
+            await page.screenshot({ path: `${outDir}/${vp.name}-catalog-first.png`, fullPage: false });
+
+            let modal = { opened: false };
+            try {
+              const clickTarget = firstCard.locator('.k-card-img-wrap');
+              await clickTarget.click({ timeout: 10000 });
+              const modalRoot = page.locator('#k-modal');
+              await modalRoot.waitFor({ state: 'visible', timeout: 15000 });
+              await wait(800);
+              await page.screenshot({ path: `${outDir}/${vp.name}-modal-first.png`, fullPage: false });
+              modal = await modalRoot.evaluate(root => {
+                const rect = root.getBoundingClientRect();
+                const imgs = [...root.querySelectorAll('img')].map(img => ({
+                  src: img.currentSrc || img.src,
+                  complete: img.complete,
+                  naturalWidth: img.naturalWidth,
+                  naturalHeight: img.naturalHeight,
+                  alt: img.alt,
+                }));
+                return {
+                  opened: true,
+                  rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+                  text: root.innerText.replace(/\s+/g, ' ').trim().slice(0, 1200),
+                  images: imgs,
+                };
+              });
+            } catch (err) {
+              modal = { opened: false, error: String(err) };
+            }
+
+            const result = {
+              viewport: vp,
+              httpStatus: response?.status() || null,
+              finalUrl: page.url(),
+              title: await page.title(),
+              apiProbe,
+              renderedCardCount: cards,
+              initialViewportCardCount: cardAudit.filter(c => c.inInitialViewport).length,
+              firstCards: cardAudit,
+              layout,
+              modal,
+              consoleErrors: consoleErrors.slice(0, 50),
+              requestFailures: requestFailures.slice(0, 50),
+            };
+
+            await context.close();
+            return result;
+          }
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const results = [];
+            try {
+              for (const vp of viewports) results.push(await auditViewport(browser, vp));
+            } finally {
+              await browser.close();
+            }
+
+            fs.writeFileSync(`${outDir}/showcase-v2-visual-audit.json`, JSON.stringify({ target, generatedAt: new Date().toISOString(), results }, null, 2));
+
+            for (const r of results) {
+              console.log(`\n=== ${r.viewport.name.toUpperCase()} ===`);
+              console.log(JSON.stringify({
+                httpStatus: r.httpStatus,
+                finalUrl: r.finalUrl,
+                apiProbe: r.apiProbe,
+                renderedCardCount: r.renderedCardCount,
+                initialViewportCardCount: r.initialViewportCardCount,
+                layout: r.layout,
+                firstCard: r.firstCards[0],
+                modalOpened: r.modal.opened,
+                consoleErrors: r.consoleErrors,
+                requestFailures: r.requestFailures,
+              }, null, 2));
+            }
+          })().catch(err => {
+            console.error(err);
+            process.exitCode = 1;
+          });
+          NODE
+
+          node audit-output/run-audit.cjs | tee audit-output/audit.log
+
+      - name: Upload visual audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-visual-audit
+          path: public/boutique/audit-output/
+          retention-days: 7
