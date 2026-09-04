@@ -14,9 +14,9 @@
  * @db-read       orders
  * @db-write      order_items, order_status_history, orders
  * @db-txn        participant (reçoit le client transactionnel de l'appelant, ne BEGIN/COMMIT/ROLLBACK jamais lui-même)
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout
- * @version       2026-08 (extrait de order-checkout-service.js, refactoring checkout réel)
+ * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, resolve_before_behavior_change
+ * @impact-areas  orders, checkout, local-stock
+ * @version       2026-09 (Lot C — snapshot fulfillment_source sur order_items)
  */
 
 'use strict';
@@ -24,40 +24,32 @@
 /**
  * order-checkout-persistence.js
  *
- * Extrait de services/order-checkout-service.js (refactoring réel du
- * checkout, post-audit domaine 4/5). Porte les écritures transactionnelles
- * du checkout, dans l'ordre où order-checkout-service.js les appelle :
- * INSERT order, historique initial, wallet debit transactionnel, INSERT
- * order_items (avec classification douanière figée — I-DOUANE-1 — et
- * allocation local_stock dans la MÊME transaction), complétion du cycle de
- * paiement wallet-100%, snapshot économique figé (non-bloquant).
+ * Porte les écritures transactionnelles du checkout, dans l'ordre où
+ * order-checkout-service.js les appelle : INSERT order, historique initial,
+ * wallet debit transactionnel, INSERT order_items, allocation local_stock,
+ * cycle wallet-100%, snapshot économique figé.
  *
- * ⚠️ Ce module ne possède AUCUNE transaction : il reçoit le `client` déjà
- * ouvert par order-checkout-service.js (BEGIN posé par l'appelant) et ne
- * fait JAMAIS de BEGIN/COMMIT/ROLLBACK lui-même. Sur erreur métier
- * (stock insuffisant au moment de la confirmation wallet), il renvoie
- * { ok: false, status, body } SANS rollback — c'est order-checkout-
- * service.js qui reste seul propriétaire du ROLLBACK/COMMIT et de l'ordre
- * global des étapes. Copie exacte du comportement d'origine : mêmes
- * requêtes SQL, même ordre, mêmes messages/codes — seul le point
- * d'exécution du ROLLBACK a changé de fichier.
+ * Fulfillment mixte — Lot C : le verdict LOCAL_STOCK / IMPORT calculé sous
+ * verrou par local-stock-service.js est figé directement dans
+ * order_items.fulfillment_source lors de l'INSERT. Il n'est jamais recalculé
+ * depuis l'état courant. `availability_status` reste un concept séparé.
  *
- * Exports (appelés par order-checkout-service.js, dans cet ordre) :
- *   insertOrderRow(client, params)                → order (row complet)
- *   recordInitialHistory(client, orderId, userId)  → void
- *   applyWalletDebit(client, { userId, amountKmf, orderId, orderReference }) → void
- *   insertOrderItemsWithStock(client, { items, productMap, order, relais }) → void
- *   completeWalletFullPayment(client, { order, user })
- *     → { ok: true, walletPickupCode, order } | { ok: false, status, body }
- *   lockCostSnapshot(client, order)                → void (non-bloquant)
+ * Ce module ne possède AUCUNE transaction : il reçoit le `client` déjà
+ * ouvert par order-checkout-service.js et ne fait jamais de BEGIN/COMMIT/
+ * ROLLBACK lui-même.
  */
 
 const { randomUUID: uuidv4 } = require('crypto');
 const { appendOrderHistoryNote } = require('./order-status-machine');
 const { ensureSecretGenerated } = require('./pickup-secret-service');
 const walletService = require('./wallet-service');
-const { allocateForOrderItem } = require('./local-stock-service');
+const {
+  FULFILLMENT_SOURCE,
+  allocateForOrderItem,
+} = require('./local-stock-service');
 const log = require('../utils/logger').child({ module: 'order-checkout-persistence' });
+
+const FULFILLMENT_VALUES = new Set(Object.values(FULFILLMENT_SOURCE));
 
 async function insertOrderRow(client, params) {
   const {
@@ -118,9 +110,6 @@ async function insertOrderRow(client, params) {
     trackingPhone || null,
     totalKmf, totalEur,
     paymentMode,
-    // PATCH P2-4 : toujours créer en 'pending'. Si wallet couvre 100%,
-    // confirmPaymentCycle (appelé plus bas) transite vers 'paid' via la machine.
-    // L'ancien pre-write 'paid' ici contournait la machine et était redondant.
     'pending',
     stripePaymentIntent || null,
     cashRefCode,
@@ -183,6 +172,15 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
   for (const item of items) {
     const product = productMap[item.product_id];
     const qty = parseInt(item.quantity, 10) || 1;
+    const fulfillmentSource = item._fulfillment_source;
+
+    if (!FULFILLMENT_VALUES.has(fulfillmentSource)) {
+      const err = new Error(
+        `insertOrderItemsWithStock: fulfillment_source manquant ou invalide pour ${item.product_id}`
+      );
+      err.code = 'fulfillment_source_invalid';
+      throw err;
+    }
 
     // Gel de la classification douanière — I-DOUANE-1
     const clf = await resolveFrozenClassification(client, product.category);
@@ -196,8 +194,9 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
          customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
          classification_defaulted,
          requested_transport_rail,
-         shared_cart_item_id
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+         shared_cart_item_id,
+         fulfillment_source
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
       [
         order.id,
         item.product_id,
@@ -210,16 +209,9 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
         item.module_retouche || false,
         item.module_qty_meters || null,
         item.module_accessories ? JSON.stringify(item.module_accessories) : null,
-        // VAGUE 3 : combo de variantes choisie côté frontend (taille, couleur...)
-        // Stockée en jsonb pour rester autonome (= valide même si la variante
-        // est supprimée plus tard côté admin). Voir 063_product_variants.sql.
         item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)
           ? JSON.stringify(item.variant_combo)
           : null,
-        // Lot 3 : FK vers product_skus, posée uniquement pour les produits
-        // en inventory_model = 'SKU' (resolveActiveSku plus haut). NULL pour
-        // tout produit LEGACY_VARIANTS — variant_combo reste la référence
-        // d'affichage/historique dans ce cas, comme avant.
         item._resolved_sku_id || null,
         clf.customs_category_key,
         clf.sh_code,
@@ -227,34 +219,31 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
         clf.tva_pct,
         clf.taxe_add_pct,
         clf.classification_defaulted,
-        // Code canonique du rail demandé par le client (null = aucun choix explicite).
-        // L'orchestrateur logistique assigne le rail réel dans assigned_transport_rail.
         item.requested_transport_rail ?? null,
-        // Boutique First (D2/D4) — rattachement à un article de liste
-        // partagée. Optionnel : null pour tout achat hors contexte liste.
-        // L'unicité est arbitrée par un index unique en base (migration 123),
-        // pas par une vérification applicative : deux participants qui
-        // achètent le même article de liste au même instant produisent une
-        // seule commande gagnante, l'autre reçoit une violation de
-        // contrainte que ce bloc convertit en 409 explicite plus bas.
         item.shared_cart_item_id || null,
+        fulfillmentSource,
       ]
     );
 
-    // Vague 2 D2 — engage ce stock local AVANT tout paiement, dans la
-    // MÊME transaction que la commande (client, pas db global) : le
-    // verrou FOR UPDATE posé par allocateForOrderItem tient jusqu'au
-    // COMMIT/ROLLBACK de cette requête, sérialisant deux checkouts
-    // concurrents sur le même produit. No-op silencieux (retourne null)
-    // pour l'immense majorité des produits, qui n'ont pas de ligne
-    // local_stock — la logique d'allocation reste entièrement dans
-    // local-stock-service.js, cette route n'en est que l'appelante.
-    await allocateForOrderItem(client, {
-      productId: item.product_id,
-      marketId:  relais?.market_id || null,
-      orderId:   order.id,
-      quantity:  qty,
-    });
+    // Le snapshot et l'allocation doivent raconter la même vérité. Une ligne
+    // IMPORT n'essaie jamais opportunistement de s'allouer un stock local qui
+    // aurait changé après le verdict. Une ligne LOCAL_STOCK est revalidée et
+    // allouée sous la même transaction avant COMMIT.
+    if (fulfillmentSource === FULFILLMENT_SOURCE.LOCAL_STOCK) {
+      const allocation = await allocateForOrderItem(client, {
+        productId: item.product_id,
+        marketId:  relais?.market_id || null,
+        orderId:   order.id,
+        quantity:  qty,
+      });
+      if (!allocation) {
+        const err = new Error(
+          `insertOrderItemsWithStock: allocation locale absente après verdict LOCAL_STOCK (${item.product_id})`
+        );
+        err.code = 'local_stock_verdict_drift';
+        throw err;
+      }
+    }
   }
 }
 
@@ -279,8 +268,6 @@ async function completeWalletFullPayment(client, { order, user, relais }) {
     };
   }
 
-  // Code de retrait canonique — généré ici, à la confirmation du paiement
-  // (jamais à la création). Même transaction que le cycle de paiement.
   const secretResult = await ensureSecretGenerated({
     orderId:  order.id,
     relaisId: relais?.id || null,
@@ -289,7 +276,6 @@ async function completeWalletFullPayment(client, { order, user, relais }) {
   });
   const walletPickupCode = secretResult.code || null;
 
-  // Rafraîchir order : status / confirmed_at à jour dans la réponse API
   const { rows: [refreshed] } = await client.query(
     'SELECT * FROM orders WHERE id = $1', [order.id]
   );
@@ -299,17 +285,11 @@ async function completeWalletFullPayment(client, { order, user, relais }) {
 }
 
 // ─── PHASE B — Snapshot economique fige (P3 doctrine) ────────────────
-// Appelle pricing-engine.recommend() sur chaque order_item et stocke
-// l'estime dans order_item_cost_imputations (immuable).
-// No-op si ORDER_COST_SNAPSHOT_ACTIVE != true (rollout progressif).
-// Idempotent (ON CONFLICT order_item_id DO NOTHING).
 async function lockCostSnapshot(client, order) {
   try {
     const orderCostSnapshot = require('./order-cost-snapshot');
     await orderCostSnapshot.lockEstimatedCostsForOrder(order.id, client, { source: 'pricing-engine' });
   } catch (snapErr) {
-    // Non-bloquant : si le snapshot échoue, la commande est quand même créée.
-    // L'erreur est loggée pour traitement admin (alerts table possible plus tard).
     log.error('[ORDER-CREATE] cost snapshot failed for', order.reference, snapErr.message);
   }
 }
