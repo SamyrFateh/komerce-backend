@@ -152,7 +152,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema` — vérifié live Railway)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw \| ai_enriched \| manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema` — vérifié live Railway)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw | ai_enriched | manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. |
 | `baskets` | Paniers (différents `basket_type`). |
@@ -234,6 +234,14 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sourcing_candidate_observations` | Historique immuable des observations fournisseur par batch et profil, avec hash de ligne et snapshot du contrat normalisé. Migration 110. |
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
+
+<!-- schema-pending
+object: supplier_catalog_sync_checkpoints
+kind: table
+migration: 163
+section: ### 4.10 Sourcing et fournisseurs (10 tables)
+role: Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique.
+-->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 
