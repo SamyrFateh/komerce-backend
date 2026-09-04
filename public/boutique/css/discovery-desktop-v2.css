@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         ui-style
  * @owner         public/boutique/js/discovery-desktop-style.js
- * @purpose       Intégrer Disponible ici au Product Display Contract desktop sans toucher au mobile.
+ * @purpose       Intégrer Disponible ici au Product Display Contract desktop sans redéfinir le contrôle panier Product.
  * @impact-areas  discovery-rail, product-discovery, desktop
  * @version       2026-09
  */
@@ -93,9 +93,11 @@
     min-height: 18px;
   }
 
-  /* Le slot reste le slot k-card-add canonique ; le contenu verbal est la
-     seule différence nécessaire pour exprimer Acheter / Commander / Demander. */
-  .k-discovery-canonical-action-slot {
+  /* Les pilules verbales sont réservées aux capacités provider. Un Product
+     ne reçoit jamais ce skin : son `.k-card-add` reste strictement celui de
+     products.css/cart.css, cercle `+` puis stepper canonique. */
+  [data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot,
+  [data-discovery-kind="service"] .k-discovery-canonical-action-slot {
     width: auto;
     min-width: 82px;
     max-width: 102px;

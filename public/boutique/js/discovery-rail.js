@@ -5,7 +5,7 @@
  * @layer         ui-component
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.
- * @impact-areas  home, product-discovery, discovery-rail, category-navigation, desktop
+ * @impact-areas  home, product-discovery, discovery-rail, category-navigation, mobile, desktop
  * @version       2026-09
  */
 'use strict';
@@ -150,6 +150,11 @@ function syncMountAndRender() {
         { marketLabel, titleId, title: 'Disponible ici' }
       );
     }
+
+    // Point A : mobile possède maintenant le même `.k-card-add` que le
+    // catalogue. Synchroniser avant le snapshot ghost garantit qu'un Product
+    // déjà au panier apparaît directement en stepper, y compris dans les clones.
+    markAllCartButtons();
     refreshGhostSnapshot();
     return rendered;
   }
@@ -242,11 +247,10 @@ function productHasVariants(product) {
 }
 
 function handleDiscoveryClick(event) {
-  // Desktop Product local : le contrôle quantité canonique est une vraie
-  // mutation panier. Il doit être intercepté AVANT le contrat d'ouverture de
-  // la carte, sinon le `+` ajouterait puis ouvrirait immédiatement la PDP.
+  // Product local, desktop OU mobile : le contrôle quantité canonique est une
+  // vraie mutation panier. Il doit être intercepté avant le clic de carte.
   const actionButton = event.target.closest(
-    '.k-discovery-canonical-card[data-discovery-kind="product"] .k-card-add [data-action]'
+    '[data-discovery-kind="product"] .k-card-add [data-action]'
   );
   if (actionButton) {
     const addControl = actionButton.closest('.k-card-add[data-add]');
