@@ -10,17 +10,17 @@
  */
 'use strict';
 
-// Courte respiration historique : le bas est perçu avant que la page suivante
-// remonte automatiquement, sans demander un second geste à l'utilisateur.
+// Le relâchement du premier geste vertical déclenche le passage presque
+// immédiatement. Le petit délai laisse Samsung Browser terminer son touchend
+// sans réintroduire un état intermédiaire visible ou un second geste.
 const BOTTOM_TOLERANCE_PX = 32;
 const TOUCH_BOTTOM_TOLERANCE_PX = 64;
 const DOWN_EPSILON_PX = 2;
 const UP_CANCEL_PX = 8;
 const VERTICAL_INTENT_PX = 8;
 const VERTICAL_DOMINANCE = 1.25;
-const AUTO_ADVANCE_DELAY_MS = 350;
-const TOUCH_ADVANCE_DELAY_MS = 220;
-const HINT_DURATION_MS = 900;
+const AUTO_ADVANCE_DELAY_MS = 160;
+const TOUCH_ADVANCE_DELAY_MS = 40;
 
 function isAtBottom(page, tolerance = BOTTOM_TOLERANCE_PX) {
   if (!page) return false;
@@ -33,30 +33,6 @@ function distanceFromBottom(page) {
   return page.scrollHeight - page.clientHeight - page.scrollTop;
 }
 
-function nextPageLabel(nextPage) {
-  const category = nextPage?.dataset?.cat || 'Tout';
-  return document.querySelector(
-    `#k-cats .k-chip[data-cat="${category}"] .k-chip-label`
-  )?.textContent?.trim() || category;
-}
-
-function removeHint(page) {
-  page?.querySelector('.k-pager-next-hint')?.remove();
-}
-
-function showNextHint(page, nextPage) {
-  if (!page || !nextPage) return null;
-  removeHint(page);
-
-  const hint = document.createElement('div');
-  hint.className = 'k-pager-next-hint';
-  hint.setAttribute('aria-hidden', 'true');
-  hint.textContent = `${nextPageLabel(nextPage)} →`;
-  page.appendChild(hint);
-  setTimeout(() => hint.remove(), HINT_DURATION_MS);
-  return hint;
-}
-
 function resetGesture(runtime) {
   runtime.verticalIntent = false;
   runtime.horizontalIntent = false;
@@ -67,7 +43,6 @@ function resetGesture(runtime) {
 function cancelAdvance(page, runtime) {
   clearTimeout(runtime.advanceTimer);
   runtime.advanceTimer = null;
-  removeHint(page);
 }
 
 function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
@@ -82,7 +57,6 @@ function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
     ) return;
 
     runtime.movingDown = false;
-    showNextHint(page, nextPage);
     onAdvance(page, nextPage);
   }, delay);
 }
@@ -220,6 +194,4 @@ export {
   teardownPagerEndBounce,
   isAtBottom,
   distanceFromBottom,
-  nextPageLabel,
-  showNextHint,
 };

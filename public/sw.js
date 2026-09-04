@@ -11,16 +11,16 @@
 
 'use strict';
 
-/* Komerce SW v340 — finition navigation : mains mobiles et sous-catégories graphite
+/* Komerce SW v341 — bump mobile immédiat et cache pager unifié
  *
- * La rotation force le rechargement des modules Commandes / Mon Komerce et
- * de leurs styles afin que les documents privés et le wallet compact soient
- * visibles immédiatement sur les sessions déjà ouvertes.
+ * La rotation expulse le contrôleur de bump en deux temps encore chargé dans
+ * certaines sessions mobiles. Le message legacy v340 fait recharger une fois
+ * les onglets qui exécutent encore l'ancien listener de refresh.
  *
  * La garde anti-empoisonnement demeure : une réponse HTML reçue à la place
  * d'un script ou d'une feuille CSS n'est jamais mise en cache.
  */
-const CACHE = 'komerce-v340';
+const CACHE = 'komerce-v341';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         keys.map((key) => {
           if (key === CACHE || !key.startsWith('komerce-')) return undefined;
-          console.log('[SW v340] Purge ancien cache :', key);
+          console.log('[SW v341] Purge ancien cache :', key);
           return caches.delete(key);
         })
       );
@@ -47,6 +47,7 @@ self.addEventListener('activate', (event) => {
 
       clients.forEach((client) => {
         client.postMessage({ type: 'sw-updated', version: 'v340' });
+        client.postMessage({ type: 'sw-updated', version: 'v341' });
       });
     })()
   );

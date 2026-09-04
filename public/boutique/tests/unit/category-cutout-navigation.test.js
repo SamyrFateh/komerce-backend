@@ -154,12 +154,13 @@ describe('Komerce Shelf category navigation contract', () => {
   });
 
   it('force la rotation du cache qui conservait encore l’ancien atlas', () => {
-    expect(index).toContain('/boutique/js/b-service-worker-refresh.js?v=338');
-    expect(index).toContain('/boutique/js/main.js?v=358');
-    expect(swRefresh).toContain("komerce-v340");
-    expect(swRefresh).toContain("event.data?.version === 'v340'");
-    expect(sw).toContain("const CACHE = 'komerce-v340'");
+    expect(index).toContain('/boutique/js/b-service-worker-refresh.js?v=341');
+    expect(index).toContain('/boutique/js/main.js?v=359');
+    expect(swRefresh).toContain("komerce-v341");
+    expect(swRefresh).toContain("event.data?.version === 'v341'");
+    expect(sw).toContain("const CACHE = 'komerce-v341'");
     expect(sw).toContain("version: 'v340'");
+    expect(sw).toContain("version: 'v341'");
   });
 
   it('détache le niveau 2 Shelf de la classe visuelle legacy k-subchip', () => {
