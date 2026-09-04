@@ -48,6 +48,7 @@ module.exports = {
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'glossaire metier EN->FR (catalog_glossary)',
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
+      'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
     ],
     out: [
       'calcul du prix final et valorisation transport (feature economic-engine)',
@@ -65,14 +66,19 @@ module.exports = {
     ci: [
       // Workflow ACTIF (.github/workflows/).
       '.github/workflows/showcase-v2-staging-deploy.yml',
+      '.github/workflows/cj-real-showcase-contract.yml',
       // Workflows showcase-catalog EN PAUSE (revue gouvernance 2026-08-14,
       // cf. `.github/workflows-disabled/README.md`) — déclarés à leur
       // emplacement réel pour rester possédés (ni faux « absent », ni orphelins).
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
       '.github/workflows-disabled/showcase-catalog-staging-deploy.yml',
+      '.github/workflows-disabled/README-CJ-SHOWCASE.md',
     ],
     utils: [
       'utils/categories-cache.js',
+    ],
+    scripts: [
+      'scripts/cj-real-showcase-seed.js',
     ],
     services: [
       'services/product-publication-guard.js',
@@ -153,6 +159,11 @@ module.exports = {
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
       'docs/CJ_CONNECTOR.md',
       'docs/cj-connector-validation.md',
+      'docs/cj-real-showcase-63.md',
+      'docs/cj-real-showcase-validation.md',
+      'docs/cj-real-showcase-runbook.md',
+      'docs/cj-real-showcase-63-checklist.md',
+      'docs/cj-real-showcase-63-scope.md',
     ],
     routes: [
       'routes/products.js',
@@ -225,6 +236,7 @@ module.exports = {
       'tests/unit/noon-connector.test.js',
       'tests/unit/cj-connector.test.js',
       'tests/unit/cj-connector-doc-contract.test.js',
+      'tests/unit/cj-real-showcase-seed.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-product-mutation-service.test.js',
       'tests/unit/catalog-promotion.test.js',
