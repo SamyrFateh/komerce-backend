@@ -1,0 +1,40 @@
+name: CJ connector check
+
+on:
+  push:
+    branches:
+      - feat/cj-supplier-connector
+  pull_request:
+    paths:
+      - 'services/suppliers/connectors/cj-connector.js'
+      - 'services/sourcing-import-dispatch.js'
+      - 'tests/unit/cj-connector*.test.js'
+      - 'tests/unit/sourcing-import-dispatch.test.js'
+      - 'docs/CJ_CONNECTOR.md'
+      - '.github/workflows/cj-connector-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: |
+          node --check services/suppliers/connectors/cj-connector.js
+          node --check services/sourcing-import-dispatch.js
+      - name: Unit tests
+        run: |
+          npx jest \
+            tests/unit/cj-connector.test.js \
+            tests/unit/cj-connector-doc-contract.test.js \
+            tests/unit/sourcing-import-dispatch.test.js \
+            --runInBand
