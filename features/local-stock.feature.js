@@ -44,7 +44,7 @@ module.exports = {
     out: [
       'stock hub/transit : feature inventory',
       'stock import/national : feature catalog',
-      'pricing transport : feature economic/transport ; local-stock ne calcule aucun fret',
+      'pricing transport : local-stock ne calcule aucun fret',
       'ETA import : domaine transport rail, jamais produit par local-stock',
       'parcels et retrait : feature logistics',
       'création et lifecycle commande : feature orders',
@@ -99,11 +99,13 @@ module.exports = {
       { fn: 'releaseAllocationsForOrder', file: 'services/local-stock-service.js' },
       { fn: 'previewCheckoutFulfillmentSources', file: 'services/local-stock-checkout-preview.js' },
     ],
+    // Les explications détaillées restent dans perimeter/rationale. Le graphe
+    // métier attend ici uniquement les noms canoniques des features consommées.
     consumes: [
-      'catalog : existence produit uniquement ; jamais products.stock/product_skus.stock pour la vérité locale',
-      'market : résolution du code marché vers markets.id',
-      'logistics : lecture de relais.market_id pour la projection checkout du relais choisi',
-      'infrastructure : db.js',
+      'catalog',
+      'market',
+      'logistics',
+      'infrastructure',
     ],
   },
 
