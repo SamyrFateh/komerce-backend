@@ -104,7 +104,7 @@ async function loadOrder360(order) {
       ORDER BY oi.created_at ASC
     `, [orderId]),
     db.query(`
-      SELECT p.id, p.reference, p.tracking_number, p.status::text AS status,
+      SELECT p.id, p.reference, p.reference AS tracking_number, p.status::text AS status,
              p.type, p.weight_kg, p.created_at, p.prepared_at, p.shipped_at, p.updated_at
       FROM parcels p
       WHERE p.order_id = $1::uuid AND p.status != 'cancelled'

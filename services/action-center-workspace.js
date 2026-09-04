@@ -96,7 +96,7 @@ async function resolveEntityBusinessRefs(signals) {
   }
   if (parcelIds.length) {
     queries.push(db.query(
-      `SELECT p.id::text AS internal_id, p.tracking_number, o.reference AS order_reference
+      `SELECT p.id::text AS internal_id, p.reference AS tracking_number, o.reference AS order_reference
          FROM parcels p
          LEFT JOIN orders o ON o.id = p.order_id
         WHERE p.id::text = ANY($1::text[])`,
