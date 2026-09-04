@@ -104,6 +104,23 @@ function renderCard(card) {
     </article>`;
 }
 
+function renderDesktopActionSlot(card, safeTitle) {
+  if (card.kind === 'product') {
+    const ref = sanitize(card.actionRef);
+    return `
+      <div class="k-card-add k-discovery-canonical-action-slot" data-add="${ref}" data-cart-lines="0" role="group" aria-label="Quantité de ${safeTitle}">
+        <button type="button" class="k-card-add-trigger" data-action="add" aria-label="Ajouter ${safeTitle} au panier">
+          <span class="k-card-add-plus" aria-hidden="true">+</span>
+        </button>
+      </div>`;
+  }
+
+  return `
+    <div class="k-card-add k-discovery-canonical-action-slot" role="group" aria-label="Action pour ${safeTitle}">
+      <button class="k-discovery-canonical-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+    </div>`;
+}
+
 /**
  * Desktop One Card Contract.
  *
@@ -111,6 +128,9 @@ function renderCard(card) {
  * `k-card-info`, `k-card-name`, `k-card-bottom`, `k-card-add`). Discovery ne
  * possède que des hooks de capacité. Le CSS Discovery n'a donc jamais besoin
  * de redéfinir le shell canonique `.k-card`.
+ *
+ * Un Product `Disponible maintenant` conserve le contrôle panier canonique `+`.
+ * Les kinds provider gardent leur CTA d'ouverture de détail.
  */
 function renderDesktopCard(card) {
   const safeTitle = sanitize(card.title);
@@ -135,9 +155,7 @@ function renderDesktopCard(card) {
         <div class="k-card-desc k-discovery-canonical-context">${context}</div>
         <div class="k-card-bottom k-card-prices-row">
           <div class="k-card-price-col k-discovery-canonical-price-col">${price}</div>
-          <div class="k-card-add k-discovery-canonical-action-slot" role="group" aria-label="Action pour ${safeTitle}">
-            <button class="k-discovery-canonical-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
-          </div>
+          ${renderDesktopActionSlot(card, safeTitle)}
         </div>
       </div>
     </article>`;
