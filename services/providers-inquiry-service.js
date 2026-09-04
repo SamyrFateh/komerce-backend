@@ -5,6 +5,7 @@
  * @layer         service
  * @owner         services/providers-service.js
  * @purpose       Créer une Inquiry contextualisée par une cible canonique, une intention request|callback et une précision facultative.
+ * @db-write      inquiries
  * @impact-areas  providers-services, discovery-modal
  * @version       2026-09
  */

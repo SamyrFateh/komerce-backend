@@ -160,7 +160,7 @@ jobs:
               state: 'open',
               labels: label,
             });
-            const openIssue = existing.find(i => !i.pull_request);
+            const openIssue = existing.find(i => !i.pull_request && i.title === title);
             const body = [
               `\`arch:gate\` a échoué dans le workflow \`schema-refresh\`.`,
               ``,
@@ -182,6 +182,35 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner, repo: context.repo.repo,
                 title, body, labels: [label],
+              });
+            }
+
+      - name: Close resolved architecture gate alert
+        if: steps.arch_gate.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'architecture-gate-alert';
+            const title = '🏗️ Architecture gate rouge dans schema-refresh';
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            for (const issue of existing.filter(i => !i.pull_request && i.title === title)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ Résolu automatiquement : \`arch:gate\` est vert dans le run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
               });
             }
 
@@ -208,7 +237,7 @@ jobs:
               state: 'open',
               labels: label,
             });
-            const openIssue = existing.find(i => !i.pull_request);
+            const openIssue = existing.find(i => !i.pull_request && i.title === title);
             const body = [
               `Le snapshot Railway est **valide**, mais \`check-schema-freshness --all\` reste rouge après les retries.`,
               `La synchronisation du dump et de \`SCHEMA.md\` continue volontairement : elle documente la vérité live observée au lieu de la masquer.`,
@@ -247,6 +276,13 @@ jobs:
                 description: 'Le refresh du schéma Railway nécessite une intervention',
               }).catch(() => {});
             }
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const openIssue = existing.find(i => !i.pull_request && i.title === title);
             const body = [
               `Impossible d'extraire un snapshot Railway valide après tous les retries.`,
               ``,
@@ -255,10 +291,54 @@ jobs:
               ``,
               `Vérifier \`RAILWAY_DATABASE_URL\`, la disponibilité PostgreSQL et le réseau du runner.`,
             ].join('\n');
-            await github.rest.issues.create({
-              owner: context.repo.owner, repo: context.repo.repo,
-              title, body, labels: [label],
+            if (openIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              });
+            }
+
+      - name: Close resolved Railway schema alerts
+        if: steps.snapshot.outputs.success == 'true' && steps.snapshot.outputs.deploy_lag == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'schema-drift-alert';
+            const resolvedTitles = new Set([
+              '🔴 Railway: migrations du repo non encore live',
+              '🔴 schema-refresh: snapshot Railway impossible',
+            ]);
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
             });
+            for (const issue of existing.filter(i => !i.pull_request && resolvedTitles.has(i.title))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ Résolu automatiquement : snapshot Railway valide et migrations convergées dans le run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }
 
       - name: Check for changes
         if: steps.snapshot.outputs.success == 'true'
