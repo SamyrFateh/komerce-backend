@@ -1,0 +1,165 @@
+name: Retire Showcase V1 and audit Boutique
+
+on:
+  push:
+    branches:
+      - chore/retire-showcase-v1-20260904
+    paths:
+      - 'scripts/showcase-v1-retire.js'
+      - '.github/workflows/showcase-v1-retire-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  TARGET_URL: https://komerce.co/boutique/
+
+jobs:
+  retire-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_ALLOW_SHOWCASE_V1_RETIRE: '1'
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Syntax-check reversible retirement
+        run: node --check scripts/showcase-v1-retire.js
+
+      - name: Require Railway database secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::RAILWAY_DATABASE_URL manquant"
+            exit 1
+          fi
+
+      - name: Retire SHOWCASE-V1 only
+        run: node scripts/showcase-v1-retire.js
+
+      - name: Certify public API after retirement
+        run: |
+          node - <<'NODE'
+          const target = 'https://komerce.co';
+          const sleep = ms => new Promise(r => setTimeout(r, ms));
+          async function fetchAll() {
+            const a = await fetch(`${target}/api/products?limit=1000&offset=0`);
+            const ja = await a.json();
+            const b = await fetch(`${target}/api/products?limit=1000&offset=1000`);
+            const jb = await b.json();
+            if (!a.ok || !b.ok) throw new Error(`API produits: ${a.status}/${b.status}`);
+            return [...(ja.products || []), ...(jb.products || [])];
+          }
+          let proof = null;
+          for (let attempt = 1; attempt <= 15; attempt += 1) {
+            const products = await fetchAll();
+            const v1 = products.filter(p => String(p.product_ref || '').startsWith('SHOWCASE-V1-'));
+            const v2 = products.filter(p => String(p.product_ref || '').startsWith('SHOWCASE-V2-'));
+            const golden = products.filter(p => String(p.product_ref || '').startsWith('GOLDEN-'));
+            proof = { attempt, returned: products.length, v1: v1.length, v2: v2.length, golden: golden.length };
+            console.log(JSON.stringify(proof));
+            if (v1.length === 0 && v2.length === 500 && golden.length >= 1) break;
+            await sleep(2000);
+          }
+          if (!proof || proof.v1 !== 0 || proof.v2 !== 500 || proof.golden < 1) {
+            throw new Error(`Certification API échouée: ${JSON.stringify(proof)}`);
+          }
+          NODE
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright desktop and mobile smoke
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-output
+          cat > audit-output/post-v1-retire.cjs <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('@playwright/test');
+          const target = process.env.TARGET_URL || 'https://komerce.co/boutique/';
+          const viewports = [
+            { name: 'desktop', width: 1440, height: 1000 },
+            { name: 'mobile', width: 390, height: 844 },
+          ];
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const results = [];
+            try {
+              for (const vp of viewports) {
+                const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, locale: 'fr-FR' });
+                const page = await context.newPage();
+                const badResponses = [];
+                page.on('response', res => {
+                  if (res.status() >= 400) badResponses.push({ status: res.status(), url: res.url() });
+                });
+                const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                await page.waitForSelector('.k-card', { timeout: 45000 });
+                await page.waitForTimeout(1800);
+                const cards = await page.locator('.k-card').evaluateAll(nodes => nodes.map(card => ({
+                  id: card.getAttribute('data-id'),
+                  name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
+                  description: card.querySelector('.k-card-desc')?.textContent?.trim() || '',
+                  imageSrc: card.querySelector('img')?.currentSrc || card.querySelector('img')?.src || '',
+                })));
+                const body = await page.evaluate(() => ({
+                  scrollWidth: document.documentElement.scrollWidth,
+                  innerWidth,
+                }));
+                await page.screenshot({ path: `audit-output/${vp.name}-post-v1-retire.png`, fullPage: false });
+                const cloudinary401 = badResponses.filter(x => x.status === 401 && /res\.cloudinary\.com/i.test(x.url));
+                const auth401 = badResponses.filter(x => x.status === 401 && /\/api\/(auth\/me|shared-carts\/mine)/i.test(x.url));
+                const legacyEnglish = cards.filter(c => /Cricket Helmet|Feather Shuttlecock|Apple iPhone 6S Plus Inside|Arnaud Rousseau robe chemise/i.test(c.name));
+                const result = {
+                  viewport: vp.name,
+                  httpStatus: response?.status() || null,
+                  renderedCards: cards.length,
+                  firstCards: cards.slice(0, 12),
+                  legacyEnglishCount: legacyEnglish.length,
+                  cloudinary401Count: cloudinary401.length,
+                  auth401Count: auth401.length,
+                  horizontalOverflow: body.scrollWidth > body.innerWidth + 2,
+                };
+                results.push(result);
+                await context.close();
+              }
+            } finally {
+              await browser.close();
+            }
+            fs.writeFileSync('audit-output/post-v1-retire.json', JSON.stringify(results, null, 2));
+            console.log(JSON.stringify(results, null, 2));
+            for (const r of results) {
+              if (r.httpStatus !== 200) throw new Error(`${r.viewport}: HTTP ${r.httpStatus}`);
+              if (r.legacyEnglishCount !== 0) throw new Error(`${r.viewport}: legacy V1 encore rendu`);
+              if (r.cloudinary401Count !== 0) throw new Error(`${r.viewport}: images Cloudinary V1 encore sollicitées (${r.cloudinary401Count})`);
+              if (r.horizontalOverflow) throw new Error(`${r.viewport}: overflow horizontal`);
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; });
+          NODE
+          node audit-output/post-v1-retire.cjs
+
+      - name: Upload post-retirement evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v1-retire-audit
+          path: public/boutique/audit-output/
+          retention-days: 7
