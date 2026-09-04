@@ -54,7 +54,7 @@ jobs:
             if (!condition) throw new Error(message);
           }
 
-          async function auditViewport(browser, name, viewport) {
+          async function auditViewport(browser, name, viewport, targetName) {
             const page = await browser.newPage({ viewport });
             const errors = [];
             page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
@@ -62,9 +62,9 @@ jobs:
             const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
             assert(response && response.ok(), `${name}: boutique HTTP ${response && response.status()}`);
             await page.waitForSelector('.k-card', { timeout: 30000 });
-            await page.waitForTimeout(5000);
+            await page.waitForTimeout(4000);
 
-            const result = await page.evaluate(() => {
+            const home = await page.evaluate(() => {
               const cards = [...document.querySelectorAll('.k-card')];
               const visible = cards.filter(card => {
                 const r = card.getBoundingClientRect();
@@ -87,20 +87,42 @@ jobs:
                 inspected,
                 viewportWidth: innerWidth,
                 scrollWidth: document.documentElement.scrollWidth,
-                bodyScrollWidth: document.body.scrollWidth,
               };
             });
 
-            assert(result.visibleCardCount >= 8, `${name}: seulement ${result.visibleCardCount} cartes visibles`);
-            assert(result.scrollWidth <= result.viewportWidth + 2, `${name}: overflow horizontal ${result.scrollWidth} > ${result.viewportWidth}`);
-            assert(result.inspected.length >= 8, `${name}: échantillon visuel insuffisant`);
-            for (const card of result.inspected) {
-              assert(card.imageComplete && card.naturalWidth > 0 && card.naturalHeight > 0, `${name}: image cassée pour ${card.name}`);
+            assert(home.visibleCardCount >= 8, `${name}: seulement ${home.visibleCardCount} cartes visibles`);
+            assert(home.scrollWidth <= home.viewportWidth + 2, `${name}: overflow horizontal ${home.scrollWidth} > ${home.viewportWidth}`);
+            assert(home.inspected.length >= 8, `${name}: échantillon visuel insuffisant`);
+            for (const card of home.inspected) {
+              assert(card.imageComplete && card.naturalWidth > 0 && card.naturalHeight > 0, `${name}: image accueil cassée pour ${card.name}`);
             }
+            await page.screenshot({ path: `audit-output/${name}-home.png`, fullPage: true });
 
-            await page.screenshot({ path: `audit-output/${name}.png`, fullPage: true });
+            const search = page.locator('#k-search-input');
+            assert(await search.count() === 1, `${name}: champ recherche introuvable`);
+            await search.fill(targetName);
+            await page.waitForTimeout(900);
+            const targetCard = page.locator('.k-card').filter({ has: page.locator('.k-card-name', { hasText: targetName }) }).first();
+            await targetCard.waitFor({ state: 'visible', timeout: 15000 });
+            const cj = await targetCard.evaluate((card) => {
+              const img = card.querySelector('img');
+              return {
+                name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
+                imageUrl: img?.currentSrc || img?.src || '',
+                imageComplete: !!img?.complete,
+                naturalWidth: img?.naturalWidth || 0,
+                naturalHeight: img?.naturalHeight || 0,
+                rect: card.getBoundingClientRect().toJSON(),
+              };
+            });
+            assert(cj.name === targetName, `${name}: mauvaise carte CJ ${cj.name}`);
+            assert(cj.imageComplete && cj.naturalWidth > 0 && cj.naturalHeight > 0, `${name}: image CJ cassée pour ${cj.name}`);
+            assert(/^https:\/\//i.test(cj.imageUrl), `${name}: URL image CJ non HTTPS`);
+            await targetCard.scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `audit-output/${name}-cj-search.png`, fullPage: false });
+
             await page.close();
-            return { ...result, consoleErrors: errors };
+            return { home, cj, consoleErrors: errors };
           }
 
           (async () => {
@@ -110,30 +132,34 @@ jobs:
             const products = payload.products || [];
             assert(products.length >= 63, `API: ${products.length} produits seulement`);
 
-            const first63 = products.slice(0, 63);
-            assert(first63.length === 63, 'API: first63 incomplet');
-            assert(first63.every(p => p.sourcing_source === 'CJdropshipping'), 'API: les 63 premiers ne sont pas tous CJdropshipping');
-            assert(first63.every(p => /^https:\/\//i.test(p.image_url || '')), 'API: une image CJ des 63 premiers n’est pas HTTPS');
-            assert(first63.every(p => p.is_available === true), 'API: un des 63 premiers CJ n’est pas disponible');
+            const cjLot = products.filter(p =>
+              p.sourcing_source === 'CJdropshipping' && / — modèle [ABC]$/.test(p.name || '')
+            );
+            assert(cjLot.length === 63, `API: lot CJ attendu 63, reçu ${cjLot.length}`);
+            assert(cjLot.every(p => /^https:\/\//i.test(p.image_url || '')), 'API: une image du lot CJ n’est pas HTTPS');
+            assert(cjLot.every(p => p.is_available === true), 'API: un produit du lot CJ n’est pas disponible');
 
             for (const family of expectedFamilies) {
-              const names = first63.filter(p => p.name === `${family} — modèle A` || p.name === `${family} — modèle B` || p.name === `${family} — modèle C`);
+              const names = cjLot.filter(p => p.name === `${family} — modèle A` || p.name === `${family} — modèle B` || p.name === `${family} — modèle C`);
               assert(names.length === 3, `API: famille ${family} = ${names.length}/3`);
             }
 
+            const targetName = 'Robe femme — modèle A';
             const browser = await chromium.launch({ headless: true });
             try {
-              const desktop = await auditViewport(browser, 'desktop-1440', { width: 1440, height: 1100 });
-              const mobile = await auditViewport(browser, 'mobile-390', { width: 390, height: 844 });
+              const desktop = await auditViewport(browser, 'desktop-1440', { width: 1440, height: 1100 }, targetName);
+              const mobile = await auditViewport(browser, 'mobile-390', { width: 390, height: 844 }, targetName);
               const report = {
                 generatedAt: new Date().toISOString(),
                 api: {
                   total: payload.total,
                   fetched: products.length,
-                  first63CJ: first63.length,
-                  first63ImagesHttps: first63.filter(p => /^https:\/\//i.test(p.image_url || '')).length,
-                  first63Available: first63.filter(p => p.is_available === true).length,
+                  cjLot: cjLot.length,
+                  cjImagesHttps: cjLot.filter(p => /^https:\/\//i.test(p.image_url || '')).length,
+                  cjAvailable: cjLot.filter(p => p.is_available === true).length,
+                  families: expectedFamilies.length,
                 },
+                targetName,
                 desktop,
                 mobile,
               };
