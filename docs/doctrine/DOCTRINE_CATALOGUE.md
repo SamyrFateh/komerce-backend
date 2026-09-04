@@ -73,8 +73,11 @@ Trois voies sont autorisées :
    est publiable uniquement si `source_locale` est français et que tous les autres
    garde-fous de publication sont satisfaits.
 2. **Préparation humaine** — l'admin peut traduire, rédiger ou corriger le contenu
-   client avant validation. Le résultat est tracé `content_source='manual'`. La
-   vérité source reste inchangée.
+   client avant validation. Pour une source étrangère brute, une préparation
+   éditoriale complète fait passer la présentation client à
+   `content_source='manual'`, tandis que `name_source`, `description_source` et
+   `source_locale` restent inchangés. Les corrections champ par champ restent
+   tracées dans `catalog_field_overrides`.
 3. **Assistance IA facultative** — une IA peut proposer traduction, reformulation,
    catégorie, attributs ou précautions. Le résultat est tracé
    `content_source='ai_enriched'`, avec `enrichment_version`, confiance et
@@ -90,7 +93,9 @@ Garde-fous communs :
 - **Glossaire métier en DB** (`catalog_glossary`) : référence terminologique pour
   les traductions humaines comme pour l'IA ;
 - **Marquage d'origine** : `content_source` (`ai_enriched` / `manual` /
-  `connector_raw`) décrit la provenance du contenu client ;
+  `connector_raw`) décrit la provenance de la présentation client ;
+- **Overrides** : les corrections humaines d'une fiche issue du pipeline restent
+  tracées champ par champ, y compris après passage à `manual` ;
 - `enrichment_version` et `enrichment_confidence` ne sont requis que pour la voie
   `ai_enriched` ;
 - les champs source et le `raw_payload` sont immuables du point de vue éditorial.
@@ -100,11 +105,10 @@ Garde-fous communs :
 **Toute fiche doit pouvoir être reconstruite en repartant de sa donnée source et
 de ses décisions éditoriales tracées.**
 
-La préparation initiale humaine peut produire directement le contenu client
-`manual`. Les corrections ultérieures se posent en **overrides tracés** champ par
-champ, réappliqués après un nouveau raffinage. Une réimportation ou un éventuel
-ré-enrichissement IA ne doit jamais effacer une décision humaine existante sans
-action explicite.
+La préparation initiale humaine peut produire une présentation client `manual`.
+Les corrections se posent en **overrides tracés** champ par champ, réappliqués
+après un nouveau raffinage. Une réimportation ou un éventuel ré-enrichissement IA
+ne doit jamais effacer une décision humaine existante sans action explicite.
 
 Corollaire : le CRUD admin existant devient un éditeur de contenu préparé et
 d'overrides — même formulaire, mais avec une sémantique de traçabilité stricte.
@@ -114,9 +118,9 @@ d'overrides — même formulaire, mais avec une sémantique de traçabilité str
 L'approbation (étage ⑥) reste l'autorité de publication :
 
 - **Nouvelle référence** : toujours approuvée humainement après lecture de la
-  fiche FR, quelle que soit l'origine du contenu (`connector_raw` FR, `manual` ou
-  `ai_enriched`). C'est le `quality_validated` existant — validation de la
-  RÉFÉRENCE.
+  fiche FR, quelle que soit l'origine de la présentation (`connector_raw` FR,
+  `manual` ou `ai_enriched`). C'est le `quality_validated` existant — validation
+  de la RÉFÉRENCE.
 - **Mise à jour d'une fiche déjà approuvée** : peut être auto-publiée si le
   changement est borné et couvert par les règles existantes ; les changements
   éditoriaux significatifs ou incertains restent en review.
@@ -132,7 +136,7 @@ L'approbation (étage ⑥) reste l'autorité de publication :
   `raw_payload` pour faire passer une traduction comme vérité fournisseur.
 - Ne jamais traduire ou enrichir avant d'avoir filtré l'éligibilité lorsque ce
   travail est coûteux.
-- Ne jamais éditer une fiche sans provenance/override traçable.
+- Ne jamais éditer une fiche pipeline sans provenance/override traçable.
 - Ne jamais coder une exclusion douane en dur (table + business_rules).
 - Ne jamais imposer une clé ou un crédit IA à une fiche FR déjà conforme ou à une
   fiche préparée humainement.
@@ -151,9 +155,8 @@ d'importer, préparer, valider et publier un catalogue sans dépendre d'OpenAI,
 Anthropic ou de tout autre fournisseur LLM.
 
 L'utilisation ponctuelle d'un assistant externe pour aider l'opérateur à préparer
-un lot de fiches n'introduit pas de dépendance runtime : une fois relu et saisi dans
-le workflow éditorial, ce contenu est traité comme une préparation humaine
-`manual`.
+un lot de fiches n'introduit pas de dépendance runtime : une fois relu et intégré
+au workflow éditorial, ce contenu relève de la voie humaine `manual`.
 
 ## 9. Clés business_rules
 
