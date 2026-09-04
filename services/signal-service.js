@@ -180,7 +180,7 @@ let GENERATORS = {};
 GENERATORS.parcel_blocked = async function() {
   try {
     let rows = (await db.query(`
-      SELECT p.id, p.tracking_number, p.status, p.order_id,
+      SELECT p.id, p.reference AS tracking_number, p.status, p.order_id,
              EXTRACT(DAY FROM NOW() - p.updated_at)::int AS days_stuck,
              o.reference
       FROM parcels p
