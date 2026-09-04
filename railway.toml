@@ -34,8 +34,9 @@ watchPatterns = [
 
 [deploy]
 # One-shot operator run: migrate first, then populate only the guarded CJ
-# sourcing pool. The worker is resumable, requires KOMERCE_ALLOW_CJ_FULL_SYNC=1,
-# and is hard-capped by code at 1000 clean candidates. This config is reverted
-# immediately after the verified operator run.
-preDeployCommand = ["node scripts/migrate.js", "node scripts/cj-full-catalog-sync.js"]
+# sourcing pool. Railway accepts a single preDeploy array item, so the two
+# commands are chained. The worker is resumable, requires
+# KOMERCE_ALLOW_CJ_FULL_SYNC=1, and is hard-capped by code at 1000 clean
+# candidates. This config is reverted immediately after the verified run.
+preDeployCommand = ["node scripts/migrate.js && node scripts/cj-full-catalog-sync.js"]
 startCommand = "node server.js"
