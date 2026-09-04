@@ -18,11 +18,8 @@ module.exports = {
   status:   'production',
   owner:    'backend-core',
 
-  // ── Classification d'ontologie (arbitrage 2026-07-29) ────────────────────
-  // `axis` est la SEULE source de la binarité business/support. `type` est un
-  // champ historique de topologie et ne doit jamais servir à la dériver.
   classification: {
-    axis:     'business',   // business | support
+    axis:     'business',
     kind:     'business-feature',
     rationale: [
       'Propriétaire exclusif de products, catalog_media, product_variants, product_skus, product_sku_media, et des règles de canonicalisation, dédoublonnage et publication (arbitrage D, 2026-07-29).',
@@ -49,6 +46,7 @@ module.exports = {
       'glossaire metier EN->FR (catalog_glossary)',
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
+      'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
     ],
     out: [
       'calcul du prix final et valorisation transport (feature economic-engine)',
@@ -64,12 +62,8 @@ module.exports = {
       'middleware/require-catalog-global-authority.js',
     ],
     ci: [
-      // Workflow ACTIF (.github/workflows/).
       '.github/workflows/showcase-v2-staging-deploy.yml',
       '.github/workflows/cj-real-showcase-contract.yml',
-      // Workflows showcase-catalog EN PAUSE (revue gouvernance 2026-08-14,
-      // cf. `.github/workflows-disabled/README.md`) — déclarés à leur
-      // emplacement réel pour rester possédés (ni faux « absent », ni orphelins).
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
       '.github/workflows-disabled/showcase-catalog-staging-deploy.yml',
       '.github/workflows-disabled/README-CJ-SHOWCASE.md',
@@ -79,6 +73,7 @@ module.exports = {
     ],
     scripts: [
       'scripts/cj-real-showcase-seed.js',
+      'scripts/cj-full-catalog-sync.js',
     ],
     services: [
       'services/product-publication-guard.js',
@@ -108,6 +103,8 @@ module.exports = {
       'services/suppliers/connectors/noon-connector.js',
       'services/suppliers/connectors/cj-connector.js',
       'services/suppliers/connectors/json-connector.js',
+      'services/suppliers/cj-catalog-index.js',
+      'services/suppliers/catalog-sync-checkpoint.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
       'services/sourcing-import-dispatch.js',
@@ -126,8 +123,6 @@ module.exports = {
       'schemas/catalog/normalized-supplier-product.v1.schema.json',
       'schemas/catalog/normalized-supplier-product.v2.schema.json',
       'schemas/catalog/product-detail.v1.schema.json',
-      // Rattaché (B1, 2026-07-29) : schéma du profil d'import, catalogué à tort
-      // dans le fourre-tout komerce-repo — cœur catalog (json-source-pipeline.js).
       'schemas/catalog/import-profile.v1.schema.json',
     ],
     migrations: [
@@ -140,16 +135,13 @@ module.exports = {
       'migrations/107_product_variants_axis_display_name.sql',
       'migrations/108_product_skus_supplier_identity.sql',
       'migrations/109_product_sku_media.sql',
-      // Rattaché (B1, 2026-07-29) : audit d'import, catalogué à tort dans
-      // komerce-schema — suit services/suppliers/json-source-pipeline.js.
       'migrations/110_catalog_import_audit.sql',
       'migrations/130_deactivate_catalog_test_placeholders.sql',
       'migrations/150_catalog_import_business_ref.sql',
       'migrations/147_catalog_global_access_grants.sql',
+      'migrations/163_supplier_catalog_sync_checkpoints.sql',
     ],
     config: [
-      // Rattaché (B1, 2026-07-29) : profil de test dummyjson, catalogué à tort
-      // dans komerce-repo — consommé par services/suppliers/json-source-pipeline.js.
       'config/import-profiles/komerce-test-dummyjson.v1.json',
     ],
     docs: [
@@ -203,10 +195,6 @@ module.exports = {
       'js/market-hydration.js',
       'js/b-pager.js',
       'js/b-subcat.js',
-      // Lot O4 (cross-repo feature coverage) : ecart factuel comble — ces 2
-      // fichiers sont declares par boutique/features/catalog.feature.js
-      // (canonicalFeature: 'catalog') mais n'etaient pas encore revendiques
-      // ici, ce qui les faisait apparaitre en TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP.
       'js/b-cart-product-open-style.js',
       'css/hero.css',
       'css/products.css',
@@ -237,6 +225,8 @@ module.exports = {
       'tests/unit/cj-connector.test.js',
       'tests/unit/cj-connector-doc-contract.test.js',
       'tests/unit/cj-real-showcase-seed.test.js',
+      'tests/unit/cj-catalog-index.test.js',
+      'tests/unit/cj-full-catalog-sync.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-product-mutation-service.test.js',
       'tests/unit/catalog-promotion.test.js',
@@ -292,18 +282,19 @@ module.exports = {
       'catalog_field_overrides: RW',
       'catalog_glossary: R',
       'catalog_enrichment_runs: W',
-      'catalog_media: RW!',          // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 2 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'catalog_media: RW!',
       'order_items: R',
       'orders: R',
-      'product_skus: RW!',           // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
-      'product_sku_media: RW!',      // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
-      'product_variants: RW!',       // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
-      'product_content_profile: RW', // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
-      'product_content_sections: RW',// Lot Content (migration 111) : écrivain réel = catalog-promotion.js
-      'product_attributes: RW',      // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
-      'products: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'sourcing_candidates: R',      // lifecycle owner = sourcing ; catalog persiste via sourcing-candidate-import-service
+      'product_skus: RW!',
+      'product_sku_media: RW!',
+      'product_variants: RW!',
+      'product_content_profile: RW',
+      'product_content_sections: RW',
+      'product_attributes: RW',
+      'products: RW!',
+      'sourcing_candidates: R',
       'supplier_catalog_imports: W',
+      'supplier_catalog_sync_checkpoints: RW',
     ],
   },
 
@@ -348,41 +339,26 @@ module.exports = {
       'GET /api/products/categories',
       'GET /api/products/subcategories',
     ],
-    // Protocole de mutation exposé à sourcing (arbitrage D, 2026-07-29) : écrit
-
-    // atomiquement products, catalog_media, product_variants, product_skus et
-
-    // product_sku_media, décide créer / fusionner / rattacher, et retourne le
-
-    // productId. Idempotent via l'état PROMOTION_PENDING porté par sourcing.
-
     internalApi: [
-
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
       { fn: 'createDraftProductFromSourcingCandidate', file: 'services/catalog-candidate-product-service.js' },
       { fn: 'applyPrice', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'updateSourcingFields', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'bulkAssignSourcingRail', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'replaceVariantsForSourcing', file: 'services/catalog-product-mutation-service.js' },
-
     ],
-
     consumes: [
       'notifications (alert persistence via utils/alerts.js)',
       'auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
-
       'economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)',
       'sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)',
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
-      'orders (actions panier depuis les surfaces produit boutique — preuve: ' +
-        'b-catalog.js, render-product-card.js, b-modal-desktop-product.js, ' +
-        'b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> ' +
-        'b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)',
+      'orders (actions panier depuis les surfaces produit boutique — preuve: b-catalog.js, render-product-card.js, b-modal-desktop-product.js, b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)',
     ],
   },
 
@@ -428,5 +404,6 @@ module.exports = {
     'la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage',
     'le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css',
     'aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux',
+    'le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement',
   ],
 };
