@@ -73,12 +73,14 @@ describe('renderDiscoveryRail', () => {
     expect(target().querySelector('#k-discovery-local-title-test')?.textContent).toBe('Disponible ici');
     expect(target().textContent).toContain('Comores');
 
-    // Product local = Product Komerce normal : desktop retrouve le contrôle
-    // panier canonique `+`, tandis que les kinds provider gardent leur CTA.
+    // Product local = Product Komerce normal : desktop retrouve exactement le
+    // contrôle panier canonique. Il ne porte plus la classe de skin provider
+    // qui le transformait en pilule large et empêchait la forme catalogue.
     const productControl = target().querySelector(
       '[data-discovery-kind="product"] .k-card-add[data-add="p-1"]'
     );
     expect(productControl).not.toBeNull();
+    expect(productControl.classList.contains('k-discovery-canonical-action-slot')).toBe(false);
     expect(productControl.querySelector('.k-card-add-trigger[data-action="add"]')).not.toBeNull();
     expect(productControl.querySelector('.k-card-add-plus')?.textContent).toBe('+');
     expect(target().querySelector('[data-discovery-kind="product"] .k-discovery-canonical-cta')).toBeNull();
@@ -86,6 +88,8 @@ describe('renderDiscoveryRail', () => {
     const labels = Array.from(target().querySelectorAll('.k-discovery-canonical-cta'))
       .map(button => button.textContent);
     expect(labels).toEqual(['Commander', 'Demander']);
+    expect(target().querySelector('[data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot')).not.toBeNull();
+    expect(target().querySelector('[data-discovery-kind="service"] .k-discovery-canonical-action-slot')).not.toBeNull();
 
     expect(target().querySelectorAll('.k-discovery-status')).toHaveLength(3);
     expect(target().querySelector('[data-discovery-kind="product"] .k-card-price')?.textContent)
@@ -175,7 +179,7 @@ describe('renderDiscoveryRail', () => {
     expect(target().querySelector('.k-discovery-canonical-cta')?.textContent).toBe('Demander');
   });
 
-  it('conserve strictement la politique mobile 2×2 historique', () => {
+  it('conserve le mobile 2×2 tout en donnant aux Products le + canonique', () => {
     setViewport(390);
     const cards = [
       { kind: 'product', title: 'P1', cta_action_ref: 'p1' },
@@ -188,7 +192,18 @@ describe('renderDiscoveryRail', () => {
     expect(renderDiscoveryRail(target(), cards)).toBe(5);
     expect(target().querySelectorAll('.k-discovery-card')).toHaveLength(4);
     expect(target().querySelectorAll('.k-discovery-canonical-card')).toHaveLength(0);
-    expect(target().querySelectorAll('.k-discovery-cta')).toHaveLength(4);
+
+    // selectMobile() produit ici Product / Service / Product / Service.
+    // Les Products ne doivent donc plus afficher le vieux CTA verbal Acheter.
+    expect(target().querySelectorAll('[data-discovery-kind="product"] .k-discovery-product-action-row .k-card-add'))
+      .toHaveLength(2);
+    expect(target().querySelectorAll('[data-discovery-kind="product"] .k-card-add-trigger[data-action="add"]'))
+      .toHaveLength(2);
+    expect(target().querySelectorAll('[data-discovery-kind="product"] .k-discovery-cta'))
+      .toHaveLength(0);
+    expect(target().querySelectorAll('.k-discovery-cta')).toHaveLength(2);
+    expect(Array.from(target().querySelectorAll('.k-discovery-cta')).map(button => button.textContent))
+      .toEqual(['Demander', 'Demander']);
   });
 });
 

@@ -5,8 +5,8 @@
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
  * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
- *                Mobile conserve sa géométrie 2×2 ; desktop réutilise le shell k-card canonique.
- * @impact-areas  home, product-discovery, discovery-rail, category-navigation
+ *                Mobile conserve sa géométrie 2×2 ; Product réutilise le contrôle panier canonique sur tous les viewports.
+ * @impact-areas  home, product-discovery, discovery-rail, category-navigation, mobile, desktop
  * @version       2026-09
  */
 'use strict';
@@ -81,13 +81,35 @@ function renderContextSlot(card) {
 }
 
 /**
- * Renderer historique mobile. Il reste volontairement inchangé : le pager
- * garde son 2×2 vertical et aucun geste horizontal interne n'est réintroduit.
+ * Point A fulfillment mixte : un Product local n'a pas un CTA Discovery.
+ * Il expose exactement le même shell transactionnel `.k-card-add` que le
+ * catalogue. `markAllCartButtons()` remplacera ce contenu initial par le
+ * stepper canonique dès que le panier contient la ligne.
+ */
+function renderProductCartControl(card, safeTitle) {
+  const ref = sanitize(card.actionRef);
+  return `
+    <div class="k-card-add" data-add="${ref}" data-cart-lines="0" role="group" aria-label="Quantité de ${safeTitle}">
+      <button type="button" class="k-card-add-trigger" data-action="add" aria-label="Ajouter ${safeTitle} au panier">
+        <span class="k-card-add-plus" aria-hidden="true">+</span>
+      </button>
+    </div>`;
+}
+
+/**
+ * Renderer mobile 2×2. La géométrie Discovery reste inchangée, mais un Product
+ * `Disponible maintenant` est désormais transactionnel comme n'importe quelle
+ * carte Product : `+` canonique puis stepper vivant. Les kinds provider gardent
+ * leur CTA verbal.
  */
 function renderCard(card) {
+  const safeTitle = sanitize(card.title);
   const image = card.imageRef
-    ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${sanitize(card.title)}" loading="lazy" decoding="async">`
+    ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${safeTitle}" loading="lazy" decoding="async">`
     : `<div class="k-discovery-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
+  const action = card.kind === 'product'
+    ? `<div class="k-discovery-product-action-row">${renderProductCartControl(card, safeTitle)}</div>`
+    : `<button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>`;
 
   return `
     <article class="k-discovery-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
@@ -96,23 +118,17 @@ function renderCard(card) {
         ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
       </div>
       <div class="k-discovery-info">
-        <div class="k-discovery-name">${sanitize(card.title)}</div>
+        <div class="k-discovery-name">${safeTitle}</div>
         <div class="k-discovery-primary-slot">${renderPrimarySlot(card)}</div>
         <div class="k-discovery-context-slot">${renderContextSlot(card)}</div>
-        <button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+        ${action}
       </div>
     </article>`;
 }
 
 function renderDesktopActionSlot(card, safeTitle) {
   if (card.kind === 'product') {
-    const ref = sanitize(card.actionRef);
-    return `
-      <div class="k-card-add k-discovery-canonical-action-slot" data-add="${ref}" data-cart-lines="0" role="group" aria-label="Quantité de ${safeTitle}">
-        <button type="button" class="k-card-add-trigger" data-action="add" aria-label="Ajouter ${safeTitle} au panier">
-          <span class="k-card-add-plus" aria-hidden="true">+</span>
-        </button>
-      </div>`;
+    return renderProductCartControl(card, safeTitle);
   }
 
   return `

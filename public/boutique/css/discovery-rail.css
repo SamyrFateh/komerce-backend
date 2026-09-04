@@ -131,7 +131,7 @@
 
 /* Géométrie canonique Discovery : les trois kinds possèdent les mêmes
    rangs structurels. Une donnée optionnelle peut être vide ; elle ne peut
-   jamais déplacer le CTA ni modifier l'empreinte de la carte. */
+   jamais déplacer l'action ni modifier l'empreinte de la carte. */
 .k-discovery-info {
   display: flex;
   flex: 1 1 auto;
@@ -184,6 +184,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Point A — Product local : Discovery ne touche jamais au sélecteur critique
+   du contrôle panier. Le wrapper fournit uniquement le containing block mobile ;
+   products.css/cart.css restent propriétaires de la forme et du stepper. */
+.k-discovery-product-action-row {
+  position: relative;
+  min-height: 42px;
+  margin-top: auto;
 }
 
 .k-discovery-cta {
