@@ -1429,25 +1429,31 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : staging
 
-**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
+**Service** : Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Aucun paiement, settlement, calendrier structuré, contact provider direct ou order Komerce n’est créé par cette interaction.
 
 **Perimeter** :
 - _in_ :
-  - table providers (identité, contact, market, statut pending|active|suspended)
+  - table providers (identité et contact privé, market, statut pending|active|suspended)
   - table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)
   - table physical_offers (produit physique tiers, image_ref public optionnel)
-  - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni téléphone
+  - actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback
+  - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé
   - table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)
+  - intent request|callback et requester_note facultative : la note enrichit la cible sans jamais remplacer le propos connu
   - isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant
-  - POST /api/providers-services/inquiries — mutation client authentifiée, téléphone dérivé de la session canonique serveur
-  - consumer Boutique Commander/Demander — identité Komerce puis création de l’Inquiry propriétaire
+  - POST /api/providers-services/inquiries — mutation client authentifiée, téléphone demandeur dérivé de la session canonique serveur
+  - consumer Boutique des actions request/callback — identité Komerce puis création de l’Inquiry propriétaire
   - seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production
+  - seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception
 - _out_ :
   - authentification provider (pas de users / user_role pour le provider)
   - profil public provider riche, bio, téléphone, adresse exacte, métriques sociales ou comparaison de providers
+  - exposition de providers.phone, public_phone ou public_whatsapp dans le détail client
+  - appel direct tel: ou WhatsApp provider depuis la fiche Discovery
   - scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre
   - paiement, commission, settlement, provider wallet
-  - orders Komerce : Commander une physical_offer crée une Inquiry, jamais une ligne orders
+  - orders Komerce : request/callback créent une Inquiry, jamais une ligne orders
+  - action order sur providers-services tant qu’aucun contrat orders explicite n’existe ; un Product Komerce continue d’utiliser le parcours product
   - market_offer / multi-offres / ranking
   - god-table Listing/Offer unifiée
   - prescription artisan et shared-cart
@@ -1455,7 +1461,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - surface produit/catalogue et navigation — owner catalog
   - hébergement/stockage binaire des médias — image_ref reste une référence, pas un media service
 
-**Authority** : backend-core — providers-services possède le cycle demande/confirmation, le nom public minimal du provider, les médias source service/physical_offer et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.
+**Authority** : backend-core — providers-services possède le cycle demande/confirmation, la projection request/callback, le nom public minimal du provider, les médias source service/physical_offer, le contexte Inquiry et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.
 
 **Invariants** :
 - [object Object]
@@ -1484,13 +1490,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 9 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 15 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
-  - migrations : 1
+  - migrations : 3
   - routes : 1
-  - scripts : 1
-  - services : 1
-  - tests : 3
+  - scripts : 2
+  - services : 3
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="providers-services"]_
 

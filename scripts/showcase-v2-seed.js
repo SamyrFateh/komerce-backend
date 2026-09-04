@@ -6,14 +6,14 @@
  * @layer         script
  * @criticality   high
  * @inputs        canonical_hosted_manifest_v2, railway_staging
- * @outputs       500 cumulative products, sourcing candidates, canonical media, axes, SKU, French enrichment, approvals
+ * @outputs       500 cumulative products, sourcing candidates, canonical media, axes, SKU, French editorial preparation, approvals
  * @depends       db.js, scripts/showcase-v2-plan.js, scripts/showcase-media-provider.js, services/suppliers/connectors/manual-connector.js, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js, services/product-admin-service.js, services/catalog-enrichment.js, services/catalog-approval.js
  * @used-by       showcase v2 staging deploy
  * @db-read       products, product_skus, product_variants, sourcing_candidates
  * @db-write      products, catalog_media, product_variants, product_skus, product_sku_media, product_content_profile, product_content_sections, product_attributes, sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, catalog_enrichment_runs
  * @db-txn        yes (ingestion orchestrator + preparation/approval transactions per product)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @version       2026-08-v5
+ * @version       2026-09-v6
  */
 'use strict';
 
@@ -38,8 +38,6 @@ const SUPPLIER_NAME = 'Komerce Showcase V2';
 const RUN_MODES = Object.freeze(['fresh', 'resume']);
 
 function parseArgs(argv) {
-  // CLI direct reste conservateur : fresh. Le workflow de debug passe
-  // explicitement --mode resume ; la certification finale passe --mode fresh.
   const out = { target: TARGET, manifest: DEFAULT_MANIFEST, mode: 'fresh' };
   for (let i = 0; i < argv.length; i += 1) {
     const [key, inline] = argv[i].split('=', 2);
@@ -54,12 +52,33 @@ function parseArgs(argv) {
   return out;
 }
 
+function isFrenchLocale(locale) {
+  const value = String(locale || '').trim().toLowerCase().replace('_', '-');
+  return value === 'fr' || value.startsWith('fr-');
+}
+
 function resolveEnrichmentProvider() {
-  const provider = String(process.env.CATALOG_ENRICH_PROVIDER || 'anthropic').trim().toLowerCase();
-  if (!['anthropic', 'openai'].includes(provider)) {
-    throw new Error(`CATALOG_ENRICH_PROVIDER invalide: ${provider || '(vide)'}`);
+  const configured = String(process.env.CATALOG_ENRICH_PROVIDER || '').trim().toLowerCase();
+  if (configured) {
+    if (!['anthropic', 'openai'].includes(configured)) {
+      throw new Error(`CATALOG_ENRICH_PROVIDER invalide: ${configured}`);
+    }
+    return configured;
   }
-  return provider;
+  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (process.env.OPENAI_API_KEY) return 'openai';
+  return null;
+}
+
+function enrichmentKeyName(provider) {
+  if (provider === 'openai') return 'OPENAI_API_KEY';
+  if (provider === 'anthropic') return 'ANTHROPIC_API_KEY';
+  return null;
+}
+
+function hasEnrichmentCredentials(provider = resolveEnrichmentProvider()) {
+  const keyName = enrichmentKeyName(provider);
+  return Boolean(keyName && process.env[keyName]);
 }
 
 function assertStaging() {
@@ -70,12 +89,7 @@ function assertStaging() {
     throw new Error('KOMERCE_ALLOW_SHOWCASE_SEED=1 requis');
   }
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-
-  const provider = resolveEnrichmentProvider();
-  const keyName = provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
-  if (!process.env[keyName]) {
-    throw new Error(`${keyName} requis : la V2 ne peut pas contourner l’enrichissement français (${provider})`);
-  }
+  resolveEnrichmentProvider(); // valide une configuration explicite éventuelle, sans l'imposer
   resolveMediaProvider();
 }
 
@@ -120,8 +134,6 @@ async function assertV1Foundation() {
 function buildImportContracts(products, slots) {
   return products.map((product, index) => {
     const contract = buildV2Contract(product, slots[index]);
-    // Le contrat normalisé peut porter une représentation de travail, mais le
-    // raw_payload garde explicitement la vérité source originale à vie.
     return {
       ...contract,
       supplier_name: SUPPLIER_NAME,
@@ -176,10 +188,9 @@ async function ingestThroughRefinery(products, slots) {
   const body = {
     supplier_name: SUPPLIER_NAME,
     source_type: 'manual',
-    notes: 'Showcase V2 — campagne staging contractuelle, rejouable et enrichie FR',
+    notes: 'Showcase V2 — campagne staging contractuelle, rejouable et préparée FR',
     items,
   };
-
   const dispatch = () => manualConnector.fetchProducts({ supplier_name: SUPPLIER_NAME, items });
   const result = await catalogImportOrchestrator.importCatalog(body, null, dispatch);
   if (result.status !== 200) {
@@ -188,7 +199,6 @@ async function ingestThroughRefinery(products, slots) {
   if (result.body.accepted !== TARGET || result.body.rejected !== 0) {
     throw new Error(`Ingestion raffinerie incomplète: accepted=${result.body.accepted}, rejected=${result.body.rejected}`);
   }
-
   const byRef = await loadExistingCandidates(slots);
   console.log(`[showcase-v2-seed] ingestion vraie: import=${result.body.import_id}, candidats=${byRef.size}, erreurs=0`);
   return byRef;
@@ -223,6 +233,23 @@ function hydrateResumeProduct(sourceProduct, slot, candidate) {
   return { ...sourceProduct, image_url: imageUrl, images };
 }
 
+function editorialStateProblems(row, promptVersion = catalogEnrichmentPrompt.PROMPT_VERSION) {
+  const problems = [];
+  if (row.needs_review === true) problems.push('contenu éditorial à revoir');
+
+  if (row.content_source === 'ai_enriched') {
+    if (Number(row.enrichment_version) !== Number(promptVersion)) problems.push('version enrichissement obsolète');
+    if (!Number.isFinite(Number(row.enrichment_confidence))) problems.push('enrichissement non certifié');
+  } else if (row.content_source === 'manual') {
+    // Contenu client préparé humainement : aucune métadonnée IA exigée.
+  } else if (row.content_source === 'connector_raw') {
+    if (!isFrenchLocale(row.source_locale)) problems.push('préparation FR absente');
+  } else {
+    problems.push('source éditoriale invalide');
+  }
+  return problems;
+}
+
 function resumeProductProblems(row, slot, candidate, { promptVersion = catalogEnrichmentPrompt.PROMPT_VERSION, mediaProvider = resolveMediaProvider() } = {}) {
   const problems = [];
   if (!row) return ['produit absent'];
@@ -233,9 +260,7 @@ function resumeProductProblems(row, slot, candidate, { promptVersion = catalogEn
     : 0;
 
   if (!row.is_active || !row.is_available || !row.quality_validated || row.lifecycle_status !== 'active') problems.push('publication incomplète');
-  if (row.content_source !== 'ai_enriched') problems.push('enrichissement FR absent');
-  if (Number(row.enrichment_version) !== Number(promptVersion)) problems.push('version enrichissement obsolète');
-  if (row.needs_review === true || !Number.isFinite(Number(row.enrichment_confidence))) problems.push('enrichissement non certifié');
+  problems.push(...editorialStateProblems(row, promptVersion));
   if (row.category !== slot.category || row.subcategory !== slot.subcategory) problems.push('taxonomie divergente');
   if (row.name_source !== raw.source_title || (row.description_source ?? null) !== (raw.source_description ?? null) || (row.source_locale || 'en') !== (raw.source_locale || 'en')) problems.push('lignage source divergent');
   if (!isCanonicalMediaUrl(row.image_url, mediaProvider, 'showcase-v2')) problems.push('média non canonique');
@@ -368,7 +393,6 @@ async function applyCommercialSkus(client, product, contract) {
       is_active: unit.is_active !== false,
     });
   }
-
   const audit = await auditProductSkuReadiness(client, product.id);
   if (!audit.ready && !audit.already_sku) {
     throw new Error(`SKU readiness ${product.product_ref}: ${audit.reasons.join(' ; ')}`);
@@ -420,7 +444,6 @@ async function enrichProductInFrench(productId, productRef) {
   if (result.status !== 'ok' || result.needsReview === true) {
     throw new Error(`Enrichissement FR ${productRef} refusé: status=${result.status} ${result.error || ''}`.trim());
   }
-
   const { rows: [row] } = await db.query(
     `SELECT name, description, name_source, description_source, source_locale,
             content_source, enrichment_version, enrichment_confidence, needs_review
@@ -431,6 +454,18 @@ async function enrichProductInFrench(productId, productRef) {
     throw new Error(`Invariant enrichissement FR cassé ${productRef}: ${JSON.stringify(row || null)}`);
   }
   return row;
+}
+
+async function prepareEditorialContent(productId, product) {
+  if (isFrenchLocale(product.source_locale)) {
+    return { mode: 'source_fr', provider: null };
+  }
+  const provider = resolveEnrichmentProvider();
+  if (!provider || !hasEnrichmentCredentials(provider)) {
+    throw new Error(`Préparation FR requise ${product.product_ref}: source=${product.source_locale || 'inconnue'}, aucune assistance IA configurée. Traduire/corriger manuellement ou configurer un provider IA.`);
+  }
+  await enrichProductInFrench(productId, product.product_ref);
+  return { mode: 'ai_enriched', provider };
 }
 
 async function approvePreparedProduct(productId, productRef) {
@@ -461,7 +496,7 @@ async function approvePreparedProduct(productId, productRef) {
 
 async function processProduct(product, slot, candidate) {
   const productId = await prepareProduct(product, slot, candidate);
-  await enrichProductInFrench(productId, product.product_ref);
+  await prepareEditorialContent(productId, product);
   await approvePreparedProduct(productId, product.product_ref);
 }
 
@@ -473,10 +508,15 @@ async function postSeedAudit() {
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND inventory_model='SKU')::int AS sku_products,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND COALESCE(promo_pct,0)>0)::int AS promo_products,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='ai_enriched')::int AS ai_enriched_products,
-       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='connector_raw')::int AS raw_active_products,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='manual')::int AS manual_products,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='connector_raw'
+         AND (REPLACE(LOWER(COALESCE(source_locale,'')),'_','-')='fr' OR REPLACE(LOWER(COALESCE(source_locale,'')),'_','-') LIKE 'fr-%'))::int AS french_raw_products,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='connector_raw'
+         AND NOT (REPLACE(LOWER(COALESCE(source_locale,'')),'_','-')='fr' OR REPLACE(LOWER(COALESCE(source_locale,'')),'_','-') LIKE 'fr-%'))::int AS foreign_raw_products,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source NOT IN ('connector_raw','manual','ai_enriched'))::int AS unsupported_content_source,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND char_length(name)>80)::int AS overlong_titles,
-       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND enrichment_version IS NULL)::int AS missing_enrichment_version,
-       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND enrichment_version IS DISTINCT FROM $1)::int AS wrong_enrichment_version,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='ai_enriched' AND enrichment_version IS NULL)::int AS ai_missing_enrichment_version,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='ai_enriched' AND enrichment_version IS DISTINCT FROM $1)::int AS ai_wrong_enrichment_version,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND needs_review=TRUE)::int AS active_needs_review
      FROM products`,
     [catalogEnrichmentPrompt.PROMPT_VERSION],
@@ -529,8 +569,9 @@ async function postSeedAudit() {
   if (totals.v1 !== 500 || totals.v2 !== 500 || totals.sku_products !== 350) {
     throw new Error(`Post-seed mismatch: ${JSON.stringify({ ...totals, ...skuStats })}`);
   }
-  if (totals.ai_enriched_products !== 500 || totals.raw_active_products !== 0 || totals.overlong_titles !== 0 || totals.missing_enrichment_version !== 0 || totals.wrong_enrichment_version !== 0 || totals.active_needs_review !== 0) {
-    throw new Error(`Audit éditorial FR refusé: ${JSON.stringify(totals)}`);
+  const preparedTotal = totals.ai_enriched_products + totals.manual_products + totals.french_raw_products;
+  if (preparedTotal !== 500 || totals.foreign_raw_products !== 0 || totals.unsupported_content_source !== 0 || totals.overlong_titles !== 0 || totals.ai_missing_enrichment_version !== 0 || totals.ai_wrong_enrichment_version !== 0 || totals.active_needs_review !== 0) {
+    throw new Error(`Audit éditorial FR refusé: ${JSON.stringify({ ...totals, preparedTotal })}`);
   }
   if (lineage.name_source_mismatch !== 0 || lineage.description_source_mismatch !== 0 || lineage.missing_raw_source_title !== 0) {
     throw new Error(`Audit lignage source refusé: ${JSON.stringify(lineage)}`);
@@ -549,11 +590,14 @@ async function postSeedAudit() {
     promo_products: totals.promo_products,
     taxonomy_rows: distribution.length,
     french_editorial: {
+      prepared_total: preparedTotal,
+      native_fr_products: totals.french_raw_products,
+      manual_products: totals.manual_products,
       ai_enriched_products: totals.ai_enriched_products,
-      raw_active_products: totals.raw_active_products,
+      foreign_raw_products: totals.foreign_raw_products,
       overlong_titles: totals.overlong_titles,
-      missing_enrichment_version: totals.missing_enrichment_version,
-      wrong_enrichment_version: totals.wrong_enrichment_version,
+      ai_missing_enrichment_version: totals.ai_missing_enrichment_version,
+      ai_wrong_enrichment_version: totals.ai_wrong_enrichment_version,
       active_needs_review: totals.active_needs_review,
     },
     source_lineage: lineage,
@@ -582,14 +626,9 @@ async function seed(options) {
   let completed = new Set();
   if (options.mode === 'fresh') {
     validateManifest(manifestProducts);
-    // Chaîne réellement éprouvée : connecteur → normalisation → éligibilité →
-    // pricing → candidat inactif → promotion/SKU → enrichissement FR → approbation.
     products = manifestProducts;
     candidates = await ingestThroughRefinery(products, slots);
   } else {
-    // Reprise sans coût inutile : les 500 candidats issus du dernier fresh sont
-    // la source des médias canoniques et du contrat. Aucune réingestion, aucun
-    // remirroring ImageKit, aucun appel Luna pour une fiche déjà complète.
     candidates = await loadExistingCandidates(slots);
     products = manifestProducts.map((product, index) => hydrateResumeProduct(product, slots[index], candidates.get(slots[index].product_ref)));
     validateManifest(products);
@@ -608,14 +647,14 @@ async function seed(options) {
     await processProduct(product, slot, candidate);
     replayed += 1;
     if (options.mode === 'fresh') {
-      if ((index + 1) % 25 === 0) console.log(`[showcase-v2-seed] ${index + 1}/${TARGET} enrichis FR + approuvés`);
+      if ((index + 1) % 25 === 0) console.log(`[showcase-v2-seed] ${index + 1}/${TARGET} préparés FR + approuvés`);
     } else if (replayed % 25 === 0 || replayed === pendingTotal) {
       console.log(`[showcase-v2-seed] resume ${replayed}/${pendingTotal} rejoués — ${completed.size + replayed}/${TARGET} complets`);
     }
   }
 
   await postSeedAudit();
-  console.log(`[showcase-v2-seed] ✅ campagne V2 ${options.mode} committée, enrichie FR et auditée`);
+  console.log(`[showcase-v2-seed] ✅ campagne V2 ${options.mode} committée, préparée FR et auditée`);
 }
 
 async function main() {
@@ -641,7 +680,10 @@ module.exports = {
   buildImportContracts,
   candidatePrice,
   hydrateResumeProduct,
+  editorialStateProblems,
   resumeProductProblems,
   isResumeProductComplete,
+  isFrenchLocale,
   resolveEnrichmentProvider,
+  hasEnrichmentCredentials,
 };

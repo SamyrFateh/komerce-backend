@@ -1,22 +1,18 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
 /**
- * Tests unitaires — K-4 module partagé overrides tracés (DOCTRINE_CATALOGUE.md §5, §7)
+ * Tests unitaires — K-4 module partagé overrides tracés.
  *
  * Verrouille :
- *   isPipelineSourced — connector_raw/ai_enriched only, legacy manual exclu ;
- *   upsertOverride    — whitelist stricte (rejet AVANT toute requête),
- *                        UPSERT sur (product_id, field_name), colonne
- *                        interpolée toujours issue de la whitelist (jamais
- *                        le field_name brut client — défense injection) ;
- *   upsertOverrides    — validation de tout le lot avant le premier query
- *                        (tout ou rien côté validation), overridden[] complet.
+ *   isPipelineSourced — connector_raw/ai_enriched et manual avec lignage ;
+ *   upsertOverride    — whitelist stricte et colonne sûre ;
+ *   upsertOverrides   — validation du lot et passage à `manual` lorsqu'une
+ *                       source étrangère a reçu une préparation FR complète.
  */
 
 const {
@@ -24,6 +20,7 @@ const {
   isPipelineSourced,
   upsertOverride,
   upsertOverrides,
+  _manualPreparationComplete,
 } = require('../../services/catalog-overrides');
 
 const PRODUCT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -35,6 +32,9 @@ function mockDb({ product } = {}) {
       calls.push({ sql, params });
       if (sql.includes('INSERT INTO catalog_field_overrides')) {
         return { rows: [{ id: 'override-1', product_id: params[0], field_name: params[1], field_value: params[2], reason: params[3], set_by: params[4] }] };
+      }
+      if (sql.includes("SET content_source='manual'")) {
+        return { rows: [{ ...product, id: params[0], content_source: 'manual', enrichment_version: null, enrichment_confidence: null, needs_review: false }] };
       }
       if (sql.startsWith('UPDATE products')) {
         return { rows: [{ ...product, id: params[1] }] };
@@ -54,7 +54,11 @@ describe('isPipelineSourced', () => {
     expect(isPipelineSourced({ content_source: 'ai_enriched' })).toBe(true);
   });
 
-  it('faux pour manual (legacy, avant K-1)', () => {
+  it('vrai pour manual lorsque le produit conserve un lignage source', () => {
+    expect(isPipelineSourced({ content_source: 'manual', name_source: 'Wireless headphones' })).toBe(true);
+  });
+
+  it('faux pour manual legacy sans lignage source', () => {
     expect(isPipelineSourced({ content_source: 'manual' })).toBe(false);
   });
 
@@ -66,6 +70,23 @@ describe('isPipelineSourced', () => {
   it('faux si produit absent', () => {
     expect(isPipelineSourced(null)).toBe(false);
     expect(isPipelineSourced(undefined)).toBe(false);
+  });
+});
+
+describe('manualPreparationComplete', () => {
+  it('exige titre + description pour une source étrangère qui possède une description', () => {
+    const product = {
+      content_source: 'connector_raw',
+      source_locale: 'en',
+      name_source: 'Wireless headphones',
+      description_source: 'Bluetooth headphones for daily use',
+    };
+    expect(_manualPreparationComplete(product, ['name'])).toBe(false);
+    expect(_manualPreparationComplete(product, ['name', 'description'])).toBe(true);
+  });
+
+  it('ne marque pas manual une source déjà française', () => {
+    expect(_manualPreparationComplete({ content_source: 'connector_raw', source_locale: 'fr' }, ['name', 'description'])).toBe(false);
   });
 });
 
@@ -128,9 +149,33 @@ describe('upsertOverrides (batch)', () => {
       q, PRODUCT_ID, { name: 'Nom corrigé', description: 'Desc corrigée' }, { reason: 'lot', setBy: 'admin-1' }
     );
     expect(overridden).toEqual(['name', 'description']);
-    // 2 champs × (INSERT + UPDATE) = 4 requêtes
     expect(calls).toHaveLength(4);
     expect(product).toBeDefined();
+  });
+
+  it('marque manual une source étrangère entièrement traduite sans toucher au lignage source', async () => {
+    const source = {
+      id: PRODUCT_ID,
+      content_source: 'connector_raw',
+      source_locale: 'en',
+      name_source: 'Wireless headphones',
+      description_source: 'Bluetooth headphones for daily use',
+    };
+    const { q, calls } = mockDb({ product: source });
+    const { product } = await upsertOverrides(
+      q,
+      PRODUCT_ID,
+      { name: 'Casque audio sans fil', description: 'Casque Bluetooth pour un usage quotidien.' },
+      { reason: 'traduction humaine', setBy: 'admin-1' }
+    );
+
+    expect(calls).toHaveLength(5);
+    const provenanceCall = calls.find((c) => c.sql.includes("SET content_source='manual'"));
+    expect(provenanceCall).toBeDefined();
+    expect(product.content_source).toBe('manual');
+    expect(product.name_source).toBe('Wireless headphones');
+    expect(product.description_source).toBe('Bluetooth headphones for daily use');
+    expect(product.source_locale).toBe('en');
   });
 
   it('lot vide : overridden vide, aucune requête', async () => {

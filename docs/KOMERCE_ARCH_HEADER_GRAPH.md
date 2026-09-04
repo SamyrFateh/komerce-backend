@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 493
+- Scanned code files: 494
 - Files with full headers: 450
-- Files with lite headers: 43
-- Files with any headers: 493
+- Files with lite headers: 44
+- Files with any headers: 494
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1077
-- Edges: 5646
+- Graph nodes: 1078
+- Edges: 5650
 - DB tables: 126
 - Doctrines: 288
 - Impact areas: 170
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 91
+- catalog: 92
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -97,7 +97,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-renderer: 11
 - ui-runtime: 2
 - ui-service: 5
-- ui-state: 1
+- ui-state: 2
 - util: 32
 - util-ui: 1
 - utility: 1
@@ -443,6 +443,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
 - public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
 - public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
+- public/boutique/js/b-pager-end-bounce.js -> owner public/boutique/js/b-pager-end-bounce.js (mobile-pager-end-bounce)
 - public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
 - public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
 - public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)

@@ -13,13 +13,13 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v13
+ * @version       2026-09-v14
  *
  * SHOWCASE V2 — fixtures fournisseur déterministes.
  *
  * Ce builder ne découvre aucun produit sur Internet. Il fabrique exactement
- * les 500 lignes attendues par le plan V2, avec des identités produit propres,
- * des descriptions source anglaises explicites et un média SVG contrôlé par
+ * les 500 lignes attendues par le plan V2, avec des identités produit et des
+ * descriptions marchandes en français, ainsi qu'un média SVG contrôlé par
  * produit. La Raffinerie reçoit ainsi des données qui ressemblent à un flux
  * marchand normalisé, sans bruit éditorial ou culturel propre à Wikimedia.
  */
@@ -36,30 +36,54 @@ const DESCRIPTION_MAX_LENGTH = 10000;
 const FIXTURE_SUPPLIER = 'Komerce Fixture Supplier';
 
 const FIXTURE_TYPES = Object.freeze({
-  'Mode & Beauté/Femme': ["Women's cotton dress", "Women's linen blouse", "Women's midi skirt", "Women's leather handbag", "Women's casual jacket"],
-  'Mode & Beauté/Homme': ["Men's cotton shirt", "Men's casual jacket", "Men's chino trousers", "Men's leather belt", "Men's lace-up shoes"],
-  'Mode & Beauté/Enfant': ['Kids cotton t-shirt', 'Kids school backpack', 'Kids casual jacket', 'Kids sneakers', 'Kids school uniform set'],
-  'Mode & Beauté/Beauté': ['Hydrating face cream', 'Matte lipstick', 'Eau de parfum spray', 'Volumizing mascara', 'Gentle cleansing soap'],
-  'Maison/Confort': ['Electric desk fan', 'Portable space heater', 'Steam clothes iron', 'Compact vacuum cleaner', 'Bed pillow'],
-  'Maison/Cuisine': ['Electric kettle', 'Stainless steel frying pan', 'Stainless steel cutlery set', 'Countertop blender', 'Ceramic bowl set'],
-  'Maison/Déco': ['Ceramic flower vase', 'Table lamp', 'Decorative cushion', 'Wall clock', 'Scented candle'],
-  'Maison/Enfants': ['School backpack', 'Pencil case', 'Spiral notebook', 'Kids desk chair', 'Stationery set'],
-  'Tech/Phones': ['Android smartphone', 'Dual SIM smartphone', '5G smartphone', 'Unlocked feature phone', 'Rugged smartphone'],
-  'Tech/Audio': ['Wireless headphones', 'Bluetooth speaker', 'True wireless earbuds', 'USB microphone', 'Gaming headset'],
-  'Tech/Montres': ['Digital wristwatch', 'Smartwatch', 'Mechanical wristwatch', 'Sports watch', 'Classic wristwatch'],
-  'Bricolage/Outillage': ['Cordless drill', 'Phillips screwdriver set', 'Claw hammer', 'Combination pliers', 'Adjustable wrench'],
-  'Bricolage/Electricité': ['Electrical connector set', 'Power extension cord', 'Wall electrical socket', 'Light switch', 'Electrical plug adapter'],
-  'Bricolage/Sécurité': ['Steel padlock', 'Door lock cylinder', 'Home security camera', 'Door security latch', 'Compact safe'],
-  'Créations personnelles/Cérémonie': ["Women's formal evening dress", 'Wedding dress', "Men's formal suit", 'Tuxedo jacket', 'Ceremonial gown'],
-  'Créations personnelles/Cadeau': ['Rigid gift box', 'Personalized keepsake box', 'Souvenir mug', 'Decorative wooden photo frame', 'Fabric gift bag'],
-  'Créations personnelles/Impression': ['Printed ceramic mug', 'Printed greeting card', 'A4 poster print', 'Printed notebook', 'Personalized stationery set'],
-  'Auto/Filtres': ['Engine oil filter', 'Automotive air filter', 'Fuel filter', 'Cabin air filter', 'Engine oil and air filter kit'],
-  'Auto/Freinage': ['Front brake disc', 'Brake pad set', 'Rear brake caliper', 'Brake rotor', 'Disc brake kit'],
-  'Auto/Éclairage': ['Left car headlight', 'Right car headlight', 'LED headlamp', 'Tail light assembly', 'Automotive LED bulb pair'],
-  'Auto/Moto': ['Motorcycle helmet', 'Motorcycle rear-view mirror', 'Motorcycle LED light', 'Motorcycle phone mount', 'Motorcycle lock'],
+  'Mode & Beauté/Femme': ['Robe femme en coton', 'Blouse femme en lin', 'Jupe midi femme', 'Sac à main femme en cuir', 'Veste décontractée femme'],
+  'Mode & Beauté/Homme': ['Chemise homme en coton', 'Veste décontractée homme', 'Pantalon chino homme', 'Ceinture homme en cuir', 'Chaussures à lacets homme'],
+  'Mode & Beauté/Enfant': ['T-shirt enfant en coton', 'Sac à dos scolaire enfant', 'Veste décontractée enfant', 'Baskets enfant', 'Ensemble uniforme scolaire enfant'],
+  'Mode & Beauté/Beauté': ['Crème hydratante visage', 'Rouge à lèvres mat', 'Eau de parfum', 'Mascara volume', 'Savon nettoyant doux'],
+  'Maison/Confort': ['Ventilateur de table électrique', "Chauffage d'appoint portable", 'Fer à repasser vapeur', 'Aspirateur compact', 'Oreiller de lit'],
+  'Maison/Cuisine': ['Bouilloire électrique', 'Poêle en acier inoxydable', 'Ménagère en acier inoxydable', 'Blender de cuisine', 'Lot de bols en céramique'],
+  'Maison/Déco': ['Vase décoratif en céramique', 'Lampe de table', 'Coussin décoratif', 'Horloge murale', 'Bougie parfumée'],
+  'Maison/Enfants': ['Sac à dos scolaire', 'Trousse scolaire', 'Cahier à spirale', 'Chaise de bureau enfant', 'Set de fournitures scolaires'],
+  'Tech/Phones': ['Smartphone Android', 'Smartphone double SIM', 'Smartphone 5G', 'Téléphone mobile débloqué', 'Smartphone renforcé'],
+  'Tech/Audio': ['Casque audio sans fil', 'Enceinte Bluetooth', 'Écouteurs sans fil', 'Microphone USB', 'Casque gaming'],
+  'Tech/Montres': ['Montre numérique', 'Montre connectée', 'Montre mécanique', 'Montre sport', 'Montre classique'],
+  'Bricolage/Outillage': ['Perceuse sans fil', 'Jeu de tournevis cruciformes', 'Marteau arrache-clou', 'Pince universelle', 'Clé à molette'],
+  'Bricolage/Electricité': ['Lot de connecteurs électriques', 'Rallonge électrique', 'Prise électrique murale', 'Interrupteur mural', 'Adaptateur de prise électrique'],
+  'Bricolage/Sécurité': ['Cadenas en acier', 'Cylindre de serrure de porte', 'Caméra de sécurité domestique', 'Verrou de sécurité pour porte', 'Coffre-fort compact'],
+  'Créations personnelles/Cérémonie': ['Robe de soirée femme', 'Robe de mariée', 'Costume habillé homme', 'Veste de smoking', 'Tenue de cérémonie'],
+  'Créations personnelles/Cadeau': ['Coffret cadeau rigide', 'Boîte souvenir personnalisable', 'Mug souvenir', 'Cadre photo décoratif en bois', 'Sac cadeau en tissu'],
+  'Créations personnelles/Impression': ['Mug en céramique imprimé', 'Carte de vœux imprimée', 'Affiche A4 imprimée', 'Carnet imprimé', 'Set de papeterie personnalisable'],
+  'Auto/Filtres': ['Filtre à huile moteur', 'Filtre à air automobile', 'Filtre à carburant', "Filtre d'habitacle", 'Kit filtres huile et air moteur'],
+  'Auto/Freinage': ['Disque de frein avant', 'Jeu de plaquettes de frein', 'Étrier de frein arrière', 'Disque de frein ventilé', 'Kit de freinage à disque'],
+  'Auto/Éclairage': ['Phare avant gauche', 'Phare avant droit', 'Projecteur LED automobile', 'Feu arrière complet', "Paire d'ampoules LED automobile"],
+  'Auto/Moto': ['Casque moto', 'Rétroviseur moto', 'Feu LED moto', 'Support téléphone moto', 'Antivol moto'],
 });
 
-const FIXTURE_SERIES = Object.freeze(['Classic', 'Essential', 'Premium', 'Compact', 'Everyday', 'Pro', 'Urban', 'Select', 'Studio', 'Core']);
+const FIXTURE_SERIES = Object.freeze(['Classique', 'Essentiel', 'Premium', 'Compact', 'Quotidien', 'Pro', 'Urbain', 'Sélection', 'Atelier', 'Signature']);
+
+const DESCRIPTION_LEADS = Object.freeze({
+  'Mode & Beauté/Femme': 'Pièce de mode femme pensée pour un usage quotidien, avec une présentation actuelle et une finition soignée.',
+  'Mode & Beauté/Homme': 'Pièce de mode homme conçue pour un usage quotidien, facile à porter et à associer.',
+  'Mode & Beauté/Enfant': 'Article enfant pratique et confortable, adapté aux usages du quotidien.',
+  'Mode & Beauté/Beauté': 'Produit de beauté pensé pour une routine simple, avec une utilisation claire et agréable au quotidien.',
+  'Maison/Confort': 'Équipement maison pratique, conçu pour améliorer le confort dans les usages du quotidien.',
+  'Maison/Cuisine': 'Article de cuisine fonctionnel et simple à utiliser, adapté à une utilisation régulière.',
+  'Maison/Déco': 'Objet décoratif pensé pour apporter une touche simple et chaleureuse à la maison.',
+  'Maison/Enfants': 'Article pratique pour accompagner les activités scolaires et quotidiennes des enfants.',
+  'Tech/Phones': 'Téléphone pensé pour les usages mobiles du quotidien, avec une prise en main simple et polyvalente.',
+  'Tech/Audio': 'Équipement audio conçu pour une écoute confortable et une utilisation simple au quotidien.',
+  'Tech/Montres': 'Montre pensée pour un usage quotidien, avec un design lisible et facile à porter.',
+  'Bricolage/Outillage': 'Outil pratique pour les travaux courants, avec une prise en main simple et efficace.',
+  'Bricolage/Electricité': 'Accessoire électrique destiné aux installations et usages courants de la maison.',
+  'Bricolage/Sécurité': 'Équipement de sécurité conçu pour renforcer simplement la protection des biens et des accès.',
+  'Créations personnelles/Cérémonie': 'Article de cérémonie destiné aux occasions habillées, avec une présentation élégante et soignée.',
+  'Créations personnelles/Cadeau': 'Article cadeau pensé pour une attention personnelle, facile à offrir et à présenter.',
+  'Créations personnelles/Impression': 'Support personnalisable destiné à l’impression, au cadeau ou à la communication visuelle.',
+  'Auto/Filtres': 'Pièce automobile destinée à l’entretien courant et au bon fonctionnement du véhicule.',
+  'Auto/Freinage': 'Pièce de freinage destinée à l’entretien et au remplacement des éléments d’usure du véhicule.',
+  'Auto/Éclairage': 'Équipement d’éclairage automobile destiné au remplacement ou à l’amélioration de la visibilité du véhicule.',
+  'Auto/Moto': 'Équipement moto pratique, pensé pour l’usage quotidien, la sécurité ou le confort de conduite.',
+});
 
 function segmentKey(target) { return `${target.category}/${target.subcategory}`; }
 
@@ -101,15 +125,16 @@ function fixtureSvgDataUri(product) {
 function fixtureProductForSlot(slot) {
   const key = segmentKey(slot);
   const types = FIXTURE_TYPES[key];
+  const descriptionLead = DESCRIPTION_LEADS[key];
   if (!types?.length) throw new Error(`Aucune fixture produit définie pour ${key}`);
+  if (!descriptionLead) throw new Error(`Aucune description produit définie pour ${key}`);
   const base = types[slot.localIndex % types.length];
   const series = FIXTURE_SERIES[Math.floor(slot.localIndex / types.length) % FIXTURE_SERIES.length];
   const sourceTitle = `${base} — ${series}`;
   const description = [
-    `Commercial supplier catalogue item: ${base}.`,
-    `Supplier commercial line: ${series}. This line name does not indicate size, age, quantity or technical specification.`,
-    `Sellable physical product intended for e-commerce listing in ${slot.category} / ${slot.subcategory}.`,
-    'The source record describes the product itself, with no person, artwork, museum object or editorial scene.',
+    `${base}.`,
+    descriptionLead,
+    `Gamme ${series}, présentée dans la catégorie ${slot.category} / ${slot.subcategory}.`,
   ].join(' ');
   const product = {
     product_ref: slot.product_ref,
@@ -119,7 +144,7 @@ function fixtureProductForSlot(slot) {
     source_title: sourceTitle,
     source_description: description.slice(0, DESCRIPTION_MAX_LENGTH),
     description: description.slice(0, DESCRIPTION_MAX_LENGTH),
-    source_locale: 'en',
+    source_locale: 'fr',
     source: `fixture:${slot.product_ref}`,
     source_url: `https://fixtures.komerce.test/products/${slot.product_ref.toLowerCase()}`,
     source_attribution: { supplier: FIXTURE_SUPPLIER, license: 'synthetic-test-fixture' },
@@ -175,6 +200,7 @@ module.exports = {
   FIXTURE_SUPPLIER,
   FIXTURE_TYPES,
   FIXTURE_SERIES,
+  DESCRIPTION_LEADS,
   segmentKey,
   parseArgs,
   escapeXml,

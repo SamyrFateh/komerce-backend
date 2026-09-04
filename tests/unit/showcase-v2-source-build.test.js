@@ -48,15 +48,14 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     }
   });
 
-  test('les données ressemblent à un flux fournisseur marchand normal', () => {
+  test('les données ressemblent à un flux fournisseur marchand français', () => {
     for (const product of buildCatalogue()) {
       expect(product.source).toMatch(/^fixture:SHOWCASE-V2-\d{4}$/);
-      expect(product.source_locale).toBe('en');
+      expect(product.source_locale).toBe('fr');
       expect(product.source_title).toBeTruthy();
-      expect(product.source_description).toContain('Commercial supplier catalogue item');
-      expect(product.source_description).toContain('Supplier commercial line');
-      expect(product.source_description).toContain('does not indicate size, age, quantity or technical specification');
-      expect(product.source_description).toContain('Sellable physical product');
+      expect(product.source_description).toContain('Gamme ');
+      expect(product.source_description).toContain(`catégorie ${product.category} / ${product.subcategory}`);
+      expect(product.source_description).not.toMatch(/Commercial supplier catalogue item|Supplier commercial line|Sellable physical product/i);
       expect(product.source_description).not.toMatch(/Paul Klee|Hirohito|museum collection|work of art/i);
       expect(product.source_url).toMatch(/^https:\/\/fixtures\.komerce\.test\/products\//);
       expect(product.image_url).toMatch(/^data:image\/svg\+xml;base64,/);
@@ -69,19 +68,19 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
       (product) => product.category === 'Maison' && product.subcategory === 'Cuisine'
     );
     expect(kitchen).toHaveLength(25);
-    expect(kitchen.some((product) => /\bknife\b/i.test(product.source_title))).toBe(false);
-    expect(kitchen.filter((product) => /\bcutlery\b/i.test(product.source_title))).toHaveLength(5);
+    expect(kitchen.some((product) => /\bcouteau\b/i.test(product.source_title))).toBe(false);
+    expect(kitchen.filter((product) => /\bménagère\b/i.test(product.source_title))).toHaveLength(5);
   });
 
   test('régression run 59 : les gammes ne portent plus de suffixe numérique ambigu', () => {
     const products = buildCatalogue();
-    expect(products.some((product) => /—\s+[A-Za-z]+\s+\d+\s*$/.test(product.source_title))).toBe(false);
+    expect(products.some((product) => /—\s+[\p{L}-]+\s+\d+\s*$/u.test(product.source_title))).toBe(false);
 
     const product70 = products.find((product) => product.product_ref === 'SHOWCASE-V2-0070');
     expect(product70).toBeDefined();
-    expect(product70.source_title).toBe('Kids school uniform set — Essential');
-    expect(product70.source_description).toContain('Supplier commercial line: Essential');
-    expect(product70.source_description).toContain('does not indicate size, age, quantity or technical specification');
+    expect(product70.source_title).toBe('Ensemble uniforme scolaire enfant — Essentiel');
+    expect(product70.source_description).toContain('Gamme Essentiel');
+    expect(product70.source_locale).toBe('fr');
   });
 
   test('régression run 60 : les identités produit vagues sont remplacées par des objets marchands concrets', () => {
@@ -90,12 +89,12 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     const product420 = products.find((product) => product.product_ref === 'SHOWCASE-V2-0420');
 
     expect(product419).toBeDefined();
-    expect(product419.source_title).toBe('Decorative wooden photo frame — Compact');
+    expect(product419.source_title).toBe('Cadre photo décoratif en bois — Compact');
     expect(product420).toBeDefined();
-    expect(product420.source_title).toBe('Fabric gift bag — Compact');
+    expect(product420.source_title).toBe('Sac cadeau en tissu — Compact');
 
     for (const product of products) {
-      expect(product.source_title).not.toMatch(/\bdecorative gift item\b|\bpresent box\b|\bmobile phone handset\b|\bautomotive lamp\b|\bcar filter kit\b/i);
+      expect(product.source_title).not.toMatch(/\bobjet cadeau décoratif\b|\bboîte cadeau générique\b|\btéléphone mobile générique\b|\blampe automobile\b|\bkit filtre automobile\b/i);
     }
   });
 
@@ -103,13 +102,14 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     expect(buildCatalogue()).toEqual(buildCatalogue());
   });
 
-  test('une fixture garde une identité produit explicite et la taxonomie du slot', () => {
+  test('une fixture garde une identité produit explicite en français et la taxonomie du slot', () => {
     const slot = buildSlots()[6];
     const product = fixtureProductForSlot(slot);
     expect(product.product_ref).toBe('SHOWCASE-V2-0007');
     expect(product.category).toBe(slot.category);
     expect(product.subcategory).toBe(slot.subcategory);
-    expect(product.source_title).toMatch(/dress|blouse|skirt|handbag|jacket/i);
+    expect(product.source_locale).toBe('fr');
+    expect(product.source_title).toMatch(/robe|blouse|jupe|sac à main|veste/i);
     expect(product.showcase_v2).toMatchObject({ fixture: true, rich: slot.rich });
   });
 
