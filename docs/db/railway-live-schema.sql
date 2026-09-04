@@ -458,6 +458,25 @@ $$;
 
 
 --
+-- Name: prevent_order_item_fulfillment_source_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_order_item_fulfillment_source_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.fulfillment_source IS DISTINCT FROM NEW.fulfillment_source THEN
+    RAISE EXCEPTION
+      'order_items.fulfillment_source est immuable après création (% -> %)',
+      OLD.fulfillment_source, NEW.fulfillment_source
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: prevent_scan_event_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2454,9 +2473,11 @@ CREATE TABLE public.order_items (
     delivery_mode text DEFAULT 'sea'::text NOT NULL,
     requested_transport_rail text,
     shared_cart_item_id uuid,
+    fulfillment_source text,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
     CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
+    CONSTRAINT order_items_fulfillment_source_valid CHECK (((fulfillment_source IS NULL) OR (fulfillment_source = ANY (ARRAY['LOCAL_STOCK'::text, 'IMPORT'::text])))),
     CONSTRAINT order_items_requested_transport_rail_check CHECK ((requested_transport_rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text])))
 );
 
@@ -2564,6 +2585,13 @@ COMMENT ON COLUMN public.order_items.delivery_mode IS 'DÉPRÉCIÉE — remplac�
 --
 
 COMMENT ON COLUMN public.order_items.requested_transport_rail IS 'Code canonique du rail demandé par le client lors de la commande. NULL = aucun choix explicite (ne déduit pas SEA_STANDARD). Valeurs : SEA_STANDARD, AIR_EXPRESS. À distinguer de assigned_transport_rail (rail réellement exécuté par logistics).';
+
+
+--
+-- Name: COLUMN order_items.fulfillment_source; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.fulfillment_source IS 'Snapshot immuable de provenance au checkout : LOCAL_STOCK ou IMPORT. NULL est réservé aux lignes historiques/synthétiques sans snapshot fiable et ne doit jamais être interprété comme IMPORT.';
 
 
 --
@@ -9529,6 +9557,13 @@ CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH 
 --
 
 CREATE TRIGGER trg_no_delete_parcels BEFORE DELETE ON public.parcels FOR EACH ROW EXECUTE FUNCTION public.prevent_hard_delete_parcels();
+
+
+--
+-- Name: order_items trg_order_items_fulfillment_source_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_order_items_fulfillment_source_immutable BEFORE UPDATE OF fulfillment_source ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.prevent_order_item_fulfillment_source_change();
 
 
 --
