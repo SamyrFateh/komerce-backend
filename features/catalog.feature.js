@@ -36,7 +36,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      'connecteurs fournisseurs (CSV, API, manuel, Noon)',
+      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
@@ -100,6 +100,7 @@ module.exports = {
       'services/suppliers/connectors/csv-connector.js',
       'services/suppliers/connectors/_connector-utils.js',
       'services/suppliers/connectors/noon-connector.js',
+      'services/suppliers/connectors/cj-connector.js',
       'services/suppliers/connectors/json-connector.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
@@ -150,6 +151,8 @@ module.exports = {
       'docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md',
       'docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md',
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
+      'docs/CJ_CONNECTOR.md',
+      'docs/cj-connector-validation.md',
     ],
     routes: [
       'routes/products.js',
@@ -220,6 +223,8 @@ module.exports = {
       'tests/unit/manual-connector.test.js',
       'tests/unit/manual-connector-source-v2.test.js',
       'tests/unit/noon-connector.test.js',
+      'tests/unit/cj-connector.test.js',
+      'tests/unit/cj-connector-doc-contract.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-product-mutation-service.test.js',
       'tests/unit/catalog-promotion.test.js',

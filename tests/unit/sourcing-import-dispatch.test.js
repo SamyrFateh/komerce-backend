@@ -8,6 +8,7 @@
 
 const mockCsvFetch = jest.fn();
 const mockManualFetch = jest.fn();
+const mockCjFetch = jest.fn();
 
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({
   fetchProducts: (...args) => mockCsvFetch(...args),
@@ -20,6 +21,12 @@ jest.mock('../../services/suppliers/connectors/manual-connector', () => ({
 jest.mock('../../services/suppliers/connectors/noon-connector', () => ({
   IS_ACTIVE: false,
   INACTIVE_REASON: 'Noon disabled in test',
+}));
+
+jest.mock('../../services/suppliers/connectors/cj-connector', () => ({
+  IS_ACTIVE: true,
+  INACTIVE_REASON: null,
+  fetchProducts: (...args) => mockCjFetch(...args),
 }));
 
 const { connectorCatalog, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
@@ -61,8 +68,36 @@ describe('sourcing-import-dispatch', () => {
     await expect(dispatchToConnector({ source_type: 'api', supplier_id: 'NOON' }))
       .rejects.toThrow('Noon disabled in test');
 
-    expect(connectorCatalog().api_suppliers).toEqual([
+    expect(connectorCatalog().api_suppliers).toEqual(expect.arrayContaining([
       expect.objectContaining({ supplier: 'noon', active: false, reason: 'Noon disabled in test' }),
-    ]);
+      expect.objectContaining({ supplier: 'cj', active: true, label: 'CJdropshipping API' }),
+    ]));
+  });
+
+  it('délègue CJ au connecteur API avec uniquement les filtres autorisés', async () => {
+    const expected = { products: [{ supplier_product_id: 'CJ-1' }], invalid: [], total: 1 };
+    mockCjFetch.mockResolvedValue(expected);
+
+    await expect(dispatchToConnector({
+      source_type: 'api',
+      supplier_id: 'CJ',
+      keyword: 'wireless headphones',
+      page: 2,
+      page_size: 30,
+      country_code: 'cn',
+      start_warehouse_inventory: 1,
+      verified_warehouse: 1,
+      ignored_secret: 'never-forward-me',
+    })).resolves.toBe(expected);
+
+    expect(mockCjFetch).toHaveBeenCalledWith({
+      keyword: 'wireless headphones',
+      page: 2,
+      size: 30,
+      categoryId: undefined,
+      countryCode: 'cn',
+      startWarehouseInventory: 1,
+      verifiedWarehouse: 1,
+    });
   });
 });
