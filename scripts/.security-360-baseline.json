@@ -5,6 +5,7 @@
     "GET /api/categories",
     "GET /api/client/magic-link/validate",
     "GET /api/local-stock/availability",
+    "GET /api/local-stock/checkout-preview",
     "GET /api/loyalty/tiers",
     "GET /api/modules",
     "GET /api/modules/fabrics",

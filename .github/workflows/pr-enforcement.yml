@@ -249,14 +249,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      # Les sources canoniques restent bloquantes. Les projections dérivées sont
-      # hydratées dans le workspace CI avant les gates, puis restaurées avant le
-      # contrôle de mutation. Une PR ne devient donc plus rouge pour un simple
-      # oubli de régénération/commit d'un snapshot généré.
-      - name: Hydrate derived governance projections
-        run: node scripts/ci-refresh-governance-projections.js
+      # Les sources canoniques restent bloquantes. Le graphe technique doit être
+      # hydraté AVANT les projections métier qui le consomment ; sinon un
+      # changement de header rend mécaniquement BUSINESS_FEATURE_GRAPH stale
+      # quelques millisecondes après sa génération.
       - name: Hydrate technical architecture projection
         run: node scripts/generate-komerce-arch-graph.js
+      - name: Hydrate derived governance projections
+        run: node scripts/ci-refresh-governance-projections.js
       - name: Pre-merge architecture coherence
         run: |
           node scripts/arch-db-check.js
