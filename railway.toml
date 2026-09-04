@@ -33,7 +33,9 @@ watchPatterns = [
 ]
 
 [deploy]
-# Migration authority : exécuter le runner APRÈS le build et AVANT que la
-# nouvelle version commence à servir. Un exit != 0 doit bloquer le déploiement.
-preDeployCommand = ["node scripts/migrate.js"]
+# One-shot operator run: migrate first, then populate only the guarded CJ
+# sourcing pool. The worker is resumable, requires KOMERCE_ALLOW_CJ_FULL_SYNC=1,
+# and is hard-capped by code at 1000 clean candidates. This config is reverted
+# immediately after the verified operator run.
+preDeployCommand = ["node scripts/migrate.js", "node scripts/cj-full-catalog-sync.js"]
 startCommand = "node server.js"
