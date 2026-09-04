@@ -15,14 +15,15 @@
 'use strict';
 
 /**
- * b-pager.js — Temu V2.9.1 : pager horizontal des catégories principales mobile.
+ * b-pager.js — Temu V2.10 : pager horizontal des catégories principales mobile.
  *
  * Grammaire :
  * - horizontal = changement explicite d'univers (swipe ou tap sur le rail) ;
  * - vertical   = exploration locale de l'univers courant ;
  * - toute entrée horizontale dans un univers repart en haut afin que
  *   `Disponible ici`, lorsqu'il existe, soit immédiatement visible ;
- * - aucun changement de catégorie n'est déclenché par l'arrivée en bas de page ;
+ * - l'arrivée en bas signale la suite sans naviguer ; une seconde impulsion
+ *   verticale volontaire déclenche seule le changement de catégorie ;
  * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
  * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,
@@ -33,6 +34,7 @@
 import { bus } from './b-bus.js';
 import { state, dom, setActiveCatState } from './b-store.js';
 import { isDesktop } from './b-scroll-owner.js';
+import { setupPagerEndBounce, teardownPagerEndBounce } from './b-pager-end-bounce.js';
 
 let _stabilizationHooksInstalled = false;
 let _recalcRaf = 0;
@@ -355,8 +357,8 @@ function _setupInfiniteLoop() {
   ghost.scrollTop = 0;
 }
 
-function _setupSectionAutoAdvance() {
-  _getPages().forEach((page) => {
+function _teardownSectionAutoAdvance(pages = _getPages()) {
+  pages.forEach((page) => {
     if (page._bounceH) {
       page.removeEventListener('scroll', page._bounceH);
       page._bounceH = null;
@@ -372,6 +374,36 @@ function _setupSectionAutoAdvance() {
     }
     page._bounceLastST = 0;
     page._bounceWasDown = false;
+  });
+  teardownPagerEndBounce(pages);
+}
+
+function _setupSectionAutoAdvance() {
+  const pages = _getPages();
+  _teardownSectionAutoAdvance(pages);
+
+  return setupPagerEndBounce({
+    pages,
+    isBlocked: () => state.modalOpen || isDesktop(),
+    onAdvance: (currentPage, nextPage) => {
+      const grid = _getGrid();
+      if (!grid) return;
+      const realPages = _getPages(grid);
+      const currentIndex = realPages.indexOf(currentPage);
+      if (currentIndex < 0) return;
+
+      _resetPageToTop(nextPage, grid);
+      _syncChip(nextPage.dataset.cat || 'all');
+
+      if (currentIndex + 1 < realPages.length) {
+        _scrollToIndex(grid, currentIndex + 1, 'smooth');
+        return;
+      }
+
+      const ghost = grid.querySelector(':scope > .k-cat-section[data-ghost="right"]');
+      const ghostIndex = _getPagerPages(grid).indexOf(ghost);
+      _scrollToIndex(grid, ghostIndex >= 0 ? ghostIndex : 0, 'smooth');
+    },
   });
 }
 
@@ -404,7 +436,7 @@ function destroyMobilePager() {
       grid._pagerScrollH = null;
     }
 
-    _setupSectionAutoAdvance();
+    _teardownSectionAutoAdvance(_getPages(grid));
     grid.querySelectorAll('[data-ghost]').forEach((ghost) => ghost.remove());
     grid.classList.remove('k-grid-cat-pager');
     ['transform', 'transition', 'width', 'height', 'position', 'overflow', 'willChange', 'display']

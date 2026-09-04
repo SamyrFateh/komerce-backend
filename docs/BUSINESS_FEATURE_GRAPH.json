@@ -401,7 +401,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.",
+        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Aucun paiement, settlement, calendrier structuré, contact provider direct ou order Komerce n’est créé par cette interaction.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -9314,6 +9314,20 @@
       },
       {
         "feature": "providers-services",
+        "category": "services",
+        "declared": "services/providers-inquiry-service.js",
+        "resolvedPath": "services/providers-inquiry-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "providers-services",
+        "category": "services",
+        "declared": "services/providers-interaction-policy.js",
+        "resolvedPath": "services/providers-interaction-policy.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "providers-services",
         "category": "routes",
         "declared": "routes/providers-services.js",
         "resolvedPath": "routes/providers-services.js",
@@ -9342,9 +9356,30 @@
       },
       {
         "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/seed-discovery-modal-v2-staging.js",
+        "resolvedPath": "scripts/seed-discovery-modal-v2-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
         "category": "migrations",
         "declared": "migrations/157_providers_services_media.sql",
         "resolvedPath": "migrations/157_providers_services_media.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/160_providers_services_interaction_actions.sql",
+        "resolvedPath": "migrations/160_providers_services_interaction_actions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/161_providers_services_inquiry_context.sql",
+        "resolvedPath": "migrations/161_providers_services_inquiry_context.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9359,6 +9394,13 @@
         "category": "tests",
         "declared": "tests/unit/providers-services-routes.test.js",
         "resolvedPath": "tests/unit/providers-services-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/providers-interaction-policy.test.js",
+        "resolvedPath": "tests/unit/providers-interaction-policy.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17470,6 +17512,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/b-pager-end-bounce.js",
+        "resolvedPath": "public/boutique/js/b-pager-end-bounce.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/spike-vertical-shell.js",
         "resolvedPath": "public/boutique/js/spike-vertical-shell.js",
         "exists": true,
@@ -17582,6 +17632,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/discovery-desktop-style.js",
+        "resolvedPath": "public/boutique/js/discovery-desktop-style.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/discovery-actions.js",
         "resolvedPath": "public/boutique/js/discovery-actions.js",
         "exists": true,
@@ -17680,6 +17738,14 @@
         "category": "css",
         "declared": "../css/discovery-rail.css",
         "resolvedPath": "public/boutique/css/discovery-rail.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/discovery-desktop-v2.css",
+        "resolvedPath": "public/boutique/css/discovery-desktop-v2.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17830,6 +17896,22 @@
       {
         "boutiqueManifest": "catalog",
         "category": "tests",
+        "declared": "../tests/unit/discovery-desktop-style.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-desktop-style.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/discovery-desktop-v2-css.test.js",
+        "resolvedPath": "public/boutique/tests/unit/discovery-desktop-v2-css.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
         "declared": "../tests/unit/spike-vertical-shell.test.js",
         "resolvedPath": "public/boutique/tests/unit/spike-vertical-shell.test.js",
         "exists": true,
@@ -17848,6 +17930,14 @@
         "category": "tests",
         "declared": "../tests/unit/discovery-actions.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-actions.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/home-controller-discovery-anchor.test.js",
+        "resolvedPath": "public/boutique/tests/unit/home-controller-discovery-anchor.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17900,6 +17990,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/b-pager-end-bounce.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-pager-end-bounce.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "checkout",
         "category": "js",
         "declared": "../js/b-checkout-render.js",
@@ -17917,9 +18015,25 @@
       },
       {
         "boutiqueManifest": "checkout",
+        "category": "js",
+        "declared": "../js/checkout-desktop-style.js",
+        "resolvedPath": "public/boutique/js/checkout-desktop-style.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
         "category": "css",
         "declared": "../css/checkout-vertical-rail.css",
         "resolvedPath": "public/boutique/css/checkout-vertical-rail.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "css",
+        "declared": "../css/checkout-desktop-v2.css",
+        "resolvedPath": "public/boutique/css/checkout-desktop-v2.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17944,6 +18058,22 @@
         "category": "tests",
         "declared": "../tests/unit/checkout-responsive-css.test.js",
         "resolvedPath": "public/boutique/tests/unit/checkout-responsive-css.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/checkout-desktop-style.test.js",
+        "resolvedPath": "public/boutique/tests/unit/checkout-desktop-style.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/checkout-desktop-v2-css.test.js",
+        "resolvedPath": "public/boutique/tests/unit/checkout-desktop-v2-css.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20565,6 +20695,10 @@
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
               {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "targetFile": "public/boutique/js/b-cart.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-favs.test.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
@@ -20790,6 +20924,14 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/discovery-rail.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/discovery-actions.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               },
@@ -20811,6 +20953,10 @@
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/render-home-sections.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/home-controller-discovery-anchor.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
@@ -25966,6 +26112,10 @@
                 "targetFile": "services/local-stock-service.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/local-stock-service.js"
+              },
+              {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/local-stock-service.js"
               }
@@ -28021,6 +28171,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/providers-inquiry-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/providers-services.js",
                 "targetFile": "db.js"
               },
@@ -28031,6 +28185,10 @@
               {
                 "sourceFileId": "scripts/seed-discovery-staging.js",
                 "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-discovery-modal-v2-staging.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
@@ -28881,6 +29039,10 @@
                 "targetFile": "public/boutique/js/b-checkout.js"
               },
               {
+                "sourceFileId": "public/boutique/js/group/group-checkout-adapter.js",
+                "targetFile": "public/boutique/js/checkout-desktop-style.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/group/group-library-remove.js",
                 "targetFile": "public/boutique/js/b-tracking.js"
               },
@@ -29687,10 +29849,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1008
+        "filesObserved": 1012
       },
       "boutique": {
-        "filesObserved": 191,
+        "filesObserved": 200,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -31896,8 +32058,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 389,
-        "technicalNodesOwned": 389,
+        "technicalNodesTotal": 391,
+        "technicalNodesOwned": 391,
         "technicalOrphans": 0
       },
       "dash": {
@@ -31911,8 +32073,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 100,
-        "technicalNodesOwned": 100,
+        "technicalNodesTotal": 103,
+        "technicalNodesOwned": 103,
         "technicalOrphans": 0
       }
     },
@@ -32181,17 +32343,17 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel",
+        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id",
+        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
