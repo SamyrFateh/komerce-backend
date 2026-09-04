@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        category_sections, scroll_state, viewport, modal_events
  * @outputs       horizontal_pager_state, active_chip_sync, category_scroll_memory
- * @depends       b-bus.js, b-scroll-owner.js, b-store.js
+ * @depends       b-bus.js, b-pager-end-bounce.js, b-scroll-owner.js, b-store.js
  * @used-by       b-catalog.js, b-subcat.js, b-nav.js, discovery-rail.js
  * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, mobile_desktop_coherence, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
  * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid, discovery-rail
@@ -15,15 +15,15 @@
 'use strict';
 
 /**
- * b-pager.js — Temu V2.10 : pager horizontal des catégories principales mobile.
+ * b-pager.js — Temu V2.11 : pager horizontal des catégories principales mobile.
  *
  * Grammaire :
  * - horizontal = changement explicite d'univers (swipe ou tap sur le rail) ;
  * - vertical   = exploration locale de l'univers courant ;
  * - toute entrée horizontale dans un univers repart en haut afin que
  *   `Disponible ici`, lorsqu'il existe, soit immédiatement visible ;
- * - l'arrivée en bas signale la suite sans naviguer ; une seconde impulsion
- *   verticale volontaire déclenche seule le changement de catégorie ;
+ * - l'arrivée verticale volontaire en bas déclenche le bump historique :
+ *   passage automatique vers la catégorie suivante, repositionnée en haut ;
  * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
  * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,

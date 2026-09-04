@@ -4,21 +4,28 @@
  * @domain        catalog
  * @layer         ui-state
  * @owner         public/boutique/js/b-pager-end-bounce.js
- * @purpose       Signaler la fin d'une page mobile et n'avancer qu'après une seconde impulsion verticale volontaire.
+ * @purpose       Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.
  * @impact-areas  mobile-navigation, category-navigation, scroll-ownership
  * @version       2026-09
  */
 'use strict';
 
-const BOTTOM_TOLERANCE_PX = 12;
-const LEAVE_BOTTOM_PX = 48;
-const PULL_THRESHOLD_PX = 42;
-const ARM_DURATION_MS = 4500;
+// Courte respiration historique : le bas est perçu avant que la page suivante
+// remonte automatiquement, sans demander un second geste à l'utilisateur.
+const BOTTOM_TOLERANCE_PX = 32;
+const TOUCH_BOTTOM_TOLERANCE_PX = 64;
+const DOWN_EPSILON_PX = 2;
+const UP_CANCEL_PX = 8;
+const VERTICAL_INTENT_PX = 8;
+const VERTICAL_DOMINANCE = 1.25;
+const AUTO_ADVANCE_DELAY_MS = 350;
+const TOUCH_ADVANCE_DELAY_MS = 220;
 const HINT_DURATION_MS = 900;
 
-function isAtBottom(page) {
+function isAtBottom(page, tolerance = BOTTOM_TOLERANCE_PX) {
   if (!page) return false;
-  return page.scrollTop + page.clientHeight >= page.scrollHeight - BOTTOM_TOLERANCE_PX;
+  return page.scrollHeight <= page.clientHeight + 8
+    || page.scrollTop + page.clientHeight >= page.scrollHeight - tolerance;
 }
 
 function distanceFromBottom(page) {
@@ -51,24 +58,33 @@ function showNextHint(page, nextPage) {
 }
 
 function resetGesture(runtime) {
-  runtime.startedArmed = false;
-  runtime.pulledUp = false;
+  runtime.verticalIntent = false;
+  runtime.horizontalIntent = false;
   runtime.startX = 0;
   runtime.startY = 0;
 }
 
-function disarmPage(page, runtime) {
-  runtime.armed = false;
-  clearTimeout(runtime.armTimer);
-  runtime.armTimer = null;
+function cancelAdvance(page, runtime) {
+  clearTimeout(runtime.advanceTimer);
+  runtime.advanceTimer = null;
   removeHint(page);
 }
 
-function armPage(page, nextPage, runtime) {
-  runtime.armed = true;
-  clearTimeout(runtime.armTimer);
-  showNextHint(page, nextPage);
-  runtime.armTimer = setTimeout(() => disarmPage(page, runtime), ARM_DURATION_MS);
+function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
+  clearTimeout(runtime.advanceTimer);
+  runtime.advanceTimer = setTimeout(() => {
+    runtime.advanceTimer = null;
+    if (
+      isBlocked?.()
+      || runtime.horizontalIntent
+      || !runtime.movingDown
+      || !isAtBottom(page, TOUCH_BOTTOM_TOLERANCE_PX)
+    ) return;
+
+    runtime.movingDown = false;
+    showNextHint(page, nextPage);
+    onAdvance(page, nextPage);
+  }, delay);
 }
 
 function touchPoint(event) {
@@ -85,7 +101,7 @@ function teardownPagerEndBounce(pages) {
     page.removeEventListener('touchmove', runtime.onTouchMove);
     page.removeEventListener('touchend', runtime.onTouchEnd);
     page.removeEventListener('touchcancel', runtime.onTouchCancel);
-    disarmPage(page, runtime);
+    cancelAdvance(page, runtime);
     delete page._pagerEndBounce;
   });
 }
@@ -98,11 +114,11 @@ function setupPagerEndBounce({ pages, isBlocked, onAdvance }) {
   realPages.forEach((page, pageIndex) => {
     const nextPage = realPages[(pageIndex + 1) % realPages.length];
     const runtime = {
-      armed: false,
-      armTimer: null,
+      advanceTimer: null,
       lastScrollTop: page.scrollTop,
-      startedArmed: false,
-      pulledUp: false,
+      movingDown: false,
+      verticalIntent: false,
+      horizontalIntent: false,
       startX: 0,
       startY: 0,
       onScroll: null,
@@ -113,58 +129,80 @@ function setupPagerEndBounce({ pages, isBlocked, onAdvance }) {
     };
 
     runtime.onScroll = () => {
-      if (isBlocked?.()) return;
-      const currentTop = page.scrollTop;
-      const movingDown = currentTop > runtime.lastScrollTop;
-      runtime.lastScrollTop = currentTop;
-
-      if (distanceFromBottom(page) > LEAVE_BOTTOM_PX) {
-        disarmPage(page, runtime);
+      if (isBlocked?.()) {
+        cancelAdvance(page, runtime);
         return;
       }
-      if (movingDown && isAtBottom(page) && !runtime.armed) {
-        armPage(page, nextPage, runtime);
+      const currentTop = page.scrollTop;
+      if (currentTop > runtime.lastScrollTop + DOWN_EPSILON_PX) {
+        runtime.movingDown = true;
+      } else if (currentTop < runtime.lastScrollTop - UP_CANCEL_PX) {
+        runtime.movingDown = false;
+      }
+      runtime.lastScrollTop = currentTop;
+
+      if (runtime.movingDown && isAtBottom(page) && !runtime.horizontalIntent) {
+        scheduleAdvance(
+          page,
+          nextPage,
+          runtime,
+          isBlocked,
+          onAdvance,
+          AUTO_ADVANCE_DELAY_MS
+        );
+      } else if (!isAtBottom(page)) {
+        cancelAdvance(page, runtime);
       }
     };
 
     runtime.onTouchStart = (event) => {
       const point = touchPoint(event);
+      cancelAdvance(page, runtime);
       resetGesture(runtime);
       if (!point || isBlocked?.()) return;
       runtime.startX = point.clientX;
       runtime.startY = point.clientY;
-      runtime.startedArmed = runtime.armed && isAtBottom(page);
     };
 
     runtime.onTouchMove = (event) => {
-      if (!runtime.startedArmed || isBlocked?.()) return;
+      if (isBlocked?.()) return;
       const point = touchPoint(event);
       if (!point) return;
 
       const pullUp = runtime.startY - point.clientY;
       const horizontalTravel = Math.abs(runtime.startX - point.clientX);
-      runtime.pulledUp = pullUp >= PULL_THRESHOLD_PX
-        && pullUp > horizontalTravel * 1.25;
+      runtime.verticalIntent = pullUp >= VERTICAL_INTENT_PX
+        && pullUp > horizontalTravel * VERTICAL_DOMINANCE;
+      runtime.horizontalIntent = horizontalTravel > Math.abs(pullUp)
+        && horizontalTravel >= VERTICAL_INTENT_PX;
+
+      if (runtime.horizontalIntent) cancelAdvance(page, runtime);
     };
 
     runtime.onTouchEnd = () => {
-      const shouldAdvance = runtime.startedArmed
-        && runtime.pulledUp
-        && isAtBottom(page)
-        && !isBlocked?.();
-
-      if (shouldAdvance) {
-        disarmPage(page, runtime);
-        onAdvance(page, nextPage);
-      } else if (!runtime.armed && isAtBottom(page) && !isBlocked?.()) {
-        // Une page courte ou déjà positionnée en bas reçoit elle aussi un
-        // premier signal ; elle ne peut jamais avancer sur ce même geste.
-        armPage(page, nextPage, runtime);
+      if (
+        !isBlocked?.()
+        && runtime.verticalIntent
+        && !runtime.horizontalIntent
+        && isAtBottom(page, TOUCH_BOTTOM_TOLERANCE_PX)
+      ) {
+        runtime.movingDown = true;
+        scheduleAdvance(
+          page,
+          nextPage,
+          runtime,
+          isBlocked,
+          onAdvance,
+          TOUCH_ADVANCE_DELAY_MS
+        );
       }
-      resetGesture(runtime);
     };
 
-    runtime.onTouchCancel = () => resetGesture(runtime);
+    runtime.onTouchCancel = () => {
+      runtime.movingDown = false;
+      cancelAdvance(page, runtime);
+      resetGesture(runtime);
+    };
 
     page.addEventListener('scroll', runtime.onScroll, { passive: true });
     page.addEventListener('touchstart', runtime.onTouchStart, { passive: true });

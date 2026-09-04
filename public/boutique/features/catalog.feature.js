@@ -185,7 +185,7 @@ module.exports = {
     'sur desktop, le rail Discovery conserve tout le pool éditorial borné par le backend et le rend horizontalement accessible ; le renderer ne tronque jamais silencieusement les candidats valides',
     'sur desktop, chaque carte Discovery réutilise le shell k-card canonique et seules les capacités locales portent des hooks k-discovery-canonical-* ; aucun second modèle de carte n’est créé',
     'sur mobile, la surface Discovery conserve son 2×2 vertical historique et ne réintroduit aucun scroller horizontal interne au pager catégories',
-    'sur mobile, atteindre la fin d une page ne change jamais de catégorie ; seul un second geste vertical volontaire après le signal de fin peut avancer le pager',
+    'sur mobile, une arrivée verticale volontaire en fin de page déclenche automatiquement le bump vers la catégorie suivante, repositionnée en haut ; un swipe surtout horizontal ne le déclenche jamais',
     'une fiche service ou physical_offer ne propose publiquement que demander et/ou être rappelé ; le kind décrit l objet, pas le mode de contact',
     'le sujet d une demande ou d un rappel est toujours la fiche courante ; la précision client est facultative et ne peut jamais produire un rappel sans propos',
     'aucun téléphone provider, lien tel: ou lien WhatsApp n est rendu par le détail Discovery',
