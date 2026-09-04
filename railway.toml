@@ -13,6 +13,7 @@ installCommand = "npm ci --omit=dev"
 # build dans le schéma Railway actuel.
 watchPatterns = [
   "routes/**",
+  "services/**",
   "middleware/**",
   "utils/**",
   "validators/**",
