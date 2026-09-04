@@ -65,7 +65,7 @@ const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html')
 // retrait au moment du paiement. Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const {
   generateAndStoreSecret, cacheCodeForReveal,
-  verifyPickupCode, regenerateCode,
+  verifyPickupCode, collectOrder, collectByPickupCode, regenerateCode,
   getExceptionalPickupAvailability, collectByAuthorizedName,
 } = require('../services/pickup-secret-service');
 
@@ -249,7 +249,9 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
 // ══════════════════════════════════════════════════════════════════════════════
 // 4. POST /collect/:orderId — Marquer la commande comme récupérée
 // ══════════════════════════════════════════════════════════════════════════════
-// À appeler après un verify réussi et remise physique du colis.
+// Le dashboard repasse le code déjà vérifié afin que la vérification finale
+// et la remise physique soient atomiques. Sans code, les commandes AVAILABLE
+// sont refusées par le service pour préserver le one-shot en retrait partiel.
 // Cycle B (O7.2) : la logique inline de collect a été déplacée dans
 // services/pickup-secret-service.js:collectOrder, comme pour les autres
 // fonctions de ce fichier. collectOrder pose désormais un FOR UPDATE +
@@ -257,13 +259,22 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
 // resolve_before_behavior_change). Le routeur reste un adaptateur HTTP.
 router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req, res, next) => {
   try {
-    const { collectOrder } = require('../services/pickup-secret-service');
-    const result = await collectOrder({
-      orderId:         req.params.orderId,
-      agentId:         req.user.id,
-      role:            req.user.role,
-      collectedByName: req.body.collected_by_name,
-    });
+    const pickupCode = req.body?.pickup_code || req.body?.code || null;
+    const result = pickupCode
+      ? await collectByPickupCode({
+          code:            pickupCode,
+          user:            req.user,
+          expectedOrderId: req.params.orderId,
+          collectedByName: req.body?.collected_by_name,
+          ip:              req.ip,
+          userAgent:       req.get('user-agent') || null,
+        })
+      : await collectOrder({
+          orderId:         req.params.orderId,
+          agentId:         req.user.id,
+          role:            req.user.role,
+          collectedByName: req.body?.collected_by_name,
+        });
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });

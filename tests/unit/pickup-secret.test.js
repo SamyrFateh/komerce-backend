@@ -317,20 +317,27 @@ describe('POST /api/pickup/collect/:orderId', () => {
     expect(res.status).toBe(409);
   });
 
-  test('409 si la state machine refuse la transition', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'O1', reference: 'ORD1', status: 'available' }] });
-    mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: false, error: 'refusé' });
+  test('409 si commande available mais code courant absent du collect', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'O1', reference: 'ORD1', status: 'available', relais_id: 'r1' }],
+    });
+
     const res = await request(app).post('/api/pickup/collect/O1').send({});
+
     expect(res.status).toBe(409);
+    expect(res.body.code).toBe('PICKUP_CODE_REQUIRED');
+    expect(mockTransitionOrderStatus).not.toHaveBeenCalled();
   });
 
-  test('succès : met à jour collected_by_name', async () => {
+  test('legacy non-available : conserve la transition historique order-level', async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'O1', reference: 'ORD1', status: 'available' }] })
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE collected_by_name
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', reference: 'ORD1', status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
 
-    const res = await request(app).post('/api/pickup/collect/O1').send({ collected_by_name: 'Fatima' });
+    const res = await request(app)
+      .post('/api/pickup/collect/O1')
+      .send({ collected_by_name: 'Fatima' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);

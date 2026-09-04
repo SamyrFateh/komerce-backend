@@ -53,6 +53,12 @@ jest.mock('../../utils/alerts', () => ({
   createAlert: (...args) => mockCreateAlert(...args),
 }));
 
+const mockRotatePickupSecretAfterPartialCollection = jest.fn();
+jest.mock('../../services/pickup-secret-rotation-service', () => ({
+  rotatePickupSecretAfterPartialCollection: (...args) =>
+    mockRotatePickupSecretAfterPartialCollection(...args),
+}));
+
 const mockTransitionOrderStatus = jest.fn();
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
@@ -115,6 +121,9 @@ beforeEach(() => {
 
   mockCreateAlert.mockReset();
   mockCreateAlert.mockResolvedValue();
+
+  mockRotatePickupSecretAfterPartialCollection.mockReset();
+  mockRotatePickupSecretAfterPartialCollection.mockResolvedValue({ last4: 'NEXT' });
 
   mockTransitionOrderStatus.mockReset();
   mockGetActiveAuthorizationForUpdate.mockReset();
@@ -446,6 +455,24 @@ describe('collectOrder', () => {
     expect(result.status).toBe(409);
   });
 
+  it('available : refuse le chemin orderId-only sans code courant', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', reference: 'KMC-001', status: 'available', relais_id: 'r1' }],
+    });
+
+    const result = await collectOrder({
+      orderId: 'o1',
+      agentId: 'a1',
+      role: 'agent_relais',
+      collectedByName: 'Fatima',
+    });
+
+    expect(result.status).toBe(409);
+    expect(result.body.code).toBe('PICKUP_CODE_REQUIRED');
+    expect(mockSafeSyncScanToParcels).not.toHaveBeenCalled();
+    expect(mockRotatePickupSecretAfterPartialCollection).not.toHaveBeenCalled();
+  });
+
   it('409 si la transition échoue (pas noop)', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', status: 'confirmed' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: false, error: 'transition invalide' });
@@ -744,6 +771,81 @@ describe('collectByPickupCode', () => {
     expect(insertCall[1].join(' ')).not.toMatch(new RegExp(CODE));
   });
 
+  test('retrait ciblé 4 chars → revalide le code dans la transaction puis collecte un seul parcel', async () => {
+    const order = buildOrder({ pickup_secret_last4: CODE.replace(/-/g, '').slice(-4) });
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({
+      synced: true,
+      parcelsUpdated: 1,
+      orderStatus: 'available',
+      parcelId: 'parcel-local',
+      parcelReference: 'PAR-LOCAL',
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's-targeted' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await collectByPickupCode({
+      code: CODE.replace(/-/g, '').slice(-4),
+      user: admin,
+      expectedOrderId: 'o1',
+      collectedByName: 'Fatima',
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.body.partial).toBe(true);
+    expect(result.body.order_id).toBe('o1');
+    expect(mockRotatePickupSecretAfterPartialCollection).toHaveBeenCalled();
+    const nameCall = db.query.mock.calls.find(([sql]) => sql.includes('collected_by_name'));
+    expect(nameCall).toBeTruthy();
+  });
+
+  test('retrait partiel → un seul parcel collecté, parent available, secret rotaté', async () => {
+    const order = buildOrder();
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({
+      synced: true,
+      parcelsUpdated: 1,
+      orderStatus: 'available',
+      parcelId: 'parcel-local',
+      parcelReference: 'PAR-LOCAL',
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's-partial' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await collectByPickupCode({ code: CODE, user: admin });
+
+    expect(result.status).toBe(200);
+    expect(result.body.partial).toBe(true);
+    expect(result.body.order_status).toBe('available');
+    expect(result.body.parcel_id).toBe('parcel-local');
+    expect(result.body.parcel_reference).toBe('PAR-LOCAL');
+    expect(mockRotatePickupSecretAfterPartialCollection).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: 'o1', relaisId: 'r1' })
+    );
+  });
+
+  test('parent available mais aucun parcel prêt → 409 sans fallback order-level', async () => {
+    const order = buildOrder();
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({
+      synced: false,
+      parcelsUpdated: 0,
+      orderStatus: null,
+      reason: 'no_available_parcel',
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's-no-ready' }] });
+
+    const result = await collectByPickupCode({ code: CODE, user: admin });
+
+    expect(result.status).toBe(409);
+    expect(result.body.code).toBe('NO_PARCEL_AVAILABLE');
+    expect(mockTransitionOrderStatus).not.toHaveBeenCalled();
+    expect(mockRotatePickupSecretAfterPartialCollection).not.toHaveBeenCalled();
+  });
+
   test('code avec tirets de présentation → accepté (normalisation)', async () => {
     const order = buildOrder();
     db.query
@@ -840,7 +942,7 @@ describe('collectByPickupCode', () => {
 
   test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
     const order = buildOrder();
-    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false, reason: 'no_parcels' });
     mockTransitionOrderStatus.mockResolvedValueOnce({
       success: true,
       noop: false,
@@ -1326,8 +1428,12 @@ describe('collectByAuthorizedName', () => {
       status: 200,
       body: {
         success: true,
-        message: 'Colis remis. Commande marquée comme récupérée (retrait exceptionnel).',
+        message: 'Colis remis. Commande entièrement récupérée (retrait exceptionnel).',
         order_ref: 'ORD1',
+        parcel_id: null,
+        parcel_reference: null,
+        partial: false,
+        order_status: 'collected',
       },
     });
 

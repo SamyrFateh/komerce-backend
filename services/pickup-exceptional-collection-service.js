@@ -294,10 +294,16 @@ async function collectByAuthorizedName({
       status: 200,
       body: {
         success:   true,
-        message:   'Colis remis. Commande marquée comme récupérée (retrait exceptionnel).',
+        message:   collection.partial
+          ? 'Lot remis. D’autres articles restent à retirer (retrait exceptionnel).'
+          : 'Colis remis. Commande entièrement récupérée (retrait exceptionnel).',
         order_ref: order.reference,
+        parcel_id: collection.parcelId,
+        parcel_reference: collection.parcelReference,
+        partial: collection.partial,
+        order_status: collection.orderStatus,
       },
-      _notify: { phone: order.buyer_phone || null, reference: order.reference },
+      _notify: { phone: order.buyer_phone || null, reference: order.reference, partial: collection.partial },
     };
     });
   } catch (err) {
@@ -311,7 +317,9 @@ async function collectByAuthorizedName({
   if (result.status === 200 && result._notify && result._notify.phone) {
     notifyText(
       result._notify.phone,
-      `Votre colis ${result._notify.reference} a été remis (retrait exceptionnel autorisé).`,
+      result._notify.partial
+        ? `Un lot de votre commande ${result._notify.reference} a été remis. D’autres articles restent à retirer.`
+        : `Votre commande ${result._notify.reference} a été entièrement remise (retrait exceptionnel autorisé).`,
       'exceptional_pickup_collected',
       orderId,
     ).catch(e => log.warn({ err: e }, '[PICKUP-SECRET] notifyText exceptional_pickup_collected error'));

@@ -615,7 +615,7 @@
           body: JSON.stringify({ code: code }),
         });
         modal.close();
-        openCollectConfirmation(orderRef, orderId);
+        openCollectConfirmation(orderRef, orderId, code);
       } catch(err) {
         if (err.status === 401) {
           var d = err.data || {};
@@ -692,7 +692,7 @@
     startScanning();
   }
 
-  function openCollectConfirmation(orderRef, orderId) {
+  function openCollectConfirmation(orderRef, orderId, pickupCode) {
     var html =
       '<div style="background:#dcfce7;border:2px solid #16a34a;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center">' +
         '<div style="font-size:20px;margin-bottom:6px">✅</div>' +
@@ -711,7 +711,7 @@
         '<button type="submit" id="pickup-collect-submit" ' +
                 'style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:8px;' +
                 'font-size:15px;font-weight:700;cursor:pointer">' +
-          '📦 Colis remis, clôturer' +
+          '📦 Confirmer la remise' +
         '</button>' +
 
       '</form>';
@@ -727,19 +727,24 @@
       var name = new FormData(e.target).get('collected_by_name');
 
       try {
-        await apiFetch('/api/pickup/collect/' + orderId, {
+        var collected = await apiFetch('/api/pickup/collect/' + orderId, {
           method: 'POST',
-          body: JSON.stringify({ collected_by_name: name || null }),
+          body: JSON.stringify({
+            collected_by_name: name || null,
+            pickup_code: pickupCode,
+          }),
         });
         modal.close();
-        toast('✅ ' + orderRef + ' remis et clôturé');
+        toast(collected.partial
+          ? '✅ Lot remis · d’autres articles restent à retirer'
+          : '✅ ' + orderRef + ' entièrement remis');
         if (window.CT && window.CT.views && window.CT.views.relais) {
           var mainEl = document.getElementById('ct-main');
           if (mainEl) window.CT.views.relais(mainEl);
         }
       } catch(err) {
         btn.disabled = false;
-        btn.textContent = '📦 Colis remis, clôturer';
+        btn.textContent = '📦 Confirmer la remise';
         toast('❌ ' + err.message, 'error');
       }
     });
