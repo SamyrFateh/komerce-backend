@@ -13,62 +13,48 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, admin-dashboard
- * @version       2026-07
+ * @version       2026-09
  */
 
 'use strict';
 
 /**
- * KOMERCE — Overrides tracés, module partagé (K-4, DOCTRINE_CATALOGUE.md §5, §7)
- * ═══════════════════════════════════════════════════════════════════════════
- * §5 — une retouche manuelle sur une fiche générée n'édite JAMAIS la fiche
- *      directement : elle se pose en override tracé (catalog_field_overrides),
- *      réappliqué après chaque re-raffinage (catalog-enrichment.js§loadOverrides).
- * §7 — "Ne jamais éditer une fiche sans override tracé."
+ * KOMERCE — Overrides tracés, module partagé.
  *
- * Whitelist PARTAGÉE avec l'enrichissement IA (OVERRIDABLE_FIELDS,
- * catalog-enrichment.js) : un seul contrat "champs publiés retouchables",
- * côté IA et côté admin — jamais deux vérités qui divergent.
- *
- * Corollaire doctrine §5 : "le CRUD admin existant devient l'éditeur
- * d'overrides — même formulaire, sémantique nouvelle." C'est ce module qui
- * porte cette sémantique ; product-admin-service.js et catalog-approval.js
- * l'appellent tous les deux plutôt que de faire chacun leur propre UPDATE.
+ * La vérité fournisseur reste dans name_source / description_source /
+ * source_locale. Les corrections client sont des overrides rejouables.
+ * Lorsqu'une source étrangère connector_raw reçoit une préparation humaine
+ * complète (titre + description si la source en porte une), la présentation
+ * client devient `content_source='manual'` : la source ne change pas, mais le
+ * garde de publication sait que le contenu affiché n'est plus la donnée brute.
  */
 
-// Whitelist PARTAGÉE avec l'enrichissement IA (OVERRIDABLE_FIELDS).
-// Dupliquée ici (identique à catalog-enrichment.js:60) pour éviter un require
-// circulaire : catalog-overrides ← catalog-enrichment ← logger.forModule()
-// qui force le chargement de toute la raffinerie au require-time de product-admin-service.
-// Si la liste change dans catalog-enrichment.js, elle doit changer ici aussi
-// (le test catalog-overrides.test.js vérifie la cohérence).
 const OVERRIDABLE_FIELDS = ['name', 'description', 'category', 'fragility', 'emoji'];
 
-/**
- * Un produit est-il "issu du pipeline" (connecteur ou IA) ? Seuls ceux-là
- * passent par le régime override — §5 ne s'applique qu'à ce qui est
- * régénérable depuis une source. Le contenu manuel legacy (content_source
- * NULL ou 'manual', saisi avant K-1) reste en édition directe : il n'y a
- * pas de pipeline à rejouer, donc pas de risque d'écrasement (doctrine
- * §7, note d'audit 2026-07-03 : "défendable pour le legacy manual").
- */
-function isPipelineSourced(product) {
-  return !!product && (product.content_source === 'connector_raw' || product.content_source === 'ai_enriched');
+function isFrenchLocale(locale) {
+  const value = String(locale || '').trim().toLowerCase().replace('_', '-');
+  return value === 'fr' || value.startsWith('fr-');
 }
 
 /**
- * Pose ou remplace un override pour UN champ, l'applique immédiatement sur
- * la colonne réelle, et retourne les deux lignes. UPSERT sur
- * (product_id, field_name) — dernier override gagne (contrainte 098).
- *
- * Défense en profondeur : le nom de colonne interpolé dans l'UPDATE n'est
- * JAMAIS pris tel quel — il doit d'abord matcher un littéral de
- * OVERRIDABLE_FIELDS. Un field_name vérolé est rejeté avant toute requête.
- *
- * @param {import('pg').Pool|import('pg').PoolClient} q
- * @param {{productId:string, fieldName:string, fieldValue:string, reason?:string, setBy?:string}} params
- * @returns {Promise<{override:object, product:object}>}
+ * Les fiches pipeline restent sous régime override, y compris après une
+ * préparation humaine. Le legacy `manual` sans lignage source reste éditable
+ * comme auparavant.
  */
+function isPipelineSourced(product) {
+  if (!product) return false;
+  if (product.content_source === 'connector_raw' || product.content_source === 'ai_enriched') return true;
+  if (product.content_source === 'manual' && (product.name_source || product.description_source)) return true;
+  return false;
+}
+
+function manualPreparationComplete(product, overridden) {
+  if (!product || product.content_source !== 'connector_raw' || isFrenchLocale(product.source_locale)) return false;
+  if (!overridden.includes('name')) return false;
+  const sourceHasDescription = Boolean(String(product.description_source || '').trim());
+  return !sourceHasDescription || overridden.includes('description');
+}
+
 async function upsertOverride(q, { productId, fieldName, fieldValue, reason = null, setBy = null }) {
   if (!OVERRIDABLE_FIELDS.includes(fieldName)) {
     const err = new Error(`Champ non retouchable par override: "${fieldName}"`);
@@ -88,8 +74,6 @@ async function upsertOverride(q, { productId, fieldName, fieldValue, reason = nu
     [productId, fieldName, String(fieldValue), reason, setBy]
   );
 
-  // Colonne interpolée : whitelist déjà vérifiée ci-dessus, jamais le
-  // field_name brut de la requête client.
   const safeColumn = OVERRIDABLE_FIELDS.find((f) => f === fieldName);
   const { rows: [product] } = await q.query(
     `UPDATE products SET ${safeColumn} = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
@@ -99,19 +83,6 @@ async function upsertOverride(q, { productId, fieldName, fieldValue, reason = nu
   return { override, product };
 }
 
-/**
- * Pose plusieurs overrides d'un coup (écran K-4 : correction multi-champs
- * avant approbation). S'arrête au premier champ invalide — tout ou rien
- * côté validation, mais chaque upsert reste une requête indépendante
- * (pas de transaction explicite : cohérent avec le reste du service admin,
- * qui n'ouvre pas de txn pour de simples UPDATE mono-ligne).
- *
- * @param {import('pg').Pool|import('pg').PoolClient} q
- * @param {string} productId
- * @param {Object<string,string>} fields  ex: { name: "...", description: "..." }
- * @param {{reason?:string, setBy?:string}} meta
- * @returns {Promise<{overridden:string[], product:object}>}
- */
 async function upsertOverrides(q, productId, fields, { reason = null, setBy = null } = {}) {
   const entries = Object.entries(fields || {});
   const unknown = entries.map(([f]) => f).filter((f) => !OVERRIDABLE_FIELDS.includes(f));
@@ -128,7 +99,30 @@ async function upsertOverrides(q, productId, fields, { reason = null, setBy = nu
     product = result.product;
     overridden.push(fieldName);
   }
+
+  if (manualPreparationComplete(product, overridden)) {
+    const { rows: [prepared] } = await q.query(
+      `UPDATE products
+          SET content_source='manual',
+              enrichment_version=NULL,
+              enrichment_confidence=NULL,
+              needs_review=FALSE,
+              updated_at=NOW()
+        WHERE id=$1
+        RETURNING *`,
+      [productId]
+    );
+    product = prepared;
+  }
+
   return { overridden, product };
 }
 
-module.exports = { OVERRIDABLE_FIELDS, isPipelineSourced, upsertOverride, upsertOverrides };
+module.exports = {
+  OVERRIDABLE_FIELDS,
+  isPipelineSourced,
+  upsertOverride,
+  upsertOverrides,
+  _isFrenchLocale: isFrenchLocale,
+  _manualPreparationComplete: manualPreparationComplete,
+};
