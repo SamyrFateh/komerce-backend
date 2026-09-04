@@ -146,9 +146,6 @@ jobs:
       SHOWCASE_MEDIA_PROVIDER: imagekit
       IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      CATALOG_ENRICH_PROVIDER: openai
-      CATALOG_ENRICH_MODEL: gpt-5.6-luna
       NODE_ENV: test
 
     steps:
@@ -168,12 +165,10 @@ jobs:
           SHOWCASE_RUN_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          for var in DATABASE_URL OPENAI_API_KEY; do
-            if [ -z "${!var:-}" ]; then
-              echo "::error::$var manquant dans les secrets GitHub"
-              exit 1
-            fi
-          done
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL manquant dans les secrets GitHub"
+            exit 1
+          fi
           if [ "$SHOWCASE_RUN_MODE" = "fresh" ] && [ -z "${IMAGEKIT_PRIVATE_KEY:-}" ]; then
             echo "::error::IMAGEKIT_PRIVATE_KEY manquant pour une certification fresh"
             exit 1
@@ -272,9 +267,6 @@ jobs:
     env:
       SHOWCASE_MEDIA_PROVIDER: imagekit
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      CATALOG_ENRICH_PROVIDER: openai
-      CATALOG_ENRICH_MODEL: gpt-5.6-luna
       NODE_ENV: test
 
     steps:
@@ -288,16 +280,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require Railway and French-enrichment secrets
+      - name: Require Railway staging secret
         shell: bash
         run: |
           set -euo pipefail
-          for var in DATABASE_URL OPENAI_API_KEY; do
-            if [ -z "${!var:-}" ]; then
-              echo "::error::$var manquant dans les secrets GitHub"
-              exit 1
-            fi
-          done
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL manquant dans les secrets GitHub"
+            exit 1
+          fi
 
       - name: Restore V2 campaign inputs
         uses: actions/download-artifact@v4
@@ -305,7 +295,7 @@ jobs:
           name: showcase-v2-canonical-manifests
           path: data/catalogue-test-raw
 
-      - name: Resume or fresh refinery seed with mandatory French enrichment
+      - name: Resume or fresh refinery seed with native French editorial
         shell: bash
         env:
           SHOWCASE_RUN_MODE: ${{ inputs.mode }}
