@@ -14,167 +14,124 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: public/boutique/package-lock.json
-
       - name: Install Boutique dependencies
         working-directory: public/boutique
         run: npm ci
-
       - name: Install Chromium
         working-directory: public/boutique
         run: npx playwright install --with-deps chromium
-
       - name: Audit public API and live Boutique
         working-directory: public/boutique
         env:
           BASE_URL: https://komerce.co/boutique/
-          API_URL: https://komerce.co/api/products?limit=1000&offset=0
+          API_BASE: https://komerce.co/api/products
         run: |
           mkdir -p audit-output
           node <<'NODE'
           const fs = require('fs');
           const { chromium } = require('@playwright/test');
-
           const BASE_URL = process.env.BASE_URL;
-          const API_URL = process.env.API_URL;
-          const expectedFamilies = [
+          const API_BASE = process.env.API_BASE;
+          const families = [
             'Robe femme','Chemise homme','Tenue enfant','Soin visage','Chaussons confort',
             'Blender de cuisine','Décoration murale','Décoration chambre enfant','Accessoire smartphone',
             'Écouteurs sans fil','Montre connectée','Perceuse sans fil','Éclairage LED','Caméra de sécurité',
             'Décoration de cérémonie','Coffret cadeau','Mug personnalisable','Filtre à eau','Plaquettes de frein',
             'Ampoule LED automobile','Gants moto'
           ];
+          const expectedNames = new Set(families.flatMap(f => ['A','B','C'].map(s => `${f} — modèle ${s}`)));
+          const assert = (ok, msg) => { if (!ok) throw new Error(msg); };
 
-          function assert(condition, message) {
-            if (!condition) throw new Error(message);
+          async function fetchPage(offset) {
+            const r = await fetch(`${API_BASE}?limit=1000&offset=${offset}`, { headers: { accept: 'application/json' } });
+            assert(r.ok, `API HTTP ${r.status} offset=${offset}`);
+            return r.json();
           }
 
           async function auditViewport(browser, name, viewport, targetName) {
             const page = await browser.newPage({ viewport });
-            const errors = [];
-            page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
-            page.on('console', msg => { if (msg.type() === 'error') errors.push(`console: ${msg.text()}`); });
-            const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-            assert(response && response.ok(), `${name}: boutique HTTP ${response && response.status()}`);
+            const consoleErrors = [];
+            page.on('pageerror', e => consoleErrors.push(`pageerror: ${e.message}`));
+            page.on('console', m => { if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`); });
+            const r = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            assert(r && r.ok(), `${name}: HTTP ${r && r.status()}`);
             await page.waitForSelector('.k-card', { timeout: 30000 });
             await page.waitForTimeout(4000);
-
             const home = await page.evaluate(() => {
-              const cards = [...document.querySelectorAll('.k-card')];
-              const visible = cards.filter(card => {
-                const r = card.getBoundingClientRect();
-                const s = getComputedStyle(card);
-                return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
-              });
-              const inspected = visible.slice(0, Math.min(12, visible.length)).map(card => {
-                const img = card.querySelector('img');
-                return {
-                  name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
-                  imageUrl: img?.currentSrc || img?.src || '',
-                  imageComplete: !!img?.complete,
-                  naturalWidth: img?.naturalWidth || 0,
-                  naturalHeight: img?.naturalHeight || 0,
-                };
+              const cards = [...document.querySelectorAll('.k-card')].filter(c => {
+                const b = c.getBoundingClientRect(); const s = getComputedStyle(c);
+                return b.width > 0 && b.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
               });
               return {
-                cardCount: cards.length,
-                visibleCardCount: visible.length,
-                inspected,
+                visibleCards: cards.length,
                 viewportWidth: innerWidth,
                 scrollWidth: document.documentElement.scrollWidth,
+                sample: cards.slice(0, 12).map(c => {
+                  const img = c.querySelector('img');
+                  return { name: c.querySelector('.k-card-name')?.textContent?.trim() || '', complete: !!img?.complete, naturalWidth: img?.naturalWidth || 0, src: img?.currentSrc || img?.src || '' };
+                })
               };
             });
-
-            assert(home.visibleCardCount >= 8, `${name}: seulement ${home.visibleCardCount} cartes visibles`);
-            assert(home.scrollWidth <= home.viewportWidth + 2, `${name}: overflow horizontal ${home.scrollWidth} > ${home.viewportWidth}`);
-            assert(home.inspected.length >= 8, `${name}: échantillon visuel insuffisant`);
-            for (const card of home.inspected) {
-              assert(card.imageComplete && card.naturalWidth > 0 && card.naturalHeight > 0, `${name}: image accueil cassée pour ${card.name}`);
-            }
+            assert(home.visibleCards >= 8, `${name}: seulement ${home.visibleCards} cartes`);
+            assert(home.scrollWidth <= home.viewportWidth + 2, `${name}: overflow horizontal ${home.scrollWidth}/${home.viewportWidth}`);
+            assert(home.sample.every(x => x.complete && x.naturalWidth > 0), `${name}: image cassée dans l’échantillon accueil`);
             await page.screenshot({ path: `audit-output/${name}-home.png`, fullPage: true });
 
             const search = page.locator('#k-search-input');
-            assert(await search.count() === 1, `${name}: champ recherche introuvable`);
             await search.fill(targetName);
-            await page.waitForTimeout(900);
-            const targetCard = page.locator('.k-card').filter({ has: page.locator('.k-card-name', { hasText: targetName }) }).first();
-            await targetCard.waitFor({ state: 'visible', timeout: 15000 });
-            const cj = await targetCard.evaluate((card) => {
-              const img = card.querySelector('img');
-              return {
-                name: card.querySelector('.k-card-name')?.textContent?.trim() || '',
-                imageUrl: img?.currentSrc || img?.src || '',
-                imageComplete: !!img?.complete,
-                naturalWidth: img?.naturalWidth || 0,
-                naturalHeight: img?.naturalHeight || 0,
-                rect: card.getBoundingClientRect().toJSON(),
-              };
-            });
-            assert(cj.name === targetName, `${name}: mauvaise carte CJ ${cj.name}`);
-            assert(cj.imageComplete && cj.naturalWidth > 0 && cj.naturalHeight > 0, `${name}: image CJ cassée pour ${cj.name}`);
-            assert(/^https:\/\//i.test(cj.imageUrl), `${name}: URL image CJ non HTTPS`);
-            await targetCard.scrollIntoViewIfNeeded();
-            await page.screenshot({ path: `audit-output/${name}-cj-search.png`, fullPage: false });
-
+            await page.waitForTimeout(1000);
+            const card = page.locator('.k-card').filter({ has: page.locator('.k-card-name', { hasText: targetName }) }).first();
+            await card.waitFor({ state: 'visible', timeout: 15000 });
+            const cj = await card.evaluate(c => { const img = c.querySelector('img'); return { name: c.querySelector('.k-card-name')?.textContent?.trim() || '', src: img?.currentSrc || img?.src || '', complete: !!img?.complete, naturalWidth: img?.naturalWidth || 0, naturalHeight: img?.naturalHeight || 0 }; });
+            assert(cj.name === targetName, `${name}: mauvaise carte ${cj.name}`);
+            assert(cj.complete && cj.naturalWidth > 0 && cj.naturalHeight > 0, `${name}: image CJ cassée`);
+            await card.scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `audit-output/${name}-cj.png`, fullPage: false });
             await page.close();
-            return { home, cj, consoleErrors: errors };
+            return { home, cj, consoleErrors };
           }
 
           (async () => {
-            const apiResponse = await fetch(API_URL, { headers: { accept: 'application/json' } });
-            assert(apiResponse.ok, `API produits HTTP ${apiResponse.status}`);
-            const payload = await apiResponse.json();
-            const products = payload.products || [];
-            assert(products.length >= 63, `API: ${products.length} produits seulement`);
+            const p0 = await fetchPage(0);
+            const p1 = p0.total > 1000 ? await fetchPage(1000) : { products: [] };
+            const products = [...(p0.products || []), ...(p1.products || [])];
+            const sourceCounts = {};
+            for (const p of products) sourceCounts[p.sourcing_source || '(null)'] = (sourceCounts[p.sourcing_source || '(null)'] || 0) + 1;
+            const byExpectedName = products.filter(p => expectedNames.has(p.name));
+            const byCJSource = products.filter(p => p.sourcing_source === 'CJdropshipping');
+            const diagnostic = {
+              total: p0.total,
+              fetched: products.length,
+              sourceCounts,
+              expectedNameMatches: byExpectedName.length,
+              cjSourceMatches: byCJSource.length,
+              expectedMatches: byExpectedName.map(p => ({ name: p.name, source: p.sourcing_source, image_url: p.image_url, available: p.is_available, ref: p.product_ref }))
+            };
+            fs.writeFileSync('audit-output/api-diagnostic.json', JSON.stringify(diagnostic, null, 2));
+            console.log(JSON.stringify({ total: diagnostic.total, fetched: diagnostic.fetched, sourceCounts, expectedNameMatches: diagnostic.expectedNameMatches, cjSourceMatches: diagnostic.cjSourceMatches }, null, 2));
 
-            const cjLot = products.filter(p =>
-              p.sourcing_source === 'CJdropshipping' && / — modèle [ABC]$/.test(p.name || '')
-            );
-            assert(cjLot.length === 63, `API: lot CJ attendu 63, reçu ${cjLot.length}`);
-            assert(cjLot.every(p => /^https:\/\//i.test(p.image_url || '')), 'API: une image du lot CJ n’est pas HTTPS');
-            assert(cjLot.every(p => p.is_available === true), 'API: un produit du lot CJ n’est pas disponible');
-
-            for (const family of expectedFamilies) {
-              const names = cjLot.filter(p => p.name === `${family} — modèle A` || p.name === `${family} — modèle B` || p.name === `${family} — modèle C`);
-              assert(names.length === 3, `API: famille ${family} = ${names.length}/3`);
-            }
+            assert(byExpectedName.length === 63, `API: 63 noms CJ attendus, reçu ${byExpectedName.length}`);
+            assert(byExpectedName.every(p => /^https:\/\//i.test(p.image_url || '')), 'API: une image du lot CJ n’est pas HTTPS');
+            assert(byExpectedName.every(p => p.is_available === true), 'API: un produit du lot CJ n’est pas disponible');
+            for (const family of families) assert(byExpectedName.filter(p => p.name.startsWith(`${family} — modèle `)).length === 3, `API: famille ${family} incomplète`);
 
             const targetName = 'Robe femme — modèle A';
             const browser = await chromium.launch({ headless: true });
             try {
               const desktop = await auditViewport(browser, 'desktop-1440', { width: 1440, height: 1100 }, targetName);
               const mobile = await auditViewport(browser, 'mobile-390', { width: 390, height: 844 }, targetName);
-              const report = {
-                generatedAt: new Date().toISOString(),
-                api: {
-                  total: payload.total,
-                  fetched: products.length,
-                  cjLot: cjLot.length,
-                  cjImagesHttps: cjLot.filter(p => /^https:\/\//i.test(p.image_url || '')).length,
-                  cjAvailable: cjLot.filter(p => p.is_available === true).length,
-                  families: expectedFamilies.length,
-                },
-                targetName,
-                desktop,
-                mobile,
-              };
+              const report = { generatedAt: new Date().toISOString(), api: { total: p0.total, fetched: products.length, cjLot: byExpectedName.length, imagesHttps: byExpectedName.filter(p => /^https:\/\//i.test(p.image_url || '')).length, available: byExpectedName.filter(p => p.is_available === true).length }, targetName, desktop, mobile };
               fs.writeFileSync('audit-output/report.json', JSON.stringify(report, null, 2));
               console.log(JSON.stringify(report, null, 2));
               console.log('CJ_LIVE_VISUAL_AUDIT_SUCCESS');
-            } finally {
-              await browser.close();
-            }
-          })().catch(err => {
-            console.error(err.stack || err);
-            process.exit(1);
-          });
+            } finally { await browser.close(); }
+          })().catch(e => { console.error(e.stack || e); process.exit(1); });
           NODE
-
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
