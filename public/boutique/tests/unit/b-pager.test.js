@@ -9,7 +9,7 @@
  * - swipe horizontal explicite entre catégories ;
  * - toute entrée horizontale repart en haut pour exposer `Disponible ici` ;
  * - un ghost droite inerte de Tout pour la continuité dernière catégorie → Tout ;
- * - aucun auto-advance vertical ;
+ * - bump automatique au premier relâchement vertical en bas ;
  * - mémoire verticale locale conservée pour les remplacements DOM, jamais comme
  *   position d'entrée lors d'un changement horizontal ;
  * - cage mobile nettoyable sans effet desktop.
@@ -142,7 +142,7 @@ test('le ghost représente toujours Tout en haut, jamais son ancien scroll verti
   expect(grid.querySelector('[data-ghost="right"]').scrollTop).toBe(0);
 });
 
-test('arriver en bas ne câble aucun changement automatique de catégorie', () => {
+test('câble un unique bump automatique et retire les anciens listeners legacy', () => {
   const grid = makeGrid(['all', 'Mode']);
   const page = grid.querySelector('[data-cat="Mode"]');
   page._bounceH = jest.fn();
@@ -155,6 +155,9 @@ test('arriver en bas ne câble aucun changement automatique de catégorie', () =
   expect(page._bounceH).toBeNull();
   expect(page._bounceTouchEnd).toBeNull();
   expect(page._bounceTimer).toBeUndefined();
+  expect(page._pagerEndBounce).toBeDefined();
+  expect(typeof page._pagerEndBounce.onScroll).toBe('function');
+  expect(typeof page._pagerEndBounce.onTouchEnd).toBe('function');
 });
 
 test('tap catégorie navigue horizontalement et repart en haut de la page cible', () => {

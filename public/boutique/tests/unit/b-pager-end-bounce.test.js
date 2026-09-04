@@ -11,8 +11,6 @@ const {
   teardownPagerEndBounce,
   isAtBottom,
   distanceFromBottom,
-  nextPageLabel,
-  showNextHint,
 } = require('../../js/b-pager-end-bounce.js');
 
 function touch(type, x, y) {
@@ -52,20 +50,16 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-test('mesure la fin de page et résout le libellé de la catégorie suivante', () => {
+test('mesure la fin de page', () => {
   const page = makePage('all', { top: 568 });
-  const next = makePage('Mode');
   expect(isAtBottom(page)).toBe(true);
   expect(isAtBottom(page, 12)).toBe(false);
   expect(distanceFromBottom(page)).toBe(32);
-  expect(nextPageLabel(next)).toBe('La mode');
-  expect(nextPageLabel(makePage('Tech'))).toBe('Tech');
-  expect(nextPageLabel(null)).toBe('Tout');
   expect(distanceFromBottom(null)).toBe(Infinity);
   expect(isAtBottom(null)).toBe(false);
 });
 
-test('arriver en bas par scroll avance automatiquement après le bump', () => {
+test('arriver en bas par scroll avance rapidement et sans signal intermédiaire', () => {
   const page = makePage('all', { top: 500 });
   const next = makePage('Mode');
   const onAdvance = jest.fn();
@@ -74,14 +68,13 @@ test('arriver en bas par scroll avance automatiquement après le bump', () => {
 
   page.scrollTop = 600;
   page.dispatchEvent(new Event('scroll'));
-  jest.advanceTimersByTime(349);
+  jest.advanceTimersByTime(159);
   expect(onAdvance).not.toHaveBeenCalled();
 
   jest.advanceTimersByTime(1);
   expect(onAdvance).toHaveBeenCalledTimes(1);
   expect(onAdvance).toHaveBeenCalledWith(page, next);
-  expect(page.querySelector('.k-pager-next-hint').textContent).toBe('La mode →');
-  expect(page.querySelector('.k-pager-next-hint').getAttribute('aria-hidden')).toBe('true');
+  expect(page.querySelector('.k-pager-next-hint')).toBeNull();
 });
 
 test('le touchend garantit le passage automatique sur une page courte ou déjà en bas', () => {
@@ -92,7 +85,7 @@ test('le touchend garantit le passage automatique sur une page courte ou déjà 
   setupPagerEndBounce({ pages: [page, next], onAdvance });
 
   gesture(page);
-  jest.advanceTimersByTime(219);
+  jest.advanceTimersByTime(39);
   expect(onAdvance).not.toHaveBeenCalled();
   jest.advanceTimersByTime(1);
   expect(onAdvance).toHaveBeenCalledWith(page, next);
@@ -150,7 +143,7 @@ test('une modale ouverte bloque le bump, y compris après armement du timer', ()
   page.scrollTop = 600;
   page.dispatchEvent(new Event('scroll'));
   blocked = true;
-  jest.advanceTimersByTime(350);
+  jest.advanceTimersByTime(160);
   expect(onAdvance).not.toHaveBeenCalled();
 });
 
@@ -183,7 +176,7 @@ test('la dernière page boucle bien vers la première', () => {
   setupPagerEndBounce({ pages: [first, last], onAdvance });
 
   gesture(last);
-  jest.advanceTimersByTime(220);
+  jest.advanceTimersByTime(40);
   expect(onAdvance).toHaveBeenCalledWith(last, first);
 });
 
@@ -193,8 +186,6 @@ test('API défensive : pas de pages, une seule page ou aucun callback', () => {
   expect(setupPagerEndBounce({ pages: null, onAdvance: jest.fn() })).toBe(0);
   expect(setupPagerEndBounce({ pages: [page], onAdvance: jest.fn() })).toBe(0);
   expect(setupPagerEndBounce({ pages: [page, makePage('Mode')] })).toBe(0);
-  expect(showNextHint(null, page)).toBeNull();
-  expect(showNextHint(page, null)).toBeNull();
   teardownPagerEndBounce();
 });
 

@@ -530,6 +530,7 @@ module.exports = {
       'tests/unit/dashboard-logistics.test.js',
       'tests/unit/dashboard-metrics-index.test.js',
       'tests/unit/system.test.js',
+      'tests/unit/sw.test.js',
       'tests/unit/users.test.js',
       'tests/unit/dashboard-clients-queries.test.js',
       'tests/unit/dashboard-metrics.test.js',
