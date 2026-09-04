@@ -134,6 +134,11 @@ jobs:
         run: node scripts/check-migration-immutability.js --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Schema freshness
         run: node scripts/check-schema-freshness.js
+      - name: Schema intent documentation
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-schema-intent-doc.js --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Schema anti-resurrection
         if: needs.changes.outputs.schema_dump == 'true'
         run: node scripts/check-schema-resurrection.js
@@ -250,6 +255,10 @@ jobs:
       # oubli de régénération/commit d'un snapshot généré.
       - name: Hydrate derived governance projections
         run: node scripts/ci-refresh-governance-projections.js
+      - name: Pre-merge architecture coherence
+        run: |
+          node scripts/arch-db-check.js
+          node scripts/arch-header-sql-check.js
       - name: Feature slice guard
         run: node scripts/feature-guard.js --strict
       - name: Business graph semantic check on fresh projection
