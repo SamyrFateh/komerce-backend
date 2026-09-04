@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1077,
-    "edges": 5642,
+    "edges": 5645,
     "dbTables": 126,
     "doctrines": 288,
     "impactAreas": 170,
@@ -14797,17 +14797,16 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "multi_statement — allocateForOrderItem/consumeAllocationsForOrder/"
+        "multi_statement — resolveCheckoutFulfillmentSources/"
       ],
       "doctrine": [
-        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "§4 (capacité"
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
       ],
       "impactAreas": [
         "local-stock",
         "orders"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/loyalty-service.js",
@@ -15628,13 +15627,15 @@
         "ne BEGIN/COMMIT/ROLLBACK jamais lui-même)"
       ],
       "doctrine": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "local-stock"
       ],
-      "version": "2026-08 (extrait de order-checkout-service.js, refactoring checkout réel)"
+      "version": "2026-09 (Lot C — snapshot fulfillment_source sur order_items)"
     },
     {
       "id": "services/order-checkout-service.js",
@@ -15683,14 +15684,16 @@
         "owns_full_transaction"
       ],
       "doctrine": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "shared-cart"
+        "shared-cart",
+        "local-stock"
       ],
-      "version": "2026-08 (refactoring checkout réel — orchestrateur transactionnel ; résolution"
+      "version": "2026-09 (résolution transactionnelle LOCAL_STOCK/IMPORT avant pricing)"
     },
     {
       "id": "services/order-cost-snapshot.js",
@@ -24804,14 +24807,9 @@
       "doctrine": "preserve_caller_transaction"
     },
     {
-      "id": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
+      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
       "type": "doctrine",
-      "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1"
-    },
-    {
-      "id": "doctrine:§4 (capacité",
-      "type": "doctrine",
-      "doctrine": "§4 (capacité"
+      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -24837,6 +24835,11 @@
       "id": "doctrine:no_client_market_authority",
       "type": "doctrine",
       "doctrine": "no_client_market_authority"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026",
@@ -47224,15 +47227,9 @@
     },
     {
       "from": "services/local-stock-service.js",
-      "to": "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
       "type": "doctrine",
-      "label": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1"
-    },
-    {
-      "from": "services/local-stock-service.js",
-      "to": "doctrine:§4 (capacité",
-      "type": "doctrine",
-      "label": "§4 (capacité"
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
       "from": "services/local-stock-service.js",
@@ -48664,6 +48661,12 @@
     },
     {
       "from": "services/order-checkout-persistence.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "from": "services/order-checkout-persistence.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -48679,6 +48682,12 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/order-checkout-persistence.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
     },
     {
       "from": "services/order-checkout-service.js",
@@ -48772,6 +48781,12 @@
     },
     {
       "from": "services/order-checkout-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "from": "services/order-checkout-service.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -48793,6 +48808,12 @@
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
     },
     {
       "from": "services/order-cost-snapshot.js",
@@ -74623,8 +74644,7 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "§4 (capacité"
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
       ],
       "impactAreas": [
         "local-stock",
@@ -74635,8 +74655,7 @@
         "db:local_stock_allocations",
         "db:markets",
         "db:products",
-        "doctrine:IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §2.1",
-        "doctrine:§4 (capacité",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
         "impact:local-stock",
         "impact:orders",
         "routes/local-stock.js",
@@ -75473,18 +75492,22 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "local-stock"
       ],
       "mustCheck": [
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
+        "impact:local-stock",
         "impact:orders",
         "services/order-checkout-service.js",
         "services/order-status-machine.js",
@@ -75524,12 +75547,14 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "shared-cart"
+        "shared-cart",
+        "local-stock"
       ],
       "mustCheck": [
         "db:order_items",
@@ -75542,8 +75567,10 @@
         "db:relais",
         "db:shared_cart_items",
         "db:shared_carts",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
+        "impact:local-stock",
         "impact:orders",
         "impact:shared-cart",
         "routes/orders/create.js",
