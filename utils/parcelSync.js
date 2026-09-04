@@ -97,6 +97,7 @@ const STEP_TO_ORDER_STATUS = Object.freeze({
  * @param {string} opts.order_id       — UUID de la commande
  * @param {string} opts.step           — Étape du scan (preparation, shipped, ...)
  * @param {string} opts.scan_id        — UUID du scan créé (pour lier parcel_id + history)
+ * @param {boolean} opts.target_one_available — Retrait : cible exactement un parcel AVAILABLE
  * @param {string|null} opts.order_item_id — Si le scan vise un article précis
  * @param {string|null} opts.scanned_by    — [P3-3] UUID de l'utilisateur qui a scanné
  * @param {string|null} opts.notes         — [P3-3] Notes du scan (pour l'historique)
@@ -107,7 +108,7 @@ const STEP_TO_ORDER_STATUS = Object.freeze({
  *                                            FOR UPDATE de hub.js pendant tout le sync.
  * @returns {Promise<{synced: boolean, parcelsUpdated: number, orderStatus: string|null}>}
  */
-async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null, scanned_by = null, notes = null, skipHistory = false }, dbClient = null) {
+async function syncScanToParcels({ order_id, step, scan_id, target_one_available = false, order_item_id = null, scanned_by = null, notes = null, skipHistory = false }, dbClient = null) {
   // FIX-004: utiliser le client de transaction si fourni, sinon le pool
   const q = dbClient || db;
 
@@ -123,10 +124,42 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   // ── 1. Trouver les parcels à mettre à jour ────────────────────────────────
   let parcels;
 
-  if (order_item_id) {
+  if (target_one_available) {
+    // Retrait physique : un événement de collecte cible UN SEUL colis prêt.
+    // L'ordre stable évite toute ambiguïté quand plusieurs lots sont prêts.
+    const { rows } = await q.query(
+      `SELECT id, status, reference
+       FROM parcels
+       WHERE order_id = $1
+         AND status = 'available'
+       ORDER BY available_at NULLS LAST, created_at ASC, id ASC
+       FOR UPDATE
+       LIMIT 1`,
+      [order_id]
+    );
+    parcels = rows;
+
+    if (!parcels.length) {
+      const { rows: active } = await q.query(
+        `SELECT id
+         FROM parcels
+         WHERE order_id = $1 AND status != 'cancelled'
+         LIMIT 1`,
+        [order_id]
+      );
+      return {
+        synced: false,
+        parcelsUpdated: 0,
+        orderStatus: null,
+        reason: active.length ? 'no_available_parcel' : 'no_parcels',
+        parcelId: null,
+        parcelReference: null,
+      };
+    }
+  } else if (order_item_id) {
     // Scan article spécifique → trouver le parcel de cet article
     const { rows } = await q.query(
-      `SELECT p.id, p.status
+      `SELECT p.id, p.status, p.reference
        FROM parcels p
        JOIN parcel_items pi ON pi.parcel_id = p.id
        WHERE pi.order_item_id = $1
@@ -138,7 +171,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   } else {
     // Scan commande entière → tous les parcels actifs
     const { rows } = await q.query(
-      `SELECT id, status
+      `SELECT id, status, reference
        FROM parcels
        WHERE order_id = $1 AND status != 'cancelled'`,
       [order_id]
@@ -154,6 +187,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   // ── 2. Mettre à jour chaque parcel (forward only) ─────────────────────────
   let parcelsUpdated = 0;
   const firstParcelId = parcels[0].id; // pour lier le scan
+  const firstParcelReference = parcels[0].reference || null;
 
   for (const parcel of parcels) {
     const currentWeight = STATUS_WEIGHT[parcel.status] ?? 0;
@@ -220,6 +254,17 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   log.info(
     `[PARCEL-SYNC] ✅ order=${order_id} step=${step} → ${parcelsUpdated} parcel(s) updated, status=${finalOrderStatus}`
   );
+
+  if (target_one_available) {
+    return {
+      synced: true,
+      parcelsUpdated,
+      orderStatus: finalOrderStatus,
+      reason: null,
+      parcelId: firstParcelId,
+      parcelReference: firstParcelReference,
+    };
+  }
 
   return { synced: true, parcelsUpdated, orderStatus: finalOrderStatus };
 }

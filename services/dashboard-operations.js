@@ -90,7 +90,7 @@ async function getCriticalDelays(filters = {}) {
   const { where, params } = buildFiltersClause(filters, 'o');
   const { rows } = await db.query(`
     SELECT
-      p.tracking_number,
+      p.reference AS tracking_number,
       p.status::text AS status,
       p.shipped_at,
       o.reference AS order_reference,

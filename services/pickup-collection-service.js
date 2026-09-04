@@ -178,55 +178,63 @@ async function verifyPickupCode({ orderId, code, agentId }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function collectOrder({ orderId, agentId, role, collectedByName }) {
-  return db.withTransaction(async (client) => {
-    // Verrou de ligne (résout @db-txn resolve_before_behavior_change, en-tête
-    // de fichier) : élimine la fenêtre check-then-act entre la lecture du
-    // statut et son écriture. FOR UPDATE bloque toute transaction concurrente
-    // qui voudrait lire/écrire cette même ligne tant que celle-ci n'a pas
-    // COMMIT/ROLLBACK — les appels concurrents se mettent en file, chacun
-    // relit alors un statut à jour au lieu d'un statut périmé.
-    const { rows: [order] } = await client.query(`
-      SELECT id, reference, status FROM orders WHERE id = $1 FOR UPDATE
-    `, [orderId]);
+  try {
+    return await db.withTransaction(async (client) => {
+      const { rows: [order] } = await client.query(`
+        SELECT id, reference, status, relais_id
+        FROM orders
+        WHERE id = $1
+        FOR UPDATE
+      `, [orderId]);
 
-    if (!order) {
-      return { status: 404, body: { error: 'Commande introuvable' } };
-    }
-    // Relecture APRÈS l'acquisition du verrou : la valeur lue avant FOR
-    // UPDATE serait déjà périmée si un appel concurrent a committé pendant
-    // l'attente du verrou. C'est cette relecture, pas la requête elle-même,
-    // qui ferme la course.
-    if (order.status === 'collected') {
-      return { status: 409, body: { error: 'Cette commande est déjà marquée comme récupérée' } };
-    }
+      if (!order) {
+        return { status: 404, body: { error: 'Commande introuvable' } };
+      }
+      if (order.status === 'collected') {
+        return { status: 409, body: { error: 'Cette commande est déjà marquée comme récupérée' } };
+      }
 
-    const transition = await transitionOrderStatus({
-      orderId,
-      newStatus: 'collected',
-      actor:  { id: agentId, role },
-      source: 'patch',
-      note:   'Colis remis apres verification du code retrait',
-      dbClient: client, // même transaction, même verrou — transitionOrderStatus
-                         // sait déjà poser FOR UPDATE quand dbClient est fourni.
+      // Une commande AVAILABLE peut contenir plusieurs parcels. Un simple
+      // appel orderId-only après un verify séparé deviendrait alors réutilisable
+      // et permettrait de retirer plusieurs lots avec le même secret. On refuse
+      // donc ce chemin : la route HTTP doit repasser le code courant au moteur
+      // atomique collectByPickupCode pour chaque remise physique.
+      if (order.status === 'available') {
+        return { status: 409, body: {
+          error: 'Le code de retrait courant est requis pour confirmer cette remise.',
+          code: 'PICKUP_CODE_REQUIRED',
+        }};
+      }
+
+      const transition = await transitionOrderStatus({
+        orderId,
+        newStatus: 'collected',
+        actor: { id: agentId, role },
+        source: 'patch',
+        note: 'Colis remis apres verification du code retrait',
+        dbClient: client,
+      });
+
+      if (!transition.success && !transition.noop) {
+        return { status: 409, body: { error: transition.error } };
+      }
+
+      await setCollectedByName(client, {
+        orderId,
+        collectedByName: collectedByName || null,
+      });
+
+      return { status: 200, body: {
+        success: true,
+        message: 'Colis remis. Commande marquée comme récupérée.',
+        order_ref: order.reference,
+      }};
     });
-
-    if (!transition.success && !transition.noop) {
-      return { status: 409, body: { error: transition.error } };
-    }
-
-    await setCollectedByName(client, {
-      orderId,
-      collectedByName: collectedByName || null,
-    });
-
-    log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collectedByName || '(anonyme)'}"`);
-
-    return { status: 200, body: {
-      success:   true,
-      message:   'Colis remis. Commande marquée comme récupérée.',
-      order_ref: order.reference,
-    }};
-  });
+  } catch (err) {
+    const mapped = _mapCanonicalCollectionError(err);
+    if (mapped) return mapped;
+    throw err;
+  }
 }
 // ══════════════════════════════════════════════════════════════════════════════
 // collectByPickupCode (Lot 2C)
@@ -250,12 +258,24 @@ async function collectOrder({ orderId, agentId, role, collectedByName }) {
 
 const CODE_FORMAT_REGEX = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`);
 
-async function collectByPickupCode({ code, user, ip = null, userAgent = null }) {
+async function collectByPickupCode({
+  code,
+  user,
+  ip = null,
+  userAgent = null,
+  expectedOrderId = null,
+  collectedByName = null,
+}) {
   const normalized = normalizeCode(code);
+  const targeted = Boolean(expectedOrderId);
+  const isShortTargetedCode = targeted && normalized.length === 4
+    && /^[A-HJ-NP-Z2-9]{4}$/.test(normalized);
 
-  if (!CODE_FORMAT_REGEX.test(normalized)) {
+  if (!CODE_FORMAT_REGEX.test(normalized) && !isShortTargetedCode) {
     return { status: 400, body: {
-      error: 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)',
+      error: targeted
+        ? 'Code de retrait invalide — 4 ou 8 caractères attendus'
+        : 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)',
     }};
   }
 
@@ -270,30 +290,68 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
     // collectOrder ci-dessus). last4 restreint le candidate set ; la
     // correspondance exacte se fait ensuite par comparaison de hash salé —
     // jamais par égalité directe sur le secret.
-    const { rows: candidates } = await client.query(`
-      SELECT o.id, o.reference, o.relais_id, o.payer_name, o.status,
-             r.name AS relais_name,
-             o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
-             o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
-      FROM orders o
-      LEFT JOIN relais r ON r.id = o.relais_id
-      WHERE o.pickup_secret_last4 = $1
-        AND o.status = 'available'
-      FOR UPDATE OF o
-    `, [last4]);
-
-    const order = candidates.find(c =>
-      c.pickup_secret_hash && hashCode(normalized, c.pickup_secret_salt) === c.pickup_secret_hash
+    const targetedQuery = targeted
+      ? `
+        SELECT o.id, o.reference, o.relais_id, o.payer_name, o.status,
+               r.name AS relais_name,
+               o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
+               o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
+        FROM orders o
+        LEFT JOIN relais r ON r.id = o.relais_id
+        WHERE o.id = $1 AND o.status = 'available'
+        FOR UPDATE OF o
+      `
+      : `
+        SELECT o.id, o.reference, o.relais_id, o.payer_name, o.status,
+               r.name AS relais_name,
+               o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
+               o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
+        FROM orders o
+        LEFT JOIN relais r ON r.id = o.relais_id
+        WHERE o.pickup_secret_last4 = $1
+          AND o.status = 'available'
+        FOR UPDATE OF o
+      `;
+    const { rows: candidates } = await client.query(
+      targetedQuery,
+      [targeted ? expectedOrderId : last4]
     );
+
+    const order = targeted
+      ? candidates[0]
+      : candidates.find(c =>
+          c.pickup_secret_hash
+          && hashCode(normalized, c.pickup_secret_salt) === c.pickup_secret_hash
+        );
 
     if (!order) {
       await _logSecurityAlert(client, {
         type:        'pickup_collect_invalid_code',
-        entityId:    null,
-        title:       `Tentative de retrait avec un code invalide (last4=${last4})`,
+        entityId:    targeted ? expectedOrderId : null,
+        title:       targeted
+          ? 'Tentative de retrait sur une commande indisponible ou inconnue'
+          : `Tentative de retrait avec un code invalide (last4=${last4})`,
         description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
       });
       return { status: 404, body: { error: 'Code de retrait introuvable ou déjà utilisé' } };
+    }
+
+    if (targeted) {
+      const matchesTarget = normalized.length === 4
+        ? normalized === String(order.pickup_secret_last4 || '').toUpperCase()
+        : Boolean(
+            order.pickup_secret_hash
+            && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
+          );
+      if (!matchesTarget) {
+        await _logSecurityAlert(client, {
+          type:        'pickup_collect_invalid_code',
+          entityId:    order.id,
+          title:       `Code invalide pour retrait ciblé ${order.reference}`,
+          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
+        });
+        return { status: 401, body: { error: 'Code de retrait incorrect' } };
+      }
     }
 
     const now = new Date();
@@ -326,14 +384,28 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
       notes,
     });
 
+    if (collectedByName !== null && collectedByName !== undefined) {
+      await setCollectedByName(client, {
+        orderId: order.id,
+        collectedByName: String(collectedByName || '').trim() || null,
+      });
+    }
+
     log.info(`[PICKUP-SECRET] 📦 Retrait aveugle confirmé pour ${order.reference} par agent=${agentId}`);
 
     return { status: 200, body: {
       success:      true,
+      message:      collection.partial
+        ? 'Lot remis. D’autres articles restent à retirer.'
+        : 'Commande entièrement récupérée.',
       order_id:     order.id,
       reference:    order.reference,
       recipient:    order.payer_name,
       relais:       order.relais_name,
+      parcel_id:    collection.parcelId,
+      parcel_reference: collection.parcelReference,
+      partial:      collection.partial,
+      order_status: collection.orderStatus,
       collected_at: collection.collectedAt.toISOString(),
     }};
     });
