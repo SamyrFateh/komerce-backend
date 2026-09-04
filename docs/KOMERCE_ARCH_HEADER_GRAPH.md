@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 494
-- Files with full headers: 450
+- Scanned code files: 500
+- Files with full headers: 456
 - Files with lite headers: 44
-- Files with any headers: 494
+- Files with any headers: 500
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1078
-- Edges: 5650
-- DB tables: 126
-- Doctrines: 288
+- Graph nodes: 1086
+- Edges: 5706
+- DB tables: 127
+- Doctrines: 289
 - Impact areas: 170
-- Unresolved code edges: 560
+- Unresolved code edges: 562
 - Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 20
 - business-rules: 1
-- catalog: 92
+- catalog: 95
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -42,8 +42,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
-- local-stock: 2
-- logistics: 43
+- local-stock: 3
+- logistics: 45
 - loyalty: 3
 - market: 2
 - notification: 21
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 208
+- service: 214
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -160,6 +160,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/paypal-client.js — payment-paypal-client (payment, critical, full)
 - services/pickup-collection-recorder.js — pickup-collection-recorder (logistics, critical, full)
 - services/pickup-secret-access-service.js — pickup-secret-access-service (logistics, critical, full)
+- services/pickup-secret-issuer.js — pickup-secret-issuer (logistics, critical, full)
+- services/pickup-secret-rotation-service.js — pickup-secret-partial-rotation (logistics, critical, full)
 - services/product-stock-service.js — catalog-product-stock-service (catalog, critical, full)
 - services/purchasing-cancel-service.js — purchasing-cancel-service (purchasing, critical, full)
 - services/qr-collection-core.js — qr-collection-core (orders, critical, full)
@@ -346,6 +348,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
+- services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
 - services/notifications/internals.js — notification-internals (notification, high, full)
@@ -649,6 +652,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pickup-exceptional-collection-service.js -> orders (via pickup-collection-recorder)
 - WRITE services/pickup-exceptional-collection-service.js -> orders (via order-mutation-service)
 - WRITE services/pickup-secret-access-service.js -> orders (via order-mutation-service)
+- WRITE services/pickup-secret-issuer.js -> orders (via order-mutation-service)
+- WRITE services/pickup-secret-rotation-service.js -> orders (via order-mutation-service)
 - WRITE services/pickup-secret-service.js -> orders (via order-mutation-service)
 - WRITE services/pickup-secret-service.js -> orders (via pickup-secret-access-service)
 - WRITE services/pickup-secret-service.js -> orders (via pickup-collection-service)
@@ -718,8 +723,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/order-status-machine.js -> products (via product-admin-service)
 - WRITE services/parcel-auto-create-service.js -> products (via order-status-machine)
 - WRITE services/parcel-operations.js -> products (via order-status-machine)
-- WRITE services/parcel-operations.js -> products (via product-admin-service)
-- WRITE services/pickup-collection-recorder.js -> products (via order-status-machine)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
@@ -733,12 +736,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - order_items: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/scan-engine.js
 - order_status_history: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js
 - finance_config: 6 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js, services/pricing-rates.js
+- pickup_print_tokens: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
+- pickup_reveal_codes: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
 - scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
 - shared_cart_events: 6 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
-- pickup_print_tokens: 5 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js
-- pickup_reveal_codes: 5 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js
 - purchase_orders: 5 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
@@ -797,7 +800,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
-- uses: (aucun — Vague 2 D4 -> routes/local-stock.js ((aucun — Vague 2 D4)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -916,6 +918,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> middleware/auth (middleware/auth)
 - depends: routes/admin-dashboard-market.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
+- depends: routes/admin-dashboard-market.js -> services/dashboard-admin-context (services/dashboard-admin-context)
 
 ## Files Still Without Headers Or Aggregation
 
