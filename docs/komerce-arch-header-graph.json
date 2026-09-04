@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 494,
-    "filesWithFullHeaders": 450,
+    "scannedCodeFiles": 500,
+    "filesWithFullHeaders": 456,
     "filesWithLiteHeaders": 44,
-    "filesWithAnyHeaders": 494,
+    "filesWithAnyHeaders": 500,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1078,
-    "edges": 5650,
-    "dbTables": 126,
-    "doctrines": 288,
+    "graphNodes": 1086,
+    "edges": 5706,
+    "dbTables": 127,
+    "doctrines": 289,
     "impactAreas": 170,
-    "unresolvedCodeEdges": 560,
+    "unresolvedCodeEdges": 562,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -34,13 +34,13 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 92,
+    "catalog": 95,
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 2,
     "economic-engine": 47,
     "sourcing": 6,
-    "logistics": 43,
+    "logistics": 45,
     "boutique": 20,
     "checkout": 3,
     "shared-cart": 25,
@@ -61,7 +61,7 @@
     "auth-identity": 6,
     "operations": 11,
     "inventory": 2,
-    "local-stock": 2,
+    "local-stock": 3,
     "purchasing": 8,
     "unsold-resolution": 1,
     "incident-management": 2,
@@ -101,7 +101,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 208,
+    "service": 214,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -110,9 +110,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 68,
-    "medium": 121,
-    "high": 253,
+    "critical": 70,
+    "medium": 124,
+    "high": 254,
     "low": 52
   },
   "nodes": [
@@ -1949,6 +1949,7 @@
         "b-identity.js",
         "b-checkout-render.js",
         "b-phone.js",
+        "routes/local-stock.js",
         "routes/orders.js",
         "routes/payments.js"
       ],
@@ -3071,7 +3072,7 @@
       "layer": "ui-state",
       "criticality": "low",
       "owner": "public/boutique/js/b-pager-end-bounce.js",
-      "purpose": "Signaler la fin d'une page mobile et n'avancer qu'après une seconde impulsion verticale volontaire.",
+      "purpose": "Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -3112,6 +3113,7 @@
       ],
       "depends": [
         "b-bus.js",
+        "b-pager-end-bounce.js",
         "b-scroll-owner.js",
         "b-store.js"
       ],
@@ -4217,6 +4219,7 @@
         "product-discovery",
         "discovery-rail",
         "category-navigation",
+        "mobile",
         "desktop"
       ],
       "version": "2026-09"
@@ -4940,7 +4943,9 @@
         "home",
         "product-discovery",
         "discovery-rail",
-        "category-navigation"
+        "category-navigation",
+        "mobile",
+        "desktop"
       ],
       "version": "2026-09"
     },
@@ -8562,18 +8567,20 @@
       ],
       "outputs": [
         "availability_projection",
-        "exposable_flag"
+        "exposable_flag",
+        "checkout_fulfillment_preview"
       ],
       "depends": [
         "services/local-stock-service.js",
-        "db (résolution code marché)"
+        "services/local-stock-checkout-preview.js"
       ],
       "usedBy": [
-        "(aucun — Vague 2 D4",
-        "shadow : jamais monté dans bootstrap/api-routes.js)"
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-checkout.js"
       ],
       "dbRead": [
-        "markets"
+        "markets",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -8581,12 +8588,13 @@
         "single_statement_sufficient"
       ],
       "doctrine": [
-        "RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de"
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
       ],
       "impactAreas": [
-        "local-stock"
+        "local-stock",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/logistics.js",
@@ -14783,6 +14791,50 @@
       "version": "2026-06"
     },
     {
+      "id": "services/local-stock-checkout-preview.js",
+      "file": "services/local-stock-checkout-preview.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "local-stock-checkout-preview",
+      "domain": "local-stock",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "checkout_demands",
+        "location"
+      ],
+      "outputs": [
+        "checkout_fulfillment_preview"
+      ],
+      "depends": [
+        "db.js",
+        "services/local-stock-service.js"
+      ],
+      "usedBy": [
+        "routes/local-stock.js"
+      ],
+      "dbRead": [
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "read_only_projection_no_lock"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+      ],
+      "impactAreas": [
+        "local-stock",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/local-stock-service.js",
       "file": "services/local-stock-service.js",
       "type": "file",
@@ -17102,11 +17154,16 @@
       ],
       "outputs": [
         "{ scanId",
-        "collectedAt } | mapped_http_error"
+        "collectedAt",
+        "parcelId",
+        "parcelReference",
+        "orderStatus",
+        "partial }"
       ],
       "depends": [
         "services/order-status-machine.js",
         "services/order-mutation-service.js",
+        "services/pickup-secret-rotation-service.js",
         "utils/parcelSync.js"
       ],
       "usedBy": [
@@ -17144,16 +17201,16 @@
         }
       ],
       "dbTxn": [
-        "participant (reçoit le client transactionnel de l'appelant",
-        "ne BEGIN/COMMIT/ROLLBACK jamais lui-même)"
+        "participant (client transactionnel obligatoire)"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "pickup"
       ],
-      "version": "2026-08 (extrait de pickup-collection-service.js, LOT 5A — nettoyage architectural)"
+      "version": "2026-09"
     },
     {
       "id": "services/pickup-collection-service.js",
@@ -17381,6 +17438,113 @@
       ],
       "version": "2026-08 (extrait de pickup-secret-service.js, LOT 5B — nettoyage architectural)",
       "dbWriteViaOverlapWarning": "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders"
+    },
+    {
+      "id": "services/pickup-secret-issuer.js",
+      "file": "services/pickup-secret-issuer.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-issuer",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orderId",
+        "relaisId",
+        "channel",
+        "dbClient?",
+        "excludeOrderId?",
+        "extraUpdates?"
+      ],
+      "outputs": [
+        "{ code",
+        "last4 }"
+      ],
+      "depends": [
+        "db.js",
+        "services/order-mutation-service.js",
+        "services/pickup-code-helpers.js"
+      ],
+      "usedBy": [
+        "services/pickup-secret-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned when dbClient is supplied"
+      ],
+      "doctrine": [
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/pickup-secret-rotation-service.js",
+      "file": "services/pickup-secret-rotation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-partial-rotation",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client",
+        "orderId",
+        "relaisId"
+      ],
+      "outputs": [
+        "{ last4 }"
+      ],
+      "depends": [
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "usedBy": [
+        "services/pickup-collection-recorder.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "participant — rotation atomique dans la transaction de collecte"
+      ],
+      "doctrine": [
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/pickup-secret-service.js",
@@ -20523,7 +20687,8 @@
       "depends": [
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
-        "services/suppliers/connectors/noon-connector.js"
+        "services/suppliers/connectors/noon-connector.js",
+        "services/suppliers/connectors/cj-connector.js"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js",
@@ -20540,7 +20705,7 @@
         "sourcing",
         "supplier-import"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/sourcing-mutations.js",
@@ -20826,6 +20991,82 @@
       "version": "2026-08"
     },
     {
+      "id": "services/suppliers/catalog-sync-checkpoint.js",
+      "file": "services/suppliers/catalog-sync-checkpoint.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-catalog-sync-checkpoint-owner",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "supplier_sync_progress"
+      ],
+      "outputs": [
+        "persisted_sync_checkpoint"
+      ],
+      "depends": [],
+      "usedBy": [
+        "scripts/cj-full-catalog-sync.js"
+      ],
+      "dbRead": [
+        "supplier_catalog_sync_checkpoints"
+      ],
+      "dbWrite": [
+        "supplier_catalog_sync_checkpoints"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
+      "id": "services/suppliers/cj-catalog-index.js",
+      "file": "services/suppliers/cj-catalog-index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "cj-catalog-category-index",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "CJ access token"
+      ],
+      "outputs": [
+        "CJ third-level category list"
+      ],
+      "depends": [
+        "services/suppliers/connectors/cj-connector.js"
+      ],
+      "usedBy": [
+        "scripts/cj-full-catalog-sync.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
       "id": "services/suppliers/connectors/_connector-utils.js",
       "file": "services/suppliers/connectors/_connector-utils.js",
       "type": "file",
@@ -20902,6 +21143,45 @@
         "product-discovery"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/suppliers/connectors/cj-connector.js",
+      "file": "services/suppliers/connectors/cj-connector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "cj-dropshipping-api-connector",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "CJ API v2 credentials and product search filters"
+      ],
+      "outputs": [
+        "normalized_supplier_product_v2"
+      ],
+      "depends": [
+        "services/suppliers/normalized-product.js"
+      ],
+      "usedBy": [
+        "services/sourcing-import-dispatch.js",
+        "scripts/cj-showcase-sampler.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "version": "2026-09-v1"
     },
     {
       "id": "services/suppliers/connectors/csv-connector.js",
@@ -23751,6 +24031,11 @@
       "table": "supplier_catalog_import_rejections"
     },
     {
+      "id": "db:supplier_catalog_sync_checkpoints",
+      "type": "db-table",
+      "table": "supplier_catalog_sync_checkpoints"
+    },
+    {
       "id": "db:webauthn_challenges",
       "type": "db-table",
       "table": "webauthn_challenges"
@@ -24531,9 +24816,9 @@
       "doctrine": "telechargement_authentifie_uniquement"
     },
     {
-      "id": "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
+      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
       "type": "doctrine",
-      "doctrine": "RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de"
+      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
       "id": "doctrine:order_creation_idempotent",
@@ -24836,9 +25121,9 @@
       "doctrine": "preserve_caller_transaction"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
+      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
+      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -24864,11 +25149,6 @@
       "id": "doctrine:no_client_market_authority",
       "type": "doctrine",
       "doctrine": "no_client_market_authority"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026",
@@ -24974,6 +25254,16 @@
       "id": "doctrine:exceptional_pickup_strict_normalized_match",
       "type": "doctrine",
       "doctrine": "exceptional_pickup_strict_normalized_match"
+    },
+    {
+      "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
+      "type": "doctrine",
+      "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
+    },
+    {
+      "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
+      "type": "doctrine",
+      "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
     },
     {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -28869,6 +29159,12 @@
     },
     {
       "from": "public/boutique/js/b-checkout.js",
+      "to": "routes/local-stock.js",
+      "type": "depends",
+      "label": "routes/local-stock.js"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
       "to": "routes/orders.js",
       "type": "depends",
       "label": "routes/orders.js"
@@ -30459,6 +30755,12 @@
     },
     {
       "from": "public/boutique/js/b-pager.js",
+      "to": "public/boutique/js/b-pager-end-bounce.js",
+      "type": "depends",
+      "label": "b-pager-end-bounce.js"
+    },
+    {
+      "from": "public/boutique/js/b-pager.js",
       "to": "public/boutique/js/b-scroll-owner.js",
       "type": "depends",
       "label": "b-scroll-owner.js"
@@ -31995,6 +32297,12 @@
     },
     {
       "from": "public/boutique/js/discovery-rail.js",
+      "to": "impact:mobile",
+      "type": "impact",
+      "label": "mobile"
+    },
+    {
+      "from": "public/boutique/js/discovery-rail.js",
       "to": "impact:desktop",
       "type": "impact",
       "label": "desktop"
@@ -32814,6 +33122,18 @@
       "to": "impact:category-navigation",
       "type": "impact",
       "label": "category-navigation"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-rail.js",
+      "to": "impact:mobile",
+      "type": "impact",
+      "label": "mobile"
+    },
+    {
+      "from": "public/boutique/js/render/render-discovery-rail.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
     },
     {
       "from": "public/boutique/js/render/render-home-sections.js",
@@ -37866,21 +38186,21 @@
     },
     {
       "from": "routes/local-stock.js",
-      "to": "db (résolution code marché)",
+      "to": "services/local-stock-checkout-preview.js",
       "type": "depends",
-      "label": "db (résolution code marché)"
+      "label": "services/local-stock-checkout-preview.js"
     },
     {
-      "from": "(aucun — Vague 2 D4",
+      "from": "bootstrap/api-routes.js",
       "to": "routes/local-stock.js",
       "type": "uses",
-      "label": "(aucun — Vague 2 D4"
+      "label": "bootstrap/api-routes.js"
     },
     {
-      "from": "shadow : jamais monté dans bootstrap/api-routes.js)",
+      "from": "public/boutique/js/b-checkout.js",
       "to": "routes/local-stock.js",
       "type": "uses",
-      "label": "shadow : jamais monté dans bootstrap/api-routes.js)"
+      "label": "public/boutique/js/b-checkout.js"
     },
     {
       "from": "routes/local-stock.js",
@@ -37890,15 +38210,27 @@
     },
     {
       "from": "routes/local-stock.js",
-      "to": "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/local-stock.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
       "type": "doctrine",
-      "label": "RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de"
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
       "from": "routes/local-stock.js",
       "to": "impact:local-stock",
       "type": "impact",
       "label": "local-stock"
+    },
+    {
+      "from": "routes/local-stock.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "routes/logistics.js",
@@ -47225,6 +47557,54 @@
       "label": "checkout"
     },
     {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "services/local-stock-service.js",
+      "type": "depends",
+      "label": "services/local-stock-service.js"
+    },
+    {
+      "from": "routes/local-stock.js",
+      "to": "services/local-stock-checkout-preview.js",
+      "type": "uses",
+      "label": "routes/local-stock.js"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-read",
+      "label": "local_stock_allocations"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "services/local-stock-service.js",
       "to": "db",
       "type": "depends",
@@ -50877,6 +51257,12 @@
     },
     {
       "from": "services/pickup-collection-recorder.js",
+      "to": "services/pickup-secret-rotation-service.js",
+      "type": "depends",
+      "label": "services/pickup-secret-rotation-service.js"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
       "to": "utils/parcelSync.js",
       "type": "depends",
       "label": "utils/parcelSync.js"
@@ -50962,15 +51348,21 @@
     },
     {
       "from": "services/pickup-collection-recorder.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
     },
     {
       "from": "services/pickup-collection-recorder.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
     },
     {
       "from": "services/pickup-collection-service.js",
@@ -51435,6 +51827,122 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "services/pickup-code-helpers.js",
+      "type": "depends",
+      "label": "services/pickup-code-helpers.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "uses",
+      "label": "services/pickup-secret-service.js"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "uses",
+      "label": "services/pickup-secret-rotation-service.js"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-mutation-service"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
+      "type": "doctrine",
+      "label": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "depends",
+      "label": "services/pickup-secret-issuer.js"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
+      "to": "services/pickup-secret-rotation-service.js",
+      "type": "uses",
+      "label": "services/pickup-collection-recorder.js"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-write",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-mutation-service"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
+      "type": "doctrine",
+      "label": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-rotation-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
     },
     {
       "from": "services/pickup-secret-service.js",
@@ -56123,6 +56631,12 @@
       "label": "services/suppliers/connectors/noon-connector.js"
     },
     {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/cj-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/cj-connector.js"
+    },
+    {
       "from": "routes/sourcing-scanner.js",
       "to": "services/sourcing-import-dispatch.js",
       "type": "uses",
@@ -56610,6 +57124,72 @@
       "label": "product-detail"
     },
     {
+      "from": "scripts/cj-full-catalog-sync.js",
+      "to": "services/suppliers/catalog-sync-checkpoint.js",
+      "type": "uses",
+      "label": "scripts/cj-full-catalog-sync.js"
+    },
+    {
+      "from": "services/suppliers/catalog-sync-checkpoint.js",
+      "to": "db:supplier_catalog_sync_checkpoints",
+      "type": "db-read",
+      "label": "supplier_catalog_sync_checkpoints"
+    },
+    {
+      "from": "services/suppliers/catalog-sync-checkpoint.js",
+      "to": "db:supplier_catalog_sync_checkpoints",
+      "type": "db-write",
+      "label": "supplier_catalog_sync_checkpoints"
+    },
+    {
+      "from": "services/suppliers/catalog-sync-checkpoint.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/catalog-sync-checkpoint.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/catalog-sync-checkpoint.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
+      "from": "services/suppliers/cj-catalog-index.js",
+      "to": "services/suppliers/connectors/cj-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/cj-connector.js"
+    },
+    {
+      "from": "scripts/cj-full-catalog-sync.js",
+      "to": "services/suppliers/cj-catalog-index.js",
+      "type": "uses",
+      "label": "scripts/cj-full-catalog-sync.js"
+    },
+    {
+      "from": "services/suppliers/cj-catalog-index.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/cj-catalog-index.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/cj-catalog-index.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
       "from": "services/suppliers/connectors/_connector-utils.js",
       "to": "@none",
       "type": "depends",
@@ -56668,6 +57248,54 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/cj-connector.js",
+      "type": "uses",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "scripts/cj-showcase-sampler.js",
+      "to": "services/suppliers/connectors/cj-connector.js",
+      "type": "uses",
+      "label": "scripts/cj-showcase-sampler.js"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/suppliers/connectors/cj-connector.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
     },
     {
       "from": "services/suppliers/connectors/csv-connector.js",
@@ -60237,6 +60865,7 @@
         "routes/hub.js",
         "routes/inventory-api.js",
         "routes/invoices.js",
+        "routes/local-stock.js",
         "routes/logistics.js",
         "routes/loyalty.js",
         "routes/meta-whatsapp.js",
@@ -62081,6 +62710,7 @@
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-checkout-render.js",
         "public/boutique/js/b-phone.js",
+        "routes/local-stock.js",
         "routes/orders.js",
         "routes/payments.js"
       ],
@@ -62136,6 +62766,7 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/checkout-desktop-style.js",
         "public/boutique/js/group/group-checkout-adapter.js",
+        "routes/local-stock.js",
         "routes/orders.js",
         "routes/payments.js",
         "routes/wallet.js"
@@ -63264,7 +63895,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/b-pager-end-bounce.js",
-      "purpose": "Signaler la fin d'une page mobile et n'avancer qu'après une seconde impulsion verticale volontaire.",
+      "purpose": "Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -63283,7 +63914,8 @@
         "impact:category-navigation",
         "impact:mobile-navigation",
         "impact:scroll-ownership",
-        "public/boutique/js/b-pager-end-bounce.js"
+        "public/boutique/js/b-pager-end-bounce.js",
+        "public/boutique/js/b-pager.js"
       ]
     },
     "public/boutique/js/b-pager.js": {
@@ -63295,6 +63927,7 @@
       "purpose": null,
       "directDependsOn": [
         "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-pager-end-bounce.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js"
       ],
@@ -63334,6 +63967,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-pager-end-bounce.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
@@ -64467,6 +65101,7 @@
         "product-discovery",
         "discovery-rail",
         "category-navigation",
+        "mobile",
         "desktop"
       ],
       "mustCheck": [
@@ -64474,6 +65109,7 @@
         "impact:desktop",
         "impact:discovery-rail",
         "impact:home",
+        "impact:mobile",
         "impact:product-discovery",
         "public/boutique/js/b-modal-discovery-detail.js",
         "public/boutique/js/b-pager.js",
@@ -65181,12 +65817,16 @@
         "home",
         "product-discovery",
         "discovery-rail",
-        "category-navigation"
+        "category-navigation",
+        "mobile",
+        "desktop"
       ],
       "mustCheck": [
         "impact:category-navigation",
+        "impact:desktop",
         "impact:discovery-rail",
         "impact:home",
+        "impact:mobile",
         "impact:product-discovery",
         "public/boutique/js/discovery-rail.js"
       ]
@@ -68618,28 +69258,35 @@
       "purpose": null,
       "directDependsOn": [
         "services/local-stock-service.js",
-        "db (résolution code marché)"
+        "services/local-stock-checkout-preview.js"
       ],
       "directUsedBy": [
-        "(aucun — Vague 2 D4",
-        "shadow : jamais monté dans bootstrap/api-routes.js)"
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-checkout.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets"
+        "markets",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de"
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
       ],
       "impactAreas": [
-        "local-stock"
+        "local-stock",
+        "checkout"
       ],
       "mustCheck": [
+        "bootstrap/api-routes.js",
         "db:markets",
-        "doctrine:RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de",
+        "db:relais",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;",
+        "impact:checkout",
         "impact:local-stock",
+        "public/boutique/js/b-checkout.js",
+        "services/local-stock-checkout-preview.js",
         "services/local-stock-service.js"
       ]
     },
@@ -74704,6 +75351,44 @@
         "utils/documents/logo-base64.js"
       ]
     },
+    "services/local-stock-checkout-preview.js": {
+      "role": "local-stock-checkout-preview",
+      "domain": "local-stock",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/local-stock-service.js"
+      ],
+      "directUsedBy": [
+        "routes/local-stock.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+      ],
+      "impactAreas": [
+        "local-stock",
+        "checkout"
+      ],
+      "mustCheck": [
+        "db:local_stock",
+        "db:local_stock_allocations",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+        "impact:checkout",
+        "impact:local-stock",
+        "routes/local-stock.js",
+        "services/local-stock-service.js"
+      ]
+    },
     "services/local-stock-service.js": {
       "role": "local-stock-local-stock-service",
       "domain": "local-stock",
@@ -74746,7 +75431,8 @@
         "impact:local-stock",
         "impact:orders",
         "routes/local-stock.js",
-        "services/discovery-rail-composer.js"
+        "services/discovery-rail-composer.js",
+        "services/local-stock-checkout-preview.js"
       ]
     },
     "services/loyalty-service.js": {
@@ -75837,6 +76523,8 @@
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-access-service.js",
+        "services/pickup-secret-issuer.js",
+        "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js",
         "services/wallet-service.js"
       ]
@@ -76982,6 +77670,7 @@
       "mustCheck": [
         "impact:logistics",
         "services/pickup-collection-service.js",
+        "services/pickup-secret-issuer.js",
         "services/pickup-secret-service.js"
       ]
     },
@@ -76995,6 +77684,7 @@
       "directDependsOn": [
         "services/order-status-machine.js",
         "services/order-mutation-service.js",
+        "services/pickup-secret-rotation-service.js",
         "utils/parcelSync.js"
       ],
       "directUsedBy": [
@@ -77033,10 +77723,11 @@
         }
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "pickup"
       ],
       "mustCheck": [
         "db:order_status_history",
@@ -77048,12 +77739,14 @@
         "db:product_variants",
         "db:products",
         "db:scans",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
         "impact:logistics",
+        "impact:pickup",
         "services/order-mutation-service.js",
         "services/order-status-machine.js",
         "services/pickup-collection-service.js",
         "services/pickup-exceptional-collection-service.js",
+        "services/pickup-secret-rotation-service.js",
         "utils/parcelSync.js"
       ]
     },
@@ -77294,6 +77987,100 @@
         "utils/pickup-receipt-html.js"
       ]
     },
+    "services/pickup-secret-issuer.js": {
+      "role": "pickup-secret-issuer",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/order-mutation-service.js",
+        "services/pickup-code-helpers.js"
+      ],
+      "directUsedBy": [
+        "services/pickup-secret-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "doctrines": [
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
+        "impact:logistics",
+        "impact:pickup",
+        "services/order-mutation-service.js",
+        "services/pickup-code-helpers.js",
+        "services/pickup-secret-rotation-service.js",
+        "services/pickup-secret-service.js"
+      ]
+    },
+    "services/pickup-secret-rotation-service.js": {
+      "role": "pickup-secret-partial-rotation",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "directUsedBy": [
+        "services/pickup-collection-recorder.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "doctrines": [
+        "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:pickup_print_tokens",
+        "db:pickup_reveal_codes",
+        "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
+        "impact:logistics",
+        "impact:pickup",
+        "services/order-mutation-service.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-secret-issuer.js"
+      ]
+    },
     "services/pickup-secret-service.js": {
       "role": "pickup-secret-service",
       "domain": "logistics",
@@ -77394,6 +78181,7 @@
         "services/pickup-collection-service.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-access-service.js",
+        "services/pickup-secret-issuer.js",
         "services/scan-operations.js",
         "utils/logger.js",
         "utils/name-normalize.js",
@@ -80305,7 +81093,8 @@
       "directDependsOn": [
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
-        "services/suppliers/connectors/noon-connector.js"
+        "services/suppliers/connectors/noon-connector.js",
+        "services/suppliers/connectors/cj-connector.js"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js",
@@ -80328,6 +81117,7 @@
         "impact:supplier-import",
         "routes/sourcing-scanner.js",
         "services/sourcing-workspace.js",
+        "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js"
@@ -80612,6 +81402,70 @@
         "utils/rules.js"
       ]
     },
+    "services/suppliers/catalog-sync-checkpoint.js": {
+      "role": "supplier-catalog-sync-checkpoint-owner",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "scripts/cj-full-catalog-sync.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "supplier_catalog_sync_checkpoints"
+      ],
+      "dbWrite": [
+        "supplier_catalog_sync_checkpoints"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "db:supplier_catalog_sync_checkpoints",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:supplier-import"
+      ]
+    },
+    "services/suppliers/cj-catalog-index.js": {
+      "role": "cj-catalog-category-index",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/connectors/cj-connector.js"
+      ],
+      "directUsedBy": [
+        "scripts/cj-full-catalog-sync.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:supplier-import",
+        "services/suppliers/connectors/cj-connector.js"
+      ]
+    },
     "services/suppliers/connectors/_connector-utils.js": {
       "role": "connector-utils",
       "domain": "catalog",
@@ -80672,6 +81526,44 @@
         "impact:catalog",
         "impact:product-discovery",
         "services/suppliers/connectors/noon-connector.js",
+        "services/suppliers/normalized-product.js"
+      ]
+    },
+    "services/suppliers/connectors/cj-connector.js": {
+      "role": "cj-dropshipping-api-connector",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/normalized-product.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-import-dispatch.js",
+        "scripts/cj-showcase-sampler.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "impact:supplier-import",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/cj-catalog-index.js",
         "services/suppliers/normalized-product.js"
       ]
     },
@@ -80942,6 +81834,7 @@
         "services/catalog-promotion.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/api-connector.base.js",
+        "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/json-source-pipeline.js",
@@ -83097,6 +83990,30 @@
       ]
     },
     {
+      "table": "pickup_print_tokens",
+      "writerCount": 6,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
+      "table": "pickup_reveal_codes",
+      "writerCount": 6,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
       "table": "scan_events",
       "writerCount": 6,
       "writers": [
@@ -83141,28 +84058,6 @@
         "routes/invoices.js",
         "services/invoice-service.js",
         "services/order-payment-confirmation.js"
-      ]
-    },
-    {
-      "table": "pickup_print_tokens",
-      "writerCount": 5,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js"
-      ]
-    },
-    {
-      "table": "pickup_reveal_codes",
-      "writerCount": 5,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js"
       ]
     },
     {
@@ -84792,24 +85687,6 @@
       "label": "services/*"
     },
     {
-      "from": "routes/local-stock.js",
-      "to": "db (résolution code marché)",
-      "type": "depends",
-      "label": "db (résolution code marché)"
-    },
-    {
-      "from": "(aucun — Vague 2 D4",
-      "to": "routes/local-stock.js",
-      "type": "uses",
-      "label": "(aucun — Vague 2 D4"
-    },
-    {
-      "from": "shadow : jamais monté dans bootstrap/api-routes.js)",
-      "to": "routes/local-stock.js",
-      "type": "uses",
-      "label": "shadow : jamais monté dans bootstrap/api-routes.js)"
-    },
-    {
       "from": "routes/logistics.js",
       "to": "db.js",
       "type": "depends",
@@ -85968,6 +86845,12 @@
       "label": "payment confirmation flows"
     },
     {
+      "from": "services/local-stock-checkout-preview.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/local-stock-service.js",
       "to": "db",
       "type": "depends",
@@ -86236,6 +87119,12 @@
       "to": "services/pickup-secret-access-service.js",
       "type": "uses",
       "label": "services/pickup-secret-service.js (réexport)"
+    },
+    {
+      "from": "services/pickup-secret-issuer.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pickup-secret-service.js",
@@ -86634,10 +87523,28 @@
       "label": "services/suppliers/connectors/*"
     },
     {
+      "from": "scripts/cj-full-catalog-sync.js",
+      "to": "services/suppliers/catalog-sync-checkpoint.js",
+      "type": "uses",
+      "label": "scripts/cj-full-catalog-sync.js"
+    },
+    {
+      "from": "scripts/cj-full-catalog-sync.js",
+      "to": "services/suppliers/cj-catalog-index.js",
+      "type": "uses",
+      "label": "scripts/cj-full-catalog-sync.js"
+    },
+    {
       "from": "services/suppliers/connectors/_connector-utils.js",
       "to": "@none",
       "type": "depends",
       "label": "@none"
+    },
+    {
+      "from": "scripts/cj-showcase-sampler.js",
+      "to": "services/suppliers/connectors/cj-connector.js",
+      "type": "uses",
+      "label": "scripts/cj-showcase-sampler.js"
     },
     {
       "from": "services/suppliers/connectors/csv-connector.js",
