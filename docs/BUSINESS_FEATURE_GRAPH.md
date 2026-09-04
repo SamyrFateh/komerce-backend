@@ -76,9 +76,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 389 | 389 | 0 |
+| backend | 29 | 29 | 391 | 391 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 100 | 100 | 0 |
+| boutique | 16 | 16 | 102 | 102 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -479,14 +479,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### providers-services _(business-feature)_
 
-> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle de demande explicite d’un client Komerce. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par Commander/Demander.
+> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Aucun paiement, settlement, calendrier structuré, contact provider direct ou order Komerce n’est créé par cette interaction.
 
-- services: 1
+- services: 3
 - routes: 1
 - boutique: 2
-- scripts: 1
-- migrations: 1
-- tests: 3
+- scripts: 2
+- migrations: 3
+- tests: 4
 - tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
 - tables written: 4
 - interfaces exposed: 0
@@ -1650,9 +1650,9 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[EXPOSE-ENTRY-UNPARSED]** local-stock / GET /api/local-stock/availability?product_id=X&market=CODE (KM|YT|CM|CG) — jamais monté dans bootstrap/api-routes.js à ce stade (Vague 2 D4, shadow). market est un CODE, jamais un UUID — résolu serveur (resolveMarketId) avant tout usage, corrigé en D6 après découverte que le contrat initial faisait confiance à un market_id brut du client (confiance aveugle, contraire à la doctrine market-scope-serveur) — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref optionnel — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions — ranking produit historique — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
@@ -1670,8 +1670,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1008 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 191 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- backend : 1012 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 200 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1720,8 +1720,8 @@ Meta Graph monté : oui.
 | catalog | infrastructure | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| catalog | orders | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
-| catalog | platform-ops | static-code | 69 | **DECLARED_AND_OBSERVED** |
+| catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 72 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1848,7 +1848,7 @@ Meta Graph monté : oui.
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 57 | **DECLARED_AND_OBSERVED** |
-| orders | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 22 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1891,7 +1891,7 @@ Meta Graph monté : oui.
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
 | providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| providers-services | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| providers-services | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | providers-services | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1920,7 +1920,7 @@ Meta Graph monté : oui.
 | shared-cart | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| shared-cart | orders | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| shared-cart | orders | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | shared-cart | platform-ops | static-code | 50 | **DECLARED_AND_OBSERVED** |
 | shared-cart | recommendations | static-code, interface | 3 | **DECLARED_AND_OBSERVED** |
 | sourcing | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
