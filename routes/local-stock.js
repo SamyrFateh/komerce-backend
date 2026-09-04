@@ -4,53 +4,49 @@
  * @domain        local-stock
  * @layer         route
  * @criticality   medium
- * @inputs        product_id, market (query — code KM|YT|CM|CG, résolu serveur)
- * @outputs       availability_projection, exposable_flag
- * @depends       services/local-stock-service.js, db (résolution code marché)
- * @used-by       (aucun — Vague 2 D4, shadow : jamais monté dans bootstrap/api-routes.js)
- * @db-read       markets
+ * @inputs        product_id, market (query — code KM|YT|CM|CG, résolu serveur),
+ *                relais_id, quantity
+ * @outputs       availability_projection, exposable_flag, checkout_fulfillment_preview
+ * @depends       services/local-stock-service.js, services/local-stock-checkout-preview.js,
+ *                db.js
+ * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js
+ * @db-read       markets, relais
  * @db-write      none
  * @db-txn        single_statement_sufficient
- * @doctrine      RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G (contrat de
- *                lecture minimal, jamais une vérité métier exposée en détail)
- * @impact-areas  local-stock
- * @version       2026-08
+ * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;
+ *                RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §G
+ * @impact-areas  local-stock, checkout
+ * @version       2026-09
  */
 
 'use strict';
 
 /**
- * KOMERCE — Vague 2 D4 : route GET read-only shadow.
+ * KOMERCE — projections publiques read-only du stock local.
  *
- * Aucune mutation. Jamais montée dans bootstrap/api-routes.js à ce stade —
- * le frontend peut techniquement lire (route fonctionnelle, testable), mais
- * rien n'est encore branché (D6/D7). La route ne renvoie jamais le POURQUOI
- * d'une indisponibilité (allocations actives, exposure DISABLED, etc.) —
- * uniquement le résultat binaire, jamais une vérité métier détaillée.
+ * - /availability sert la promesse Discovery produit-level.
+ * - /checkout-preview sert une projection quantité + relais pour expliquer
+ *   le checkout mixte. Elle ne réserve rien et n'est jamais l'autorité finale :
+ *   POST /api/orders résout à nouveau LOCAL_STOCK/IMPORT sous verrou.
  *
- * market est un CODE (KM/YT/CM/CG), jamais un UUID — exactement ce que le
- * frontend a déjà via window.KomerceMarket.get().code
- * (public/boutique/js/market-context.js), une valeur de navigation
- * (KOMERCE_MARKET_LAYER_FREEZE.md §3 : "contextuel, client, commutable, NON
- * autorisant"), jamais une preuve d'autorisation. resolveMarketId() la
- * traduit en UUID réel côté serveur avant tout usage — la route ne fait
- * JAMAIS confiance à un market_id brut fourni par le client.
+ * Aucune route ne renvoie le pourquoi opérationnel détaillé d'une
+ * indisponibilité (allocation précise, exposure brut, quantité physique).
  */
 
 const express = require('express');
 const router  = express.Router();
 const db = require('../db');
 const { getAvailability, isStockExposable } = require('../services/local-stock-service');
+const { previewCheckoutFulfillmentSources } = require('../services/local-stock-checkout-preview');
+
+function asArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
 
 /**
- * Résout un code marché (KM/YT/CM/CG — window.KomerceMarket.get().code côté
- * client, KOMERCE_MARKET_LAYER_FREEZE.md §3 : "navigation — contextuel,
- * client, commutable, NON autorisant") vers l'UUID markets.id réel. Ne fait
- * JAMAIS confiance à un UUID brut fourni par le client — seul un code de
- * navigation déjà légitimé par le freeze est accepté, résolu et validé
- * serveur avant tout usage dans isStockExposable/getAvailability.
- * @param {string} marketCode
- * @returns {Promise<string|null>}
+ * Résout un code marché (KM/YT/CM/CG) vers l'UUID markets.id réel.
+ * Le client ne fournit jamais directement un market_id d'autorité.
  */
 async function resolveMarketId(marketCode) {
   if (!marketCode) return null;
@@ -80,6 +76,66 @@ router.get('/availability', async (req, res, next) => {
     ]);
 
     res.json({ availability, exposable });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/local-stock/checkout-preview ────────────────────────────────
+// Exemple :
+//   ?relais_id=R&product_id=P1&quantity=2&product_id=P2&quantity=1
+//
+// Les paires product_id/quantity restent alignées par ordre d'apparition.
+// Le serveur résout relais.market_id : aucun market_id brut n'est accepté.
+router.get('/checkout-preview', async (req, res, next) => {
+  try {
+    const relaisId = String(req.query.relais_id || '').trim();
+    const productIds = asArray(req.query.product_id).map(v => String(v || '').trim());
+    const quantities = asArray(req.query.quantity);
+
+    if (!relaisId || !productIds.length) {
+      return res.status(400).json({ error: 'relais_id et product_id sont requis' });
+    }
+    if (productIds.length > 50) {
+      return res.status(400).json({ error: '50 lignes maximum pour la prévisualisation' });
+    }
+    if (quantities.length && quantities.length !== productIds.length) {
+      return res.status(400).json({ error: 'quantity doit correspondre à chaque product_id' });
+    }
+
+    const demands = productIds.map((productId, index) => {
+      const quantity = Number(quantities[index] ?? 1);
+      if (!productId || !Number.isInteger(quantity) || quantity <= 0 || quantity > 100) {
+        return null;
+      }
+      return { productId, quantity };
+    });
+    if (demands.some(v => !v)) {
+      return res.status(400).json({ error: 'product_id/quantity invalide' });
+    }
+
+    const { rows } = await db.query(
+      `SELECT market_id
+         FROM relais
+        WHERE id = $1 AND is_active = TRUE`,
+      [relaisId]
+    );
+    const marketId = rows[0]?.market_id || null;
+    if (!marketId) {
+      return res.status(400).json({ error: 'relais inconnu, inactif ou sans marché' });
+    }
+
+    const projection = await previewCheckoutFulfillmentSources({ marketId, demands });
+    const items = Object.entries(projection).map(([product_id, state]) => ({
+      product_id,
+      state,
+    }));
+
+    return res.json({
+      preview: true,
+      relais_id: relaisId,
+      items,
+    });
   } catch (err) {
     next(err);
   }
