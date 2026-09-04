@@ -1,0 +1,23 @@
+name: CJ real showcase contract
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/cj-real-showcase-seed.js'
+      - 'tests/unit/cj-real-showcase-seed.test.js'
+      - 'docs/cj-real-showcase-63.md'
+      - 'features/catalog-cj-showcase.feature.js'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --check scripts/cj-real-showcase-seed.js
+      - run: npx jest tests/unit/cj-real-showcase-seed.test.js --runInBand
