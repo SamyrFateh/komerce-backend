@@ -56,6 +56,32 @@ async function ensureCheckpoint(q, {
   return row;
 }
 
+async function markComplete(q, {
+  supplierName,
+  syncKey,
+  categoryId,
+  totalPages = 0,
+  totalRecords = 0,
+  cappedBySupplier = false,
+}) {
+  const { rows: [row] } = await q.query(
+    `UPDATE supplier_catalog_sync_checkpoints
+        SET total_pages = $4,
+            total_records = $5,
+            capped_by_supplier = capped_by_supplier OR $6,
+            completed = TRUE,
+            last_error = NULL,
+            last_synced_at = NOW(),
+            updated_at = NOW()
+      WHERE supplier_name = $1
+        AND sync_key = $2
+        AND category_id = $3
+      RETURNING *`,
+    [supplierName, syncKey, categoryId, totalPages, totalRecords, Boolean(cappedBySupplier)]
+  );
+  return row || null;
+}
+
 async function recordPageSuccess(q, {
   supplierName,
   syncKey,
@@ -137,6 +163,7 @@ async function summarize(q, { supplierName, syncKey }) {
 module.exports = {
   getCheckpoint,
   ensureCheckpoint,
+  markComplete,
   recordPageSuccess,
   recordError,
   summarize,
