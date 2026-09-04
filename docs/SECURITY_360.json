@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-02T05:24:17.436Z",
+  "generatedAt": "2026-09-04T13:11:41.505Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 564,
+    "total": 565,
     "protected": 514,
     "public": 7,
-    "unprotected": 41,
+    "unprotected": 42,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -78,6 +78,12 @@
     },
     {
       "key": "GET /api/local-stock/availability",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/local-stock/checkout-preview",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -2750,6 +2756,11 @@
     },
     {
       "key": "GET /api/local-stock/availability",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/local-stock/checkout-preview",
       "level": "UNPROTECTED",
       "roles": []
     },
