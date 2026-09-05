@@ -347,6 +347,10 @@
     UIState,
     FilterBar,
     Section,
+    // Alias contractuel : les workspaces historiques parlent en KPI tandis que
+    // le renderer DashboardSchema parle en métriques. Les deux noms désignent
+    // strictement le même primitive de présentation, sans logique métier.
+    KpiStrip: MetricStrip,
     MetricStrip,
     AlertPanel,
     DataTable,
