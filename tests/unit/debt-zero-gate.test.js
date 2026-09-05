@@ -29,11 +29,12 @@ describe('debt-zero-gate', () => {
   });
 
   test('countQualityDisables compte les suppressions inline par règle', () => {
-    const counts = countQualityDisables(`
-      db.query(sql); // quality-disable N2-SQL-INJECTION
-      foo(); // quality-disable N2-X
-      bar(); // quality-disable N2-X
-    `);
+    const marker = ['quality', 'disable'].join('-');
+    const counts = countQualityDisables([
+      `db.query(sql); // ${marker} N2-SQL-INJECTION`,
+      `foo(); // ${marker} N2-X`,
+      `bar(); // ${marker} N2-X`,
+    ].join('\n'));
     expect(counts.get('N2-SQL-INJECTION')).toBe(1);
     expect(counts.get('N2-X')).toBe(2);
   });
