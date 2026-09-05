@@ -23,7 +23,11 @@ const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const { seedGoldenProduct } = require('./seed-golden-product');
 const { setLocalStock, setLocalStockExposure } = require('../services/local-stock-service');
-const { CJ_LOCAL_PRODUCTS, resolveCjProducts } = require('./discovery-cj-local-repair');
+const {
+  CJ_LOCAL_PRODUCTS,
+  resolveCjProducts,
+  buildCandidates: buildCjDiscoveryCandidates,
+} = require('./discovery-cj-local-repair');
 const goldenFixture = require('../tests/fixtures/catalog/golden-elite-pro');
 
 const FLAG = 'DISCOVERY_STAGING_SEED_ENABLED';
@@ -41,20 +45,16 @@ const STAGING_MEDIA = Object.freeze({
 });
 
 // ── Product Komerce local canonique ──────────────────────────────────────
-// Le Golden Product reste le premier produit du rail : il est stable, riche
-// et entièrement maîtrisé par le domaine catalog.
 const GOLDEN_PRODUCT = Object.freeze({
   id: goldenFixture.productRow().id,
   location: LOCAL_STOCK_LOCATION,
   qtyPhysical: 25,
 });
 
-// Les sept autres Products du rail proviennent du showcase CJ réel 63/63.
+// Les autres Products du rail proviennent du showcase CJ réel 63/63.
 // Le plan est détenu dans discovery-cj-local-repair.js afin que le seed manuel
-// et l'opération de réparation ne puissent plus diverger vers SHOWCASE-V2.
+// et l'opération de réparation ne puissent plus diverger.
 
-// Les coordonnées publiques ci-dessous sont un choix EXPLICITE du dataset
-// staging. Elles ne sont jamais déduites de `phone` par le runtime.
 const PROVIDERS = Object.freeze([
   {
     id: 'd15c0000-0000-4000-8000-000000000001', name: '[STAGING] Saveurs d\'Anjouan', phone: '+269000000001',
@@ -171,22 +171,8 @@ function shouldSeedDiscoveryStaging() {
 }
 
 function buildDiscoveryCandidates(productIds = []) {
-  const [goldenId, ...cjIds] = productIds;
-  const p = cjIds.map(id => `product:${id}`);
-  return [
-    goldenId ? `product:${goldenId}` : null,
-    p[0],
-    `physical_offer:${PHYSICAL_OFFERS[0].id}@Maison`,
-    p[2],
-    p[3],
-    `service:${SERVICES[6].id}@Maison|Tech`,
-    p[4],
-    p[5],
-    `physical_offer:${PHYSICAL_OFFERS[2].id}@Bricolage`,
-    p[6],
-    p[1],
-    `service:${SERVICES[1].id}@Maison|Bricolage`,
-  ].filter(Boolean).slice(0, 12);
+  const [, ...cjIds] = productIds;
+  return buildCjDiscoveryCandidates(cjIds.map(id => ({ id })));
 }
 
 async function resolveCjLocalProducts() {
@@ -271,12 +257,9 @@ async function seedDiscoveryStaging() {
   const marketId = market.rows[0]?.id;
   if (!marketId) throw new Error('[seed:discovery] active market KM not found');
 
-  // 1. Golden Product (owner: catalog domain)
   await seedGoldenProduct();
 
-  // 2. Products Komerce locaux : Golden + sept vrais produits CJ publiables.
-  // Le resolver échoue explicitement si le plan 7/7 n'est pas disponible :
-  // jamais de dégradation silencieuse vers un rail composé seulement d'assets internes.
+  // Golden + douze vrais produits CJ : deux représentants par univers.
   const cjProducts = await resolveCjLocalProducts();
   const localProducts = [
     { id: GOLDEN_PRODUCT.id, qtyPhysical: GOLDEN_PRODUCT.qtyPhysical },
@@ -286,7 +269,6 @@ async function seedDiscoveryStaging() {
     await exposeProductAsLocalStock(product, marketId);
   }
 
-  // 3. Providers, physical offers, services
   await db.withTransaction(async client => {
     for (const provider of PROVIDERS) await upsertProvider(client, marketId, provider);
     for (const offer of PHYSICAL_OFFERS) await upsertPhysicalOffer(client, marketId, offer);
