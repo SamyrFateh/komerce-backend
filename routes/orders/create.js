@@ -40,7 +40,19 @@ const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
 
-router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req, res, next) => {
+// Business Alignment Closure — un relais explicite est désormais une
+// précondition du checkout. Il fixe le marché, le routage et la résolution
+// LOCAL_STOCK/IMPORT ; laisser le service choisir "le premier relais actif"
+// rendrait ces décisions arbitraires en environnement multi-marché.
+// On dérive le schéma canonique au boundary HTTP sans dupliquer ses autres
+// règles. Le fallback interne historique du service reste donc inatteignable
+// depuis POST /api/orders.
+const orderCreateSchema = {
+  ...orders.create,
+  body: orders.create.body.fork(['relais_id'], schema => schema.required()),
+};
+
+router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
   let result;
   try {
     result = await runOrderCheckout({ user: req.user, body: req.body });
