@@ -6,7 +6,7 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        DATABASE_URL, DISCOVERY_CJ_LOCAL_REPAIR_ENABLED, market KM
- * @outputs       7 real CJ products exposed in local_stock + canonical Discovery candidates
+ * @outputs       12 real CJ products exposed in local_stock + canonical Discovery candidates
  * @depends       db.js, services/local-stock-service.js, services/catalog-public-view.js, scripts/cj-real-showcase-seed.js
  * @used-by       bounded GitHub/Railway operator run
  * @db-read       markets, products, local_stock
@@ -14,7 +14,7 @@
  * @db-txn        local-stock owner mutations
  * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  discovery-rail, local-stock, product-discovery, category-navigation
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -28,28 +28,41 @@ const LOCATION = 'KM_MAIN';
 const FLAG = 'DISCOVERY_CJ_LOCAL_REPAIR_ENABLED';
 const SUPPLIER = 'CJdropshipping';
 const GOLDEN_PRODUCT_ID = 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001';
+const TARGET_CJ_LOCAL = 12;
+const TARGET_CANDIDATES = 18;
 
-// Sept représentants CJ réels couvrent les six univers publics. Mode & Beauté
-// en a volontairement deux afin de conserver les huit Products de la grille
-// Discovery historique avec le Golden Product.
+// Deux représentants CJ réels par grand univers public. Le rail local reste
+// une sélection éditoriale bornée, pas un miroir intégral des 63 produits.
 const CJ_LOCAL_PRODUCTS = Object.freeze([
+  // Mode & Beauté
   Object.freeze({ family: 'women',     sortOrder: slotSortOrder(0, 0),  qtyPhysical: 18 }),
   Object.freeze({ family: 'beauty',    sortOrder: slotSortOrder(3, 0),  qtyPhysical: 16 }),
+  // Maison
   Object.freeze({ family: 'comfort',   sortOrder: slotSortOrder(4, 0),  qtyPhysical: 14 }),
+  Object.freeze({ family: 'kitchen',   sortOrder: slotSortOrder(5, 0),  qtyPhysical: 13 }),
+  // Tech
   Object.freeze({ family: 'phones',    sortOrder: slotSortOrder(8, 0),  qtyPhysical: 12 }),
+  Object.freeze({ family: 'audio',     sortOrder: slotSortOrder(9, 0),  qtyPhysical: 11 }),
+  // Bricolage
   Object.freeze({ family: 'tools',     sortOrder: slotSortOrder(11, 0), qtyPhysical: 10 }),
+  Object.freeze({ family: 'electric',  sortOrder: slotSortOrder(12, 0), qtyPhysical: 9 }),
+  // Créations personnelles
   Object.freeze({ family: 'ceremony',  sortOrder: slotSortOrder(14, 0), qtyPhysical: 9 }),
-  Object.freeze({ family: 'filters',   sortOrder: slotSortOrder(17, 0), qtyPhysical: 11 }),
+  Object.freeze({ family: 'gift',      sortOrder: slotSortOrder(15, 0), qtyPhysical: 8 }),
+  // Auto
+  Object.freeze({ family: 'filters',   sortOrder: slotSortOrder(17, 0), qtyPhysical: 8 }),
+  Object.freeze({ family: 'car-light', sortOrder: slotSortOrder(19, 0), qtyPhysical: 7 }),
 ]);
 
 const PHYSICAL_OFFERS = Object.freeze({
-  SAMBOUSSAS: 'd15c1000-0000-4000-8000-000000000001',
+  PLATEAU_RECEPTION: 'd15c1000-0000-4000-8000-000000000002',
   CIMENT: 'd15c1000-0000-4000-8000-000000000003',
 });
 
 const SERVICES = Object.freeze({
+  ELECTRICITE: 'd15c2000-0000-4000-8000-000000000003',
+  MECANIQUE: 'd15c2000-0000-4000-8000-000000000004',
   CLIMATISEUR: 'd15c2000-0000-4000-8000-000000000007',
-  PLOMBERIE: 'd15c2000-0000-4000-8000-000000000002',
 });
 
 function isEnabled() {
@@ -94,8 +107,8 @@ async function resolveCjProducts() {
     return { ...config, ...row };
   });
 
-  if (resolved.length !== CJ_LOCAL_PRODUCTS.length) {
-    throw new Error(`Plan CJ local incomplet: ${resolved.length}/${CJ_LOCAL_PRODUCTS.length}`);
+  if (resolved.length !== TARGET_CJ_LOCAL) {
+    throw new Error(`Plan CJ local incomplet: ${resolved.length}/${TARGET_CJ_LOCAL}`);
   }
   return resolved;
 }
@@ -117,17 +130,29 @@ function buildCandidates(products) {
   const golden = `product:${GOLDEN_PRODUCT_ID}`;
   return [
     golden,
+    // Mode & Beauté — 2 produits
     p[0],
-    `physical_offer:${PHYSICAL_OFFERS.SAMBOUSSAS}@Maison`,
+    p[1],
+    // Maison — 2 produits + 2 capacités locales partagées
     p[2],
     p[3],
-    `service:${SERVICES.CLIMATISEUR}@Maison|Tech`,
+    // Tech — 2 produits ; le climatiseur et l'électricité complètent la catégorie
     p[4],
     p[5],
-    `physical_offer:${PHYSICAL_OFFERS.CIMENT}@Bricolage`,
+    `service:${SERVICES.CLIMATISEUR}@Maison|Tech`,
+    // Bricolage — 2 produits + offre matière + service électrique
     p[6],
-    p[1],
-    `service:${SERVICES.PLOMBERIE}@Maison|Bricolage`,
+    p[7],
+    `physical_offer:${PHYSICAL_OFFERS.CIMENT}@Bricolage`,
+    `service:${SERVICES.ELECTRICITE}@Bricolage|Tech`,
+    // Créations personnelles — 2 produits + offre réception
+    p[8],
+    p[9],
+    `physical_offer:${PHYSICAL_OFFERS.PLATEAU_RECEPTION}@Maison|Créations personnelles`,
+    // Auto — 2 produits + mécanique locale
+    p[10],
+    p[11],
+    `service:${SERVICES.MECANIQUE}@Auto`,
   ].filter(Boolean);
 }
 
@@ -151,8 +176,8 @@ async function audit(marketId, products) {
     && /^https:\/\//i.test(String(row.image_url || ''))
     && !String(row.product_ref || '').toUpperCase().startsWith('SHOWCASE-V2-')
   );
-  if (valid.length !== CJ_LOCAL_PRODUCTS.length) {
-    throw new Error(`Audit Discovery CJ local refusé: valid=${valid.length}/${CJ_LOCAL_PRODUCTS.length}`);
+  if (valid.length !== TARGET_CJ_LOCAL) {
+    throw new Error(`Audit Discovery CJ local refusé: valid=${valid.length}/${TARGET_CJ_LOCAL}`);
   }
 
   return {
@@ -172,7 +197,9 @@ async function main() {
   const proof = await audit(marketId, products);
   const candidates = buildCandidates(products);
 
-  if (candidates.length !== 12) throw new Error(`Plan Discovery invalide: ${candidates.length}/12`);
+  if (candidates.length !== TARGET_CANDIDATES) {
+    throw new Error(`Plan Discovery invalide: ${candidates.length}/${TARGET_CANDIDATES}`);
+  }
 
   console.log(`[discovery-cj-local] SUCCESS ${JSON.stringify(proof)}`);
   console.log(`DISCOVERY_RAIL_CANDIDATES=${candidates.join(',')}`);
@@ -193,6 +220,8 @@ module.exports = {
   FLAG,
   MARKET_CODE,
   LOCATION,
+  TARGET_CJ_LOCAL,
+  TARGET_CANDIDATES,
   CJ_LOCAL_PRODUCTS,
   PHYSICAL_OFFERS,
   SERVICES,
