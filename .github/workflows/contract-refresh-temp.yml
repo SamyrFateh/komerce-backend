@@ -19,7 +19,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run contract:generate
+      - name: Generate API contract
+        run: JWT_SECRET=$(node -e "process.stdout.write('c'.repeat(64))") npm run contract:generate
       - uses: actions/upload-artifact@v4
         with:
           name: contract-refresh
