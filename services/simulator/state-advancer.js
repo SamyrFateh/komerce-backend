@@ -6,26 +6,38 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/order-status-machine.js, utils/logger.js
+ * @depends       db, services/order-status-machine.js, services/payment-service.js, services/parcel-operations.js, services/wallet-service.js, utils/logger.js
  * @used-by       services/simulator/engine.js
  * @db-read       order_items, orders, parcels
- * @db-write      notification_log, orders, parcel_items, parcels, scans, store_credits
+ * @db-write      notification_log, parcel_items, parcels, scans
+ * @db-write-via:order-status-machine orders
+ * @db-write-via:payment-service orders
+ * @db-write-via:parcel-operations parcels
+ * @db-write-via:wallet-service wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @impact-areas  operations, payments, wallet, logistics
+ * @version       2026-09
  */
 
 /**
- * Simulator State Advancer v2 — exécute les transitions via les vraies fonctions backend
- * Utilise transitionOrderStatus() (state machine SSOT) — jamais d'écriture directe sur orders.status
+ * Simulator State Advancer v2 — exécute les transitions via les vraies fonctions backend.
+ * Les écritures sensibles restent chez leurs owners canoniques, y compris quand
+ * le simulateur fabrique volontairement un état incohérent pour le chaos-test.
  *
- * Nouvelles actions: refund, chaos impacts (duplicate_scan, desync_payment, add_wait)
+ * Actions: refund, chaos impacts (duplicate_scan, desync_payment, add_wait)
  */
 'use strict';
 
 const db = require('../../db');
-const { transitionOrderStatus } = require('../../services/order-status-machine');
+const { transitionOrderStatus } = require('../order-status-machine');
+const {
+  markPaid,
+  markRefunded,
+  forcePaymentStatusForSimulation,
+} = require('../payment-service');
+const { transitionParcelStatus } = require('../parcel-operations');
+const walletService = require('../wallet-service');
 const log = require('../../utils/logger').child({ module: 'state-advancer' });
 
 const SIM_ACTOR = { id: null, role: 'simulator' };
@@ -68,18 +80,15 @@ async function executeChaosImpact(orderId, tracked, chaos) {
 
   switch (impact) {
     case 'skip':
-      // Original behavior — just skip the tick
       return { applied: true, message: chaos.description };
 
     case 'duplicate_scan': {
-      // Actually fire the same scan twice
       const { rows: parcels } = await db.query(
         "SELECT id, status FROM parcels WHERE order_id = $1 AND status != 'cancelled' ORDER BY created_at DESC LIMIT 1",
         [orderId]
       );
       if (parcels.length) {
         const p = parcels[0];
-        // Insert duplicate scan
         await db.query(
           "INSERT INTO scans (parcel_id, step, notes, created_at) VALUES ($1, $2, $3, NOW())",
           [p.id, p.status, '🎲 CHAOS: Duplicate scan — ' + p.status]
@@ -90,7 +99,6 @@ async function executeChaosImpact(orderId, tracked, chaos) {
     }
 
     case 'add_wait': {
-      // Inject extra wait ticks by NOT advancing
       if (!tracked._chaosWait) tracked._chaosWait = 0;
       tracked._chaosWait++;
       const target = chaos.waitTicks || 1;
@@ -102,19 +110,19 @@ async function executeChaosImpact(orderId, tracked, chaos) {
     }
 
     case 'desync_payment': {
-      // Flip payment_status without touching order status
+      // Le chaos reste intentionnel, mais l'écriture physique appartient au
+      // payment-service. Sa primitive dédiée refuse de fonctionner en prod.
       const { rows } = await db.query('SELECT payment_status FROM orders WHERE id = $1', [orderId]);
       if (rows.length) {
         const current = rows[0].payment_status;
         const flipped = current === 'paid' ? 'pending' : 'paid';
-        await db.query("UPDATE orders SET payment_status = $1, updated_at = NOW() WHERE id = $2", [flipped, orderId]);
+        await forcePaymentStatusForSimulation(orderId, flipped);
         return { applied: true, message: chaos.description + ' (' + current + ' → ' + flipped + ')' };
       }
       return { applied: true, message: chaos.description };
     }
 
     case 'log_incident': {
-      // Just log — but create a notification_log entry for realism
       await db.query(
         "INSERT INTO notification_log (order_id, channel, recipient, message, status, created_at) VALUES ($1, 'system', 'admin', $2, 'chaos_event', NOW())",
         [orderId, '🎲 CHAOS: ' + chaos.description]
@@ -126,7 +134,6 @@ async function executeChaosImpact(orderId, tracked, chaos) {
       return { applied: true, message: chaos.description };
   }
 }
-
 
 // ── Confirm Payment (cash) ──────────────────────────────────
 
@@ -140,7 +147,12 @@ async function confirmPayment(orderId, tracked) {
     return { success: true, from, to: order.status, action: 'already_past_pending' };
   }
 
-  await db.query("UPDATE orders SET payment_status = 'paid', updated_at = NOW() WHERE id = $1", [orderId]);
+  if (order.payment_status !== 'paid') {
+    const payment = await markPaid(orderId);
+    if (!payment.changed) {
+      return { success: false, from, to: from, error: 'confirm_payment: transition payment_status → paid refusée' };
+    }
+  }
 
   const r1 = await transitionOrderStatus({ orderId, newStatus: 'confirmed', actor: SIM_ACTOR, source: 'simulator' });
   if (!r1.success) return { success: false, from, to: from, error: 'pending→confirmed: ' + (r1.error || 'transition refusée') };
@@ -214,7 +226,6 @@ async function scanAdvance(orderId, tracked, targetStep) {
   const parcel = parcels[0];
 
   try {
-    const { transitionParcelStatus } = require('../parcel-operations');
     await transitionParcelStatus(db, parcel.id, targetStep, { skipValidation: true });
 
     await db.query(
@@ -257,15 +268,14 @@ async function cancelOrder(orderId, tracked) {
   return { success: true, from, to: 'cancelled', action: 'cancel' };
 }
 
-// ── Refund Order (NEW) ──────────────────────────────────────
+// ── Refund Order ────────────────────────────────────────────
 
 async function refundOrder(orderId, tracked) {
-  const { rows } = await db.query('SELECT status, total_kmf, user_id FROM orders WHERE id = $1', [orderId]);
+  const { rows } = await db.query('SELECT status, payment_status, total_kmf, user_id FROM orders WHERE id = $1', [orderId]);
   if (!rows.length) return { success: false, error: 'Commande introuvable' };
   const order = rows[0];
   const from = order.status;
 
-  // Try transition to refunded
   const result = await transitionOrderStatus({
     orderId,
     newStatus: 'refunded',
@@ -274,22 +284,30 @@ async function refundOrder(orderId, tracked) {
   });
 
   if (!result.success) {
-    // LOT 3: pas de fallback direct — si la transition est invalide, retourner l'erreur
     return { success: false, from, to: from, error: 'refund: ' + (result.error || 'transition refusée par la state machine') };
   }
 
-  // Credit wallet if user exists
-  if (order.user_id && order.total_kmf) {
-    await db.query(
-      `INSERT INTO store_credits (user_id, amount_kmf, reason, source_order_id, created_at)
-       VALUES ($1, $2, 'Remboursement simulateur', $3, NOW())
-       ON CONFLICT DO NOTHING`,
-      [order.user_id, order.total_kmf, orderId]
-    ).catch(() => {});
+  // Le statut financier est lui aussi muté par son owner canonique.
+  if (order.payment_status === 'paid') {
+    const payment = await markRefunded(orderId);
+    if (!payment.changed) {
+      return { success: false, from, to: 'refunded', error: 'refund: payment_status → refunded refusé' };
+    }
   }
 
-  // Cancel all parcels — bulk via requête directe (simulator uniquement, pas de validation)
-  const { transitionParcelStatus } = require('../parcel-operations');
+  // L'ancien store_credits est retiré du chemin simulateur : le wallet unifié
+  // reçoit un crédit idempotent, comme les autres flux modernes de remboursement.
+  if (order.user_id && order.total_kmf) {
+    await walletService.credit(db, {
+      userId: order.user_id,
+      amountKmf: order.total_kmf,
+      reason: 'simulator_refund',
+      referenceId: orderId,
+      idempotencyKey: `simulator_refund_${orderId}`,
+      note: 'Remboursement simulateur',
+    });
+  }
+
   const { rows: parcelsToCancel } = await db.query(
     "SELECT id FROM parcels WHERE order_id = $1 AND status != 'cancelled'",
     [orderId]
