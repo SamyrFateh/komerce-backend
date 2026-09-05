@@ -7,30 +7,21 @@
  * @domain        governance
  * @owner         backend
  *
- * debt-zero-gate.js — interdit toute croissance des mécanismes de dette/
- * tolérance entre la base d'une PR et son HEAD, sauf validation humaine
- * explicite et justifiée du propriétaire de gouvernance.
+ * Debt Zero : aucune croissance d'un mécanisme de tolérance sans validation
+ * humaine explicite, justifiée et liée au SHA HEAD exact de la PR.
  *
- * Doctrine :
- *   - une dette existante peut diminuer librement ;
- *   - une baseline, exemption, allowance ou quality-disable ne peut augmenter
- *     silencieusement ;
- *   - toute hausse est bloquante par défaut ;
- *   - exception possible uniquement par commentaire PR de SamyrFateh, lié au
- *     SHA HEAD exact, avec Explication + Justification substantielles ;
- *   - un nouveau push invalide automatiquement l'approbation précédente ;
- *   - aucune auto-écriture : ce gate est strictement read-only.
- *
- * Format d'approbation :
- *   DEBT-APPROVAL <HEAD_SHA_COMPLET>
- *   Explication: <ce qui est introduit>
- *   Justification: <pourquoi l'exception est acceptée>
+ * Le registre canonique governance/debt-zero-registry.json décrit les sources
+ * de tolérance connues et leur sémantique. Après son bootstrap, toute mutation
+ * du registre est elle-même soumise à Debt Zero. Un nouveau JSON de baseline,
+ * exemption, exception, suppression ou allowlist non enregistré est bloqué.
  */
 
 const cp = require('child_process');
 const https = require('https');
 
+const REGISTRY_FILE = 'governance/debt-zero-registry.json';
 const args = process.argv.slice(2);
+
 function argValue(flag) {
   const i = args.indexOf(flag);
   return i >= 0 ? args[i + 1] : null;
@@ -70,6 +61,30 @@ function changedFiles(base, head) {
     .filter(Boolean);
 }
 
+function trackedGovernanceFiles(ref) {
+  const raw = git(['ls-tree', '-r', '--name-only', ref, '--', 'scripts', 'governance']);
+  return raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]));
+  }
+  return value;
+}
+
+function stableStringify(value) {
+  return JSON.stringify(stableValue(value));
+}
+
+function getPath(obj, dottedPath) {
+  if (!dottedPath) return obj;
+  return String(dottedPath).split('.').reduce((value, key) => (
+    value && typeof value === 'object' ? value[key] : undefined
+  ), obj);
+}
+
 function numericMapGrowth(baseMap, headMap, label, failures, prefix = '') {
   const b = baseMap && typeof baseMap === 'object' ? baseMap : {};
   const h = headMap && typeof headMap === 'object' ? headMap : {};
@@ -82,12 +97,31 @@ function numericMapGrowth(baseMap, headMap, label, failures, prefix = '') {
 }
 
 function objectKeyGrowth(baseObj, headObj, label, failures) {
-  const b = baseObj && typeof baseObj === 'object' ? baseObj : {};
-  const h = headObj && typeof headObj === 'object' ? headObj : {};
+  const b = baseObj && typeof baseObj === 'object' && !Array.isArray(baseObj) ? baseObj : {};
+  const h = headObj && typeof headObj === 'object' && !Array.isArray(headObj) ? headObj : {};
   for (const key of Object.keys(h).sort()) {
     if (key.startsWith('_')) continue;
-    if (!Object.prototype.hasOwnProperty.call(b, key)) failures.push(`${label}${key}: nouvelle exemption/allowance`);
+    if (!Object.prototype.hasOwnProperty.call(b, key)) {
+      failures.push(`${label}${key}: nouvelle exemption/allowance`);
+    }
   }
+}
+
+function arrayGrowth(baseArray, headArray, label, failures, keyFn = stableStringify) {
+  const before = new Set((Array.isArray(baseArray) ? baseArray : []).map(keyFn));
+  for (const item of Array.isArray(headArray) ? headArray : []) {
+    const key = keyFn(item);
+    if (!before.has(key)) failures.push(`${label}: +${key}`);
+  }
+}
+
+function identityKey(item, fields) {
+  const value = item && typeof item === 'object' ? item : {};
+  return fields.map(field => `${field}=${stableStringify(value[field])}`).join('|');
+}
+
+function identityArrayGrowth(baseArray, headArray, fields, label, failures) {
+  arrayGrowth(baseArray, headArray, label, failures, item => identityKey(item, fields));
 }
 
 function countQualityDisables(src) {
@@ -131,52 +165,189 @@ function extractRuleFileExemptions(src) {
   return counts;
 }
 
-function ruleFileExemptionGrowth(base, head, failures) {
-  const file = 'scripts/code-quality-gate.js';
-  const before = extractRuleFileExemptions(readAt(base, file));
-  const after = extractRuleFileExemptions(readAt(head, file));
-  for (const [rule, files] of after.entries()) {
-    const prior = before.get(rule) || new Set();
-    for (const entry of [...files].sort()) {
-      if (!prior.has(entry)) failures.push(`RULE_FILE_EXEMPT ${rule}: +${entry}`);
+function setMapGrowth(before, after, label, failures) {
+  for (const [group, items] of after.entries()) {
+    const prior = before.get(group) || new Set();
+    for (const item of [...items].sort()) {
+      if (!prior.has(item)) failures.push(`${label}${group}: +${item}`);
     }
   }
 }
 
-function checkBusinessGraphBaseline(base, head, failures) {
-  const file = 'governance/business-graph-drift-baseline.json';
-  const b = readJsonAt(base, file) || {};
-  const h = readJsonAt(head, file) || {};
-  numericMapGrowth(b.baseline, h.baseline, `${file} `, failures);
+function collectionTokens(block) {
+  if (!block) return new Set();
+  const withoutComments = block
+    .split(/\r?\n/)
+    .map(line => line.replace(/\/\/.*$/, ''))
+    .join('\n');
+  const tokens = new Set();
+  const re = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\/(?:\\.|[^/\n])+\/[gimsuy]*/g;
+  for (const match of withoutComments.matchAll(re)) tokens.add(match[0].trim());
+  return tokens;
 }
 
-function checkArchDebtBudget(base, head, failures) {
-  const file = 'scripts/arch-debt-budget.json';
-  const b = readJsonAt(base, file) || {};
-  const h = readJsonAt(head, file) || {};
-  numericMapGrowth(b.ratchet, h.ratchet, `${file} ratchet.`, failures);
-  objectKeyGrowth(b.knownDriftAllowlist, h.knownDriftAllowlist, `${file} knownDriftAllowlist.`, failures);
+function extractArchSourceAllowlists(src) {
+  const out = new Map();
+  if (!src) return out;
+
+  const setRe = /const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*new Set\(\[([\s\S]*?)\]\s*\);/g;
+  for (const match of src.matchAll(setRe)) out.set(match[1], collectionTokens(match[2]));
+
+  const arrayRe = /const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*\[([\s\S]*?)\]\s*;/g;
+  for (const match of src.matchAll(arrayRe)) out.set(match[1], collectionTokens(match[2]));
+
+  const ownership = src.match(/const\s+COLUMN_OWNERSHIP\s*=\s*\[([\s\S]*?)\n\];/);
+  if (ownership) {
+    const re = /id:\s*'([^']+)'[\s\S]*?allowlist:\s*new Set\(\[([\s\S]*?)\]\)/g;
+    for (const match of ownership[1].matchAll(re)) {
+      out.set(`COLUMN_OWNERSHIP.${match[1]}.allowlist`, collectionTokens(match[2]));
+    }
+  }
+  return out;
 }
 
-function checkQualityBaseline(base, head, failures) {
-  const file = 'scripts/code-quality-baseline.json';
-  const b = readJsonAt(base, file) || {};
-  const h = readJsonAt(head, file) || {};
+function compareNpmExceptions(baseArray, headArray, spec, file, failures) {
+  const fields = Array.isArray(spec.identity) ? spec.identity : ['package', 'advisory'];
+  const before = new Map((Array.isArray(baseArray) ? baseArray : []).map(item => [identityKey(item, fields), item]));
+  for (const item of Array.isArray(headArray) ? headArray : []) {
+    const key = identityKey(item, fields);
+    const prior = before.get(key);
+    if (!prior) {
+      failures.push(`${file}: nouvelle exception npm ${key}`);
+      continue;
+    }
+    if (stableStringify(item.scope) !== stableStringify(prior.scope)) {
+      failures.push(`${file} ${key}: scope modifié ${stableStringify(prior.scope)} -> ${stableStringify(item.scope)}`);
+    }
+    const beforeExpiry = prior.expires ? Date.parse(prior.expires) : NaN;
+    const afterExpiry = item.expires ? Date.parse(item.expires) : NaN;
+    if (prior.expires && !item.expires) {
+      failures.push(`${file} ${key}: expiration supprimée`);
+    } else if (Number.isFinite(beforeExpiry) && Number.isFinite(afterExpiry) && afterExpiry > beforeExpiry) {
+      failures.push(`${file} ${key}: expiration prolongée ${prior.expires} -> ${item.expires}`);
+    } else if (item.expires && !Number.isFinite(afterExpiry)) {
+      failures.push(`${file} ${key}: expiration invalide ${item.expires}`);
+    }
+  }
+}
+
+function compareQualityBaseline(baseValue, headValue, file, failures) {
+  const b = baseValue || {};
+  const h = headValue || {};
   for (const key of ['totalErrors', 'totalWarnings']) {
     const bv = typeof b[key] === 'number' ? b[key] : 0;
     const hv = typeof h[key] === 'number' ? h[key] : 0;
     if (hv > bv) failures.push(`${file} ${key}: ${bv} -> ${hv}`);
   }
-  const bFiles = Array.isArray(b.files) ? b.files.length : 0;
-  const hFiles = Array.isArray(h.files) ? h.files.length : 0;
-  if (hFiles > bFiles) failures.push(`${file} files: ${bFiles} -> ${hFiles}`);
+  arrayGrowth(b.files, h.files, `${file} files`, failures);
 }
 
-function checkTestExemptions(base, head, failures) {
-  const file = 'governance/test-exemptions.json';
-  const b = readJsonAt(base, file) || {};
-  const h = readJsonAt(head, file) || {};
-  objectKeyGrowth(b, h, `${file} `, failures);
+function compareArchDebtBudget(baseValue, headValue, file, failures) {
+  const b = baseValue || {};
+  const h = headValue || {};
+  numericMapGrowth(b.ratchet, h.ratchet, `${file} ratchet.`, failures);
+  objectKeyGrowth(b.knownDriftAllowlist, h.knownDriftAllowlist, `${file} knownDriftAllowlist.`, failures);
+}
+
+function compareSpec(file, spec, baseValue, headValue, failures) {
+  switch (spec.kind) {
+    case 'numeric-map':
+      numericMapGrowth(getPath(baseValue, spec.path), getPath(headValue, spec.path), `${file} `, failures);
+      break;
+    case 'object-keys':
+      objectKeyGrowth(baseValue, headValue, `${file} `, failures);
+      break;
+    case 'entry-file-lists': {
+      const b = baseValue && typeof baseValue === 'object' ? baseValue : {};
+      const h = headValue && typeof headValue === 'object' ? headValue : {};
+      objectKeyGrowth(b, h, `${file} `, failures);
+      for (const key of Object.keys(h).filter(key => !key.startsWith('_')).sort()) {
+        arrayGrowth(b[key]?.files, h[key]?.files, `${file} ${key}.files`, failures);
+      }
+      break;
+    }
+    case 'nested-file-lists': {
+      for (const group of spec.groups || []) {
+        const b = baseValue?.[group];
+        const h = headValue?.[group];
+        if (h && !b) failures.push(`${file} ${group}: nouveau groupe d'exemption`);
+        arrayGrowth(b?.files, h?.files, `${file} ${group}.files`, failures);
+      }
+      break;
+    }
+    case 'arch-debt-budget':
+      compareArchDebtBudget(baseValue, headValue, file, failures);
+      break;
+    case 'quality-baseline':
+      compareQualityBaseline(baseValue, headValue, file, failures);
+      break;
+    case 'array-fields':
+      for (const field of spec.fields || []) {
+        arrayGrowth(baseValue?.[field], headValue?.[field], `${file} ${field}`, failures);
+      }
+      break;
+    case 'identity-array':
+      identityArrayGrowth(baseValue, headValue, spec.identity || [], file, failures);
+      break;
+    case 'npm-exceptions':
+      compareNpmExceptions(baseValue, headValue, spec, file, failures);
+      break;
+    case 'arch-source-allowlists': {
+      const before = extractArchSourceAllowlists(baseValue || '');
+      const after = extractArchSourceAllowlists(headValue || '');
+      setMapGrowth(before, after, `${file} `, failures);
+      break;
+    }
+    case 'code-quality-source': {
+      const before = extractRuleFileExemptions(baseValue || '');
+      const after = extractRuleFileExemptions(headValue || '');
+      setMapGrowth(before, after, `${file} RULE_FILE_EXEMPT.`, failures);
+      break;
+    }
+    default:
+      failures.push(`${REGISTRY_FILE}: kind inconnu '${spec.kind}' pour ${file}`);
+  }
+}
+
+function isJsonSpec(spec) {
+  return !['arch-source-allowlists', 'code-quality-source'].includes(spec.kind);
+}
+
+function compareRegisteredSources(base, head, registry, failures) {
+  const specs = registry?.files && typeof registry.files === 'object' ? registry.files : {};
+  for (const [file, spec] of Object.entries(specs).sort(([a], [b]) => a.localeCompare(b))) {
+    const baseValue = isJsonSpec(spec) ? readJsonAt(base, file) : readAt(base, file);
+    const headValue = isJsonSpec(spec) ? readJsonAt(head, file) : readAt(head, file);
+    if (baseValue != null && headValue == null) continue; // suppression = réduction de surface
+    if (headValue == null) continue;
+    compareSpec(file, spec, baseValue, headValue, failures);
+  }
+}
+
+function findUnknownToleranceFiles(head, registry, failures) {
+  const known = new Set(Object.keys(registry?.files || {}));
+  const suspicious = /(?:baseline|exempt|exception|suppress|allowlist)/i;
+  for (const file of trackedGovernanceFiles(head).sort()) {
+    if (!file.endsWith('.json')) continue;
+    const name = file.split('/').pop();
+    if (!suspicious.test(name)) continue;
+    if (!known.has(file)) failures.push(`registre de tolérance non classifié: ${file}`);
+  }
+}
+
+function registryForComparison(base, head, failures) {
+  const baseRegistry = readJsonAt(base, REGISTRY_FILE);
+  const headRegistry = readJsonAt(head, REGISTRY_FILE);
+  if (!headRegistry) {
+    failures.push(`${REGISTRY_FILE}: registre absent du HEAD`);
+    return baseRegistry || { files: {} };
+  }
+  if (baseRegistry && stableStringify(baseRegistry) !== stableStringify(headRegistry)) {
+    failures.push(`${REGISTRY_FILE}: registre Debt Zero modifié`);
+    return baseRegistry;
+  }
+  // Bootstrap unique : main n'a pas encore de registre, le HEAD devient la source.
+  return baseRegistry || headRegistry;
 }
 
 function parseApprovalComment(body, expectedHead) {
@@ -186,14 +357,10 @@ function parseApprovalComment(body, expectedHead) {
   const match = first.match(/^DEBT-APPROVAL\s+([0-9a-f]{40})$/i);
   if (!match || match[1].toLowerCase() !== expectedHead.toLowerCase()) return null;
 
-  const explanation = lines
-    .find(line => /^Explication\s*:/i.test(line))
-    ?.replace(/^Explication\s*:\s*/i, '')
-    .trim() || '';
-  const justification = lines
-    .find(line => /^Justification\s*:/i.test(line))
-    ?.replace(/^Justification\s*:\s*/i, '')
-    .trim() || '';
+  const explanation = lines.find(line => /^Explication\s*:/i.test(line))
+    ?.replace(/^Explication\s*:\s*/i, '').trim() || '';
+  const justification = lines.find(line => /^Justification\s*:/i.test(line))
+    ?.replace(/^Justification\s*:\s*/i, '').trim() || '';
 
   if (explanation.length < 20 || justification.length < 20) return null;
   return { head: match[1], explanation, justification };
@@ -232,9 +399,7 @@ function githubGet(path) {
 
 async function findHumanApproval(headSha) {
   const repository = process.env.GITHUB_REPOSITORY;
-  const prNumber = process.env.PR_NUMBER
-    || process.env.GITHUB_PR_NUMBER
-    || extractPrFromRef(process.env.GITHUB_REF);
+  const prNumber = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER || extractPrFromRef(process.env.GITHUB_REF);
   if (!repository || !prNumber) return null;
   const [owner, repo] = repository.split('/');
   const comments = await githubGet(`/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`);
@@ -253,12 +418,10 @@ function run({ base = BASE, head = HEAD } = {}) {
 
   const failures = [];
   const files = changedFiles(base, head);
+  const registry = registryForComparison(base, head, failures);
 
-  checkBusinessGraphBaseline(base, head, failures);
-  checkArchDebtBudget(base, head, failures);
-  checkQualityBaseline(base, head, failures);
-  checkTestExemptions(base, head, failures);
-  ruleFileExemptionGrowth(base, head, failures);
+  compareRegisteredSources(base, head, registry, failures);
+  findUnknownToleranceFiles(head, registry, failures);
   qualityDisableGrowth(base, head, files, failures);
 
   return { base, head: resolveCommit(head), changedFiles: files, failures };
@@ -266,14 +429,14 @@ function run({ base = BASE, head = HEAD } = {}) {
 
 async function main() {
   const result = run();
-  console.log('\nDEBT ZERO GATE — anti-croissance des tolérances\n');
+  console.log('\nDEBT ZERO GATE v2 — anti-croissance des tolérances\n');
 
   if (result.failures.length === 0) {
-    console.log('✔ Aucune baseline, allowance, exemption ou quality-disable n\'a augmenté.\n');
+    console.log('✔ Aucun mécanisme de dette/tolérance n\'a augmenté et aucun registre inconnu n\'est apparu.\n');
     return;
   }
 
-  console.error('▲ Nouvelle dette/tolérance détectée :');
+  console.error('▲ Nouvelle dette/tolérance ou modification de gouvernance détectée :');
   for (const failure of result.failures) console.error(`  - ${failure}`);
 
   let approval = null;
@@ -290,7 +453,7 @@ async function main() {
   console.error(`\n✖ Blocage Debt Zero. Validation humaine requise de ${APPROVER}.`);
   console.error('  Ajouter un commentaire PR exactement sous cette forme :\n');
   console.error(`  DEBT-APPROVAL ${result.head}`);
-  console.error('  Explication: <décrire précisément la dette/tolérance introduite>');
+  console.error('  Explication: <décrire précisément la dette/tolérance ou la modification de gouvernance>');
   console.error('  Justification: <expliquer pourquoi elle est acceptée maintenant>\n');
   console.error('  Tout nouveau commit change le SHA et invalide automatiquement cette validation.\n');
   process.exit(1);
@@ -304,11 +467,16 @@ if (require.main === module) {
 }
 
 module.exports = {
+  arrayGrowth,
   countQualityDisables,
+  extractArchSourceAllowlists,
   extractRuleFileExemptions,
+  identityArrayGrowth,
   numericMapGrowth,
   objectKeyGrowth,
   parseApprovalComment,
+  registryForComparison,
+  stableStringify,
   extractPrFromRef,
   run,
 };
