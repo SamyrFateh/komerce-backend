@@ -8,9 +8,14 @@ const {
   identityArrayGrowth,
   numericMapGrowth,
   objectKeyGrowth,
-  parseApprovalComment,
+  parseApprovalSignal,
+  parseApprovalContext,
   stableStringify,
 } = require('../../scripts/debt-zero-gate');
+
+const fs = require('fs');
+const path = require('path');
+const debtRegistry = require('../../governance/debt-zero-registry.json');
 
 describe('debt-zero-gate', () => {
   test('numericMapGrowth refuse une augmentation et autorise une réduction', () => {
@@ -116,25 +121,25 @@ describe('debt-zero-gate', () => {
       .toEqual(["'scripts/fix-schema.js'"]);
   });
 
-  test('parseApprovalComment exige SHA exact, explication et justification substantielles', () => {
-    const sha = 'a'.repeat(40);
-    const valid = parseApprovalComment([
-      `DEBT-APPROVAL ${sha}`,
-      'Explication: ajout temporaire d’une exemption ciblée sur le flux catalogue.',
-      'Justification: nécessaire pour livrer le lot, avec suppression prévue dans le chantier suivant.',
-    ].join('\n'), sha);
-    expect(valid).not.toBeNull();
-
-    expect(parseApprovalComment([
-      `DEBT-APPROVAL ${'b'.repeat(40)}`,
-      'Explication: ajout temporaire d’une exemption ciblée sur le flux catalogue.',
-      'Justification: nécessaire pour livrer le lot, avec suppression prévue dans le chantier suivant.',
-    ].join('\n'), sha)).toBeNull();
-
-    expect(parseApprovalComment([
-      `DEBT-APPROVAL ${sha}`,
-      'Explication: trop court',
-      'Justification: trop court',
-    ].join('\n'), sha)).toBeNull();
+  test('parseApprovalSignal accepte uniquement le geste simplifié', () => {
+    expect(parseApprovalSignal('DEBT-APPROVAL')).toBe(true);
+    expect(parseApprovalSignal('DEBT-APPROVAL\nmerci')).toBe(true);
+    expect(parseApprovalSignal('DEBT-APPROVAL abc')).toBe(false);
   });
+
+  test('parseApprovalContext exige explication et justification dans la PR', () => {
+    const valid = [
+      'Explication: Le registre doit protéger la source réellement exécutée par les gates.',
+      'Justification: La correction ferme un trou de gouvernance sans créer de tolérance.',
+    ].join('\n');
+    expect(parseApprovalContext(valid)).not.toBeNull();
+    expect(parseApprovalContext('Explication: trop court\nJustification: trop court')).toBeNull();
+  });
+
+  test('chaque cible du registre Debt Zero existe réellement', () => {
+    const root = path.join(__dirname, '../..');
+    const missing = Object.keys(debtRegistry.files).filter(file => !fs.existsSync(path.join(root, file)));
+    expect(missing).toEqual([]);
+  });
+
 });

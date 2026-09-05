@@ -202,6 +202,14 @@ function compareRegisteredSources(base, head, registry, failures) {
   }
 }
 
+function validateRegisteredTargets(head, registry, failures) {
+  for (const [file, spec] of Object.entries(registry?.files || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    if (readAt(head, file) == null) {
+      failures.push(`${REGISTRY_FILE}: cible enregistrée absente du HEAD: ${file} (${spec.kind})`);
+    }
+  }
+}
+
 function findUnknownToleranceFiles(head, registry, failures) {
   const known = new Set(Object.keys(registry?.files || {}));
   const suspicious = /(?:baseline|exempt|exception|suppress|allowlist)/i;
@@ -218,14 +226,21 @@ function registryForComparison(base, head, failures) {
   return b || h; // bootstrap unique si main n'a pas encore le registre
 }
 
-function parseApprovalComment(body, expectedHead) {
-  const lines = String(body || '').trim().split(/\r?\n/);
-  const m = (lines[0] || '').trim().match(/^DEBT-APPROVAL\s+([0-9a-f]{40})$/i);
-  if (!m || m[1].toLowerCase() !== expectedHead.toLowerCase()) return null;
-  const pick = label => lines.find(x => new RegExp(`^${label}\\s*:`, 'i').test(x))?.replace(new RegExp(`^${label}\\s*:\\s*`, 'i'), '').trim() || '';
-  const explanation = pick('Explication'), justification = pick('Justification');
-  return explanation.length >= 20 && justification.length >= 20 ? { head: m[1], explanation, justification } : null;
+function parseApprovalSignal(body) {
+  return String(body || '').trim().split(/\r?\n/)[0]?.trim() === 'DEBT-APPROVAL';
 }
+
+function parseApprovalContext(body) {
+  const lines = String(body || '').split(/\r?\n/);
+  const pick = label => {
+    const line = lines.find(x => new RegExp(`^${label}\\s*:`, 'i').test(x.trim()));
+    return line ? line.trim().replace(new RegExp(`^${label}\\s*:\\s*`, 'i'), '').trim() : '';
+  };
+  const explanation = pick('Explication');
+  const justification = pick('Justification');
+  return explanation.length >= 20 && justification.length >= 20 ? { explanation, justification } : null;
+}
+
 const extractPrFromRef = ref => String(ref || '').match(/^refs\/pull\/(\d+)\//)?.[1] || null;
 
 function githubGet(path) {
@@ -246,11 +261,29 @@ async function findHumanApproval(head) {
   const repo = process.env.GITHUB_REPOSITORY;
   const pr = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER || extractPrFromRef(process.env.GITHUB_REF);
   if (!repo || !pr) return null;
-  const comments = await githubGet(`/repos/${repo}/issues/${pr}/comments?per_page=100`);
-  for (const c of [...comments].reverse()) {
-    if (c?.user?.login !== APPROVER) continue;
-    const parsed = parseApprovalComment(c.body, head);
-    if (parsed) return { ...parsed, author: c.user.login, commentId: c.id };
+
+  const [comments, reviews, prMeta, commitMeta] = await Promise.all([
+    githubGet(`/repos/${repo}/issues/${pr}/comments?per_page=100`),
+    githubGet(`/repos/${repo}/pulls/${pr}/reviews?per_page=100`),
+    githubGet(`/repos/${repo}/pulls/${pr}`),
+    githubGet(`/repos/${repo}/commits/${head}`),
+  ]);
+
+  const context = parseApprovalContext(prMeta?.body);
+  if (!context) return null;
+  const headAt = Date.parse(commitMeta?.commit?.committer?.date || commitMeta?.commit?.author?.date || '');
+  if (!Number.isFinite(headAt)) return null;
+
+  const entries = [...comments, ...reviews].sort((a, b) => {
+    const at = Date.parse(a?.created_at || a?.submitted_at || '') || 0;
+    const bt = Date.parse(b?.created_at || b?.submitted_at || '') || 0;
+    return at - bt;
+  });
+  for (const entry of entries.reverse()) {
+    if (entry?.user?.login !== APPROVER || !parseApprovalSignal(entry.body)) continue;
+    const approvedAt = Date.parse(entry?.created_at || entry?.submitted_at || '');
+    if (!Number.isFinite(approvedAt) || approvedAt < headAt) continue;
+    return { author: entry.user.login, commentId: entry.id, approvedAt, ...context };
   }
   return null;
 }
@@ -260,8 +293,10 @@ function run({ base = BASE, head = HEAD } = {}) {
   if (!head) throw new Error('--head (ou HEAD_SHA) est obligatoire');
   const failures = [], files = changedFiles(base, head);
   const registry = registryForComparison(base, head, failures);
+  const headRegistry = readJsonAt(head, REGISTRY_FILE) || registry;
+  validateRegisteredTargets(head, headRegistry, failures);
   compareRegisteredSources(base, head, registry, failures);
-  findUnknownToleranceFiles(head, registry, failures);
+  findUnknownToleranceFiles(head, headRegistry, failures);
   qualityDisableGrowth(base, head, files, failures);
   return { base, head: resolveCommit(head), changedFiles: files, failures };
 }
@@ -281,10 +316,9 @@ async function main() {
     return;
   }
   console.error(`\n✖ Blocage Debt Zero. Validation humaine requise de ${APPROVER}.`);
-  console.error(`\n  DEBT-APPROVAL ${result.head}`);
-  console.error('  Explication: <décrire précisément la dette/tolérance ou la modification de gouvernance>');
-  console.error('  Justification: <expliquer pourquoi elle est acceptée maintenant>');
-  console.error('\n  Tout nouveau commit change le SHA et invalide automatiquement cette validation.\n');
+  console.error('\n  Commenter simplement : DEBT-APPROVAL');
+  console.error('  La PR doit contenir Explication: et Justification:.');
+  console.error('  Tout nouveau commit postérieur à l’accord invalide automatiquement cette validation.\n');
   process.exit(1);
 }
 
@@ -298,9 +332,11 @@ module.exports = {
   identityArrayGrowth,
   numericMapGrowth,
   objectKeyGrowth,
-  parseApprovalComment,
+  parseApprovalSignal,
+  parseApprovalContext,
   registryForComparison,
   stableStringify,
+  validateRegisteredTargets,
   extractPrFromRef,
   run,
 };
