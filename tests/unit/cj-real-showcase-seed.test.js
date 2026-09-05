@@ -1,6 +1,7 @@
 'use strict';
 
 const {
+  ACTOR,
   FAMILIES,
   TARGET,
   TARGET_PER_FAMILY,
@@ -16,6 +17,10 @@ describe('cj-real-showcase-seed contract', () => {
     expect(TARGET_PER_FAMILY).toBe(3);
     expect(TARGET).toBe(63);
     expect(FAMILIES.length * TARGET_PER_FAMILY).toBe(TARGET);
+  });
+
+  it('uses a nullable operator actor because sourcing audit columns expect UUIDs', () => {
+    expect(ACTOR).toEqual({ id: null });
   });
 
   it('allocates a unique stable sort slot to every planned product', () => {
