@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Monter « Disponible ici » uniquement sur l'accueil « Tout » et déléguer l'exposition au backend.
+ * @purpose       Monter « Disponible ici » sur Tout et, sur mobile, à l'entrée d'une catégorie par bump vertical uniquement.
  * @impact-areas  home, product-discovery, discovery-rail, category-navigation, mobile, desktop
  * @version       2026-09
  */
@@ -20,6 +20,7 @@ import {
   markAllCartButtons,
 } from './b-cart.js';
 import { _setupInfiniteLoop } from './b-pager.js';
+import { PAGER_BUMP_EVENT } from './b-pager-end-bounce.js';
 import { fetchDiscoveryRail, fetchServiceCard, fetchPhysicalOfferCard } from './discovery-api.js';
 import { renderDiscoveryRail } from './render/render-discovery-rail.js';
 import { ensureDiscoveryDesktopV2Stylesheet } from './discovery-desktop-style.js';
@@ -29,6 +30,8 @@ let _lastCards = null;
 let _gridObserver = null;
 let _mountSyncScheduled = false;
 let _activeDesktopCategory = 'all';
+let _pendingBumpCategory = null;
+let _activeMobileBumpCategory = null;
 
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 900;
@@ -65,12 +68,17 @@ function removeMobileShells() {
     .forEach(shell => shell.remove());
 }
 
+function removeMobileBumpShells() {
+  document.querySelectorAll('.k-discovery-shell[data-discovery-entry="bump"]')
+    .forEach(shell => shell.remove());
+}
+
 /**
- * Mobile : le rail local appartient uniquement à la page « Tout ».
- * Les pages Mode/Maison/Tech/Bricolage/Perso/Auto/Soldes restent des pages
- * catalogue pures et ne reçoivent jamais de shell Discovery.
+ * Mobile : Tout garde son rail natif. Les autres catégories restent pures
+ * lorsqu'elles sont ouvertes par tap/swipe ; elles ne gagnent un rail local
+ * qu'après un bump vertical explicite depuis la catégorie précédente.
  */
-function ensureMobileMount() {
+function ensureMobileHomeMount() {
   removeDesktopShell();
   removeMobileShells();
 
@@ -81,8 +89,45 @@ function ensureMobileMount() {
 
   const titleId = 'k-discovery-local-title-mobile';
   const shell = createShell('all', titleId);
+  shell.dataset.discoveryEntry = 'home';
   page.insertBefore(shell, page.firstElementChild);
   return { shell, titleId };
+}
+
+function bumpTitleId(category) {
+  const safe = String(category || 'local').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+  return `k-discovery-local-title-bump-${safe}`;
+}
+
+function mountMobileBumpRail(category) {
+  if (!isMobileViewport() || !category || category === 'all' || _lastCards === null) return 0;
+
+  removeMobileBumpShells();
+  const page = document.querySelector(
+    `#k-grid > .k-cat-section[data-cat="${String(category).replace(/"/g, '\\"')}"]:not([data-ghost])`
+  );
+  if (!page) return 0;
+
+  const cards = cardsForCategory(_lastCards, category);
+  if (cards.length === 0) return 0;
+
+  const titleId = bumpTitleId(category);
+  const shell = createShell(category, titleId);
+  shell.dataset.discoveryEntry = 'bump';
+  page.insertBefore(shell, page.firstElementChild);
+
+  const rendered = renderDiscoveryRail(shell, cards, {
+    marketLabel: getMarketLabel(),
+    titleId,
+    title: 'Disponible ici',
+  });
+  if (rendered === 0) {
+    shell.remove();
+    return 0;
+  }
+
+  markAllCartButtons();
+  return rendered;
 }
 
 function ensureDesktopMount() {
@@ -134,25 +179,30 @@ function syncMountAndRender() {
   const marketLabel = getMarketLabel();
 
   if (isMobileViewport()) {
-    const mount = ensureMobileMount();
+    const mount = ensureMobileHomeMount();
     if (!mount) return 0;
 
-    const rendered = renderDiscoveryRail(
+    let rendered = renderDiscoveryRail(
       mount.shell,
       _lastCards,
       { marketLabel, titleId: mount.titleId, title: 'Disponible ici' }
     );
 
-    // Point A : mobile possède maintenant le même `.k-card-add` que le
-    // catalogue. Synchroniser avant le snapshot ghost garantit qu'un Product
-    // déjà au panier apparaît directement en stepper dans la page « Tout ».
+    // Si un rerender survient pendant une entrée par bump, reconstruire aussi
+    // la surface transitoire de la catégorie depuis le cache déjà chargé.
+    if (_activeMobileBumpCategory && _activeMobileBumpCategory !== 'all') {
+      rendered += mountMobileBumpRail(_activeMobileBumpCategory);
+    }
+
     markAllCartButtons();
     refreshGhostSnapshot();
     return rendered;
   }
 
-  // Desktop : « Disponible ici » est une surface d'accueil. Dès qu'un onglet
-  // catégorie est actif, retirer le shell plutôt que de le filtrer par catégorie.
+  _pendingBumpCategory = null;
+  _activeMobileBumpCategory = null;
+
+  // Desktop : « Disponible ici » reste une surface d'accueil uniquement.
   if (_activeDesktopCategory !== 'all') {
     removeDesktopShell();
     return 0;
@@ -166,8 +216,6 @@ function syncMountAndRender() {
     title: 'Disponible ici',
   });
 
-  // Un Product local reste un Product Komerce : le contrôle `+` du rail doit
-  // refléter le panier vivant exactement comme les cartes du catalogue.
   markAllCartButtons();
   return rendered;
 }
@@ -186,9 +234,6 @@ function installGridObserver() {
   const grid = document.getElementById('k-grid');
   if (!grid) return;
 
-  // renderGrid() remplace les pages réelles. Les mutations qui ne concernent
-  // que le ghost sont ignorées afin que le refresh du snapshot ne reboucle pas
-  // sur le MutationObserver.
   _gridObserver = new MutationObserver(mutations => {
     const realPageMutation = mutations.some(mutation => {
       const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
@@ -203,7 +248,45 @@ function installGridObserver() {
 
 function handleCatalogCategoryChanged(category) {
   _activeDesktopCategory = category || 'all';
-  if (!isMobileViewport()) syncMountAndRender();
+  if (isMobileViewport()) {
+    _pendingBumpCategory = null;
+    _activeMobileBumpCategory = null;
+    removeMobileBumpShells();
+    return;
+  }
+  syncMountAndRender();
+}
+
+function handlePagerBump(event) {
+  if (!isMobileViewport()) return;
+  const category = event?.detail?.to || 'all';
+  _pendingBumpCategory = category;
+  _activeMobileBumpCategory = category === 'all' ? null : category;
+
+  if (category === 'all') {
+    removeMobileBumpShells();
+    return;
+  }
+  mountMobileBumpRail(category);
+}
+
+function handlePagerCategoryCentered(chip) {
+  if (!isMobileViewport()) return;
+  const category = chip?.dataset?.cat || null;
+  if (!category) return;
+
+  // Le bump émet son intention avant que b-pager centre la chip. Cette première
+  // synchronisation est donc la suite du même geste et conserve le rail local.
+  if (_pendingBumpCategory === category) {
+    _pendingBumpCategory = null;
+    return;
+  }
+
+  // Toute autre entrée (tap d'onglet, swipe horizontal, restauration pager)
+  // redevient une surface catégorie pure.
+  _pendingBumpCategory = null;
+  _activeMobileBumpCategory = null;
+  removeMobileBumpShells();
 }
 
 async function refreshDiscoveryRail() {
@@ -246,8 +329,6 @@ function productHasVariants(product) {
 }
 
 function handleDiscoveryClick(event) {
-  // Product local, desktop OU mobile : le contrôle quantité canonique est une
-  // vraie mutation panier. Il doit être intercepté avant le clic de carte.
   const actionButton = event.target.closest(
     '[data-discovery-kind="product"] .k-card-add [data-action]'
   );
@@ -295,11 +376,12 @@ export function setupDiscoveryRail() {
   ensureDiscoveryDesktopV2Stylesheet();
   installGridObserver();
   window.addEventListener('resize', scheduleMountSync, { passive: true });
+  window.addEventListener(PAGER_BUMP_EVENT, handlePagerBump);
+  bus.on('chip:center', handlePagerCategoryCentered);
   bus.on('catalog:cat-changed', handleCatalogCategoryChanged);
 
-  // Un seul fetch alimente la surface d'accueil mobile/desktop. Les metadata
-  // category_keys restent disponibles pour d'autres projections, mais le rail
-  // « Disponible ici » n'est jamais remonté dans les onglets catégorie.
+  // Un seul fetch alimente Tout et les éventuelles projections de bump.
+  // category_keys reste la vérité qui borne le sous-pool local de la catégorie.
   refreshDiscoveryRail().catch(() => {
     _lastCards = [];
     syncMountAndRender();
@@ -310,6 +392,8 @@ export {
   refreshDiscoveryRail,
   openDiscoveryDetail,
   handleDiscoveryClick,
+  handlePagerBump,
+  handlePagerCategoryCentered,
   cardsForCategory,
   activeCategoryFromDom,
   productHasVariants,
