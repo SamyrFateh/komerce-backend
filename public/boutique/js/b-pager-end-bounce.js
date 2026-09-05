@@ -5,7 +5,7 @@
  * @layer         ui-state
  * @owner         public/boutique/js/b-pager-end-bounce.js
  * @purpose       Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.
- * @impact-areas  mobile-navigation, category-navigation, scroll-ownership
+ * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, discovery-rail
  * @version       2026-09
  */
 'use strict';
@@ -21,6 +21,7 @@ const VERTICAL_INTENT_PX = 8;
 const VERTICAL_DOMINANCE = 1.25;
 const AUTO_ADVANCE_DELAY_MS = 160;
 const TOUCH_ADVANCE_DELAY_MS = 40;
+const PAGER_BUMP_EVENT = 'komerce:pager-bump';
 
 function isAtBottom(page, tolerance = BOTTOM_TOLERANCE_PX) {
   if (!page) return false;
@@ -45,6 +46,16 @@ function cancelAdvance(page, runtime) {
   runtime.advanceTimer = null;
 }
 
+function emitPagerBump(page, nextPage) {
+  if (typeof window === 'undefined' || typeof window.CustomEvent !== 'function') return;
+  window.dispatchEvent(new window.CustomEvent(PAGER_BUMP_EVENT, {
+    detail: {
+      from: page?.dataset?.cat || 'all',
+      to: nextPage?.dataset?.cat || 'all',
+    },
+  }));
+}
+
 function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
   clearTimeout(runtime.advanceTimer);
   runtime.advanceTimer = setTimeout(() => {
@@ -57,6 +68,10 @@ function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
     ) return;
 
     runtime.movingDown = false;
+    // Le bump est une entrée métier distincte d'un tap/swipe horizontal.
+    // L'événement part AVANT onAdvance afin que les surfaces de tête de page
+    // (notamment Disponible ici) puissent être montées avant le repositionnement.
+    emitPagerBump(page, nextPage);
     onAdvance(page, nextPage);
   }, delay);
 }
@@ -190,6 +205,7 @@ function setupPagerEndBounce({ pages, isBlocked, onAdvance }) {
 }
 
 export {
+  PAGER_BUMP_EVENT,
   setupPagerEndBounce,
   teardownPagerEndBounce,
   isAtBottom,
