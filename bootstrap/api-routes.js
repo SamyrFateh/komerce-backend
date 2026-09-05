@@ -6,13 +6,13 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-market-operators.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
- * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail
- * @version       2026-08
+ * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, market, boutique, product-detail
+ * @version       2026-09
  */
 
 'use strict';
@@ -134,6 +134,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');
   const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');
   const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');
+  const adminMarketOperatorsRouter = require('../routes/admin-market-operators');
   const adminActionCenterRouter = require('../routes/admin-action-center');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
@@ -153,6 +154,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);
   app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);
   app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);
+  app.use('/api/admin/market-operators', adminMarketOperatorsRouter);
   app.use('/api/admin/action-center', adminActionCenterRouter);
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
