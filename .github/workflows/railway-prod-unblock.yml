@@ -40,12 +40,12 @@ jobs:
           test "$(jq -r '.data.projectToken.projectId // empty' "$response")" = "$RAILWAY_PROJECT_ID"
           test "$(jq -r '.data.projectToken.environmentId // empty' "$response")" = "$RAILWAY_ENVIRONMENT_ID"
 
-      - name: Stop wedged deployment and cancel stale queue
+      - name: Clear wedged and stale deployments
         shell: bash
         run: |
           set -euo pipefail
 
-          gql() {
+          gql_soft() {
             local query="$1"
             local vars="$2"
             local out="$3"
@@ -55,46 +55,66 @@ jobs:
               --request POST --url "$RAILWAY_GRAPHQL_URL" \
               --header "Project-Access-Token: $RAILWAY_TOKEN" \
               --header 'Content-Type: application/json' --data-binary "$payload")"
-            if [ "$code" != '200' ] || jq -e '.errors and (.errors|length>0)' "$out" >/dev/null; then
-              echo "::error::Railway GraphQL failed"
-              cat "$out"
-              exit 1
-            fi
+            [ "$code" = '200' ] && ! jq -e '.errors and (.errors|length>0)' "$out" >/dev/null
           }
 
           status_of() {
             local id="$1"
-            local out="$RUNNER_TEMP/deployment-$id.json"
-            gql 'query deployment($id: String!) { deployment(id: $id) { id status } }' "$(jq -n --arg id "$id" '{id:$id}')" "$out"
-            jq -r '.data.deployment.status // empty' "$out"
+            local out="$RUNNER_TEMP/status-$id.json"
+            if ! gql_soft 'query deployment($id: String!) { deployment(id: $id) { id status } }' \
+              "$(jq -n --arg id "$id" '{id:$id}')" "$out"; then
+              echo 'UNKNOWN'
+              return
+            fi
+            jq -r '.data.deployment.status // "UNKNOWN"' "$out"
           }
 
-          blocker_status="$(status_of "$BLOCKING_DEPLOYMENT")"
-          echo "blocking deployment: $BLOCKING_DEPLOYMENT status=$blocker_status"
-          case "$blocker_status" in
-            DEPLOYING)
-              gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
-                "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/stop.json"
-              ;;
-            BUILDING|QUEUED|INITIALIZING|WAITING)
-              gql 'mutation deploymentCancel($id: String!) { deploymentCancel(id: $id) }' \
-                "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/cancel-blocker.json"
-              ;;
-          esac
+          mutate_id() {
+            local mutation="$1"
+            local field="$2"
+            local id="$3"
+            local out="$RUNNER_TEMP/${field}-${id}.json"
+            local query
+            query="mutation op(\$id: String!) { ${field}(id: \$id) }"
+            if gql_soft "$query" "$(jq -n --arg id "$id" '{id:$id}')" "$out"; then
+              echo "$mutation succeeded for $id"
+              return 0
+            fi
+            echo "$mutation failed for $id: $(jq -c '.errors // []' "$out" 2>/dev/null || true)"
+            return 1
+          }
 
-          for id in $STALE_DEPLOYMENTS; do
+          clear_deployment() {
+            local id="$1"
+            local status
             status="$(status_of "$id")"
-            echo "stale deployment: $id status=$status"
+            echo "deployment $id status=$status"
+
             case "$status" in
-              BUILDING|QUEUED|INITIALIZING|WAITING)
-                gql 'mutation deploymentCancel($id: String!) { deploymentCancel(id: $id) }' \
-                  "$(jq -n --arg id "$id" '{id:$id}')" "$RUNNER_TEMP/cancel-$id.json"
+              SUCCESS|REMOVED|FAILED|CRASHED|SKIPPED|UNKNOWN)
+                return 0
                 ;;
               DEPLOYING)
-                gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
-                  "$(jq -n --arg id "$id" '{id:$id}')" "$RUNNER_TEMP/stop-$id.json"
+                mutate_id stop deploymentStop "$id" && return 0
+                mutate_id cancel deploymentCancel "$id" && return 0
+                mutate_id remove deploymentRemove "$id" && return 0
+                ;;
+              BUILDING|QUEUED|INITIALIZING|WAITING)
+                mutate_id cancel deploymentCancel "$id" && return 0
+                mutate_id remove deploymentRemove "$id" && return 0
+                ;;
+              *)
+                mutate_id remove deploymentRemove "$id" && return 0
                 ;;
             esac
+
+            echo "::error::Unable to clear Railway deployment $id (status=$status)"
+            exit 1
+          }
+
+          clear_deployment "$BLOCKING_DEPLOYMENT"
+          for id in $STALE_DEPLOYMENTS; do
+            clear_deployment "$id"
           done
 
       - name: Trigger fresh deployment from current main
@@ -122,5 +142,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Railway production queue unblocked and a fresh deployment from current main was requested.'
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Railway production queue ghost/stale deployments cleared and a fresh deployment from current main was requested.'
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
