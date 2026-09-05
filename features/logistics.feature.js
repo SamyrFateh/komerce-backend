@@ -40,10 +40,8 @@ module.exports = {
     ]
   },
 
-  // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'scan et operations colis',
@@ -53,7 +51,6 @@ module.exports = {
       'compatibilité verify→collect : le code courant est revalidé atomiquement à chaque remise physique',
       'tracking client et transitaire',
       'relais et transporteurs',
-      // ── 2026-07 : densite de valeur + qualite hub Dubai ──
       'consignes hub prescrites au scan : repack, mesure volume, photo de scelle (bornes de responsabilite)',
       'saisie volumes produits (POST /hub/volume) et photos de scelle (POST /hub/photo)',
     ],
@@ -64,7 +61,6 @@ module.exports = {
     ],
   },
 
-  // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     middleware: [
       'middleware/upload-hub.js',
@@ -72,11 +68,6 @@ module.exports = {
     migrations: [
       'migrations/095_value_density_foundation.sql',
       'migrations/096_quality_foundation.sql',
-      // Lot 5 : migrations/121_exceptional_pickup_authorization.sql ajoute
-      // exceptional_pickup_attempts/blocked_until + pickup_collected_via sur
-      // orders (logistics) MAIS crée aussi user_pickup_authorizations,
-      // propriété d'auth-identity — fichier possédé par une seule feature
-      // (doctrine multipropriété), déclaré dans features/auth-identity.feature.js.
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -86,9 +77,9 @@ module.exports = {
     ],
     utils: [
       'utils/parcelSync.js',
-
       'utils/parcels.js',
-      'utils/pickup-receipt-html.js',],
+      'utils/pickup-receipt-html.js',
+    ],
     services: [
       'services/parcel-operations.js',
       'services/parcel-item-mutation-service.js',
@@ -110,10 +101,10 @@ module.exports = {
       'services/parcel-guards.js',
       'services/parcelOptimizationService.js',
       'services/parcel-service.js',
-
       'services/hub-operations.js',
       'services/routing.js',
-      'services/transport-rails.js',],
+      'services/transport-rails.js',
+    ],
     routes: [
       'routes/parcels.js',
       'routes/parcel-api-v2/read.js',
@@ -131,14 +122,13 @@ module.exports = {
       'routes/parcel-api-v2.js',
       'routes/relais.js',
       'routes/logistics.js',
-
       'routes/auto-distribute-api.js',
-      'routes/hub.js',],
+      'routes/hub.js',
+    ],
     boutique: [
       'js/b-tracking.js',
     ],
-      dash: [
-      // dashboards/admin views — Lot 4
+    dash: [
       'dashboards/admin/js/views/HubRelaisView.js',
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
@@ -183,57 +173,36 @@ module.exports = {
       'tests/unit/transit-dashboard.test.js',
       'tests/unit/transitaire-api.test.js',
     ],
+  },
 
-},
-
-  // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
     boutique: 'js/b-tracking.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md pour le détail DOM/CSS',
   },
 
-  // ── Contrat d'interface ──────────────────────────────────────────────────
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
-  // Généré par parsing réel des appels .query() (pas un grep de mots) :
-  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
-  // Une table listée ici pour PLUSIEURS features est une vraie propriété
-  // partagée détectée dans le code, pas un artefact de méthode — à
-  // documenter explicitement si volontaire, ou à re-scoper sinon.
-  // Champ auto-généré : à corriger à la main si une requête dynamique
-  // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
       'business_rules: R',
       'carriers: RW',
-      'incidents: R',  // W-via incident-management/incident-write-service - LOT9
+      'incidents: R',
       'invoices: R',
-      'order_items: R',  // W-via:order-item-availability-service (orders owner boundary)
-      // order_status_history retiré (Sprint A, 2026-07-07) : les 4 anciennes
-      // écritures directes (markAvailability, partialShip, updateParcelStatus,
-      // cancelBackorder) délèguent maintenant à
-      // order-status-machine.appendOrderHistoryNote(). Logistics ne lit
-      // jamais cette table — pas de déclaration R/W requise (cf. convention
-      // W-via ci-dessous, qui ne s'applique qu'aux tables aussi lues).
-      'orders: R',  // W-via orders/order-mutation-service ? LOT11
+      'order_items: R',
+      'orders: R',
       'parcel_events: RW',
-      'parcel_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'parcels: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'pickup_print_tokens: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'pickup_reveal_codes: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'parcel_items: RW!',
+      'parcels: RW!',
+      'pickup_print_tokens: RW!',
+      'pickup_reveal_codes: RW!',
       'pickup_verify_attempts: RW',
       'product_suppliers: R',
-      'product_variants: R',          // W-via:order-status-machine (service orders)
-      'products: R',          // W-via:product-admin-service (adjustStock — parcel-operations.js)
+      'product_variants: R',
+      'products: R',
       'purchase_orders: R',
       'recipients: R',
-      'relais: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-
-      'scan_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'scans: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'relais: RW!',
+      'scan_events: RW!',
+      'scans: RW!',
       'shipments: RW',
-      // sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports :
-      // retirées d'ici (Lot O1.3, 2026-07-12) — n'étaient lues/écrites que par
-      // routes/sourcing-scanner.js, extrait vers features/sourcing.feature.js.
       'users: R',
     ],
   },
@@ -249,8 +218,6 @@ module.exports = {
       'GET/POST /api/parcels',
       'POST /api/v2/parcels/:ref/scan',
       'GET /api/tracking/:token',
-      // Les 11 routes /api/admin/sourcing/* (audit 2026-07-06 §3) ont quitté ce
-      // contrat — extraites vers features/sourcing.feature.js (Lot O1.3, 2026-07-12).
       'GET /api/carriers',
       'POST /api/carriers',
       'DELETE /api/carriers/:id',
@@ -291,7 +258,6 @@ module.exports = {
       'GET /api/pickup/reveal-once/:orderId',
       'GET /api/pickup/status/:orderId',
       'POST /api/pickup/verify/:orderId',
-      // Lot 5 — retrait exceptionnel par autorisation nominative (substitution)
       'GET /api/pickup/exceptional-pickup/:orderId',
       'POST /api/pickup/exceptional-pickup/:orderId/collect',
       'GET /api/relais',
@@ -321,12 +287,6 @@ module.exports = {
       'GET /api/v2/parcels/kpis',
       'GET /api/v2/parcels/reconciliation',
     ],
-    // O7.3 (provider logistics) : formalise transitionParcelStatus() comme
-    // capacité exposée cross-feature. Ownership confirmé O7.1 (WRITER !=
-    // LIFECYCLE OWNER — logistics reste seul lifecycle owner du colis, le
-    // simulateur ne fait que déclencher via cette fonction, jamais
-    // d'écriture directe). skipValidation reste un paramètre explicite de
-    // l'appelant, pas un contournement caché. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
     internalApi: [
       { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },
       { fn: 'recordHubPreparationScan', file: 'services/scan-write-service.js' },
@@ -349,7 +309,7 @@ module.exports = {
       'incident-management (incident persistence via incident-write-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
-'orders (commande rattachee au colis)',
+      'orders (commande rattachee au colis)',
       'auth',
       'auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)',
       'catalog',
@@ -358,32 +318,21 @@ module.exports = {
       'refunds',
       'purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)',
       'loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)',
+      'market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; jamais de market_id client)',
     ],
   },
 
-  // ── Dette assumée / documentée ────────────────────────────────────────────
-  // (audit 2026-07-06 §2d — vérifié empiriquement contre le route-registry)
   debt: {
     knownGaps: [
-      { gap: 'ancien contrat déclaré "POST /api/parcels/:id/scan" (v1) : aucune route ne ' +
-             'sert ce chemin. Le scan de colis est passé à l\'API v2 ' +
-             '(routes/parcel-api-v2/scans.js), montée sous /api/v2/parcels/:ref/scan.',
-        risk: 'si un client externe (scanner physique, app mobile hub) appelle encore le ' +
-              'chemin v1, il reçoit un 404 — à vérifier avant de considérer ce point clos.' },
-      { gap: 'RÉSOLU (2026-07-06) — le FAIL [PARAM_NAME_MISMATCH] sur "GET /api/v2/parcels/:ref" ' +
-             'était un artefact du bug de shadowing documenté dans platform-ops.feature.js ' +
-             '(routes/ops-api.js déclarait GET /api/v2/parcels/:id, code mort, jamais atteint, ' +
-             'mais structurellement comparé par le checker au vrai GET /:ref). Les handlers ' +
-             'morts ont été supprimés de ops-api.js — le contrat :ref (celui réellement servi ' +
-             'par routes/parcel-api-v2/read.js) n\'a plus de faux jumeau à comparer.',
+      { gap: 'ancien contrat déclaré "POST /api/parcels/:id/scan" (v1) : aucune route ne sert ce chemin. Le scan de colis est passé à l\'API v2 (routes/parcel-api-v2/scans.js), montée sous /api/v2/parcels/:ref/scan.',
+        risk: 'si un client externe (scanner physique, app mobile hub) appelle encore le chemin v1, il reçoit un 404 — à vérifier avant de considérer ce point clos.' },
+      { gap: 'RÉSOLU (2026-07-06) — le FAIL [PARAM_NAME_MISMATCH] sur "GET /api/v2/parcels/:ref" était un artefact du bug de shadowing documenté dans platform-ops.feature.js.',
         risk: 'nul désormais — à revérifier empiriquement au prochain run du gate.' },
     ],
   },
 
-  // ── Autorite ─────────────────────────────────────────────────────────────
   authority: 'backend-core — tout changement de la machine de scan doit etre valide par le proprietaire de scan-engine.js',
 
-  // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon',
     'un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume',
@@ -396,5 +345,4 @@ module.exports = {
     'le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l\'un ne bloque jamais l\'autre',
     'le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant',
   ],
-
 };
