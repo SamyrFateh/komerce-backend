@@ -29,7 +29,10 @@ const SUPPLIER_NAME = 'CJdropshipping';
 const TARGET_PER_FAMILY = 3;
 const TARGET = 63;
 const SORT_BASE = -1063;
-const ACTOR = { id: 'cj-real-showcase-seed' };
+// Sourcing audit columns store actor identifiers as UUIDs. This operator run
+// is not attached to a persisted admin user, so keep the actor nullable
+// instead of writing a synthetic non-UUID label into updated_by/triggered_by.
+const ACTOR = Object.freeze({ id: null });
 const RUN_NOTE = 'CJ real showcase 63 v1 — real supplier media, manual FR preparation';
 
 const FAMILIES = Object.freeze([
@@ -297,4 +300,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription };
+module.exports = { ACTOR, FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription };
