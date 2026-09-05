@@ -30,10 +30,6 @@
 const express = require('express');
 const router  = express.Router();
 
-// Market — provisioning central des opérateurs pays. Le routeur reste possédé
-// par la feature market ; cet index ne fait que la composition historique /api/admin.
-router.use('/market-operators', require('../admin-market-operators'));
-
 // Groupe Documents — visibilité transaction_documents (diagnostic + admin)
 router.use('/', require('./documents'));
 
