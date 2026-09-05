@@ -199,21 +199,21 @@ function parseApprovalComment(body, expectedHead) {
   return { head: match[1], explanation, justification };
 }
 
+function extractPrFromRef(ref) {
+  const match = String(ref || '').match(/^refs\/pull\/(\d+)\//);
+  return match ? match[1] : null;
+}
+
 function githubGet(path) {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) return Promise.reject(new Error('GITHUB_TOKEN absent'));
+  const headers = {
+    'User-Agent': 'komerce-debt-zero-gate',
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+
   return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: 'api.github.com',
-      path,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'komerce-debt-zero-gate',
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }, res => {
+    const req = https.request({ hostname: 'api.github.com', path, method: 'GET', headers }, res => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
@@ -232,7 +232,9 @@ function githubGet(path) {
 
 async function findHumanApproval(headSha) {
   const repository = process.env.GITHUB_REPOSITORY;
-  const prNumber = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER;
+  const prNumber = process.env.PR_NUMBER
+    || process.env.GITHUB_PR_NUMBER
+    || extractPrFromRef(process.env.GITHUB_REF);
   if (!repository || !prNumber) return null;
   const [owner, repo] = repository.split('/');
   const comments = await githubGet(`/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`);
@@ -307,5 +309,6 @@ module.exports = {
   numericMapGrowth,
   objectKeyGrowth,
   parseApprovalComment,
+  extractPrFromRef,
   run,
 };
