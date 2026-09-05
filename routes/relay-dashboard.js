@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders
+ * @db-read       operator_market_scopes, orders
  * @db-write      order_comments, order_incidents
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-2)
+ * @impact-areas  dashboard, admin-dashboard, market
+ * @version       2026-09
  */
 
 'use strict';
@@ -38,33 +38,65 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
 
-router.use(authenticate, requireRole(['admin', 'agent_relais']));
+// ── GAP-2 (2026-09) ──────────────────────────────────────────────────────
+// Ouvert en plus au market_operator, scopé à ses marchés via
+// operator_market_scopes. attachAuthorizedMarketsForOperator ne fait rien
+// pour admin/agent_relais — aucune requête DB, aucun changement de
+// comportement pour ces deux rôles (invariant : droits actuels inchangés).
+router.use(authenticate, requireRole(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);
 
 // ── Security helper — vérifie que la commande appartient au relais ──────────
+// 3 cas : admin (aucun check), agent_relais (relais_id fixe, IDOR fix
+// d'origine préservé à l'identique), market_operator (marché autorisé, ET
+// scope 'manager' requis — toute mutation, y compris comment/escalate, est
+// fermée à un viewer, cf. requireMarketScopeRole).
 async function assertOrderBelongsToRelais(req, res, orderId) {
   const { rows: [order] } = await db.query(
-    'SELECT id, reference, status, relais_id FROM orders WHERE id = $1',
+    'SELECT id, reference, status, relais_id, market_id FROM orders WHERE id = $1',
     [orderId]
   );
   if (!order) {
     res.status(404).json({ error: 'Commande introuvable' });
     return null;
   }
-  if (req.user.role !== 'admin' && String(order.relais_id) !== String(req.user.relais_id)) {
-    log.warn(`[RELAY] IDOR bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
-    res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
-    return null;
+
+  if (req.user.role === 'agent_relais') {
+    if (String(order.relais_id) !== String(req.user.relais_id)) {
+      log.warn(`[RELAY] IDOR bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+      res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
+      return null;
+    }
+    return order;
   }
+
+  if (req.user.role === 'market_operator') {
+    if (!req.authorizedMarkets || !req.authorizedMarkets.has(order.market_id)) {
+      res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' });
+      return null;
+    }
+    const actualRole = await resolveMarketScopeRole(req.user.id, order.market_id);
+    if (!hasMarketScopeRole(actualRole, 'manager')) {
+      res.status(403).json({
+        error: `Scope ${actualRole || 'aucun'} insuffisant — manager requis`,
+        code: 'market_scope_role_insufficient',
+      });
+      return null;
+    }
+    return order;
+  }
+
+  // admin : aucun check, comportement inchangé.
   return order;
 }
 
 // GET /dashboard
 router.get('/dashboard', async (req, res, next) => {
   try {
-    res.json(await getDashboardKPIs(req.user));
+    res.json(await getDashboardKPIs(req.user, { authorizedMarkets: req.authorizedMarkets }));
   } catch(err) { next(err); }
 });
 
@@ -72,16 +104,16 @@ router.get('/dashboard', async (req, res, next) => {
 router.get('/orders', async (req, res, next) => {
   try {
     const { status, search, limit = 50, offset = 0 } = req.query;
-    res.json(await getOrders(req.user, { status, search, limit, offset }));
+    res.json(await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets }));
   } catch(err) { next(err); }
 });
 
 // GET /orders/:id
 router.get('/orders/:id', async (req, res, next) => {
   try {
-    const result = await getOrderDetail(req.user, req.params.id);
+    const result = await getOrderDetail(req.user, req.params.id, { authorizedMarkets: req.authorizedMarkets });
     if (!result) return res.status(404).json({ error: 'Commande introuvable' });
-    if (result.forbidden) return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
+    if (result.forbidden) return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais ou marché", code: 'market_scope_denied' });
     res.json(result);
   } catch(err) { next(err); }
 });

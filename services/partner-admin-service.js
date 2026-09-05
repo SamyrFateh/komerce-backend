@@ -30,13 +30,16 @@ class PartnerAdminError extends Error {
 }
 
 async function listPartners(filters = {}, q = db) {
-  const { type, island, country, active } = filters;
+  const { type, island, country, countryIn, active } = filters;
   const conditions = ['1=1'];
   const params = [];
   let pi = 1;
   if (type) { conditions.push(`partner_type = $${pi++}`); params.push(type); }
   if (island) { conditions.push(`island = $${pi++}`); params.push(island); }
-  if (country) { conditions.push(`country_code = $${pi++}`); params.push(country); }
+  // GAP-3 (2026-09) : countryIn (array, scope market_operator) prime sur
+  // country (valeur unique, filtre libre non scopé — admin uniquement).
+  if (countryIn) { conditions.push(`country_code = ANY($${pi++}::text[])`); params.push(countryIn); }
+  else if (country) { conditions.push(`country_code = $${pi++}`); params.push(country); }
   if (active !== undefined && active !== null) {
     conditions.push(`is_active = $${pi++}`);
     params.push(Boolean(active));
@@ -48,8 +51,20 @@ async function listPartners(filters = {}, q = db) {
   return rows;
 }
 
-async function getStats(q = db) {
+// GAP-3 (2026-09) : countryIn (array de country_code) scope les stats à un
+// market_operator via jointure sur partners.country_code — suppliers_stats
+// n'a pas de colonne marché propre. null = pas de scope (admin, inchangé).
+async function getStats(countryIn = null, q = db) {
   try {
+    if (countryIn) {
+      const { rows } = await q.query(
+        `SELECT ss.* FROM suppliers_stats ss
+           JOIN partners p ON p.id = ss.partner_id
+          WHERE p.country_code = ANY($1::text[])`,
+        [countryIn]
+      );
+      return rows;
+    }
     const { rows } = await q.query('SELECT * FROM suppliers_stats');
     return rows;
   } catch (_) {
