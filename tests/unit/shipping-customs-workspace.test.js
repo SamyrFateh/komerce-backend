@@ -93,25 +93,43 @@ test('transit utilise l id interne résolu et délègue à scan-engine', async (
   expect(result).toEqual({ parcel_ref: 'PCL-CM-001', status: 'in_transit', event_applied: true });
 });
 
-test('échec du tag market compense la création douane', async () => {
-  mockQuery
-    .mockResolvedValueOnce({
-      rows: [{ id: 'parcel-internal-1', reference: 'PCL-CM-001', status: 'in_transit' }],
-    })
-    .mockResolvedValueOnce({ rows: [] });
+test('création douane délègue market_id au owner transactionnel sans mutation compensatoire', async () => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'parcel-internal-1', reference: 'PCL-CM-001', status: 'in_transit' }],
+  });
   mockCreateShipment.mockResolvedValue({
-    shipment: { id: 'shipment-internal-1', reference: 'CUS-CM-001' },
+    shipment: {
+      id: 'shipment-internal-1',
+      reference: 'CUS-CM-001',
+      status: 'pending',
+      is_active: true,
+      shipment_date: '2026-08-26',
+    },
     allocations: [],
   });
-  mockDeleteShipment.mockResolvedValue({ deleted: true });
 
-  await expect(workspace.createCustomsShipment({
+  const result = await workspace.createCustomsShipment({
     reference: 'CUS-CM-001',
     shipment_date: '2026-08-26',
     cif_value_kmf: 100000,
     parcel_refs: ['PCL-CM-001'],
-  }, MARKET, { id: 'admin-1', role: 'admin' }))
-    .rejects.toThrow('customs_market_tag_failed');
+  }, MARKET, { id: 'admin-1', role: 'admin' });
 
-  expect(mockDeleteShipment).toHaveBeenCalledWith(expect.anything(), 'shipment-internal-1');
+  expect(mockCreateShipment).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ parcel_ids: ['parcel-internal-1'] }),
+    'admin-1',
+    { marketId: MARKET.id }
+  );
+  expect(mockDeleteShipment).not.toHaveBeenCalled();
+  expect(mockQuery).toHaveBeenCalledTimes(1); // résolution colis uniquement, aucun UPDATE market post-COMMIT
+  expect(result).toEqual({
+    shipment: {
+      reference: 'CUS-CM-001',
+      status: 'pending',
+      is_active: true,
+      shipment_date: '2026-08-26',
+    },
+    allocations: [],
+  });
 });
