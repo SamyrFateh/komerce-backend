@@ -6,17 +6,17 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       order_items, orders, parcel_items, parcels, products
+ * @db-read       operator_market_scopes, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
  * @db-write-via:parcel-item-mutation-service parcel_items
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-1)
+ * @impact-areas  dashboard, admin-dashboard, market
+ * @version       2026-09
  */
 
 /**
@@ -45,6 +45,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
@@ -66,43 +67,74 @@ const hubQueries = require('../services/hub-dashboard-queries');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
+// ── GAP-1 (2026-09) ──────────────────────────────────────────────────────
+// hubRead / hubSupervise : ouverts en plus au market_operator, scopé à son
+// marché via operator_market_scopes (attachAuthorizedMarketsForOperator ne
+// fait rien pour admin/agent_hub — aucune requête DB, aucun changement de
+// comportement pour ces deux rôles).
+// hubAuth reste EXCLUSIVEMENT admin/agent_hub pour toute opération physique
+// sur le colis (scan, pack, seal, create-parcel, ready, ship, backorder) —
+// un market_operator ne scanne, n'emballe ni n'expédie jamais.
+const hubRead      = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubSupervise = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+
+async function ensureMarketOperatorCanSupervise(req, marketId) {
+  if (req.user.role !== 'market_operator') return null;
+  if (!req.authorizedMarkets || !req.authorizedMarkets.has(marketId)) {
+    return { status: 403, body: { error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' } };
+  }
+  const actualRole = await resolveMarketScopeRole(req.user.id, marketId);
+  if (!hasMarketScopeRole(actualRole, 'manager')) {
+    return {
+      status: 403,
+      body: { error: `Scope ${actualRole || 'aucun'} insuffisant — manager requis`, code: 'market_scope_role_insufficient' },
+    };
+  }
+  return null;
+}
+
 // ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
 
-// ── GET /dashboard — KPIs Hub (défensif) ────────────────────────────────────
-router.get('/dashboard', ...hubAuth, async (req, res, next) => {
+router.get('/dashboard', ...hubRead, async (req, res, next) => {
   try {
-    const data = await hubQueries.getDashboardKPIs();
+    const data = req.user.role === 'market_operator'
+      ? await hubQueries.getDashboardKPIs({ authorizedMarkets: req.authorizedMarkets })
+      : await hubQueries.getDashboardKPIs();
     res.json(data);
   } catch(e) { next(e); }
 });
 
-// ── GET /queue — File de travail priorisée ──────────────────────────────────
-router.get('/queue', ...hubAuth, async (req, res, next) => {
+router.get('/queue', ...hubRead, async (req, res, next) => {
   try {
-    const data = await hubQueries.getQueue(req.query);
+    const data = req.user.role === 'market_operator'
+      ? await hubQueries.getQueue(req.query, { authorizedMarkets: req.authorizedMarkets })
+      : await hubQueries.getQueue(req.query);
     res.json(data);
   } catch(e) { next(e); }
 });
 
-// ── GET /orders/:id — Détail complet ────────────────────────────────────────
-router.get('/orders/:id', ...hubAuth, async (req, res, next) => {
+router.get('/orders/:id', ...hubRead, async (req, res, next) => {
   try {
-    const data = await hubQueries.getOrderDetail(req.params.id);
+    const data = req.user.role === 'market_operator'
+      ? await hubQueries.getOrderDetail(req.params.id, { authorizedMarkets: req.authorizedMarkets })
+      : await hubQueries.getOrderDetail(req.params.id);
     if (!data) return res.status(404).json({ error: 'Commande introuvable' });
+    if (data.forbidden) return res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' });
     res.json(data);
   } catch(e) { next(e); }
 });
 
-// ── GET /validate/:id — Validations anti-erreur ────────────────────────────
-router.get('/validate/:id', ...hubAuth, async (req, res, next) => {
+router.get('/validate/:id', ...hubRead, async (req, res, next) => {
   try {
-    const data = await hubQueries.getValidation(req.params.id);
+    const data = req.user.role === 'market_operator'
+      ? await hubQueries.getValidation(req.params.id, { authorizedMarkets: req.authorizedMarkets })
+      : await hubQueries.getValidation(req.params.id);
     if (!data) return res.status(404).json({ error: 'Commande introuvable' });
+    if (data.forbidden) return res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' });
     res.json(data);
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/start-prep — Démarrer préparation ─────────────────────
 router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -119,7 +151,6 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Transition via state machine
     const _prepResult = await transitionOrderStatus({
       orderId: order.id,
       newStatus: 'preparation',
@@ -130,8 +161,6 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
       log.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
     }
 
-    // Log scan
-    // R7 FIX — scan_code NOT NULL : générer un code synthétique pour les scans hub automatiques
     const scanCodePrep = `HUB-PREP-${order.id.slice(0, 8).toUpperCase()}`;
     await recordHubPreparationScan(db, {
       orderId: order.id,
@@ -140,7 +169,6 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
       scanCode: scanCodePrep,
     });
 
-    // Log comment
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', 'Préparation démarrée')
@@ -150,7 +178,6 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/create-parcel — Créer colis ───────────────────────────
 router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
   try {
     const { type = 'standard', notes, item_ids } = req.body;
@@ -159,14 +186,12 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
     const order = rows[0];
 
     const reference = await generateParcelRef(db);
-
-    // Generate security codes if available
     let external_code = null, seal_code = null;
     try {
       const security = require('../services/parcel-security');
       external_code = security.generateExternalCode();
       seal_code = security.generateSealCode();
-    } catch(e) { /* security module not critical */ }
+    } catch(e) {}
 
     const parcel = await createHubParcel(db, {
       reference,
@@ -177,7 +202,6 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
       notes,
     });
 
-    // Auto-assign items if provided
     if (item_ids && item_ids.length) {
       for (const itemId of item_ids) {
         await assignWholeOrderItemToParcel(db, {
@@ -188,7 +212,6 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
       }
     }
 
-    // Log
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
@@ -202,15 +225,11 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/auto-prepare — Auto-split + assign articles (R2 compliant) ──
-// Crée automatiquement un colis et assigne tous les articles non-assignés.
-// Déclenché sur premier scan QR d'une commande. L'opérateur ne décide rien.
 router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
-    // Lock la commande
     const { rows: [order] } = await client.query(
       `SELECT id, reference, status FROM orders WHERE id = $1 FOR UPDATE`,
       [req.params.id]
@@ -225,7 +244,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Articles non encore assignés à un colis actif
     const { rows: unassigned } = await client.query(`
       SELECT oi.id, oi.quantity, oi.product_id, p.name AS product_name, p.weight_kg
       FROM order_items oi
@@ -247,7 +265,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Passer en preparation si besoin
     if (['confirmed', 'ordered'].includes(order.status)) {
       await transitionOrderStatus({
         orderId: order.id,
@@ -258,15 +275,13 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Créer un colis unique pour tous les articles non-assignés
     const reference = await generateParcelRef(client);
-
     let external_code = null, seal_code = null;
     try {
       const security = require('../services/parcel-security');
       external_code = security.generateExternalCode();
       seal_code = security.generateSealCode();
-    } catch(e) { /* security module optional */ }
+    } catch(e) {}
 
     const parcel = await createAutoPreparedParcel(client, {
       reference,
@@ -276,7 +291,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       notes: `Auto-cr\u00e9\u00e9 sur scan QR \u2014 ${unassigned.length} article(s)`,
     });
 
-    // Assign all unassigned items
     for (const item of unassigned) {
       await assignParcelItem(client, {
         parcelId: parcel.id,
@@ -292,8 +306,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       weightKg: Math.round(totalWeight * 100) / 100,
     });
 
-    // Log scan + commentaire
-    // R7 FIX — scan_code NOT NULL : code synthétique pour scans hub automatiques
     try {
       await client.query('SAVEPOINT sp_scans_auto_prepare');
       const scanCodeAuto = `HUB-AUTO-${order.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
@@ -305,9 +317,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       });
       await client.query('RELEASE SAVEPOINT sp_scans_auto_prepare');
     } catch(e) {
-      // scans table peut varier — sans SAVEPOINT, cette erreur aborte le
-      // client et l'INSERT order_comments suivant échoue (auto-prepare
-      // annulé silencieusement au COMMIT, RED-2/RED-2b).
       await client.query('ROLLBACK TO SAVEPOINT sp_scans_auto_prepare').catch(() => {});
       log.warn('[HUB] scan auto-prepare skipped:', e.message);
     }
@@ -318,8 +327,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     `, [order.id, req.user.id, `📦 Auto-prepare: colis ${reference} créé (${unassigned.length} article(s))`]);
 
     await client.query('COMMIT');
-
-    // Fetch colis complet post-commit
     const { rows: [fullParcel] } = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
 
     res.status(201).json({
@@ -327,7 +334,7 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       parcel: fullParcel,
       items_assigned: unassigned.length,
       items: unassigned.map(i => ({ id: i.id, product_name: i.product_name, quantity: i.quantity })),
-      next_action: 'ready', // l'opérateur n'a plus qu'à marquer prêt
+      next_action: 'ready',
     });
   } catch(e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -337,7 +344,6 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
   }
 });
 
-// ── POST /parcels/:id/add-item — Ajouter article ───────────────────────────
 router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
   try {
     const { order_item_id, quantity } = req.body;
@@ -348,7 +354,6 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
 
-    // Verify item belongs to same order
     const { rows: [item] } = await db.query(
       'SELECT id, quantity, product_id FROM order_items WHERE id = $1 AND order_id = $2',
       [order_item_id, parcel.order_id]
@@ -356,7 +361,6 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
     if (!item) return res.status(400).json({ error: "Article n'appartient pas à cette commande" });
 
     const qty = quantity || item.quantity;
-
     const pi = await addParcelItem(db, {
       parcelId: parcel.id,
       orderItemId: order_item_id,
@@ -364,14 +368,10 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
       quantity: qty,
     });
 
-    res.json({
-      message: 'Article ajout\u00e9',
-      item: pi || { already_assigned: true }
-    });
+    res.json({ message: 'Article ajout\u00e9', item: pi || { already_assigned: true } });
   } catch(e) { next(e); }
 });
 
-// ── POST /parcels/:id/remove-item — Retirer article ────────────────────────
 router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
   try {
     const { order_item_id } = req.body;
@@ -382,20 +382,11 @@ router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
       orderItemId: order_item_id,
     });
 
-    if (!deleted) {
-      return res.status(404).json({
-        error: 'Article non trouv\u00e9 dans ce colis'
-      });
-    }
-
-    res.json({
-      message: 'Article retir\u00e9',
-      deleted
-    });
+    if (!deleted) return res.status(404).json({ error: 'Article non trouv\u00e9 dans ce colis' });
+    res.json({ message: 'Article retir\u00e9', deleted });
   } catch(e) { next(e); }
 });
 
-// ── POST /parcels/:id/ready — Marquer prêt ─────────────────────────────────
 router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
   try {
     const { rows: [parcel] } = await db.query(
@@ -404,8 +395,6 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
 
-    // Garde de complétude : TOUS les articles de la commande doivent être
-    // dans un colis actif (1 colis = 1 commande). Pas juste "au moins un".
     const { rows: [cov] } = await db.query(`
       SELECT COUNT(oi.id) AS total,
              COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS packed
@@ -421,7 +410,6 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Une seule voie d'écriture : parcelSync (statut + order history + parcel_event)
     await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'preparation',
@@ -434,7 +422,6 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /parcels/:id/ship — Expédier ──────────────────────────────────────
 router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
   try {
     const { transport, batch_id, notes } = req.body;
@@ -445,13 +432,9 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
     if (parcel.status === 'draft') {
-      return res.status(400).json({
-        error: 'Colis non préparé',
-        hint: 'Marquez le colis prêt avant de l’expédier'
-      });
+      return res.status(400).json({ error: 'Colis non préparé', hint: 'Marquez le colis prêt avant de l’expédier' });
     }
 
-    // Anti-error: check parcel is ready
     const { rows: [itemCheck] } = await db.query(
       'SELECT COUNT(*) AS cnt FROM parcel_items WHERE parcel_id = $1',
       [parcel.id]
@@ -463,7 +446,6 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Anti-error: check order payment for non-cash
     const { rows: [order] } = await db.query(
       'SELECT payment_mode, payment_status, reference FROM orders WHERE id = $1',
       [parcel.order_id]
@@ -475,7 +457,6 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Sync via parcelSync (handles order status cascade)
     await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'shipped',
@@ -484,13 +465,11 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       notes: notes || `Expédié par hub — transport: ${transport || 'non spécifié'}`
     });
 
-    // Update parcel with transport info
     await appendParcelShipmentInfo(db, {
       parcelId: parcel.id,
       note: `\n[SHIPPED] ${new Date().toISOString()} | transport: ${transport || '-'} | batch: ${batch_id || '-'}`,
     });
 
-    // Log
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
@@ -505,21 +484,21 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/incident — Signaler incident ──────────────────────────
-router.post('/orders/:id/incident', ...hubAuth, async (req, res, next) => {
+router.post('/orders/:id/incident', ...hubSupervise, async (req, res, next) => {
   try {
     const { type, description, priority = 'normal' } = req.body;
-    if (!type || !description) {
-      return res.status(400).json({ error: 'type et description requis' });
-    }
+    if (!type || !description) return res.status(400).json({ error: 'type et description requis' });
 
     const validTypes = ['retard', 'blocage', 'paiement', 'stock', 'colis_endommage', 'colis_perdu', 'client_absent', 'autre'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
     }
 
-    const { rows: [order] } = await db.query('SELECT id FROM orders WHERE id = $1', [req.params.id]);
+    const { rows: [order] } = await db.query('SELECT id, market_id FROM orders WHERE id = $1', [req.params.id]);
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
+    if (denial) return res.status(denial.status).json(denial.body);
 
     const { rows: [incident] } = await db.query(`
       INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
@@ -527,7 +506,6 @@ router.post('/orders/:id/incident', ...hubAuth, async (req, res, next) => {
       RETURNING *
     `, [order.id, type, description, priority, req.user.id]);
 
-    // Auto-comment
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
@@ -537,25 +515,25 @@ router.post('/orders/:id/incident', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/escalate — Escalader ──────────────────────────────────
-router.post('/orders/:id/escalate', ...hubAuth, async (req, res, next) => {
+router.post('/orders/:id/escalate', ...hubSupervise, async (req, res, next) => {
   try {
     const { reason, priority = 'high' } = req.body;
     if (!reason) return res.status(400).json({ error: 'Raison requise' });
 
     const { rows: [order] } = await db.query(
-      'SELECT id, reference FROM orders WHERE id = $1', [req.params.id]
+      'SELECT id, reference, market_id FROM orders WHERE id = $1', [req.params.id]
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Create critical incident
+    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
+    if (denial) return res.status(denial.status).json(denial.body);
+
     const { rows: [incident] } = await db.query(`
       INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
       VALUES ($1, 'autre', $2, 'urgent', $3)
       RETURNING *
     `, [order.id, `[ESCALADE] ${reason}`, req.user.id]);
 
-    // Log comment
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
@@ -569,14 +547,16 @@ router.post('/orders/:id/escalate', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/comment — Commentaire terrain ─────────────────────────
-router.post('/orders/:id/comment', ...hubAuth, async (req, res, next) => {
+router.post('/orders/:id/comment', ...hubSupervise, async (req, res, next) => {
   try {
     const { content } = req.body;
     if (!content) return res.status(400).json({ error: 'Contenu requis' });
 
-    const { rows: [order] } = await db.query('SELECT id FROM orders WHERE id = $1', [req.params.id]);
+    const { rows: [order] } = await db.query('SELECT id, market_id FROM orders WHERE id = $1', [req.params.id]);
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
+    if (denial) return res.status(denial.status).json(denial.body);
 
     const { rows: [comment] } = await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
@@ -588,7 +568,6 @@ router.post('/orders/:id/comment', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// ── POST /orders/:id/backorder — Marquer en attente fournisseur ─────────────
 router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
   try {
     const { reason, items_waiting } = req.body;
@@ -598,13 +577,11 @@ router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Create incident
     await db.query(`
       INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
       VALUES ($1, 'stock', $2, 'normal', $3)
     `, [order.id, reason || 'En attente fournisseur', req.user.id]);
 
-    // Log
     await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
@@ -619,4 +596,3 @@ router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
 });
 
 module.exports = router;
-

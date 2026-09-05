@@ -11,9 +11,9 @@
  * @db-read       order_comments, order_incidents, order_items, order_status_history, orders, products, recipients, relais, sms_log, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-2)
+ * @impact-areas  dashboard, admin-dashboard, market
+ * @version       2026-09
  */
 
 'use strict';
@@ -24,9 +24,9 @@
  * Extrait de routes/relay-dashboard.js — R9 (2026-06-14)
  *
  * Expose uniquement les fonctions READ (GET) :
- *   getDashboardKPIs(user)       — GET /dashboard  (KPIs + alertes relais)
- *   getOrders(user, filters)     — GET /orders  (liste filtrée + enrichissement urgence)
- *   getOrderDetail(user, id)     — GET /orders/:id  (détail complet)
+ *   getDashboardKPIs(user, opts)       — GET /dashboard  (KPIs + alertes relais)
+ *   getOrders(user, filters, opts)     — GET /orders  (liste filtrée + enrichissement urgence)
+ *   getOrderDetail(user, id, opts)     — GET /orders/:id  (détail complet)
  *
  * Les mutations (POST/PATCH) restent dans la route — inserts simples sans
  * logique partageable :
@@ -35,20 +35,32 @@
  *   POST /orders/:id/escalate    → incident + comment
  *   PATCH /orders/:id/client-absent → incident + comment
  *
- * Note sécurité : le scoping par relais_id (R1 FIX) est préservé à l'identique.
+ * Note sécurité : le scoping par relais_id (R1 FIX) est préservé à l'identique
+ * pour agent_relais.
+ *
+ * GAP-2 (2026-09) — market_operator : 3ᵉ cas distinct, en plus de admin (tout)
+ * et agent_relais (relais_id fixe). Chaque fonction accepte un 3ᵉ paramètre
+ * optionnel `{ authorizedMarkets }` (un Set<uuid> de markets.id), consulté
+ * uniquement si user.role === 'market_operator'. Le filtre porte sur
+ * orders.market_id (même colonne que GAP-1/hub-dashboard-queries.js), pas
+ * relais_id fixe comme agent_relais — un market_operator voit TOUS les
+ * relais/commandes de son marché, jamais un relais unique.
  */
 
 const db  = require('../db');
 const { maskLast4 } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'relay-dashboard-queries' });
 
-// ─── getDashboardKPIs ─────────────────────────────────────────────────────
-
-async function getDashboardKPIs(user) {
+async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   const kpiParams = [];
-  const kpiWhere = user.role !== 'admin'
-    ? (kpiParams.push(user.relais_id), 'WHERE relais_id = $1')
-    : '';
+  let kpiWhere = '';
+  if (user.role === 'agent_relais') {
+    kpiParams.push(user.relais_id);
+    kpiWhere = 'WHERE relais_id = $1';
+  } else if (user.role === 'market_operator') {
+    kpiParams.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
+    kpiWhere = 'WHERE market_id = ANY($1::uuid[])';
+  }
 
   const { rows: [kpi] } = await db.query(`
     SELECT
@@ -71,15 +83,24 @@ async function getDashboardKPIs(user) {
 
   let incidents_ouverts = 0;
   try {
-    const incQuery = user.role !== 'admin'
-      ? `SELECT COUNT(*)::int AS c FROM order_incidents oi
+    let incQuery, incParams;
+    if (user.role === 'agent_relais') {
+      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
          JOIN orders o ON o.id = oi.order_id
-         WHERE oi.status IN ('open','in_progress') AND o.relais_id = $1`
-      : `SELECT COUNT(*)::int AS c FROM order_incidents WHERE status IN ('open','in_progress')`;
-    const incParams = user.role !== 'admin' ? [user.relais_id] : [];
+         WHERE oi.status IN ('open','in_progress') AND o.relais_id = $1`;
+      incParams = [user.relais_id];
+    } else if (user.role === 'market_operator') {
+      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE oi.status IN ('open','in_progress') AND o.market_id = ANY($1::uuid[])`;
+      incParams = [authorizedMarkets ? Array.from(authorizedMarkets) : []];
+    } else {
+      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents WHERE status IN ('open','in_progress')`;
+      incParams = [];
+    }
     const { rows: [inc] } = await db.query(incQuery, incParams);
     incidents_ouverts = inc.c;
-  } catch(e) { /* table might not exist yet */ }
+  } catch(e) {}
 
   const alertes = [];
   if (Number(kpi.en_attente_72h) > 0)
@@ -91,30 +112,32 @@ async function getDashboardKPIs(user) {
 
   return {
     kpi: {
-      en_transit:           Number(kpi.en_transit),
-      disponibles:          Number(kpi.disponibles),
-      cash_a_encaisser:     Number(kpi.cash_a_encaisser),
+      en_transit: Number(kpi.en_transit),
+      disponibles: Number(kpi.disponibles),
+      cash_a_encaisser: Number(kpi.cash_a_encaisser),
       montant_cash_pending: Math.round(Number(kpi.montant_cash_pending)),
       collectes_aujourd_hui: Number(kpi.collectes_aujourd_hui),
-      collectes_7j:         Number(kpi.collectes_7j),
-      en_attente_72h:       Number(kpi.en_attente_72h),
-      total_actives:        Number(kpi.total_actives),
+      collectes_7j: Number(kpi.collectes_7j),
+      en_attente_72h: Number(kpi.en_attente_72h),
+      total_actives: Number(kpi.total_actives),
       incidents_ouverts,
     },
     alertes,
   };
 }
 
-// ─── getOrders ────────────────────────────────────────────────────────────
-
-async function getOrders(user, { status, search, limit = 50, offset = 0 }) {
+async function getOrders(user, { status, search, limit = 50, offset = 0 }, { authorizedMarkets = null } = {}) {
   let where = 'WHERE 1=1';
   const params = [];
   let pi = 1;
 
-  if (user.role !== 'admin') {
+  if (user.role === 'agent_relais') {
     where += ` AND o.relais_id = $${pi}`;
     params.push(user.relais_id);
+    pi++;
+  } else if (user.role === 'market_operator') {
+    where += ` AND o.market_id = ANY($${pi}::uuid[])`;
+    params.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
     pi++;
   }
 
@@ -191,17 +214,11 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }) {
   return { total: orders.length, orders };
 }
 
-// ─── getOrderDetail ───────────────────────────────────────────────────────
-
-// Regex UUID standard — utilisée pour éviter "operator does not exist: text = uuid"
-// quand orderId est une référence (ex. "KOM-1234") et non un uuid.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function getOrderDetail(user, orderId) {
+async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) {
   const isUuid = UUID_RE.test(orderId);
-  const whereClause = isUuid
-    ? 'o.id = $1::uuid OR o.reference = $1'
-    : 'o.reference = $1';
+  const whereClause = isUuid ? 'o.id = $1::uuid OR o.reference = $1' : 'o.reference = $1';
 
   const { rows: [order] } = await db.query(`
     SELECT
@@ -221,9 +238,12 @@ async function getOrderDetail(user, orderId) {
 
   if (!order) return null;
 
-  // Guard IDOR
-  if (user.role !== 'admin' && String(order.relais_id) !== String(user.relais_id)) {
+  if (user.role === 'agent_relais' && String(order.relais_id) !== String(user.relais_id)) {
     log.warn(`[RELAY] IDOR bloqué — user ${user.id} (relais ${user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+    return { forbidden: true };
+  }
+  if (user.role === 'market_operator' && (!authorizedMarkets || !authorizedMarkets.has(order.market_id))) {
+    log.warn(`[RELAY] Scope marché refusé — user ${user.id} → order ${order.id} (market ${order.market_id})`);
     return { forbidden: true };
   }
 
@@ -257,9 +277,7 @@ async function getOrderDetail(user, orderId) {
 
   let comments = [];
   try {
-    const { rows } = await db.query(`
-      SELECT * FROM order_comments WHERE order_id = $1 ORDER BY created_at DESC
-    `, [order.id]);
+    const { rows } = await db.query(`SELECT * FROM order_comments WHERE order_id = $1 ORDER BY created_at DESC`, [order.id]);
     comments = rows;
   } catch(e) {}
 
@@ -274,14 +292,20 @@ async function getOrderDetail(user, orderId) {
 
   let client_history = { total_orders: 0, total_spent_kmf: 0, problems: 0 };
   if (order.user_id) {
+    const historyParams = [order.user_id];
+    let historyMarketClause = '';
+    if (user.role === 'market_operator') {
+      historyParams.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
+      historyMarketClause = ' AND market_id = ANY($2::uuid[])';
+    }
     const { rows: [hist] } = await db.query(`
       SELECT
         COUNT(*)::int AS total_orders,
         COALESCE(SUM(total_kmf), 0) AS total_spent_kmf,
         COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
         MIN(created_at) AS first_order
-      FROM orders WHERE user_id = $1
-    `, [order.user_id]);
+      FROM orders WHERE user_id = $1${historyMarketClause}
+    `, historyParams);
     client_history = {
       total_orders: hist.total_orders,
       total_spent_kmf: Math.round(Number(hist.total_spent_kmf)),

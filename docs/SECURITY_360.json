@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T13:11:41.505Z",
+  "generatedAt": "2026-09-05T10:51:52.951Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
     "total": 565,
@@ -1037,42 +1037,48 @@
       "key": "DELETE /api/admin/partners/{id}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "GET /api/admin/partners/{id}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "PUT /api/admin/partners/{id}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "GET /api/admin/partners/stats",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "GET /api/admin/partners",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "POST /api/admin/partners",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -2441,7 +2447,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2465,7 +2472,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2481,7 +2489,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2489,7 +2498,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2505,7 +2515,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2545,7 +2556,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2553,7 +2565,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2673,7 +2686,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2705,7 +2719,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2713,7 +2728,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -2721,7 +2737,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub"
+        "agent_hub",
+        "market_operator"
       ]
     },
     {
@@ -3522,7 +3539,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3530,7 +3548,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3538,7 +3557,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3546,7 +3566,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3554,7 +3575,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3562,7 +3584,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -3570,7 +3593,8 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
