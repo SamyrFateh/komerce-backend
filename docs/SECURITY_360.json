@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-05T10:51:52.951Z",
+  "generatedAt": "2026-09-05T11:41:28.200Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 565,
-    "protected": 514,
+    "total": 569,
+    "protected": 518,
     "public": 7,
     "unprotected": 42,
     "admin_no_guard": 0,
@@ -1537,6 +1537,27 @@
       ]
     },
     {
+      "key": "DELETE /api/admin/users/{id}/market-scopes/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/users/{id}/market-scopes",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/users/{id}/market-scopes",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "PUT /api/admin/users/{id}/password",
       "level": "PROTECTED",
       "roles": [
@@ -1552,6 +1573,13 @@
     },
     {
       "key": "DELETE /api/admin/users/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/users/markets",
       "level": "PROTECTED",
       "roles": [
         "admin"

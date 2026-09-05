@@ -82,10 +82,12 @@ module.exports = {
     ],
     services: [
       'middleware/require-market-scope.js',
+      'services/market-scope-admin-service.js',
       'utils/currency.js',
     ],
     tests: [
       'tests/unit/require-market-scope.test.js',
+      'tests/unit/market-scope-admin-service.test.js',
       'tests/integration/market-scope-isolation.test.js',
       'tests/unit/currency.test.js',
       'tests/integration/currency-boundary.test.js',
