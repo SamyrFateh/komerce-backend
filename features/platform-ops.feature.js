@@ -116,14 +116,13 @@ module.exports = {
       'invoices: R',
       'notification_log: W~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement, "chaos_event" ; propriétaire réel : notifications
       'order_items: R',
-      'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture directe limitée à services/simulator/state-advancer.js (payment_status en chaos ; les transitions de statut réelles passent par transitionOrderStatus(), déjà déclaré via contract.consumes) ; propriétaire réel : orders
+      'orders: R',  // mutations déléguées à order-status-machine/payment-service ; aucun write SQL direct depuis platform-ops
       'parcel_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
       'parcels: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
       'products: R',
       'relais: R',
       'scan_events: R',
       'scans: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
-      'store_credits: W',
       'users: R',
     ],
   },
@@ -185,7 +184,8 @@ module.exports = {
 
       'economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
       'logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
-      'orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
+      'orders (simulateur délègue statuts commande/paiement à order-status-machine + payment-service ; le chaos payment reste non-production et owner-bound)',
+      'wallet (simulateur crédite les remboursements via wallet-service.credit ; aucun store_credits legacy direct)',
     ],
   },
 

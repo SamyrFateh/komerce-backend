@@ -1,16 +1,16 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-09-04",
+  "generatedAt": "2026-09-05",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
     "generatedTruth": "regenerate this index from executable measurements; never hand-edit it"
   },
   "backend": {
-    "measuredRows": 11,
+    "measuredRows": 7,
     "openDebtCount": 0,
-    "reviewedExceptionCount": 15,
+    "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
       {
@@ -38,122 +38,6 @@
             "note": "Conservés grands par cohésion métier ; à revalider seulement si leur responsabilité évolue",
             "entries": [
               "services/scan-engine.js"
-            ]
-          }
-        }
-      },
-      {
-        "rule": "I-BACK-4",
-        "label": "Propriété orders.payment_status — allowlist hors scripts légitimes",
-        "count": 1,
-        "entries": [
-          "services/simulator/state-advancer.js"
-        ],
-        "lot": "Exception documentée (voir commentaire in-source)",
-        "note": "Remedy : Passer par services/payment-service.js (markPaid/markRefunded/markFailed)",
-        "remediation": {
-          "code": "BACKEND-REVIEWED-EXCEPTION",
-          "scope": "backend",
-          "owner": "exception exacte documentée dans son gate source",
-          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
-          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
-          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
-          "baselinePolicy": "never-increase-to-pass",
-          "severity": "info",
-          "autoRemediation": false,
-          "evidence": {
-            "rule": "I-BACK-4",
-            "lot": "Exception documentée (voir commentaire in-source)",
-            "note": "Remedy : Passer par services/payment-service.js (markPaid/markRefunded/markFailed)",
-            "entries": [
-              "services/simulator/state-advancer.js"
-            ]
-          }
-        }
-      },
-      {
-        "rule": "I-BACK-14",
-        "label": "Propriété parcels.status — allowlist hors scripts légitimes",
-        "count": 1,
-        "entries": [
-          "services/simulator/state-advancer.js"
-        ],
-        "lot": "Exception documentée (voir commentaire in-source)",
-        "note": "Remedy : Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)",
-        "remediation": {
-          "code": "BACKEND-REVIEWED-EXCEPTION",
-          "scope": "backend",
-          "owner": "exception exacte documentée dans son gate source",
-          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
-          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
-          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
-          "baselinePolicy": "never-increase-to-pass",
-          "severity": "info",
-          "autoRemediation": false,
-          "evidence": {
-            "rule": "I-BACK-14",
-            "lot": "Exception documentée (voir commentaire in-source)",
-            "note": "Remedy : Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)",
-            "entries": [
-              "services/simulator/state-advancer.js"
-            ]
-          }
-        }
-      },
-      {
-        "rule": "I-BACK-12",
-        "label": "Propriété wallet_transactions / store_credits — allowlist hors scripts légitimes",
-        "count": 1,
-        "entries": [
-          "services/simulator/state-advancer.js"
-        ],
-        "lot": "Exception documentée (voir commentaire in-source)",
-        "note": "Remedy : Passer par services/wallet-service.js",
-        "remediation": {
-          "code": "BACKEND-REVIEWED-EXCEPTION",
-          "scope": "backend",
-          "owner": "exception exacte documentée dans son gate source",
-          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
-          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
-          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
-          "baselinePolicy": "never-increase-to-pass",
-          "severity": "info",
-          "autoRemediation": false,
-          "evidence": {
-            "rule": "I-BACK-12",
-            "lot": "Exception documentée (voir commentaire in-source)",
-            "note": "Remedy : Passer par services/wallet-service.js",
-            "entries": [
-              "services/simulator/state-advancer.js"
-            ]
-          }
-        }
-      },
-      {
-        "rule": "I-BACK-12",
-        "label": "Propriété wallet_transactions / store_credits — allowlist hors scripts légitimes",
-        "count": 1,
-        "entries": [
-          "services/simulator/state-advancer.js"
-        ],
-        "lot": "Exception documentée (voir commentaire in-source)",
-        "note": "Remedy : Passer par services/store-credit-service.js",
-        "remediation": {
-          "code": "BACKEND-REVIEWED-EXCEPTION",
-          "scope": "backend",
-          "owner": "exception exacte documentée dans son gate source",
-          "cause": "Une exception historique, de glue, de test ou de chaos est mesurée et explicitement justifiée.",
-          "action": "Ne rien changer tant que la responsabilité reste identique; réauditer si le fichier, le périmètre ou le comportement évolue.",
-          "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
-          "baselinePolicy": "never-increase-to-pass",
-          "severity": "info",
-          "autoRemediation": false,
-          "evidence": {
-            "rule": "I-BACK-12",
-            "lot": "Exception documentée (voir commentaire in-source)",
-            "note": "Remedy : Passer par services/store-credit-service.js",
-            "entries": [
-              "services/simulator/state-advancer.js"
             ]
           }
         }
