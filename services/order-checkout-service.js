@@ -15,7 +15,7 @@
  * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
  *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
  * @db-txn        owns_full_transaction
- * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, resolve_before_behavior_change
+ * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, explicit_relay_market_anchor, resolve_before_behavior_change
  * @impact-areas  orders, checkout, shared-cart, local-stock
  * @version       2026-09 (LOCAL_STOCK/IMPORT + transport commercial IMPORT-only)
  */
@@ -48,6 +48,11 @@
  * commercial, seules les lignes IMPORT sont transmises à transport-pricing :
  * LOCAL_STOCK contribue donc exactement 0 au transport international, sans
  * introduire de connaissance local-stock dans le moteur de transport.
+ *
+ * Invariant marché : relais_id est obligatoire ici, y compris pour les appels
+ * service directs. Le service ne choisit jamais un relais actif « par défaut » :
+ * le relais explicite est l'ancre serveur du market_id, du routing et du
+ * verdict LOCAL_STOCK/IMPORT.
  *
  * Résultat renvoyé à l'appelant (jamais de res.status/res.json ici) :
  *   { ok: true, order, creditApplied, relais }
@@ -145,37 +150,33 @@ async function runOrderCheckout({ user, body }) {
       return fail(400, { error: `module_type invalide. Valeurs : ${MODULE_TYPES.join(', ')}` });
     }
 
-    let relais = null;
+    if (!relais_id) {
+      await client.query('ROLLBACK');
+      return fail(400, {
+        error: 'relais_id obligatoire — le checkout exige un relais explicite',
+        code: 'relay_required',
+      });
+    }
 
-    if (relais_id) {
-      const { rows: [r] } = await client.query(
-        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE',
-        [relais_id]
-      );
-      if (!r) {
-        await client.query('ROLLBACK');
-        return fail(404, { error: 'Relais introuvable' });
-      }
-      relais = r;
-    } else {
-      const { rows: [r] } = await client.query(
-        'SELECT * FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1'
-      );
-      relais = r;
+    const { rows: [relais] } = await client.query(
+      'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE',
+      [relais_id]
+    );
+    if (!relais) {
+      await client.query('ROLLBACK');
+      return fail(404, { error: 'Relais introuvable' });
     }
 
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };
 
-    if (relais) {
-      try {
-        routing = resolveRoutingFromRelais(relais);
-      } catch (e) {
-        if (e instanceof RoutingError) {
-          await client.query('ROLLBACK');
-          return fail(e.statusCode || 400, { error: e.message, code: e.code });
-        }
-        throw e;
+    try {
+      routing = resolveRoutingFromRelais(relais);
+    } catch (e) {
+      if (e instanceof RoutingError) {
+        await client.query('ROLLBACK');
+        return fail(e.statusCode || 400, { error: e.message, code: e.code });
       }
+      throw e;
     }
 
     let recipient_id = null;
