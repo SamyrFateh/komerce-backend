@@ -73,7 +73,7 @@ jobs:
           candidates="$(printf '%s\n' "$output" | sed -n 's/^DISCOVERY_RAIL_CANDIDATES=//p' | tail -n 1)"
           test -n "$candidates" || { echo '::error::repair did not produce candidates'; exit 1; }
           count="$(printf '%s' "$candidates" | awk -F',' '{print NF}')"
-          test "$count" = '12' || { echo "::error::candidate count=$count"; exit 1; }
+          test "$count" = '18' || { echo "::error::candidate count=$count"; exit 1; }
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "candidate_count=$count" >> "$GITHUB_OUTPUT"
 
@@ -123,5 +123,5 @@ jobs:
           CANDIDATE_COUNT: ${{ steps.repair.outputs.candidate_count }}
         run: |
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --body "Discovery CJ local repair completed. Real CJ local products: 7. Runtime candidates: ${CANDIDATE_COUNT}."
+            --body "Discovery CJ local repair completed. Real CJ local products: 12. Runtime candidates: ${CANDIDATE_COUNT}."
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
