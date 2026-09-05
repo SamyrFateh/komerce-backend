@@ -2,6 +2,7 @@
 
 const {
   ACTOR,
+  CJ_MIN_INTERVAL_MS,
   FAMILIES,
   TARGET,
   TARGET_PER_FAMILY,
@@ -22,6 +23,10 @@ describe('cj-real-showcase-seed contract', () => {
 
   it('uses a nullable operator actor because sourcing audit columns expect UUIDs', () => {
     expect(ACTOR).toEqual({ id: null });
+  });
+
+  it('paces CJ imports above the provider 1 request/second QPS floor', () => {
+    expect(CJ_MIN_INTERVAL_MS).toBeGreaterThanOrEqual(1100);
   });
 
   it('skips fresh CJ candidates that cannot satisfy the canonical promotion price guard', () => {
