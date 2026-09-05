@@ -2,64 +2,23 @@
   "_doctrine": "Source canonique des mécanismes qui peuvent tolérer, masquer ou grandfather une dette. Toute croissance est bloquée par défaut ; toute modification de ce registre après bootstrap exige l'approbation humaine Debt Zero liée au SHA exact.",
   "version": 1,
   "files": {
-    "governance/business-graph-drift-baseline.json": {
-      "kind": "numeric-map",
-      "path": "baseline"
-    },
-    "governance/test-exemptions.json": {
-      "kind": "object-keys"
-    },
-    "governance/migration-slot-exemptions.json": {
-      "kind": "entry-file-lists"
-    },
-    "governance/migration-guard-exemptions.json": {
-      "kind": "nested-file-lists",
-      "groups": ["no_prefix"]
-    },
-    "scripts/arch-debt-budget.json": {
-      "kind": "arch-debt-budget"
-    },
-    "scripts/code-quality-baseline.json": {
-      "kind": "quality-baseline"
-    },
-    "scripts/.security-360-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["flagged"]
-    },
-    "scripts/.boutique-360-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["orphanEmit", "orphanListen", "undeclared", "notFoundEndpoints", "ownershipRed", "ownershipOrange"]
-    },
-    "scripts/.dashboards-360-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["orphanRoutes", "deadApiMethods", "missingApiMethods", "doctrineViolations"]
-    },
-    "scripts/.docs-history-lint-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["exempt"]
-    },
-    "scripts/.feature-schema-tests-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["exempt"]
-    },
-    "scripts/.meta-graph-baseline.json": {
-      "kind": "array-fields",
-      "fields": ["phantomSeams"],
-      "informational": ["sharedEndpoints"]
-    },
-    "scripts/impact-suppressions.json": {
-      "kind": "identity-array",
-      "identity": ["file", "category", "contains"]
-    },
-    "scripts/npm-audit-exceptions.json": {
-      "kind": "npm-exceptions",
-      "identity": ["package", "advisory"]
-    },
-    "audit-backend-arch.js": {
-      "kind": "arch-source-allowlists"
-    },
-    "scripts/code-quality-gate.js": {
-      "kind": "code-quality-source"
-    }
+    "governance/business-graph-drift-baseline.json": { "kind": "numeric-map", "path": "baseline" },
+    "governance/test-exemptions.json": { "kind": "object-keys" },
+    "governance/migration-slot-exemptions.json": { "kind": "entry-file-lists" },
+    "governance/migration-guard-exemptions.json": { "kind": "nested-file-lists", "groups": ["no_prefix"] },
+    "governance/feature-dependency-exceptions.json": { "kind": "array-fields", "fields": ["exceptions"] },
+    "governance/ff-c2-support-exceptions.json": { "kind": "identity-array", "path": "exceptions", "identity": ["from", "to", "file", "target"] },
+    "scripts/arch-debt-budget.json": { "kind": "arch-debt-budget" },
+    "scripts/code-quality-baseline.json": { "kind": "quality-baseline" },
+    "scripts/.security-360-baseline.json": { "kind": "array-fields", "fields": ["flagged"] },
+    "scripts/.boutique-360-baseline.json": { "kind": "array-fields", "fields": ["orphanEmit", "orphanListen", "undeclared", "notFoundEndpoints", "ownershipRed", "ownershipOrange"] },
+    "scripts/.dashboards-360-baseline.json": { "kind": "array-fields", "fields": ["orphanRoutes", "deadApiMethods", "missingApiMethods", "doctrineViolations"] },
+    "scripts/.docs-history-lint-baseline.json": { "kind": "array-fields", "fields": ["exempt"] },
+    "scripts/.feature-schema-tests-baseline.json": { "kind": "array-fields", "fields": ["exempt"] },
+    "scripts/.meta-graph-baseline.json": { "kind": "array-fields", "fields": ["phantomSeams"], "informational": ["sharedEndpoints"] },
+    "scripts/impact-suppressions.json": { "kind": "identity-array", "identity": ["file", "category", "contains"] },
+    "scripts/npm-audit-exceptions.json": { "kind": "npm-exceptions", "identity": ["package", "advisory"] },
+    "audit-backend-arch.js": { "kind": "arch-source-allowlists" },
+    "scripts/code-quality-gate.js": { "kind": "code-quality-source" }
   }
 }
