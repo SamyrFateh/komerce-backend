@@ -1,0 +1,127 @@
+name: Discovery CJ local repair
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: discovery-cj-local-repair-20260905
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[ops] discovery-cj-local-repair-20260905'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_GRAPHQL_URL: 'https://backboard.railway.com/graphql/v2'
+      DISCOVERY_CJ_LOCAL_REPAIR_ENABLED: '1'
+
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Verify bounded secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL missing'; exit 1; }
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_TOKEN missing'; exit 1; }
+
+          response="$RUNNER_TEMP/project-token.json"
+          payload='{"query":"query { projectToken { projectId environmentId } }"}'
+          code="$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+            --request POST --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' --data-binary "$payload")"
+          test "$code" = '200'
+          test "$(jq -r '.data.projectToken.projectId // empty' "$response")" = "$RAILWAY_PROJECT_ID"
+          test "$(jq -r '.data.projectToken.environmentId // empty' "$response")" = "$RAILWAY_ENVIRONMENT_ID"
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Expose real CJ representatives in KM local stock
+        id: repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 90s node scripts/discovery-cj-local-repair.js)"
+          printf '%s\n' "$output"
+
+          candidates="$(printf '%s\n' "$output" | sed -n 's/^DISCOVERY_RAIL_CANDIDATES=//p' | tail -n 1)"
+          test -n "$candidates" || { echo '::error::repair did not produce candidates'; exit 1; }
+          count="$(printf '%s' "$candidates" | awk -F',' '{print NF}')"
+          test "$count" = '12' || { echo "::error::candidate count=$count"; exit 1; }
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+          echo "candidate_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Sync Discovery runtime candidates
+        shell: bash
+        env:
+          CANDIDATES: ${{ steps.repair.outputs.candidates }}
+        run: |
+          set -euo pipefail
+          response="$RUNNER_TEMP/railway-variable-upsert.json"
+          payload="$(jq -n \
+            --arg projectId "$RAILWAY_PROJECT_ID" \
+            --arg environmentId "$RAILWAY_ENVIRONMENT_ID" \
+            --arg serviceId "$RAILWAY_SERVICE_ID" \
+            --arg candidates "$CANDIDATES" \
+            '{
+              query: "mutation variableCollectionUpsert($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
+              variables: {
+                input: {
+                  projectId: $projectId,
+                  environmentId: $environmentId,
+                  serviceId: $serviceId,
+                  variables: {
+                    DISCOVERY_RAIL_ENABLED: "true",
+                    DISCOVERY_RAIL_CANDIDATES: $candidates
+                  }
+                }
+              }
+            }')"
+
+          code="$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+            --request POST --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' --data-binary "$payload")"
+          if [ "$code" != '200' ] || jq -e '.errors and (.errors|length>0)' "$response" >/dev/null; then
+            cat "$response"
+            exit 1
+          fi
+          echo 'Railway Discovery variables updated.'
+
+      - name: Close command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          CANDIDATE_COUNT: ${{ steps.repair.outputs.candidate_count }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Discovery CJ local repair completed. Real CJ local products: 7. Runtime candidates: ${CANDIDATE_COUNT}."
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

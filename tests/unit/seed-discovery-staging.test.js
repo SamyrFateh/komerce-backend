@@ -27,12 +27,12 @@ const { setLocalStock, setLocalStockExposure } = require('../../services/local-s
 const {
   STAGING_MEDIA,
   GOLDEN_PRODUCT,
-  SHOWCASE_LOCAL_PRODUCTS,
+  CJ_LOCAL_PRODUCTS,
   PROVIDERS,
   PHYSICAL_OFFERS,
   SERVICES,
   buildDiscoveryCandidates,
-  resolveShowcaseLocalProducts,
+  resolveCjLocalProducts,
   shouldSeedDiscoveryStaging,
   seedDiscoveryStaging,
 } = require('../../scripts/seed-discovery-staging');
@@ -40,9 +40,13 @@ const goldenFixture = require('../../tests/fixtures/catalog/golden-elite-pro');
 
 const ORIGINAL_ENV = { ...process.env };
 const MARKET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const SHOWCASE_ROWS = SHOWCASE_LOCAL_PRODUCTS.map((product, index) => ({
+const CJ_ROWS = CJ_LOCAL_PRODUCTS.map((product, index) => ({
   id: `bbbb${String(index + 1).padStart(4, '0')}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
-  product_ref: product.productRef,
+  product_ref: `KPR-${131333 + index}`,
+  sort_order: product.sortOrder,
+  category: index < 2 ? 'Mode & Beauté' : ['Maison', 'Tech', 'Bricolage', 'Créations personnelles', 'Auto'][index - 2],
+  subcategory: 'Test',
+  image_url: `https://cf.cjdropshipping.com/local-${index}.jpg`,
 }));
 
 beforeEach(() => {
@@ -75,38 +79,33 @@ test('staging reste sans écriture tant que le flag seed est absent', async () =
   expect(db.query).not.toHaveBeenCalled();
 });
 
-test('résout les produits Showcase V2 par refs stables et conserve leur ordre éditorial', async () => {
-  db.query.mockResolvedValueOnce({ rows: [...SHOWCASE_ROWS].reverse() });
+test('résout 7 produits CJ réels par slots déterministes et conserve leur ordre éditorial', async () => {
+  db.query.mockResolvedValueOnce({ rows: [...CJ_ROWS].reverse() });
 
-  const products = await resolveShowcaseLocalProducts();
+  const products = await resolveCjLocalProducts();
 
-  expect(db.query).toHaveBeenCalledWith(
-    expect.stringMatching(/product_ref = ANY/),
-    [SHOWCASE_LOCAL_PRODUCTS.map(product => product.productRef)]
+  const sql = db.query.mock.calls[0][0];
+  expect(sql).toMatch(/sourcing_source = \$1/);
+  expect(sql).toMatch(/sort_order = ANY/);
+  expect(sql).toContain("product_ref NOT LIKE 'SHOWCASE-V2-%'");
+  expect(products.map(product => product.sort_order)).toEqual(
+    CJ_LOCAL_PRODUCTS.map(product => product.sortOrder)
   );
-  expect(products.map(product => product.productRef)).toEqual(
-    SHOWCASE_LOCAL_PRODUCTS.map(product => product.productRef)
-  );
-  expect(products.map(product => product.id)).toEqual(SHOWCASE_ROWS.map(row => row.id));
+  expect(products.map(product => product.id)).toEqual(CJ_ROWS.map(row => row.id));
+  expect(products.every(product => product.image_url.startsWith('https://'))).toBe(true);
 });
 
-test('une ref Showcase absente est ignorée sans créer de faux produit', async () => {
-  db.query.mockResolvedValueOnce({ rows: SHOWCASE_ROWS.slice(0, 3) });
-
-  const products = await resolveShowcaseLocalProducts();
-
-  expect(products).toHaveLength(3);
-  expect(products.map(product => product.productRef)).toEqual(
-    SHOWCASE_LOCAL_PRODUCTS.slice(0, 3).map(product => product.productRef)
-  );
+test('un représentant CJ absent fait échouer le seed au lieu de dégrader silencieusement le rail', async () => {
+  db.query.mockResolvedValueOnce({ rows: CJ_ROWS.slice(0, 6) });
+  await expect(resolveCjLocalProducts()).rejects.toThrow(/Représentant CJ local introuvable/);
 });
 
-test('staging opt-in seeds 8 produits locaux + providers in transaction', async () => {
+test('staging opt-in seeds 8 produits locaux dont 7 CJ + providers in transaction', async () => {
   process.env.KOMERCE_ENV = 'staging';
   process.env.DISCOVERY_STAGING_SEED_ENABLED = 'yes';
   db.query
     .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
-    .mockResolvedValueOnce({ rows: SHOWCASE_ROWS });
+    .mockResolvedValueOnce({ rows: CJ_ROWS });
 
   const client = { query: jest.fn().mockResolvedValue({ rows: [] }) };
   db.withTransaction.mockImplementation(async callback => callback(client));
@@ -116,16 +115,15 @@ test('staging opt-in seeds 8 produits locaux + providers in transaction', async 
   expect(result.market).toBe('KM');
   expect(result.product).toBe(goldenFixture.productRow().id);
   expect(result.products).toBe(8);
-  expect(result.showcaseProducts).toBe(7);
+  expect(result.cjProducts).toBe(7);
   expect(result.providers).toBe(5);
   expect(result.physicalOffers).toBe(4);
   expect(result.services).toBe(7);
   expect(result.candidates.split(',')).toHaveLength(12);
 
-  // Golden Product seeded via son owner catalog.
   expect(seedGoldenProduct).toHaveBeenCalledTimes(1);
 
-  // 8 Products Komerce réellement exposés en local-stock : Golden + 7 V2.
+  // 8 Products Komerce réellement exposés en local-stock : Golden + 7 CJ.
   expect(setLocalStock).toHaveBeenCalledTimes(8);
   expect(setLocalStockExposure).toHaveBeenCalledTimes(8);
   expect(setLocalStock).toHaveBeenCalledWith(expect.objectContaining({
@@ -138,10 +136,10 @@ test('staging opt-in seeds 8 produits locaux + providers in transaction', async 
     'ENABLED',
     'KM_MAIN'
   );
-  for (const [index, row] of SHOWCASE_ROWS.entries()) {
+  for (const [index, row] of CJ_ROWS.entries()) {
     expect(setLocalStock).toHaveBeenCalledWith(expect.objectContaining({
       productId: row.id,
-      qtyPhysical: SHOWCASE_LOCAL_PRODUCTS[index].qtyPhysical,
+      qtyPhysical: CJ_LOCAL_PRODUCTS[index].qtyPhysical,
     }));
     expect(setLocalStockExposure).toHaveBeenCalledWith(
       row.id,
@@ -151,7 +149,6 @@ test('staging opt-in seeds 8 produits locaux + providers in transaction', async 
     );
   }
 
-  // Providers/offers/services via transaction.
   expect(db.withTransaction).toHaveBeenCalledTimes(1);
   expect(client.query).toHaveBeenCalledTimes(
     PROVIDERS.length + PHYSICAL_OFFERS.length + SERVICES.length
@@ -183,21 +180,15 @@ test('le dataset staging éprouve réellement les combinaisons cumulatives', () 
   expect(PROVIDERS.some(provider => !provider.publicPhone && !provider.publicWhatsapp)).toBe(true);
 });
 
-test('les refs Showcase couvrent plusieurs univers et restent stables', () => {
-  expect(SHOWCASE_LOCAL_PRODUCTS.map(product => product.productRef)).toEqual([
-    'SHOWCASE-V2-0020',
-    'SHOWCASE-V2-0100',
-    'SHOWCASE-V2-0140',
-    'SHOWCASE-V2-0230',
-    'SHOWCASE-V2-0320',
-    'SHOWCASE-V2-0405',
-    'SHOWCASE-V2-0440',
+test('le plan CJ local couvre les six univers sans dépendre des anciennes refs Showcase', () => {
+  expect(CJ_LOCAL_PRODUCTS.map(product => product.sortOrder)).toEqual([
+    -1063, -1054, -1051, -1039, -1030, -1021, -1012,
   ]);
-  expect(new Set(SHOWCASE_LOCAL_PRODUCTS.map(product => product.productRef)).size).toBe(7);
+  expect(new Set(CJ_LOCAL_PRODUCTS.map(product => product.sortOrder)).size).toBe(7);
 });
 
-test('l’ordre Discovery donne 8 Products Komerce, 2 offres et 2 services', () => {
-  const productIds = [GOLDEN_PRODUCT.id, ...SHOWCASE_ROWS.map(row => row.id)];
+test('l’ordre Discovery donne Golden + 7 CJ, 2 offres et 2 services avec scopes locaux', () => {
+  const productIds = [GOLDEN_PRODUCT.id, ...CJ_ROWS.map(row => row.id)];
   const candidates = buildDiscoveryCandidates(productIds);
 
   expect(candidates).toHaveLength(12);
@@ -208,28 +199,22 @@ test('l’ordre Discovery donne 8 Products Komerce, 2 offres et 2 services', () 
   expect(candidates).toEqual([
     `product:${productIds[0]}`,
     `product:${productIds[1]}`,
-    `physical_offer:${PHYSICAL_OFFERS[0].id}`,
-    `product:${productIds[2]}`,
+    `physical_offer:${PHYSICAL_OFFERS[0].id}@Maison`,
     `product:${productIds[3]}`,
-    `service:${SERVICES[6].id}`,
     `product:${productIds[4]}`,
+    `service:${SERVICES[6].id}@Maison|Tech`,
     `product:${productIds[5]}`,
-    `physical_offer:${PHYSICAL_OFFERS[2].id}`,
     `product:${productIds[6]}`,
+    `physical_offer:${PHYSICAL_OFFERS[2].id}@Bricolage`,
     `product:${productIds[7]}`,
-    `service:${SERVICES[1].id}`,
+    `product:${productIds[2]}`,
+    `service:${SERVICES[1].id}@Maison|Bricolage`,
   ]);
 });
 
-test('le rail reste valable si Showcase V2 est partiellement absent', () => {
-  const candidates = buildDiscoveryCandidates([GOLDEN_PRODUCT.id, SHOWCASE_ROWS[0].id]);
-
-  expect(candidates).toEqual([
-    `product:${GOLDEN_PRODUCT.id}`,
-    `product:${SHOWCASE_ROWS[0].id}`,
-    `physical_offer:${PHYSICAL_OFFERS[0].id}`,
-    `service:${SERVICES[6].id}`,
-    `physical_offer:${PHYSICAL_OFFERS[2].id}`,
-    `service:${SERVICES[1].id}`,
-  ]);
+test('un rail partiel ne réintroduit jamais de référence Showcase', () => {
+  const candidates = buildDiscoveryCandidates([GOLDEN_PRODUCT.id, CJ_ROWS[0].id]);
+  expect(candidates.join(',')).not.toContain('SHOWCASE-V2');
+  expect(candidates[0]).toBe(`product:${GOLDEN_PRODUCT.id}`);
+  expect(candidates[1]).toBe(`product:${CJ_ROWS[0].id}`);
 });

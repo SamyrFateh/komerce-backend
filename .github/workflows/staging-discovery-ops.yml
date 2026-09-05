@@ -171,6 +171,8 @@ jobs:
           timeout 45s node - <<'NODE'
           const db = require('./db');
 
+          const CJ_LOCAL_SORT_ORDERS = [-1063, -1054, -1051, -1039, -1030, -1021, -1012];
+
           async function main() {
             const { rows: [market] } = await db.query(
               `SELECT id FROM markets WHERE code = 'KM' AND is_active = true LIMIT 1`
@@ -178,14 +180,26 @@ jobs:
             if (!market) throw new Error('market KM actif introuvable');
 
             const { rows: products } = await db.query(
-              `SELECT p.product_ref, ls.qty_physical, ls.commercial_exposure
+              `SELECT p.product_ref, p.sourcing_source, p.sort_order, p.image_url,
+                      ls.qty_physical, ls.commercial_exposure
                  FROM local_stock ls
                  JOIN products p ON p.id = ls.product_id
                 WHERE ls.market_id = $1
+                  AND ls.location = 'KM_MAIN'
                   AND ls.commercial_exposure = 'ENABLED'
-                  AND (p.product_ref = 'GOLDEN-ELITE-PRO' OR p.product_ref LIKE 'SHOWCASE-V2-%')
-                ORDER BY p.product_ref`,
-              [market.id]
+                  AND (
+                    p.product_ref = 'GOLDEN-ELITE-PRO'
+                    OR (p.sourcing_source = 'CJdropshipping' AND p.sort_order = ANY($2::int[]))
+                  )
+                ORDER BY p.sort_order, p.product_ref`,
+              [market.id, CJ_LOCAL_SORT_ORDERS]
+            );
+
+            const cj = products.filter(row => row.sourcing_source === 'CJdropshipping');
+            const invalidCj = cj.filter(row =>
+              Number(row.qty_physical) <= 0
+              || !/^https:\/\//i.test(String(row.image_url || ''))
+              || String(row.product_ref || '').toUpperCase().startsWith('SHOWCASE-V2-')
             );
 
             const { rows: [thirdParty] } = await db.query(
@@ -198,15 +212,22 @@ jobs:
             const proof = {
               market: 'KM',
               local_products: products.length,
+              cj_products: cj.length,
+              cj_real_media: cj.filter(row => /^https:\/\//i.test(String(row.image_url || ''))).length,
+              invalid_cj: invalidCj.length,
               product_refs: products.map(row => row.product_ref),
               physical_offers: thirdParty.physical_offers,
               services: thirdParty.services,
             };
             console.log(JSON.stringify(proof, null, 2));
 
+            if (proof.local_products !== 8 || proof.cj_products !== 7 || proof.cj_real_media !== 7 || proof.invalid_cj !== 0) {
+              throw new Error(`Discovery local CJ audit failed: ${JSON.stringify(proof)}`);
+            }
+
             if (process.env.GITHUB_OUTPUT) {
               require('fs').appendFileSync(process.env.GITHUB_OUTPUT,
-                `local_products=${proof.local_products}\nphysical_offers=${proof.physical_offers}\nservices=${proof.services}\n`);
+                `local_products=${proof.local_products}\ncj_products=${proof.cj_products}\nphysical_offers=${proof.physical_offers}\nservices=${proof.services}\n`);
             }
           }
 
@@ -273,6 +294,7 @@ jobs:
           OPERATION: ${{ steps.operation.outputs.operation }}
           RAILWAY_ACCESS: ${{ steps.railway_access.outputs.railway_access }}
           LOCAL_PRODUCTS: ${{ steps.verify.outputs.local_products }}
+          CJ_PRODUCTS: ${{ steps.verify.outputs.cj_products }}
           PHYSICAL_OFFERS: ${{ steps.verify.outputs.physical_offers }}
           SERVICES: ${{ steps.verify.outputs.services }}
           CANDIDATE_COUNT: ${{ steps.seed.outputs.candidate_count }}
@@ -287,6 +309,7 @@ jobs:
             fi
             if [ "$OPERATION" != 'railway-check' ]; then
               echo "- local products: ${LOCAL_PRODUCTS:-unknown}"
+              echo "- real CJ local products: ${CJ_PRODUCTS:-unknown}"
               echo "- physical offers: ${PHYSICAL_OFFERS:-unknown}"
               echo "- services: ${SERVICES:-unknown}"
             fi
