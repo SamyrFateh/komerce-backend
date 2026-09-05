@@ -10,7 +10,7 @@
       "kind": "object-keys"
     },
     "governance/migration-slot-exemptions.json": {
-      "kind": "object-keys"
+      "kind": "entry-file-lists"
     },
     "governance/migration-guard-exemptions.json": {
       "kind": "nested-file-lists",
@@ -55,7 +55,7 @@
       "kind": "npm-exceptions",
       "identity": ["package", "advisory"]
     },
-    "scripts/audit-backend-arch.js": {
+    "audit-backend-arch.js": {
       "kind": "arch-source-allowlists"
     },
     "scripts/code-quality-gate.js": {
