@@ -1,0 +1,26 @@
+name: Temporary Contract Refresh
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run contract:generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contract-refresh
+          path: docs/contract/openapi.json
