@@ -33,5 +33,8 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = ["node scripts/migrate.js"]
+# Explicit one-shot operator run: migrate first, then bootstrap the guarded
+# 63-product CJ real-image showcase. This is reverted immediately after the
+# production run is verified.
+preDeployCommand = ["node scripts/migrate.js && node scripts/cj-real-showcase-seed.js"]
 startCommand = "node server.js"
