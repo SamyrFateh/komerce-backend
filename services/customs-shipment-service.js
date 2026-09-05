@@ -7,14 +7,14 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/cost-allocation/index.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
- * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js
+ * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_items, orders, parcels, products
  * @db-write      customs_shipment_parcels, customs_shipments, orders
  * @db-write-via:parcel-mutation-service parcels
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @db-txn        createShipment_owns_full_transaction
+ * @doctrine      trusted_market_scope_options_never_request_body, resolve_before_behavior_change
+ * @impact-areas  customs, logistics, market-authorization
+ * @version       2026-09
  */
 
 'use strict';
@@ -47,9 +47,10 @@ const { recomputeCustomsCosts } = require('./order-mutation-service');
  *     → { shipment, parcels }
  *     ✗ throws err.status=404 si introuvable
  *
- *   createShipment(db, body, userId)
+ *   createShipment(db, body, userId, { marketId? })
  *     → { shipment, allocations }
- *     Transaction complète (INSERT envoi + ventilation + propagation).
+ *     Transaction complète (INSERT envoi + market snapshot + ventilation + propagation).
+ *     marketId est une option de service de confiance, jamais lue depuis body.
  *
  *   updateShipment(db, id, body)
  *     → { shipment }
@@ -272,21 +273,23 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
 }
 
 /**
- * Crée un envoi douane + ventilation initiale (transaction complète).
+ * Crée un envoi douane + snapshot marché + ventilation initiale dans une seule transaction.
  *
  * @param {import('pg').Pool} db
  * @param {object} body
  * @param {string} userId
+ * @param {{ marketId?: string|null }} options — contexte serveur de confiance
  * @returns {{ shipment, allocations }}
  * ✗ throws err.status=400 si champs requis manquants
  */
-async function createShipment(db, body, userId) {
+async function createShipment(db, body, userId, options = {}) {
   const {
     reference, shipment_date, transitaire_name, transport_mode,
     cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
     nb_parcels, allocation_method, allocation_config, notes,
     supplier_id, parcel_ids,
   } = body;
+  const marketId = options.marketId || null;
 
   // customs_paid_kmf n'est plus requis à la création (workflow en deux étapes)
   // Il est saisi lors de la déclaration (declareCustomsPayment).
@@ -304,8 +307,8 @@ async function createShipment(db, body, userId) {
         (reference, shipment_date, transitaire_name, transport_mode,
          cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
          nb_parcels, allocation_method, allocation_config, notes, supplier_id, created_by,
-         status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pending')
+         market_id, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pending')
        RETURNING *`,
       [
         reference, shipment_date, transitaire_name || null, transport_mode || null,
@@ -314,7 +317,7 @@ async function createShipment(db, body, userId) {
         freight_kmf || null, total_weight_kg || null,
         nb_parcels || null, allocation_method || 'by_cif_value',
         allocation_config ? JSON.stringify(allocation_config) : null,
-        notes || null, supplier_id || null, userId,
+        notes || null, supplier_id || null, userId, marketId,
       ]
     );
 
@@ -347,8 +350,15 @@ async function createShipment(db, body, userId) {
       }
     }
 
+    // Retourner l'état final réellement commité (notamment status='declared'
+    // dans le chemin rétrocompatible), tout en restant dans la même transaction.
+    const { rows: [finalShipment] } = await client.query(
+      `SELECT * FROM customs_shipments WHERE id = $1`,
+      [shipment.id]
+    );
+
     await client.query('COMMIT');
-    return { shipment, allocations };
+    return { shipment: finalShipment || shipment, allocations };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
