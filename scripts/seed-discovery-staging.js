@@ -5,10 +5,10 @@
  * @layer         tooling
  * @criticality   low
  * @inputs        KOMERCE_ENV, DISCOVERY_STAGING_SEED_ENABLED, market KM
- * @outputs       deterministic staging providers, services, physical_offers, showcase local_stock
+ * @outputs       deterministic staging providers, services, physical_offers, real CJ local_stock
  * @depends       db, middleware/require-non-production.js,
- *                scripts/seed-golden-product.js, services/local-stock-service.js,
- *                tests/fixtures/catalog/golden-elite-pro.js
+ *                scripts/seed-golden-product.js, scripts/discovery-cj-local-repair.js,
+ *                services/local-stock-service.js, tests/fixtures/catalog/golden-elite-pro.js
  * @used-by       manual staging operations
  * @db-read       markets, products, local_stock
  * @db-write      providers, services, physical_offers, local_stock
@@ -23,6 +23,7 @@ const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const { seedGoldenProduct } = require('./seed-golden-product');
 const { setLocalStock, setLocalStockExposure } = require('../services/local-stock-service');
+const { CJ_LOCAL_PRODUCTS, resolveCjProducts } = require('./discovery-cj-local-repair');
 const goldenFixture = require('../tests/fixtures/catalog/golden-elite-pro');
 
 const FLAG = 'DISCOVERY_STAGING_SEED_ENABLED';
@@ -30,8 +31,8 @@ const MARKET_CODE = 'KM';
 const LOCAL_STOCK_LOCATION = 'KM_MAIN';
 
 // Médias Boutique existants utilisés uniquement pour éprouver le pipeline
-// image_ref en staging. Ils restent des placeholders explicites : les vraies
-// photos provider remplaceront ces références sans changement de code.
+// image_ref des objets provider. Les Products « Disponible maintenant » utilisent
+// désormais les vraies photos CJ du catalogue public, jamais ces placeholders.
 const STAGING_MEDIA = Object.freeze({
   FOOD: '/boutique/categories/cat-maison-v3.webp',
   BUILDING: '/boutique/categories/cat-bricolage-v3.webp',
@@ -48,23 +49,9 @@ const GOLDEN_PRODUCT = Object.freeze({
   qtyPhysical: 25,
 });
 
-// Pour juger le rendu réel d'un rail ecommerce, un seul Product Komerce ne
-// suffit pas. On réutilise donc sept produits Showcase V2 déjà présents dans
-// le vrai catalogue staging, choisis par product_ref stable et répartis sur
-// les grands univers de la Boutique. Aucun produit parallèle n'est créé ici.
-//
-// Les UUID restent ceux du catalogue live staging : le seed les résout au run
-// et ignore proprement une ref absente, sans rendre le rail dépendant d'un ID
-// généré par une autre campagne.
-const SHOWCASE_LOCAL_PRODUCTS = Object.freeze([
-  { productRef: 'SHOWCASE-V2-0020', qtyPhysical: 18 }, // Mode
-  { productRef: 'SHOWCASE-V2-0100', qtyPhysical: 16 }, // Beauté
-  { productRef: 'SHOWCASE-V2-0140', qtyPhysical: 14 }, // Maison
-  { productRef: 'SHOWCASE-V2-0230', qtyPhysical: 12 }, // Tech
-  { productRef: 'SHOWCASE-V2-0320', qtyPhysical: 10 }, // Bricolage
-  { productRef: 'SHOWCASE-V2-0405', qtyPhysical: 9 },  // Créations personnelles
-  { productRef: 'SHOWCASE-V2-0440', qtyPhysical: 11 }, // Auto
-]);
+// Les sept autres Products du rail proviennent du showcase CJ réel 63/63.
+// Le plan est détenu dans discovery-cj-local-repair.js afin que le seed manuel
+// et l'opération de réparation ne puissent plus diverger vers SHOWCASE-V2.
 
 // Les coordonnées publiques ci-dessous sont un choix EXPLICITE du dataset
 // staging. Elles ne sont jamais déduites de `phone` par le runtime.
@@ -184,41 +171,26 @@ function shouldSeedDiscoveryStaging() {
 }
 
 function buildDiscoveryCandidates(productIds = []) {
-  const p = productIds.map(id => `product:${id}`);
+  const [goldenId, ...cjIds] = productIds;
+  const p = cjIds.map(id => `product:${id}`);
   return [
+    goldenId ? `product:${goldenId}` : null,
     p[0],
-    p[1],
-    `physical_offer:${PHYSICAL_OFFERS[0].id}`,
+    `physical_offer:${PHYSICAL_OFFERS[0].id}@Maison`,
     p[2],
     p[3],
-    `service:${SERVICES[6].id}`,
+    `service:${SERVICES[6].id}@Maison|Tech`,
     p[4],
     p[5],
-    `physical_offer:${PHYSICAL_OFFERS[2].id}`,
+    `physical_offer:${PHYSICAL_OFFERS[2].id}@Bricolage`,
     p[6],
-    p[7],
-    `service:${SERVICES[1].id}`,
+    p[1],
+    `service:${SERVICES[1].id}@Maison|Bricolage`,
   ].filter(Boolean).slice(0, 12);
 }
 
-async function resolveShowcaseLocalProducts() {
-  const refs = SHOWCASE_LOCAL_PRODUCTS.map(product => product.productRef);
-  const { rows } = await db.query(
-    `SELECT id, product_ref
-       FROM products
-      WHERE is_active = true
-        AND product_ref = ANY($1::text[])
-        AND NULLIF(BTRIM(image_url), '') IS NOT NULL`,
-    [refs]
-  );
-
-  const byRef = new Map(rows.map(row => [row.product_ref, row]));
-  return SHOWCASE_LOCAL_PRODUCTS
-    .map(config => {
-      const row = byRef.get(config.productRef);
-      return row ? { ...config, id: row.id } : null;
-    })
-    .filter(Boolean);
+async function resolveCjLocalProducts() {
+  return resolveCjProducts();
 }
 
 async function exposeProductAsLocalStock({ id, qtyPhysical }, marketId) {
@@ -302,11 +274,13 @@ async function seedDiscoveryStaging() {
   // 1. Golden Product (owner: catalog domain)
   await seedGoldenProduct();
 
-  // 2. Product Komerce locaux : Golden + vraie sélection Showcase V2.
-  const showcaseProducts = await resolveShowcaseLocalProducts();
+  // 2. Products Komerce locaux : Golden + sept vrais produits CJ publiables.
+  // Le resolver échoue explicitement si le plan 7/7 n'est pas disponible :
+  // jamais de dégradation silencieuse vers un rail composé seulement d'assets internes.
+  const cjProducts = await resolveCjLocalProducts();
   const localProducts = [
     { id: GOLDEN_PRODUCT.id, qtyPhysical: GOLDEN_PRODUCT.qtyPhysical },
-    ...showcaseProducts,
+    ...cjProducts,
   ];
   for (const product of localProducts) {
     await exposeProductAsLocalStock(product, marketId);
@@ -325,7 +299,7 @@ async function seedDiscoveryStaging() {
     market: MARKET_CODE,
     product: GOLDEN_PRODUCT.id,
     products: productIds.length,
-    showcaseProducts: showcaseProducts.length,
+    cjProducts: cjProducts.length,
     providers: PROVIDERS.length,
     physicalOffers: PHYSICAL_OFFERS.length,
     services: SERVICES.length,
@@ -339,7 +313,7 @@ async function runCli() {
     console.log(`[seed:discovery] skipped (${result.reason})`);
     return;
   }
-  console.log(`[seed:discovery] ✅ ${result.products} products, ${result.providers} providers, ${result.physicalOffers} physical offers, ${result.services} services`);
+  console.log(`[seed:discovery] ✅ ${result.products} products (${result.cjProducts} CJ), ${result.providers} providers, ${result.physicalOffers} physical offers, ${result.services} services`);
   console.log('[seed:discovery] Set staging env:');
   console.log('DISCOVERY_RAIL_ENABLED=true');
   console.log(`DISCOVERY_RAIL_CANDIDATES=${result.candidates}`);
@@ -360,14 +334,14 @@ module.exports = {
   LOCAL_STOCK_LOCATION,
   STAGING_MEDIA,
   GOLDEN_PRODUCT,
-  SHOWCASE_LOCAL_PRODUCTS,
+  CJ_LOCAL_PRODUCTS,
   PROVIDERS,
   PHYSICAL_OFFERS,
   SERVICES,
   isTruthy,
   shouldSeedDiscoveryStaging,
   buildDiscoveryCandidates,
-  resolveShowcaseLocalProducts,
+  resolveCjLocalProducts,
   exposeProductAsLocalStock,
   seedDiscoveryStaging,
 };
