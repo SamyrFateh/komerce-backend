@@ -229,6 +229,8 @@ module.exports = {
       { fn: 'markPaid', file: 'services/payment-service.js' },
       { fn: 'markRefunded', file: 'services/payment-service.js' },
       { fn: 'markFailed', file: 'services/payment-service.js' },
+      // Non-production uniquement : chaos-test explicite, écriture conservée chez l'owner payment.
+      { fn: 'forcePaymentStatusForSimulation', file: 'services/payment-service.js' },
       { fn: 'setInventoryCompletion', file: 'services/order-mutation-service.js' },
       { fn: 'recomputeCustomsCosts', file: 'services/order-mutation-service.js' },
       { fn: 'backfillRoutingFields', file: 'services/order-mutation-service.js' },

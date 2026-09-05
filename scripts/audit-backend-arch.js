@@ -129,10 +129,6 @@ const COLUMN_OWNERSHIP = [
     allowlist: new Set([
       'scripts/fix-schema.js',
       'scripts/reset-admin.js',
-      // ── Chaos-testing — PAS de la prod paiement ──────────────────────────
-      // Pose volontairement des états incohérents. Ne doit PAS passer par
-      // payment-service.js (ce serait dénaturer le chaos-testing).
-      'services/simulator/state-advancer.js',
     ]),
     remedy: 'Passer par services/payment-service.js (markPaid/markRefunded/markFailed)',
   },
@@ -154,8 +150,6 @@ const COLUMN_OWNERSHIP = [
     allowlist: new Set([
       'scripts/fix-schema.js',
       'scripts/seed.js',
-      // ── Chaos-testing — même raison que orders.payment_status ci-dessus ──
-      'services/simulator/state-advancer.js',
     ]),
     remedy: 'Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)',
   },
@@ -169,8 +163,6 @@ const COLUMN_OWNERSHIP = [
     allowlist: new Set([
       'scripts/fix-schema.js',
       'scripts/seed.js',
-      // ── Chaos-testing ────────────────────────────────────────────────────
-      'services/simulator/state-advancer.js',
     ]),
     remedy: 'Passer par services/wallet-service.js',
   },
@@ -180,13 +172,12 @@ const COLUMN_OWNERSHIP = [
     ops:     ['UPDATE', 'INSERT'],
     table:   'store_credits',
     column:  null,
-    owners:  new Set(['services/store-credit-service.js']),
+    owners:  new Set([]),
     allowlist: new Set([
       'scripts/fix-schema.js',
       'scripts/seed.js',
-      'services/simulator/state-advancer.js',
     ]),
-    remedy: 'Passer par services/store-credit-service.js',
+    remedy: 'store_credits est legacy : passer par services/wallet-service.js ; aucun writer runtime direct autorisé',
   },
 ];
 
@@ -297,7 +288,6 @@ const STATE_MACHINE_ALL_SOURCES = new Set([
 
 // Exemptions : chaos-testing — transitions délibérément incohérentes
 const ALLOWED_STATE_MACHINE_BYPASS = new Set([
-  'services/simulator/state-advancer.js',
 ]);
 
 
