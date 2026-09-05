@@ -2,7 +2,7 @@
  * @feature       market
  * @type          feature
  * @domain        market
- * @status        draft
+ * @status        production
  * @owner         backend-core
  * @since         2026-08
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
@@ -16,7 +16,7 @@ module.exports = {
   name:     'market',
   type:     'feature',   // feature | transversal
   domain:   'market',
-  status:   'draft',   // draft | staging | production | deprecated
+  status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
   since:    '2026-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
@@ -33,6 +33,7 @@ module.exports = {
       'historique d\'accès operator_market_scopes (grain user, jamais settlement) — M1',
       'scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c',
       'requireMarketScope autorisation (serveur, enferme l\'opérateur, jamais le client) — M2',
+      'consommation runtime de requireMarketScope par les surfaces admin canoniques scopées par marché (Dashboard, Order 360, Client, Pricing, Opérations, Finance et Expéditions/Douane)',
       'garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2',
       'boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5',
       'parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1',
@@ -47,9 +48,6 @@ module.exports = {
       'MarketContext navigation acheteur — déjà livré côté boutique ' +
         '(public/boutique/js/market-context.js, chantier hero H2/H3), ' +
         'contextuel et commutable, jamais lu par requireMarketScope',
-      'branchement de requireMarketScope sur une route concrète — aucune route ' +
-        'admin scopée par marché n\'existe encore dans ce dépôt ; le middleware ' +
-        'est livré et testé, pas encore consommé',
       'migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre ' +
         'l\'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; ' +
         'renommer une colonne de montant en prod est un chantier séparé, à fort risque',
@@ -112,27 +110,24 @@ module.exports = {
   },
 
   // ── Securite ─────────────────────────────────────────────────────────────
-  // M0 et M1 sont des lots purs DB : aucune route, aucun middleware. Le
-  // champ est posé à son état réel (zéro surface) plutôt qu'omis, pour que
-  // le prochain lot applicatif (M2, requireMarketScope) ait une base à
-  // mettre à jour au lieu d'ajouter le champ après coup.
+  // La feature Market ne possède pas de route HTTP dédiée : ses compteurs de
+  // routes restent donc à 0/0. En revanche, sa boundary d'autorisation M2 est
+  // désormais réellement consommée par les routes de leurs features métiers.
   security: {
     status: 'CONFIRMED_PROTECTED',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: 'M0/M1 ne câblent aucune route. M2 livre requireMarketScope ' +
-      '(middleware/require-market-scope.js), résolu côté serveur depuis ' +
-      'operator_market_scopes, jamais depuis un market_id fourni par le ' +
-      'client — testé (12 tests unitaires mockés + 10 tests d\'intégration ' +
-      'contre un vrai Postgres), mais 0 route ne le consomme encore : ' +
-      'aucune route admin scopée par marché n\'existe dans ce dépôt à ce ' +
-      'jour. Le champ reste à 0/0 tant qu\'aucune route ne branche le ' +
-      'middleware — brancher sans route réelle serait une fausse déclaration.',
+    note: 'La feature Market n\'expose aucune route HTTP propre (0/0), mais ' +
+      'requireMarketScope est actif en production comme boundary transverse : ' +
+      'les surfaces admin canoniques résolvent leurs marchés autorisés côté ' +
+      'serveur depuis operator_market_scopes, jamais depuis un market_id fourni ' +
+      'par le client. Les consommateurs incluent Dashboard market, Order 360, ' +
+      'Client, Pricing, Opérations, Finance et Expéditions/Douane.',
   },
 
   // ── Contrat ──────────────────────────────────────────────────────────────
   contract: {
-    exposes: [], // aucune route encore câblée — requireMarketScope est livré (M2) mais non consommé
+    exposes: [], // aucune route Market propre ; boundary consommée par composition directe
     consumes: [
       'infrastructure (db.js — pool de connexion Postgres, seule dépendance ' +
         'de middleware/require-market-scope.js)',
