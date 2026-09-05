@@ -7,9 +7,9 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       middleware/auth.js, services/order-checkout-service.js,
- *                services/cart-share-service.js
+ *                services/cart-share-service.js, utils/rates.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       none
+ * @db-read       finance_config
  * @db-write      none
  * @db-write-via:order-checkout-service order_items, order_status_history, orders, recipients
  * @db-write-via:cart-share-service shared_carts, shared_cart_events
@@ -17,10 +17,12 @@
  *                transport → wallet → INSERT) vit dans order-checkout-service ;
  *                après son COMMIT, la façade demande au boundary shared-cart
  *                de réconcilier la complétion avant de rendre le HTTP 201.
- *                La route n'écrit jamais directement les tables shared-cart.
+ *                Pour Stripe/PayPal, finance_config est validée strictement
+ *                avant toute création : aucun fallback FX ne peut engager un
+ *                paiement en EUR. Le cash KMF reste indépendant de ce garde.
  * @db-txn        delegated_to_service
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout, shared-cart
+ * @doctrine      resolve_before_behavior_change, payment_fx_authority
+ * @impact-areas  orders, checkout, shared-cart, payment, finance
  * @version       2026-09
  */
 
@@ -39,20 +41,42 @@ const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
+const {
+  getAuthoritativeRates,
+  AuthoritativeRateUnavailableError,
+} = require('../../utils/rates');
+
+const EUR_PAYMENT_MODES = new Set(['stripe_eur', 'paypal_eur']);
 
 // Business Alignment Closure — un relais explicite est désormais une
 // précondition du checkout. Il fixe le marché, le routage et la résolution
 // LOCAL_STOCK/IMPORT ; laisser le service choisir "le premier relais actif"
 // rendrait ces décisions arbitraires en environnement multi-marché.
-// On dérive le schéma canonique au boundary HTTP sans dupliquer ses autres
-// règles. Le fallback interne historique du service reste donc inatteignable
-// depuis POST /api/orders.
 const orderCreateSchema = {
   ...orders.create,
   body: orders.create.body.fork(['relais_id'], schema => schema.required()),
 };
 
 router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
+  // Payment & FX Authority — toute commande qui sera encaissée en EUR doit
+  // d'abord obtenir le taux canonique finance_config. getAuthoritativeRates()
+  // hydrate le cache partagé de utils/rates ; l'orchestrateur checkout réutilise
+  // donc exactement ce snapshot au moment de calculer orders.total_eur.
+  // Aucun fallback 492/138 ne peut servir à créer une dette de paiement.
+  if (EUR_PAYMENT_MODES.has(req.body.payment_mode)) {
+    try {
+      await getAuthoritativeRates();
+    } catch (err) {
+      if (err instanceof AuthoritativeRateUnavailableError || err?.code === 'fx_rate_unavailable') {
+        return res.status(503).json({
+          error: 'Taux de change temporairement indisponible — paiement EUR suspendu',
+          code: 'fx_rate_unavailable',
+        });
+      }
+      return next(err);
+    }
+  }
+
   let result;
   try {
     result = await runOrderCheckout({ user: req.user, body: req.body });
@@ -68,11 +92,6 @@ router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (
 
   // Régression 2026-09 : une liste entièrement réclamée restait OPEN et
   // continuait à proposer « Clôturer la liste » malgré 4/4 achetés / reste 0.
-  // La commande est déjà commitée à ce stade. On attend donc la projection
-  // owner shared-cart AVANT le 201 afin qu'un rafraîchissement immédiat du
-  // side-cart lise déjà CLOSED. Le boundary est fail-safe : s'il rencontre
-  // une erreur, il la journalise et renvoie false sans transformer une
-  // commande déjà créée en faux échec client.
   await closeCompletedSharedCartForOrderItems(req.body.items, order.id);
 
   return res.status(201).json({
