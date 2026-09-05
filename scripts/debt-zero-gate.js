@@ -7,24 +7,28 @@
  * @domain        governance
  * @owner         backend
  *
- * debt-zero-gate.js — interdit toute croissance volontaire des mécanismes
- * de dette/tolérance entre la base d'une PR et son HEAD.
+ * debt-zero-gate.js — interdit toute croissance des mécanismes de dette/
+ * tolérance entre la base d'une PR et son HEAD, sauf validation humaine
+ * explicite et justifiée du propriétaire de gouvernance.
  *
  * Doctrine :
- *   - une dette existante peut diminuer ;
- *   - une baseline ne peut jamais augmenter ;
- *   - une nouvelle exemption/allowance est interdite ;
- *   - un nouveau quality-disable inline est interdit ;
+ *   - une dette existante peut diminuer librement ;
+ *   - une baseline, exemption, allowance ou quality-disable ne peut augmenter
+ *     silencieusement ;
+ *   - toute hausse est bloquante par défaut ;
+ *   - exception possible uniquement par commentaire PR de SamyrFateh, lié au
+ *     SHA HEAD exact, avec Explication + Justification substantielles ;
+ *   - un nouveau push invalide automatiquement l'approbation précédente ;
  *   - aucune auto-écriture : ce gate est strictement read-only.
  *
- * Usage CI :
- *   node scripts/debt-zero-gate.js --base <sha> --head <sha>
- *
- * Usage local :
- *   node scripts/debt-zero-gate.js --base origin/main --head HEAD
+ * Format d'approbation :
+ *   DEBT-APPROVAL <HEAD_SHA_COMPLET>
+ *   Explication: <ce qui est introduit>
+ *   Justification: <pourquoi l'exception est acceptée>
  */
 
 const cp = require('child_process');
+const https = require('https');
 
 const args = process.argv.slice(2);
 function argValue(flag) {
@@ -34,6 +38,7 @@ function argValue(flag) {
 
 const BASE = argValue('--base') || process.env.BASE_SHA;
 const HEAD = argValue('--head') || process.env.HEAD_SHA || 'HEAD';
+const APPROVER = process.env.DEBT_APPROVER || 'SamyrFateh';
 
 function git(argsList, { allowFail = false } = {}) {
   const result = cp.spawnSync('git', argsList, { encoding: 'utf8' });
@@ -41,6 +46,10 @@ function git(argsList, { allowFail = false } = {}) {
     throw new Error(`git ${argsList.join(' ')}: ${(result.stderr || result.stdout || '').trim()}`);
   }
   return result.status === 0 ? result.stdout : null;
+}
+
+function resolveCommit(ref) {
+  return git(['rev-parse', ref]).trim();
 }
 
 function readAt(ref, file) {
@@ -110,7 +119,7 @@ function qualityDisableGrowth(base, head, files, failures) {
 function extractRuleFileExemptions(src) {
   const counts = new Map();
   if (!src) return counts;
-  const block = src.match(/const\s+RULE_FILE_EXEMPT\s*=\s*\{([\s\S]*?)\n\};/);
+  const block = src.match(/const\s+RULE_FILE_EXEMPT\s*=\s*\{([\s\S]*?)\n\s*\};/);
   if (!block) return counts;
   const re = /'([^']+)'\s*:\s*new Set\(\[([\s\S]*?)\]\)/g;
   let m;
@@ -170,6 +179,72 @@ function checkTestExemptions(base, head, failures) {
   objectKeyGrowth(b, h, `${file} `, failures);
 }
 
+function parseApprovalComment(body, expectedHead) {
+  const text = String(body || '').trim();
+  const lines = text.split(/\r?\n/);
+  const first = (lines[0] || '').trim();
+  const match = first.match(/^DEBT-APPROVAL\s+([0-9a-f]{40})$/i);
+  if (!match || match[1].toLowerCase() !== expectedHead.toLowerCase()) return null;
+
+  const explanation = lines
+    .find(line => /^Explication\s*:/i.test(line))
+    ?.replace(/^Explication\s*:\s*/i, '')
+    .trim() || '';
+  const justification = lines
+    .find(line => /^Justification\s*:/i.test(line))
+    ?.replace(/^Justification\s*:\s*/i, '')
+    .trim() || '';
+
+  if (explanation.length < 20 || justification.length < 20) return null;
+  return { head: match[1], explanation, justification };
+}
+
+function githubGet(path) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return Promise.reject(new Error('GITHUB_TOKEN absent'));
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.github.com',
+      path,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'komerce-debt-zero-gate',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    }, res => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`GitHub API HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
+          return;
+        }
+        try { resolve(JSON.parse(data)); }
+        catch (error) { reject(new Error(`GitHub API JSON invalide: ${error.message}`)); }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+async function findHumanApproval(headSha) {
+  const repository = process.env.GITHUB_REPOSITORY;
+  const prNumber = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER;
+  if (!repository || !prNumber) return null;
+  const [owner, repo] = repository.split('/');
+  const comments = await githubGet(`/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`);
+
+  for (const comment of [...comments].reverse()) {
+    if (comment?.user?.login !== APPROVER) continue;
+    const parsed = parseApprovalComment(comment.body, headSha);
+    if (parsed) return { ...parsed, author: comment.user.login, commentId: comment.id };
+  }
+  return null;
+}
+
 function run({ base = BASE, head = HEAD } = {}) {
   if (!base) throw new Error('--base (ou BASE_SHA) est obligatoire');
   if (!head) throw new Error('--head (ou HEAD_SHA) est obligatoire');
@@ -184,27 +259,46 @@ function run({ base = BASE, head = HEAD } = {}) {
   ruleFileExemptionGrowth(base, head, failures);
   qualityDisableGrowth(base, head, files, failures);
 
-  return { base, head, changedFiles: files, failures };
+  return { base, head: resolveCommit(head), changedFiles: files, failures };
 }
 
-function main() {
+async function main() {
   const result = run();
   console.log('\nDEBT ZERO GATE — anti-croissance des tolérances\n');
-  if (result.failures.length > 0) {
-    console.error('✖ Nouvelle dette/tolérance détectée :');
-    for (const failure of result.failures) console.error(`  - ${failure}`);
-    console.error('\nDoctrine : réduire ou supprimer la dette ; ne jamais relever une baseline ni ajouter une exemption.\n');
-    process.exit(1);
+
+  if (result.failures.length === 0) {
+    console.log('✔ Aucune baseline, allowance, exemption ou quality-disable n\'a augmenté.\n');
+    return;
   }
-  console.log('✔ Aucune baseline, allowance, exemption ou quality-disable n\'a augmenté.\n');
+
+  console.error('▲ Nouvelle dette/tolérance détectée :');
+  for (const failure of result.failures) console.error(`  - ${failure}`);
+
+  let approval = null;
+  try { approval = await findHumanApproval(result.head); }
+  catch (error) { console.error(`\n  Validation humaine non vérifiable: ${error.message}`); }
+
+  if (approval) {
+    console.log(`\n✔ Exception approuvée humainement par ${approval.author} pour HEAD ${result.head}.`);
+    console.log(`  Explication : ${approval.explanation}`);
+    console.log(`  Justification : ${approval.justification}\n`);
+    return;
+  }
+
+  console.error(`\n✖ Blocage Debt Zero. Validation humaine requise de ${APPROVER}.`);
+  console.error('  Ajouter un commentaire PR exactement sous cette forme :\n');
+  console.error(`  DEBT-APPROVAL ${result.head}`);
+  console.error('  Explication: <décrire précisément la dette/tolérance introduite>');
+  console.error('  Justification: <expliquer pourquoi elle est acceptée maintenant>\n');
+  console.error('  Tout nouveau commit change le SHA et invalide automatiquement cette validation.\n');
+  process.exit(1);
 }
 
 if (require.main === module) {
-  try { main(); }
-  catch (error) {
+  main().catch(error => {
     console.error(`✖ debt-zero-gate: ${error.message}`);
     process.exit(1);
-  }
+  });
 }
 
 module.exports = {
@@ -212,5 +306,6 @@ module.exports = {
   extractRuleFileExemptions,
   numericMapGrowth,
   objectKeyGrowth,
+  parseApprovalComment,
   run,
 };
