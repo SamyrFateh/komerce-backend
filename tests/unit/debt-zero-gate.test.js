@@ -1,11 +1,15 @@
 'use strict';
 
 const {
+  arrayGrowth,
   countQualityDisables,
+  extractArchSourceAllowlists,
   extractRuleFileExemptions,
+  identityArrayGrowth,
   numericMapGrowth,
   objectKeyGrowth,
   parseApprovalComment,
+  stableStringify,
 } = require('../../scripts/debt-zero-gate');
 
 describe('debt-zero-gate', () => {
@@ -27,6 +31,33 @@ describe('debt-zero-gate', () => {
       failures
     );
     expect(failures).toEqual(['exemptions routes/b.js: nouvelle exemption/allowance']);
+  });
+
+  test('arrayGrowth bloque un ajout mais autorise une suppression', () => {
+    const failures = [];
+    arrayGrowth(['a', 'b'], ['b', 'c'], 'baseline exempt', failures);
+    expect(failures).toEqual(['baseline exempt: +"c"']);
+  });
+
+  test('identityArrayGrowth ignore une modification de raison mais bloque une nouvelle identité', () => {
+    const failures = [];
+    identityArrayGrowth(
+      [{ file: 'a.js', category: 'xss', contains: 'innerHTML', reason: 'old' }],
+      [
+        { file: 'a.js', category: 'xss', contains: 'innerHTML', reason: 'better explanation' },
+        { file: 'b.js', category: 'xss', contains: 'innerHTML', reason: 'new' },
+      ],
+      ['file', 'category', 'contains'],
+      'impact',
+      failures
+    );
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('file="b.js"');
+  });
+
+  test('stableStringify ne dépend pas de l’ordre des clés objet', () => {
+    expect(stableStringify({ b: 2, a: { d: 4, c: 3 } }))
+      .toBe(stableStringify({ a: { c: 3, d: 4 }, b: 2 }));
   });
 
   test('countQualityDisables compte les suppressions inline par règle', () => {
@@ -58,6 +89,31 @@ describe('debt-zero-gate', () => {
       'utils/logger.js',
     ]);
     expect([...out.get('N2-OTHER')]).toEqual(['utils/other.js']);
+  });
+
+  test('extractArchSourceAllowlists couvre ALLOWED_* et COLUMN_OWNERSHIP.allowlist', () => {
+    const src = `
+      const ALLOWED_LARGE_FILES = new Set([
+        'routes/a.js',
+      ]);
+      const ALLOWED_RAW_SQL_PATTERNS = [
+        /SAVEPOINT\\s+\\w+/i,
+      ];
+      const COLUMN_OWNERSHIP = [
+        {
+          id: 'orders.status',
+          owners: new Set(['services/owner.js']),
+          allowlist: new Set([
+            'scripts/fix-schema.js',
+          ]),
+        },
+      ];
+    `;
+    const out = extractArchSourceAllowlists(src);
+    expect([...out.get('ALLOWED_LARGE_FILES')]).toEqual(["'routes/a.js'"]);
+    expect([...out.get('ALLOWED_RAW_SQL_PATTERNS')]).toEqual(['/SAVEPOINT\\s+\\w+/i']);
+    expect([...out.get('COLUMN_OWNERSHIP.orders.status.allowlist')])
+      .toEqual(["'scripts/fix-schema.js'"]);
   });
 
   test('parseApprovalComment exige SHA exact, explication et justification substantielles', () => {
