@@ -11,7 +11,7 @@
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, browser_business_refs_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -22,7 +22,7 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
+const { attachAuthorizedMarkets, requireMarketScope, requireMarketScopeRole } = require('../middleware/require-market-scope');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
 
@@ -68,19 +68,37 @@ async function resolveRequestedMarket(req, res, next) {
   } catch (error) { return next(error); }
 }
 
-function requireMarketPricingAccess(req, res, next) {
+function runLocalMarketGuard(req, res, next) {
   const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) return marketGuard(req, res, next);
-  return hasPricingGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
+  return requireMarketScope(() => targetMarketId)(req, res, next);
+}
+
+async function requireMarketPricingAccess(req, res, next) {
+  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
+
+  // L'autorité centrale reste prioritaire pour les administrateurs : un admin
+  // global peut intervenir sur un override pays même s'il possède par ailleurs
+  // un grant local viewer. Les partenaires market_operator n'empruntent jamais
+  // cette branche.
+  if (req.user && req.user.role === 'admin') {
+    try {
+      if (await hasPricingGlobalAuthority(req.user.id)) {
         req.pricingGlobalAuthority = true;
         return next();
       }
-      return marketGuard(req, res, next);
-    })
-    .catch(next);
+    } catch (error) { return next(error); }
+  }
+
+  if (req.authorizedMarketScopes && req.authorizedMarketScopes.has(targetMarketId)) {
+    req.marketScopeRole = req.authorizedMarketScopes.get(targetMarketId);
+  }
+  return runLocalMarketGuard(req, res, next);
+}
+
+function requireMarketPricingManager(req, res, next) {
+  if (req.pricingGlobalAuthority) return next();
+  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
+  return requireMarketScopeRole(() => targetMarketId, ['manager'])(req, res, next);
 }
 
 function sendAction(res, action, result, status = 200) {
@@ -104,6 +122,7 @@ router.use(
   requireMarketPricingAccess
 );
 
+// viewer + manager : lecture du modèle effectif du marché.
 router.get('/market/:marketCode', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
@@ -111,7 +130,8 @@ router.get('/market/:marketCode', async (req, res, next) => {
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/update', async (req, res, next) => {
+// manager uniquement (ou autorité Pricing globale centrale) : mutations pays.
+router.post('/market/:marketCode/cost-components/:key/update', requireMarketPricingManager, async (req, res, next) => {
   try {
     sendAction(res, 'update_market_cost_component', await workspace.updateMarketCostComponent(
       req.workspaceMarket,
@@ -122,7 +142,7 @@ router.post('/market/:marketCode/cost-components/:key/update', async (req, res, 
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/toggle', async (req, res, next) => {
+router.post('/market/:marketCode/cost-components/:key/toggle', requireMarketPricingManager, async (req, res, next) => {
   try {
     sendAction(res, 'toggle_market_cost_component', await workspace.toggleMarketCostComponent(
       req.workspaceMarket,
@@ -132,7 +152,7 @@ router.post('/market/:marketCode/cost-components/:key/toggle', async (req, res, 
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/reset', async (req, res, next) => {
+router.post('/market/:marketCode/cost-components/:key/reset', requireMarketPricingManager, async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_cost_component', await workspace.resetMarketCostComponent(
       req.workspaceMarket,

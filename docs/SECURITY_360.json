@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-04T13:11:41.505Z",
+  "generatedAt": "2026-09-05T07:18:39.940Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 565,
-    "protected": 514,
+    "total": 569,
+    "protected": 518,
     "public": 7,
     "unprotected": 42,
     "admin_no_guard": 0,
@@ -1007,6 +1007,34 @@
     },
     {
       "key": "GET /api/admin/margins",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/market-operators/{userId}/markets/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/market-operators/{userId}/markets/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-operators",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-operators",
       "level": "PROTECTED",
       "roles": [
         "admin"
