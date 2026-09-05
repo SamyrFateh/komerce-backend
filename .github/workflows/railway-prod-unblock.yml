@@ -46,7 +46,9 @@ jobs:
           set -euo pipefail
 
           gql() {
-            local query="$1" vars="$2" out="$3"
+            local query="$1"
+            local vars="$2"
+            local out="$3"
             local payload code
             payload="$(jq -n --arg q "$query" --argjson v "$vars" '{query:$q,variables:$v}')"
             code="$(curl --silent --show-error --output "$out" --write-out '%{http_code}' \
@@ -61,7 +63,8 @@ jobs:
           }
 
           status_of() {
-            local id="$1" out="$RUNNER_TEMP/deployment-$id.json"
+            local id="$1"
+            local out="$RUNNER_TEMP/deployment-$id.json"
             gql 'query deployment($id: String!) { deployment(id: $id) { id status } }' "$(jq -n --arg id "$id" '{id:$id}')" "$out"
             jq -r '.data.deployment.status // empty' "$out"
           }
@@ -69,11 +72,9 @@ jobs:
           blocker_status="$(status_of "$BLOCKING_DEPLOYMENT")"
           echo "blocking deployment: $BLOCKING_DEPLOYMENT status=$blocker_status"
           case "$blocker_status" in
-            DEPLOYING|SUCCESS|CRASHED|SLEEPING)
-              if [ "$blocker_status" = 'DEPLOYING' ]; then
-                gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
-                  "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/stop.json"
-              fi
+            DEPLOYING)
+              gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
+                "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/stop.json"
               ;;
             BUILDING|QUEUED|INITIALIZING|WAITING)
               gql 'mutation deploymentCancel($id: String!) { deploymentCancel(id: $id) }' \
