@@ -22,11 +22,13 @@ describe('Boutique product image loading continuity', () => {
     expect(ux).toContain('MutationObserver');
   });
 
-  test('keeps media visually occupied until a managed product image is ready', () => {
-    expect(css).toMatch(/\.k-card-img-wrap::before[\s\S]*content:\s*'📦'/);
-    expect(css).toContain('.k-card-img-wrap.is-image-ready::before');
-    expect(css).toContain('.k-sug-card-img.is-image-ready::before');
+  test('keeps only managed product media visually occupied until its image is ready', () => {
+    expect(css).toMatch(/\.k-card-img-wrap:has\(img\[data-k-product-image="1"\]\)::before[\s\S]*content:\s*'📦'/);
+    expect(css).toContain('.k-card-img-wrap:has(img[data-k-product-image="1"]).is-image-ready::before');
+    expect(css).toContain('.k-sug-card-img:has(img[data-k-product-image="1"]).is-image-ready::before');
     expect(css).toContain('k-product-image-sheen');
+    expect(css).not.toMatch(/\.k-card-img-wrap::before/);
+    expect(css).not.toMatch(/\.k-sug-card-img::before/);
   });
 
   test('ships the loading source in the canonical components bundle', () => {
