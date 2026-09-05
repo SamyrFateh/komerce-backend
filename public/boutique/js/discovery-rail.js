@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.
+ * @purpose       Monter « Disponible ici » uniquement sur l'accueil « Tout » et déléguer l'exposition au backend.
  * @impact-areas  home, product-discovery, discovery-rail, category-navigation, mobile, desktop
  * @version       2026-09
  */
@@ -55,11 +55,6 @@ function createShell(category, titleId) {
   return bindShell(shell);
 }
 
-function mobileShellForCategory(category) {
-  return Array.from(document.querySelectorAll('.k-discovery-shell[data-discovery-category]'))
-    .find(shell => shell.dataset.discoveryCategory === category) || null;
-}
-
 function removeDesktopShell() {
   const shell = document.getElementById('k-discovery-local');
   if (shell) shell.remove();
@@ -70,26 +65,24 @@ function removeMobileShells() {
     .forEach(shell => shell.remove());
 }
 
-function ensureMobileMounts() {
+/**
+ * Mobile : le rail local appartient uniquement à la page « Tout ».
+ * Les pages Mode/Maison/Tech/Bricolage/Perso/Auto/Soldes restent des pages
+ * catalogue pures et ne reçoivent jamais de shell Discovery.
+ */
+function ensureMobileMount() {
   removeDesktopShell();
-  const pages = Array.from(document.querySelectorAll(
-    '#k-grid > .k-cat-section[data-cat]:not([data-ghost])'
-  ));
-  if (pages.length === 0) return [];
+  removeMobileShells();
 
-  return pages.map((page, index) => {
-    const category = page.dataset.cat || 'all';
-    const titleId = `k-discovery-local-title-${index}`;
-    let shell = mobileShellForCategory(category);
-    if (!shell) shell = createShell(category, titleId);
-    bindShell(shell);
-    shell.setAttribute('aria-labelledby', titleId);
+  const page = document.querySelector(
+    '#k-grid > .k-cat-section[data-cat="all"]:not([data-ghost])'
+  );
+  if (!page) return null;
 
-    if (shell.parentElement !== page || shell !== page.firstElementChild) {
-      page.insertBefore(shell, page.firstElementChild);
-    }
-    return { shell, category, titleId };
-  });
+  const titleId = 'k-discovery-local-title-mobile';
+  const shell = createShell('all', titleId);
+  page.insertBefore(shell, page.firstElementChild);
+  return { shell, titleId };
 }
 
 function ensureDesktopMount() {
@@ -141,27 +134,33 @@ function syncMountAndRender() {
   const marketLabel = getMarketLabel();
 
   if (isMobileViewport()) {
-    const mounts = ensureMobileMounts();
-    let rendered = 0;
-    for (const { shell, category, titleId } of mounts) {
-      rendered += renderDiscoveryRail(
-        shell,
-        cardsForCategory(_lastCards, category),
-        { marketLabel, titleId, title: 'Disponible ici' }
-      );
-    }
+    const mount = ensureMobileMount();
+    if (!mount) return 0;
+
+    const rendered = renderDiscoveryRail(
+      mount.shell,
+      _lastCards,
+      { marketLabel, titleId: mount.titleId, title: 'Disponible ici' }
+    );
 
     // Point A : mobile possède maintenant le même `.k-card-add` que le
     // catalogue. Synchroniser avant le snapshot ghost garantit qu'un Product
-    // déjà au panier apparaît directement en stepper, y compris dans les clones.
+    // déjà au panier apparaît directement en stepper dans la page « Tout ».
     markAllCartButtons();
     refreshGhostSnapshot();
     return rendered;
   }
 
+  // Desktop : « Disponible ici » est une surface d'accueil. Dès qu'un onglet
+  // catégorie est actif, retirer le shell plutôt que de le filtrer par catégorie.
+  if (_activeDesktopCategory !== 'all') {
+    removeDesktopShell();
+    return 0;
+  }
+
   const shell = ensureDesktopMount();
   if (!shell) return 0;
-  const rendered = renderDiscoveryRail(shell, cardsForCategory(_lastCards, _activeDesktopCategory), {
+  const rendered = renderDiscoveryRail(shell, _lastCards, {
     marketLabel,
     titleId: 'k-discovery-local-title',
     title: 'Disponible ici',
@@ -298,8 +297,9 @@ export function setupDiscoveryRail() {
   window.addEventListener('resize', scheduleMountSync, { passive: true });
   bus.on('catalog:cat-changed', handleCatalogCategoryChanged);
 
-  // Un seul fetch alimente mobile et desktop. category_keys vient du backend ;
-  // le frontend ne fait qu'en prendre le sous-ensemble sans modifier l'ordre.
+  // Un seul fetch alimente la surface d'accueil mobile/desktop. Les metadata
+  // category_keys restent disponibles pour d'autres projections, mais le rail
+  // « Disponible ici » n'est jamais remonté dans les onglets catégorie.
   refreshDiscoveryRail().catch(() => {
     _lastCards = [];
     syncMountAndRender();
