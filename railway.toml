@@ -33,5 +33,8 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = ["node scripts/migrate.js"]
+# Explicit one-shot repair: migrations first, then restore the canonical
+# category/subcategory mapping for the already-published 63-product CJ lot.
+# This is restored to migrations-only immediately after production audit.
+preDeployCommand = ["node scripts/migrate.js && node scripts/cj-real-showcase-taxonomy-repair.js"]
 startCommand = "node server.js"
