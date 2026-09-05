@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — Product image loading continuity
-   Les cartes restent visuellement occupées pendant le lazy-load.
-   La vraie image ne découvre le média qu'après son événement load.
+   Les cartes produit gérées restent visuellement occupées pendant le lazy-load.
+   Le masque ne doit jamais recouvrir un autre consommateur du shell k-card
+   (notamment Discovery « Disponible ici »).
    ═══════════════════════════════════════════════════════════════ */
 
 .k-card-img-wrap,
@@ -9,8 +10,10 @@
   position: relative;
 }
 
-.k-card-img-wrap::before,
-.k-sug-card-img::before {
+/* Le shell `.k-card-img-wrap` est partagé avec Discovery. Le masque appartient
+   uniquement aux images explicitement enrôlées dans le contrôleur de readiness. */
+.k-card-img-wrap:has(img[data-k-product-image="1"])::before,
+.k-sug-card-img:has(img[data-k-product-image="1"])::before {
   content: '📦';
   position: absolute;
   inset: 0;
@@ -27,8 +30,8 @@
   transition: opacity .18s ease, visibility 0s linear 0s;
 }
 
-.k-card-img-wrap::after,
-.k-sug-card-img::after {
+.k-card-img-wrap:has(img[data-k-product-image="1"])::after,
+.k-sug-card-img:has(img[data-k-product-image="1"])::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -39,16 +42,16 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .k-card-img-wrap:not(.is-image-ready)::after,
-  .k-sug-card-img:not(.is-image-ready)::after {
+  .k-card-img-wrap:has(img[data-k-product-image="1"]):not(.is-image-ready)::after,
+  .k-sug-card-img:has(img[data-k-product-image="1"]):not(.is-image-ready)::after {
     animation: k-product-image-sheen 1.15s ease-in-out infinite;
   }
 }
 
-.k-card-img-wrap.is-image-ready::before,
-.k-card-img-wrap.is-image-ready::after,
-.k-sug-card-img.is-image-ready::before,
-.k-sug-card-img.is-image-ready::after {
+.k-card-img-wrap:has(img[data-k-product-image="1"]).is-image-ready::before,
+.k-card-img-wrap:has(img[data-k-product-image="1"]).is-image-ready::after,
+.k-sug-card-img:has(img[data-k-product-image="1"]).is-image-ready::before,
+.k-sug-card-img:has(img[data-k-product-image="1"]).is-image-ready::after {
   opacity: 0;
   visibility: hidden;
   animation: none;
