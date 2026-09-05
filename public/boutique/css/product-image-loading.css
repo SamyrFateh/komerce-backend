@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — Product image loading continuity
+   Les cartes restent visuellement occupées pendant le lazy-load.
+   La vraie image ne découvre le média qu'après son événement load.
+   ═══════════════════════════════════════════════════════════════ */
+
+.k-card-img-wrap,
+.k-sug-card-img {
+  position: relative;
+}
+
+.k-card-img-wrap::before,
+.k-sug-card-img::before {
+  content: '📦';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
+  color: var(--text-muted);
+  font-size: 1.6rem;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .18s ease, visibility 0s linear 0s;
+}
+
+.k-card-img-wrap::after,
+.k-sug-card-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .k-card-img-wrap:not(.is-image-ready)::after,
+  .k-sug-card-img:not(.is-image-ready)::after {
+    animation: k-product-image-sheen 1.15s ease-in-out infinite;
+  }
+}
+
+.k-card-img-wrap.is-image-ready::before,
+.k-card-img-wrap.is-image-ready::after,
+.k-sug-card-img.is-image-ready::before,
+.k-sug-card-img.is-image-ready::after {
+  opacity: 0;
+  visibility: hidden;
+  animation: none;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
+
+@keyframes k-product-image-sheen {
+  to { transform: translateX(100%); }
+}
