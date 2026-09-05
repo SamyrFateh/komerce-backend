@@ -5,6 +5,7 @@ const {
   extractRuleFileExemptions,
   numericMapGrowth,
   objectKeyGrowth,
+  parseApprovalComment,
 } = require('../../scripts/debt-zero-gate');
 
 describe('debt-zero-gate', () => {
@@ -57,5 +58,27 @@ describe('debt-zero-gate', () => {
       'utils/logger.js',
     ]);
     expect([...out.get('N2-OTHER')]).toEqual(['utils/other.js']);
+  });
+
+  test('parseApprovalComment exige SHA exact, explication et justification substantielles', () => {
+    const sha = 'a'.repeat(40);
+    const valid = parseApprovalComment([
+      `DEBT-APPROVAL ${sha}`,
+      'Explication: ajout temporaire d’une exemption ciblée sur le flux catalogue.',
+      'Justification: nécessaire pour livrer le lot, avec suppression prévue dans le chantier suivant.',
+    ].join('\n'), sha);
+    expect(valid).not.toBeNull();
+
+    expect(parseApprovalComment([
+      `DEBT-APPROVAL ${'b'.repeat(40)}`,
+      'Explication: ajout temporaire d’une exemption ciblée sur le flux catalogue.',
+      'Justification: nécessaire pour livrer le lot, avec suppression prévue dans le chantier suivant.',
+    ].join('\n'), sha)).toBeNull();
+
+    expect(parseApprovalComment([
+      `DEBT-APPROVAL ${sha}`,
+      'Explication: trop court',
+      'Justification: trop court',
+    ].join('\n'), sha)).toBeNull();
   });
 });
