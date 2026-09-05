@@ -108,6 +108,7 @@ module.exports = {
       'tests/unit/shared-cart-lifecycle.test.js',
       'tests/unit/shared-cart-queries.test.js',
       'tests/unit/cart-share-service.test.js',
+      'tests/unit/shared-cart-user-cleanup.test.js',
       // NOTE (2026-08) : ces fichiers de test existent encore dans le repo
       // mais testent l'ancien domaine V4.1 (contributed_kmf, estimations,
       // awaiting_choice...) et n'ont pas encore été réécrits contre le code

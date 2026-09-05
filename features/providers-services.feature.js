@@ -94,6 +94,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/providers-service.test.js',
+      'tests/unit/providers-inquiry-service.test.js',
       'tests/unit/providers-services-routes.test.js',
       'tests/unit/providers-interaction-policy.test.js',
       'tests/unit/seed-discovery-staging.test.js',
