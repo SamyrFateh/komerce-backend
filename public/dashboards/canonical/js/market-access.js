@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        admin_session, active_markets, admin_users, market_scope_mutations
  * @outputs       market_operator_provisioning_ui, demo_credentials
- * @depends       /api/auth/me, /api/admin/users, /api/admin/users/markets
+ * @depends       /api/auth/me, /api/admin/users, /api/admin/dashboard/context
  * @used-by       /dashboards/canonical/access.html
  * @db-read       none
  * @db-write      none
@@ -113,6 +113,17 @@
       value: market.code,
       label: `${market.code} · ${market.name || market.code}`,
     }));
+  }
+
+  function marketsFromAdminContext(rawContext) {
+    const contract = global.KomerceAdminContext;
+    const context = contract && typeof contract.validateAdminContext === 'function'
+      ? contract.validateAdminContext(rawContext)
+      : rawContext;
+    const codes = context && context.access && Array.isArray(context.access.allowedMarkets)
+      ? context.access.allowedMarkets
+      : [];
+    return codes.map(code => Object.freeze({ code, name: code }));
   }
 
   function setFeedback(node, message, kind) {
@@ -268,7 +279,7 @@
     const createPanel = el(doc, 'section', 'kmc-access-panel');
     const createHeader = el(doc, 'div', 'kmc-access-panel-header');
     createHeader.appendChild(el(doc, 'h2', '', 'Créer un responsable pays'));
-    createHeader.appendChild(el(doc, 'p', '', 'Le premier scope est obligatoire. Les marchés sont chargés depuis le référentiel serveur.'));
+    createHeader.appendChild(el(doc, 'p', '', 'Le premier scope est obligatoire. Les marchés autorisés sont résolus par le contexte Canonical côté serveur.'));
     createPanel.appendChild(createHeader);
 
     const form = el(doc, 'form', 'kmc-access-form');
@@ -393,11 +404,11 @@
       return { denied: true };
     }
 
-    const [marketsPayload, usersPayload] = await Promise.all([
-      requestJson(fetchImpl, '/api/admin/users/markets'),
+    const [contextPayload, usersPayload] = await Promise.all([
+      requestJson(fetchImpl, '/api/admin/dashboard/context'),
       requestJson(fetchImpl, '/api/admin/users?role=market_operator&limit=100'),
     ]);
-    state.markets = Array.isArray(marketsPayload.markets) ? marketsPayload.markets : [];
+    state.markets = marketsFromAdminContext(contextPayload);
     state.users = Array.isArray(usersPayload.users) ? usersPayload.users : [];
     return renderShell({ document: doc, root, fetch: fetchImpl });
   }
@@ -409,6 +420,7 @@
     requestJson,
     buildDemoCredentials,
     marketOptions,
+    marketsFromAdminContext,
     renderShell,
   });
 
