@@ -29,11 +29,14 @@ const SUPPLIER_NAME = 'CJdropshipping';
 const TARGET_PER_FAMILY = 3;
 const TARGET = 63;
 const SORT_BASE = -1063;
+const CJ_MIN_INTERVAL_MS = 1100;
+const CJ_RATE_LIMIT_RETRIES = 3;
 // Sourcing audit columns store actor identifiers as UUIDs. This operator run
 // is not attached to a persisted admin user, so keep the actor nullable
 // instead of writing a synthetic non-UUID label into updated_by/triggered_by.
 const ACTOR = Object.freeze({ id: null });
 const RUN_NOTE = 'CJ real showcase 63 v1 — real supplier media, manual FR preparation';
+let lastCjImportAt = 0;
 
 const FAMILIES = Object.freeze([
   { key: 'women', keyword: 'women dress', fr: 'Robe femme' },
@@ -84,6 +87,20 @@ function frenchDescription(family) {
   return `${family.fr} sélectionné auprès d’un fournisseur partenaire. Visuel réel fournisseur et référence source conservés pour la traçabilité Komerce.`;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForCjQpsSlot() {
+  if (lastCjImportAt) {
+    const elapsed = Date.now() - lastCjImportAt;
+    if (elapsed < CJ_MIN_INTERVAL_MS) {
+      await sleep(CJ_MIN_INTERVAL_MS - elapsed);
+    }
+  }
+  lastCjImportAt = Date.now();
+}
+
 async function loadExistingSlot(sortOrder) {
   const { rows: [row] } = await db.query(
     `SELECT p.id, p.product_ref, p.name, p.image_url, p.is_active, p.is_available,
@@ -119,11 +136,24 @@ async function importPage(family, page) {
     size: 5,
     notes: `${RUN_NOTE} — family=${family.key} page=${page}`,
   };
-  const result = await catalogImportOrchestrator.importCatalog(body, null, dispatchToConnector);
-  if (result.status !== 200) {
-    throw new Error(`CJ import ${family.key}/p${page} refusé (${result.status}): ${JSON.stringify(result.body).slice(0, 800)}`);
+
+  let lastResult = null;
+  for (let attempt = 1; attempt <= CJ_RATE_LIMIT_RETRIES; attempt += 1) {
+    await waitForCjQpsSlot();
+    const result = await catalogImportOrchestrator.importCatalog(body, null, dispatchToConnector);
+    lastResult = result;
+    if (result.status === 200) return result.body.import_id;
+
+    const detail = JSON.stringify(result.body || {});
+    const rateLimited = result.status === 429 || /429|Too Many Requests|QPS limit/i.test(detail);
+    if (rateLimited && attempt < CJ_RATE_LIMIT_RETRIES) {
+      console.warn(`[cj-real-showcase] CJ QPS ${family.key}/p${page} — retry ${attempt + 1}/${CJ_RATE_LIMIT_RETRIES}`);
+      continue;
+    }
+    break;
   }
-  return result.body.import_id;
+
+  throw new Error(`CJ import ${family.key}/p${page} refusé (${lastResult?.status}): ${JSON.stringify(lastResult?.body || {}).slice(0, 800)}`);
 }
 
 async function loadImportCandidates(importId) {
@@ -313,4 +343,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { ACTOR, FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription, candidateUsable };
+module.exports = { ACTOR, CJ_MIN_INTERVAL_MS, FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription, candidateUsable };
