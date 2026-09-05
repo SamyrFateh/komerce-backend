@@ -39,15 +39,12 @@ module.exports = {
   },
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
-  // Vérifié empiriquement (Lot O1.2, 2026-07-12) : utils/store-credits.js
-  // est un module DEPRECATED (D5, "used-by: none" dans son propre header) —
-  // toutes ses fonctions lèvent une erreur explicite. Conservé dans wallet
-  // par continuité d'ownership de nom (store credits = concept wallet), pas
-  // parce qu'il est actif.
+  // Debt Zero 2026-09 : l'ancien shim utils/store-credits.js, déjà @used-by none
+  // et DEPRECATED D5, a été supprimé. Un tombstone guard reste côté tests pour
+  // interdire sa résurrection ou le retour d'un import runtime legacy.
   files: {
     services: [
       'services/wallet-service.js',
-      'utils/store-credits.js',   // DEPRECATED (D5) — voir note ci-dessus
     ],
     routes: [
       'routes/wallet.js',
@@ -68,7 +65,7 @@ module.exports = {
     ],
   },
 
-  // ── Dépôts ───────────────────────────────────────────────────────────────
+  // ── Dépôts ────────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
     boutique: 'js/b-wallet.js + css/wallet.css — dépôt boutique, gouverné localement par boutique/features/wallet.feature.js (manifest niveau 0, ownership fichiers uniquement)',
@@ -131,12 +128,6 @@ module.exports = {
              '/admin/... avec :userId ou :orderId selon l\'action, jamais un simple crédit générique.',
         risk: 'si un consommateur externe construisait encore des URLs /api/wallet/<id> ou ' +
               '/api/wallet/<id>/credit, il reçoit un 404 — confirmé sans dépendance connue.',
-      },
-      { gap: 'utils/store-credits.js est mort (DEPRECATED D5, used-by: none) mais reste déclaré comme ' +
-             'fichier wallet — aucun code actif ne l\'appelle.',
-        risk: 'aucun — conservé uniquement pour ne pas casser un import legacy hypothétique. Candidat ' +
-              'à suppression pure dans un lot de nettoyage séparé (hors scope O1, qui n\'ontology-refactor ' +
-              'pas la suppression de code mort).',
       },
     ],
   },

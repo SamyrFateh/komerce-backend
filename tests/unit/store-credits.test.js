@@ -1,27 +1,47 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn() }),
-}));
 
-const { createStoreCredit, getAvailableCredits, applyCredits } = require('../../utils/store-credits');
+const fs = require('fs');
+const path = require('path');
 
-describe('store-credits', () => {
-  it('refuse createStoreCredit car le module est deprecie au profit du wallet', async () => {
-    await expect(createStoreCredit()).rejects.toThrow('store-credits.js est DEPRECATED');
+const ROOT = path.join(__dirname, '../..');
+const RETIRED_MODULE = path.join(ROOT, 'utils/store-credits.js');
+
+function walk(dir, files = []) {
+  if (!fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, files);
+    else if (entry.isFile() && /\.(?:js|cjs|mjs)$/.test(entry.name)) files.push(full);
+  }
+  return files;
+}
+
+describe('store-credits retirement', () => {
+  it('garde le shim legacy supprimé', () => {
+    expect(fs.existsSync(RETIRED_MODULE)).toBe(false);
   });
 
-  it('retourne un solde vide pour getAvailableCredits sans casser les imports legacy', async () => {
-    await expect(getAvailableCredits('user-001')).resolves.toEqual({ credits: [], total_kmf: 0 });
-  });
+  it('interdit tout nouvel import runtime de utils/store-credits', () => {
+    const runtimeRoots = ['bootstrap', 'middleware', 'routes', 'services', 'utils']
+      .map(dir => path.join(ROOT, dir));
+    const offenders = [];
 
-  it('refuse applyCredits car le module est deprecie au profit du wallet', async () => {
-    await expect(applyCredits()).rejects.toThrow('store-credits.js est DEPRECATED');
+    for (const root of runtimeRoots) {
+      for (const file of walk(root)) {
+        const src = fs.readFileSync(file, 'utf8');
+        if (/require\(['"][^'"]*store-credits['"]\)|from\s+['"][^'"]*store-credits['"]/.test(src)) {
+          offenders.push(path.relative(ROOT, file).replace(/\\/g, '/'));
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
   });
 });
