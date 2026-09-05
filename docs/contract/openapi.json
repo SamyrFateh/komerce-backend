@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 28,
-    "total_routes": 514,
+    "unknown_responses": 33,
+    "total_routes": 517,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -9177,6 +9177,126 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/market-operators": {
+      "get": {
+        "summary": "GET /api/admin/market-operators",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/market-operators",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/market-operators/{userId}/markets/{marketCode}": {
+      "put": {
+        "summary": "PUT /api/admin/market-operators/{userId}/markets/{marketCode}",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /api/admin/market-operators/{userId}/markets/{marketCode}",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -21926,6 +22046,28 @@
     "/api/local-stock/availability": {
       "get": {
         "summary": "GET /api/local-stock/availability",
+        "x-route-file": "routes/local-stock.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/local-stock/checkout-preview": {
+      "get": {
+        "summary": "GET /api/local-stock/checkout-preview",
         "x-route-file": "routes/local-stock.js",
         "responses": {
           "200": {
