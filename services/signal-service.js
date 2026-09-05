@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  decision-signals, purchasing, orders, logistics
- * @version       2026-06
+ * @version       2026-09
  */
 
 
@@ -180,7 +180,7 @@ let GENERATORS = {};
 GENERATORS.parcel_blocked = async function() {
   try {
     let rows = (await db.query(`
-      SELECT p.id, p.tracking_number, p.status, p.order_id,
+      SELECT p.id, p.reference AS tracking_number, p.status, p.order_id,
              EXTRACT(DAY FROM NOW() - p.updated_at)::int AS days_stuck,
              o.reference
       FROM parcels p
@@ -537,7 +537,6 @@ GENERATORS.preparation_stuck = async function() {
 async function generateSignals(types) {
   let expired = await expireOldSignals();
   let results = { expired: expired, generators: {} };
-
   let toRun = types || Object.keys(GENERATORS);
   for (let type of toRun) {
     if (GENERATORS[type]) {
