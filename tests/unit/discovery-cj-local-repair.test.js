@@ -34,6 +34,7 @@ function cjRow(config, index) {
     id: `bbbb${String(index + 1).padStart(4, '0')}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
     product_ref: `KPR-${131333 + index}`,
     sort_order: config.sortOrder,
+    qtyPhysical: config.qtyPhysical,
     category: index < 2 ? 'Mode & Beauté' : ['Maison', 'Tech', 'Bricolage', 'Créations personnelles', 'Auto'][index - 2],
     subcategory: 'Test',
     image_url: `https://cf.cjdropshipping.com/product-${index}.jpg`,
