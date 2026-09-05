@@ -5,15 +5,16 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   refresh-security-360:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -21,11 +22,15 @@ jobs:
       - run: npm ci
       - name: Generate fresh Security 360
         run: npm run security:360
-      - name: Upload generated Security 360
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-360-refresh
-          path: |
-            docs/SECURITY_360.json
-            docs/SECURITY_360.md
-          if-no-files-found: error
+      - name: Commit refreshed projection
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/SECURITY_360.json docs/SECURITY_360.md; then
+            echo "Security 360 already fresh"
+            exit 0
+          fi
+          git config user.name "komerce-security-bot"
+          git config user.email "komerce-security-bot@users.noreply.github.com"
+          git add docs/SECURITY_360.json docs/SECURITY_360.md
+          git commit -m "chore(security): refresh Security 360 projection"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
