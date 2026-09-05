@@ -21,10 +21,22 @@
 const express = require('express');
 const db = require('../db');
 const { getProductDetail } = require('../services/catalog-product-detail');
-const { publicCatalogVisibilitySql } = require('../services/catalog-public-view');
+const {
+  isExcludedPublicProductRef,
+  isSyntheticPublicMediaUrl,
+} = require('../services/catalog-public-view');
 
 const router = express.Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isPublicDetail(detail) {
+  if (!detail || isExcludedPublicProductRef(detail.product?.reference)) return false;
+  const media = Array.isArray(detail.media) ? detail.media : [];
+  return media.some((item) => {
+    const url = String(item?.url || '').trim();
+    return url && !isSyntheticPublicMediaUrl(url);
+  });
+}
 
 router.get('/:id/detail', async (req, res, next) => {
   try {
@@ -32,19 +44,8 @@ router.get('/:id/detail', async (req, res, next) => {
       return res.status(400).json({ error: 'ID produit invalide' });
     }
 
-    // Le contrat détail ne doit jamais permettre de contourner la frontière
-    // d'exposition de GET /api/products (fixture SHOWCASE-V2, hero inline,
-    // produit inactif ou sans média publiable).
-    const { rows: visibleRows } = await db.query(
-      `SELECT p.id FROM products p WHERE p.id = $1 AND ${publicCatalogVisibilitySql('p')} LIMIT 1`,
-      [req.params.id]
-    );
-    if (!visibleRows.length) {
-      return res.status(404).json({ error: 'Produit introuvable' });
-    }
-
     const detail = await getProductDetail(db, req.params.id);
-    if (!detail) {
+    if (!isPublicDetail(detail)) {
       return res.status(404).json({ error: 'Produit introuvable' });
     }
 
