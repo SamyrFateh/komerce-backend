@@ -4,14 +4,15 @@
   top: 0;
   z-index: 50;
   width: 100%;
-  background: color-mix(in srgb, var(--kmc-card) 94%, transparent);
-  border-bottom: 1px solid var(--kmc-line);
+  background: color-mix(in srgb, var(--kmc-card) 95%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--kmc-line) 82%, transparent);
+  box-shadow: 0 1px 0 rgb(15 23 42 / 0.02), 0 6px 20px rgb(15 23 42 / 0.025);
   backdrop-filter: blur(14px);
 }
 
 .kmc-admin-navigation-inner {
   width: min(1440px, calc(100% - 32px));
-  min-height: 64px;
+  min-height: 62px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(190px, auto) minmax(0, 1fr) auto;
@@ -49,8 +50,9 @@
   place-items: center;
   flex: 0 0 auto;
   color: var(--kmc-card);
-  background: var(--kmc-navy);
+  background: linear-gradient(145deg, #17243b, var(--kmc-navy));
   border-radius: 9px;
+  box-shadow: 0 5px 14px rgb(15 26 46 / 0.16);
   font-size: 15px;
   line-height: 1;
 }
@@ -68,6 +70,7 @@
   color: var(--kmc-muted);
   border: 1px solid var(--kmc-line);
   border-radius: var(--kmc-radius-sm);
+  background: rgb(255 255 255 / 0.66);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -78,7 +81,7 @@
 .kmc-admin-back:focus-visible {
   color: var(--kmc-navy);
   border-color: var(--kmc-line-strong);
-  background: var(--kmc-paper);
+  background: var(--kmc-card);
 }
 
 .kmc-admin-primary-nav {
@@ -88,28 +91,60 @@
 }
 
 .kmc-admin-primary-link {
+  --nav-accent: var(--kmc-amber-strong, #d9901a);
+  --nav-soft: var(--kmc-warning-soft, #fff8e6);
   position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 40px;
   padding: 8px 13px;
   color: var(--kmc-muted);
+  border: 1px solid transparent;
   border-radius: 9px;
   font-size: 13px;
   font-weight: 750;
   text-decoration: none;
   white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.kmc-admin-primary-link[href="/admin/commerce"] {
+  --nav-accent: var(--kmc-blue, #3b82f6);
+  --nav-soft: var(--kmc-blue-soft, #eef5ff);
+}
+
+.kmc-admin-primary-link[href="/admin/operations"] {
+  --nav-accent: var(--kmc-teal, #0f9f91);
+  --nav-soft: var(--kmc-teal-soft, #ecfdf8);
+}
+
+.kmc-admin-primary-link[href="/admin/finance"] {
+  --nav-accent: var(--kmc-violet, #7c5ce5);
+  --nav-soft: var(--kmc-violet-soft, #f4f0ff);
 }
 
 .kmc-admin-primary-link:hover,
 .kmc-admin-primary-link:focus-visible {
   color: var(--kmc-navy);
-  background: var(--kmc-paper);
+  border-color: color-mix(in srgb, var(--nav-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--nav-soft) 76%, var(--kmc-card));
 }
 
 .kmc-admin-primary-link.is-active {
   color: var(--kmc-navy);
-  background: var(--kmc-warning-soft);
+  border-color: color-mix(in srgb, var(--nav-accent) 22%, transparent);
+  background: var(--nav-soft);
+}
+
+.kmc-admin-primary-link.is-active::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  flex: 0 0 auto;
+  background: var(--nav-accent);
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--nav-accent) 13%, transparent);
 }
 
 .kmc-admin-primary-link.is-active::after {
@@ -117,9 +152,9 @@
   position: absolute;
   left: 13px;
   right: 13px;
-  bottom: 4px;
+  bottom: 3px;
   height: 2px;
-  background: var(--kmc-amber);
+  background: var(--nav-accent);
   border-radius: 999px;
 }
 
@@ -215,4 +250,8 @@
   .kmc-admin-navigation-identity { gap: 7px; }
   .kmc-admin-primary-link { padding-inline: 11px; }
   .kmc-admin-primary-link.is-active::after { left: 11px; right: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kmc-admin-primary-link { transition: none; }
 }

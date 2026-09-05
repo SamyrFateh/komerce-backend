@@ -1,76 +1,114 @@
 .kmc-entity-shell {
   width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 24px 0 48px;
+  padding: 18px 0 44px;
 }
 
 .kmc-entity-header {
+  position: relative;
   display: grid;
   gap: 6px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  overflow: hidden;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-left: 3px solid var(--kmc-blue, #3b82f6);
+  border-radius: 0 16px 16px 0;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(59 130 246 / .08), transparent 18rem),
+    var(--kmc-card, #fff);
+  box-shadow: var(--kmc-shadow-card, 0 8px 24px rgb(15 23 42 / .05));
 }
 
 .kmc-entity-kicker {
-  font-size: 12px;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #225bb5;
+  background: var(--kmc-blue-soft, #eef5ff);
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--kmc-muted, #64748b);
 }
 
 .kmc-entity-title {
   margin: 0;
-  font-size: clamp(28px, 4vw, 44px);
-  line-height: 1;
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: clamp(27px, 3.5vw, 40px);
+  line-height: 1.03;
+  letter-spacing: -.035em;
 }
 
 .kmc-entity-subtitle {
   margin: 0;
   color: var(--kmc-muted, #64748b);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .kmc-entity-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .kmc-entity-nav-link {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  color: inherit;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid var(--kmc-line-strong, #cbd5e1);
+  color: var(--kmc-navy, #0f1a2e);
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 700;
-  background: rgba(255,255,255,.78);
+  font-size: 12px;
+  font-weight: 750;
+  background: rgb(255 255 255 / .82);
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
 .kmc-entity-nav-link:hover,
 .kmc-entity-nav-link:focus-visible {
-  border-color: currentColor;
+  transform: translateY(-1px);
+  border-color: var(--kmc-blue, #3b82f6);
+  background: var(--kmc-blue-soft, #eef5ff);
 }
 
 .kmc-entity-metrics {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .kmc-entity-shell > .kmc-section,
 .kmc-entity-shell > section {
-  margin-top: 18px;
+  margin-top: 14px;
+}
+
+.kmc-entity-shell > .kmc-ui-state.is-error {
+  min-height: 58px;
+  justify-content: flex-start;
+  padding: 13px 16px;
+  border-style: solid;
+  border-left: 4px solid var(--kmc-critical, #b42318);
+  text-align: left;
 }
 
 @media (max-width: 720px) {
   .kmc-entity-shell {
     width: min(100% - 24px, 1440px);
-    padding-top: 16px;
+    padding-top: 12px;
+  }
+
+  .kmc-entity-header {
+    padding: 15px 16px;
   }
 
   .kmc-entity-nav {
-    gap: 8px;
+    gap: 7px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kmc-entity-nav-link { transition: none; }
 }
