@@ -48,10 +48,10 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 123 | Vérifié sur le dump live Railway. |
+| Tables | 124 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 335 | Performance + contraintes uniques |
+| Index | 336 | Performance + contraintes uniques |
 | Foreign keys | 202 | Cohérence relationnelle |
 | Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 33 | Triggers présents dans le dump live Railway. |
@@ -234,14 +234,8 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sourcing_candidate_observations` | Historique immuable des observations fournisseur par batch et profil, avec hash de ligne et snapshot du contrat normalisé. Migration 110. |
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
+| `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: supplier_catalog_sync_checkpoints
-kind: table
-migration: 163
-section: ### 4.10 Sourcing et fournisseurs (10 tables)
-role: Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique.
--->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 

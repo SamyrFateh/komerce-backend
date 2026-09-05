@@ -4975,6 +4975,37 @@ CREATE TABLE public.supplier_catalog_imports (
 
 
 --
+-- Name: supplier_catalog_sync_checkpoints; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_catalog_sync_checkpoints (
+    supplier_name text NOT NULL,
+    sync_key text NOT NULL,
+    category_id text NOT NULL,
+    category_path text,
+    next_page integer DEFAULT 1 NOT NULL,
+    total_pages integer,
+    total_records integer,
+    api_calls integer DEFAULT 0 NOT NULL,
+    accepted_items integer DEFAULT 0 NOT NULL,
+    rejected_items integer DEFAULT 0 NOT NULL,
+    capped_by_supplier boolean DEFAULT false NOT NULL,
+    completed boolean DEFAULT false NOT NULL,
+    last_request_id text,
+    last_error text,
+    last_synced_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT supplier_catalog_sync_checkpoints_accepted_items_check CHECK ((accepted_items >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_api_calls_check CHECK ((api_calls >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_next_page_check CHECK ((next_page >= 1)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_rejected_items_check CHECK ((rejected_items >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_total_pages_check CHECK (((total_pages IS NULL) OR (total_pages >= 0))),
+    CONSTRAINT supplier_catalog_sync_checkpoints_total_records_check CHECK (((total_records IS NULL) OR (total_records >= 0)))
+);
+
+
+--
 -- Name: suppliers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6961,6 +6992,14 @@ ALTER TABLE ONLY public.supplier_catalog_imports
 
 ALTER TABLE public.supplier_catalog_imports
     ADD CONSTRAINT supplier_catalog_imports_profile_traceability_check CHECK (((source_type <> 'json'::text) OR ((profile_id IS NOT NULL) AND (profile_version IS NOT NULL) AND (profile_hash IS NOT NULL)))) NOT VALID;
+
+
+--
+-- Name: supplier_catalog_sync_checkpoints supplier_catalog_sync_checkpoints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_sync_checkpoints
+    ADD CONSTRAINT supplier_catalog_sync_checkpoints_pkey PRIMARY KEY (supplier_name, sync_key, category_id);
 
 
 --
@@ -9179,6 +9218,13 @@ CREATE INDEX idx_strategy_history_product ON public.pricing_strategy_history USI
 --
 
 CREATE UNIQUE INDEX idx_supplier_catalog_imports_import_ref ON public.supplier_catalog_imports USING btree (import_ref);
+
+
+--
+-- Name: idx_supplier_catalog_sync_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_catalog_sync_pending ON public.supplier_catalog_sync_checkpoints USING btree (supplier_name, sync_key, completed, updated_at);
 
 
 --

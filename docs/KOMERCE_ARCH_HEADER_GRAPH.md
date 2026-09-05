@@ -6,21 +6,21 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 500
+- Scanned code files: 501
 - Files with full headers: 456
-- Files with lite headers: 44
-- Files with any headers: 500
+- Files with lite headers: 45
+- Files with any headers: 501
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1086
-- Edges: 5706
+- Graph nodes: 1095
+- Edges: 5720
 - DB tables: 127
-- Doctrines: 289
-- Impact areas: 170
-- Unresolved code edges: 562
+- Doctrines: 295
+- Impact areas: 172
+- Unresolved code edges: 561
 - Tables multi-écrivains directs (>=2): 63
-- Avertissements db-write / db-write-via en chevauchement: 7
+- Avertissements db-write / db-write-via en chevauchement: 6
 
 ## Domains
 
@@ -30,7 +30,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 6
 - auth-passkey: 7
 - bootstrap: 2
-- boutique: 20
+- boutique: 21
 - business-rules: 1
 - catalog: 95
 - checkout: 3
@@ -87,6 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - state: 1
 - state-store: 1
 - ui-adapter: 1
+- ui-behavior: 1
 - ui-bootstrap: 4
 - ui-boundary: 1
 - ui-component: 40
@@ -466,6 +467,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
 - public/boutique/js/market-context.js -> owner public/boutique/js/market-context.js (boutique-market-context)
 - public/boutique/js/market-hydration.js -> owner public/boutique/js/market-context.js (boutique-market-hydration)
+- public/boutique/js/product-image-loading-ux.js -> owner public/boutique/js/render/render-product-card.js (boutique-product-image-loading-ux)
 - public/boutique/js/providers-services-api.js -> owner public/boutique/js/providers-services-api.js (providers-services-api)
 - public/boutique/js/render/category-shelf-visuals.js -> owner public/boutique/js/render/render-categories.js (category-shelf-visual-registry)
 - public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
@@ -540,7 +542,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE services/shipping-customs-workspace.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
@@ -600,6 +601,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/users.js -> order_status_history
 - WRITE routes/orders/cancel.js -> order_status_history
 - WRITE services/order-checkout-persistence.js -> order_status_history
+- WRITE services/order-checkout-service.js -> order_status_history
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -752,7 +754,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
-- customs_shipments: 3 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js, services/shipping-customs-workspace.js
 - order_item_real_cost_allocations: 3 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
 - product_skus: 3 écrivains directs — services/catalog-promotion.js, services/product-sku-service.js, services/product-stock-service.js
@@ -768,6 +769,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
+- customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
 - exchange_rates: 2 écrivains directs — routes/admin-finance-config.js, services/pricing-rates.js
 - incidents: 2 écrivains directs — services/incident-service.js, services/incident-write-service.js
@@ -795,7 +797,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders
 - services/pickup-secret-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders
 - services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products
-- services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments
 
 ## Unresolved Code Edges
 
