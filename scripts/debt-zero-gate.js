@@ -7,121 +7,75 @@
  * @domain        governance
  * @owner         backend
  *
- * Debt Zero : aucune croissance d'un mécanisme de tolérance sans validation
+ * Debt Zero v2 — aucune croissance d'un mécanisme de tolérance sans validation
  * humaine explicite, justifiée et liée au SHA HEAD exact de la PR.
- *
- * Le registre canonique governance/debt-zero-registry.json décrit les sources
- * de tolérance connues et leur sémantique. Après son bootstrap, toute mutation
- * du registre est elle-même soumise à Debt Zero. Un nouveau JSON de baseline,
- * exemption, exception, suppression ou allowlist non enregistré est bloqué.
  */
 
 const cp = require('child_process');
 const https = require('https');
 
 const REGISTRY_FILE = 'governance/debt-zero-registry.json';
-const args = process.argv.slice(2);
-
-function argValue(flag) {
-  const i = args.indexOf(flag);
-  return i >= 0 ? args[i + 1] : null;
-}
-
-const BASE = argValue('--base') || process.env.BASE_SHA;
-const HEAD = argValue('--head') || process.env.HEAD_SHA || 'HEAD';
+const argv = process.argv.slice(2);
+const arg = flag => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : null; };
+const BASE = arg('--base') || process.env.BASE_SHA;
+const HEAD = arg('--head') || process.env.HEAD_SHA || 'HEAD';
 const APPROVER = process.env.DEBT_APPROVER || 'SamyrFateh';
 
-function git(argsList, { allowFail = false } = {}) {
-  const result = cp.spawnSync('git', argsList, { encoding: 'utf8' });
-  if (result.status !== 0 && !allowFail) {
-    throw new Error(`git ${argsList.join(' ')}: ${(result.stderr || result.stdout || '').trim()}`);
-  }
-  return result.status === 0 ? result.stdout : null;
+function git(args, allowFail = false) {
+  const r = cp.spawnSync('git', args, { encoding: 'utf8' });
+  if (r.status !== 0 && !allowFail) throw new Error(`git ${args.join(' ')}: ${(r.stderr || r.stdout || '').trim()}`);
+  return r.status === 0 ? r.stdout : null;
 }
-
-function resolveCommit(ref) {
-  return git(['rev-parse', ref]).trim();
-}
-
-function readAt(ref, file) {
-  return git(['show', `${ref}:${file}`], { allowFail: true });
-}
-
+const resolveCommit = ref => git(['rev-parse', ref]).trim();
+const readAt = (ref, file) => git(['show', `${ref}:${file}`], true);
 function readJsonAt(ref, file) {
   const raw = readAt(ref, file);
   if (raw == null) return null;
-  try { return JSON.parse(raw); }
-  catch (error) { throw new Error(`${file}@${ref}: JSON invalide (${error.message})`); }
+  try { return JSON.parse(raw); } catch (e) { throw new Error(`${file}@${ref}: JSON invalide (${e.message})`); }
 }
+const changedFiles = (base, head) => git(['diff', '--name-only', base, head]).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+const trackedGovernanceFiles = ref => git(['ls-tree', '-r', '--name-only', ref, '--', 'scripts', 'governance']).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 
-function changedFiles(base, head) {
-  return git(['diff', '--name-only', base, head])
-    .split(/\r?\n/)
-    .map(s => s.trim())
-    .filter(Boolean);
+function stableValue(v) {
+  if (Array.isArray(v)) return v.map(stableValue);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map(k => [k, stableValue(v[k])]));
+  return v;
 }
+const stableStringify = v => JSON.stringify(stableValue(v));
+const getPath = (obj, path) => !path ? obj : String(path).split('.').reduce((v, k) => v && typeof v === 'object' ? v[k] : undefined, obj);
 
-function trackedGovernanceFiles(ref) {
-  const raw = git(['ls-tree', '-r', '--name-only', ref, '--', 'scripts', 'governance']);
-  return raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-}
-
-function stableValue(value) {
-  if (Array.isArray(value)) return value.map(stableValue);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]));
-  }
-  return value;
-}
-
-function stableStringify(value) {
-  return JSON.stringify(stableValue(value));
-}
-
-function getPath(obj, dottedPath) {
-  if (!dottedPath) return obj;
-  return String(dottedPath).split('.').reduce((value, key) => (
-    value && typeof value === 'object' ? value[key] : undefined
-  ), obj);
-}
-
-function numericMapGrowth(baseMap, headMap, label, failures, prefix = '') {
-  const b = baseMap && typeof baseMap === 'object' ? baseMap : {};
-  const h = headMap && typeof headMap === 'object' ? headMap : {};
+function numericMapGrowth(base, head, label, failures) {
+  const b = base && typeof base === 'object' ? base : {};
+  const h = head && typeof head === 'object' ? head : {};
   for (const key of Object.keys(h).sort()) {
-    const hv = h[key];
-    if (typeof hv !== 'number') continue;
-    const bv = typeof b[key] === 'number' ? b[key] : 0;
-    if (hv > bv) failures.push(`${label}${prefix}${key}: ${bv} -> ${hv}`);
+    if (typeof h[key] !== 'number') continue;
+    const before = typeof b[key] === 'number' ? b[key] : 0;
+    if (h[key] > before) failures.push(`${label}${key}: ${before} -> ${h[key]}`);
   }
 }
 
-function objectKeyGrowth(baseObj, headObj, label, failures) {
-  const b = baseObj && typeof baseObj === 'object' && !Array.isArray(baseObj) ? baseObj : {};
-  const h = headObj && typeof headObj === 'object' && !Array.isArray(headObj) ? headObj : {};
+function objectKeyGrowth(base, head, label, failures) {
+  const b = base && typeof base === 'object' && !Array.isArray(base) ? base : {};
+  const h = head && typeof head === 'object' && !Array.isArray(head) ? head : {};
   for (const key of Object.keys(h).sort()) {
-    if (key.startsWith('_')) continue;
-    if (!Object.prototype.hasOwnProperty.call(b, key)) {
-      failures.push(`${label}${key}: nouvelle exemption/allowance`);
-    }
+    if (!key.startsWith('_') && !Object.prototype.hasOwnProperty.call(b, key)) failures.push(`${label}${key}: nouvelle exemption/allowance`);
   }
 }
 
-function arrayGrowth(baseArray, headArray, label, failures, keyFn = stableStringify) {
-  const before = new Set((Array.isArray(baseArray) ? baseArray : []).map(keyFn));
-  for (const item of Array.isArray(headArray) ? headArray : []) {
+function arrayGrowth(base, head, label, failures, keyFn = stableStringify) {
+  const before = new Set((Array.isArray(base) ? base : []).map(keyFn));
+  for (const item of Array.isArray(head) ? head : []) {
     const key = keyFn(item);
     if (!before.has(key)) failures.push(`${label}: +${key}`);
   }
 }
 
 function identityKey(item, fields) {
-  const value = item && typeof item === 'object' ? item : {};
-  return fields.map(field => `${field}=${stableStringify(value[field])}`).join('|');
+  const v = item && typeof item === 'object' ? item : {};
+  return fields.map(f => `${f}=${stableStringify(v[f])}`).join('|');
 }
-
-function identityArrayGrowth(baseArray, headArray, fields, label, failures) {
-  arrayGrowth(baseArray, headArray, label, failures, item => identityKey(item, fields));
+function identityArrayGrowth(base, head, fields, label, failures) {
+  arrayGrowth(base, head, label, failures, item => identityKey(item, fields));
 }
 
 function countQualityDisables(src) {
@@ -129,198 +83,122 @@ function countQualityDisables(src) {
   if (!src) return out;
   const re = /quality-disable\s+([A-Z0-9-]+)/g;
   let m;
-  while ((m = re.exec(src)) !== null) {
-    const rule = m[1];
-    out.set(rule, (out.get(rule) || 0) + 1);
-  }
+  while ((m = re.exec(src))) out.set(m[1], (out.get(m[1]) || 0) + 1);
   return out;
 }
-
 function qualityDisableGrowth(base, head, files, failures) {
-  const sourceExt = /\.(?:js|cjs|mjs|ts)$/i;
-  for (const file of files.filter(f => sourceExt.test(f)).sort()) {
-    const before = countQualityDisables(readAt(base, file));
-    const after = countQualityDisables(readAt(head, file));
-    const rules = new Set([...before.keys(), ...after.keys()]);
-    for (const rule of [...rules].sort()) {
-      const b = before.get(rule) || 0;
-      const h = after.get(rule) || 0;
-      if (h > b) failures.push(`quality-disable ${file} [${rule}]: ${b} -> ${h}`);
+  for (const file of files.filter(f => /\.(?:js|cjs|mjs|ts)$/i.test(f)).sort()) {
+    const b = countQualityDisables(readAt(base, file));
+    const h = countQualityDisables(readAt(head, file));
+    for (const rule of [...new Set([...b.keys(), ...h.keys()])].sort()) {
+      if ((h.get(rule) || 0) > (b.get(rule) || 0)) failures.push(`quality-disable ${file} [${rule}]: ${b.get(rule) || 0} -> ${h.get(rule) || 0}`);
     }
   }
 }
 
 function extractRuleFileExemptions(src) {
-  const counts = new Map();
-  if (!src) return counts;
+  const out = new Map();
+  if (!src) return out;
   const block = src.match(/const\s+RULE_FILE_EXEMPT\s*=\s*\{([\s\S]*?)\n\s*\};/);
-  if (!block) return counts;
-  const re = /'([^']+)'\s*:\s*new Set\(\[([\s\S]*?)\]\)/g;
-  let m;
-  while ((m = re.exec(block[1])) !== null) {
-    const rule = m[1];
-    const files = [...m[2].matchAll(/'([^']+)'/g)].map(x => x[1]);
-    counts.set(rule, new Set(files));
+  if (!block) return out;
+  for (const m of block[1].matchAll(/'([^']+)'\s*:\s*new Set\(\[([\s\S]*?)\]\)/g)) {
+    out.set(m[1], new Set([...m[2].matchAll(/'([^']+)'/g)].map(x => x[1])));
   }
-  return counts;
-}
-
-function setMapGrowth(before, after, label, failures) {
-  for (const [group, items] of after.entries()) {
-    const prior = before.get(group) || new Set();
-    for (const item of [...items].sort()) {
-      if (!prior.has(item)) failures.push(`${label}${group}: +${item}`);
-    }
-  }
+  return out;
 }
 
 function collectionTokens(block) {
   if (!block) return new Set();
-  const withoutComments = block
-    .split(/\r?\n/)
-    .map(line => line.replace(/\/\/.*$/, ''))
-    .join('\n');
-  const tokens = new Set();
-  const re = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\/(?:\\.|[^/\n])+\/[gimsuy]*/g;
-  for (const match of withoutComments.matchAll(re)) tokens.add(match[0].trim());
-  return tokens;
+  const clean = block.split(/\r?\n/).map(line => line.replace(/\/\/.*$/, '')).join('\n');
+  const out = new Set();
+  for (const m of clean.matchAll(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\/(?:\\.|[^/\n])+\/[gimsuy]*/g)) out.add(m[0].trim());
+  return out;
 }
 
 function extractArchSourceAllowlists(src) {
   const out = new Map();
   if (!src) return out;
-
-  const setRe = /const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*new Set\(\[([\s\S]*?)\]\s*\);/g;
-  for (const match of src.matchAll(setRe)) out.set(match[1], collectionTokens(match[2]));
-
-  const arrayRe = /const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*\[([\s\S]*?)\]\s*;/g;
-  for (const match of src.matchAll(arrayRe)) out.set(match[1], collectionTokens(match[2]));
-
-  const ownership = src.match(/const\s+COLUMN_OWNERSHIP\s*=\s*\[([\s\S]*?)\n\];/);
+  for (const m of src.matchAll(/const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*new Set\(\[([\s\S]*?)\]\s*\);/g)) out.set(m[1], collectionTokens(m[2]));
+  for (const m of src.matchAll(/const\s+(ALLOWED_[A-Z0-9_]+)\s*=\s*\[([\s\S]*?)\]\s*;/g)) out.set(m[1], collectionTokens(m[2]));
+  const ownership = src.match(/const\s+COLUMN_OWNERSHIP\s*=\s*\[([\s\S]*?)\n\s*\];/);
   if (ownership) {
-    const re = /id:\s*'([^']+)'[\s\S]*?allowlist:\s*new Set\(\[([\s\S]*?)\]\)/g;
-    for (const match of ownership[1].matchAll(re)) {
-      out.set(`COLUMN_OWNERSHIP.${match[1]}.allowlist`, collectionTokens(match[2]));
+    for (const m of ownership[1].matchAll(/id:\s*'([^']+)'[\s\S]*?allowlist:\s*new Set\(\[([\s\S]*?)\]\)/g)) {
+      out.set(`COLUMN_OWNERSHIP.${m[1]}.allowlist`, collectionTokens(m[2]));
     }
   }
   return out;
 }
 
-function compareNpmExceptions(baseArray, headArray, spec, file, failures) {
-  const fields = Array.isArray(spec.identity) ? spec.identity : ['package', 'advisory'];
-  const before = new Map((Array.isArray(baseArray) ? baseArray : []).map(item => [identityKey(item, fields), item]));
-  for (const item of Array.isArray(headArray) ? headArray : []) {
+function setMapGrowth(base, head, label, failures) {
+  for (const [group, items] of head.entries()) {
+    const before = base.get(group) || new Set();
+    for (const item of [...items].sort()) if (!before.has(item)) failures.push(`${label}${group}: +${item}`);
+  }
+}
+
+function compareNpmExceptions(base, head, spec, file, failures) {
+  const fields = spec.identity || ['package', 'advisory'];
+  const before = new Map((Array.isArray(base) ? base : []).map(x => [identityKey(x, fields), x]));
+  for (const item of Array.isArray(head) ? head : []) {
     const key = identityKey(item, fields);
     const prior = before.get(key);
-    if (!prior) {
-      failures.push(`${file}: nouvelle exception npm ${key}`);
-      continue;
-    }
-    if (stableStringify(item.scope) !== stableStringify(prior.scope)) {
-      failures.push(`${file} ${key}: scope modifié ${stableStringify(prior.scope)} -> ${stableStringify(item.scope)}`);
-    }
-    const beforeExpiry = prior.expires ? Date.parse(prior.expires) : NaN;
-    const afterExpiry = item.expires ? Date.parse(item.expires) : NaN;
-    if (prior.expires && !item.expires) {
-      failures.push(`${file} ${key}: expiration supprimée`);
-    } else if (Number.isFinite(beforeExpiry) && Number.isFinite(afterExpiry) && afterExpiry > beforeExpiry) {
-      failures.push(`${file} ${key}: expiration prolongée ${prior.expires} -> ${item.expires}`);
-    } else if (item.expires && !Number.isFinite(afterExpiry)) {
-      failures.push(`${file} ${key}: expiration invalide ${item.expires}`);
-    }
+    if (!prior) { failures.push(`${file}: nouvelle exception npm ${key}`); continue; }
+    if (stableStringify(item.scope) !== stableStringify(prior.scope)) failures.push(`${file} ${key}: scope modifié`);
+    if (prior.expires && !item.expires) failures.push(`${file} ${key}: expiration supprimée`);
+    const b = Date.parse(prior.expires || '');
+    const h = Date.parse(item.expires || '');
+    if (item.expires && !Number.isFinite(h)) failures.push(`${file} ${key}: expiration invalide ${item.expires}`);
+    else if (Number.isFinite(b) && Number.isFinite(h) && h > b) failures.push(`${file} ${key}: expiration prolongée ${prior.expires} -> ${item.expires}`);
   }
 }
 
-function compareQualityBaseline(baseValue, headValue, file, failures) {
-  const b = baseValue || {};
-  const h = headValue || {};
-  for (const key of ['totalErrors', 'totalWarnings']) {
-    const bv = typeof b[key] === 'number' ? b[key] : 0;
-    const hv = typeof h[key] === 'number' ? h[key] : 0;
-    if (hv > bv) failures.push(`${file} ${key}: ${bv} -> ${hv}`);
-  }
-  arrayGrowth(b.files, h.files, `${file} files`, failures);
-}
-
-function compareArchDebtBudget(baseValue, headValue, file, failures) {
-  const b = baseValue || {};
-  const h = headValue || {};
-  numericMapGrowth(b.ratchet, h.ratchet, `${file} ratchet.`, failures);
-  objectKeyGrowth(b.knownDriftAllowlist, h.knownDriftAllowlist, `${file} knownDriftAllowlist.`, failures);
-}
-
-function compareSpec(file, spec, baseValue, headValue, failures) {
+function compareSpec(file, spec, base, head, failures) {
   switch (spec.kind) {
-    case 'numeric-map':
-      numericMapGrowth(getPath(baseValue, spec.path), getPath(headValue, spec.path), `${file} `, failures);
-      break;
-    case 'object-keys':
-      objectKeyGrowth(baseValue, headValue, `${file} `, failures);
-      break;
+    case 'numeric-map': return numericMapGrowth(getPath(base, spec.path), getPath(head, spec.path), `${file} `, failures);
+    case 'object-keys': return objectKeyGrowth(base, head, `${file} `, failures);
     case 'entry-file-lists': {
-      const b = baseValue && typeof baseValue === 'object' ? baseValue : {};
-      const h = headValue && typeof headValue === 'object' ? headValue : {};
+      const b = base || {}, h = head || {};
       objectKeyGrowth(b, h, `${file} `, failures);
-      for (const key of Object.keys(h).filter(key => !key.startsWith('_')).sort()) {
-        arrayGrowth(b[key]?.files, h[key]?.files, `${file} ${key}.files`, failures);
-      }
-      break;
+      for (const key of Object.keys(h).filter(k => !k.startsWith('_')).sort()) arrayGrowth(b[key]?.files, h[key]?.files, `${file} ${key}.files`, failures);
+      return;
     }
-    case 'nested-file-lists': {
+    case 'nested-file-lists':
       for (const group of spec.groups || []) {
-        const b = baseValue?.[group];
-        const h = headValue?.[group];
-        if (h && !b) failures.push(`${file} ${group}: nouveau groupe d'exemption`);
-        arrayGrowth(b?.files, h?.files, `${file} ${group}.files`, failures);
+        if (head?.[group] && !base?.[group]) failures.push(`${file} ${group}: nouveau groupe d'exemption`);
+        arrayGrowth(base?.[group]?.files, head?.[group]?.files, `${file} ${group}.files`, failures);
       }
-      break;
-    }
+      return;
     case 'arch-debt-budget':
-      compareArchDebtBudget(baseValue, headValue, file, failures);
-      break;
+      numericMapGrowth(base?.ratchet, head?.ratchet, `${file} ratchet.`, failures);
+      objectKeyGrowth(base?.knownDriftAllowlist, head?.knownDriftAllowlist, `${file} knownDriftAllowlist.`, failures);
+      return;
     case 'quality-baseline':
-      compareQualityBaseline(baseValue, headValue, file, failures);
-      break;
-    case 'array-fields':
-      for (const field of spec.fields || []) {
-        arrayGrowth(baseValue?.[field], headValue?.[field], `${file} ${field}`, failures);
+      for (const key of ['totalErrors', 'totalWarnings']) {
+        const b = typeof base?.[key] === 'number' ? base[key] : 0;
+        const h = typeof head?.[key] === 'number' ? head[key] : 0;
+        if (h > b) failures.push(`${file} ${key}: ${b} -> ${h}`);
       }
-      break;
+      arrayGrowth(base?.files, head?.files, `${file} files`, failures);
+      return;
+    case 'array-fields':
+      for (const field of spec.fields || []) arrayGrowth(base?.[field], head?.[field], `${file} ${field}`, failures);
+      return;
     case 'identity-array':
-      identityArrayGrowth(baseValue, headValue, spec.identity || [], file, failures);
-      break;
-    case 'npm-exceptions':
-      compareNpmExceptions(baseValue, headValue, spec, file, failures);
-      break;
-    case 'arch-source-allowlists': {
-      const before = extractArchSourceAllowlists(baseValue || '');
-      const after = extractArchSourceAllowlists(headValue || '');
-      setMapGrowth(before, after, `${file} `, failures);
-      break;
-    }
-    case 'code-quality-source': {
-      const before = extractRuleFileExemptions(baseValue || '');
-      const after = extractRuleFileExemptions(headValue || '');
-      setMapGrowth(before, after, `${file} RULE_FILE_EXEMPT.`, failures);
-      break;
-    }
-    default:
-      failures.push(`${REGISTRY_FILE}: kind inconnu '${spec.kind}' pour ${file}`);
+      return identityArrayGrowth(getPath(base, spec.path), getPath(head, spec.path), spec.identity || [], file, failures);
+    case 'npm-exceptions': return compareNpmExceptions(base, head, spec, file, failures);
+    case 'arch-source-allowlists': return setMapGrowth(extractArchSourceAllowlists(base || ''), extractArchSourceAllowlists(head || ''), `${file} `, failures);
+    case 'code-quality-source': return setMapGrowth(extractRuleFileExemptions(base || ''), extractRuleFileExemptions(head || ''), `${file} RULE_FILE_EXEMPT.`, failures);
+    default: failures.push(`${REGISTRY_FILE}: kind inconnu '${spec.kind}' pour ${file}`);
   }
 }
 
-function isJsonSpec(spec) {
-  return !['arch-source-allowlists', 'code-quality-source'].includes(spec.kind);
-}
-
+const sourceSpec = spec => ['arch-source-allowlists', 'code-quality-source'].includes(spec.kind);
 function compareRegisteredSources(base, head, registry, failures) {
-  const specs = registry?.files && typeof registry.files === 'object' ? registry.files : {};
-  for (const [file, spec] of Object.entries(specs).sort(([a], [b]) => a.localeCompare(b))) {
-    const baseValue = isJsonSpec(spec) ? readJsonAt(base, file) : readAt(base, file);
-    const headValue = isJsonSpec(spec) ? readJsonAt(head, file) : readAt(head, file);
-    if (baseValue != null && headValue == null) continue; // suppression = réduction de surface
-    if (headValue == null) continue;
-    compareSpec(file, spec, baseValue, headValue, failures);
+  for (const [file, spec] of Object.entries(registry?.files || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    const b = sourceSpec(spec) ? readAt(base, file) : readJsonAt(base, file);
+    const h = sourceSpec(spec) ? readAt(head, file) : readJsonAt(head, file);
+    if (h == null) continue; // suppression = réduction de surface
+    compareSpec(file, spec, b, h, failures);
   }
 }
 
@@ -328,86 +206,51 @@ function findUnknownToleranceFiles(head, registry, failures) {
   const known = new Set(Object.keys(registry?.files || {}));
   const suspicious = /(?:baseline|exempt|exception|suppress|allowlist)/i;
   for (const file of trackedGovernanceFiles(head).sort()) {
-    if (!file.endsWith('.json')) continue;
-    const name = file.split('/').pop();
-    if (!suspicious.test(name)) continue;
-    if (!known.has(file)) failures.push(`registre de tolérance non classifié: ${file}`);
+    if (file.endsWith('.json') && suspicious.test(file.split('/').pop()) && !known.has(file)) failures.push(`registre de tolérance non classifié: ${file}`);
   }
 }
 
 function registryForComparison(base, head, failures) {
-  const baseRegistry = readJsonAt(base, REGISTRY_FILE);
-  const headRegistry = readJsonAt(head, REGISTRY_FILE);
-  if (!headRegistry) {
-    failures.push(`${REGISTRY_FILE}: registre absent du HEAD`);
-    return baseRegistry || { files: {} };
-  }
-  if (baseRegistry && stableStringify(baseRegistry) !== stableStringify(headRegistry)) {
-    failures.push(`${REGISTRY_FILE}: registre Debt Zero modifié`);
-    return baseRegistry;
-  }
-  // Bootstrap unique : main n'a pas encore de registre, le HEAD devient la source.
-  return baseRegistry || headRegistry;
+  const b = readJsonAt(base, REGISTRY_FILE);
+  const h = readJsonAt(head, REGISTRY_FILE);
+  if (!h) { failures.push(`${REGISTRY_FILE}: registre absent du HEAD`); return b || { files: {} }; }
+  if (b && stableStringify(b) !== stableStringify(h)) { failures.push(`${REGISTRY_FILE}: registre Debt Zero modifié`); return b; }
+  return b || h; // bootstrap unique si main n'a pas encore le registre
 }
 
 function parseApprovalComment(body, expectedHead) {
-  const text = String(body || '').trim();
-  const lines = text.split(/\r?\n/);
-  const first = (lines[0] || '').trim();
-  const match = first.match(/^DEBT-APPROVAL\s+([0-9a-f]{40})$/i);
-  if (!match || match[1].toLowerCase() !== expectedHead.toLowerCase()) return null;
-
-  const explanation = lines.find(line => /^Explication\s*:/i.test(line))
-    ?.replace(/^Explication\s*:\s*/i, '').trim() || '';
-  const justification = lines.find(line => /^Justification\s*:/i.test(line))
-    ?.replace(/^Justification\s*:\s*/i, '').trim() || '';
-
-  if (explanation.length < 20 || justification.length < 20) return null;
-  return { head: match[1], explanation, justification };
+  const lines = String(body || '').trim().split(/\r?\n/);
+  const m = (lines[0] || '').trim().match(/^DEBT-APPROVAL\s+([0-9a-f]{40})$/i);
+  if (!m || m[1].toLowerCase() !== expectedHead.toLowerCase()) return null;
+  const pick = label => lines.find(x => new RegExp(`^${label}\\s*:`, 'i').test(x))?.replace(new RegExp(`^${label}\\s*:\\s*`, 'i'), '').trim() || '';
+  const explanation = pick('Explication'), justification = pick('Justification');
+  return explanation.length >= 20 && justification.length >= 20 ? { head: m[1], explanation, justification } : null;
 }
-
-function extractPrFromRef(ref) {
-  const match = String(ref || '').match(/^refs\/pull\/(\d+)\//);
-  return match ? match[1] : null;
-}
+const extractPrFromRef = ref => String(ref || '').match(/^refs\/pull\/(\d+)\//)?.[1] || null;
 
 function githubGet(path) {
-  const headers = {
-    'User-Agent': 'komerce-debt-zero-gate',
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-
   return new Promise((resolve, reject) => {
-    const req = https.request({ hostname: 'api.github.com', path, method: 'GET', headers }, res => {
+    const req = https.request({ hostname: 'api.github.com', path, headers: { 'User-Agent': 'komerce-debt-zero-gate', Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }, res => {
       let data = '';
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', c => { data += c; });
       res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(new Error(`GitHub API HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
-          return;
-        }
-        try { resolve(JSON.parse(data)); }
-        catch (error) { reject(new Error(`GitHub API JSON invalide: ${error.message}`)); }
+        if (res.statusCode < 200 || res.statusCode >= 300) return reject(new Error(`GitHub API HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
+        try { resolve(JSON.parse(data)); } catch (e) { reject(new Error(`GitHub API JSON invalide: ${e.message}`)); }
       });
     });
-    req.on('error', reject);
-    req.end();
+    req.on('error', reject); req.end();
   });
 }
 
-async function findHumanApproval(headSha) {
-  const repository = process.env.GITHUB_REPOSITORY;
-  const prNumber = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER || extractPrFromRef(process.env.GITHUB_REF);
-  if (!repository || !prNumber) return null;
-  const [owner, repo] = repository.split('/');
-  const comments = await githubGet(`/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`);
-
-  for (const comment of [...comments].reverse()) {
-    if (comment?.user?.login !== APPROVER) continue;
-    const parsed = parseApprovalComment(comment.body, headSha);
-    if (parsed) return { ...parsed, author: comment.user.login, commentId: comment.id };
+async function findHumanApproval(head) {
+  const repo = process.env.GITHUB_REPOSITORY;
+  const pr = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER || extractPrFromRef(process.env.GITHUB_REF);
+  if (!repo || !pr) return null;
+  const comments = await githubGet(`/repos/${repo}/issues/${pr}/comments?per_page=100`);
+  for (const c of [...comments].reverse()) {
+    if (c?.user?.login !== APPROVER) continue;
+    const parsed = parseApprovalComment(c.body, head);
+    if (parsed) return { ...parsed, author: c.user.login, commentId: c.id };
   }
   return null;
 }
@@ -415,56 +258,37 @@ async function findHumanApproval(headSha) {
 function run({ base = BASE, head = HEAD } = {}) {
   if (!base) throw new Error('--base (ou BASE_SHA) est obligatoire');
   if (!head) throw new Error('--head (ou HEAD_SHA) est obligatoire');
-
-  const failures = [];
-  const files = changedFiles(base, head);
+  const failures = [], files = changedFiles(base, head);
   const registry = registryForComparison(base, head, failures);
-
   compareRegisteredSources(base, head, registry, failures);
   findUnknownToleranceFiles(head, registry, failures);
   qualityDisableGrowth(base, head, files, failures);
-
   return { base, head: resolveCommit(head), changedFiles: files, failures };
 }
 
 async function main() {
   const result = run();
   console.log('\nDEBT ZERO GATE v2 — anti-croissance des tolérances\n');
-
-  if (result.failures.length === 0) {
-    console.log('✔ Aucun mécanisme de dette/tolérance n\'a augmenté et aucun registre inconnu n\'est apparu.\n');
-    return;
-  }
-
+  if (!result.failures.length) return console.log("✔ Aucun mécanisme de dette/tolérance n'a augmenté et aucun registre inconnu n'est apparu.\n");
   console.error('▲ Nouvelle dette/tolérance ou modification de gouvernance détectée :');
-  for (const failure of result.failures) console.error(`  - ${failure}`);
-
+  result.failures.forEach(f => console.error(`  - ${f}`));
   let approval = null;
-  try { approval = await findHumanApproval(result.head); }
-  catch (error) { console.error(`\n  Validation humaine non vérifiable: ${error.message}`); }
-
+  try { approval = await findHumanApproval(result.head); } catch (e) { console.error(`\n  Validation humaine non vérifiable: ${e.message}`); }
   if (approval) {
     console.log(`\n✔ Exception approuvée humainement par ${approval.author} pour HEAD ${result.head}.`);
     console.log(`  Explication : ${approval.explanation}`);
     console.log(`  Justification : ${approval.justification}\n`);
     return;
   }
-
   console.error(`\n✖ Blocage Debt Zero. Validation humaine requise de ${APPROVER}.`);
-  console.error('  Ajouter un commentaire PR exactement sous cette forme :\n');
-  console.error(`  DEBT-APPROVAL ${result.head}`);
+  console.error(`\n  DEBT-APPROVAL ${result.head}`);
   console.error('  Explication: <décrire précisément la dette/tolérance ou la modification de gouvernance>');
-  console.error('  Justification: <expliquer pourquoi elle est acceptée maintenant>\n');
-  console.error('  Tout nouveau commit change le SHA et invalide automatiquement cette validation.\n');
+  console.error('  Justification: <expliquer pourquoi elle est acceptée maintenant>');
+  console.error('\n  Tout nouveau commit change le SHA et invalide automatiquement cette validation.\n');
   process.exit(1);
 }
 
-if (require.main === module) {
-  main().catch(error => {
-    console.error(`✖ debt-zero-gate: ${error.message}`);
-    process.exit(1);
-  });
-}
+if (require.main === module) main().catch(e => { console.error(`✖ debt-zero-gate: ${e.message}`); process.exit(1); });
 
 module.exports = {
   arrayGrowth,
