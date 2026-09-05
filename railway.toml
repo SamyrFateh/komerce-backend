@@ -33,5 +33,8 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = ["node scripts/migrate.js"]
+# Read-only one-shot audit of the remote image health for every product
+# currently active + available in Boutique. Restored to migrations-only
+# immediately after the production result is captured.
+preDeployCommand = ["node scripts/migrate.js && node scripts/catalog-image-health-audit.js"]
 startCommand = "node server.js"
