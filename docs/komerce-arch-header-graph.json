@@ -13,20 +13,20 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 500,
+    "scannedCodeFiles": 501,
     "filesWithFullHeaders": 456,
-    "filesWithLiteHeaders": 44,
-    "filesWithAnyHeaders": 500,
+    "filesWithLiteHeaders": 45,
+    "filesWithAnyHeaders": 501,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1086,
-    "edges": 5706,
+    "graphNodes": 1095,
+    "edges": 5720,
     "dbTables": 127,
-    "doctrines": 289,
-    "impactAreas": 170,
-    "unresolvedCodeEdges": 562,
-    "dbWriteViaOverlapWarnings": 7,
+    "doctrines": 295,
+    "impactAreas": 172,
+    "unresolvedCodeEdges": 561,
+    "dbWriteViaOverlapWarnings": 6,
     "multiWriterTables": 63
   },
   "byDomain": {
@@ -41,7 +41,7 @@
     "economic-engine": 47,
     "sourcing": 6,
     "logistics": 45,
-    "boutique": 20,
+    "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
@@ -97,6 +97,7 @@
     "domain-logic": 1,
     "ui-boundary": 1,
     "ui-adapter": 1,
+    "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
     "route": 114,
@@ -113,7 +114,7 @@
     "critical": 70,
     "medium": 124,
     "high": 254,
-    "low": 52
+    "low": 53
   },
   "nodes": [
     {
@@ -4795,6 +4796,33 @@
       "version": "2026-08"
     },
     {
+      "id": "public/boutique/js/product-image-loading-ux.js",
+      "file": "public/boutique/js/product-image-loading-ux.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "boutique-product-image-loading-ux",
+      "domain": "boutique",
+      "layer": "ui-behavior",
+      "criticality": "low",
+      "owner": "public/boutique/js/render/render-product-card.js",
+      "purpose": "Keep product-card media visually occupied until lazy images are actually ready.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "catalog",
+        "product-discovery",
+        "image-loading"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "public/boutique/js/product-store.js",
       "file": "public/boutique/js/product-store.js",
       "type": "file",
@@ -7586,7 +7614,8 @@
       ],
       "depends": [
         "db.js",
-        "services/catalog-product-detail.js"
+        "services/catalog-product-detail.js",
+        "services/catalog-public-view.js"
       ],
       "usedBy": [
         "routes/products.js",
@@ -7608,7 +7637,7 @@
         "product-detail",
         "modal"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "routes/categories.js",
@@ -10074,7 +10103,8 @@
       "depends": [
         "db.js",
         "validators.js",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/catalog-public-view.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
@@ -10105,7 +10135,7 @@
         "admin-products",
         "suggestions"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/providers-services.js",
@@ -10451,7 +10481,7 @@
       "file": "routes/shares.js",
       "type": "file",
       "headerType": "full",
-      "role": "shares",
+      "role": "snapshot-share-link",
       "domain": "shared-cart",
       "layer": "route",
       "criticality": "medium",
@@ -10467,8 +10497,7 @@
       ],
       "depends": [
         "db.js",
-        "middleware/auth.js",
-        "services/*"
+        "middleware/rate-limit.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -10485,12 +10514,14 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "snapshot_share_non_transactional",
+        "snapshot_share_not_shared_list"
       ],
       "impactAreas": [
-        "unknown"
+        "shared-cart",
+        "boutique-share-link"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/signals.js",
@@ -11985,7 +12016,7 @@
         "catalog",
         "economic-engine"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/catalog-promotion.js",
@@ -12230,7 +12261,7 @@
         "product-discovery",
         "modal"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "services/catalog-workspace.js",
@@ -12942,7 +12973,8 @@
       ],
       "usedBy": [
         "routes/admin-customs-shipments.js",
-        "services/order-status-machine.js"
+        "services/order-status-machine.js",
+        "services/shipping-customs-workspace.js"
       ],
       "dbRead": [
         "customs_effective_rates",
@@ -12967,15 +12999,18 @@
         }
       ],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "createShipment_owns_full_transaction"
       ],
       "doctrine": [
+        "trusted_market_scope_options_never_request_body",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "customs",
+        "logistics",
+        "market-authorization"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/dashboard-admin-context.js",
@@ -13676,7 +13711,8 @@
       "depends": [
         "db",
         "services/local-stock-service.js",
-        "services/providers-service.js"
+        "services/providers-service.js",
+        "services/catalog-public-view.js"
       ],
       "usedBy": [
         "services/discovery-rail-service.js"
@@ -15548,7 +15584,8 @@
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
         "no_client_market_authority",
-        "reuse_domain_mutation_authorities"
+        "reuse_domain_mutation_authorities",
+        "semantic_state_source_reuse"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -15558,7 +15595,7 @@
         "payments",
         "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/order-360.js",
@@ -15764,6 +15801,7 @@
       ],
       "doctrine": [
         "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+        "explicit_relay_market_anchor",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
@@ -20145,9 +20183,7 @@
         "customs_shipments",
         "customs_shipment_parcels"
       ],
-      "dbWrite": [
-        "customs_shipments"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "scan-engine",
@@ -20175,6 +20211,7 @@
       "doctrine": [
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
+        "customs_market_snapshot_atomic_with_create",
         "no_global_workspace_mutation",
         "reuse_domain_mutation_authorities"
       ],
@@ -20184,8 +20221,7 @@
         "customs",
         "market-authorization"
       ],
-      "version": "2026-08",
-      "dbWriteViaOverlapWarning": "services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments"
+      "version": "2026-09"
     },
     {
       "id": "services/signal-admin-service.js",
@@ -20284,7 +20320,7 @@
         "orders",
         "logistics"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/simulator/cleanup.js",
@@ -24886,6 +24922,16 @@
       "doctrine": "participant_achete_individuellement"
     },
     {
+      "id": "doctrine:snapshot_share_non_transactional",
+      "type": "doctrine",
+      "doctrine": "snapshot_share_non_transactional"
+    },
+    {
+      "id": "doctrine:snapshot_share_not_shared_list",
+      "type": "doctrine",
+      "doctrine": "snapshot_share_not_shared_list"
+    },
+    {
       "id": "doctrine:legacy_http_isomorphic",
       "type": "doctrine",
       "doctrine": "legacy_http_isomorphic"
@@ -25066,6 +25112,11 @@
       "doctrine": "douane_declaration_pivot"
     },
     {
+      "id": "doctrine:trusted_market_scope_options_never_request_body",
+      "type": "doctrine",
+      "doctrine": "trusted_market_scope_options_never_request_body"
+    },
+    {
       "id": "doctrine:finance_event_date_is_authoritative",
       "type": "doctrine",
       "doctrine": "finance_event_date_is_authoritative"
@@ -25149,6 +25200,16 @@
       "id": "doctrine:no_client_market_authority",
       "type": "doctrine",
       "doctrine": "no_client_market_authority"
+    },
+    {
+      "id": "doctrine:semantic_state_source_reuse",
+      "type": "doctrine",
+      "doctrine": "semantic_state_source_reuse"
+    },
+    {
+      "id": "doctrine:explicit_relay_market_anchor",
+      "type": "doctrine",
+      "doctrine": "explicit_relay_market_anchor"
     },
     {
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026",
@@ -25329,6 +25390,11 @@
       "id": "doctrine:lecture_derivee",
       "type": "doctrine",
       "doctrine": "lecture_derivee"
+    },
+    {
+      "id": "doctrine:customs_market_snapshot_atomic_with_create",
+      "type": "doctrine",
+      "doctrine": "customs_market_snapshot_atomic_with_create"
     },
     {
       "id": "doctrine:signal_is_derived_fact",
@@ -26036,6 +26102,11 @@
       "area": "seo"
     },
     {
+      "id": "impact:image-loading",
+      "type": "impact-area",
+      "area": "image-loading"
+    },
+    {
       "id": "impact:offline-fallback",
       "type": "impact-area",
       "area": "offline-fallback"
@@ -26179,6 +26250,11 @@
       "id": "impact:creator-dashboard",
       "type": "impact-area",
       "area": "creator-dashboard"
+    },
+    {
+      "id": "impact:boutique-share-link",
+      "type": "impact-area",
+      "area": "boutique-share-link"
     },
     {
       "id": "impact:refunds",
@@ -32968,6 +33044,30 @@
       "label": "seo"
     },
     {
+      "from": "public/boutique/js/product-image-loading-ux.js",
+      "to": "public/boutique/js/render/render-product-card.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/render/render-product-card.js"
+    },
+    {
+      "from": "public/boutique/js/product-image-loading-ux.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/product-image-loading-ux.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/product-image-loading-ux.js",
+      "to": "impact:image-loading",
+      "type": "impact",
+      "label": "image-loading"
+    },
+    {
       "from": "public/boutique/js/product-store.js",
       "to": "localStorage",
       "type": "depends",
@@ -36904,6 +37004,12 @@
       "label": "services/catalog-product-detail.js"
     },
     {
+      "from": "routes/catalog-product-detail.js",
+      "to": "services/catalog-public-view.js",
+      "type": "depends",
+      "label": "services/catalog-public-view.js"
+    },
+    {
       "from": "routes/products.js",
       "to": "routes/catalog-product-detail.js",
       "type": "uses",
@@ -40392,6 +40498,12 @@
       "label": "middleware/auth.js"
     },
     {
+      "from": "routes/products.js",
+      "to": "services/catalog-public-view.js",
+      "type": "depends",
+      "label": "services/catalog-public-view.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/products.js",
       "type": "uses",
@@ -40958,15 +41070,9 @@
     },
     {
       "from": "routes/shares.js",
-      "to": "middleware/auth.js",
+      "to": "middleware/rate-limit.js",
       "type": "depends",
-      "label": "middleware/auth.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
+      "label": "middleware/rate-limit.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -40994,15 +41100,27 @@
     },
     {
       "from": "routes/shares.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:snapshot_share_non_transactional",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "snapshot_share_non_transactional"
     },
     {
       "from": "routes/shares.js",
-      "to": "impact:unknown",
+      "to": "doctrine:snapshot_share_not_shared_list",
+      "type": "doctrine",
+      "label": "snapshot_share_not_shared_list"
+    },
+    {
+      "from": "routes/shares.js",
+      "to": "impact:shared-cart",
       "type": "impact",
-      "label": "unknown"
+      "label": "shared-cart"
+    },
+    {
+      "from": "routes/shares.js",
+      "to": "impact:boutique-share-link",
+      "type": "impact",
+      "label": "boutique-share-link"
     },
     {
       "from": "routes/signals.js",
@@ -44530,6 +44648,12 @@
       "label": "services/order-status-machine.js"
     },
     {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "services/customs-shipment-service.js",
+      "type": "uses",
+      "label": "services/shipping-customs-workspace.js"
+    },
+    {
       "from": "services/customs-shipment-service.js",
       "to": "db:customs_effective_rates",
       "type": "db-read",
@@ -44598,15 +44722,33 @@
     },
     {
       "from": "services/customs-shipment-service.js",
+      "to": "doctrine:trusted_market_scope_options_never_request_body",
+      "type": "doctrine",
+      "label": "trusted_market_scope_options_never_request_body"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
       "from": "services/customs-shipment-service.js",
-      "to": "impact:unknown",
+      "to": "impact:customs",
       "type": "impact",
-      "label": "unknown"
+      "label": "customs"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/dashboard-admin-context.js",
@@ -45771,6 +45913,12 @@
       "to": "services/providers-service.js",
       "type": "depends",
       "label": "services/providers-service.js"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
+      "to": "services/catalog-public-view.js",
+      "type": "depends",
+      "label": "services/catalog-public-view.js"
     },
     {
       "from": "services/discovery-rail-service.js",
@@ -48788,6 +48936,12 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "doctrine:semantic_state_source_reuse",
+      "type": "doctrine",
+      "label": "semantic_state_source_reuse"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -49217,6 +49371,12 @@
       "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "doctrine:explicit_relay_market_anchor",
+      "type": "doctrine",
+      "label": "explicit_relay_market_anchor"
     },
     {
       "from": "services/order-checkout-service.js",
@@ -55850,12 +56010,6 @@
     },
     {
       "from": "services/shipping-customs-workspace.js",
-      "to": "db:customs_shipments",
-      "type": "db-write",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "services/shipping-customs-workspace.js",
       "to": "db:parcels",
       "type": "db-write-via",
       "label": "parcels",
@@ -55928,6 +56082,12 @@
       "to": "doctrine:server_market_scope_is_authority",
       "type": "doctrine",
       "label": "server_market_scope_is_authority"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "doctrine:customs_market_snapshot_atomic_with_create",
+      "type": "doctrine",
+      "label": "customs_market_snapshot_atomic_with_create"
     },
     {
       "from": "services/shipping-customs-workspace.js",
@@ -61489,7 +61649,6 @@
         "routes/scans.js",
         "routes/shared-cart-saved.js",
         "routes/shared-cart.js",
-        "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
         "routes/sourcing-scanner.js",
@@ -61598,6 +61757,7 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
+        "routes/shares.js",
         "server.js",
         "utils/logger.js"
       ]
@@ -65678,6 +65838,32 @@
         "public/boutique/js/market-context.js"
       ]
     },
+    "public/boutique/js/product-image-loading-ux.js": {
+      "role": "boutique-product-image-loading-ux",
+      "domain": "boutique",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/render/render-product-card.js",
+      "purpose": "Keep product-card media visually occupied until lazy images are actually ready.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "catalog",
+        "product-discovery",
+        "image-loading"
+      ],
+      "mustCheck": [
+        "impact:catalog",
+        "impact:image-loading",
+        "impact:product-discovery",
+        "public/boutique/js/render/render-product-card.js"
+      ]
+    },
     "public/boutique/js/product-store.js": {
       "role": "boutique-product-store",
       "domain": "catalog",
@@ -65882,7 +66068,9 @@
       "purpose": "supports public/boutique/js/b-catalog.js",
       "directDependsOn": [],
       "directUsedBy": [],
-      "ownedFiles": [],
+      "ownedFiles": [
+        "public/boutique/js/product-image-loading-ux.js"
+      ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -65897,6 +66085,7 @@
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-suggestions.js",
+        "public/boutique/js/product-image-loading-ux.js",
         "public/boutique/js/render/render-home-sections.js"
       ]
     },
@@ -68337,7 +68526,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/catalog-product-detail.js"
+        "services/catalog-product-detail.js",
+        "services/catalog-public-view.js"
       ],
       "directUsedBy": [
         "routes/products.js",
@@ -68370,7 +68560,8 @@
         "impact:product-detail",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "routes/products.js",
-        "services/catalog-product-detail.js"
+        "services/catalog-product-detail.js",
+        "services/catalog-public-view.js"
       ]
     },
     "routes/categories.js": {
@@ -70725,7 +70916,8 @@
       "directDependsOn": [
         "db.js",
         "validators.js",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/catalog-public-view.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -71110,7 +71302,7 @@
       ]
     },
     "routes/shares.js": {
-      "role": "shares",
+      "role": "snapshot-share-link",
       "domain": "shared-cart",
       "criticality": "medium",
       "headerType": "full",
@@ -71118,8 +71310,7 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "middleware/auth.js",
-        "services/*"
+        "middleware/rate-limit.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -71134,18 +71325,22 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "snapshot_share_non_transactional",
+        "snapshot_share_not_shared_list"
       ],
       "impactAreas": [
-        "unknown"
+        "shared-cart",
+        "boutique-share-link"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:cart_shares",
         "db:products",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "middleware/auth.js",
+        "doctrine:snapshot_share_non_transactional",
+        "doctrine:snapshot_share_not_shared_list",
+        "impact:boutique-share-link",
+        "impact:shared-cart",
+        "middleware/rate-limit.js",
         "utils/logger.js"
       ]
     },
@@ -72816,7 +73011,9 @@
         "impact:catalog",
         "impact:modal",
         "impact:product-discovery",
-        "routes/products.js"
+        "routes/catalog-product-detail.js",
+        "routes/products.js",
+        "services/discovery-rail-composer.js"
       ]
     },
     "services/catalog-workspace.js": {
@@ -73493,7 +73690,8 @@
       ],
       "directUsedBy": [
         "routes/admin-customs-shipments.js",
-        "services/order-status-machine.js"
+        "services/order-status-machine.js",
+        "services/shipping-customs-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -73519,10 +73717,13 @@
         }
       ],
       "doctrines": [
+        "trusted_market_scope_options_never_request_body",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "customs",
+        "logistics",
+        "market-authorization"
       ],
       "mustCheck": [
         "db:customs_effective_rates",
@@ -73533,7 +73734,10 @@
         "db:parcels",
         "db:products",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "doctrine:trusted_market_scope_options_never_request_body",
+        "impact:customs",
+        "impact:logistics",
+        "impact:market-authorization",
         "routes/admin-customs-shipments.js",
         "services/cost-allocation/index.js",
         "services/documents/customs-invoice.js",
@@ -74228,7 +74432,8 @@
       "directDependsOn": [
         "db",
         "services/local-stock-service.js",
-        "services/providers-service.js"
+        "services/providers-service.js",
+        "services/catalog-public-view.js"
       ],
       "directUsedBy": [
         "services/discovery-rail-service.js"
@@ -74257,6 +74462,7 @@
         "impact:category-navigation",
         "impact:discovery-rail",
         "impact:recommendations",
+        "services/catalog-public-view.js",
         "services/discovery-rail-service.js",
         "services/local-stock-service.js",
         "services/providers-service.js"
@@ -76077,7 +76283,8 @@
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
         "no_client_market_authority",
-        "reuse_domain_mutation_authorities"
+        "reuse_domain_mutation_authorities",
+        "semantic_state_source_reuse"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -76103,6 +76310,7 @@
         "db:users",
         "doctrine:no_client_market_authority",
         "doctrine:reuse_domain_mutation_authorities",
+        "doctrine:semantic_state_source_reuse",
         "doctrine:server_market_scope_is_authority",
         "doctrine:workspace_acts_dashboard_observes",
         "impact:admin-dashboard",
@@ -76321,6 +76529,7 @@
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+        "explicit_relay_market_anchor",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
@@ -76341,6 +76550,7 @@
         "db:shared_cart_items",
         "db:shared_carts",
         "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+        "doctrine:explicit_relay_market_anchor",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:local-stock",
@@ -80581,9 +80791,7 @@
         "customs_shipments",
         "customs_shipment_parcels"
       ],
-      "dbWrite": [
-        "customs_shipments"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "scan-engine",
@@ -80608,6 +80816,7 @@
       "doctrines": [
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
+        "customs_market_snapshot_atomic_with_create",
         "no_global_workspace_mutation",
         "reuse_domain_mutation_authorities"
       ],
@@ -80628,6 +80837,7 @@
         "db:relais",
         "db:scan_events",
         "db:users",
+        "doctrine:customs_market_snapshot_atomic_with_create",
         "doctrine:no_global_workspace_mutation",
         "doctrine:reuse_domain_mutation_authorities",
         "doctrine:server_market_scope_is_authority",
@@ -83800,8 +84010,7 @@
     "services/pickup-exceptional-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts",
     "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
     "services/pickup-secret-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
-    "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products",
-    "services/shipping-customs-workspace.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> customs_shipments"
+    "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products"
   ],
   "multiWriterTables": [
     {
@@ -84164,15 +84373,6 @@
       ]
     },
     {
-      "table": "customs_shipments",
-      "writerCount": 3,
-      "writers": [
-        "routes/admin-customs-shipments.js",
-        "services/customs-shipment-service.js",
-        "services/shipping-customs-workspace.js"
-      ]
-    },
-    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 3,
       "writers": [
@@ -84292,6 +84492,14 @@
     },
     {
       "table": "customs_shipment_parcels",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/customs-shipment-service.js"
+      ]
+    },
+    {
+      "table": "customs_shipments",
       "writerCount": 2,
       "writers": [
         "routes/admin-customs-shipments.js",
@@ -86081,12 +86289,6 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
     },
     {
       "from": "routes/simulator.js",
