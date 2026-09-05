@@ -40,8 +40,8 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   // Debt Zero 2026-09 : l'ancien shim utils/store-credits.js, déjà @used-by none
-  // et DEPRECATED D5, a été supprimé avec son test auto-référent. Le wallet
-  // canonique est désormais l'unique système d'avoir actif et déclaré.
+  // et DEPRECATED D5, a été supprimé. Un tombstone guard reste côté tests pour
+  // interdire sa résurrection ou le retour d'un import runtime legacy.
   files: {
     services: [
       'services/wallet-service.js',
@@ -60,6 +60,7 @@ module.exports = {
     tests: [
       'tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js',
       'tests/unit/wallet-service.test.js',
+      'tests/unit/store-credits.test.js',
       'tests/unit/wallet-route.test.js',
     ],
   },
