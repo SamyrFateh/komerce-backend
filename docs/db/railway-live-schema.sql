@@ -107,7 +107,6 @@ CREATE TYPE public.inquiry_status AS ENUM (
 
 CREATE TYPE public.order_status AS ENUM (
     'pending',
-    'pending_group_payment',
     'confirmed',
     'ordered',
     'preparation',
