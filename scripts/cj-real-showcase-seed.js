@@ -143,7 +143,20 @@ function candidateUsable(candidate, used) {
   if (!candidate.image_url || !/^https:\/\//i.test(candidate.image_url)) return false;
   if (['rejected', 'quarantined', 'archived'].includes(candidate.state)) return false;
   if (candidate.scan_result?.sourcing_decision === 'EXCLUDED') return false;
-  return ['scanned', 'imported_to_catalog'].includes(candidate.state);
+  if (!['scanned', 'imported_to_catalog'].includes(candidate.state)) return false;
+
+  // Promotion requires a non-zero computed price. Already-promoted candidates
+  // carry product_id and can be resumed even if their scan payload is sparse;
+  // fresh candidates without one are skipped rather than aborting the run.
+  if (!candidate.product_id) {
+    const scanResult = candidate.scan_result || {};
+    const initialPrice = scanResult.test_price_kmf
+      || scanResult.recommended_price_kmf
+      || scanResult.minimum_safe_price_kmf
+      || 0;
+    if (!(Number(initialPrice) > 0)) return false;
+  }
+  return true;
 }
 
 async function prepareAndPublish(candidate, family, familyIndex, slotIndex) {
@@ -300,4 +313,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { ACTOR, FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription };
+module.exports = { ACTOR, FAMILIES, TARGET, TARGET_PER_FAMILY, SORT_BASE, slotSortOrder, frenchName, frenchDescription, candidateUsable };
