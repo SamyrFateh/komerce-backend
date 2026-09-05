@@ -55,13 +55,6 @@
   transition: opacity .18s ease, visibility 0s linear .18s;
 }
 
-/* Les badges/contrôles métier restent au-dessus du masque de chargement. */
-.k-card-promo,
-.k-card-fav,
-.k-sug-promo-badge {
-  isolation: isolate;
-}
-
 @keyframes k-product-image-sheen {
   to { transform: translateX(100%); }
 }
