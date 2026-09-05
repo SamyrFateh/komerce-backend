@@ -1,0 +1,125 @@
+name: Railway production queue unblock
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  unblock:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[ops] railway-prod-unblock-20260905'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_GRAPHQL_URL: 'https://backboard.railway.com/graphql/v2'
+      BLOCKING_DEPLOYMENT: '07251578-3b1f-412c-b547-6df3dfa43e19'
+      STALE_DEPLOYMENTS: 'c06a03ec-6880-43c7-8504-9359bf53f335 5e9ef052-ac99-4952-8f4f-381b4de6fb25 ac9f6bb0-14ae-478f-b072-fdc804694efc dce2fec1-5f11-4def-bb8f-b6d226a771df 778c044f-d86f-47a6-b8af-8a190694a5cb'
+
+    steps:
+      - name: Verify bounded Railway project token
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_TOKEN missing'; exit 1; }
+          response="$RUNNER_TEMP/project-token.json"
+          payload='{"query":"query { projectToken { projectId environmentId } }"}'
+          code="$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+            --request POST --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' --data-binary "$payload")"
+          test "$code" = '200' || { cat "$response"; exit 1; }
+          test "$(jq -r '.data.projectToken.projectId // empty' "$response")" = "$RAILWAY_PROJECT_ID"
+          test "$(jq -r '.data.projectToken.environmentId // empty' "$response")" = "$RAILWAY_ENVIRONMENT_ID"
+
+      - name: Stop wedged deployment and cancel stale queue
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gql() {
+            local query="$1" vars="$2" out="$3"
+            local payload code
+            payload="$(jq -n --arg q "$query" --argjson v "$vars" '{query:$q,variables:$v}')"
+            code="$(curl --silent --show-error --output "$out" --write-out '%{http_code}' \
+              --request POST --url "$RAILWAY_GRAPHQL_URL" \
+              --header "Project-Access-Token: $RAILWAY_TOKEN" \
+              --header 'Content-Type: application/json' --data-binary "$payload")"
+            if [ "$code" != '200' ] || jq -e '.errors and (.errors|length>0)' "$out" >/dev/null; then
+              echo "::error::Railway GraphQL failed"
+              cat "$out"
+              exit 1
+            fi
+          }
+
+          status_of() {
+            local id="$1" out="$RUNNER_TEMP/deployment-$id.json"
+            gql 'query deployment($id: String!) { deployment(id: $id) { id status } }' "$(jq -n --arg id "$id" '{id:$id}')" "$out"
+            jq -r '.data.deployment.status // empty' "$out"
+          }
+
+          blocker_status="$(status_of "$BLOCKING_DEPLOYMENT")"
+          echo "blocking deployment: $BLOCKING_DEPLOYMENT status=$blocker_status"
+          case "$blocker_status" in
+            DEPLOYING|SUCCESS|CRASHED|SLEEPING)
+              if [ "$blocker_status" = 'DEPLOYING' ]; then
+                gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
+                  "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/stop.json"
+              fi
+              ;;
+            BUILDING|QUEUED|INITIALIZING|WAITING)
+              gql 'mutation deploymentCancel($id: String!) { deploymentCancel(id: $id) }' \
+                "$(jq -n --arg id "$BLOCKING_DEPLOYMENT" '{id:$id}')" "$RUNNER_TEMP/cancel-blocker.json"
+              ;;
+          esac
+
+          for id in $STALE_DEPLOYMENTS; do
+            status="$(status_of "$id")"
+            echo "stale deployment: $id status=$status"
+            case "$status" in
+              BUILDING|QUEUED|INITIALIZING|WAITING)
+                gql 'mutation deploymentCancel($id: String!) { deploymentCancel(id: $id) }' \
+                  "$(jq -n --arg id "$id" '{id:$id}')" "$RUNNER_TEMP/cancel-$id.json"
+                ;;
+              DEPLOYING)
+                gql 'mutation deploymentStop($id: String!) { deploymentStop(id: $id) }' \
+                  "$(jq -n --arg id "$id" '{id:$id}')" "$RUNNER_TEMP/stop-$id.json"
+                ;;
+            esac
+          done
+
+      - name: Trigger fresh deployment from current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          query='mutation environmentTriggersDeploy($input: EnvironmentTriggersDeployInput!) { environmentTriggersDeploy(input: $input) }'
+          vars="$(jq -n --arg projectId "$RAILWAY_PROJECT_ID" --arg environmentId "$RAILWAY_ENVIRONMENT_ID" --arg serviceId "$RAILWAY_SERVICE_ID" '{input:{projectId:$projectId,environmentId:$environmentId,serviceId:$serviceId}}')"
+          payload="$(jq -n --arg q "$query" --argjson v "$vars" '{query:$q,variables:$v}')"
+          response="$RUNNER_TEMP/trigger.json"
+          code="$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+            --request POST --url "$RAILWAY_GRAPHQL_URL" \
+            --header "Project-Access-Token: $RAILWAY_TOKEN" \
+            --header 'Content-Type: application/json' --data-binary "$payload")"
+          if [ "$code" != '200' ] || jq -e '.errors and (.errors|length>0)' "$response" >/dev/null; then
+            cat "$response"
+            exit 1
+          fi
+          echo 'Fresh production deployment requested from current main.'
+
+      - name: Close command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Railway production queue unblocked and a fresh deployment from current main was requested.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
