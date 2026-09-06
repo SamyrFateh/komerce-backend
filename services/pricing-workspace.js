@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        product_ref, competitor_ref, cost_component_key, simulation_payload, actor
  * @outputs       canonical_pricing_projection, global_economic_projection, delegated_mutation_results
- * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js, services/economic-engine-queries.js
+ * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js, services/pricing-cost-explainability.js, services/economic-engine-queries.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       products, competitor_prices, charges, economic_variables, economic_snapshots, finance_config
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only
+ * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only, every_cost_line_is_explainable
  * @impact-areas  pricing, economic-engine, admin-dashboard, catalog
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -26,6 +26,7 @@ const pricingApply = require('./pricing-apply');
 const strategyService = require('./pricing-strategy-service');
 const costComponents = require('./cost-component-admin-service');
 const marketCostComponents = require('./cost-component-market-service');
+const costExplainability = require('./pricing-cost-explainability');
 const economicQueries = require('./economic-engine-queries');
 
 class PricingWorkspaceError extends Error {
@@ -133,7 +134,9 @@ async function buildWorkspace() {
     recommendations = [];
   }
 
-  const components = componentProjection.components.map(publicComponent);
+  const components = costExplainability.explainComponents(
+    componentProjection.components.map(publicComponent)
+  );
   const products = productRes.rows.map(publicProduct);
   return {
     scope: { mode: 'global_pricing' },
@@ -262,12 +265,14 @@ async function toggleCostComponent(key, actor = {}) {
   return publicComponent(await costComponents.toggleComponent({ key }, actor.id || null));
 }
 
-
 async function buildMarketWorkspace({ market } = {}) {
   if (!market || !market.id || !market.code) {
     throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
   }
-  const components = (await marketCostComponents.listEffectiveComponents(market.id)).map(publicComponent);
+  const components = costExplainability.explainComponents(
+    (await marketCostComponents.listEffectiveComponents(market.id)).map(publicComponent),
+    { marketCode: market.code }
+  );
   return {
     scope: {
       mode: 'market_pricing',
