@@ -1,6 +1,6 @@
 # Doctrine — Mutualisation et refacturation des coûts plateforme par marché
 
-> **Version** : 1.0 — 2026-09-06
+> **Version** : 1.1 — 2026-09-06
 > **Statut** : doctrine spécialisée — complète `DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md`
 > **Périmètre** : Railway, Cloudinary, Twilio fixe et autres charges techniques partagées de structure
 
@@ -52,6 +52,8 @@ Une modification du mode de facturation est un acte de gouvernance, pas une perm
 ## 4. Fenêtre canonique unique
 
 La ventilation plateforme utilise **la même fenêtre canonique que le gate de couverture du marché** : fenêtre glissante de largeur fixe, terminée au watermark de maturité.
+
+Le watermark peut être franchissable via une disposition gouvernée, mais une disposition ne transforme jamais une commande en donnée économique mature. Toute politique de couverture utilisant une cohorte avec dispositions doit conserver séparément maturité, taux de dispositions et niveau de confiance.
 
 Interdit : calculer la viabilité sur une fenêtre et la quote-part de structure sur un mois calendaire différent.
 
@@ -171,13 +173,16 @@ Reclasser une charge groupe vers marché, ou l'inverse, est un acte gouverné : 
 
 ---
 
-## 12. Gaps de données assumés
+## 12. État de matérialisation et gaps assumés
 
-À la date de cette version :
+Les préconditions suivantes existent désormais dans le moteur : séparation N2/N3 des snapshots, maturité économique, watermark anti cherry-picking et dispositions gouvernées.
+
+Restent à matérialiser :
 
 - `finance_config` est global/singleton et ne porte pas encore une vérité N3 par marché ;
 - `charges` ne porte pas encore une attribution gouvernée groupe / marché ;
 - le modèle de charge économique de période reste à matérialiser ;
+- la largeur de fenêtre et les seuils décisionnels doivent être fixés par politique versionnée ;
 - le gate de couverture par marché n'est pas encore calculable de façon décisionnelle.
 
 Ces gaps interdisent de facturer automatiquement un partenaire sur cette doctrine seule.
@@ -188,9 +193,10 @@ Ces gaps interdisent de facturer automatiquement un partenaire sur cette doctrin
 
 - Ne pas coder la refacturation partenaire avant le ratio de couverture réconcilié.
 - Ne pas ajouter `market_id` à `charges` avant arbitrage de la frontière groupe / marché.
-- Ne pas dupliquer `finance_config` par marché avant séparation N2 / N3 et définition du modèle de structure par marché.
+- Ne pas dupliquer `finance_config` par marché avant définition du modèle de structure par marché.
 - Ne pas utiliser `markets.is_active` comme diviseur.
 - Ne pas créer un coût Railway / Cloudinary « par article » pour alimenter N1 ou N2.
+- Ne pas traiter une disposition de maturité comme une preuve de coût réel pour calculer une quote-part.
 
 ---
 
