@@ -1,0 +1,51 @@
+name: One-off contract debt bootstrap
+
+on:
+  push:
+    branches:
+      - fix/contract-unknown-zero
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/contract-unknown-zero
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wire canonical contract debt ledger
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const pkgPath = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkg.scripts['contract:generate'] = 'node scripts/contract-generate.js && node scripts/contract-debt-sync.js --write';
+          pkg.scripts['contract:debt:check'] = 'node scripts/contract-debt-sync.js --check';
+          pkg.scripts['contract:debt:write'] = 'node scripts/contract-debt-sync.js --write';
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+
+          const workflowPath = '.github/workflows/pr-enforcement.yml';
+          let workflow = fs.readFileSync(workflowPath, 'utf8');
+          const from = '      - name: Contract consumer check\n        if: needs.changes.outputs.backend == \'true\'\n        run: node scripts/contract-check.js';
+          const to = '      - name: Contract consumer check\n        if: needs.changes.outputs.backend == \'true\'\n        run: |\n          node scripts/contract-check.js\n          node scripts/contract-debt-sync.js --check';
+          if (!workflow.includes(from)) throw new Error('Contract consumer check block not found');
+          workflow = workflow.replace(from, to);
+          fs.writeFileSync(workflowPath, workflow);
+          NODE
+          node scripts/contract-debt-sync.js --write
+          node scripts/contract-debt-sync.js --check
+      - name: Commit canonical ledger and remove one-off workflow
+        run: |
+          git config user.name "komerce-governance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add package.json docs/contract/DEBT.md .github/workflows/pr-enforcement.yml
+          git rm .github/workflows/contract-debt-bootstrap-once.yml
+          git commit -m "fix(contract): synchronize UNKNOWN debt ledger"
+          git push origin HEAD:fix/contract-unknown-zero
