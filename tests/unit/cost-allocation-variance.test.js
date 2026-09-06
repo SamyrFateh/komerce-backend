@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -19,50 +18,64 @@ describe('cost-allocation/variance', () => {
   beforeEach(() => jest.clearAllMocks());
 
   describe('computeOrderCostVariance', () => {
-    it('calcule une variance nulle quand le cout reel egale le cout estime', async () => {
+    it('compare N1+N2 estime au reel variable et exclut N3 de la variance', async () => {
       db.query
-        .mockResolvedValueOnce({ rows: [{ landed: '9000', business: '10000', margin: '2500', by_cost_type: { freight: 3000 } }] })
-        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '4000' }, { cost_type: 'customs', amount: '6000' }] });
+        .mockResolvedValueOnce({ rows: [{
+          landed: '9000',
+          business_complete: '12000',
+          business_variable: '1000',
+          fixed_overhead: '2000',
+          imputations_count: 1,
+          missing_variable_snapshot_count: 0,
+        }] })
+        .mockResolvedValueOnce({ rows: [
+          { cost_type: 'freight', amount: '4000', all_actual: true },
+          { cost_type: 'customs', amount: '6000', all_actual: true },
+          { cost_type: 'fixed_overhead', amount: '2000', all_actual: true },
+        ] });
 
       const result = await computeOrderCostVariance('order-001');
 
-      expect(result.estimated.business_kmf).toBe(10000);
-      expect(result.real.total_kmf).toBe(10000);
-      expect(result.variance).toEqual({ total_kmf: 0, total_pct: 0 });
-      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(result.estimated.variable_total_kmf).toBe(10000);
+      expect(result.estimated.business_complete_kmf).toBe(12000);
+      expect(result.real.total_kmf).toBe(12000);
+      expect(result.real.variable_total_kmf).toBe(10000);
+      expect(result.real.structure_total_kmf).toBe(2000);
+      expect(result.variance).toEqual({ scope: 'N1+N2', total_kmf: 0, total_pct: 0 });
+      expect(result.reconciliation_status).toBe('comparable_scope');
     });
 
-    it('calcule une variance positive quand le reel depasse l estime', async () => {
+    it('calcule une variance positive sur le seul perimetre variable', async () => {
       db.query
-        .mockResolvedValueOnce({ rows: [{ landed: '8000', business: '10000', margin: '3000', by_cost_type: {} }] })
-        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '12500' }] });
+        .mockResolvedValueOnce({ rows: [{
+          landed: '8000', business_complete: '13000', business_variable: '2000', fixed_overhead: '3000',
+          imputations_count: 1, missing_variable_snapshot_count: 0,
+        }] })
+        .mockResolvedValueOnce({ rows: [
+          { cost_type: 'freight', amount: '12500', all_actual: true },
+          { cost_type: 'fixed_overhead', amount: '9000', all_actual: true },
+        ] });
 
       const result = await computeOrderCostVariance('order-002');
 
       expect(result.variance.total_kmf).toBe(2500);
       expect(result.variance.total_pct).toBe(25);
+      expect(result.real.structure_total_kmf).toBe(9000);
     });
 
-    it('calcule une variance negative quand le reel est inferieur a l estime', async () => {
+    it('retourne NOT_DECISIONAL si le split N2 manque dans un snapshot legacy', async () => {
       db.query
-        .mockResolvedValueOnce({ rows: [{ landed: '9000', business: '10000', margin: '3000', by_cost_type: {} }] })
-        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '7500' }] });
+        .mockResolvedValueOnce({ rows: [{
+          landed: '9000', business_complete: '12000', business_variable: null, fixed_overhead: null,
+          imputations_count: 1, missing_variable_snapshot_count: 1,
+        }] })
+        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '10000', all_actual: true }] });
 
-      const result = await computeOrderCostVariance('order-003');
+      const result = await computeOrderCostVariance('order-legacy');
 
-      expect(result.variance.total_kmf).toBe(-2500);
-      expect(result.variance.total_pct).toBe(-25);
-    });
-
-    it('retourne total_pct null si le cout estime vaut zero', async () => {
-      db.query
-        .mockResolvedValueOnce({ rows: [{ landed: '0', business: '0', margin: '0', by_cost_type: {} }] })
-        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '1000' }] });
-
-      const result = await computeOrderCostVariance('order-zero');
-
-      expect(result.variance.total_kmf).toBe(1000);
-      expect(result.variance.total_pct).toBeNull();
+      expect(result.estimated.variable_total_kmf).toBeNull();
+      expect(result.variance).toBeNull();
+      expect(result.reconciliation_status).toBe('not_decisional');
     });
   });
 
@@ -76,46 +89,78 @@ describe('cost-allocation/variance', () => {
       });
     });
 
-    it('calcule la variance produit quand des couts reels existent', async () => {
+    it('borne la variance produit dans le temps et compare N1+N2 a N1+N2', async () => {
       db.query.mockResolvedValueOnce({ rows: [{
         product_id: 'product-001',
         quantity_sold: 3,
-        total_estimated_kmf: '9000',
-        total_real_kmf: '9900',
         orders_count: 2,
+        missing_variable_snapshot_count: 0,
+        total_estimated_variable_kmf: '9000',
+        total_real_variable_kmf: '9900',
+        total_real_structure_kmf: '1200',
       }] });
 
-      const result = await computeProductCostVariance('product-001');
+      const result = await computeProductCostVariance('product-001', {
+        from: '2026-08-01T00:00:00Z',
+        to: '2026-09-01T00:00:00Z',
+      });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         product_id: 'product-001',
         quantity_sold: 3,
         orders_count: 2,
         total_estimated_kmf: 9000,
         total_real_kmf: 9900,
+        total_estimated_variable_kmf: 9000,
+        total_real_variable_kmf: 9900,
+        total_real_structure_kmf: 1200,
         variance_kmf: 900,
         variance_pct: 10,
+        variance_scope: 'N1+N2',
+        reconciliation_status: 'comparable_scope',
       });
+      expect(db.query.mock.calls[0][0]).toContain('o.created_at >= $2');
+      expect(db.query.mock.calls[0][0]).toContain('ro.created_at <= $3');
+      expect(db.query.mock.calls[0][1]).toEqual([
+        'product-001', '2026-08-01T00:00:00Z', '2026-09-01T00:00:00Z',
+      ]);
+    });
+
+    it('ne fabrique pas de variance si un ancien snapshot ne permet pas de reconstruire N2', async () => {
+      db.query.mockResolvedValueOnce({ rows: [{
+        product_id: 'product-legacy',
+        quantity_sold: 1,
+        orders_count: 1,
+        missing_variable_snapshot_count: 1,
+        total_estimated_variable_kmf: null,
+        total_real_variable_kmf: '5000',
+        total_real_structure_kmf: '1000',
+      }] });
+
+      const result = await computeProductCostVariance('product-legacy');
+
+      expect(result.total_estimated_variable_kmf).toBeNull();
+      expect(result.variance_kmf).toBeNull();
+      expect(result.variance_pct).toBeNull();
+      expect(result.reconciliation_status).toBe('not_decisional');
     });
   });
 
   describe('getOrderCostTruth', () => {
     it('retourne null si la commande est introuvable', async () => {
       db.query.mockResolvedValueOnce({ rows: [] });
-
       await expect(getOrderCostTruth('missing-order')).resolves.toBeNull();
     });
 
-    it('signale partial_real si des couts reels variables manquent', async () => {
+    it('expose N2/N3 separes et calcule la variance sur le perimetre N1+N2', async () => {
       db.query
-        .mockResolvedValueOnce({ rows: [{ id: 'order-001', reference: 'CMD-001', status: 'confirmed', payment_status: 'paid', total_kmf: '20000' }] })
         .mockResolvedValueOnce({ rows: [{
-          imputations_count: '1',
-          items_quantity: '2',
-          sale_total: '20000',
-          estimated_landed: '9000',
-          estimated_business: '12000',
-          estimated_margin: '8000',
+          id: 'order-001', reference: 'CMD-001', status: 'confirmed', payment_status: 'paid', total_kmf: '20000',
+        }] })
+        .mockResolvedValueOnce({ rows: [{
+          imputations_count: '1', items_quantity: '2', sale_total: '20000',
+          estimated_landed: '9000', estimated_business: '12000', estimated_business_variable: '2000',
+          estimated_fixed_overhead: '1000', missing_variable_snapshot_count: '0', estimated_margin: '8000',
         }] })
         .mockResolvedValueOnce({ rows: [
           { cost_type: 'product_purchase', amount: '5000', all_actual: true },
@@ -125,13 +170,19 @@ describe('cost-allocation/variance', () => {
       const result = await getOrderCostTruth('order-001');
 
       expect(result.cost_status).toBe('partial_real');
-      expect(result.real.total_kmf).toBe(7000);
-      expect(result.real.margin_kmf).toBeNull();
+      expect(result.estimated).toMatchObject({
+        landed_relay_cost_kmf: 9000,
+        business_variable_cost_kmf: 2000,
+        fixed_overhead_kmf: 1000,
+        variable_total_kmf: 11000,
+        business_complete_cost_kmf: 12000,
+      });
+      expect(result.real.variable_total_kmf).toBe(7000);
+      expect(result.variance).toEqual({ scope: 'N1+N2', total_kmf: -4000, total_pct: -36.36 });
       expect(result.missing_cost_fields).toEqual(expect.arrayContaining(['customs', 'local_distribution', 'relay', 'payment']));
-      expect(result.variance).toEqual({ total_kmf: -5000, total_pct: -41.67 });
     });
 
-    it('signale actual quand tous les couts attendus sont presents', async () => {
+    it('conserve le statut actual legacy quand tous les types attendus sont presents', async () => {
       const allCosts = [
         'product_purchase', 'freight', 'customs', 'local_distribution', 'relay',
         'hub', 'risk_provision', 'fixed_overhead', 'payment',
@@ -140,12 +191,9 @@ describe('cost-allocation/variance', () => {
       db.query
         .mockResolvedValueOnce({ rows: [{ id: 'order-002', reference: 'CMD-002', status: 'confirmed', payment_status: 'paid', total_kmf: '20000' }] })
         .mockResolvedValueOnce({ rows: [{
-          imputations_count: '1',
-          items_quantity: '1',
-          sale_total: '20000',
-          estimated_landed: '8000',
-          estimated_business: '9000',
-          estimated_margin: '11000',
+          imputations_count: '1', items_quantity: '1', sale_total: '20000',
+          estimated_landed: '5000', estimated_business: '9000', estimated_business_variable: '3000',
+          estimated_fixed_overhead: '1000', missing_variable_snapshot_count: '0', estimated_margin: '11000',
         }] })
         .mockResolvedValueOnce({ rows: allCosts });
 
@@ -154,8 +202,9 @@ describe('cost-allocation/variance', () => {
       expect(result.cost_status).toBe('actual');
       expect(result.missing_cost_fields).toEqual([]);
       expect(result.real.total_kmf).toBe(9000);
-      expect(result.real.margin_kmf).toBe(11000);
-      expect(result.real.margin_pct).toBe(55);
+      expect(result.real.variable_total_kmf).toBe(8000);
+      expect(result.real.structure_total_kmf).toBe(1000);
+      expect(result.variance).toEqual({ scope: 'N1+N2', total_kmf: 0, total_pct: 0 });
     });
   });
 });
