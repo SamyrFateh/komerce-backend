@@ -49,6 +49,7 @@ module.exports = {
       'moteur de pricing et application des regles',
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
+      'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
         'economic-engine au Lot O2, était @domain dashboard)',
@@ -73,6 +74,7 @@ module.exports = {
       'services/pricing-apply.js',
       'services/cost-component-admin-service.js',
       'services/cost-component-market-service.js',
+      'services/pricing-cost-explainability.js',
       'services/pricing-workspace.js',
       'services/pricing-dashboard.js',
       'services/pricing-recommend.js',
@@ -142,7 +144,6 @@ module.exports = {
       'migrations/119_economic_variables_to_finance_config.sql',
       'migrations/152_pricing_workspace_global_authority.sql',
       'migrations/159_cost_component_market_overrides.sql',
-      'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -163,7 +164,6 @@ module.exports = {
       'tests/unit/apply-pricing-updates.test.js',
       'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
-      'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -199,6 +199,7 @@ module.exports = {
       'tests/unit/admin-pricing-workspace-route.test.js',
       'tests/unit/admin-pricing-workspace-market-route.test.js',
       'tests/unit/cost-component-market-service.test.js',
+      'tests/unit/pricing-cost-explainability.test.js',
       'tests/unit/pricing-workspace.test.js',
       'tests/unit/require-pricing-global-authority.test.js',
       'tests/unit/pricing-chain.test.js',
@@ -448,6 +449,7 @@ module.exports = {
   invariants: [
     'une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee',
     'aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js',
+    'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
   ],
 
 };
