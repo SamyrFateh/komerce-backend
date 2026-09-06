@@ -85,6 +85,7 @@ module.exports = {
       'services/finance-metrics/payments.js',
       'services/finance-metrics/sales-analysis.js',
       'services/cost-allocation/_helpers.js',
+      'services/cost-allocation/cost-types.js',
       'services/cost-allocation/allocate.js',
       'services/cost-allocation/variance.js',
       'services/cost-allocation/index.js',
@@ -100,6 +101,7 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
+      'services/pricing-maturity.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -175,6 +177,7 @@ module.exports = {
       'tests/unit/pricing-cache.test.js',
       'tests/unit/pricing-cdr.test.js',
       'tests/unit/pricing-engine.test.js',
+      'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
