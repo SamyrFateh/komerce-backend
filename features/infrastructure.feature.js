@@ -347,6 +347,7 @@ module.exports = {
       'railway.toml',
     ],
     tests: [
+      'tests/unit/impact-check-security-conventions.test.js',
       'tests/integration/groupe-paiement.manual.js',
       'tests/integration/test-harness/mock-db.js',
       'tests/test-benchmarks.js',

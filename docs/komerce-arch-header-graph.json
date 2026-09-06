@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 501,
-    "filesWithFullHeaders": 456,
+    "scannedCodeFiles": 502,
+    "filesWithFullHeaders": 457,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 501,
+    "filesWithAnyHeaders": 502,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1099,
-    "edges": 5769,
+    "graphNodes": 1111,
+    "edges": 5788,
     "dbTables": 127,
-    "doctrines": 299,
+    "doctrines": 310,
     "impactAreas": 172,
     "unresolvedCodeEdges": 565,
     "dbWriteViaOverlapWarnings": 7,
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 47,
+    "economic-engine": 48,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 215,
+    "service": 216,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
   "byCriticality": {
     "critical": 70,
     "medium": 123,
-    "high": 255,
+    "high": 256,
     "low": 53
   },
   "nodes": [
@@ -6317,7 +6317,9 @@
       "dbTxn": [],
       "doctrine": [
         "global_pricing_authority_or_server_market_scope",
-        "browser_business_refs_only"
+        "viewer_reads_manager_writes",
+        "browser_business_refs_only",
+        "simulation_is_read_only"
       ],
       "impactAreas": [
         "pricing",
@@ -12746,7 +12748,7 @@
         "economic-engine",
         "admin-costing"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/cost-component-admin-service.js",
@@ -15943,7 +15945,7 @@
         "orders",
         "checkout"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/order-display-snapshot.js",
@@ -17865,6 +17867,44 @@
       "version": "2026-06"
     },
     {
+      "id": "services/pricing-cost-explainability.js",
+      "file": "services/pricing-cost-explainability.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-cost-explainability",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "cost_component_projection",
+        "market_context"
+      ],
+      "outputs": [
+        "semantic_cost_line_explainability"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/pricing-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "explain_without_recompute",
+        "never_promote_config_to_real",
+        "n3_is_period_structure"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/pricing-dashboard.js",
       "file": "services/pricing-dashboard.js",
       "type": "file",
@@ -18221,6 +18261,7 @@
       "outputs": [
         "canonical_pricing_projection",
         "global_economic_projection",
+        "observed_cost_truth",
         "delegated_mutation_results"
       ],
       "depends": [
@@ -18231,6 +18272,7 @@
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js",
         "services/cost-component-admin-service.js",
+        "services/pricing-cost-explainability.js",
         "services/economic-engine-queries.js"
       ],
       "usedBy": [
@@ -18242,14 +18284,23 @@
         "charges",
         "economic_variables",
         "economic_snapshots",
-        "finance_config"
+        "finance_config",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "workspace_orchestrates_existing_pricing_authorities",
-        "browser_business_refs_only"
+        "browser_business_refs_only",
+        "every_cost_line_is_explainable",
+        "simulation_never_persists",
+        "same_engine_before_after",
+        "observed_real_never_auto_promotes_config",
+        "market_observation_is_decisional_scope",
+        "group_observation_is_informational"
       ],
       "impactAreas": [
         "pricing",
@@ -18257,7 +18308,7 @@
         "admin-dashboard",
         "catalog"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/product-360.js",
@@ -24845,9 +24896,19 @@
       "doctrine": "global_pricing_authority_or_server_market_scope"
     },
     {
+      "id": "doctrine:viewer_reads_manager_writes",
+      "type": "doctrine",
+      "doctrine": "viewer_reads_manager_writes"
+    },
+    {
       "id": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "doctrine": "browser_business_refs_only"
+    },
+    {
+      "id": "doctrine:simulation_is_read_only",
+      "type": "doctrine",
+      "doctrine": "simulation_is_read_only"
     },
     {
       "id": "doctrine:product_ref_is_business_identity",
@@ -25435,9 +25496,54 @@
       "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10"
     },
     {
+      "id": "doctrine:explain_without_recompute",
+      "type": "doctrine",
+      "doctrine": "explain_without_recompute"
+    },
+    {
+      "id": "doctrine:never_promote_config_to_real",
+      "type": "doctrine",
+      "doctrine": "never_promote_config_to_real"
+    },
+    {
+      "id": "doctrine:n3_is_period_structure",
+      "type": "doctrine",
+      "doctrine": "n3_is_period_structure"
+    },
+    {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
       "type": "doctrine",
       "doctrine": "workspace_orchestrates_existing_pricing_authorities"
+    },
+    {
+      "id": "doctrine:every_cost_line_is_explainable",
+      "type": "doctrine",
+      "doctrine": "every_cost_line_is_explainable"
+    },
+    {
+      "id": "doctrine:simulation_never_persists",
+      "type": "doctrine",
+      "doctrine": "simulation_never_persists"
+    },
+    {
+      "id": "doctrine:same_engine_before_after",
+      "type": "doctrine",
+      "doctrine": "same_engine_before_after"
+    },
+    {
+      "id": "doctrine:observed_real_never_auto_promotes_config",
+      "type": "doctrine",
+      "doctrine": "observed_real_never_auto_promotes_config"
+    },
+    {
+      "id": "doctrine:market_observation_is_decisional_scope",
+      "type": "doctrine",
+      "doctrine": "market_observation_is_decisional_scope"
+    },
+    {
+      "id": "doctrine:group_observation_is_informational",
+      "type": "doctrine",
+      "doctrine": "group_observation_is_informational"
     },
     {
       "id": "doctrine:sourcing_and_audit_global_only",
@@ -35272,9 +35378,21 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:viewer_reads_manager_writes",
+      "type": "doctrine",
+      "label": "viewer_reads_manager_writes"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "label": "browser_business_refs_only"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:simulation_is_read_only",
+      "type": "doctrine",
+      "label": "simulation_is_read_only"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -52799,6 +52917,48 @@
       "label": "economic-engine"
     },
     {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-cost-explainability.js",
+      "type": "uses",
+      "label": "services/pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "doctrine:explain_without_recompute",
+      "type": "doctrine",
+      "label": "explain_without_recompute"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "doctrine:never_promote_config_to_real",
+      "type": "doctrine",
+      "label": "never_promote_config_to_real"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "doctrine:n3_is_period_structure",
+      "type": "doctrine",
+      "label": "n3_is_period_structure"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-cost-explainability.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/pricing-dashboard.js",
       "to": "db",
       "type": "depends",
@@ -53323,6 +53483,12 @@
     },
     {
       "from": "services/pricing-workspace.js",
+      "to": "services/pricing-cost-explainability.js",
+      "type": "depends",
+      "label": "services/pricing-cost-explainability.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
       "to": "services/economic-engine-queries.js",
       "type": "depends",
       "label": "services/economic-engine-queries.js"
@@ -53371,6 +53537,24 @@
     },
     {
       "from": "services/pricing-workspace.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pricing-workspace.js",
       "to": "doctrine:workspace_orchestrates_existing_pricing_authorities",
       "type": "doctrine",
       "label": "workspace_orchestrates_existing_pricing_authorities"
@@ -53380,6 +53564,42 @@
       "to": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "label": "browser_business_refs_only"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:every_cost_line_is_explainable",
+      "type": "doctrine",
+      "label": "every_cost_line_is_explainable"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:simulation_never_persists",
+      "type": "doctrine",
+      "label": "simulation_never_persists"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:same_engine_before_after",
+      "type": "doctrine",
+      "label": "same_engine_before_after"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:observed_real_never_auto_promotes_config",
+      "type": "doctrine",
+      "label": "observed_real_never_auto_promotes_config"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:market_observation_is_decisional_scope",
+      "type": "doctrine",
+      "label": "market_observation_is_decisional_scope"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:group_observation_is_informational",
+      "type": "doctrine",
+      "label": "group_observation_is_informational"
     },
     {
       "from": "services/pricing-workspace.js",
@@ -67718,7 +67938,9 @@
       "dbWriteVia": [],
       "doctrines": [
         "global_pricing_authority_or_server_market_scope",
-        "browser_business_refs_only"
+        "viewer_reads_manager_writes",
+        "browser_business_refs_only",
+        "simulation_is_read_only"
       ],
       "impactAreas": [
         "pricing",
@@ -67733,6 +67955,8 @@
         "db:pricing_global_access_grants",
         "doctrine:browser_business_refs_only",
         "doctrine:global_pricing_authority_or_server_market_scope",
+        "doctrine:simulation_is_read_only",
+        "doctrine:viewer_reads_manager_writes",
         "impact:admin-dashboard",
         "impact:economic-engine",
         "impact:market-authorization",
@@ -79006,6 +79230,41 @@
         "utils/rates.js"
       ]
     },
+    "services/pricing-cost-explainability.js": {
+      "role": "economic-engine-pricing-cost-explainability",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "explain_without_recompute",
+        "never_promote_config_to_real",
+        "n3_is_period_structure"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:explain_without_recompute",
+        "doctrine:n3_is_period_structure",
+        "doctrine:never_promote_config_to_real",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:pricing",
+        "services/pricing-workspace.js"
+      ]
+    },
     "services/pricing-dashboard.js": {
       "role": "economic-engine-pricing-dashboard",
       "domain": "economic-engine",
@@ -79340,6 +79599,7 @@
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js",
         "services/cost-component-admin-service.js",
+        "services/pricing-cost-explainability.js",
         "services/economic-engine-queries.js"
       ],
       "directUsedBy": [
@@ -79352,13 +79612,22 @@
         "charges",
         "economic_variables",
         "economic_snapshots",
-        "finance_config"
+        "finance_config",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "workspace_orchestrates_existing_pricing_authorities",
-        "browser_business_refs_only"
+        "browser_business_refs_only",
+        "every_cost_line_is_explainable",
+        "simulation_never_persists",
+        "same_engine_before_after",
+        "observed_real_never_auto_promotes_config",
+        "market_observation_is_decisional_scope",
+        "group_observation_is_informational"
       ],
       "impactAreas": [
         "pricing",
@@ -79372,8 +79641,17 @@
         "db:economic_snapshots",
         "db:economic_variables",
         "db:finance_config",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
         "db:products",
         "doctrine:browser_business_refs_only",
+        "doctrine:every_cost_line_is_explainable",
+        "doctrine:group_observation_is_informational",
+        "doctrine:market_observation_is_decisional_scope",
+        "doctrine:observed_real_never_auto_promotes_config",
+        "doctrine:same_engine_before_after",
+        "doctrine:simulation_never_persists",
         "doctrine:workspace_orchestrates_existing_pricing_authorities",
         "impact:admin-dashboard",
         "impact:catalog",
@@ -79383,6 +79661,7 @@
         "services/cost-component-admin-service.js",
         "services/economic-engine-queries.js",
         "services/pricing-apply.js",
+        "services/pricing-cost-explainability.js",
         "services/pricing-engine.js",
         "services/pricing-rates.js",
         "services/pricing-recommend.js",
