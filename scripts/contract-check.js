@@ -7,7 +7,9 @@
  * Règle : consommé ⊄ produit → erreur explicite → exit(1) → CI rouge.
  * La dette UNKNOWN n'est pas une erreur (on sait qu'on ne sait pas).
  * La dérive (route/champ disparu du contrat) est une erreur.
+ * Le registre docs/contract/DEBT.md doit refléter exactement les UNKNOWN réels.
  */
+const { execFileSync } = require('child_process');
 const fs   = require('fs');
 const path = require('path');
 
@@ -156,6 +158,13 @@ for (const [frontName, dir] of Object.entries(FRONT_DIRS)) {
   }
 }
 
+// Le registre de dette est une projection du contrat, pas une liste manuelle.
+try {
+  execFileSync(process.execPath, [path.join(__dirname, 'contract-debt-sync.js'), '--check'], { stdio: 'inherit' });
+} catch {
+  errors.push('❌ docs/contract/DEBT.md ne correspond pas aux réponses UNKNOWN réelles du contrat.');
+}
+
 // ── Rapport ───────────────────────────────────────────────────────────────────
 const age = contract['x-generated-at']
   ? new Date(contract['x-generated-at']).toLocaleString('fr-FR')
@@ -175,7 +184,7 @@ if (errors.length) {
   console.error(`❌ ${errors.length} dérive(s) bloquantes :\n`);
   errors.forEach(e => console.error(e + '\n'));
   console.error('→ Relancer `npm run contract:generate` si le changement est intentionnel,');
-  console.error('  puis documenter la dérive dans docs/contract/DEBT.md.');
+  console.error('  puis synchroniser docs/contract/DEBT.md avec `node scripts/contract-debt-sync.js --write`.');
   process.exit(1);
 }
 
