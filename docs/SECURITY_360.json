@@ -1,278 +1,279 @@
 {
-  "generatedAt": "2026-09-05T11:41:28.200Z",
-  "source": "hybrid: runtime inventory + static guard analysis",
+  "generatedAt": "2026-09-06T04:42:52.229Z",
+  "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 569,
     "protected": 518,
-    "public": 7,
-    "unprotected": 42,
+    "public": 51,
+    "unprotected": 0,
     "admin_no_guard": 0,
-    "unknown": 2
+    "unknown": 0
   },
-  "flagged": [
+  "flagged": [],
+  "dispositions": [
     {
       "key": "POST /api/auth/admin-reset",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/auth.js; tests/unit/auth-route.test.js",
+      "rationale": "Garde applicative : clé >=32 caractères, comparaison constante, désactivé par défaut en production et sans clé."
     },
     {
       "key": "POST /api/auth/guest-checkout",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "RETIRED",
+      "evidence": "routes/auth.js",
+      "rationale": "Ancienne voie non vérifiée retirée ; endpoint conservé uniquement comme tombstone HTTP 410."
     },
     {
       "key": "GET /api/auth/magic-link/validate",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/client-auth.js",
+      "rationale": "Validation publique d’un magic-link à token signé/mono-usage ; la possession du token est la capacité."
     },
     {
       "key": "POST /api/auth/magic-link",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/client-auth.js; features/auth-identity.feature.js",
+      "rationale": "Point d’entrée public d’authentification : il émet un lien de connexion, il ne consomme pas une session existante."
     },
     {
       "key": "POST /api/auth/otp/request",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/otp.js; tests/unit/otp-route.test.js",
+      "rationale": "Bootstrap OTP public avec cooldown par téléphone et plafond de demandes ; aucune session n’existe encore."
     },
     {
       "key": "POST /api/auth/otp/test-reset",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "TEST_ONLY",
+      "evidence": "routes/otp.js; services/otp-test-mode.js; tests/unit/otp-route.test.js",
+      "rationale": "Retourne 404 hors mode test ; le mode maître est explicitement impossible en production."
     },
     {
       "key": "POST /api/auth/otp/verify",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/otp.js; tests/unit/otp-route.test.js",
+      "rationale": "La vérification OTP est précisément l’étape qui crée la session vérifiée."
     },
     {
       "key": "GET /api/boutique/suggestions",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/boutique-suggestions.js",
+      "rationale": "Suggestions de découverte de la boutique, nécessaires avant authentification."
     },
     {
       "key": "GET /api/categories",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/categories.js; features/catalog.feature.js",
+      "rationale": "Taxonomie publique du catalogue."
     },
     {
       "key": "GET /api/client/magic-link/validate",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/client-auth.js",
+      "rationale": "Alias client du parcours magic-link ; token signé/mono-usage requis."
     },
     {
       "key": "POST /api/client/magic-link",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/client-auth.js; features/auth-identity.feature.js",
+      "rationale": "Alias public du bootstrap magic-link."
     },
     {
       "key": "GET /api/local-stock/availability",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/local-stock.js",
+      "rationale": "Projection read-only de disponibilité locale pour la découverte produit."
     },
     {
       "key": "GET /api/local-stock/checkout-preview",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/local-stock.js",
+      "rationale": "Projection read-only de fulfillment ; ne réserve ni ne mute aucun stock."
     },
     {
       "key": "GET /api/loyalty/tiers",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/loyalty.js; features/loyalty.feature.js",
+      "rationale": "Référentiel public des paliers de fidélité, sans donnée utilisateur."
     },
     {
       "key": "GET /api/modules/{type}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/modules.js",
+      "rationale": "Lecture publique d’un référentiel de module par type."
     },
     {
       "key": "GET /api/modules/fabrics",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/modules.js",
+      "rationale": "Référentiel public des tissus."
     },
     {
       "key": "GET /api/modules/models",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/modules.js",
+      "rationale": "Référentiel public des modèles."
     },
     {
       "key": "POST /api/modules/price",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/modules.js",
+      "rationale": "Calculateur public sans mutation métier persistante."
     },
     {
       "key": "GET /api/modules",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/modules.js",
+      "rationale": "Référentiel public des modules de configuration produit."
     },
     {
       "key": "GET /api/orders/retrait/{token}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/orders/qr.js; tests/unit/qr.test.js; features/orders.feature.js",
+      "rationale": "Page de retrait publique protégée par un token capability généré côté serveur et validé avant lecture."
     },
     {
       "key": "GET /api/payments/config",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/payments.js; features/payments.feature.js",
+      "rationale": "Expose uniquement la configuration/les clés publiables nécessaires au checkout navigateur."
     },
     {
       "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js",
+      "rationale": "Capture liée à un ordre PayPal opaque et réconciliée côté serveur ; l’identifiant PayPal sert de capacité."
     },
     {
       "key": "POST /api/payments/paypal/create-order",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js",
+      "rationale": "Étape PayPal du checkout navigateur ; l’autorité montant/commande est résolue côté serveur, pas depuis le client."
     },
     {
       "key": "POST /api/pricing/calculate",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/pricing.js",
+      "rationale": "Calculateur de prix public ; pas de mutation d’autorité métier."
     },
     {
       "key": "POST /api/pricing/couture",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/pricing.js",
+      "rationale": "Calculateur couture public ; pas de mutation d’autorité métier."
     },
     {
       "key": "GET /api/products/{id}/detail",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/catalog-product-detail.js; schemas/catalog/product-detail.v1.schema.json",
+      "rationale": "Contrat public de détail produit ; filtre explicitement les produits non exposables."
     },
     {
       "key": "GET /api/products/{id}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Fiche publique d’un produit exposable."
     },
     {
       "key": "GET /api/products/categories",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Projection publique des catégories catalogue."
     },
     {
       "key": "GET /api/products/subcategories",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Projection publique des sous-catégories catalogue."
     },
     {
       "key": "GET /api/products",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js; features/catalog.feature.js",
+      "rationale": "Catalogue marchand public."
     },
     {
       "key": "GET /api/providers-services/physical-offers/{id}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/providers-services.js",
+      "rationale": "Offre locale publique après contrôle serveur isPhysicalOfferExposable."
     },
     {
       "key": "GET /api/providers-services/services/{id}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/providers-services.js",
+      "rationale": "Service local public après contrôle serveur isServiceExposable."
     },
     {
       "key": "GET /api/relais/{id}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Détail public d’un point relais."
     },
     {
       "key": "GET /api/relais/public",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Projection publique des points relais."
     },
     {
       "key": "GET /api/relais",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Annuaire public des points relais."
     },
     {
       "key": "GET /api/shares/{token}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/shares.js; tests/unit/shares-token-entropy.test.js",
+      "rationale": "Snapshot non transactionnel adressé par token CSPRNG ; aucun paiement ni lifecycle métier n’est exposé."
     },
     {
       "key": "POST /api/shares",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/shares.js; middleware/rate-limit.js; tests/unit/shares-token-entropy.test.js",
+      "rationale": "Création publique d’un snapshot non transactionnel, rate-limitée, avec token CSPRNG."
     },
     {
       "key": "POST /api/tracking/{token}/verify-pickup",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/tracking.js; tests/unit/tracking.test.js; features/logistics.feature.js",
+      "rationale": "Capability token de tracking + vérification du secret de retrait hashé ; pas d’autorité par session implicite."
     },
     {
       "key": "GET /api/tracking/{token}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/tracking.js; tests/unit/tracking.test.js; features/logistics.feature.js",
+      "rationale": "Tracking public par capability token ; données client minimisées/masquées."
     },
     {
       "key": "GET /health/ready",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Readiness public pour l’orchestrateur."
     },
     {
       "key": "GET /health/version",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Version applicative publique utilisée par les probes/outils de diagnostic."
     },
     {
       "key": "GET /health",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Liveness public sans secret métier."
     },
     {
       "key": "GET /webhook/meta-whatsapp",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/meta-whatsapp.js; tests/unit/meta-whatsapp.test.js",
+      "rationale": "Handshake Meta vérifié par META_WA_VERIFY_TOKEN ; un mauvais token reçoit 403."
     },
     {
       "key": "POST /webhook/meta-whatsapp",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/meta-whatsapp.js; bootstrap/env.js; tests/unit/meta-whatsapp.test.js",
+      "rationale": "Signature X-Hub-Signature-256 HMAC-SHA256 vérifiée en temps constant ; secret obligatoire en production."
     }
   ],
   "routes": [
@@ -2070,7 +2071,7 @@
     },
     {
       "key": "POST /api/auth/admin-reset",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2080,7 +2081,7 @@
     },
     {
       "key": "POST /api/auth/guest-checkout",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2100,12 +2101,12 @@
     },
     {
       "key": "GET /api/auth/magic-link/validate",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/auth/magic-link",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2160,17 +2161,17 @@
     },
     {
       "key": "POST /api/auth/otp/request",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/auth/otp/test-reset",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/auth/otp/verify",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2220,7 +2221,7 @@
     },
     {
       "key": "GET /api/boutique/suggestions",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2316,7 +2317,7 @@
     },
     {
       "key": "GET /api/categories",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2326,12 +2327,12 @@
     },
     {
       "key": "GET /api/client/magic-link/validate",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/client/magic-link",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2801,12 +2802,12 @@
     },
     {
       "key": "GET /api/local-stock/availability",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/local-stock/checkout-preview",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2879,7 +2880,7 @@
     },
     {
       "key": "GET /api/loyalty/tiers",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2891,12 +2892,12 @@
     },
     {
       "key": "GET /api/modules/{type}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/modules/fabrics",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2908,7 +2909,7 @@
     },
     {
       "key": "GET /api/modules/models",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -2920,12 +2921,12 @@
     },
     {
       "key": "POST /api/modules/price",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/modules",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3031,7 +3032,7 @@
     },
     {
       "key": "GET /api/orders/retrait/{token}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3156,17 +3157,17 @@
     },
     {
       "key": "GET /api/payments/config",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/payments/paypal/create-order",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3281,12 +3282,12 @@
     },
     {
       "key": "POST /api/pricing/calculate",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/pricing/couture",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3355,7 +3356,7 @@
     },
     {
       "key": "GET /api/products/{id}/detail",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3430,7 +3431,7 @@
     },
     {
       "key": "GET /api/products/{id}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3442,17 +3443,17 @@
     },
     {
       "key": "GET /api/products/categories",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/products/subcategories",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/products",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3469,12 +3470,12 @@
     },
     {
       "key": "GET /api/providers-services/physical-offers/{id}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/providers-services/services/{id}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3549,17 +3550,17 @@
     },
     {
       "key": "GET /api/relais/{id}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/relais/public",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/relais",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3721,12 +3722,12 @@
     },
     {
       "key": "GET /api/shares/{token}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /api/shares",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -3766,12 +3767,12 @@
     },
     {
       "key": "POST /api/tracking/{token}/verify-pickup",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /api/tracking/{token}",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
@@ -4206,27 +4207,27 @@
     },
     {
       "key": "GET /health/ready",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /health/version",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /health",
-      "level": "UNPROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "GET /webhook/meta-whatsapp",
-      "level": "UNKNOWN",
+      "level": "PUBLIC",
       "roles": []
     },
     {
       "key": "POST /webhook/meta-whatsapp",
-      "level": "UNKNOWN",
+      "level": "PUBLIC",
       "roles": []
     }
   ]
