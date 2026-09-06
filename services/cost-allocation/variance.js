@@ -6,12 +6,12 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, services/cost-allocation/cost-types.js
  * @used-by       services/cost-allocation/index.js
  * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders
  * @db-write      (none)
  * @db-txn        @none
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      pricing_market_viability_cost_scope
  * @impact-areas  economic-engine, admin-costing
  * @version       2026-09
  */
@@ -25,6 +25,11 @@
  * N3 (structure de période) reste visible séparément et n'entre jamais
  * dans cette variance.
  *
+ * La classification des cost_type vient exclusivement de cost-types.js.
+ * `hub` est N1 variable ; `payment` et `risk_provision` sont N2 variables ;
+ * `fixed_overhead` est une structure legacy d'allocation commande, pas la
+ * future vérité N3 de période.
+ *
  * Si le split N2/N3 manque sur un ancien snapshot, la variance est NULL :
  * une absence de vérité ne devient jamais 0.
  */
@@ -32,8 +37,11 @@
 'use strict';
 
 const db = require('../../db');
-
-const STRUCTURE_COST_TYPES = new Set(['fixed_overhead']);
+const {
+  VARIABLE_COST_TYPES,
+  ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
+  classifyOrderAllocationCostType,
+} = require('./cost-types');
 
 function _roundOrNull(value) {
   return value == null || !Number.isFinite(Number(value)) ? null : Math.round(Number(value));
@@ -43,25 +51,40 @@ function _splitRealRows(rows) {
   const byType = {};
   const variableByType = {};
   const structureByType = {};
+  const unknownByType = {};
   let total = 0;
   let variableTotal = 0;
   let structureTotal = 0;
+  let unknownTotal = 0;
 
   for (const row of rows || []) {
     const amount = Number(row.amount) || 0;
     byType[row.cost_type] = amount;
     total += amount;
 
-    if (STRUCTURE_COST_TYPES.has(row.cost_type)) {
+    const scope = classifyOrderAllocationCostType(row.cost_type);
+    if (scope === 'structure_legacy') {
       structureByType[row.cost_type] = amount;
       structureTotal += amount;
-    } else {
+    } else if (scope === 'variable') {
       variableByType[row.cost_type] = amount;
       variableTotal += amount;
+    } else {
+      unknownByType[row.cost_type] = amount;
+      unknownTotal += amount;
     }
   }
 
-  return { byType, variableByType, structureByType, total, variableTotal, structureTotal };
+  return {
+    byType,
+    variableByType,
+    structureByType,
+    unknownByType,
+    total,
+    variableTotal,
+    structureTotal,
+    unknownTotal,
+  };
 }
 
 function _variance(realValue, estimatedValue) {
@@ -116,6 +139,7 @@ async function computeOrderCostVariance(orderId) {
     : null;
 
   const real = _splitRealRows(realRes.rows);
+  const comparable = estimatedVariable != null && real.unknownTotal === 0;
 
   return {
     order_id: orderId,
@@ -132,12 +156,14 @@ async function computeOrderCostVariance(orderId) {
       total_kmf: Math.round(real.total),
       variable_total_kmf: Math.round(real.variableTotal),
       structure_total_kmf: Math.round(real.structureTotal),
+      unknown_total_kmf: Math.round(real.unknownTotal),
       by_cost_type: real.byType,
       variable_by_cost_type: real.variableByType,
       structure_by_cost_type: real.structureByType,
+      unknown_by_cost_type: real.unknownByType,
     },
-    variance: _variance(real.variableTotal, estimatedVariable),
-    reconciliation_status: estimatedVariable == null ? 'not_decisional' : 'comparable_scope',
+    variance: comparable ? _variance(real.variableTotal, estimatedVariable) : null,
+    reconciliation_status: comparable ? 'comparable_scope' : 'not_decisional',
   };
 }
 
@@ -162,6 +188,11 @@ async function computeProductCostVariance(productId, options = {}) {
     impWhere.push(`o.created_at <= $${idx}`);
     realWhere.push(`ro.created_at <= $${idx}`);
   }
+
+  params.push(VARIABLE_COST_TYPES);
+  const variableTypesParam = `$${params.length}`;
+  params.push(ORDER_ALLOCATION_STRUCTURE_COST_TYPES);
+  const structureTypesParam = `$${params.length}`;
 
   const sql = `
     WITH scoped_imp AS (
@@ -195,13 +226,19 @@ async function computeProductCostVariance(productId, options = {}) {
       COALESCE((
         SELECT SUM(sr.amount_kmf)
         FROM scoped_real sr
-        WHERE sr.cost_type <> 'fixed_overhead'
+        WHERE sr.cost_type = ANY(${variableTypesParam}::text[])
       ), 0) AS total_real_variable_kmf,
       COALESCE((
         SELECT SUM(sr.amount_kmf)
         FROM scoped_real sr
-        WHERE sr.cost_type = 'fixed_overhead'
-      ), 0) AS total_real_structure_kmf
+        WHERE sr.cost_type = ANY(${structureTypesParam}::text[])
+      ), 0) AS total_real_structure_kmf,
+      COALESCE((
+        SELECT SUM(sr.amount_kmf)
+        FROM scoped_real sr
+        WHERE NOT (sr.cost_type = ANY(${variableTypesParam}::text[]))
+          AND NOT (sr.cost_type = ANY(${structureTypesParam}::text[]))
+      ), 0) AS total_real_unknown_kmf
     FROM scoped_imp imp
     GROUP BY imp.product_id
   `;
@@ -215,7 +252,9 @@ async function computeProductCostVariance(productId, options = {}) {
   const estimated = row.total_estimated_variable_kmf == null ? null : Number(row.total_estimated_variable_kmf);
   const realVariable = Number(row.total_real_variable_kmf) || 0;
   const realStructure = Number(row.total_real_structure_kmf) || 0;
-  const variance = _variance(realVariable, estimated);
+  const realUnknown = Number(row.total_real_unknown_kmf) || 0;
+  const comparable = estimated != null && realUnknown === 0;
+  const variance = comparable ? _variance(realVariable, estimated) : null;
 
   return {
     product_id: row.product_id,
@@ -228,16 +267,17 @@ async function computeProductCostVariance(productId, options = {}) {
     total_estimated_variable_kmf: _roundOrNull(estimated),
     total_real_variable_kmf: Math.round(realVariable),
     total_real_structure_kmf: Math.round(realStructure),
+    total_real_unknown_kmf: Math.round(realUnknown),
     variance_kmf: variance ? variance.total_kmf : null,
     variance_pct: variance ? variance.total_pct : null,
     variance_scope: 'N1+N2',
     missing_variable_snapshot_count: Number(row.missing_variable_snapshot_count) || 0,
-    reconciliation_status: estimated == null ? 'not_decisional' : 'comparable_scope',
+    reconciliation_status: comparable ? 'comparable_scope' : 'not_decisional',
   };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 8. getOrderCostTruth — verite economique complete d'une order
+// 8. getOrderCostTruth — vérité économique variable d'une order
 // ═══════════════════════════════════════════════════════════════════════
 
 async function getOrderCostTruth(orderId) {
@@ -287,31 +327,18 @@ async function getOrderCostTruth(orderId) {
     totalRealKmf += Number(row.amount);
   }
 
-  // Compatibilite D-full : le statut existant reste inchangé dans ce lot.
-  // La redéfinition du watermark de maturité fera l'objet du lot suivant.
-  const expectedVariable = ['product_purchase', 'freight', 'customs', 'local_distribution', 'relay'];
-  const expectedFixed = ['hub', 'risk_provision', 'fixed_overhead'];
-  const expectedAll = [...expectedVariable, ...expectedFixed, 'payment'];
-
   const present = Object.keys(realByType);
+  const expectedVariable = VARIABLE_COST_TYPES;
   const missingVariable = expectedVariable.filter(t => !present.includes(t));
-  const missingFixed = expectedFixed.filter(t => !present.includes(t));
-  const missingPayment = !present.includes('payment') ? ['payment'] : [];
-  const missing = [...missingVariable, ...missingFixed, ...missingPayment];
+  const unknown = present.filter(t => classifyOrderAllocationCostType(t) === 'unknown');
 
   let costStatus;
   if (Number(est.imputations_count) === 0) costStatus = 'incomplete';
   else if (totalRealKmf === 0) costStatus = 'estimated';
-  else if (missingVariable.length > 0) costStatus = 'partial_real';
-  else if (missingFixed.length > 0 || missingPayment.length > 0) costStatus = 'partial_real';
-  else costStatus = 'actual';
+  else if (missingVariable.length > 0 || unknown.length > 0) costStatus = 'partial_real';
+  else costStatus = 'actual_variable';
 
   const sale = Number(est.sale_total) || Number(order.total_kmf) || 0;
-  const realMarginKmf = costStatus === 'actual' ? (sale - totalRealKmf) : null;
-  const realMarginPct = (realMarginKmf != null && sale > 0)
-    ? Number(((realMarginKmf / sale) * 100).toFixed(2))
-    : null;
-
   const totalEstBusiness = est.estimated_business == null ? null : Number(est.estimated_business);
   const totalEstLanded = est.estimated_landed == null ? null : Number(est.estimated_landed);
   const totalEstN2 = est.estimated_business_variable == null ? null : Number(est.estimated_business_variable);
@@ -323,7 +350,12 @@ async function getOrderCostTruth(orderId) {
 
   const realSplitRows = realRes.rows.map(row => ({ cost_type: row.cost_type, amount: row.amount }));
   const realSplit = _splitRealRows(realSplitRows);
-  const variance = _variance(realSplit.variableTotal, totalEstVariable);
+  const comparable = totalEstVariable != null && realSplit.unknownTotal === 0;
+  const variance = comparable ? _variance(realSplit.variableTotal, totalEstVariable) : null;
+  const realVariableMarginKmf = costStatus === 'actual_variable' ? (sale - realSplit.variableTotal) : null;
+  const realVariableMarginPct = (realVariableMarginKmf != null && sale > 0)
+    ? Number(((realVariableMarginKmf / sale) * 100).toFixed(2))
+    : null;
 
   return {
     order_id: order.id,
@@ -349,15 +381,17 @@ async function getOrderCostTruth(orderId) {
     real: {
       total_kmf: totalRealKmf > 0 ? Math.round(totalRealKmf) : null,
       variable_total_kmf: totalRealKmf > 0 ? Math.round(realSplit.variableTotal) : null,
-      structure_total_kmf: totalRealKmf > 0 ? Math.round(realSplit.structureTotal) : null,
-      margin_kmf: realMarginKmf != null ? Math.round(realMarginKmf) : null,
-      margin_pct: realMarginPct,
+      structure_legacy_total_kmf: totalRealKmf > 0 ? Math.round(realSplit.structureTotal) : null,
+      unknown_total_kmf: totalRealKmf > 0 ? Math.round(realSplit.unknownTotal) : null,
+      margin_kmf: realVariableMarginKmf != null ? Math.round(realVariableMarginKmf) : null,
+      margin_pct: realVariableMarginPct,
       by_cost_type: realByType,
     },
     variance,
-    reconciliation_status: totalEstVariable == null ? 'not_decisional' : 'comparable_scope',
+    reconciliation_status: comparable ? 'comparable_scope' : 'not_decisional',
     cost_status: costStatus,
-    missing_cost_fields: missing,
+    missing_cost_fields: [...missingVariable, ...unknown.map(t => `unknown:${t}`)],
+    structure_period_status: 'not_evaluated_here',
   };
 }
 
