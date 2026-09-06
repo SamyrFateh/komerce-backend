@@ -110,12 +110,6 @@
   {
     "file": "public/boutique/js/b-komerce.js",
     "category": "xss",
-    "contains": "LOT4B_STATIC_WALLET_CONTAINER",
-    "reason": "Lot 4B : conteneur statique requis pour monter le renderer wallet canonique."
-  },
-  {
-    "file": "public/boutique/js/b-komerce.js",
-    "category": "xss",
     "contains": "LOT4B_STATIC_PROFILE_SHELL",
     "reason": "Lot 4B : formulaire statique ; les donn?es API sont assign?es ensuite via les propri?t?s DOM value."
   },

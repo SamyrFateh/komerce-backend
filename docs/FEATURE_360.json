@@ -49,21 +49,21 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 236,
+    "businessDependencies": 240,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
     "debtItemsTotal": 0,
-    "gateHealthy": 32,
-    "gateBlocked": 0
+    "gateHealthy": 30,
+    "gateBlocked": 2
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-3.0",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 2,
-    "attributedFindings": 2,
+    "totalFindings": 5,
+    "attributedFindings": 5,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -2273,7 +2273,7 @@
       "service": "Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.",
       "perimeter": {
         "in": [
-          "connecteurs fournisseurs (CSV, API, manuel, Noon)",
+          "connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping)",
           "contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait",
           "publication produit et déclenchement de l audit prix via economic-engine",
           "categories boutique admin",
@@ -2284,7 +2284,9 @@
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
           "glossaire metier EN->FR (catalog_glossary)",
-          "file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active"
+          "file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active",
+          "bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée",
+          "pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique"
         ],
         "out": [
           "calcul du prix final et valorisation transport (feature economic-engine)",
@@ -2313,7 +2315,8 @@
         "le prompt d enrichissement est du code : versionne dans le depot, chaque run trace, un echec IA ne bloque jamais un import",
         "la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage",
         "le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css",
-        "aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux"
+        "aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux",
+        "le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement"
       ],
       "implementation": {
         "byCategory": {
@@ -2518,8 +2521,13 @@
             ]
           },
           "ci": {
-            "count": 3,
+            "count": 6,
             "files": [
+              {
+                "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
+                "resolvedPath": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
                 "resolvedPath": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
@@ -2528,6 +2536,16 @@
               {
                 "declared": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
                 "resolvedPath": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/catalog-prod-smoke.yml",
+                "resolvedPath": ".github/workflows/catalog-prod-smoke.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/cj-real-showcase-contract.yml",
+                "resolvedPath": ".github/workflows/cj-real-showcase-contract.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2573,8 +2591,43 @@
             ]
           },
           "docs": {
-            "count": 4,
+            "count": 11,
             "files": [
+              {
+                "declared": "docs/CJ_CONNECTOR.md",
+                "resolvedPath": "docs/CJ_CONNECTOR.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-connector-validation.md",
+                "resolvedPath": "docs/cj-connector-validation.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-real-showcase-63-checklist.md",
+                "resolvedPath": "docs/cj-real-showcase-63-checklist.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-real-showcase-63-scope.md",
+                "resolvedPath": "docs/cj-real-showcase-63-scope.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-real-showcase-63.md",
+                "resolvedPath": "docs/cj-real-showcase-63.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-real-showcase-runbook.md",
+                "resolvedPath": "docs/cj-real-showcase-runbook.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/cj-real-showcase-validation.md",
+                "resolvedPath": "docs/cj-real-showcase-validation.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "docs/doctrine/DOCTRINE_CATALOGUE.md",
                 "resolvedPath": "docs/doctrine/DOCTRINE_CATALOGUE.md",
@@ -2608,7 +2661,7 @@
             ]
           },
           "migrations": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2674,6 +2727,11 @@
                 "declared": "migrations/150_catalog_import_business_ref.sql",
                 "resolvedPath": "migrations/150_catalog_import_business_ref.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/163_supplier_catalog_sync_checkpoints.sql",
+                "resolvedPath": "migrations/163_supplier_catalog_sync_checkpoints.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -2737,8 +2795,23 @@
               }
             ]
           },
+          "scripts": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "scripts/cj-full-catalog-sync.js",
+                "resolvedPath": "scripts/cj-full-catalog-sync.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/cj-real-showcase-seed.js",
+                "resolvedPath": "scripts/cj-real-showcase-seed.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "services": {
-            "count": 39,
+            "count": 42,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2876,6 +2949,16 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/catalog-sync-checkpoint.js",
+                "resolvedPath": "services/suppliers/catalog-sync-checkpoint.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/cj-catalog-index.js",
+                "resolvedPath": "services/suppliers/cj-catalog-index.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/connectors/_connector-utils.js",
                 "resolvedPath": "services/suppliers/connectors/_connector-utils.js",
                 "status": "resolved-in-technical-graph"
@@ -2883,6 +2966,11 @@
               {
                 "declared": "services/suppliers/connectors/api-connector.base.js",
                 "resolvedPath": "services/suppliers/connectors/api-connector.base.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/connectors/cj-connector.js",
+                "resolvedPath": "services/suppliers/connectors/cj-connector.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2938,7 +3026,7 @@
             ]
           },
           "tests": {
-            "count": 48,
+            "count": 62,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -3066,6 +3154,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-sync-checkpoint.test.js",
+                "resolvedPath": "tests/unit/catalog-sync-checkpoint.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-test-placeholder-migration.test.js",
                 "resolvedPath": "tests/unit/catalog-test-placeholder-migration.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3083,6 +3176,31 @@
               {
                 "declared": "tests/unit/categories.test.js",
                 "resolvedPath": "tests/unit/categories.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-catalog-index.test.js",
+                "resolvedPath": "tests/unit/cj-catalog-index.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-connector-doc-contract.test.js",
+                "resolvedPath": "tests/unit/cj-connector-doc-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-connector.test.js",
+                "resolvedPath": "tests/unit/cj-connector.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-full-catalog-sync.test.js",
+                "resolvedPath": "tests/unit/cj-full-catalog-sync.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-real-showcase-seed.test.js",
+                "resolvedPath": "tests/unit/cj-real-showcase-seed.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3116,6 +3234,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/media-normalizer.test.js",
+                "resolvedPath": "tests/unit/media-normalizer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/modal-mobile-canonical.test.js",
                 "resolvedPath": "tests/unit/modal-mobile-canonical.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3136,6 +3259,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pipeline-constants.test.js",
+                "resolvedPath": "tests/unit/pipeline-constants.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/product-admin-service.test.js",
                 "resolvedPath": "tests/unit/product-admin-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3151,8 +3279,33 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/product-sellable-service.test.js",
+                "resolvedPath": "tests/unit/product-sellable-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/product-sku-service.test.js",
+                "resolvedPath": "tests/unit/product-sku-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/product-stock-service.test.js",
+                "resolvedPath": "tests/unit/product-stock-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/product-variant-service.test.js",
+                "resolvedPath": "tests/unit/product-variant-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/products.test.js",
                 "resolvedPath": "tests/unit/products.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/promotion-classifier.test.js",
+                "resolvedPath": "tests/unit/promotion-classifier.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3168,6 +3321,11 @@
               {
                 "declared": "tests/unit/scan-engine-extras.test.js",
                 "resolvedPath": "tests/unit/scan-engine-extras.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/source-product-normalizer.test.js",
+                "resolvedPath": "tests/unit/source-product-normalizer.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3193,7 +3351,7 @@
             ]
           }
         },
-        "totalFiles": 163,
+        "totalFiles": 193,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -3485,6 +3643,10 @@
           {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
+          },
+          {
+            "table": "supplier_catalog_sync_checkpoints",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -3563,6 +3725,12 @@
           {
             "table": "supplier_catalog_imports",
             "mode": "W",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_catalog_sync_checkpoints",
+            "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
           }
@@ -3643,6 +3811,10 @@
           {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
+          },
+          {
+            "table": "supplier_catalog_sync_checkpoints",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -3721,6 +3893,12 @@
           {
             "table": "supplier_catalog_imports",
             "mode": "W",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_catalog_sync_checkpoints",
+            "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
           }
@@ -4017,11 +4195,39 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "HEALTHY",
-        "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "status": "BLOCKED",
+        "failCount": 1,
+        "warnCount": 2,
+        "gatesReporting": [
+          "check:imports",
+          "gate:feature-guard"
+        ],
+        "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
+          },
+          {
+            "gate": "gate:feature-guard",
+            "scope": "boutique",
+            "type": "FEATURE-GUARD",
+            "verdict": "fail",
+            "file": null,
+            "message": "@domain mismatch : ../js/product-image-loading-ux.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -5280,7 +5486,7 @@
             ]
           },
           "tests": {
-            "count": 64,
+            "count": 65,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5593,6 +5799,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sw.test.js",
+                "resolvedPath": "tests/unit/sw.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/system.test.js",
                 "resolvedPath": "tests/unit/system.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5605,7 +5816,7 @@
             ]
           }
         },
-        "totalFiles": 212,
+        "totalFiles": 213,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6122,11 +6333,15 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 2,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "loyalty",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "platform",
             "family": "NON_RUNTIME_TEST"
           }
         ]
@@ -8092,7 +8307,7 @@
           },
           {
             "table": "store_credits",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": null
           },
           {
             "table": "users",
@@ -8374,7 +8589,7 @@
           },
           {
             "table": "store_credits",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": null
           },
           {
             "table": "users",
@@ -9143,7 +9358,7 @@
             ]
           },
           "ci": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -9253,6 +9468,11 @@
               {
                 "declared": ".github/workflows/pr-enforcement.yml",
                 "resolvedPath": ".github/workflows/pr-enforcement.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/railway-prod-unblock.yml",
+                "resolvedPath": ".github/workflows/railway-prod-unblock.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9818,7 +10038,7 @@
             ]
           },
           "scripts": {
-            "count": 90,
+            "count": 91,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -10141,6 +10361,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/impact-suppression-check.js",
+                "resolvedPath": "scripts/impact-suppression-check.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/impact-suppressions.json",
                 "resolvedPath": "scripts/impact-suppressions.json",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10403,7 +10628,7 @@
             ]
           }
         },
-        "totalFiles": 279,
+        "totalFiles": 281,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11523,67 +11748,73 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, projeter une disponibilité calculée — jamais stockée — à partir de ce stock déduction faite des allocations actives, et engager/consommer/libérer ce stock au fil du cycle de vie d'une commande (Vague 2 D2). Toujours shadow côté FRONTEND (IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md, RECHALLENGE_DOCTRINE_DISCOVERY_LOCALE_V2.md §I) : commercial_exposure reste DISABLED par défaut, aucune route HTTP publique, aucun composant Boutique — mais depuis D2, deux points d'intégration backend délibérés et revus (routes/orders/create.js, order-status-machine.js) protègent déjà le stock réel dès la première commande, sans qu'aucune exposition ne soit visible côté client.",
+      "service": "Porter le stock physique vendable local, calculer la disponibilité nette des allocations actives, projeter une disponibilité publique minimale et engager/consommer/libérer ce stock dans le cycle commande.",
       "perimeter": {
         "in": [
-          "table local_stock (product_id, market_id, location texte, qty_physical, commercial_exposure DISABLED par défaut — Vague 2 D2)",
-          "table local_stock_allocations (engagement d'une commande sur un stock local, avant tout paiement — Vague 2 D2)",
-          "projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée, déduit les allocations actives (qty_physical - SUM(actives))",
-          "isStockExposable() — exposure ENABLED ET quantité réellement disponible (allocations actives déduites), jamais l'un sans l'autre",
-          "ajustement du stock local par un opérateur (mutation directe, tracée updated_by)",
-          "cycle allocate (création commande) -> consume (paiement confirmé) | release (annulation/échec/abandon) — idempotent par construction (WHERE consumed_at IS NULL AND released_at IS NULL), pas de qty_allocated matérialisé (calculé à la volée, micro-arbitrage validé)"
+          "table local_stock : quantité physique, marché, lieu et commercial_exposure",
+          "table local_stock_allocations : engagement anti-survente avant paiement",
+          "projection availability calculée AVAILABLE_NOW | UNAVAILABLE, jamais persistée",
+          "projection checkout read-only LOCAL_STOCK | IMPORT | REVIEW_REQUIRED, quantité-aware et relay-scoped, jamais persistée",
+          "isStockExposable() : exposure ENABLED et disponibilité nette positive",
+          "cycle allocate -> consume | release, atomique avec la transaction orders",
+          "ajustement opérateur du stock local, tracé via updated_by"
         ],
         "out": [
-          "stock hub/transit (feature inventory — inventory_items, invariant propre)",
-          "stock import/national (feature catalog — products.stock, product_skus.stock)",
-          "réservation panier avec TTL / expiration automatique / cron dédié (le release se déclenche uniquement sur un événement réel déjà émis par orders — annulation, échec paiement, abandon cash — jamais une horloge inventée par ce domaine)",
-          "branchement sur unsold-resolution (étage différent : stock déjà CONSOMMÉ, commande jamais retirée — pas un échec avant consommation)",
-          "référentiel de lieux multiples (un seul entrepôt KM_MAIN au lancement — location est un texte, jamais une FK, tant qu'un deuxième lieu réel n'existe pas)",
-          "granularité variant_combo (scope product_id uniquement à ce stade — limitation explicite, pas un oubli)",
-          "toute exposition Boutique/checkout (Vague 2, lots D3+, hors périmètre de cette feature)",
-          "ETA / délai (appartient au domaine transport rail — DOCTRINE_TRANSPORT_RAILS.md — jamais un concept produit par local-stock)"
+          "stock hub/transit : feature inventory",
+          "stock import/national : feature catalog",
+          "pricing transport : local-stock ne calcule aucun fret",
+          "ETA import : domaine transport rail, jamais produit par local-stock",
+          "parcels et retrait : feature logistics",
+          "création et lifecycle commande : feature orders",
+          "autorité transactionnelle du checkout : POST /api/orders refait toujours la résolution sous verrou",
+          "réservation panier avec TTL ou cron dédié",
+          "granularité variant_combo : scope product_id uniquement à ce stade"
         ]
       },
-      "authority": "backend-core — tout changement du calcul de disponibilité locale doit être validé par le propriétaire de local-stock-service.js",
+      "authority": "backend-core — toute règle de vérité physique locale, exposition ou engageabilité reste dans la feature local-stock.",
       "invariants": [
         {
           "statement": "qty_physical ne descend jamais sous zéro",
           "test": "tests/unit/local-stock-service.test.js"
         },
         {
-          "statement": "la route GET /availability ne fait jamais confiance à un market_id brut fourni par le client — market est un CODE (KM|YT|CM|CG), résolu et validé serveur (resolveMarketId, markets.is_active=true) avant tout appel à isStockExposable/getAvailability",
+          "statement": "la disponibilité locale n’est jamais lue depuis products.stock ou product_skus.stock",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "availability, preview et allocation déduisent les allocations actives ; jamais qty_physical brut seul",
+          "test": "tests/unit/local-stock-checkout-preview.test.js"
+        },
+        {
+          "statement": "la preview checkout est read-only, sans FOR UPDATE ni réservation ; elle n’est jamais l’autorité finale",
+          "test": "tests/unit/local-stock-checkout-preview.test.js"
+        },
+        {
+          "statement": "une lane locale exposée devenue insuffisante produit REVIEW_REQUIRED en preview et local_stock_insufficient au checkout transactionnel ; jamais un fallback silencieux IMPORT",
+          "test": "tests/unit/local-stock-checkout-preview.test.js"
+        },
+        {
+          "statement": "resolveCheckoutFulfillmentSources agrège les quantités par produit et verrouille les lignes locales dans un ordre déterministe",
+          "test": "tests/unit/local-stock-fulfillment-resolver.test.js"
+        },
+        {
+          "statement": "allocate/consume/release exigent le client de transaction appelant et restent atomiques avec orders",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "consume et release sont idempotents ; un webhook rejoué ou une double annulation ne double jamais l’effet stock",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "GET /availability ne fait jamais confiance à un market_id brut client : le code marché est résolu serveur",
           "test": "tests/unit/local-stock-routes.test.js"
         },
         {
-          "statement": "la disponibilité n'est jamais lue depuis products.stock ou product_skus.stock — uniquement depuis local_stock",
-          "test": "tests/unit/local-stock-service.test.js"
+          "statement": "GET /checkout-preview ne fait jamais confiance à un market_id brut client : le marché est résolu depuis relais.market_id",
+          "test": "tests/unit/local-stock-routes.test.js"
         },
         {
-          "statement": "availability/isStockExposable déduisent toujours les allocations actives (consumed_at IS NULL AND released_at IS NULL) — jamais qty_physical brut seul, sinon le badge mentirait sur une unité déjà engagée par une autre commande en cours de paiement",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "allocateForOrderItem/consumeAllocationsForOrder/releaseAllocationsForOrder exigent un client de transaction explicite (jamais le pool global) — reste atomique avec la mutation orders qui les entoure",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "consume et release sont idempotents par construction (WHERE consumed_at IS NULL AND released_at IS NULL dans la requête elle-même) — un webhook rejoué ou une double annulation sont des no-op, jamais un double décrément ni une double libération",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "allocateForOrderItem verrouille la ligne local_stock (FOR UPDATE) avant de calculer la disponibilité — deux allocations concurrentes sur le même produit sont sérialisées, jamais une survente (vérifié en mock ET réellement contre Postgres — verrou bloquant confirmé par timeout)",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "release ne touche jamais qty_physical (l'unité n'a jamais été réellement prélevée avant consume)",
-          "test": "tests/unit/local-stock-service.test.js"
-        },
-        {
-          "statement": "Boutique ne lit jamais une ligne local_stock ni le service owner directement : elle ne consomme que la projection publique availability/exposable via la frontière Discovery, et le checkout conserve les mutations allocate/consume/release via les services owners",
-          "test": "tests/unit/shadow-domains-boundary.test.js"
-        },
-        {
-          "statement": "GET /api/local-stock/availability ne renvoie jamais le pourquoi d'une indisponibilité (allocations actives, exposure DISABLED...) — uniquement availability/exposable, jamais une vérité métier détaillée",
+          "statement": "les projections publiques ne renvoient jamais qty_physical, allocations actives ou commercial_exposure brut",
           "test": "tests/unit/local-stock-routes.test.js"
         }
       ],
@@ -11600,8 +11831,13 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "services/local-stock-checkout-preview.js",
+                "resolvedPath": "services/local-stock-checkout-preview.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/local-stock-service.js",
                 "resolvedPath": "services/local-stock-service.js",
@@ -11610,8 +11846,18 @@
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/unit/local-stock-checkout-preview.test.js",
+                "resolvedPath": "tests/unit/local-stock-checkout-preview.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/local-stock-fulfillment-resolver.test.js",
+                "resolvedPath": "tests/unit/local-stock-fulfillment-resolver.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/local-stock-routes.test.js",
                 "resolvedPath": "tests/unit/local-stock-routes.test.js",
@@ -11625,7 +11871,7 @@
             ]
           }
         },
-        "totalFiles": 4,
+        "totalFiles": 7,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11665,6 +11911,10 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -11701,11 +11951,41 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
           }
         ]
       },
       "interfaces": {
-        "internalApis": [],
+        "internalApis": [
+          {
+            "fn": "allocateForOrderItem",
+            "file": "services/local-stock-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "consumeAllocationsForOrder",
+            "file": "services/local-stock-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "previewCheckoutFulfillmentSources",
+            "file": "services/local-stock-checkout-preview.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "releaseAllocationsForOrder",
+            "file": "services/local-stock-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCheckoutFulfillmentSources",
+            "file": "services/local-stock-service.js",
+            "status": "resolved"
+          }
+        ],
         "httpInterfaces": {
           "count": 0
         }
@@ -11723,6 +12003,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -11816,6 +12103,8 @@
           "scan et operations colis",
           "creation automatique de colis",
           "secrets de retrait",
+          "retrait partiel parcel-scoped avec rotation one-shot du secret order-level",
+          "compatibilité verify→collect : le code courant est revalidé atomiquement à chaque remise physique",
           "tracking client et transitaire",
           "relais et transporteurs",
           "consignes hub prescrites au scan : repack, mesure volume, photo de scelle (bornes de responsabilite)",
@@ -12015,7 +12304,7 @@
             ]
           },
           "services": {
-            "count": 21,
+            "count": 23,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -12093,6 +12382,16 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pickup-secret-issuer.js",
+                "resolvedPath": "services/pickup-secret-issuer.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pickup-secret-rotation-service.js",
+                "resolvedPath": "services/pickup-secret-rotation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pickup-secret-service.js",
                 "resolvedPath": "services/pickup-secret-service.js",
                 "status": "resolved-in-technical-graph"
@@ -12125,7 +12424,7 @@
             ]
           },
           "tests": {
-            "count": 37,
+            "count": 45,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
@@ -12238,6 +12537,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/parcelSync.partial-pickup.test.js",
+                "resolvedPath": "tests/unit/parcelSync.partial-pickup.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/parcelSync.test.js",
                 "resolvedPath": "tests/unit/parcelSync.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12248,8 +12552,43 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pickup-code-helpers.test.js",
+                "resolvedPath": "tests/unit/pickup-code-helpers.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-collection-recorder.test.js",
+                "resolvedPath": "tests/unit/pickup-collection-recorder.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-collection-service.test.js",
+                "resolvedPath": "tests/unit/pickup-collection-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "resolvedPath": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pickup-receipt-html.test.js",
                 "resolvedPath": "tests/unit/pickup-receipt-html.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-secret-access-service.test.js",
+                "resolvedPath": "tests/unit/pickup-secret-access-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-secret-issuer.test.js",
+                "resolvedPath": "tests/unit/pickup-secret-issuer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-secret-rotation-service.test.js",
+                "resolvedPath": "tests/unit/pickup-secret-rotation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12335,7 +12674,7 @@
             ]
           }
         },
-        "totalFiles": 89,
+        "totalFiles": 99,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12810,6 +13149,13 @@
           ]
         },
         {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12928,6 +13274,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
             "data-read"
           ]
         },
@@ -13081,8 +13434,13 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/unit/admin-loyalty-route.test.js",
+                "resolvedPath": "tests/unit/admin-loyalty-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/loyalty-notification.test.js",
                 "resolvedPath": "tests/unit/loyalty-notification.test.js",
@@ -13101,7 +13459,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 7,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13330,13 +13688,13 @@
     {
       "id": "market",
       "kind": "business-feature",
-      "status": "draft",
+      "status": "production",
       "manifestFile": "features/market.feature.js",
       "repo": "backend",
       "identity": {
         "id": "market",
         "kind": "business-feature",
-        "status": "draft"
+        "status": "production"
       },
       "service": "Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
       "perimeter": {
@@ -13345,6 +13703,7 @@
           "historique d'accès operator_market_scopes (grain user, jamais settlement) — M1",
           "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
           "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2",
+          "consommation runtime de requireMarketScope par les surfaces admin canoniques scopées par marché (Dashboard, Order 360, Client, Pricing, Opérations, Finance et Expéditions/Douane)",
           "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2",
           "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5",
           "parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1",
@@ -13354,7 +13713,6 @@
         ],
         "out": [
           "MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope",
-          "branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé",
           "migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque",
           "conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion). b-utils.js devient un ADAPTER de cette boundary en P2, jamais l'inverse",
           "P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market en EUR reference — non faits, dépendent de P3/P2 respectivement",
@@ -13451,11 +13809,16 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
                 "resolvedPath": "middleware/require-market-scope.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-scope-admin-service.js",
+                "resolvedPath": "services/market-scope-admin-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -13466,7 +13829,7 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
@@ -13509,6 +13872,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-scope-admin-service.test.js",
+                "resolvedPath": "tests/unit/market-scope-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/require-market-scope.test.js",
                 "resolvedPath": "tests/unit/require-market-scope.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13516,7 +13884,7 @@
             ]
           }
         },
-        "totalFiles": 20,
+        "totalFiles": 22,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13632,6 +14000,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -14360,7 +14735,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 2,
+        "warnCount": 1,
         "gatesReporting": [
           "check:imports"
         ],
@@ -14372,14 +14747,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
           }
         ]
       },
@@ -14613,7 +14980,7 @@
             ]
           },
           "tests": {
-            "count": 33,
+            "count": 37,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -14676,6 +15043,21 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/order-checkout-item-resolution.test.js",
+                "resolvedPath": "tests/unit/order-checkout-item-resolution.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-checkout-persistence.test.js",
+                "resolvedPath": "tests/unit/order-checkout-persistence.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-checkout-service-relay-boundary.test.js",
+                "resolvedPath": "tests/unit/order-checkout-service-relay-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/order-cost-snapshot.test.js",
                 "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14698,6 +15080,11 @@
               {
                 "declared": "tests/unit/order-payment-confirmation.test.js",
                 "resolvedPath": "tests/unit/order-payment-confirmation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-post-commit-hooks.test.js",
+                "resolvedPath": "tests/unit/order-post-commit-hooks.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -14793,7 +15180,7 @@
             ]
           }
         },
-        "totalFiles": 65,
+        "totalFiles": 69,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
@@ -15192,6 +15579,11 @@
           {
             "fn": "finalizePickupCollection",
             "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "forcePaymentStatusForSimulation",
+            "file": "services/payment-service.js",
             "status": "resolved"
           },
           {
@@ -16688,7 +17080,7 @@
         "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 25,
+          "count": 26,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -16838,6 +17230,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../tests/unit/b-service-worker-refresh.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-service-worker-refresh.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/boutique-core.unit.test.js",
               "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
               "category": "tests",
@@ -16877,10 +17276,6 @@
           {
             "table": "garment_models",
             "resolution": "single-writer"
-          },
-          {
-            "table": "store_credits",
-            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -16903,12 +17298,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "parcel_items",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -16925,12 +17314,6 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "store_credits",
-            "mode": "W",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
@@ -16944,6 +17327,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -16973,10 +17360,6 @@
           {
             "table": "garment_models",
             "resolution": "single-writer"
-          },
-          {
-            "table": "store_credits",
-            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -16999,12 +17382,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "parcel_items",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -17021,12 +17398,6 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "store_credits",
-            "mode": "W",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
@@ -17040,6 +17411,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -17153,6 +17528,13 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -17295,11 +17677,22 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "HEALTHY",
-        "failCount": 0,
+        "status": "BLOCKED",
+        "failCount": 1,
         "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "gatesReporting": [
+          "check:css-specificity-guard"
+        ],
+        "findings": [
+          {
+            "gate": "check:css-specificity-guard",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "fail",
+            "file": null,
+            "message": "✖ 9 nouvel/nouveaux override(s) hors baseline."
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -17406,6 +17799,16 @@
               }
             ]
           },
+          "ci": {
+            "count": 1,
+            "files": [
+              {
+                "declared": ".github/workflows/staging-discovery-modal-v2-ops.yml",
+                "resolvedPath": ".github/workflows/staging-discovery-modal-v2-ops.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "migrations": {
             "count": 3,
             "files": [
@@ -17472,8 +17875,13 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
+              {
+                "declared": "tests/unit/providers-inquiry-service.test.js",
+                "resolvedPath": "tests/unit/providers-inquiry-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/providers-interaction-policy.test.js",
                 "resolvedPath": "tests/unit/providers-interaction-policy.test.js",
@@ -17497,7 +17905,7 @@
             ]
           }
         },
-        "totalFiles": 15,
+        "totalFiles": 17,
         "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
           "count": 4,
@@ -17681,6 +18089,13 @@
         },
         {
           "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -18206,6 +18621,16 @@
       ],
       "implementation": {
         "byCategory": {
+          "ci": {
+            "count": 1,
+            "files": [
+              {
+                "declared": ".github/workflows/discovery-cj-local-repair.yml",
+                "resolvedPath": ".github/workflows/discovery-cj-local-repair.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "routes": {
             "count": 1,
             "files": [
@@ -18213,6 +18638,16 @@
                 "declared": "routes/boutique-suggestions.js",
                 "resolvedPath": "routes/boutique-suggestions.js",
                 "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "scripts": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "scripts/discovery-cj-local-repair.js",
+                "resolvedPath": "scripts/discovery-cj-local-repair.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -18237,7 +18672,7 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/unit/boutique-ranking-engine.test.js",
@@ -18247,6 +18682,11 @@
               {
                 "declared": "tests/unit/boutique-suggestions.test.js",
                 "resolvedPath": "tests/unit/boutique-suggestions.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/discovery-cj-local-repair.test.js",
+                "resolvedPath": "tests/unit/discovery-cj-local-repair.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18262,10 +18702,10 @@
             ]
           }
         },
-        "totalFiles": 8,
+        "totalFiles": 11,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
-          "count": 5,
+          "count": 6,
           "files": [
             {
               "declared": "../css/modal-product-polish.css",
@@ -18299,6 +18739,13 @@
               "declared": "../js/b-pdp-curation-suggestions.js",
               "resolvedPath": "public/boutique/js/b-pdp-curation-suggestions.js",
               "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-suggestions.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-suggestions.test.js",
+              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             }
@@ -18426,6 +18873,13 @@
       "consumedBy": [
         {
           "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "providers-services",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -19036,7 +19490,7 @@
             ]
           },
           "tests": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "tests/unit/baskets.test.js",
@@ -19099,6 +19553,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/shared-cart-user-cleanup.test.js",
+                "resolvedPath": "tests/unit/shared-cart-user-cleanup.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/shares-route.test.js",
                 "resolvedPath": "tests/unit/shares-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19106,7 +19565,7 @@
             ]
           }
         },
-        "totalFiles": 57,
+        "totalFiles": 58,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,
@@ -20237,16 +20696,11 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 1,
             "files": [
               {
                 "declared": "services/wallet-service.js",
                 "resolvedPath": "services/wallet-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "utils/store-credits.js",
-                "resolvedPath": "utils/store-credits.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
@@ -20277,7 +20731,7 @@
             ]
           }
         },
-        "totalFiles": 11,
+        "totalFiles": 10,
         "boutiqueManifest": "wallet",
         "boutiqueFiles": {
           "count": 3,
@@ -20505,6 +20959,13 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

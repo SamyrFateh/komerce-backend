@@ -32,6 +32,9 @@ module.exports = {
       'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
     ],
     out: [
+      'génération et vérification serveur des challenges/credentials WebAuthn — feature backend auth-passkey',
+      'autorité OTP/WhatsApp et création de session — feature auth/auth-identity',
+      'persistance et révocation d authentificateurs — autorité backend, jamais le navigateur',
     ],
   },
 

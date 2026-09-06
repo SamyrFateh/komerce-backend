@@ -83,6 +83,9 @@ module.exports = {
       'js/discovery-inquiry.js',
       'js/providers-services-api.js',
     ],
+    ci: [
+      '.github/workflows/staging-discovery-modal-v2-ops.yml',
+    ],
     scripts: [
       'scripts/seed-discovery-staging.js',
       'scripts/seed-discovery-modal-v2-staging.js',
@@ -132,6 +135,7 @@ module.exports = {
       'platform-ops — bus et showToast comme primitives UI transverses',
       'market — référentiel markets, résolution code -> id côté serveur',
       'local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner',
+      'recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial',
       'infrastructure — dépendance technique db.js et résolution KOMERCE_ENV',
     ],
   },

@@ -217,6 +217,14 @@ for (const file of files) {
   console.log(`       ${C.dim}→ déplace vers docs/_archive/ ou renomme sans signal historique.${C.r}`);
 }
 
+const rawViolationSet = new Set(rawViolations.map(v => v.file.rel));
+const staleBaseline = [...baseline].filter(rel => !rawViolationSet.has(rel));
+if (staleBaseline.length) {
+  console.log(`\n${C.red}✖ ${staleBaseline.length} exemption(s) docs devenue(s) inutile(s) :${C.r}`);
+  staleBaseline.forEach(rel => console.log(`${C.red}   ↓ ${rel}${C.r}`));
+  console.log(`${C.dim}  Rétrécir scripts/.docs-history-lint-baseline.json ; une dette archivée/supprimée ne reste jamais baselinée.${C.r}`);
+}
+
 if (SAVE) {
   const next = saveBaseline(rawViolations, baseline, !BASELINE_EXISTED);
   console.log(`\n${C.cyn}↻ Baseline docs ${BASELINE_EXISTED ? 'réécrite' : 'amorcée'} : ${next.length} fichier(s) exempté(s) (${baseline.size} avant).${C.r}`);
@@ -229,7 +237,7 @@ if (baselineDebt.length && !FULL) {
   console.log(`${C.dim}  Nettoie-les progressivement, puis lance npm run gate:docs-lint:save pour rétrécir la baseline.${C.r}`);
 }
 
-if (violations.length) {
+if (violations.length || (STRICT && staleBaseline.length)) {
   console.log(`\n${C.red}${C.bld}✖ Gate 5 ÉCHEC — ${violations.length} nouveau(x) fichier(s) historique(s) hors archive :${C.r}`);
   violations.forEach(({ file }) => console.log(`${C.red}   ↳ ${file.rel}${C.r}`));
   console.log(`\n${C.dim}Règle : un fichier à signal historique ne vit que dans docs/_archive/.${C.r}`);
@@ -237,6 +245,6 @@ if (violations.length) {
   if (STRICT) process.exit(1);
 }
 
-if (!violations.length) {
-  console.log(`\n${C.grn}${C.bld}✔ Gate 5 OK — aucune nouvelle dette historique hors archive.${C.r}`);
+if (!violations.length && !staleBaseline.length) {
+  console.log(`\n${C.grn}${C.bld}✔ Gate 5 OK — zéro dette historique hors archive, baseline exacte.${C.r}`);
 }
