@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        order_id, market_id, canonical_cohort_bounds
  * @outputs       order_maturity, maturity_watermark
- * @depends       db
+ * @depends       db, services/cost-allocation/cost-types.js
  * @used-by       future pricing coverage gate
  * @db-read       customs_shipment_parcels, customs_shipments, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels
  * @db-write      (none)
@@ -40,6 +40,20 @@
 'use strict';
 
 const db = require('../db');
+const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-allocation/cost-types');
+
+const PORT_SNAPSHOT_KEY = Object.keys(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)
+  .find((key) => SNAPSHOT_LANDED_TO_REAL_COST_TYPE[key] === 'port_transitaire');
+const PORT_REAL_COST_TYPE = SNAPSHOT_LANDED_TO_REAL_COST_TYPE[PORT_SNAPSHOT_KEY];
+
+if (!PORT_SNAPSHOT_KEY || !PORT_REAL_COST_TYPE) {
+  throw new Error('canonical port cost mapping is missing');
+}
+
+const PER_ITEM_SNAPSHOT_COST_KEYS = Object.freeze(
+  Object.keys(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)
+    .filter((key) => !['freight', 'customs', 'relay'].includes(key))
+);
 
 const NON_SETTLEMENT_RELAY_SOURCES = new Set([
   'cost_components.commission_relais_kmf',
@@ -73,10 +87,6 @@ function verifiedCount(row, key) {
   return n(row[`verified_${key}_items`]);
 }
 
-/**
- * Transforme une ligne d'évidence SQL en verdict mécanique.
- * Exportée sous préfixe _ uniquement pour verrouiller le contrat par tests.
- */
 function _evaluateEvidence(row) {
   if (!row) return null;
 
@@ -106,16 +116,7 @@ function _evaluateEvidence(row) {
     }),
   ];
 
-  const perItemTypes = [
-    'product_purchase',
-    'sourcing',
-    'hub',
-    'packaging',
-    'port_transitary',
-    'local_distribution',
-  ];
-
-  for (const type of perItemTypes) {
+  for (const type of PER_ITEM_SNAPSHOT_COST_KEYS) {
     const expected = expectedCount(row, type);
     if (expected <= 0) {
       criteria.push(criterion(`${type}_reconciled`, true, { expected_items: 0 }, false));
@@ -128,9 +129,6 @@ function _evaluateEvidence(row) {
     }));
   }
 
-  // Le coût relais configuré n'est pas une preuve de règlement. Le SQL remonte
-  // séparément les allocations provenant d'une source de règlement/constat et
-  // les allocations issues de la configuration courante.
   const expectedRelay = expectedCount(row, 'relay');
   if (expectedRelay > 0) {
     criteria.push(criterion('relay_settlement_reconciled', n(row.verified_relay_items) >= expectedRelay, {
@@ -142,8 +140,6 @@ function _evaluateEvidence(row) {
     criteria.push(criterion('relay_settlement_reconciled', true, { expected_items: 0 }, false));
   }
 
-  // Le paiement est un coût de commande. Une preuve réelle explicite suffit à
-  // établir que le poste a été constaté, y compris si son montant réel vaut 0.
   const expectedPayment = expectedCount(row, 'payment');
   if (expectedPayment > 0) {
     criteria.push(criterion('payment_cost_reconciled', n(row.actual_payment_records) > 0, {
@@ -229,10 +225,6 @@ function _evaluateEvidence(row) {
   };
 }
 
-/**
- * Une requête, une ligne d'évidence. Les sous-requêtes sont volontairement
- * explicites : ce service est un lecteur de vérité, pas un moteur de mutation.
- */
 async function getOrderMaturity(orderId) {
   const { rows } = await db.query(`
     SELECT
@@ -281,7 +273,7 @@ async function getOrderMaturity(orderId) {
           AND COALESCE((imp.cost_breakdown->'landed_relay'->>'customs')::numeric, 0) > 0) AS expected_customs_items,
       (SELECT COUNT(*)::int FROM order_item_cost_imputations imp
         WHERE imp.order_id = o.id
-          AND COALESCE((imp.cost_breakdown->'landed_relay'->>'port_transitary')::numeric, 0) > 0) AS expected_port_transitary_items,
+          AND COALESCE((imp.cost_breakdown->'landed_relay'->>'${PORT_SNAPSHOT_KEY}')::numeric, 0) > 0) AS expected_port_transitary_items,
       (SELECT COUNT(*)::int FROM order_item_cost_imputations imp
         WHERE imp.order_id = o.id
           AND COALESCE((imp.cost_breakdown->'landed_relay'->>'local_distribution')::numeric, 0) > 0) AS expected_local_distribution_items,
@@ -315,7 +307,7 @@ async function getOrderMaturity(orderId) {
           AND alc.is_actual = TRUE AND alc.allocation_method <> 'estimated_fallback') AS verified_packaging_items,
       (SELECT COUNT(DISTINCT alc.order_item_id)::int
          FROM order_item_real_cost_allocations alc
-        WHERE alc.order_id = o.id AND alc.cost_type = 'port_transitaire'
+        WHERE alc.order_id = o.id AND alc.cost_type = '${PORT_REAL_COST_TYPE}'
           AND alc.is_actual = TRUE AND alc.allocation_method <> 'estimated_fallback') AS verified_port_transitary_items,
       (SELECT COUNT(DISTINCT alc.order_item_id)::int
          FROM order_item_real_cost_allocations alc
@@ -404,14 +396,6 @@ async function getOrderMaturity(orderId) {
   return _evaluateEvidence(rows[0]);
 }
 
-/**
- * Dérive un watermark sans cherry-picking.
- *
- * Les commandes partageant exactement le même created_at forment un groupe :
- * si l'une est immature, aucune commande de ce timestamp ne peut faire avancer
- * le watermark. Les commandes matures plus récentes restent visibles dans le
- * ratio de maturité mais ne repoussent jamais la frontière sûre.
- */
 function deriveMaturityWatermark(orderMaturities = []) {
   const rows = [...orderMaturities]
     .filter(Boolean)
@@ -479,11 +463,6 @@ function deriveMaturityWatermark(orderMaturities = []) {
   };
 }
 
-/**
- * Calcule le watermark d'un marché sur une cohorte DÉJÀ bornée.
- * Aucun défaut implicite : from/to sont obligatoires pour empêcher qu'une
- * largeur de fenêtre arbitraire devienne une vérité cachée du moteur.
- */
 async function computeMarketMaturityWatermark(marketId, options = {}) {
   if (!marketId) throw new Error('marketId is required');
   if (!options.from || !options.to) {
@@ -509,10 +488,6 @@ async function computeMarketMaturityWatermark(marketId, options = {}) {
   );
 
   const evaluations = [];
-  // Séquentiel volontairement : aucune explosion N+1 parallèle sur la DB.
-  // Ce service n'est pas encore branché à une route hot-path. Le lot couverture
-  // pourra remplacer cette lecture par une agrégation batch sans changer le
-  // contrat de sortie.
   for (const row of rows) {
     const maturity = await getOrderMaturity(row.id);
     if (maturity) evaluations.push(maturity);
@@ -537,4 +512,5 @@ module.exports = {
   computeMarketMaturityWatermark,
   _evaluateEvidence,
   _NON_SETTLEMENT_RELAY_SOURCES: NON_SETTLEMENT_RELAY_SOURCES,
+  _PORT_COST_MAPPING: Object.freeze({ snapshot_key: PORT_SNAPSHOT_KEY, real_cost_type: PORT_REAL_COST_TYPE }),
 };
