@@ -343,6 +343,64 @@
   font-weight: 700;
 }
 
+.kmc-cost-explain {
+  border: 1px solid color-mix(in srgb, var(--cost-accent, #64748b) 22%, #e2e8f0);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cost-accent-soft, #f8fafc) 55%, #fff);
+  overflow: hidden;
+}
+
+.kmc-cost-explain > summary {
+  cursor: pointer;
+  padding: 9px 10px;
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 11px;
+  font-weight: 850;
+  list-style-position: inside;
+}
+
+.kmc-cost-explain[open] > summary {
+  border-bottom: 1px solid var(--kmc-line, #e2e8f0);
+}
+
+.kmc-cost-explain-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 9px;
+}
+
+.kmc-cost-explain-item {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid rgb(226 232 240 / .85);
+  border-radius: 8px;
+  background: rgb(255 255 255 / .9);
+}
+
+.kmc-cost-explain-label {
+  color: var(--cost-accent, #64748b);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.kmc-cost-explain-value {
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.kmc-cost-explain-helper {
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .kmc-cost-card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -434,7 +492,8 @@
   }
 
   .kmc-cost-formula-rail,
-  .kmc-cost-create-form {
+  .kmc-cost-create-form,
+  .kmc-cost-explain-body {
     grid-template-columns: 1fr;
   }
 
