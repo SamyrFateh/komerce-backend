@@ -142,6 +142,7 @@ module.exports = {
       'migrations/119_economic_variables_to_finance_config.sql',
       'migrations/152_pricing_workspace_global_authority.sql',
       'migrations/159_cost_component_market_overrides.sql',
+      'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -162,6 +163,7 @@ module.exports = {
       'tests/unit/apply-pricing-updates.test.js',
       'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
+      'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
