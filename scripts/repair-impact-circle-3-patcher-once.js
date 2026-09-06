@@ -14,6 +14,13 @@ const badTemplate = "updatedEl.textContent = updatedDate ? `Enregistrée le ${up
 const goodTemplate = "updatedEl.textContent = updatedDate ? 'Enregistrée le ' + updatedDate + '.' : '';";
 if (source.includes(badTemplate)) source = source.replace(badTemplate, goodTemplate);
 
+const multilineName = `      <span class="k-kmc-sec-value" id="k-kmc-auth-name">
+        <span id="k-kmc-auth-given"></span> <span id="k-kmc-auth-family"></span>
+      </span>`;
+const compactName = `      <span class="k-kmc-sec-value" id="k-kmc-auth-name"><span id="k-kmc-auth-given"></span> <span id="k-kmc-auth-family"></span></span>`;
+if (!source.includes(multilineName)) throw new Error('Expected authorized-name markup not found');
+source = source.replace(multilineName, compactName);
+
 const testStart = source.indexOf("const testSource = `");
 const testEnd = source.indexOf("fs.writeFileSync(testPath, testSource);", testStart);
 if (testStart < 0 || testEnd < 0) throw new Error('Generated test source block not found');
@@ -24,4 +31,4 @@ testBlock = testBlock.replace(/\\+"/g, '"');
 source = prefix + testBlock + suffix;
 
 fs.writeFileSync(file, source);
-console.log('Repaired temporary patcher function signatures, syntax, and generated-test quoting.');
+console.log('Repaired temporary patcher signatures, exact text contract, syntax, and generated-test quoting.');
