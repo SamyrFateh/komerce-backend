@@ -98,6 +98,7 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
+      'services/pricing-maturity.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -173,6 +174,7 @@ module.exports = {
       'tests/unit/pricing-cache.test.js',
       'tests/unit/pricing-cdr.test.js',
       'tests/unit/pricing-engine.test.js',
+      'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
