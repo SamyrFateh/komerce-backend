@@ -5,6 +5,11 @@ const fs = require('fs');
 const file = 'scripts/impact-circle-3-fix-once.js';
 let source = fs.readFileSync(file, 'utf8');
 
+const badBrace = "  const brace = source.indexOf('{', start);";
+const goodBrace = "  const signatureEnd = source.indexOf(') {', start);\n  const brace = signatureEnd >= 0 ? source.indexOf('{', signatureEnd) : source.indexOf('{', start);";
+if (!source.includes(badBrace)) throw new Error('Expected replaceFunction brace locator not found');
+source = source.replace(badBrace, goodBrace);
+
 const badTemplate = "updatedEl.textContent = updatedDate ? `Enregistrée le ${updatedDate}.` : '';";
 const goodTemplate = "updatedEl.textContent = updatedDate ? 'Enregistrée le ' + updatedDate + '.' : '';";
 if (source.includes(badTemplate)) source = source.replace(badTemplate, goodTemplate);
@@ -15,10 +20,8 @@ if (testStart < 0 || testEnd < 0) throw new Error('Generated test source block n
 const prefix = source.slice(0, testStart);
 let testBlock = source.slice(testStart, testEnd);
 const suffix = source.slice(testEnd);
-// The test source itself is a template literal, so double quotes need no escaping.
-// Normalize accidental backslashes before them only inside this generated-test block.
 testBlock = testBlock.replace(/\\+"/g, '"');
 source = prefix + testBlock + suffix;
 
 fs.writeFileSync(file, source);
-console.log('Repaired temporary patcher syntax and generated-test quoting.');
+console.log('Repaired temporary patcher function signatures, syntax, and generated-test quoting.');
