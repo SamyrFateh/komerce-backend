@@ -3598,6 +3598,48 @@ ALTER SEQUENCE public.pricing_matrices_audit_id_seq OWNED BY public.pricing_matr
 
 
 --
+-- Name: pricing_maturity_disposition_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_maturity_disposition_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    state text NOT NULL,
+    reason_code text NOT NULL,
+    rationale text NOT NULL,
+    evidence_ref text NOT NULL,
+    decided_by uuid NOT NULL,
+    decided_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pricing_maturity_disposition_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT pricing_maturity_disposition_events_rationale_check CHECK (((char_length(btrim(rationale)) >= 10) AND (char_length(btrim(rationale)) <= 2000))),
+    CONSTRAINT pricing_maturity_disposition_events_reason_code_check CHECK ((reason_code ~ '^[A-Z][A-Z0-9_]{2,79}$'::text)),
+    CONSTRAINT pricing_maturity_disposition_events_state_check CHECK ((state = ANY (ARRAY['RECONCILIABLE'::text, 'IRRECONCILABLE_DISPOSED'::text])))
+);
+
+
+--
+-- Name: TABLE pricing_maturity_disposition_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.pricing_maturity_disposition_events IS 'Journal append-only des transitions de disposition de maturité économique.';
+
+
+--
+-- Name: COLUMN pricing_maturity_disposition_events.state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_maturity_disposition_events.state IS 'RECONCILIABLE ou IRRECONCILABLE_DISPOSED ; le dernier événement fait foi.';
+
+
+--
+-- Name: COLUMN pricing_maturity_disposition_events.evidence_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_maturity_disposition_events.evidence_ref IS 'Référence obligatoire vers la preuve ayant motivé la transition.';
+
+
+--
 -- Name: pricing_strategies; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6618,6 +6660,14 @@ ALTER TABLE ONLY public.pricing_matrices_audit
 
 
 --
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: pricing_strategies pricing_strategies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8561,6 +8611,20 @@ CREATE INDEX idx_pricing_components_active ON public.pricing_components USING bt
 --
 
 CREATE INDEX idx_pricing_global_access_active ON public.pricing_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: idx_pricing_maturity_disposition_market_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_maturity_disposition_market_time ON public.pricing_maturity_disposition_events USING btree (market_id, decided_at DESC, id DESC);
+
+
+--
+-- Name: idx_pricing_maturity_disposition_order_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_maturity_disposition_order_time ON public.pricing_maturity_disposition_events USING btree (order_id, decided_at DESC, id DESC);
 
 
 --
@@ -10774,6 +10838,30 @@ ALTER TABLE ONLY public.pricing_global_access_grants
 
 ALTER TABLE ONLY public.pricing_matrices_audit
     ADD CONSTRAINT pricing_matrices_audit_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
 
 
 --

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 502
-- Files with full headers: 457
+- Scanned code files: 504
+- Files with full headers: 459
 - Files with lite headers: 45
-- Files with any headers: 502
+- Files with any headers: 504
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1111
-- Edges: 5788
-- DB tables: 127
-- Doctrines: 310
-- Impact areas: 172
-- Unresolved code edges: 565
+- Graph nodes: 1118
+- Edges: 5818
+- DB tables: 128
+- Doctrines: 312
+- Impact areas: 174
+- Unresolved code edges: 568
 - Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 48
+- economic-engine: 50
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 216
+- service: 218
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -318,6 +318,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/client-index.js — canonical-client-index-service (admin-dashboard, high, full)
 - services/client-notification-service.js — client-notification-service (notification, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
+- services/cost-allocation/cost-types.js — economic-engine-cost-type-classification (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
@@ -382,6 +383,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-maturity.js — economic-engine-pricing-maturity (economic-engine, high, full)
 - services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
 - services/pricing-rates.js — economic-engine-pricing-rates (economic-engine, high, full)
 - services/pricing-recommend.js — economic-engine-pricing-recommend (economic-engine, high, full)
@@ -838,6 +840,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
 - uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
+- uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
@@ -922,7 +925,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
 - depends: routes/admin-dashboard-market.js -> services/dashboard-admin-context (services/dashboard-admin-context)
-- depends: routes/admin-dashboard-market.js -> services/dashboard-commerce (services/dashboard-commerce)
 
 ## Files Still Without Headers Or Aggregation
 
