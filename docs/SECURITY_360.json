@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06T04:42:52.229Z",
+  "generatedAt": "2026-09-06T15:32:11.054Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 569,
-    "protected": 518,
+    "total": 571,
+    "protected": 520,
     "public": 51,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1868,6 +1868,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/simulate-impact",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
@@ -1880,6 +1888,14 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/simulate-impact",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
       ]
     },
     {

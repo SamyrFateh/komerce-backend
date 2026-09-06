@@ -1,0 +1,179 @@
+/* Pricing impact simulation — lecture Avant / Scénario / Δ */
+
+.kmc-sim-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #eef2ff, #ffffff 150px);
+}
+
+.kmc-sim-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kmc-sim-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.kmc-sim-kicker {
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .07em;
+}
+
+.kmc-sim-title {
+  color: var(--kmc-navy, #0f172a);
+  font-size: 16px;
+}
+
+.kmc-sim-description {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--kmc-muted, #64748b);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.kmc-sim-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.kmc-sim-controls select {
+  min-width: 260px;
+  max-width: 430px;
+  padding: 8px 10px;
+  border: 1px solid #a5b4fc;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--kmc-ink, #0f172a);
+  font: inherit;
+  font-size: 12px;
+}
+
+.kmc-sim-state {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.kmc-sim-state.is-ready {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.kmc-sim-state.is-loading {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.kmc-sim-state.is-error {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.kmc-sim-table {
+  display: grid;
+  gap: 4px;
+}
+
+.kmc-sim-metric {
+  display: grid;
+  grid-template-columns: minmax(145px, 1.2fr) repeat(3, minmax(90px, .8fr));
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / .9);
+  font-size: 11px;
+}
+
+.kmc-sim-head {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.kmc-sim-metric-label {
+  color: #334155;
+  font-weight: 800;
+}
+
+.kmc-sim-before,
+.kmc-sim-after,
+.kmc-sim-delta {
+  text-align: right;
+  color: #0f172a;
+  font-size: 11px;
+}
+
+.kmc-sim-delta.is-up { color: #b45309; }
+.kmc-sim-delta.is-down { color: #047857; }
+
+.kmc-sim-changes {
+  display: grid;
+  gap: 5px;
+}
+
+.kmc-sim-change {
+  display: grid;
+  grid-template-columns: minmax(130px, .6fr) minmax(150px, .6fr) minmax(0, 1.6fr);
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  border-left: 3px solid #6366f1;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 10px;
+}
+
+.kmc-sim-change strong { color: #312e81; }
+.kmc-sim-change span { color: #334155; font-weight: 800; }
+.kmc-sim-change small { color: #64748b; line-height: 1.35; }
+.kmc-sim-no-change { color: #64748b; font-size: 10px; }
+
+[data-simulation-only="true"] {
+  background: #eef2ff !important;
+}
+
+@media (max-width: 760px) {
+  .kmc-sim-header { display: grid; }
+  .kmc-sim-controls { justify-content: stretch; }
+  .kmc-sim-controls select { min-width: 0; width: 100%; max-width: none; }
+  .kmc-sim-metric {
+    grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(70px, .7fr));
+    gap: 5px;
+    font-size: 10px;
+  }
+  .kmc-sim-change { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .kmc-sim-panel { padding: 10px; }
+  .kmc-sim-metric {
+    grid-template-columns: 1fr 1fr;
+  }
+  .kmc-sim-head { display: none; }
+  .kmc-sim-metric-label { grid-column: 1 / -1; }
+  .kmc-sim-before::before { content: 'Avant · '; color: #94a3b8; font-weight: 600; }
+  .kmc-sim-after::before { content: 'Scénario · '; color: #94a3b8; font-weight: 600; }
+  .kmc-sim-delta { grid-column: 1 / -1; }
+  .kmc-sim-delta::before { content: 'Δ · '; color: #94a3b8; font-weight: 600; }
+}

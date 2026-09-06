@@ -11,7 +11,7 @@
  * @db-read       products, competitor_prices, charges, economic_variables, economic_snapshots, finance_config
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only, every_cost_line_is_explainable
+ * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only, every_cost_line_is_explainable, simulation_never_persists, same_engine_before_after
  * @impact-areas  pricing, economic-engine, admin-dashboard, catalog
  * @version       2026-09
  */
@@ -28,6 +28,21 @@ const costComponents = require('./cost-component-admin-service');
 const marketCostComponents = require('./cost-component-market-service');
 const costExplainability = require('./pricing-cost-explainability');
 const economicQueries = require('./economic-engine-queries');
+
+const MAX_SIMULATION_OVERRIDES = 20;
+const SIMULATION_DECISION_FIELDS = Object.freeze([
+  'n1_landed_relay_cost_kmf',
+  'n2_business_variable_cost_kmf',
+  'variable_cost_complete_kmf',
+  'contribution_kmf',
+  'n3_fixed_overhead_allocation_kmf',
+  'cdr_complete_kmf',
+  'minimum_safe_price_kmf',
+  'recommended_price_kmf',
+  'final_price_kmf',
+  'estimated_margin_pct',
+  'monthly_break_even_orders',
+]);
 
 class PricingWorkspaceError extends Error {
   constructor(status, message, code = null) {
@@ -55,7 +70,7 @@ async function resolveProductRef(productRef, q = db) {
   const ref = String(productRef || '').trim();
   if (!ref) throw new PricingWorkspaceError(400, 'product_ref requis', 'pricing_product_ref_required');
   const { rows } = await q.query(
-    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, is_active
+    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
        FROM products
       WHERE product_ref = $1
       LIMIT 1`,
@@ -81,7 +96,7 @@ async function resolveCompetitorRef(competitorRef, q = db) {
 
 function publicComponent(component) {
   const clean = stripInternalIds(component);
-  delete clean.scope_value; // peut contenir un UUID historique selon le scope
+  delete clean.scope_value;
   return clean;
 }
 
@@ -93,7 +108,114 @@ function publicProduct(product) {
     price_kmf: Number(product.price_kmf) || 0,
     cost_kmf: Number(product.cost_kmf) || 0,
     weight_kg: product.weight_kg == null ? null : Number(product.weight_kg),
+    volume_m3: product.volume_m3 == null ? null : Number(product.volume_m3),
     is_active: Boolean(product.is_active),
+  };
+}
+
+function simulationProduct(product) {
+  return {
+    product_ref: product.product_ref,
+    name: product.name,
+    category: product.category,
+    current_price_kmf: Number(product.price_kmf) || 0,
+  };
+}
+
+function clonePricingConfig(config = {}) {
+  return {
+    ...config,
+    finance: { ...(config.finance || {}) },
+    categories: Object.fromEntries(Object.entries(config.categories || {}).map(([key, value]) => [key, { ...value }])),
+    components: (config.components || []).map(component => ({ ...component })),
+    provisions: (config.provisions || []).map(item => ({ ...item })),
+    charges: (config.charges || []).map(item => ({ ...item })),
+    cost_benchmarks: (config.cost_benchmarks || []).map(item => ({ ...item })),
+  };
+}
+
+function normalizeSimulationOverrides(raw = []) {
+  if (!Array.isArray(raw)) {
+    throw new PricingWorkspaceError(400, 'overrides doit être une liste', 'pricing_simulation_overrides_invalid');
+  }
+  if (raw.length > MAX_SIMULATION_OVERRIDES) {
+    throw new PricingWorkspaceError(400, `Maximum ${MAX_SIMULATION_OVERRIDES} lignes par simulation`, 'pricing_simulation_too_many_overrides');
+  }
+  const seen = new Set();
+  return raw.map((entry, index) => {
+    const key = String(entry && entry.key || '').trim();
+    if (!key) throw new PricingWorkspaceError(400, `Clé manquante à l’override ${index + 1}`, 'pricing_simulation_override_key_required');
+    if (seen.has(key)) throw new PricingWorkspaceError(400, `Ligne dupliquée : ${key}`, 'pricing_simulation_override_duplicate');
+    seen.add(key);
+    const value = Number(entry.default_value);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new PricingWorkspaceError(400, `Valeur invalide pour ${key}`, 'pricing_simulation_override_value_invalid');
+    }
+    return { key, default_value: value };
+  });
+}
+
+function applySimulationOverrides(config, overrides, marketCode = null) {
+  const scenario = clonePricingConfig(config);
+  const components = new Map(scenario.components.map(component => [component.key, component]));
+  const changes = [];
+  for (const override of overrides) {
+    const component = components.get(override.key);
+    if (!component) {
+      throw new PricingWorkspaceError(400, `Ligne de coût active introuvable : ${override.key}`, 'pricing_simulation_component_not_active');
+    }
+    const before = Number(component.default_value) || 0;
+    component.default_value = override.default_value;
+    changes.push({
+      key: component.key,
+      label: component.label || component.key,
+      unit: component.unit || null,
+      before,
+      after: override.default_value,
+      delta: override.default_value - before,
+      explainability: costExplainability.explainComponent(component, { marketCode }),
+    });
+  }
+  return { scenario, changes };
+}
+
+function simulationMetric(result, field) {
+  const value = result && result[field];
+  return value == null || !Number.isFinite(Number(value)) ? null : Number(value);
+}
+
+function projectSimulationDecision(result = {}) {
+  const metrics = {};
+  SIMULATION_DECISION_FIELDS.forEach(field => { metrics[field] = simulationMetric(result, field); });
+  return {
+    metrics,
+    strategy_risk: result.strategy_risk || null,
+    health_status: result.health_status || null,
+    pricing_strategy: result.pricing_strategy || null,
+    data_quality: result.data_quality || null,
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
+  };
+}
+
+function simulationDelta(before, after) {
+  const delta = {};
+  SIMULATION_DECISION_FIELDS.forEach(field => {
+    const a = before.metrics[field];
+    const b = after.metrics[field];
+    delta[field] = a == null || b == null ? null : Number((b - a).toFixed(2));
+  });
+  return delta;
+}
+
+function simulationEngineInput(product = {}, body = {}) {
+  return {
+    category: body.category || product.category || 'phones',
+    channel: body.channel || 'cash_relais',
+    cost_kmf: body.cost_kmf != null ? Number(body.cost_kmf) : Number(product.cost_kmf),
+    weight_kg: body.weight_kg != null ? Number(body.weight_kg) : Number(product.weight_kg),
+    volume_m3: body.volume_m3 != null ? Number(body.volume_m3) : Number(product.volume_m3),
+    current_price_kmf: body.current_price_kmf != null ? Number(body.current_price_kmf) : Number(product.price_kmf),
+    pricing_strategy: body.pricing_strategy || 'mechanical',
   };
 }
 
@@ -108,7 +230,7 @@ async function buildWorkspace() {
     economicCharges,
   ] = await Promise.all([
     db.query(
-      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, is_active
+      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
          FROM products
         ORDER BY is_active DESC, updated_at DESC NULLS LAST, name
         LIMIT 250`
@@ -134,9 +256,7 @@ async function buildWorkspace() {
     recommendations = [];
   }
 
-  const components = costExplainability.explainComponents(
-    componentProjection.components.map(publicComponent)
-  );
+  const components = costExplainability.explainComponents(componentProjection.components.map(publicComponent));
   const products = productRes.rows.map(publicProduct);
   return {
     scope: { mode: 'global_pricing' },
@@ -148,6 +268,7 @@ async function buildWorkspace() {
       competitor_observations: Number(competitorCountRes.rows[0]?.count) || 0,
     },
     products,
+    simulation_products: products.filter(product => product.is_active).map(simulationProduct),
     recommendations,
     cost_components: components,
     cost_meta: costComponents.META,
@@ -174,6 +295,35 @@ async function simulationPayload(body = {}) {
 
 async function simulate(body = {}) {
   return stripInternalIds(await pricingRecommend.computeRecommend(await simulationPayload(body)));
+}
+
+async function simulateImpact(body = {}, market = null) {
+  const product = await resolveProductRef(body.product_ref);
+  const overrides = normalizeSimulationOverrides(body.overrides || []);
+  const baseConfig = await pricingEngine.loadGlobalConfig(market && market.id ? { marketId: market.id } : {});
+  const { scenario, changes } = applySimulationOverrides(baseConfig, overrides, market && market.code || null);
+  const input = simulationEngineInput(product, body);
+  const [baselineResult, scenarioResult] = await Promise.all([
+    pricingEngine.recommend(input, { config: baseConfig }),
+    pricingEngine.recommend(input, { config: scenario }),
+  ]);
+  const baseline = projectSimulationDecision(baselineResult);
+  const after = projectSimulationDecision(scenarioResult);
+  return stripInternalIds({
+    subject: {
+      product_ref: product.product_ref,
+      name: product.name || null,
+      category: input.category,
+      market_code: market && market.code || null,
+    },
+    source_of_truth: 'pricing-engine',
+    persisted: false,
+    overrides: changes,
+    baseline,
+    scenario: after,
+    delta: simulationDelta(baseline, after),
+    generated_at: new Date().toISOString(),
+  });
 }
 
 async function flow(body = {}) {
@@ -269,10 +419,17 @@ async function buildMarketWorkspace({ market } = {}) {
   if (!market || !market.id || !market.code) {
     throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
   }
-  const components = costExplainability.explainComponents(
-    (await marketCostComponents.listEffectiveComponents(market.id)).map(publicComponent),
-    { marketCode: market.code }
-  );
+  const [effectiveComponents, productRes] = await Promise.all([
+    marketCostComponents.listEffectiveComponents(market.id),
+    db.query(
+      `SELECT product_ref, name, category, price_kmf
+         FROM products
+        WHERE is_active = TRUE
+        ORDER BY updated_at DESC NULLS LAST, name
+        LIMIT 250`
+    ),
+  ]);
+  const components = costExplainability.explainComponents(effectiveComponents.map(publicComponent), { marketCode: market.code });
   return {
     scope: {
       mode: 'market_pricing',
@@ -286,9 +443,11 @@ async function buildMarketWorkspace({ market } = {}) {
       active_cost_components: components.filter(component => component.is_active).length,
       overridden_cost_components: components.filter(component => component.inherited === false).length,
     },
+    simulation_products: productRes.rows.map(simulationProduct),
     cost_components: components,
     cost_meta: costComponents.META,
     capabilities: {
+      simulation: true,
       cost_overrides: true,
       reset_to_global: true,
       create_components: false,
@@ -307,12 +466,7 @@ function marketOverridePayload(body = {}) {
 
 async function updateMarketCostComponent(market, key, body = {}, actor = {}) {
   if (!market || !market.id) throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
-  return marketCostComponents.upsertOverride({
-    marketId: market.id,
-    key,
-    body: marketOverridePayload(body),
-    actorId: actor.id || null,
-  });
+  return marketCostComponents.upsertOverride({ marketId: market.id, key, body: marketOverridePayload(body), actorId: actor.id || null });
 }
 
 async function toggleMarketCostComponent(market, key, actor = {}) {
@@ -320,12 +474,7 @@ async function toggleMarketCostComponent(market, key, actor = {}) {
   const components = await marketCostComponents.listEffectiveComponents(market.id);
   const current = components.find(component => component.key === key);
   if (!current) throw new PricingWorkspaceError(404, 'Composant introuvable', 'market_cost_component_not_found');
-  return marketCostComponents.upsertOverride({
-    marketId: market.id,
-    key,
-    body: { is_active: !current.is_active },
-    actorId: actor.id || null,
-  });
+  return marketCostComponents.upsertOverride({ marketId: market.id, key, body: { is_active: !current.is_active }, actorId: actor.id || null });
 }
 
 async function resetMarketCostComponent(market, key, actor = {}) {
@@ -335,12 +484,20 @@ async function resetMarketCostComponent(market, key, actor = {}) {
 
 module.exports = {
   PricingWorkspaceError,
+  MAX_SIMULATION_OVERRIDES,
+  SIMULATION_DECISION_FIELDS,
   stripInternalIds,
   resolveProductRef,
   resolveCompetitorRef,
+  clonePricingConfig,
+  normalizeSimulationOverrides,
+  applySimulationOverrides,
+  projectSimulationDecision,
+  simulationDelta,
   buildWorkspace,
   buildMarketWorkspace,
   simulate,
+  simulateImpact,
   flow,
   applyPrice,
   getStrategy,
