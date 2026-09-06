@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 502,
-    "filesWithFullHeaders": 457,
+    "scannedCodeFiles": 504,
+    "filesWithFullHeaders": 459,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 502,
+    "filesWithAnyHeaders": 504,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1111,
-    "edges": 5788,
-    "dbTables": 127,
-    "doctrines": 310,
-    "impactAreas": 172,
-    "unresolvedCodeEdges": 565,
+    "graphNodes": 1118,
+    "edges": 5818,
+    "dbTables": 128,
+    "doctrines": 312,
+    "impactAreas": 174,
+    "unresolvedCodeEdges": 568,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 48,
+    "economic-engine": 50,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 216,
+    "service": 218,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
   "byCriticality": {
     "critical": 70,
     "medium": 123,
-    "high": 256,
+    "high": 258,
     "low": 53
   },
   "nodes": [
@@ -12572,7 +12572,8 @@
         "side_effects"
       ],
       "depends": [
-        "../order-cost-snapshot"
+        "../order-cost-snapshot",
+        "cost-types"
       ],
       "usedBy": [
         "allocate.js",
@@ -12585,12 +12586,12 @@
         "@none"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "economic-engine"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/cost-allocation/allocate.js",
@@ -12644,6 +12645,51 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/cost-allocation/cost-types.js",
+      "file": "services/cost-allocation/cost-types.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-cost-type-classification",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "cost_type",
+        "snapshot_cost_key"
+      ],
+      "outputs": [
+        "canonical_cost_type_classification",
+        "snapshot_to_real_mapping"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/cost-allocation/variance.js",
+        "services/dashboard-metrics/_helpers.js",
+        "services/cost-allocation/_helpers.js",
+        "services/pricing-maturity.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "dashboard",
+        "reconciliation"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/cost-allocation/index.js",
@@ -12725,7 +12771,8 @@
         "side_effects"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/cost-allocation/cost-types.js"
       ],
       "usedBy": [
         "services/cost-allocation/index.js"
@@ -12742,7 +12789,7 @@
         "@none"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "economic-engine",
@@ -13349,7 +13396,7 @@
         "side_effects"
       ],
       "depends": [
-        "@none"
+        "services/cost-allocation/cost-types.js"
       ],
       "usedBy": [
         "control-tower.js",
@@ -13368,13 +13415,14 @@
         "@none"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "pricing"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/dashboard-metrics/control-tower.js",
@@ -18043,6 +18091,63 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/pricing-maturity.js",
+      "file": "services/pricing-maturity.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-maturity",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "market_id",
+        "canonical_cohort_bounds",
+        "disposition_policy"
+      ],
+      "outputs": [
+        "order_maturity",
+        "maturity_watermark",
+        "disposition_event"
+      ],
+      "depends": [
+        "db",
+        "services/cost-allocation/cost-types.js"
+      ],
+      "usedBy": [
+        "future pricing coverage gate"
+      ],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "pricing_maturity_disposition_events"
+      ],
+      "dbWrite": [
+        "pricing_maturity_disposition_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_managed_for_disposition_write"
+      ],
+      "doctrine": [
+        "pricing_market_viability_maturity_watermark"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-output.js",
@@ -24166,6 +24271,11 @@
       "table": "pricing_benchmarks"
     },
     {
+      "id": "db:pricing_maturity_disposition_events",
+      "type": "db-table",
+      "table": "pricing_maturity_disposition_events"
+    },
+    {
       "id": "db:competitor_prices",
       "type": "db-table",
       "table": "competitor_prices"
@@ -25261,6 +25371,11 @@
       "doctrine": "dashboard_no_business_recompute"
     },
     {
+      "id": "doctrine:pricing_market_viability_cost_scope",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_cost_scope"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
@@ -25509,6 +25624,11 @@
       "id": "doctrine:n3_is_period_structure",
       "type": "doctrine",
       "doctrine": "n3_is_period_structure"
+    },
+    {
+      "id": "doctrine:pricing_market_viability_maturity_watermark",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_maturity_watermark"
     },
     {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -26516,6 +26636,11 @@
       "area": "cash-reconciliation"
     },
     {
+      "id": "impact:reconciliation",
+      "type": "impact-area",
+      "area": "reconciliation"
+    },
+    {
       "id": "impact:admin-costing",
       "type": "impact-area",
       "area": "admin-costing"
@@ -26574,6 +26699,11 @@
       "id": "impact:auth-identity",
       "type": "impact-area",
       "area": "auth-identity"
+    },
+    {
+      "id": "impact:governance",
+      "type": "impact-area",
+      "area": "governance"
     },
     {
       "id": "impact:discovery-modal",
@@ -44389,6 +44519,12 @@
       "label": "../order-cost-snapshot"
     },
     {
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "cost-types",
+      "type": "depends",
+      "label": "cost-types"
+    },
+    {
       "from": "services/cost-allocation/allocate.js",
       "to": "services/cost-allocation/_helpers.js",
       "type": "uses",
@@ -44402,9 +44538,9 @@
     },
     {
       "from": "services/cost-allocation/_helpers.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:pricing_market_viability_cost_scope",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "pricing_market_viability_cost_scope"
     },
     {
       "from": "services/cost-allocation/_helpers.js",
@@ -44507,6 +44643,66 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "uses",
+      "label": "services/cost-allocation/variance.js"
+    },
+    {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/_helpers.js"
+    },
+    {
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "uses",
+      "label": "services/cost-allocation/_helpers.js"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "uses",
+      "label": "services/pricing-maturity.js"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "doctrine:pricing_market_viability_cost_scope",
+      "type": "doctrine",
+      "label": "pricing_market_viability_cost_scope"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "impact:reconciliation",
+      "type": "impact",
+      "label": "reconciliation"
     },
     {
       "from": "services/cost-allocation/index.js",
@@ -44653,6 +44849,12 @@
       "label": "db"
     },
     {
+      "from": "services/cost-allocation/variance.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "depends",
+      "label": "services/cost-allocation/cost-types.js"
+    },
+    {
       "from": "services/cost-allocation/index.js",
       "to": "services/cost-allocation/variance.js",
       "type": "uses",
@@ -44684,9 +44886,9 @@
     },
     {
       "from": "services/cost-allocation/variance.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:pricing_market_viability_cost_scope",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "pricing_market_viability_cost_scope"
     },
     {
       "from": "services/cost-allocation/variance.js",
@@ -45597,9 +45799,9 @@
     },
     {
       "from": "services/dashboard-metrics/_helpers.js",
-      "to": "@none",
+      "to": "services/cost-allocation/cost-types.js",
       "type": "depends",
-      "label": "@none"
+      "label": "services/cost-allocation/cost-types.js"
     },
     {
       "from": "services/dashboard-metrics/control-tower.js",
@@ -45645,9 +45847,9 @@
     },
     {
       "from": "services/dashboard-metrics/_helpers.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:pricing_market_viability_cost_scope",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "pricing_market_viability_cost_scope"
     },
     {
       "from": "services/dashboard-metrics/_helpers.js",
@@ -45660,6 +45862,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
     },
     {
       "from": "services/dashboard-metrics/control-tower.js",
@@ -53161,6 +53369,108 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "depends",
+      "label": "services/cost-allocation/cost-types.js"
+    },
+    {
+      "from": "future pricing coverage gate",
+      "to": "services/pricing-maturity.js",
+      "type": "uses",
+      "label": "future pricing coverage gate"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:pricing_maturity_disposition_events",
+      "type": "db-read",
+      "label": "pricing_maturity_disposition_events"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db:pricing_maturity_disposition_events",
+      "type": "db-write",
+      "label": "pricing_maturity_disposition_events"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "doctrine:pricing_market_viability_maturity_watermark",
+      "type": "doctrine",
+      "label": "pricing_market_viability_maturity_watermark"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
     },
     {
       "from": "services/pricing-engine.js",
@@ -73976,7 +74286,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "../order-cost-snapshot"
+        "../order-cost-snapshot",
+        "cost-types"
       ],
       "directUsedBy": [
         "services/cost-allocation/allocate.js",
@@ -73987,15 +74298,16 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "economic-engine"
       ],
       "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:pricing_market_viability_cost_scope",
         "impact:economic-engine",
         "services/cost-allocation/allocate.js",
+        "services/cost-allocation/cost-types.js",
         "services/order-cost-snapshot.js"
       ]
     },
@@ -74052,6 +74364,47 @@
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/index.js",
         "utils/relay-commission.js"
+      ]
+    },
+    "services/cost-allocation/cost-types.js": {
+      "role": "economic-engine-cost-type-classification",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/cost-allocation/variance.js",
+        "services/dashboard-metrics/_helpers.js",
+        "services/cost-allocation/_helpers.js",
+        "services/pricing-maturity.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "dashboard",
+        "reconciliation"
+      ],
+      "mustCheck": [
+        "doctrine:pricing_market_viability_cost_scope",
+        "impact:dashboard",
+        "impact:economic-engine",
+        "impact:pricing",
+        "impact:reconciliation",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/variance.js",
+        "services/dashboard-metrics/_helpers.js",
+        "services/pricing-maturity.js"
       ]
     },
     "services/cost-allocation/index.js": {
@@ -74130,7 +74483,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/cost-allocation/cost-types.js"
       ],
       "directUsedBy": [
         "services/cost-allocation/index.js"
@@ -74145,7 +74499,7 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "economic-engine",
@@ -74156,9 +74510,10 @@
         "db:order_item_real_cost_allocations",
         "db:order_items",
         "db:orders",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:pricing_market_viability_cost_scope",
         "impact:admin-costing",
         "impact:economic-engine",
+        "services/cost-allocation/cost-types.js",
         "services/cost-allocation/index.js"
       ]
     },
@@ -74730,7 +75085,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "@none"
+        "services/cost-allocation/cost-types.js"
       ],
       "directUsedBy": [
         "services/dashboard-metrics/control-tower.js",
@@ -74747,20 +75102,23 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "pricing_market_viability_cost_scope"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "pricing"
       ],
       "mustCheck": [
         "db:cash_collections",
         "db:orders",
         "db:parcels",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:pricing_market_viability_cost_scope",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:pricing",
         "routes/logistics.js",
+        "services/cost-allocation/cost-types.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-metrics/costing.js"
       ]
@@ -79398,6 +79756,61 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "services/pricing-apply.js"
+      ]
+    },
+    "services/pricing-maturity.js": {
+      "role": "economic-engine-pricing-maturity",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/cost-allocation/cost-types.js"
+      ],
+      "directUsedBy": [
+        "future pricing coverage gate"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "pricing_maturity_disposition_events"
+      ],
+      "dbWrite": [
+        "pricing_maturity_disposition_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_maturity_watermark"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:pricing_maturity_disposition_events",
+        "doctrine:pricing_market_viability_maturity_watermark",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing",
+        "services/cost-allocation/cost-types.js"
       ]
     },
     "services/pricing-output.js": {
@@ -87406,6 +87819,12 @@
       "label": "../order-cost-snapshot"
     },
     {
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "cost-types",
+      "type": "depends",
+      "label": "cost-types"
+    },
+    {
       "from": "variance.js (services/cost-allocation/*)",
       "to": "services/cost-allocation/_helpers.js",
       "type": "uses",
@@ -87422,6 +87841,12 @@
       "to": "_helpers (shareByWeight)",
       "type": "depends",
       "label": "_helpers (shareByWeight)"
+    },
+    {
+      "from": "services/cost-allocation/cost-types.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
     },
     {
       "from": "services/cost-allocation/index.js",
@@ -87530,12 +87955,6 @@
       "to": "dashboard-metrics/_helpers",
       "type": "depends",
       "label": "dashboard-metrics/_helpers"
-    },
-    {
-      "from": "services/dashboard-metrics/_helpers.js",
-      "to": "@none",
-      "type": "depends",
-      "label": "@none"
     },
     {
       "from": "workspaces.js (services/dashboard-metrics/*)",
@@ -88190,6 +88609,18 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/pricing-maturity.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "future pricing coverage gate",
+      "to": "services/pricing-maturity.js",
+      "type": "uses",
+      "label": "future pricing coverage gate"
     },
     {
       "from": "services/pricing-rates.js",
