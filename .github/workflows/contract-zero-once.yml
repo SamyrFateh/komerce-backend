@@ -12,6 +12,29 @@ jobs:
   close-contract-debt:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,7 +59,6 @@ jobs:
             src = src.replace(marker, block + marker);
           }
 
-          // Route de création d'inquiry : succès réel = HTTP 201, pas 200.
           const responseMarker = '// Surcharges de réponse par route — pour les cas réels observés';
           if (!src.includes('SUCCESS_STATUS_OVERRIDES')) {
             src = src.replace(responseMarker,
@@ -47,7 +69,6 @@ jobs:
           if (src.includes(oldResponses)) src = src.replace(oldResponses, newResponses);
           else if (!src.includes('const successStatus = SUCCESS_STATUS_OVERRIDES')) throw new Error('op.responses block not found');
 
-          // Le téléchargement document est binaire : aucune fausse réponse JSON.
           const receiptMarker = "  // La route receipt retourne du HTML imprimable, pas du JSON.\n";
           if (!src.includes("'GET /api/auth/me/documents/{id}/download':")) {
             const pdfOverride = `  'GET /api/auth/me/documents/{id}/download': {\n    '200': {\n      description: 'Document transactionnel PDF privé',\n      content: { 'application/pdf': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } } },\n    },\n    '404': { description: 'Document introuvable' },\n    '503': { description: 'Document temporairement indisponible' },\n  },\n`;
@@ -56,7 +77,6 @@ jobs:
           }
 
           fs.writeFileSync(p, src);
-
           const pkgPath = 'package.json';
           const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
           pkg.scripts['contract:generate'] = 'node scripts/contract-generate.js && node scripts/contract-debt-sync.js --write';
