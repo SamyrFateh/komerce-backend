@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -47,6 +46,15 @@ describe('cost-allocation/_helpers', () => {
         expect(fixed.has(t)).toBe(false);
       });
     });
+
+    it('fige la classification economique N1 N2 N3 sans seconde verite', () => {
+      expect(VARIABLE_COST_TYPES).toEqual(expect.arrayContaining([
+        'product_purchase', 'sourcing', 'hub', 'packaging', 'freight', 'customs',
+        'port_transitaire', 'local_distribution', 'relay', 'payment', 'risk_provision',
+      ]));
+      expect(FIXED_COST_TYPES).toEqual(['fixed_overhead']);
+      expect(VARIABLE_COST_TYPES).not.toContain('fixed_overhead');
+    });
   });
 
   describe('shareByWeight', () => {
@@ -87,7 +95,6 @@ describe('cost-allocation/_helpers', () => {
 
   describe('taxableWeight', () => {
     it('retient le poids volumetrique si superieur au poids reel (mode sea, facteur 1000)', () => {
-      // volume 0.5 m3 * 1000 = 500 kg > 100 kg reel
       expect(taxableWeight(100, 0.5, 'sea')).toBe(500);
     });
 
@@ -96,9 +103,7 @@ describe('cost-allocation/_helpers', () => {
     });
 
     it('utilise le facteur 167 en mode air', () => {
-      // 0.1 m3 * 167 = 16.7 kg < poids reel 20 kg -> retient le reel
       expect(taxableWeight(20, 0.1, 'air')).toBe(20);
-      // 1 m3 * 167 = 167 kg > 20 kg reel -> retient le volumetrique
       expect(taxableWeight(20, 1, 'air')).toBe(167);
     });
 
