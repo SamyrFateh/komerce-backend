@@ -21,16 +21,17 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-      - name: Refresh lock with npm security fix
-        run: npm audit fix --package-lock-only --ignore-scripts
-      - name: Prove qs is patched
+      - name: Refresh qs in lock
+        run: npm update qs --package-lock-only --ignore-scripts
+      - name: Prove npm debt is zero
         run: |
-          node -e "const l=require('./package-lock.json'); const v=l.packages['node_modules/qs']?.version; console.log('qs='+v); if (!v || v === '6.15.3') process.exit(1)"
+          node -e "const l=require('./package-lock.json'); const v=l.packages['node_modules/qs']?.version; console.log('qs='+v); if (!v || v !== '6.16.0') process.exit(1)"
+          npm audit --audit-level=moderate
       - name: Commit generated lock and remove this one-off workflow
         run: |
           git config user.name "komerce-governance-bot"
           git config user.email "actions@users.noreply.github.com"
           git add package-lock.json
           git rm .github/workflows/lock-refresh-once.yml
-          git commit -m "fix(deps): refresh lock after npm audit"
+          git commit -m "fix(deps): bump qs to patched 6.16.0"
           git push origin HEAD:fix/debt-paydown-npm-contract-security
