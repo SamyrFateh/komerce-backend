@@ -83,6 +83,7 @@ module.exports = {
       'services/finance-metrics/payments.js',
       'services/finance-metrics/sales-analysis.js',
       'services/cost-allocation/_helpers.js',
+      'services/cost-allocation/cost-types.js',
       'services/cost-allocation/allocate.js',
       'services/cost-allocation/variance.js',
       'services/cost-allocation/index.js',
