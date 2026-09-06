@@ -69,3 +69,13 @@ describe('npm audit v2 advisory classification', () => {
     expect(inheritedBlockingCount({ low: vulnerability })).toBe(0);
   });
 });
+
+describe('npm audit dependency resolution', () => {
+  test('pins the patched qs release in both package policy and lock', () => {
+    const pkg = require('../../package.json');
+    const lock = require('../../package-lock.json');
+
+    expect(pkg.overrides?.qs).toBe('6.16.0');
+    expect(lock.packages?.['node_modules/qs']?.version).toBe('6.16.0');
+  });
+});
