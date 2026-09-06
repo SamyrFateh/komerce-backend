@@ -62,7 +62,7 @@
     "feature:360:refresh-global": "npm run gate:findings:gen && npm run feature:360:gen",
     "feature:360:check": "node scripts/feature-360-check.js",
     "arch:360:all": "npm run arch:gen && npm run dashboards:360 && npm run boutique:360 && npm run meta:graph",
-    "contract:generate": "node scripts/contract-generate.js",
+    "contract:generate": "node scripts/contract-generate.js && node scripts/contract-debt-sync.js --write",
     "security:360": "node scripts/run-security-360.js",
     "security:360:check": "node scripts/run-security-360.js --check",
     "security:360:save": "node scripts/run-security-360.js --save",
@@ -123,7 +123,9 @@
     "prepare": "node scripts/setup-hooks-runner.js",
     "hooks:install": "node scripts/setup-hooks-runner.js",
     "feature:invariant:check": "node scripts/feature-invariant-check.js",
-    "feature:invariant:check:strict": "node scripts/feature-invariant-check.js --strict"
+    "feature:invariant:check:strict": "node scripts/feature-invariant-check.js --strict",
+    "contract:debt:check": "node scripts/contract-debt-sync.js --check",
+    "contract:debt:write": "node scripts/contract-debt-sync.js --write"
   },
   "dependencies": {
     "@simplewebauthn/server": "^13.3.2",
