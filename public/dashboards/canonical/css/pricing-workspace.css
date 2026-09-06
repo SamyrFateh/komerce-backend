@@ -1,0 +1,464 @@
+/* Pricing Workspace — présentation métier de l'Atelier des coûts */
+
+[data-pricing-workshop-enhanced] .kmc-section-body {
+  display: grid;
+  gap: 18px;
+}
+
+.kmc-cost-formula {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(37 99 235 / .08), transparent 18rem),
+    linear-gradient(180deg, #ffffff, #fbfdff);
+}
+
+.kmc-cost-formula-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.kmc-cost-formula-kicker,
+.kmc-cost-group-eyebrow {
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .075em;
+}
+
+.kmc-cost-formula-title {
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 17px;
+}
+
+.kmc-cost-formula-text,
+.kmc-cost-group-description {
+  margin: 0;
+  color: var(--kmc-muted, #64748b);
+  line-height: 1.5;
+}
+
+.kmc-cost-formula-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.kmc-cost-formula-step {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 82px;
+  padding: 11px 12px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.kmc-cost-formula-step.is-n1 { border-top: 3px solid #2563eb; }
+.kmc-cost-formula-step.is-n2 { border-top: 3px solid #d9901a; }
+.kmc-cost-formula-step.is-n3 { border-top: 3px solid #7c3aed; }
+.kmc-cost-formula-step.is-marge { border-top: 3px solid #059669; }
+
+.kmc-cost-formula-step-key {
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.kmc-cost-formula-step strong {
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 13px;
+}
+
+.kmc-cost-formula-step small {
+  color: var(--kmc-muted, #64748b);
+  font-size: 11px;
+}
+
+.kmc-cost-formula-plus {
+  display: grid;
+  place-items: center;
+  color: var(--kmc-muted, #64748b);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.kmc-cost-group {
+  --cost-accent: #64748b;
+  --cost-accent-soft: #f8fafc;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-left: 4px solid var(--cost-accent);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--cost-accent-soft), #fff 92px);
+}
+
+.kmc-cost-group.is-n1 {
+  --cost-accent: #2563eb;
+  --cost-accent-soft: #eff6ff;
+}
+
+.kmc-cost-group.is-n2 {
+  --cost-accent: #d9901a;
+  --cost-accent-soft: #fff8e6;
+}
+
+.kmc-cost-group.is-n3 {
+  --cost-accent: #7c3aed;
+  --cost-accent-soft: #f5f3ff;
+}
+
+.kmc-cost-group.is-exceptional {
+  --cost-accent: #b42318;
+  --cost-accent-soft: #fff5f4;
+}
+
+.kmc-cost-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.kmc-cost-group-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.kmc-cost-group-eyebrow {
+  color: var(--cost-accent);
+}
+
+.kmc-cost-group-title {
+  margin: 0;
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 18px;
+}
+
+.kmc-cost-group-formula {
+  color: var(--kmc-ink, #334155);
+  font-weight: 700;
+}
+
+.kmc-cost-card-list {
+  display: grid;
+  gap: 8px;
+}
+
+.kmc-cost-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  gap: 18px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(15 23 42 / .025);
+}
+
+.kmc-cost-card.is-inactive {
+  background: #f8fafc;
+  opacity: .78;
+}
+
+.kmc-cost-card-identity {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.kmc-cost-card-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--cost-accent-soft, #f8fafc);
+  color: var(--cost-accent, #64748b);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.kmc-cost-card-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.kmc-cost-card-title {
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 14px;
+}
+
+.kmc-cost-card-description {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--kmc-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kmc-cost-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.kmc-cost-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.kmc-cost-pill.is-active {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.kmc-cost-pill.is-inactive {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.kmc-cost-pill.is-inherited {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.kmc-cost-pill.is-override {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #a15c00;
+}
+
+.kmc-cost-pill.is-count {
+  border-color: color-mix(in srgb, var(--cost-accent) 25%, #e2e8f0);
+  background: #fff;
+  color: var(--cost-accent);
+}
+
+.kmc-cost-card-editor {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.kmc-cost-value-label {
+  display: grid;
+  gap: 5px;
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.kmc-cost-value-input-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  border: 1px solid var(--kmc-line-strong, #cbd5e1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.kmc-cost-value-input-wrap:focus-within {
+  border-color: var(--cost-accent, #64748b);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cost-accent, #64748b) 14%, transparent);
+}
+
+.kmc-cost-value-input-wrap input {
+  min-width: 0;
+  border: 0;
+  padding: 10px 11px;
+  background: transparent;
+  color: var(--kmc-navy, #0f1a2e);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  outline: 0;
+}
+
+.kmc-cost-value-unit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-left: 1px solid var(--kmc-line, #e2e8f0);
+  background: #f8fafc;
+  color: var(--kmc-muted, #64748b);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.kmc-cost-comparison {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: var(--kmc-muted, #64748b);
+  font-size: 11px;
+}
+
+.kmc-cost-comparison strong {
+  justify-self: end;
+  color: var(--kmc-ink, #334155);
+}
+
+.kmc-cost-comparison small {
+  grid-column: 1 / -1;
+  color: var(--kmc-muted, #64748b);
+}
+
+.kmc-cost-inactive-note {
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kmc-cost-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kmc-cost-card-actions .kmc-workspace-action {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.kmc-cost-technical {
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+}
+
+.kmc-cost-technical summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.kmc-cost-technical-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+
+.kmc-cost-technical code {
+  color: #475569;
+}
+
+.kmc-cost-create {
+  padding: 12px 14px;
+  border: 1px dashed var(--kmc-line-strong, #cbd5e1);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+
+.kmc-cost-create > summary {
+  cursor: pointer;
+  color: var(--kmc-navy, #0f1a2e);
+  font-weight: 800;
+}
+
+.kmc-cost-create-help {
+  margin: 9px 0;
+  color: var(--kmc-muted, #64748b);
+  font-size: 12px;
+}
+
+.kmc-cost-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.kmc-cost-create-form input,
+.kmc-cost-create-form select {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--kmc-line-strong, #cbd5e1);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--kmc-ink, #0f172a);
+  font: inherit;
+}
+
+@media (max-width: 980px) {
+  .kmc-cost-formula-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kmc-cost-formula-plus {
+    display: none;
+  }
+
+  .kmc-cost-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kmc-cost-formula,
+  .kmc-cost-group {
+    padding: 12px;
+  }
+
+  .kmc-cost-formula-rail,
+  .kmc-cost-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .kmc-cost-group-header {
+    display: grid;
+  }
+
+  .kmc-cost-card {
+    gap: 12px;
+    padding: 11px;
+  }
+
+  .kmc-cost-card-identity {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .kmc-cost-card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 16px;
+  }
+
+  .kmc-cost-card-actions .kmc-workspace-action {
+    flex: 1 1 auto;
+  }
+}
