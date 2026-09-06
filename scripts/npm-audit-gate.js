@@ -3,7 +3,7 @@
  * GOV-03 — npm audit gate (port Node.js, cross-platform)
  *
  * Usage:
- *   npm run audit:gate          // bloquant (exit 1 si high/critical)
+ *   npm run audit:gate          // bloquant (exit 1 si moderate/high/critical)
  *   npm run audit:gate:observe  // observatoire (exit 0 toujours, log seulement)
  *   node scripts/npm-audit-gate.js --cwd=public/boutique   // audite un autre package.json du repo
  *
@@ -30,12 +30,8 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { actionableVulnerabilities, inheritedHighCriticalCount } = require('./lib/npm-audit-core');
+const { actionableVulnerabilities, inheritedBlockingCount } = require('./lib/npm-audit-core');
 
-// --cwd=<path> permet de réutiliser ce même script sur un autre package.json
-// du repo (ex. public/boutique, dépendances isolées : stylelint, playwright)
-// sans dupliquer le fichier. Par défaut : racine repo (comportement historique
-// inchangé).
 const cwdArg = process.argv.find(a => a.startsWith('--cwd='));
 const ROOT = cwdArg ? path.resolve(cwdArg.slice('--cwd='.length)) : path.join(__dirname, '..');
 const PKG_PATH = path.join(ROOT, 'package.json');
@@ -77,13 +73,13 @@ console.log(
 
 const allVulns = data.vulnerabilities || {};
 let targets = actionableVulnerabilities(allVulns);
-const inheritedCount = inheritedHighCriticalCount(allVulns);
+const inheritedCount = inheritedBlockingCount(allVulns);
 if (inheritedCount > 0) {
-  console.log(`ℹ️  npm audit v2: ${inheritedCount} entrée(s) héritée(s) regroupée(s) sous leur advisory source.`);
+  console.log(`ℹ️  npm audit v2: ${inheritedCount} entrée(s) héritée(s) moderate/high/critical regroupée(s) sous leur advisory source.`);
 }
 
 if (targets.length === 0) {
-  console.log('\n✅ npm audit: 0 high/critical vulnerabilities');
+  console.log('\n✅ npm audit: 0 moderate/high/critical vulnerabilities');
   process.exit(0);
 }
 
@@ -108,13 +104,13 @@ targets = targets.filter(v => {
   if (!ex) return true;
   if (!ex.expires || ex.expires < today) {
     expiredExceptions.push({ name: v.name, ex });
-    return true; // exception expirée ou invalide → redevient bloquant
+    return true;
   }
-  return false; // exception valide → on l'exclut du blocage
+  return false;
 });
 
 if (targets.length === 0) {
-  console.log(`\n✅ npm audit: vulnérabilité(s) high/critical couverte(s) par exception valide.`);
+  console.log(`\n✅ npm audit: vulnérabilité(s) moderate/high/critical couverte(s) par exception valide.`);
   process.exit(0);
 }
 
@@ -125,7 +121,6 @@ const pkgLines = pkgRaw.split('\n');
 const pkgJson = JSON.parse(pkgRaw);
 
 function findLineFor(depName) {
-  // Cherche la déclaration exacte `"depName": "..."` (échappe les caractères spéciaux)
   const escaped = depName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`^\\s*"${escaped}"\\s*:`);
   for (let i = 0; i < pkgLines.length; i++) {
@@ -138,14 +133,12 @@ function declaredRangeFor(depName) {
   return (pkgJson.dependencies || {})[depName] || (pkgJson.devDependencies || {})[depName] || null;
 }
 
-// Remonte la chaîne node_modules pour trouver l'ancêtre direct responsable.
 function resolveAncestor(v) {
   if (v.isDirect) return { name: v.name, direct: true };
 
   const nodePath = (v.nodes && v.nodes[0]) || '';
   const segments = nodePath.split('node_modules/').filter(Boolean).map(s => s.replace(/\/$/, ''));
 
-  // segments[0] = paquet le plus externe dans l'arbre node_modules pour ce nœud
   if (segments.length > 0) {
     const outer = segments[0];
     if (outer !== v.name && declaredRangeFor(outer)) {
@@ -153,7 +146,6 @@ function resolveAncestor(v) {
     }
   }
 
-  // Fallback : remonter via "effects" (paquets qui dépendent de celui-ci)
   for (const eff of v.effects || []) {
     if (declaredRangeFor(eff)) return { name: eff, direct: true, viaChain: [eff, v.name] };
   }
@@ -178,21 +170,21 @@ function advisoryDetail(v) {
 
 // ── 5. Rendu ────────────────────────────────────────────────────────────────
 
-console.log(`\n⚠️  npm audit: ${targets.length} vulnérabilité(s) high/critical à traiter :\n`);
+console.log(`\n⚠️  npm audit: ${targets.length} vulnérabilité(s) moderate/high/critical à traiter :\n`);
 
 if (expiredExceptions.length) {
   console.log('── EXCEPTIONS EXPIRÉES (redeviennent bloquantes) ──');
   for (const { name, ex } of expiredExceptions) {
     console.log(`  ⏰ ${name} — exception expirée le ${ex.expires || '(date absente)'} : "${ex.reason || '(raison absente)'}"`);
-    console.log(`     → renouveler ou supprimer l'entrée dans scripts/npm-audit-exceptions.json`);
+    console.log('     → supprimer l\'entrée si le correctif est disponible ; toute prolongation nécessite une validation humaine explicite.');
   }
   console.log('');
 }
 
-const byTier = { critical: [], high: [] };
+const byTier = { critical: [], high: [], moderate: [] };
 for (const v of targets) byTier[v.severity].push(v);
 
-for (const tier of ['critical', 'high']) {
+for (const tier of ['critical', 'high', 'moderate']) {
   if (byTier[tier].length === 0) continue;
   console.log(`── ${tier.toUpperCase()} (${byTier[tier].length}) ──`);
 
@@ -227,7 +219,7 @@ for (const tier of ['critical', 'high']) {
       if (fLine) console.log(`        Ligne à modifier : package.json:${fLine}`);
     } else {
       console.log('     ⛔ Aucun correctif amont publié. Options :');
-      console.log('        (a) exception datée dans scripts/npm-audit-exceptions.json (package + expires + reason)');
+      console.log('        (a) exception datée dans scripts/npm-audit-exceptions.json avec validation humaine explicite');
       console.log(`        (b) \`npm install ${v.name}@latest --force\` (⚠️ casse possible — à tester)`);
       console.log(`        (c) remplacer la dépendance "${v.name}"`);
     }

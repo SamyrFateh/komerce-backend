@@ -72,6 +72,9 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      - name: Npm audit gate
+        if: needs.changes.outputs.backend == 'true'
+        run: npm run audit:gate
 
       - name: Quality gate
         if: needs.changes.outputs.backend == 'true'
