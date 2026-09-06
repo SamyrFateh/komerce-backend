@@ -1,8 +1,8 @@
 # Doctrine Pricing ancré marché & viabilité Komerce
 
-> **Version** : 1.1 — 2026-09-06
+> **Version** : 1.2 — 2026-09-06
 > **Statut** : document fondamental du moteur économique — draft avant merge
-> **Complète** : `DOCTRINE_ECONOMIQUE_KOMERCE.md`, `DOCTRINE_ALLOCATION_COUTS.md`, `DOCTRINE_DENSITE_VALEUR.md`, `DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md`
+> **Complète** : `DOCTRINE_ECONOMIQUE_KOMERCE.md`, `DOCTRINE_ALLOCATION_COUTS.md`, `DOCTRINE_DENSITE_VALEUR.md`, `DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md`, `DOCTRINE_REFACTURATION_RAILWAY.md`, `DOCTRINE_MUTUALISATION_HUB.md`
 
 ---
 
@@ -129,7 +129,29 @@ Le gate ne bloque pas automatiquement les ventes et ne repricie pas un produit. 
 
 ---
 
-## 6. Mesurer au niveau où le coût devient vrai
+## 6. Couverture par marché, vérité globale
+
+Le **gate d'autorisation est évalué par marché** (`market_id`). Un marché déficitaire ne peut pas devenir artificiellement `COVERED` parce qu'un autre marché est rentable.
+
+```text
+market_coverage_ratio = contributions réconciliées du marché
+                        / charge économique de structure attribuée au marché
+```
+
+La couverture globale groupe reste publiée comme vérité du modèle :
+
+```text
+group_coverage_ratio = Σ contributions réconciliées groupe
+                       / charge économique groupe
+```
+
+Le ratio global ne pilote aucune autorisation locale. Il sert au pilotage du groupe.
+
+Un marché en ouverture peut être sous couverture sans être abandonné : il devient une **position de conquête groupe explicite**, financée par un budget d'expansion daté, borné, consommable et visible séparément.
+
+---
+
+## 7. Mesurer au niveau où le coût devient vrai
 
 - **Article** : achat produit et coûts propres à l'article.
 - **Commande** : frais de paiement, commission relais et autres coûts de commande réellement constatés.
@@ -145,7 +167,76 @@ Par défaut, une commande mono-article couvre son coût variable de commande. Un
 
 ---
 
-## 7. Les quatre repères prix canoniques
+## 8. Charges de structure mutualisées : plateforme et Hub physique
+
+Railway, Cloudinary, la part fixe de Twilio, le loyer du Hub, le personnel fixe Hub et les coûts structurels équivalents sont **du N3**.
+
+Ils ne deviennent jamais des coûts variables d'article du seul fait qu'ils sont ventilés par marché.
+
+Les coûts Hub réellement variables déjà portés dans N1 — contrôle qualité unitaire, étiquetage, packaging ou opération unitaire — restent hors du pool fixe mutualisé.
+
+### Imputation vs refacturation
+
+- **imputation** : convention interne de lecture d'une charge de période ;
+- **refacturation** : mouvement d'argent réel vers une entité/partenaire contractuellement facturable.
+
+Les deux portent sur une seule vérité économique. Invariant de conservation :
+
+```text
+Σ quotes-parts attribuées / refacturables aux marchés
+= charge économique du pool de structure sur la fenêtre canonique
+```
+
+Il est interdit de refacturer une charge de structure aux marchés et de la compter une seconde fois comme nouveau coût article.
+
+### Fenêtre unique
+
+La mutualisation et, le cas échéant, la refacturation utilisent la **même fenêtre canonique** que la couverture. Un mois calendaire ne devient pas une seconde base économique indépendante.
+
+---
+
+## 9. Rôle pays et statut de facturation
+
+Le rôle RBAC `market_operator` exprime une autorité opérationnelle sur un marché. Il ne signifie pas qu'un opérateur est un partenaire facturable.
+
+Deux modes sont distincts :
+
+```text
+internal_allocation
+partner_reinvoice
+```
+
+- `internal_allocation` : responsable pays interne ; on calcule sa performance et sa quote-part, sans facture partenaire ;
+- `partner_reinvoice` : partenaire/entité sous contrat ; la quote-part peut devenir une refacturation défendable ligne à ligne.
+
+Par défaut, tant qu'aucun contrat de facturation n'existe, le marché reste en `internal_allocation`.
+
+Le passage à `partner_reinvoice` est une décision de gouvernance/contrat indépendante du rôle `market_operator`.
+
+---
+
+## 10. Clés de mutualisation et intégrité des assiettes
+
+Une clé de prorata n'est jamais neutre. Elle doit être gouvernée et versionnée.
+
+Deux politiques sont admissibles :
+
+1. **mutualisation pure** selon une assiette d'activité/usage réellement constatée ;
+2. **socle par marché + marginal** : coût minimal de présence par marché, puis variable selon consommation réelle.
+
+Le choix est un arbitrage de groupe/actionnaire, pas une décision silencieuse du moteur.
+
+### Règles spécifiques
+
+- Cloudinary ne se divise jamais par `markets.is_active` ; seuls les marchés avec activité constatée sur la fenêtre canonique peuvent entrer dans une assiette d'activité.
+- La structure Hub ne se pondère pas arbitrairement au poids : manutention par colis/opération réellement traités ; stockage par volume occupé, idéalement `m3_jours` ; fallback égalitaire `confidence: low` si la mesure manque.
+- Pour le maritime, le poids n'est jamais utilisé comme proxy d'un volume absent.
+
+Les données d'assiette doivent provenir de sources opérationnelles indépendantes quand elles existent. Les commandes viennent du système de paiement ; les colis et scans du Hub viennent des flux opérationnels. Le `market_operator` ne peut pas produire librement la mesure qui réduit sa propre quote-part.
+
+---
+
+## 11. Les quatre repères prix canoniques
 
 | Repère | Nature | Autorité |
 |---|---|---|
@@ -156,11 +247,11 @@ Par défaut, une commande mono-article couvre son coût variable de commande. Un
 
 `recommended_price` reste transitoirement une référence mécanique de couverture complète pour compatibilité.
 
-Un vrai prix de test marché peut se situer entre le plancher variable et le CDR complet **uniquement si le gate de couverture l'autorise** et si contribution, écart au CDR, motif, durée et budget éventuel sont tracés.
+Un vrai prix de test marché peut se situer entre le plancher variable et le CDR complet **uniquement si le gate de couverture du marché l'autorise** et si contribution, écart au CDR, motif, durée et budget éventuel sont tracés.
 
 ---
 
-## 8. Ancrage marché
+## 12. Ancrage marché
 
 Komerce compare des produits **strictement identiques** lorsque possible : même marque, modèle, capacité, variante et condition.
 
@@ -182,7 +273,7 @@ Aucun corridor canonique n'est inventé par approximation.
 
 ---
 
-## 9. Densité, rotation et fréquence
+## 13. Densité, rotation et fréquence
 
 La densité logistique est un déterminant économique lorsqu'elle modifie les coûts réellement engagés.
 
@@ -192,28 +283,51 @@ La densité conditionne d'abord le sourcing et la conception logistique. Elle ne
 
 ---
 
-## 10. Gouvernance des hypothèses et des leviers
+## 14. Gouvernance des hypothèses et des leviers
 
-Toute modification susceptible d'améliorer artificiellement CDR, contribution, maturité ou couverture est versionnée avec auteur, date, motif, valeur avant/après et impact calculé.
+Toute modification susceptible d'améliorer artificiellement CDR, contribution, maturité, quote-part de structure ou couverture est versionnée avec auteur, date, motif, valeur avant/après et impact calculé.
 
-Sont gouvernés au minimum : objectifs et moyennes d'allocation, fenêtre et tailles d'échantillon, seuils de maturité et couverture, charges de structure et leur classification, taux de provision risque, taux de change appliqués, marge cible, marge de sécurité, seuils de santé, cibles de densité, règles d'éligibilité des comparables et règles qui déterminent si une commande est réconciliée.
+Sont gouvernés au minimum :
+
+- objectifs et moyennes d'allocation ;
+- fenêtre et tailles d'échantillon ;
+- seuils de maturité et couverture ;
+- charges de structure et leur classification ;
+- périmètre **groupe / marché** de chaque charge ;
+- clés de prorata et politique de mutualisation ;
+- règle d'activité constatée d'un marché ;
+- mode `internal_allocation` / `partner_reinvoice` ;
+- taux de provision risque ;
+- taux de change appliqués ;
+- marge cible, marge de sécurité et seuils de santé ;
+- cibles de densité ;
+- règles d'éligibilité des comparables ;
+- règles qui déterminent si une commande est réconciliée.
 
 ### Périmètre fermé des charges
 
-Le périmètre des charges de structure est fermé. Désactiver, reclassifier en `exceptional`, déplacer ou exclure une charge susceptible de réduire le dénominateur est un acte gouverné, publié et auditable.
+Le périmètre des charges de structure est fermé dans deux dimensions :
 
-Aucun changement de classification ne peut améliorer silencieusement le ratio de couverture.
+```text
+fixe / variable
+groupe / marché
+```
+
+Désactiver, reclassifier, déplacer groupe→marché ou marché→groupe, ou exclure une charge est un acte gouverné, publié et auditable.
+
+Aucun changement de classification ne peut améliorer silencieusement un ratio de couverture ou une quote-part facturable.
 
 ---
 
-## 11. Réconciliation et maturité avant refonte du prix
+## 15. Réconciliation et maturité avant refonte du prix
 
 ```text
 mesurer le réel
 → réconcilier estimé vs réel
 → établir la maturité
 → recalibrer les ratios
-→ calculer la couverture de période
+→ attribuer la charge économique de structure
+→ calculer la couverture par marché et groupe
 → observer le marché
 → décider le prix
 ```
@@ -238,7 +352,7 @@ estimated_fixed_overhead_kmf
 
 ---
 
-## 12. Provision risque : contribution provisoire et réconciliation de période
+## 16. Provision risque : contribution provisoire et réconciliation de période
 
 La provision risque appartient à N2 et agit donc sur la contribution. Elle doit être réconciliée en période : provisions passées versus sinistres, pertes et incidents réellement constatés.
 
@@ -248,19 +362,19 @@ Modifier un taux de provision risque est un acte gouverné car il agit directeme
 
 ---
 
-## 13. Budget stratégique : produit d'appel, conquête et extinction
+## 17. Budgets stratégiques : produit d'appel et conquête marché
 
-Une sous-couverture volontaire n'est jamais logée silencieusement dans une marge produit négative.
+Une sous-couverture volontaire n'est jamais logée silencieusement dans une marge produit négative ou dans la marge d'un autre marché.
 
-Toute stratégie `loss_leader`, `conquest` ou équivalent utilise un **budget stratégique explicite**, daté, borné, consommable et gouverné.
+Toute stratégie `loss_leader`, `conquest` produit ou **conquête de marché** utilise un budget stratégique explicite, daté, borné, consommable et gouverné.
 
-Le budget est affiché séparément des charges structurelles. Pour la viabilité globale, son montant consommé est un coût économique de période et réduit la capacité de couverture.
+Le budget est affiché séparément des charges structurelles. Son montant consommé est un coût économique de période et réduit la capacité de couverture.
 
-À l'épuisement du budget, à la date de fin ou au franchissement du seuil d'arrêt, l'exception se ferme pour toute nouvelle application du prix concerné et force une décision explicite : repricing, renouvellement gouverné ou sortie de la stratégie.
+À l'épuisement du budget, à la date de fin ou au franchissement du seuil d'arrêt, l'exception se ferme pour toute nouvelle application et force une décision explicite : repricing, renouvellement gouverné, réduction de périmètre ou arrêt de la stratégie.
 
 ---
 
-## 14. Saisonnalité
+## 18. Saisonnalité
 
 Une fenêtre mûre est nécessairement passée. Avant au moins un cycle annuel représentatif, la saisonnalité reste un contexte documenté, pas un multiplicateur improvisé du gate.
 
@@ -268,7 +382,23 @@ Après accumulation de données suffisantes, les ajustements saisonniers peuvent
 
 ---
 
-## 15. Interdictions
+## 19. Gaps structurels connus
+
+La doctrine cible dépasse encore le modèle de données actuel sur plusieurs points :
+
+- `finance_config` est global/singleton et ne porte pas une vérité N3 par marché ;
+- `charges` ne matérialise pas encore la frontière groupe / marché ;
+- il n'existe pas encore de vérité canonique de charge économique de période par marché ;
+- N2 et N3 sont encore fusionnés dans certains snapshots ;
+- le watermark de maturité n'existe pas encore comme concept de données ;
+- le budget stratégique de conquête n'est pas encore matérialisé ;
+- les clés de mutualisation Hub/plateforme ne sont pas encore implémentées de façon décisionnelle.
+
+Ces gaps sont des préconditions de chantier, pas une invitation à les combler par des fallbacks silencieux.
+
+---
+
+## 20. Interdictions
 
 - Interdit : `prix = coût × coefficient` comme règle unique.
 - Interdit : utiliser le marché pour définir le plancher économique.
@@ -277,17 +407,23 @@ Après accumulation de données suffisantes, les ajustements saisonniers peuvent
 - Interdit : calculer un gate sur un numérateur sélectionnable manuellement.
 - Interdit : masquer une confiance faible utilisée pour autoriser une stratégie agressive.
 - Interdit : juger la viabilité uniquement par un panier moyen.
-- Interdit : autoriser une sous-couverture sans gate de couverture.
+- Interdit : autoriser une sous-couverture sans gate de couverture du marché.
 - Interdit : modifier les ratios d'allocation sans historique et justification.
 - Interdit : sortir ou reclassifier une charge du périmètre sans acte gouverné.
+- Interdit : déplacer une charge groupe / marché sans acte gouverné.
 - Interdit : loger une subvention commerciale dans une marge produit invisible.
 - Interdit : laisser une exception temporaire sans action par défaut définie.
 - Interdit : utiliser un comparable approximatif comme ancrage marché canonique.
 - Interdit : coder le ratio de couverture tant que N2 et N3 ne sont pas séparés dans les snapshots.
+- Interdit : réinjecter une quote-part Railway / Cloudinary / Hub fixe comme coût variable article.
+- Interdit : refacturer et imputer deux fois la même charge économique.
+- Interdit : utiliser `markets.is_active` comme diviseur économique d'un pool partagé.
+- Interdit : utiliser le poids comme proxy de stockage Hub ou de volume maritime absent.
+- Interdit : déduire la facturabilité d'un marché du rôle `market_operator`.
 
 ---
 
-## 16. Ce qui ne doit pas être codé encore
+## 21. Ce qui ne doit pas être codé encore
 
 Tant que les préconditions de vérité ne sont pas remplies :
 
@@ -295,21 +431,26 @@ Tant que les préconditions de vérité ne sont pas remplies :
 - ne pas retirer `recommended_price` de l'API ;
 - ne pas coder le gate de couverture avant séparation N2 / N3 et watermark de maturité ;
 - ne pas coder l'ancrage marché décisionnel avant échantillon de comparables stricts vérifié ;
-- ne pas donner d'autorité commerciale à un ratio calculé sur charges configurées au lieu de charges économiques de période.
+- ne pas donner d'autorité commerciale à un ratio calculé sur charges configurées au lieu de charges économiques de période ;
+- ne pas coder la refacturation partenaire avant ratio de couverture réconcilié et contrat explicite ;
+- ne pas ajouter `market_id` à `charges` avant arbitrage de la frontière groupe / marché ;
+- ne pas dupliquer `finance_config` par marché avant séparation N2 / N3 et modèle de structure validé.
 
 ---
 
-## 17. Phrase de contrôle
+## 22. Phrase de contrôle
 
-Avant de valider un prix ou une stratégie :
+Avant de valider un prix, une stratégie ou une quote-part marché :
 
 1. Quel est le plancher variable réel et avec quel niveau de confiance ?
 2. Quelle contribution ce prix génère-t-il ?
-3. Le gate de couverture de période est-il `COVERED` ?
+3. Ce marché est-il `COVERED`, ou consomme-t-il un budget de conquête groupe explicite ?
 4. La donnée de maturité est-elle suffisante et non sélectionnable ?
-5. Le prix est-il crédible au regard d'un comparable strict réellement accessible au client ?
-6. S'il s'agit d'une exception, quel budget la finance et quand expire-t-elle ?
+5. La charge de structure attribuée au marché provient-elle d'un pool gouverné sans double comptage ?
+6. Le prix est-il crédible au regard d'un comparable strict réellement accessible au client ?
+7. S'il s'agit d'une exception, quel budget la finance et quand expire-t-elle ?
+8. S'il s'agit d'une refacturation, existe-t-il un contrat et l'invariant de conservation est-il vérifié ?
 
-Le shipment porte la vérité logistique de N1. La période porte la vérité de structure. Le marché borne la plausibilité. Aucun de ces niveaux ne remplace les autres.
+Le shipment porte la vérité logistique de N1. La période porte la vérité de structure. Le `market_id` porte la responsabilité économique locale. Le groupe porte la vérité consolidée. Le marché borne la plausibilité. Aucun de ces niveaux ne remplace les autres.
 
 Si une réponse critique est inconnue, Komerce dit `NOT_DECISIONAL` au lieu de fabriquer une fausse précision.
