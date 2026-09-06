@@ -20,13 +20,13 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1095,
-    "edges": 5720,
+    "graphNodes": 1099,
+    "edges": 5769,
     "dbTables": 127,
-    "doctrines": 295,
+    "doctrines": 299,
     "impactAreas": 172,
-    "unresolvedCodeEdges": 561,
-    "dbWriteViaOverlapWarnings": 6,
+    "unresolvedCodeEdges": 565,
+    "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
   "byDomain": {
@@ -37,7 +37,7 @@
     "catalog": 95,
     "admin-dashboard": 21,
     "decision-signals": 12,
-    "market": 2,
+    "market": 3,
     "economic-engine": 47,
     "sourcing": 6,
     "logistics": 45,
@@ -50,7 +50,7 @@
     "auth-passkey": 7,
     "payment": 17,
     "tracking": 1,
-    "wallet": 4,
+    "wallet": 3,
     "providers-services": 6,
     "customs": 6,
     "dashboard": 27,
@@ -87,7 +87,7 @@
     "util-ui": 1,
     "ui-infrastructure": 2,
     "state": 1,
-    "util": 32,
+    "util": 31,
     "domain-helper": 1,
     "adapter": 6,
     "ui-runtime": 2,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 214,
+    "service": 215,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -112,8 +112,8 @@
   },
   "byCriticality": {
     "critical": 70,
-    "medium": 124,
-    "high": 254,
+    "medium": 123,
+    "high": 255,
     "low": 53
   },
   "nodes": [
@@ -1008,8 +1008,9 @@
         "markets (M0)"
       ],
       "usedBy": [
-        "routes admin scoping un market_id (branchement futur",
-        "hors M2)"
+        "routes/hub-dashboard.js (GAP-1)",
+        "routes/relay-dashboard.js (GAP-2)",
+        "routes/admin/partners.js (GAP-3)"
       ],
       "dbRead": [
         "operator_market_scopes"
@@ -1024,7 +1025,7 @@
         "market",
         "admin-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "middleware/require-non-production.js",
@@ -3086,7 +3087,8 @@
       "impactAreas": [
         "mobile-navigation",
         "category-navigation",
-        "scroll-ownership"
+        "scroll-ownership",
+        "discovery-rail"
       ],
       "version": "2026-09"
     },
@@ -4205,7 +4207,7 @@
       "layer": "ui-component",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.",
+      "purpose": "Monter « Disponible ici » sur Tout et, sur mobile, à l'entrée d'une catégorie par bump vertical uniquement.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -7039,7 +7041,9 @@
         "side_effects"
       ],
       "depends": [
+        "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "middleware/validate.js",
         "validators",
         "services/partner-admin-service.js"
@@ -7047,7 +7051,10 @@
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
@@ -7055,14 +7062,16 @@
       ],
       "doctrine": [
         "legacy_http_contract_preserved",
-        "single_partner_mutation_authority"
+        "single_partner_mutation_authority",
+        "market_operator_scoping (GAP-3)"
       ],
       "impactAreas": [
         "dashboard",
         "admin-dashboard",
-        "partners"
+        "partners",
+        "market"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin/system.js",
@@ -7191,6 +7200,12 @@
           ]
         },
         {
+          "via": "market-scope-admin-service",
+          "tables": [
+            "operator_market_scopes"
+          ]
+        },
+        {
           "via": "incident-write-service",
           "tables": [
             "incidents"
@@ -7211,9 +7226,10 @@
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/alerts.js",
@@ -8348,12 +8364,14 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
+        "operator_market_scopes",
         "order_items",
         "orders",
         "parcel_items",
@@ -8388,13 +8406,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/hub-mark-ordered.js",
@@ -8464,6 +8484,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "usedBy": [
@@ -8481,12 +8502,14 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
-        "unknown"
+        "logistics",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/inventory-api.js",
@@ -9119,7 +9142,9 @@
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "finance_config"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
@@ -9143,12 +9168,15 @@
         "delegated_to_service"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "payment_fx_authority"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "shared-cart"
+        "shared-cart",
+        "payment",
+        "finance"
       ],
       "version": "2026-09"
     },
@@ -10311,12 +10339,14 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
+        "operator_market_scopes",
         "orders"
       ],
       "dbWrite": [
@@ -10328,13 +10358,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-2)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/scans.js",
@@ -14562,13 +14594,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/hub-operations.js",
@@ -14983,6 +15017,55 @@
         "loyalty"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/market-scope-admin-service.js",
+      "file": "services/market-scope-admin-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-operator-scope-admin-boundary",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "caller_owned_executor",
+        "user_id",
+        "market_code",
+        "scope_role",
+        "actor_id"
+      ],
+      "outputs": [
+        "active_markets",
+        "scope_projection",
+        "scope_history",
+        "revoke_result"
+      ],
+      "depends": [],
+      "usedBy": [
+        "dashboard"
+      ],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes"
+      ],
+      "dbWrite": [
+        "operator_market_scopes"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "lifecycle_owner_persistence_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/monitoring.js",
@@ -16909,7 +16992,8 @@
         "order_id",
         "options { client",
         "cashPaidAt",
-        "guardPending }"
+        "paymentEvent }",
+        "simulation_target_status"
       ],
       "outputs": [
         "orders.payment_status",
@@ -16923,7 +17007,8 @@
         "services/admin-order-refund.js",
         "services/payment-stripe.js",
         "services/parcel-auto-create-service.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/simulator/state-advancer.js"
       ],
       "dbRead": [
         "orders"
@@ -16944,9 +17029,10 @@
       "impactAreas": [
         "payments",
         "orders",
-        "dashboards"
+        "dashboards",
+        "simulator"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "services/payment-status-validator.js",
@@ -19420,13 +19506,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-2)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/repair-ordered-purchasing.js",
@@ -20511,6 +20599,9 @@
       "depends": [
         "db",
         "services/order-status-machine.js",
+        "services/payment-service.js",
+        "services/parcel-operations.js",
+        "services/wallet-service.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -20523,13 +20614,38 @@
       ],
       "dbWrite": [
         "notification_log",
-        "orders",
         "parcel_items",
         "parcels",
-        "scans",
-        "store_credits"
+        "scans"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders"
+          ]
+        },
+        {
+          "via": "payment-service",
+          "tables": [
+            "orders"
+          ]
+        },
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "wallet-service",
+          "tables": [
+            "wallet_credit_lots",
+            "wallet_transactions",
+            "wallets"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -20537,9 +20653,13 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "operations",
+        "payments",
+        "wallet",
+        "logistics"
       ],
-      "version": "2026-06"
+      "version": "2026-09",
+      "dbWriteViaOverlapWarning": "services/simulator/state-advancer.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels"
     },
     {
       "id": "services/sourcing-analysis.js",
@@ -23147,14 +23267,17 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "lot1a_fx_one_runtime_truth"
+        "lot1a_fx_one_runtime_truth",
+        "payment_fx_authority"
       ],
       "impactAreas": [
         "economic-engine",
         "sourcing",
-        "infrastructure"
+        "infrastructure",
+        "payment",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "utils/reference.js",
@@ -23326,41 +23449,6 @@
       ],
       "impactAreas": [
         "unknown"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "utils/store-credits.js",
-      "file": "utils/store-credits.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "wallet-store-credits",
-      "domain": "wallet",
-      "layer": "util",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "utils/logger.js"
-      ],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "wallet"
       ],
       "version": "2026-06"
     },
@@ -24807,6 +24895,11 @@
       "doctrine": "single_partner_mutation_authority"
     },
     {
+      "id": "doctrine:market_operator_scoping (GAP-3)",
+      "type": "doctrine",
+      "doctrine": "market_operator_scoping (GAP-3)"
+    },
+    {
       "id": "doctrine:no_homemade_crypto",
       "type": "doctrine",
       "doctrine": "no_homemade_crypto"
@@ -24842,6 +24935,11 @@
       "doctrine": "invalidate_cache_after_mutation"
     },
     {
+      "id": "doctrine:market_operator_scoping (GAP-1)",
+      "type": "doctrine",
+      "doctrine": "market_operator_scoping (GAP-1)"
+    },
+    {
       "id": "doctrine:facture_apres_paiement_confirme",
       "type": "doctrine",
       "doctrine": "facture_apres_paiement_confirme"
@@ -24865,6 +24963,11 @@
       "id": "doctrine:stock_apres_paiement",
       "type": "doctrine",
       "doctrine": "stock_apres_paiement"
+    },
+    {
+      "id": "doctrine:payment_fx_authority",
+      "type": "doctrine",
+      "doctrine": "payment_fx_authority"
     },
     {
       "id": "doctrine:order_status_machine",
@@ -24910,6 +25013,11 @@
       "id": "doctrine:produit_desactive_non_supprime",
       "type": "doctrine",
       "doctrine": "produit_desactive_non_supprime"
+    },
+    {
+      "id": "doctrine:market_operator_scoping (GAP-2)",
+      "type": "doctrine",
+      "doctrine": "market_operator_scoping (GAP-2)"
     },
     {
       "id": "doctrine:domaine_minimal_boutique_first",
@@ -25177,6 +25285,11 @@
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
+      "id": "doctrine:lifecycle_owner_persistence_boundary",
+      "type": "doctrine",
+      "doctrine": "lifecycle_owner_persistence_boundary"
+    },
+    {
       "id": "doctrine:notification_non_bloquante",
       "type": "doctrine",
       "doctrine": "notification_non_bloquante"
@@ -25220,11 +25333,6 @@
       "id": "doctrine:P3",
       "type": "doctrine",
       "doctrine": "P3"
-    },
-    {
-      "id": "doctrine:lifecycle_owner_persistence_boundary",
-      "type": "doctrine",
-      "doctrine": "lifecycle_owner_persistence_boundary"
     },
     {
       "id": "doctrine:transaction_existante_obligatoire",
@@ -26237,6 +26345,11 @@
       "area": "stock"
     },
     {
+      "id": "impact:finance",
+      "type": "impact-area",
+      "area": "finance"
+    },
+    {
       "id": "impact:cash",
       "type": "impact-area",
       "area": "cash"
@@ -26315,11 +26428,6 @@
       "id": "impact:canonical",
       "type": "impact-area",
       "area": "canonical"
-    },
-    {
-      "id": "impact:finance",
-      "type": "impact-area",
-      "area": "finance"
     },
     {
       "id": "impact:orders-logistics",
@@ -27854,16 +27962,22 @@
       "label": "markets (M0)"
     },
     {
-      "from": "routes admin scoping un market_id (branchement futur",
+      "from": "routes/hub-dashboard.js (GAP-1)",
       "to": "middleware/require-market-scope.js",
       "type": "uses",
-      "label": "routes admin scoping un market_id (branchement futur"
+      "label": "routes/hub-dashboard.js (GAP-1)"
     },
     {
-      "from": "hors M2)",
+      "from": "routes/relay-dashboard.js (GAP-2)",
       "to": "middleware/require-market-scope.js",
       "type": "uses",
-      "label": "hors M2)"
+      "label": "routes/relay-dashboard.js (GAP-2)"
+    },
+    {
+      "from": "routes/admin/partners.js (GAP-3)",
+      "to": "middleware/require-market-scope.js",
+      "type": "uses",
+      "label": "routes/admin/partners.js (GAP-3)"
     },
     {
       "from": "middleware/require-market-scope.js",
@@ -30822,6 +30936,12 @@
       "to": "impact:scroll-ownership",
       "type": "impact",
       "label": "scroll-ownership"
+    },
+    {
+      "from": "public/boutique/js/b-pager-end-bounce.js",
+      "to": "impact:discovery-rail",
+      "type": "impact",
+      "label": "discovery-rail"
     },
     {
       "from": "public/boutique/js/b-pager.js",
@@ -36148,9 +36268,21 @@
     },
     {
       "from": "routes/admin/partners.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin/partners.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "middleware/require-market-scope.js",
+      "type": "depends",
+      "label": "middleware/require-market-scope.js"
     },
     {
       "from": "routes/admin/partners.js",
@@ -36178,6 +36310,18 @@
     },
     {
       "from": "routes/admin/partners.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "routes/admin/partners.js",
       "to": "doctrine:legacy_http_contract_preserved",
       "type": "doctrine",
       "label": "legacy_http_contract_preserved"
@@ -36187,6 +36331,12 @@
       "to": "doctrine:single_partner_mutation_authority",
       "type": "doctrine",
       "label": "single_partner_mutation_authority"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "doctrine:market_operator_scoping (GAP-3)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-3)"
     },
     {
       "from": "routes/admin/partners.js",
@@ -36205,6 +36355,12 @@
       "to": "impact:partners",
       "type": "impact",
       "label": "partners"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "routes/admin/system.js",
@@ -36481,6 +36637,13 @@
     },
     {
       "from": "routes/admin/users.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-write-via",
+      "label": "operator_market_scopes",
+      "via": "market-scope-admin-service"
+    },
+    {
+      "from": "routes/admin/users.js",
       "to": "db:incidents",
       "type": "db-write-via",
       "label": "incidents",
@@ -36510,6 +36673,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "routes/alerts.js",
@@ -37971,6 +38140,12 @@
     },
     {
       "from": "routes/hub-dashboard.js",
+      "to": "middleware/require-market-scope.js",
+      "type": "depends",
+      "label": "middleware/require-market-scope.js"
+    },
+    {
+      "from": "routes/hub-dashboard.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -37980,6 +38155,12 @@
       "to": "routes/hub-dashboard.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/hub-dashboard.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
     },
     {
       "from": "routes/hub-dashboard.js",
@@ -38052,6 +38233,12 @@
     },
     {
       "from": "routes/hub-dashboard.js",
+      "to": "doctrine:market_operator_scoping (GAP-1)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-1)"
+    },
+    {
+      "from": "routes/hub-dashboard.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
@@ -38061,6 +38248,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/hub-dashboard.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "routes/hub-mark-ordered.js",
@@ -38130,6 +38323,12 @@
     },
     {
       "from": "routes/hub.js",
+      "to": "middleware/require-market-scope.js",
+      "type": "depends",
+      "label": "middleware/require-market-scope.js"
+    },
+    {
+      "from": "routes/hub.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -38172,9 +38371,21 @@
     },
     {
       "from": "routes/hub.js",
-      "to": "impact:unknown",
+      "to": "doctrine:market_operator_scoping (GAP-1)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-1)"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "impact:logistics",
       "type": "impact",
-      "label": "unknown"
+      "label": "logistics"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "routes/inventory-api.js",
@@ -39040,6 +39251,12 @@
     },
     {
       "from": "routes/orders/create.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "routes/orders/create.js",
       "to": "db:order_items",
       "type": "db-write-via",
       "label": "order_items",
@@ -39088,6 +39305,12 @@
     },
     {
       "from": "routes/orders/create.js",
+      "to": "doctrine:payment_fx_authority",
+      "type": "doctrine",
+      "label": "payment_fx_authority"
+    },
+    {
+      "from": "routes/orders/create.js",
       "to": "impact:orders",
       "type": "impact",
       "label": "orders"
@@ -39103,6 +39326,18 @@
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
     },
     {
       "from": "routes/orders/detail.js",
@@ -40800,6 +41035,12 @@
     },
     {
       "from": "routes/relay-dashboard.js",
+      "to": "middleware/require-market-scope.js",
+      "type": "depends",
+      "label": "middleware/require-market-scope.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -40809,6 +41050,12 @@
       "to": "routes/relay-dashboard.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
     },
     {
       "from": "routes/relay-dashboard.js",
@@ -40836,6 +41083,12 @@
     },
     {
       "from": "routes/relay-dashboard.js",
+      "to": "doctrine:market_operator_scoping (GAP-2)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-2)"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
@@ -40845,6 +41098,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "routes/scans.js",
@@ -47285,6 +47544,12 @@
     },
     {
       "from": "services/hub-dashboard-queries.js",
+      "to": "doctrine:market_operator_scoping (GAP-1)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-1)"
+    },
+    {
+      "from": "services/hub-dashboard-queries.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
@@ -47294,6 +47559,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/hub-dashboard-queries.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "services/hub-operations.js",
@@ -47932,6 +48203,54 @@
       "to": "impact:loyalty",
       "type": "impact",
       "label": "loyalty"
+    },
+    {
+      "from": "dashboard",
+      "to": "services/market-scope-admin-service.js",
+      "type": "uses",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-write",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "doctrine:lifecycle_owner_persistence_boundary",
+      "type": "doctrine",
+      "label": "lifecycle_owner_persistence_boundary"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/monitoring.js",
@@ -51080,6 +51399,12 @@
       "label": "services/payment-paypal.js"
     },
     {
+      "from": "services/simulator/state-advancer.js",
+      "to": "services/payment-service.js",
+      "type": "uses",
+      "label": "services/simulator/state-advancer.js"
+    },
+    {
       "from": "services/payment-service.js",
       "to": "db:orders",
       "type": "db-read",
@@ -51126,6 +51451,12 @@
       "to": "impact:dashboards",
       "type": "impact",
       "label": "dashboards"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "impact:simulator",
+      "type": "impact",
+      "label": "simulator"
     },
     {
       "from": "services/payment-status-validator.js",
@@ -54815,6 +55146,12 @@
     },
     {
       "from": "services/relay-dashboard-queries.js",
+      "to": "doctrine:market_operator_scoping (GAP-2)",
+      "type": "doctrine",
+      "label": "market_operator_scoping (GAP-2)"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
@@ -54824,6 +55161,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "services/repair-ordered-purchasing.js",
@@ -56451,6 +56794,24 @@
     },
     {
       "from": "services/simulator/state-advancer.js",
+      "to": "services/payment-service.js",
+      "type": "depends",
+      "label": "services/payment-service.js"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "services/parcel-operations.js",
+      "type": "depends",
+      "label": "services/parcel-operations.js"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "services/wallet-service.js",
+      "type": "depends",
+      "label": "services/wallet-service.js"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -56487,12 +56848,6 @@
     },
     {
       "from": "services/simulator/state-advancer.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
-    },
-    {
-      "from": "services/simulator/state-advancer.js",
       "to": "db:parcel_items",
       "type": "db-write",
       "label": "parcel_items"
@@ -56511,9 +56866,45 @@
     },
     {
       "from": "services/simulator/state-advancer.js",
-      "to": "db:store_credits",
-      "type": "db-write",
-      "label": "store_credits"
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "payment-service"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "db:parcels",
+      "type": "db-write-via",
+      "label": "parcels",
+      "via": "parcel-operations"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "db:wallet_credit_lots",
+      "type": "db-write-via",
+      "label": "wallet_credit_lots",
+      "via": "wallet-service"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "db:wallet_transactions",
+      "type": "db-write-via",
+      "label": "wallet_transactions",
+      "via": "wallet-service"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "db:wallets",
+      "type": "db-write-via",
+      "label": "wallets",
+      "via": "wallet-service"
     },
     {
       "from": "services/simulator/state-advancer.js",
@@ -56523,9 +56914,27 @@
     },
     {
       "from": "services/simulator/state-advancer.js",
-      "to": "impact:unknown",
+      "to": "impact:operations",
       "type": "impact",
-      "label": "unknown"
+      "label": "operations"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
+    },
+    {
+      "from": "services/simulator/state-advancer.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
     },
     {
       "from": "services/sourcing-analysis.js",
@@ -60541,6 +60950,12 @@
     },
     {
       "from": "utils/rates.js",
+      "to": "doctrine:payment_fx_authority",
+      "type": "doctrine",
+      "label": "payment_fx_authority"
+    },
+    {
+      "from": "utils/rates.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
@@ -60556,6 +60971,18 @@
       "to": "impact:infrastructure",
       "type": "impact",
       "label": "infrastructure"
+    },
+    {
+      "from": "utils/rates.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "utils/rates.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "routes/hub-dashboard.js",
@@ -60808,24 +61235,6 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
-    },
-    {
-      "from": "utils/store-credits.js",
-      "to": "utils/logger.js",
-      "type": "depends",
-      "label": "utils/logger.js"
-    },
-    {
-      "from": "utils/store-credits.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "utils/store-credits.js",
-      "to": "impact:wallet",
-      "type": "impact",
-      "label": "wallet"
     },
     {
       "from": "middleware/auth-guest.js",
@@ -61915,8 +62324,9 @@
         "markets (M0)"
       ],
       "directUsedBy": [
-        "routes admin scoping un market_id (branchement futur",
-        "hors M2)"
+        "routes/hub-dashboard.js (GAP-1)",
+        "routes/relay-dashboard.js (GAP-2)",
+        "routes/admin/partners.js (GAP-3)"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -61936,7 +62346,11 @@
         "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
         "impact:admin-authorization",
         "impact:market",
-        "routes/admin-pricing-workspace.js"
+        "routes/admin-pricing-workspace.js",
+        "routes/admin/partners.js",
+        "routes/hub-dashboard.js",
+        "routes/hub.js",
+        "routes/relay-dashboard.js"
       ]
     },
     "middleware/require-non-production.js": {
@@ -64068,10 +64482,12 @@
       "impactAreas": [
         "mobile-navigation",
         "category-navigation",
-        "scroll-ownership"
+        "scroll-ownership",
+        "discovery-rail"
       ],
       "mustCheck": [
         "impact:category-navigation",
+        "impact:discovery-rail",
         "impact:mobile-navigation",
         "impact:scroll-ownership",
         "public/boutique/js/b-pager-end-bounce.js",
@@ -65243,7 +65659,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter « Disponible ici » dans chaque contexte catégorie et déléguer l'exposition au backend.",
+      "purpose": "Monter « Disponible ici » sur Tout et, sur mobile, à l'entrée d'une catégorie par bump vertical uniquement.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -67976,7 +68392,9 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "middleware/validate.js",
         "validators",
         "services/partner-admin-service.js"
@@ -67985,26 +68403,36 @@
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "legacy_http_contract_preserved",
-        "single_partner_mutation_authority"
+        "single_partner_mutation_authority",
+        "market_operator_scoping (GAP-3)"
       ],
       "impactAreas": [
         "dashboard",
         "admin-dashboard",
-        "partners"
+        "partners",
+        "market"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
+        "db:operator_market_scopes",
         "doctrine:legacy_http_contract_preserved",
+        "doctrine:market_operator_scoping (GAP-3)",
         "doctrine:single_partner_mutation_authority",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "impact:partners",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "middleware/validate.js",
         "services/partner-admin-service.js",
         "utils/logger.js"
@@ -68142,6 +68570,12 @@
           ]
         },
         {
+          "via": "market-scope-admin-service",
+          "tables": [
+            "operator_market_scopes"
+          ]
+        },
+        {
           "via": "incident-write-service",
           "tables": [
             "incidents"
@@ -68159,11 +68593,13 @@
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:incidents",
+        "db:operator_market_scopes",
         "db:order_status_history",
         "db:orders",
         "db:recipients",
@@ -68176,6 +68612,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "middleware/auth.js",
         "services/scan-write-service.js",
         "utils/logger.js"
@@ -69209,6 +69646,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "directUsedBy": [
@@ -69216,6 +69654,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "operator_market_scopes",
         "order_items",
         "orders",
         "parcel_items",
@@ -69247,14 +69686,17 @@
         }
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:operator_market_scopes",
         "db:order_comments",
         "db:order_incidents",
         "db:order_items",
@@ -69263,10 +69705,13 @@
         "db:parcels",
         "db:products",
         "db:scans",
+        "doctrine:market_operator_scoping (GAP-1)",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/hub-dashboard-queries.js",
         "services/parcel-item-mutation-service.js",
         "services/parcel-mutation-service.js",
@@ -69327,6 +69772,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "directUsedBy": [
@@ -69342,10 +69788,12 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
-        "unknown"
+        "logistics",
+        "market"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -69353,9 +69801,12 @@
         "db:parcel_items",
         "db:parcels",
         "db:users",
+        "doctrine:market_operator_scoping (GAP-1)",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "impact:logistics",
+        "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "middleware/validate.js",
         "services/hub-operations.js"
       ]
@@ -69950,7 +70401,9 @@
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "finance_config"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
@@ -69971,24 +70424,31 @@
         }
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "payment_fx_authority"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "shared-cart"
+        "shared-cart",
+        "payment",
+        "finance"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:finance_config",
         "db:order_items",
         "db:order_status_history",
         "db:orders",
         "db:recipients",
         "db:shared_cart_events",
         "db:shared_carts",
+        "doctrine:payment_fx_authority",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
+        "impact:finance",
         "impact:orders",
+        "impact:payment",
         "impact:shared-cart",
         "middleware/auth-guest.js",
         "middleware/auth.js",
@@ -71120,6 +71580,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/*"
       ],
       "directUsedBy": [
@@ -71127,6 +71588,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "operator_market_scopes",
         "orders"
       ],
       "dbWrite": [
@@ -71135,21 +71597,27 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-2)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:operator_market_scopes",
         "db:order_comments",
         "db:order_incidents",
         "db:orders",
+        "doctrine:market_operator_scoping (GAP-2)",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-scope.js",
         "services/relay-dashboard-queries.js",
         "utils/logger.js"
       ]
@@ -75283,11 +75751,13 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-1)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
       "mustCheck": [
         "db:order_comments",
@@ -75300,9 +75770,11 @@
         "db:relais",
         "db:scans",
         "db:users",
+        "doctrine:market_operator_scoping (GAP-1)",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "routes/hub-dashboard.js",
         "utils/logger.js"
       ]
@@ -75702,6 +76174,43 @@
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
         "utils/logger.js"
+      ]
+    },
+    "services/market-scope-admin-service.js": {
+      "role": "market-operator-scope-admin-boundary",
+      "domain": "market",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes"
+      ],
+      "dbWrite": [
+        "operator_market_scopes"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "lifecycle_owner_persistence_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:operator_market_scopes",
+        "doctrine:lifecycle_owner_persistence_boundary",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:market"
       ]
     },
     "services/monitoring.js": {
@@ -77297,6 +77806,7 @@
         "services/parcel-guards.js",
         "services/parcel-service.js",
         "services/refund-service.js",
+        "services/simulator/state-advancer.js",
         "utils/logger.js",
         "utils/reference.js",
         "utils/rules.js"
@@ -77646,7 +78156,8 @@
         "services/admin-order-refund.js",
         "services/payment-stripe.js",
         "services/parcel-auto-create-service.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/simulator/state-advancer.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -77664,7 +78175,8 @@
       "impactAreas": [
         "payments",
         "orders",
-        "dashboards"
+        "dashboards",
+        "simulator"
       ],
       "mustCheck": [
         "db:orders",
@@ -77674,11 +78186,13 @@
         "impact:dashboards",
         "impact:orders",
         "impact:payments",
+        "impact:simulator",
         "services/admin-order-refund.js",
         "services/parcel-auto-create-service.js",
         "services/payment-paypal.js",
         "services/payment-status-validator.js",
-        "services/payment-stripe.js"
+        "services/payment-stripe.js",
+        "services/simulator/state-advancer.js"
       ]
     },
     "services/payment-status-validator.js": {
@@ -80043,11 +80557,13 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_operator_scoping (GAP-2)"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market"
       ],
       "mustCheck": [
         "db:order_comments",
@@ -80060,9 +80576,11 @@
         "db:relais",
         "db:sms_log",
         "db:users",
+        "doctrine:market_operator_scoping (GAP-2)",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:market",
         "routes/relay-dashboard.js",
         "utils/logger.js"
       ]
@@ -81095,6 +81613,9 @@
       "directDependsOn": [
         "db",
         "services/order-status-machine.js",
+        "services/payment-service.js",
+        "services/parcel-operations.js",
+        "services/wallet-service.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -81108,18 +81629,46 @@
       ],
       "dbWrite": [
         "notification_log",
-        "orders",
         "parcel_items",
         "parcels",
-        "scans",
-        "store_credits"
+        "scans"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders"
+          ]
+        },
+        {
+          "via": "payment-service",
+          "tables": [
+            "orders"
+          ]
+        },
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "wallet-service",
+          "tables": [
+            "wallet_credit_lots",
+            "wallet_transactions",
+            "wallets"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "operations",
+        "payments",
+        "wallet",
+        "logistics"
       ],
       "mustCheck": [
         "db:notification_log",
@@ -81128,11 +81677,19 @@
         "db:parcel_items",
         "db:parcels",
         "db:scans",
-        "db:store_credits",
+        "db:wallet_credit_lots",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "impact:logistics",
+        "impact:operations",
+        "impact:payments",
+        "impact:wallet",
         "services/order-status-machine.js",
+        "services/parcel-operations.js",
+        "services/payment-service.js",
         "services/simulator/engine.js",
+        "services/wallet-service.js",
         "utils/logger.js"
       ]
     },
@@ -82467,6 +83024,7 @@
         "services/order-payment-confirmation.js",
         "services/order-service.js",
         "services/refund-service.js",
+        "services/simulator/state-advancer.js",
         "utils/logger.js",
         "utils/refunds.js"
       ]
@@ -83386,8 +83944,7 @@
         "utils/pricing-cache.js",
         "utils/rates.js",
         "utils/refunds.js",
-        "utils/rules.js",
-        "utils/store-credits.js"
+        "utils/rules.js"
       ]
     },
     "utils/name-normalize.js": {
@@ -83712,19 +84269,25 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "lot1a_fx_one_runtime_truth"
+        "lot1a_fx_one_runtime_truth",
+        "payment_fx_authority"
       ],
       "impactAreas": [
         "economic-engine",
         "sourcing",
-        "infrastructure"
+        "infrastructure",
+        "payment",
+        "checkout"
       ],
       "mustCheck": [
         "bootstrap/feature-wiring.js",
         "db:finance_config",
         "doctrine:lot1a_fx_one_runtime_truth",
+        "doctrine:payment_fx_authority",
+        "impact:checkout",
         "impact:economic-engine",
         "impact:infrastructure",
+        "impact:payment",
         "impact:sourcing",
         "routes/admin-finance-config.js",
         "routes/dashboard-shared.js",
@@ -83911,33 +84474,6 @@
         "utils/rates.js"
       ]
     },
-    "utils/store-credits.js": {
-      "role": "wallet-store-credits",
-      "domain": "wallet",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "utils/logger.js"
-      ],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "wallet"
-      ],
-      "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
-        "impact:wallet",
-        "utils/logger.js"
-      ]
-    },
     "utils/user-cache.js": {
       "role": "user-cache",
       "domain": "auth",
@@ -84010,12 +84546,13 @@
     "services/pickup-exceptional-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts",
     "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
     "services/pickup-secret-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
-    "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products"
+    "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products",
+    "services/simulator/state-advancer.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels"
   ],
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 32,
+      "writerCount": 31,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -84047,7 +84584,6 @@
         "services/qr-collection-core.js",
         "services/routing.js",
         "services/scan-operations.js",
-        "services/simulator/state-advancer.js",
         "services/verify-qr-collection.js"
       ]
     },
@@ -84791,16 +85327,22 @@
       "label": "markets (M0)"
     },
     {
-      "from": "routes admin scoping un market_id (branchement futur",
+      "from": "routes/hub-dashboard.js (GAP-1)",
       "to": "middleware/require-market-scope.js",
       "type": "uses",
-      "label": "routes admin scoping un market_id (branchement futur"
+      "label": "routes/hub-dashboard.js (GAP-1)"
     },
     {
-      "from": "hors M2)",
+      "from": "routes/relay-dashboard.js (GAP-2)",
       "to": "middleware/require-market-scope.js",
       "type": "uses",
-      "label": "hors M2)"
+      "label": "routes/relay-dashboard.js (GAP-2)"
+    },
+    {
+      "from": "routes/admin/partners.js (GAP-3)",
+      "to": "middleware/require-market-scope.js",
+      "type": "uses",
+      "label": "routes/admin/partners.js (GAP-3)"
     },
     {
       "from": "middleware/require-pricing-global-authority.js",
@@ -85539,6 +86081,12 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "routes/admin/partners.js",
@@ -87077,6 +87625,12 @@
       "label": "db"
     },
     {
+      "from": "dashboard",
+      "to": "services/market-scope-admin-service.js",
+      "type": "uses",
+      "label": "dashboard"
+    },
+    {
       "from": "services/notifications/internals.js",
       "to": "db.js",
       "type": "depends",
@@ -88011,6 +88565,12 @@
       "to": "utils/logger.js",
       "type": "uses",
       "label": "services/shared-cart-refund-queue.js"
+    },
+    {
+      "from": "utils/store-credits.js",
+      "to": "utils/logger.js",
+      "type": "uses",
+      "label": "utils/store-credits.js"
     },
     {
       "from": "utils/parcelSync.js",

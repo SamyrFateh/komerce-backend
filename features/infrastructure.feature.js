@@ -150,6 +150,7 @@ module.exports = {
       'scripts/h1f-wire-startup-migrations.js',
       'scripts/h2-wire-server-lifecycle.js',
       'scripts/impact-check.js',
+      'scripts/impact-suppression-check.js',
       'scripts/impact-config.json',
       'scripts/impact-suppressions.json',
       'scripts/komerce-db-reset.sh',
@@ -242,6 +243,7 @@ module.exports = {
     ],
     ci: [
       '.github/CODEOWNERS',
+      '.github/workflows/railway-prod-unblock.yml',
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
       // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.

@@ -64,6 +64,7 @@ module.exports = {
     ci: [
       '.github/workflows/showcase-v2-staging-deploy.yml',
       '.github/workflows/cj-real-showcase-contract.yml',
+      '.github/workflows/catalog-prod-smoke.yml',
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
       '.github/workflows-disabled/showcase-catalog-staging-deploy.yml',
       '.github/workflows-disabled/README-CJ-SHOWCASE.md',
