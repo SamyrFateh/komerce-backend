@@ -54,6 +54,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+      - name: Feature card schema — zero debt
+        run: node scripts/feature-schema-check.js --strict --full
+      - name: Docs history — zero debt
+        run: node scripts/docs-history-lint.js --strict --full
+      - name: Impact suppression hygiene
+        run: node scripts/impact-suppression-check.js
 
   backend:
     name: Backend gates
