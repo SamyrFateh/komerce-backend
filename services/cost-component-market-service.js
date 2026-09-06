@@ -48,7 +48,9 @@ function effectiveRow(row) {
     scope_value: row.scope_value,
     allocation_method: row.allocation_method,
     source: hasOverride ? 'market_override' : row.source,
+    base_source: row.source,
     confidence: row.confidence,
+    base_confidence: row.confidence,
     channel: row.channel,
     island: row.island,
     is_active: hasOverride && row.override_is_active != null
@@ -61,7 +63,10 @@ function effectiveRow(row) {
     base_default_value: Number(row.base_default_value),
     base_is_active: Boolean(row.base_is_active),
     inherited: !hasOverride,
+    notes: row.notes || null,
     override_notes: hasOverride ? row.override_notes || null : null,
+    base_updated_at: row.base_updated_at || null,
+    override_updated_at: hasOverride ? row.override_updated_at || null : null,
   };
 }
 
@@ -72,9 +77,10 @@ async function listEffectiveComponents(marketId, q = db) {
             cc.default_value AS base_default_value, cc.unit, cc.currency, cc.scope, cc.scope_value,
             cc.allocation_method, cc.source, cc.confidence, cc.channel, cc.island,
             cc.is_active AS base_is_active, cc.is_exceptional, cc.active_from, cc.active_until,
-            cc.display_order,
+            cc.display_order, cc.notes, cc.updated_at AS base_updated_at,
             o.id AS override_id, o.default_value AS override_default_value,
-            o.is_active AS override_is_active, o.notes AS override_notes
+            o.is_active AS override_is_active, o.notes AS override_notes,
+            o.updated_at AS override_updated_at
        FROM cost_components cc
        LEFT JOIN cost_component_market_overrides o
          ON o.component_id = cc.id AND o.market_id = $1
@@ -177,6 +183,7 @@ async function upsertOverride({ marketId, key, body = {}, actorId = null }) {
       base_is_active: Boolean(component.is_active),
       inherited: false,
       override_notes: saved.notes || null,
+      override_updated_at: saved.updated_at || null,
     };
   } catch (error) {
     try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
