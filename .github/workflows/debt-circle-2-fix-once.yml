@@ -30,25 +30,30 @@ jobs:
         run: |
           node scripts/debt-circle-2-fix-once.js
           node scripts/debt-circle-2-fix-2-once.js
+          node scripts/debt-circle-2-fix-3-once.js
 
-      - name: Hydrate canonical projections
-        run: |
-          npm run arch:gen
-          npm run business-graph:gen
-          npm run feature:360:refresh-global
-          npm run boutique:360
-
-      - name: Build clean final commit locally
+      - name: Remove one-off tooling and create preliminary clean head
         run: |
           rm -f \
             .github/workflows/debt-circle-2-audit-once.yml \
             .github/workflows/debt-circle-2-fix-once.yml \
             scripts/debt-circle-2-fix-once.js \
-            scripts/debt-circle-2-fix-2-once.js
+            scripts/debt-circle-2-fix-2-once.js \
+            scripts/debt-circle-2-fix-3-once.js
           git config user.name "komerce-governance-bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git commit -m "fix(governance): pay down second-circle debt"
+
+      - name: Hydrate canonical projections on clean head
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run boutique:360
+          npm run gate:findings:gen
+          npm run feature:360:gen
+          git add -A
+          git commit --amend --no-edit
 
       - name: Prove zero debt inventories on final head
         run: |
@@ -82,7 +87,7 @@ jobs:
             tests/unit/spike-vertical-shell.test.js \
             --runInBand
 
-      - name: Prove full reconstruction on final head
+      - name: Prove feature ownership and full reconstruction on final head
         run: |
           npm run feature:registry
           npm run feature:check
