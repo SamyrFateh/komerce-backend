@@ -1,0 +1,65 @@
+name: One-off impact suppression circle 3 proof
+
+on:
+  push:
+    branches:
+      - audit/impact-suppressions-circle-3-build
+
+permissions:
+  contents: write
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/impact-suppressions-circle-3-build
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+
+      - name: Apply permanent fixes
+        run: node scripts/impact-circle-3-fix-once.js
+
+      - name: Prove impact scanner conventions
+        run: npx jest tests/unit/impact-check-security-conventions.test.js --config jest.unit.config.js --runInBand --forceExit
+
+      - name: Prove Mon Komerce behavior
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/b-komerce.test.js
+
+      - name: Prove suppression ledger and feature governance
+        run: |
+          node scripts/impact-suppression-check.js
+          node scripts/feature-schema-check.js --strict --full
+          node scripts/feature-guard.js --strict
+
+      - name: Prove changed security surfaces are clean without named suppressions
+        run: |
+          node scripts/impact-check.js --files=scripts/impact-check.js,scripts/gen-data-ownership.js,public/boutique/js/b-komerce.js,public/boutique/tests/unit/b-cart-active-flows.test.js,public/boutique/tests/unit/b-cart-stepper-guard.test.js,public/boutique/tests/unit/b-catalog.test.js,public/boutique/tests/unit/b-modal-core-active-flows.test.js,public/boutique/tests/unit/b-share-cart-active-flows.test.js,public/boutique/tests/unit/b-subcat-active-flows.test.js,public/boutique/tests/unit/boutique-bootstrap.test.js,public/boutique/tests/unit/audit-modal-ownership-selftest.test.js --json > /tmp/impact.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const raw = fs.readFileSync('/tmp/impact.json', 'utf8');
+          const json = JSON.parse(raw.slice(raw.indexOf('{')));
+          if (json.summary.securityIssues !== 0) {
+            console.error(JSON.stringify(json.securityIssues, null, 2));
+            throw new Error(`Expected 0 security findings on cleaned surfaces, got ${json.summary.securityIssues}`);
+          }
+          const suppressions = JSON.parse(fs.readFileSync('scripts/impact-suppressions.json', 'utf8'));
+          if (suppressions.length !== 4) throw new Error(`Expected 4 retained suppressions, got ${suppressions.length}`);
+          console.log('✅ Cleaned surfaces: 0 security findings; named suppressions: 4.');
+          NODE
+
+      - name: Commit proofed permanent changes
+        run: |
+          git config user.name "komerce-governance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/impact-check.js scripts/impact-suppressions.json public/boutique/js/b-komerce.js tests/unit/impact-check-security-conventions.test.js features/infrastructure.feature.js
+          git diff --cached --check
+          git commit -m "fix(governance): reduce impact suppressions to four"
+          git push origin HEAD:audit/impact-suppressions-circle-3-build
