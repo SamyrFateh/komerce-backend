@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      presentation_only_server_remains_authority, workspace_acts_dashboard_observes, viewer_reads_manager_writes
+ * @doctrine      presentation_only_server_remains_authority, workspace_acts_dashboard_observes, viewer_reads_manager_writes, every_cost_line_is_explainable
  * @impact-areas  admin-dashboard, pricing
  * @version       2026-09
  */
@@ -31,21 +31,21 @@
       eyebrow: 'N1 · COÛT RENDU RELAIS',
       title: 'Acheter & livrer',
       description: 'Tout ce qu’il faut payer pour amener le produit du fournisseur jusqu’au relais client.',
-      formula: 'Produit + sourcing + hub + emballage + transport + douane + relais',
+      formula: 'Produit + sourcing + hub variable + emballage + transport + douane + relais',
     },
     {
       key: 'n2',
       eyebrow: 'N2 · COÛTS VARIABLES BUSINESS',
       title: 'Vendre & sécuriser',
-      description: 'Les frais qui apparaissent quand une vente est encaissée ou qu’un risque doit être provisionné.',
+      description: 'Les frais variables provoqués par la vente : paiement et risque économique.',
       formula: 'Paiement + provisions de risque',
     },
     {
       key: 'n3',
-      eyebrow: 'N3 · CHARGES FIXES ALLOUÉES',
+      eyebrow: 'N3 · STRUCTURE DE PÉRIODE',
       title: 'Porter la structure',
-      description: 'Les charges fixes réparties sur les commandes pour connaître le coût complet réel.',
-      formula: 'Loyers + salaires + logiciels + structure',
+      description: 'Les charges fixes de période servent à mesurer la viabilité et la couverture. Elles ne deviennent pas une dette du SKU.',
+      formula: 'Loyers + salaires + logiciels + structure → couverture de période',
     },
     {
       key: 'exceptional',
@@ -103,6 +103,15 @@
     COIN: '🪙', CARD: '💳', MONEY: '💵', WARNING: '⚠️', BREAK: '📦', BUILDING: '🏢', STORM: '🌪️',
   });
 
+  const TRUTH_LABELS = Object.freeze({
+    observed_real: ['Réel constaté', 'active'],
+    external_reference: ['Référence externe', 'inherited'],
+    configured_override: ['Hypothèse pays', 'override'],
+    declared: ['Déclaré', 'override'],
+    configured: ['Hypothèse configurée', 'inherited'],
+    missing: ['Donnée manquante', 'inactive'],
+  });
+
   function groupKey(component = {}) {
     if (component.family === 'exceptional') return 'exceptional';
     if (component.family === 'landed_relay') return 'n1';
@@ -150,6 +159,13 @@
     return `${numberValue(value)} ${unitLabel(unit)}`;
   }
 
+  function formatDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  }
+
   function canManageCosts(payload = {}, marketMode = false) {
     if (!marketMode) return true;
     return payload.capabilities?.cost_overrides !== false && payload.access?.read_only !== true;
@@ -181,18 +197,18 @@
     copy.appendChild(el(doc, 'strong', 'kmc-cost-formula-title', 'Le prix se construit par étages, pas par une addition opaque.'));
     copy.appendChild(el(doc, 'p', 'kmc-cost-formula-text', marketMode
       ? (canManage
-        ? `Vous ajustez uniquement ${marketCode}. Une ligne “Hérité du global” suit le modèle central tant que vous ne la modifiez pas.`
-        : `Vous consultez le modèle effectif de ${marketCode}. Les valeurs héritées et les overrides pays restent visibles, mais seul un manager pays peut les modifier.`)
-      : 'Vous modifiez ici le modèle central. Les marchés héritent de ces valeurs sauf lorsqu’un override local est explicitement défini.'));
+        ? `Vous ajustez uniquement ${marketCode}. Chaque ligne indique maintenant sa provenance, son hypothèse, son mouvement et son impact.`
+        : `Vous consultez le modèle effectif de ${marketCode}. Les valeurs, leurs sources, leurs hypothèses et leurs impacts restent visibles en lecture seule.`)
+      : 'Vous modifiez ici le modèle central. Chaque ligne explique ce qui est manipulé, sa provenance, son niveau de vérité et son impact économique.'));
     block.appendChild(copy);
 
     const rail = el(doc, 'div', 'kmc-cost-formula-rail');
     [
-      ['N1', 'Acheter & livrer', 'Rendu relais'],
+      ['N1', 'Acheter & livrer', 'Variable rendu relais'],
       ['+', '', ''],
-      ['N2', 'Vendre & sécuriser', 'Paiement + risques'],
+      ['N2', 'Vendre & sécuriser', 'Variable business'],
       ['+', '', ''],
-      ['N3', 'Porter la structure', 'Charges fixes'],
+      ['N3', 'Porter la structure', 'Couverture de période'],
       ['+', '', ''],
       ['Marge', 'Décision commerciale', 'Prix final'],
     ].forEach(([step, title, subtitle]) => {
@@ -208,6 +224,62 @@
     });
     block.appendChild(rail);
     return block;
+  }
+
+  function explanationItem(doc, label, value, helper) {
+    const item = el(doc, 'div', 'kmc-cost-explain-item');
+    item.appendChild(el(doc, 'span', 'kmc-cost-explain-label', label));
+    item.appendChild(el(doc, 'strong', 'kmc-cost-explain-value', value || '—'));
+    if (helper) item.appendChild(el(doc, 'small', 'kmc-cost-explain-helper', helper));
+    return item;
+  }
+
+  function createExplainability(doc, component) {
+    const explain = component.explainability;
+    if (!explain) return null;
+    const details = doc.createElement('details');
+    details.className = 'kmc-cost-explain';
+    details.appendChild(el(doc, 'summary', '', 'Comprendre cette ligne'));
+
+    const body = el(doc, 'div', 'kmc-cost-explain-body');
+    body.appendChild(explanationItem(doc, 'Ce que vous manipulez', explain.manipulation, explain.meaning));
+
+    const originHelper = [
+      explain.origin?.base_source ? `Base : ${explain.origin.base_source}` : null,
+      explain.origin?.last_updated_at ? `Dernière évolution : ${formatDate(explain.origin.last_updated_at)}` : null,
+    ].filter(Boolean).join(' · ');
+    body.appendChild(explanationItem(doc, 'D’où vient la valeur', explain.origin?.source_label, originHelper));
+
+    body.appendChild(explanationItem(
+      doc,
+      'Hypothèse portée',
+      explain.hypothesis?.text,
+      explain.hypothesis?.is_explicit_human_note ? 'Note explicite saisie sur cette ligne.' : 'Hypothèse canonique tant qu’une meilleure preuve n’est pas disponible.'
+    ));
+
+    body.appendChild(explanationItem(
+      doc,
+      'Ce qui la fait bouger',
+      explain.movement?.driver,
+      explain.movement?.changes_when
+    ));
+
+    body.appendChild(explanationItem(
+      doc,
+      `Impact ${explain.impact?.layer || ''}`.trim(),
+      explain.impact?.price_effect,
+      explain.impact?.path
+    ));
+
+    body.appendChild(explanationItem(
+      doc,
+      'Qualité de vérité',
+      explain.evidence?.confidence_label,
+      explain.evidence?.caution
+    ));
+
+    details.appendChild(body);
+    return details;
   }
 
   function createComponentCard(doc, component, marketMode, marketCode, canManage = true) {
@@ -229,6 +301,8 @@
     if (marketMode) meta.appendChild(pill(doc, inherited ? 'Hérité du global' : `Override ${marketCode}`, inherited ? 'inherited' : 'override'));
     else meta.appendChild(pill(doc, scopeLabel(component.scope), 'scope'));
     meta.appendChild(pill(doc, component.is_active === false ? 'Inactif' : 'Actif', component.is_active === false ? 'inactive' : 'active'));
+    const truth = TRUTH_LABELS[component.explainability?.evidence?.truth_state];
+    if (truth) meta.appendChild(pill(doc, truth[0], truth[1]));
     if (marketMode && !canManage) meta.appendChild(pill(doc, 'Lecture seule', 'scope'));
     copy.appendChild(meta);
     identity.appendChild(copy);
@@ -270,6 +344,9 @@
       editor.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Ce coût est désactivé et n’entre pas dans le calcul actif.'));
     }
 
+    const explanation = createExplainability(doc, component);
+    if (explanation) editor.appendChild(explanation);
+
     const actions = el(doc, 'div', 'kmc-cost-card-actions');
     if (canManage) {
       actions.appendChild(actionButton(doc, 'Enregistrer', 'save-cost', component.key));
@@ -286,12 +363,12 @@
     technical.className = 'kmc-cost-technical';
     const summary = el(doc, 'summary', '', 'Détails techniques');
     technical.appendChild(summary);
-    const details = el(doc, 'div', 'kmc-cost-technical-body');
-    details.appendChild(el(doc, 'code', '', component.key));
-    if (component.allocation_method) details.appendChild(el(doc, 'span', '', `Allocation : ${String(component.allocation_method).replaceAll('_', ' ')}`));
-    if (component.source) details.appendChild(el(doc, 'span', '', `Source : ${component.source}`));
-    if (component.confidence) details.appendChild(el(doc, 'span', '', `Confiance : ${component.confidence}`));
-    technical.appendChild(details);
+    const technicalBody = el(doc, 'div', 'kmc-cost-technical-body');
+    technicalBody.appendChild(el(doc, 'code', '', component.key));
+    if (component.allocation_method) technicalBody.appendChild(el(doc, 'span', '', `Allocation : ${String(component.allocation_method).replaceAll('_', ' ')}`));
+    if (component.source) technicalBody.appendChild(el(doc, 'span', '', `Source : ${component.source}`));
+    if (component.confidence) technicalBody.appendChild(el(doc, 'span', '', `Confiance : ${component.confidence}`));
+    technical.appendChild(technicalBody);
     editor.appendChild(technical);
 
     card.appendChild(editor);
@@ -351,9 +428,9 @@
     if (description) {
       description.textContent = marketMode
         ? (canManage
-          ? `Construisez le coût réel de ${marketCode} sans perdre le modèle central de vue.`
-          : `Consultez le coût réel de ${marketCode}. Votre accès est en lecture seule.`)
-        : 'Le modèle de coûts central expliqué par étapes : de l’achat fournisseur au coût complet.';
+          ? `Construisez le coût économique de ${marketCode} en voyant ce qui est réel, configuré ou hypothétique.`
+          : `Consultez le coût économique de ${marketCode}, ses sources, hypothèses et impacts. Votre accès est en lecture seule.`)
+        : 'Le modèle de coûts central expliqué ligne par ligne : valeur, provenance, hypothèse, mouvement et impact.';
     }
 
     const slot = workshop.querySelector('[data-section-slot]');
@@ -361,7 +438,7 @@
     slot.replaceChildren();
     slot.appendChild(createFormula(doc, marketMode, marketCode, canManage));
     if (marketMode && !canManage) {
-      slot.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Mode viewer · vous pouvez analyser les valeurs effectives, les overrides pays et la base globale. Les mutations sont réservées au manager du marché.'));
+      slot.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Mode viewer · vous pouvez analyser les valeurs effectives, les overrides pays, la base globale, les hypothèses et les impacts. Les mutations sont réservées au manager du marché.'));
     }
 
     const components = Array.isArray(payload.cost_components) ? payload.cost_components : [];
@@ -396,6 +473,7 @@
     GROUPS,
     CATEGORY_LABELS,
     UNIT_LABELS,
+    TRUTH_LABELS,
     groupKey,
     groupComponents,
     unitLabel,
@@ -403,6 +481,7 @@
     scopeLabel,
     formatComponentValue,
     canManageCosts,
+    createExplainability,
     enhance,
     install,
   };
