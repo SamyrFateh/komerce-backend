@@ -1,6 +1,6 @@
 # Doctrine — Mutualisation des coûts du Hub physique par marché
 
-> **Version** : 1.0 — 2026-09-06
+> **Version** : 1.1 — 2026-09-06
 > **Statut** : doctrine spécialisée — complète `DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md` et `DOCTRINE_DENSITE_VALEUR.md`
 > **Périmètre** : Hub physique, loyer, personnel, manutention, stockage et coûts opérationnels associés
 
@@ -101,6 +101,8 @@ En absence de mesure physique fiable : répartition égale entre unités éligib
 
 La mutualisation Hub utilise la même fenêtre glissante bornée au watermark de maturité que la couverture de marché.
 
+Le watermark peut franchir une commande définitivement irréconciliable uniquement par disposition humaine gouvernée. Cette disposition ne transforme jamais la commande en `MATURE` et ne fournit aucune mesure Hub manquante.
+
 Interdit : facturer ou attribuer le Hub sur le mois calendaire si le gate de couverture utilise une autre fenêtre économique.
 
 Les vues calendrier peuvent exister pour comptabilité et trésorerie, mais ne remplacent pas la fenêtre économique canonique.
@@ -168,6 +170,8 @@ Les volumes, colis, événements de scan et rattachements Hub proviennent des fl
 
 Toute correction manuelle d'une mesure d'assiette doit être tracée avec auteur, motif, avant/après.
 
+Une disposition de maturité ne peut jamais servir à fabriquer un volume, un `m3_jours`, une opération ou un coût Hub absent.
+
 ---
 
 ## 12. Gouvernance obligatoire
@@ -189,14 +193,17 @@ Déplacer un coût variable N1 vers N3, ou l'inverse, est un changement de doctr
 
 ---
 
-## 13. Gaps actuels
+## 13. État de matérialisation et gaps actuels
 
-À la date de cette version :
+Les snapshots N2/N3, la maturité, le watermark anti cherry-picking et les dispositions gouvernées sont désormais matérialisés dans le moteur économique.
+
+Restent ouverts :
 
 - la structure de charge économique par marché n'est pas matérialisée ;
 - `charges` ne distingue pas encore formellement pool groupe / pool marché ;
 - les mesures `m3_jours` ne sont pas garanties disponibles ;
 - `finance_config` reste global ;
+- la largeur de fenêtre et les seuils décisionnels restent à gouverner ;
 - le gate de couverture par marché n'est pas encore décisionnel.
 
 La doctrine prescrit donc la cible sans prétendre que les données actuelles permettent une facturation fiable.
@@ -209,7 +216,8 @@ La doctrine prescrit donc la cible sans prétendre que les données actuelles pe
 - Ne pas utiliser le poids comme proxy de stockage Hub.
 - Ne pas ajouter `market_id` à `charges` avant arbitrage groupe / marché.
 - Ne pas facturer un partenaire sur une quote-part non réconciliée et non explicable.
-- Ne pas dupliquer `finance_config` par marché avant séparation N2 / N3 et modèle de structure validé.
+- Ne pas dupliquer `finance_config` par marché avant modèle de structure validé.
+- Ne pas traiter une disposition de maturité comme une preuve d'assiette Hub.
 
 ---
 
