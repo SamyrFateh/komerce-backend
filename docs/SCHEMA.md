@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 124 | Vérifié sur le dump live Railway. |
+| Tables | 125 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 336 | Performance + contraintes uniques |
-| Foreign keys | 202 | Cohérence relationnelle |
+| Index | 338 | Performance + contraintes uniques |
+| Foreign keys | 205 | Cohérence relationnelle |
 | Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 33 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -208,14 +208,8 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `charges` | Charges fixes. |
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
+| `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: pricing_maturity_disposition_events
-kind: table
-migration: 165
-section: ### 4.8 Pricing et économie (19 tables)
-role: Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle.
--->
 
 ### 4.9 Douane (4 tables)
 
