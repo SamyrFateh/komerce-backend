@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 501
-- Files with full headers: 456
+- Scanned code files: 502
+- Files with full headers: 457
 - Files with lite headers: 45
-- Files with any headers: 501
+- Files with any headers: 502
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1099
-- Edges: 5769
+- Graph nodes: 1111
+- Edges: 5788
 - DB tables: 127
-- Doctrines: 299
+- Doctrines: 310
 - Impact areas: 172
 - Unresolved code edges: 565
 - Tables multi-écrivains directs (>=2): 63
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 47
+- economic-engine: 48
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 215
+- service: 216
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -378,6 +378,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
 - services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
 - services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
+- services/pricing-cost-explainability.js — economic-engine-pricing-cost-explainability (economic-engine, high, full)
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)

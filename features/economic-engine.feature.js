@@ -85,7 +85,6 @@ module.exports = {
       'services/finance-metrics/payments.js',
       'services/finance-metrics/sales-analysis.js',
       'services/cost-allocation/_helpers.js',
-      'services/cost-allocation/cost-types.js',
       'services/cost-allocation/allocate.js',
       'services/cost-allocation/variance.js',
       'services/cost-allocation/index.js',
@@ -101,7 +100,6 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
-      'services/pricing-maturity.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -146,7 +144,6 @@ module.exports = {
       'migrations/119_economic_variables_to_finance_config.sql',
       'migrations/152_pricing_workspace_global_authority.sql',
       'migrations/159_cost_component_market_overrides.sql',
-      'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -167,7 +164,6 @@ module.exports = {
       'tests/unit/apply-pricing-updates.test.js',
       'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
-      'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -177,7 +173,6 @@ module.exports = {
       'tests/unit/pricing-cache.test.js',
       'tests/unit/pricing-cdr.test.js',
       'tests/unit/pricing-engine.test.js',
-      'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
