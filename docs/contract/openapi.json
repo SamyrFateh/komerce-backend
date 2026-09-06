@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 28,
-    "total_routes": 514,
+    "unknown_responses": 0,
+    "total_routes": 518,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -303,8 +303,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "given_names": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "family_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "version": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -323,8 +346,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "given_names": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "family_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "version": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -343,8 +389,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -736,8 +789,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "contract_version": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "inventory_model": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pricing": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "media": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "option_axes": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sellable_units": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "delivery_options": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -1245,8 +1337,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "product_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "inventory_model": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "skus": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "has_variants": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "axes": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "candidates": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_count": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -1275,8 +1406,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sku": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -1307,8 +1449,35 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "product_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ready": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "already_sku": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reasons": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active_sku_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "orphaned": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -1347,8 +1516,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sku": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -5275,8 +5455,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "query": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pagination": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "clients": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -5297,8 +5500,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "query": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pagination": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "clients": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -7667,8 +7893,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cost_components": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -7707,8 +7948,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -7747,8 +8003,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -7787,8 +8058,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -9663,6 +9949,152 @@
         }
       }
     },
+    "/api/admin/users/markets": {
+      "get": {
+        "summary": "GET /api/admin/users/markets",
+        "x-route-file": "routes/admin/users.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/market-scopes": {
+      "get": {
+        "summary": "GET /api/admin/users/{id}/market-scopes",
+        "x-route-file": "routes/admin/users.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "history": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/users/{id}/market-scopes",
+        "x-route-file": "routes/admin/users.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Scope marché créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "x-contract-status": "route-read",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/users/{id}/role": {
       "put": {
         "summary": "PUT /api/admin/users/{id}/role",
@@ -9692,6 +10124,57 @@
                       "x-observed": true
                     },
                     "user": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/market-scopes/{marketCode}": {
+      "delete": {
+        "summary": "DELETE /api/admin/users/{id}/market-scopes/{marketCode}",
+        "x-route-file": "routes/admin/users.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "revoked": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -9923,8 +10406,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "history": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "notifications": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "invoices": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -16246,8 +16752,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reason": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -16278,8 +16795,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "order_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcel_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcel_reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "partial": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "order_status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -17033,8 +17581,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "limit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "offset": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -17061,18 +17628,25 @@
         ],
         "responses": {
           "200": {
-            "description": "Succès",
+            "description": "Document transactionnel PDF privé",
             "content": {
-              "application/json": {
+              "application/pdf": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
                 }
               }
             }
           },
+          "404": {
+            "description": "Document introuvable"
+          },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
+          },
+          "503": {
+            "description": "Document temporairement indisponible"
           }
         }
       }
@@ -17087,8 +17661,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "notifications": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "count": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -17119,8 +17704,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "notification": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -21815,8 +22407,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shared_cart_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "removed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -21933,8 +22540,56 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "availability": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "exposable": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/local-stock/checkout-preview": {
+      "get": {
+        "summary": "GET /api/local-stock/checkout-preview",
+        "x-route-file": "routes/local-stock.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "preview": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "relais_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "items": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -21965,8 +22620,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "title": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "zone": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "market_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "image_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "provider_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "public_contact": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -21997,8 +22691,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "title": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "zone": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "market_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "image_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "provider_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "public_contact": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -22014,13 +22747,20 @@
         "summary": "POST /api/providers-services/inquiries",
         "x-route-file": "routes/providers-services.js",
         "responses": {
-          "200": {
+          "201": {
             "description": "Succès",
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "inquiry": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -22426,8 +23166,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "saved": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -22448,8 +23199,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shared_cart_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "already_saved": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
