@@ -78,6 +78,34 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
   expect(source).toContain('Charges économiques');
 });
 
+test('Atelier market rend le viewer en lecture seule et réserve les mutations au manager', () => {
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+  const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1215');
+  expect(presentation).toContain('payload.capabilities?.cost_overrides');
+  expect(presentation).toContain("payload.access?.read_only !== true");
+  expect(presentation).toContain('input.disabled = true');
+  expect(presentation).toContain('Lecture seule');
+  expect(presentation).toContain('manager pays');
+});
+
+test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et vérité', () => {
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+  const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
+  const service = fs.readFileSync(path.join(ROOT, 'services', 'pricing-cost-explainability.js'), 'utf8');
+
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=1215');
+  expect(presentation).toContain('Comprendre cette ligne');
+  expect(presentation).toContain('D’où vient la valeur');
+  expect(presentation).toContain('Hypothèse portée');
+  expect(presentation).toContain('Ce qui la fait bouger');
+  expect(presentation).toContain('Qualité de vérité');
+  expect(css).toContain('.kmc-cost-explain-body');
+  expect(service).toContain('never_promote_config_to_real');
+  expect(service).toContain('N3 → charge économique de période');
+});
+
 test('Pricing Canonical est global et utilise uniquement refs métier navigateur', () => {
   const appSource = fs.readFileSync(path.join(CANONICAL, 'js', 'app.js'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace.js'), 'utf8');
@@ -97,6 +125,7 @@ test('service délègue aux autorités pricing existantes', () => {
   expect(source).toContain("require('./pricing-apply')");
   expect(source).toContain("require('./pricing-strategy-service')");
   expect(source).toContain("require('./cost-component-admin-service')");
+  expect(source).toContain("require('./pricing-cost-explainability')");
   expect(source).toContain("require('./economic-engine-queries')");
 });
 

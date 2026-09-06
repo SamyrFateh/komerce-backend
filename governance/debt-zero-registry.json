@@ -18,7 +18,7 @@
     "scripts/.meta-graph-baseline.json": { "kind": "array-fields", "fields": ["phantomSeams"], "informational": ["sharedEndpoints"] },
     "scripts/impact-suppressions.json": { "kind": "identity-array", "identity": ["file", "category", "contains"] },
     "scripts/npm-audit-exceptions.json": { "kind": "npm-exceptions", "identity": ["package", "advisory"] },
-    "audit-backend-arch.js": { "kind": "arch-source-allowlists" },
+    "scripts/audit-backend-arch.js": { "kind": "arch-source-allowlists" },
     "scripts/code-quality-gate.js": { "kind": "code-quality-source" }
   }
 }
