@@ -1,0 +1,95 @@
+name: One-off debt circle 2 audit
+
+on:
+  push:
+    branches:
+      - audit/debt-circle-2
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/debt-circle-2
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Full docs-history debt
+        run: node scripts/docs-history-lint.js --strict --full || true
+
+      - name: Full feature-schema debt
+        run: node scripts/feature-schema-check.js --strict --full || true
+
+      - name: Inspect baselines, references and suppressions
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.cwd();
+          const docs = JSON.parse(fs.readFileSync('scripts/.docs-history-lint-baseline.json', 'utf8')).exempt || [];
+          const feats = JSON.parse(fs.readFileSync('scripts/.feature-schema-tests-baseline.json', 'utf8')).exempt || [];
+          const sups = JSON.parse(fs.readFileSync('scripts/impact-suppressions.json', 'utf8')) || [];
+
+          const allFiles = [];
+          function walk(dir) {
+            for (const ent of fs.readdirSync(dir, {withFileTypes:true})) {
+              if (['node_modules','.git'].includes(ent.name)) continue;
+              const abs = path.join(dir, ent.name);
+              if (ent.isDirectory()) walk(abs);
+              else allFiles.push(path.relative(root, abs).replace(/\\/g,'/'));
+            }
+          }
+          walk(root);
+
+          console.log(`\n=== DOC EXEMPTIONS (${docs.length}) ===`);
+          for (const rel of docs) {
+            const base = path.basename(rel);
+            const refs = [];
+            for (const f of allFiles) {
+              if (f === rel || f.startsWith('node_modules/')) continue;
+              if (!/\.(md|js|json|ya?ml|txt|sh|cjs|mjs)$/.test(f)) continue;
+              let s=''; try{s=fs.readFileSync(f,'utf8')}catch{continue}
+              if (s.includes(rel) || s.includes(base)) refs.push(f);
+            }
+            console.log(`${rel} :: exists=${fs.existsSync(rel)} :: refs=${refs.length}${refs.length ? ' :: '+refs.join(',') : ''}`);
+          }
+
+          console.log(`\n=== FEATURE-SCHEMA EXEMPTIONS (${feats.length}) ===`);
+          for (const name of feats) {
+            const candidates = [`features/${name}.feature.js`,`public/boutique/features/${name}.feature.js`];
+            const file = candidates.find(fs.existsSync);
+            if (!file) { console.log(`${name} :: MISSING FEATURE FILE`); continue; }
+            delete require.cache[require.resolve(path.join(root,file))];
+            const m = require(path.join(root,file));
+            console.log(`${name} :: file=${file} :: tests=${JSON.stringify(m.files?.tests || null)} :: verification=${JSON.stringify(m.verification || null)} :: contracts=${JSON.stringify(m.contracts || null)}`);
+          }
+
+          console.log(`\n=== IMPACT SUPPRESSIONS (${sups.length}) ===`);
+          let stale = 0;
+          for (const s of sups) {
+            const exists = fs.existsSync(s.file);
+            const text = exists ? fs.readFileSync(s.file,'utf8') : '';
+            const contains = exists && text.includes(s.contains);
+            if (!exists || !contains) stale++;
+            console.log(`${s.file} :: ${s.category} :: ${JSON.stringify(s.contains)} :: exists=${exists} :: contains=${contains}`);
+          }
+          console.log(`STALE_SUPPRESSION_CONTENT=${stale}`);
+          NODE
+
+      - name: Raw impact findings without suppressions
+        run: |
+          cp scripts/impact-suppressions.json /tmp/impact-suppressions.json
+          printf '[]\n' > scripts/impact-suppressions.json
+          node scripts/impact-check.js --all --json > /tmp/raw-impact.log || true
+          cp /tmp/impact-suppressions.json scripts/impact-suppressions.json
+          echo '=== RAW IMPACT SECURITY FINDINGS ==='
+          grep -E 'sqlInjection|xss|hardcodedSecrets|dangerousOps|securityIssues' /tmp/raw-impact.log | head -n 250 || true
