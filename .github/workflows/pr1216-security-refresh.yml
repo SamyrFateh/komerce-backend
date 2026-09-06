@@ -1,0 +1,36 @@
+name: PR1216 Security 360 refresh
+
+on:
+  push:
+    branches:
+      - feat/pricing-impact-simulation
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-security-360:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pricing-impact-simulation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Generate canonical Security 360 projection
+        run: npm run security:360
+      - name: Commit deterministic projection when changed
+        run: |
+          git add docs/SECURITY_360.json docs/SECURITY_360.md
+          if git diff --cached --quiet; then
+            echo "Security 360 already fresh."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs(security): refresh Security 360 for pricing simulation"
+          git push origin HEAD:feat/pricing-impact-simulation
