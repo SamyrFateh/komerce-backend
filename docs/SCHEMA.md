@@ -91,7 +91,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_incidents` | Incidents commande. |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
-| `order_item_cost_imputations` | Imputations de coûts par item (audit). |
+| `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer N2 (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable pour figer N3 séparément. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
 | `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). |
 
 ### 4.2 Logistique colis (5 tables)
