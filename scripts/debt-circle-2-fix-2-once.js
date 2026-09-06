@@ -10,22 +10,6 @@ function replaceOnce(file, from, to, label) {
   write(file, src.replace(from, to));
 }
 
-// Zero est un état sain, pas une baseline suspecte.
-replaceOnce(
-  'scripts/feature-schema-check.js',
-  "if (BASELINE_EXISTED && baseline.size === 0) {\n  console.log(`${C.yel}⚠ Baseline trouvée mais \\\"exempt\\\" est vide ou absent — vérifier le contenu de .feature-schema-tests-baseline.json.${C.r}`);\n}",
-  "if (BASELINE_EXISTED && baseline.size === 0) {\n  console.log(`${C.dim}Baseline tests : zéro exemption historique.${C.r}`);\n}",
-  'zero feature baseline message'
-);
-
-// Normalisation de chemin portable Windows/Linux pour les futures identités de baseline.
-replaceOnce(
-  'scripts/feature-schema-check.js',
-  "const featureKey = m => String(m.__file || m.name || '').replace(/\\\\\\\\/g, '/');",
-  "const featureKey = m => String(m.__file || m.name || '').replace(/\\\\/g, '/');",
-  'feature key slash normalization'
-);
-
 // Les consommateurs existent déjà et sont légitimes : on les inscrit dans le contrat bus exact.
 replaceOnce(
   'public/boutique/js/b-bus.js',
