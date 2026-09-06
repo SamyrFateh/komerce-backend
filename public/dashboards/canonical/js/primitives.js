@@ -203,6 +203,16 @@
   });
 
   const MetricStrip = Object.freeze({
+    create(itemsOrConfig = []) {
+      if (!defaultDocument) throw new Error('MetricStrip: document DOM indisponible');
+      const host = defaultDocument.createElement('div');
+      const config = Array.isArray(itemsOrConfig)
+        ? { items: itemsOrConfig }
+        : (itemsOrConfig && typeof itemsOrConfig === 'object' ? itemsOrConfig : {});
+      const element = MetricStrip.render(host, config);
+      return { element };
+    },
+
     render(container, config = {}) {
       clear(container, 'MetricStrip');
       const doc = documentFor(container);
