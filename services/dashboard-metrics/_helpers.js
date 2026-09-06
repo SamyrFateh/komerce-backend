@@ -29,6 +29,10 @@
  * consomme la classification canonique du moteur économique : `hub` est N1
  * variable et `risk_provision` est N2 variable ; seul `fixed_overhead` reste
  * une structure legacy au niveau des allocations commande.
+ *
+ * Le dashboard conserve temporairement `payment` dans un bucket séparé pour
+ * compatibilité de ses requêtes historiques. Cela ne change pas sa nature :
+ * `payment` reste N2 variable dans la source canonique cost-types.js.
  */
 
 'use strict';
@@ -50,17 +54,17 @@ const TRANSIT_PARCEL_STATUSES = Object.freeze([
 
 const EXCLUDED_FROM_REVENUE = Object.freeze(['cancelled', 'refunded']);
 
-// Source canonique = services/cost-allocation/cost-types.js.
-const EXPECTED_VARIABLE_COSTS = VARIABLE_COST_TYPES;
+// Compatibilité dashboard : payment reste séparé dans les requêtes legacy,
+// mais la source économique canonique le classe bien dans N2 variable.
+const EXPECTED_VARIABLE_COSTS = Object.freeze(
+  VARIABLE_COST_TYPES.filter((type) => type !== 'payment')
+);
 const EXPECTED_FIXED_COSTS = ORDER_ALLOCATION_STRUCTURE_COST_TYPES;
-
-// Alias legacy : `payment` est déjà inclus dans EXPECTED_VARIABLE_COSTS.
-// Ne jamais concaténer cette constante pour construire une liste économique.
 const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
-
 const EXPECTED_ALL_COSTS = Object.freeze([
   ...EXPECTED_VARIABLE_COSTS,
   ...EXPECTED_FIXED_COSTS,
+  ...EXPECTED_PAYMENT_COSTS,
 ]);
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -68,8 +72,6 @@ const EXPECTED_ALL_COSTS = Object.freeze([
 // ═══════════════════════════════════════════════════════════════════════
 
 function buildFiltersClause(filters = {}, orderAlias = 'o') {
-  // AUD-07: orderAlias est une constante interne, jamais une entrée client.
-  // Toutes les valeurs sont bindées via $N.
   const where = ['1=1'];
   const params = [];
   let i = 1;
@@ -99,7 +101,6 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.payment_status);
   }
 
-  // LOT 2C — filtre d'autorité injecté par le serveur seulement.
   if (filters.market_id) {
     where.push(`${orderAlias}.market_id = $${i++}`);
     params.push(filters.market_id);
@@ -108,15 +109,6 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
   return { where: where.join(' AND '), params, nextParamIndex: i };
 }
 
-/**
- * Construit le prédicat de rattachement d'un signal à un marché sans jamais
- * supposer qu'un signal global appartient au marché demandé.
- *
- * Seuls les signaux dont l'entité peut être reliée à orders.market_id sont
- * admis dans une vue market-scoped : order, parcel, cash_collection.
- * Les signaux produit / plateforme restent donc invisibles aux opérateurs pays
- * tant qu'ils ne portent pas une preuve de rattachement marché canonique.
- */
 function buildSignalMarketClause(filters = {}, signalAlias = 's', startParamIndex = 1) {
   if (!filters.market_id) {
     return { where: '1=1', params: [], nextParamIndex: startParamIndex };
