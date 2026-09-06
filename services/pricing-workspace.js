@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        product_ref, competitor_ref, cost_component_key, simulation_payload, actor
  * @outputs       canonical_pricing_projection, global_economic_projection, delegated_mutation_results
- * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js, services/pricing-cost-explainability.js, services/economic-engine-queries.js
+ * @depends       db.js, services/pricing-engine.js, services/pricing-recommend.js, services/pricing-impact-simulation.js, services/pricing-rates.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/cost-component-admin-service.js, services/pricing-cost-explainability.js, services/economic-engine-queries.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       products, competitor_prices, charges, economic_variables, economic_snapshots, finance_config
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only, every_cost_line_is_explainable
+ * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only, every_cost_line_is_explainable, simulation_never_persists
  * @impact-areas  pricing, economic-engine, admin-dashboard, catalog
  * @version       2026-09
  */
@@ -21,6 +21,7 @@
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
 const pricingRecommend = require('./pricing-recommend');
+const pricingImpactSimulation = require('./pricing-impact-simulation');
 const pricingRates = require('./pricing-rates');
 const pricingApply = require('./pricing-apply');
 const strategyService = require('./pricing-strategy-service');
@@ -55,7 +56,7 @@ async function resolveProductRef(productRef, q = db) {
   const ref = String(productRef || '').trim();
   if (!ref) throw new PricingWorkspaceError(400, 'product_ref requis', 'pricing_product_ref_required');
   const { rows } = await q.query(
-    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, is_active
+    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
        FROM products
       WHERE product_ref = $1
       LIMIT 1`,
@@ -93,7 +94,17 @@ function publicProduct(product) {
     price_kmf: Number(product.price_kmf) || 0,
     cost_kmf: Number(product.cost_kmf) || 0,
     weight_kg: product.weight_kg == null ? null : Number(product.weight_kg),
+    volume_m3: product.volume_m3 == null ? null : Number(product.volume_m3),
     is_active: Boolean(product.is_active),
+  };
+}
+
+function simulationProduct(product) {
+  return {
+    product_ref: product.product_ref,
+    name: product.name,
+    category: product.category,
+    current_price_kmf: Number(product.price_kmf) || 0,
   };
 }
 
@@ -108,7 +119,7 @@ async function buildWorkspace() {
     economicCharges,
   ] = await Promise.all([
     db.query(
-      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, is_active
+      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
          FROM products
         ORDER BY is_active DESC, updated_at DESC NULLS LAST, name
         LIMIT 250`
@@ -148,6 +159,7 @@ async function buildWorkspace() {
       competitor_observations: Number(competitorCountRes.rows[0]?.count) || 0,
     },
     products,
+    simulation_products: products.filter(product => product.is_active).map(simulationProduct),
     recommendations,
     cost_components: components,
     cost_meta: costComponents.META,
@@ -174,6 +186,11 @@ async function simulationPayload(body = {}) {
 
 async function simulate(body = {}) {
   return stripInternalIds(await pricingRecommend.computeRecommend(await simulationPayload(body)));
+}
+
+async function simulateImpact(body = {}, market = null) {
+  const product = await resolveProductRef(body.product_ref);
+  return stripInternalIds(await pricingImpactSimulation.simulate({ product, market, body }));
 }
 
 async function flow(body = {}) {
@@ -269,8 +286,18 @@ async function buildMarketWorkspace({ market } = {}) {
   if (!market || !market.id || !market.code) {
     throw new PricingWorkspaceError(400, 'Marché Pricing requis', 'pricing_market_required');
   }
+  const [effectiveComponents, productRes] = await Promise.all([
+    marketCostComponents.listEffectiveComponents(market.id),
+    db.query(
+      `SELECT product_ref, name, category, price_kmf
+         FROM products
+        WHERE is_active = TRUE
+        ORDER BY updated_at DESC NULLS LAST, name
+        LIMIT 250`
+    ),
+  ]);
   const components = costExplainability.explainComponents(
-    (await marketCostComponents.listEffectiveComponents(market.id)).map(publicComponent),
+    effectiveComponents.map(publicComponent),
     { marketCode: market.code }
   );
   return {
@@ -286,9 +313,11 @@ async function buildMarketWorkspace({ market } = {}) {
       active_cost_components: components.filter(component => component.is_active).length,
       overridden_cost_components: components.filter(component => component.inherited === false).length,
     },
+    simulation_products: productRes.rows.map(simulationProduct),
     cost_components: components,
     cost_meta: costComponents.META,
     capabilities: {
+      simulation: true,
       cost_overrides: true,
       reset_to_global: true,
       create_components: false,
@@ -341,6 +370,7 @@ module.exports = {
   buildWorkspace,
   buildMarketWorkspace,
   simulate,
+  simulateImpact,
   flow,
   applyPrice,
   getStrategy,
