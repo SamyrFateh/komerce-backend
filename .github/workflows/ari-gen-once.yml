@@ -1,0 +1,34 @@
+name: Generate Agent Remediation Index once
+
+on:
+  push:
+    branches:
+      - audit/debt-circle-2-ari-gen
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/debt-circle-2-ari-gen
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Generate canonical remediation index
+        run: npm run agent:remediation:gen
+      - name: Commit generated index only
+        run: |
+          git config user.name "komerce-governance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/AGENT_REMEDIATION_INDEX.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(governance): refresh agent remediation index"
+          git push origin HEAD:audit/debt-circle-2-ari-gen
