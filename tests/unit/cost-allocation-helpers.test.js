@@ -20,6 +20,12 @@ const {
   taxableWeight,
   lockEstimatedCostsForOrder,
 } = require('../../services/cost-allocation/_helpers');
+const {
+  SNAPSHOT_LANDED_TO_REAL_COST_TYPE,
+  N2_PROVISION_COST_TYPES,
+  CONTRIBUTION_COST_TYPES,
+  classifyOrderAllocationCostType,
+} = require('../../services/cost-allocation/cost-types');
 
 describe('cost-allocation/_helpers', () => {
   describe('constantes doctrine', () => {
@@ -34,9 +40,10 @@ describe('cost-allocation/_helpers', () => {
     it('chaque cost type variable/fixe/exceptionnel appartient bien a COST_TYPES', () => {
       const all = [...VARIABLE_COST_TYPES, ...FIXED_COST_TYPES, ...EXCEPTIONAL_COST_TYPES];
       all.forEach((type) => expect(COST_TYPES).toContain(type));
+      N2_PROVISION_COST_TYPES.forEach((type) => expect(COST_TYPES).toContain(type));
     });
 
-    it('les sous-categories variable/fixe/exceptionnelle sont mutuellement exclusives', () => {
+    it('les sous-categories transactionnelles/fixes/exceptionnelles sont mutuellement exclusives', () => {
       const variable = new Set(VARIABLE_COST_TYPES);
       const fixed = new Set(FIXED_COST_TYPES);
       const exceptional = new Set(EXCEPTIONAL_COST_TYPES);
@@ -47,13 +54,20 @@ describe('cost-allocation/_helpers', () => {
       });
     });
 
-    it('fige la classification economique N1 N2 N3 sans seconde verite', () => {
+    it('fige la classification économique sans traiter la provision risque comme cash commande', () => {
       expect(VARIABLE_COST_TYPES).toEqual(expect.arrayContaining([
         'product_purchase', 'sourcing', 'hub', 'packaging', 'freight', 'customs',
-        'port_transitaire', 'local_distribution', 'relay', 'payment', 'risk_provision',
+        'port_transitaire', 'local_distribution', 'relay', 'payment',
       ]));
+      expect(VARIABLE_COST_TYPES).not.toContain('risk_provision');
+      expect(CONTRIBUTION_COST_TYPES).toContain('risk_provision');
       expect(FIXED_COST_TYPES).toEqual(['fixed_overhead']);
-      expect(VARIABLE_COST_TYPES).not.toContain('fixed_overhead');
+      expect(classifyOrderAllocationCostType('risk_provision')).toBe('provision');
+      expect(classifyOrderAllocationCostType('made_up_cost')).toBe('unknown');
+    });
+
+    it('centralise la correspondance port_transitary snapshot vers port_transitaire réel', () => {
+      expect(SNAPSHOT_LANDED_TO_REAL_COST_TYPE.port_transitary).toBe('port_transitaire');
     });
   });
 
