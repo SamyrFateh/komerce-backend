@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      presentation_only_server_remains_authority, workspace_acts_dashboard_observes
+ * @doctrine      presentation_only_server_remains_authority, workspace_acts_dashboard_observes, viewer_reads_manager_writes
  * @impact-areas  admin-dashboard, pricing
  * @version       2026-09
  */
@@ -150,6 +150,11 @@
     return `${numberValue(value)} ${unitLabel(unit)}`;
   }
 
+  function canManageCosts(payload = {}, marketMode = false) {
+    if (!marketMode) return true;
+    return payload.capabilities?.cost_overrides !== false && payload.access?.read_only !== true;
+  }
+
   function el(doc, tag, className, textValue) {
     const node = doc.createElement(tag);
     if (className) node.className = className;
@@ -169,13 +174,15 @@
     return node;
   }
 
-  function createFormula(doc, marketMode, marketCode) {
+  function createFormula(doc, marketMode, marketCode, canManage = true) {
     const block = el(doc, 'div', 'kmc-cost-formula');
     const copy = el(doc, 'div', 'kmc-cost-formula-copy');
     copy.appendChild(el(doc, 'span', 'kmc-cost-formula-kicker', 'COMMENT LIRE L’ATELIER'));
     copy.appendChild(el(doc, 'strong', 'kmc-cost-formula-title', 'Le prix se construit par étages, pas par une addition opaque.'));
     copy.appendChild(el(doc, 'p', 'kmc-cost-formula-text', marketMode
-      ? `Vous ajustez uniquement ${marketCode}. Une ligne “Hérité du global” suit le modèle central tant que vous ne la modifiez pas.`
+      ? (canManage
+        ? `Vous ajustez uniquement ${marketCode}. Une ligne “Hérité du global” suit le modèle central tant que vous ne la modifiez pas.`
+        : `Vous consultez le modèle effectif de ${marketCode}. Les valeurs héritées et les overrides pays restent visibles, mais seul un manager pays peut les modifier.`)
       : 'Vous modifiez ici le modèle central. Les marchés héritent de ces valeurs sauf lorsqu’un override local est explicitement défini.'));
     block.appendChild(copy);
 
@@ -203,7 +210,7 @@
     return block;
   }
 
-  function createComponentCard(doc, component, marketMode, marketCode) {
+  function createComponentCard(doc, component, marketMode, marketCode, canManage = true) {
     const inherited = marketMode && component.inherited !== false;
     const card = el(doc, 'article', `kmc-cost-card is-${groupKey(component)}${component.is_active === false ? ' is-inactive' : ''}`);
     card.dataset.costComponent = component.key;
@@ -222,13 +229,16 @@
     if (marketMode) meta.appendChild(pill(doc, inherited ? 'Hérité du global' : `Override ${marketCode}`, inherited ? 'inherited' : 'override'));
     else meta.appendChild(pill(doc, scopeLabel(component.scope), 'scope'));
     meta.appendChild(pill(doc, component.is_active === false ? 'Inactif' : 'Actif', component.is_active === false ? 'inactive' : 'active'));
+    if (marketMode && !canManage) meta.appendChild(pill(doc, 'Lecture seule', 'scope'));
     copy.appendChild(meta);
     identity.appendChild(copy);
     card.appendChild(identity);
 
     const editor = el(doc, 'div', 'kmc-cost-card-editor');
     const label = el(doc, 'label', 'kmc-cost-value-label');
-    label.appendChild(el(doc, 'span', '', marketMode ? `Valeur pour ${marketCode}` : 'Valeur centrale'));
+    label.appendChild(el(doc, 'span', '', marketMode
+      ? (canManage ? `Valeur pour ${marketCode}` : `Valeur effective pour ${marketCode}`)
+      : 'Valeur centrale'));
     const inputWrap = el(doc, 'div', 'kmc-cost-value-input-wrap');
     const input = doc.createElement('input');
     input.type = 'number';
@@ -237,6 +247,11 @@
     input.value = component.default_value == null ? '' : component.default_value;
     input.dataset.costValue = component.key;
     input.setAttribute('aria-label', `${component.label || component.key} — valeur`);
+    if (marketMode && !canManage) {
+      input.disabled = true;
+      input.readOnly = true;
+      input.setAttribute('aria-readonly', 'true');
+    }
     inputWrap.appendChild(input);
     inputWrap.appendChild(el(doc, 'span', 'kmc-cost-value-unit', unitLabel(component.unit)));
     label.appendChild(inputWrap);
@@ -256,10 +271,14 @@
     }
 
     const actions = el(doc, 'div', 'kmc-cost-card-actions');
-    actions.appendChild(actionButton(doc, 'Enregistrer', 'save-cost', component.key));
-    actions.appendChild(actionButton(doc, component.is_active === false ? 'Activer' : 'Désactiver', 'toggle-cost', component.key, true));
-    if (marketMode && component.inherited === false) {
-      actions.appendChild(actionButton(doc, 'Revenir au global', 'reset-cost', component.key, true));
+    if (canManage) {
+      actions.appendChild(actionButton(doc, 'Enregistrer', 'save-cost', component.key));
+      actions.appendChild(actionButton(doc, component.is_active === false ? 'Activer' : 'Désactiver', 'toggle-cost', component.key, true));
+      if (marketMode && component.inherited === false) {
+        actions.appendChild(actionButton(doc, 'Revenir au global', 'reset-cost', component.key, true));
+      }
+    } else {
+      actions.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Lecture seule · un manager pays est requis pour modifier cet élément.'));
     }
     editor.appendChild(actions);
 
@@ -279,7 +298,7 @@
     return card;
   }
 
-  function createGroup(doc, group, marketMode, marketCode) {
+  function createGroup(doc, group, marketMode, marketCode, canManage = true) {
     const section = el(doc, 'section', `kmc-cost-group is-${group.key}`);
     const header = el(doc, 'header', 'kmc-cost-group-header');
     const copy = el(doc, 'div', 'kmc-cost-group-copy');
@@ -292,7 +311,7 @@
     section.appendChild(header);
 
     const cards = el(doc, 'div', 'kmc-cost-card-list');
-    group.components.forEach(component => cards.appendChild(createComponentCard(doc, component, marketMode, marketCode)));
+    group.components.forEach(component => cards.appendChild(createComponentCard(doc, component, marketMode, marketCode, canManage)));
     section.appendChild(cards);
     return section;
   }
@@ -324,25 +343,32 @@
 
     const marketMode = Boolean(context.requestedMarket);
     const marketCode = context.requestedMarket || payload.scope?.market_code || 'Marché';
+    const canManage = canManageCosts(payload, marketMode);
     workshop.dataset.pricingWorkshopEnhanced = '';
+    workshop.dataset.pricingWorkshopAccess = marketMode ? (canManage ? 'manager' : 'viewer') : 'global';
 
     const description = workshop.querySelector('.kmc-section-description');
     if (description) {
       description.textContent = marketMode
-        ? `Construisez le coût réel de ${marketCode} sans perdre le modèle central de vue.`
+        ? (canManage
+          ? `Construisez le coût réel de ${marketCode} sans perdre le modèle central de vue.`
+          : `Consultez le coût réel de ${marketCode}. Votre accès est en lecture seule.`)
         : 'Le modèle de coûts central expliqué par étapes : de l’achat fournisseur au coût complet.';
     }
 
     const slot = workshop.querySelector('[data-section-slot]');
     if (!slot) return false;
     slot.replaceChildren();
-    slot.appendChild(createFormula(doc, marketMode, marketCode));
+    slot.appendChild(createFormula(doc, marketMode, marketCode, canManage));
+    if (marketMode && !canManage) {
+      slot.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Mode viewer · vous pouvez analyser les valeurs effectives, les overrides pays et la base globale. Les mutations sont réservées au manager du marché.'));
+    }
 
     const components = Array.isArray(payload.cost_components) ? payload.cost_components : [];
     if (!components.length) {
       slot.appendChild(el(doc, 'div', 'kmc-workspace-empty', 'Aucun composant de coût disponible.'));
     } else {
-      groupComponents(components).forEach(group => slot.appendChild(createGroup(doc, group, marketMode, marketCode)));
+      groupComponents(components).forEach(group => slot.appendChild(createGroup(doc, group, marketMode, marketCode, canManage)));
     }
     if (!marketMode) slot.appendChild(createGlobalComponentForm(doc));
 
@@ -376,6 +402,7 @@
     categoryLabel,
     scopeLabel,
     formatComponentValue,
+    canManageCosts,
     enhance,
     install,
   };
