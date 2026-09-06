@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @none
+ * @depends       services/cost-allocation/cost-types.js
  * @used-by       control-tower.js, costing.js, logistics.js, workspaces.js (services/dashboard-metrics/*)
  * @db-read       cash_collections, orders, parcels
  * @db-write      (none)
  * @db-txn        @none
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
- * @version       2026-08
+ * @doctrine      pricing_market_viability_cost_scope
+ * @impact-areas  dashboard, admin-dashboard, pricing
+ * @version       2026-09
  */
 
 /**
@@ -24,9 +24,19 @@
  * extension INTERNE : il n'est jamais lu depuis req.query par les routes
  * dashboard. Il est injecté uniquement après résolution + autorisation
  * serveur du marché ciblé.
+ *
+ * IMPORTANT : les natures de coûts ne sont pas redéfinies ici. Le dashboard
+ * consomme la classification canonique du moteur économique : `hub` est N1
+ * variable et `risk_provision` est N2 variable ; seul `fixed_overhead` reste
+ * une structure legacy au niveau des allocations commande.
  */
 
 'use strict';
+
+const {
+  VARIABLE_COST_TYPES,
+  ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
+} = require('../cost-allocation/cost-types');
 
 const ACTIVE_ORDER_STATUSES = Object.freeze([
   'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available',
@@ -40,13 +50,18 @@ const TRANSIT_PARCEL_STATUSES = Object.freeze([
 
 const EXCLUDED_FROM_REVENUE = Object.freeze(['cancelled', 'refunded']);
 
-const EXPECTED_VARIABLE_COSTS = Object.freeze([
-  'product_purchase', 'freight', 'customs', 'local_distribution', 'relay',
-]);
-const EXPECTED_FIXED_COSTS = Object.freeze([
-  'hub', 'risk_provision', 'fixed_overhead',
-]);
+// Source canonique = services/cost-allocation/cost-types.js.
+const EXPECTED_VARIABLE_COSTS = VARIABLE_COST_TYPES;
+const EXPECTED_FIXED_COSTS = ORDER_ALLOCATION_STRUCTURE_COST_TYPES;
+
+// Alias legacy : `payment` est déjà inclus dans EXPECTED_VARIABLE_COSTS.
+// Ne jamais concaténer cette constante pour construire une liste économique.
 const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
+
+const EXPECTED_ALL_COSTS = Object.freeze([
+  ...EXPECTED_VARIABLE_COSTS,
+  ...EXPECTED_FIXED_COSTS,
+]);
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -207,4 +222,5 @@ module.exports = {
   EXPECTED_VARIABLE_COSTS,
   EXPECTED_FIXED_COSTS,
   EXPECTED_PAYMENT_COSTS,
+  EXPECTED_ALL_COSTS,
 };
