@@ -76,10 +76,10 @@ const CONTRIBUTION_COST_TYPES = Object.freeze([
   ...N2_COST_TYPES,
 ]);
 
-// Alias de compatibilité : historiquement VARIABLE_COST_TYPES signifiait N1+N2.
-// Les nouveaux lecteurs qui exigent du "réel commande" doivent utiliser
-// RECONCILIABLE_VARIABLE_COST_TYPES.
-const VARIABLE_COST_TYPES = CONTRIBUTION_COST_TYPES;
+// Alias de compatibilité des anciens lecteurs de coûts "réels" commande.
+// La provision risque n'y entre volontairement plus : utiliser
+// CONTRIBUTION_COST_TYPES lorsqu'on veut le périmètre économique N1+N2.
+const VARIABLE_COST_TYPES = RECONCILIABLE_VARIABLE_COST_TYPES;
 
 // Legacy/order-allocation only. N3 canonique est une vérité de période ;
 // `fixed_overhead` peut encore exister dans les allocations historiques mais
