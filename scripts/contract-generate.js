@@ -1971,6 +1971,47 @@ const KNOWN_RESPONSES = {
     post: { fields: ['ok','success','cleared','purged'], source: 'route-read' }
   },
 
+  // DEBT ZERO — réponses historiques prouvées par route/service/tests (2026-09-06)
+  '/api/admin/demo/orders/{orderId}/timeline': { get: { fields: ['order','history','notifications','invoices','documents'], source: 'route-read' } },
+  '/api/admin/entities/clients': { get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' } },
+  '/api/admin/entities/clients/market/{marketCode}': { get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}': { get: { fields: ['scope','summary','cost_components'], source: 'service-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+  '/api/admin/users/{id}/market-scopes': {
+    get: { fields: ['user','active','history'], source: 'route-read' },
+    post: { fields: ['success','status','scope'], source: 'route-read' },
+  },
+  '/api/admin/users/{id}/market-scopes/{marketCode}': { delete: { fields: ['success','revoked'], source: 'route-read' } },
+  '/api/admin/users/markets': { get: { fields: ['markets'], source: 'route-read' } },
+  '/api/auth/me/documents': { get: { fields: ['documents','count','limit','offset'], source: 'route-read' } },
+  '/api/auth/me/documents/{id}/download': { get: { fields: [], source: 'route-read' } },
+  '/api/auth/me/notifications': { get: { fields: ['notifications','count'], source: 'route-read' } },
+  '/api/auth/me/notifications/{id}/ack': { post: { fields: ['notification'], source: 'route-read' } },
+  '/api/auth/me/pickup-authorization': {
+    get: { fields: ['status','given_names','family_name','version','updated_at'], source: 'service-read' },
+    put: { fields: ['status','given_names','family_name','version','updated_at'], source: 'service-read' },
+    delete: { fields: ['status'], source: 'service-read' },
+  },
+  '/api/local-stock/availability': { get: { fields: ['availability','exposable'], source: 'route-read' } },
+  '/api/local-stock/checkout-preview': { get: { fields: ['preview','relais_id','items'], source: 'route-read' } },
+  '/api/pickup/exceptional-pickup/{orderId}': { get: { fields: ['available','reason'], source: 'test' } },
+  '/api/pickup/exceptional-pickup/{orderId}/collect': { post: { fields: ['success','message','order_ref','parcel_id','parcel_reference','partial','order_status'], source: 'test' } },
+  '/api/products/{id}/detail': { get: { fields: ['contract_version','inventory_model','product','pricing','media','option_axes','sellable_units','delivery_options','content'], source: 'service-read' } },
+  '/api/products/{id}/skus': {
+    get: { fields: ['product_id','product_name','inventory_model','skus','count','has_variants','axes','candidates','declared_count'], source: 'service-read' },
+    post: { fields: ['message','sku'], source: 'service-read' },
+  },
+  '/api/products/{id}/skus/{skuId}': { delete: { fields: ['message','sku'], source: 'service-read' } },
+  '/api/products/{id}/skus/readiness': { get: { fields: ['product_id','ready','already_sku','reasons','active_sku_count','orphaned'], source: 'service-read' } },
+  '/api/providers-services/inquiries': { post: { fields: ['inquiry'], source: 'route-read' } },
+  '/api/providers-services/physical-offers/{id}': { get: { fields: ['id','title','description','zone','market_id','image_ref','provider_name','actions','public_contact'], source: 'route-read' } },
+  '/api/providers-services/services/{id}': { get: { fields: ['id','title','description','zone','market_id','image_ref','provider_name','actions','public_contact'], source: 'route-read' } },
+  '/api/shared-carts/library': { get: { fields: ['created','saved'], source: 'route-read' } },
+  '/api/shared-carts/save': { post: { fields: ['ok','shared_cart_id','already_saved'], source: 'service-read' } },
+  '/api/shared-carts/saved/{sharedCartId}': { delete: { fields: ['ok','shared_cart_id','removed'], source: 'service-read' } },
+
   // health routes (ready, metrics, version, detailed, health)
   '/health': {
     get: { fields: ['status'], source: 'route-read' }
@@ -2153,6 +2194,10 @@ if (inventory.length < 150) {
   process.exit(1);
 }
 
+const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/providers-services/inquiries': '201',
+});
+
 // Surcharges de réponse par route — pour les cas réels observés (ex: probe Schemathesis)
 // qui ne rentrent pas dans le moule "200 + UNKNOWN/test" et ne justifient pas une entrée
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
@@ -2177,6 +2222,24 @@ const RESPONSE_OVERRIDES = {
   // POST /api/auth/auto-register renvoie 503 quand INTERNAL_API_KEY est absent (désactivé).
   'POST /api/auth/auto-register': {
     '503': { description: 'Endpoint désactivé — INTERNAL_API_KEY non configuré' },
+  },
+  'GET /api/auth/me/documents/{id}/download': {
+    '200': {
+      description: 'Document transactionnel PDF privé',
+      content: { 'application/pdf': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } } },
+    },
+    '404': { description: 'Document introuvable' },
+    '503': { description: 'Document temporairement indisponible' },
+  },
+  'POST /api/admin/users/{id}/market-scopes': {
+    '201': {
+      description: 'Scope marché créé',
+      content: { 'application/json': { schema: {
+        type: 'object',
+        'x-contract-status': 'route-read',
+        properties: { success: { type: 'string', 'x-observed': true }, status: { type: 'string', 'x-observed': true }, scope: { type: 'string', 'x-observed': true } },
+      } } },
+    },
   },
   // La route receipt retourne du HTML imprimable, pas du JSON.
   // On remplace la réponse 200 application/json générée automatiquement.
@@ -2225,8 +2288,9 @@ for (const ep of inventory) {
 
   const respSchema = buildResponseSchema(prefix, method);
   if (respSchema['x-contract-status'] === 'UNKNOWN') unknownCount++;
+  const successStatus = SUCCESS_STATUS_OVERRIDES[`${ep.method} ${prefix}`] || '200';
   op.responses = {
-    '200': { description: 'Succès', content: { 'application/json': { schema: respSchema } } },
+    [successStatus]: { description: 'Succès', content: { 'application/json': { schema: respSchema } } },
     // 429 documenté par défaut : le rate-limiter global peut se déclencher sur n'importe
     // quel endpoint, et un 429 non documenté est sinon signalé à tort par Schemathesis
     // comme "undocumented HTTP status" (bruit calibré en P4-1).

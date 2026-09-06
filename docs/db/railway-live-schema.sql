@@ -2407,8 +2407,24 @@ CREATE TABLE public.order_item_cost_imputations (
     allocation_confidence text,
     data_quality jsonb,
     pricing_source text DEFAULT 'pricing-engine'::text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    estimated_business_variable_cost_kmf numeric(12,2),
+    estimated_fixed_overhead_kmf numeric(12,2)
 );
+
+
+--
+-- Name: COLUMN order_item_cost_imputations.estimated_business_variable_cost_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_item_cost_imputations.estimated_business_variable_cost_kmf IS 'Snapshot N2 total de l order_item : paiement + provision risque. NULL si non reconstructible.';
+
+
+--
+-- Name: COLUMN order_item_cost_imputations.estimated_fixed_overhead_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_item_cost_imputations.estimated_fixed_overhead_kmf IS 'Snapshot N3 total de l order_item : allocation de structure pour lecture. NULL si non reconstructible.';
 
 
 --

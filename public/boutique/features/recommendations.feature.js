@@ -49,6 +49,9 @@ module.exports = {
       '../css/modal-suggestion-card-polish.css',
       '../css/modal-suggestion-filter.css',
     ],
+    tests: [
+      '../tests/unit/b-modal-suggestions.test.js',
+    ],
   },
 
   docs: [],

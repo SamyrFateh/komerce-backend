@@ -49,6 +49,7 @@ module.exports = {
       'moteur de pricing et application des regles',
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
+      'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
         'economic-engine au Lot O2, était @domain dashboard)',
@@ -73,6 +74,7 @@ module.exports = {
       'services/pricing-apply.js',
       'services/cost-component-admin-service.js',
       'services/cost-component-market-service.js',
+      'services/pricing-cost-explainability.js',
       'services/pricing-workspace.js',
       'services/pricing-dashboard.js',
       'services/pricing-recommend.js',
@@ -83,6 +85,7 @@ module.exports = {
       'services/finance-metrics/payments.js',
       'services/finance-metrics/sales-analysis.js',
       'services/cost-allocation/_helpers.js',
+      'services/cost-allocation/cost-types.js',
       'services/cost-allocation/allocate.js',
       'services/cost-allocation/variance.js',
       'services/cost-allocation/index.js',
@@ -98,6 +101,7 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
+      'services/pricing-maturity.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -142,6 +146,8 @@ module.exports = {
       'migrations/119_economic_variables_to_finance_config.sql',
       'migrations/152_pricing_workspace_global_authority.sql',
       'migrations/159_cost_component_market_overrides.sql',
+      'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
+      'migrations/165_pricing_maturity_disposition_events.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -162,6 +168,8 @@ module.exports = {
       'tests/unit/apply-pricing-updates.test.js',
       'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
+      'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
+      'tests/unit/pricing-maturity-disposition-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -171,6 +179,7 @@ module.exports = {
       'tests/unit/pricing-cache.test.js',
       'tests/unit/pricing-cdr.test.js',
       'tests/unit/pricing-engine.test.js',
+      'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -197,6 +206,7 @@ module.exports = {
       'tests/unit/admin-pricing-workspace-route.test.js',
       'tests/unit/admin-pricing-workspace-market-route.test.js',
       'tests/unit/cost-component-market-service.test.js',
+      'tests/unit/pricing-cost-explainability.test.js',
       'tests/unit/pricing-workspace.test.js',
       'tests/unit/require-pricing-global-authority.test.js',
       'tests/unit/pricing-chain.test.js',
@@ -233,6 +243,7 @@ module.exports = {
     'docs/doctrine/DOCTRINE_LEVIERS_MARGE.md',
     'docs/doctrine/DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md',
     'docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md',
+    'docs/chantier/PRICING_MATURITY_WATERMARK.md',
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
@@ -275,6 +286,7 @@ module.exports = {
       'pricing_category_taxes: RW',
       'pricing_components: RW',
       'pricing_matrices_audit: W',
+      'pricing_maturity_disposition_events: RW!',
       'pricing_strategies: RW',
       'pricing_global_access_grants: R',
       'pricing_strategy_history: W',
@@ -446,6 +458,8 @@ module.exports = {
   invariants: [
     'une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee',
     'aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js',
+    'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
+    'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
   ],
 
 };
