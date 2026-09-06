@@ -209,6 +209,14 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
 
+<!-- schema-pending
+object: pricing_maturity_disposition_events
+kind: table
+migration: 165
+section: ### 4.8 Pricing et économie (19 tables)
+role: Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle.
+-->
+
 ### 4.9 Douane (4 tables)
 
 | Table | Rôle |
@@ -235,7 +243,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
-
 
 ### 4.11 Scans et opérations terrain (5 tables)
 

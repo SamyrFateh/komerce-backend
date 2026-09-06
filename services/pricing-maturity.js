@@ -4,13 +4,13 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        order_id, market_id, canonical_cohort_bounds
- * @outputs       order_maturity, maturity_watermark
+ * @inputs        order_id, market_id, canonical_cohort_bounds, disposition_policy
+ * @outputs       order_maturity, maturity_watermark, disposition_event
  * @depends       db, services/cost-allocation/cost-types.js
  * @used-by       future pricing coverage gate
- * @db-read       customs_shipment_parcels, customs_shipments, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels
- * @db-write      (none)
- * @db-txn        @none
+ * @db-read       customs_shipment_parcels, customs_shipments, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, pricing_maturity_disposition_events
+ * @db-write      pricing_maturity_disposition_events
+ * @db-txn        caller_managed_for_disposition_write
  * @doctrine      pricing_market_viability_maturity_watermark
  * @impact-areas  economic-engine, pricing, governance
  * @version       2026-09
@@ -20,27 +20,36 @@
  * KOMERCE — Maturité économique / watermark
  * ════════════════════════════════════════════════════════════════════════
  *
- * Ce service NE calcule PAS encore le ratio de couverture et NE choisit PAS
- * la largeur de la fenêtre canonique. Il matérialise le prérequis mécanique :
+ * Ce service ne calcule PAS encore la couverture économique. Il matérialise :
  *
- *   1. une commande est-elle suffisamment réconciliée pour entrer dans une
- *      cohorte décisionnelle ?
- *   2. jusqu'où une cohorte FIXÉE par la future politique canonique peut-elle
- *      avancer sans sélectionner les commandes favorables et ignorer les
- *      commandes immatures ?
+ *   1. la maturité économique d'une commande à partir de preuves réelles ;
+ *   2. un watermark anti cherry-picking sur une cohorte temporelle fixée ;
+ *   3. une disposition gouvernée pour les commandes définitivement
+ *      irréconciliables, sans jamais transformer la disposition en maturité ;
+ *   4. un gate de volume de dispositions fourni par politique externe.
  *
- * Doctrine fail-closed : absence de preuve = critère non satisfait. Une
- * configuration ou une estimation n'est jamais promue en preuve de règlement.
- *
- * Important : les bornes from/to sont obligatoires pour le calcul marché.
- * Elles doivent venir de la future politique canonique (largeur fixe), jamais
- * d'un sélecteur utilisateur. Ce service n'expose volontairement aucune route.
+ * Invariants :
+ * - absence de preuve != zéro != maturité ;
+ * - une disposition ne satisfait aucun critère économique manquant ;
+ * - une disposition peut seulement rendre une ligne franchissable par le
+ *   watermark ; elle reste publiée séparément de `mature` ;
+ * - si une cohorte utilise des dispositions sans politique de plafond, elle
+ *   est NOT_DECISIONAL ;
+ * - aucun seuil numérique de disposition n'est hardcodé ici ;
+ * - les bornes from/to restent obligatoires et externes.
  */
 
 'use strict';
 
 const db = require('../db');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-allocation/cost-types');
+
+const DISPOSITION_STATES = Object.freeze({
+  RECONCILIABLE: 'RECONCILIABLE',
+  IRRECONCILABLE_DISPOSED: 'IRRECONCILABLE_DISPOSED',
+});
+
+const REASON_CODE_RE = /^[A-Z][A-Z0-9_]{2,79}$/;
 
 const PORT_SNAPSHOT_KEY = Object.keys(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)
   .find((key) => SNAPSHOT_LANDED_TO_REAL_COST_TYPE[key] === 'port_transitaire');
@@ -66,10 +75,6 @@ function n(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function bool(value) {
-  return value === true || value === 'true' || value === 1 || value === '1';
-}
-
 function criterion(code, satisfied, evidence = {}, applicable = true) {
   return {
     code,
@@ -85,6 +90,29 @@ function expectedCount(row, key) {
 
 function verifiedCount(row, key) {
   return n(row[`verified_${key}_items`]);
+}
+
+function normalizeDispositionRow(row) {
+  if (!row || !row.disposition_state) return null;
+  return {
+    event_id: row.disposition_event_id || row.id || null,
+    state: row.disposition_state || row.state,
+    reason_code: row.disposition_reason_code || row.reason_code,
+    rationale: row.disposition_rationale || row.rationale,
+    evidence_ref: row.disposition_evidence_ref || row.evidence_ref,
+    decided_by: row.disposition_decided_by || row.decided_by,
+    decided_at: row.disposition_decided_at || row.decided_at,
+  };
+}
+
+function isEffectiveDisposition(row) {
+  return !!row
+    && !row.mature
+    && row.disposition?.state === DISPOSITION_STATES.IRRECONCILABLE_DISPOSED;
+}
+
+function isWatermarkPassable(row) {
+  return !!row && (!!row.mature || isEffectiveDisposition(row));
 }
 
 function _evaluateEvidence(row) {
@@ -211,28 +239,44 @@ function _evaluateEvidence(row) {
   ));
 
   const blocking = criteria.filter((c) => c.applicable && !c.satisfied);
+  const mature = blocking.length === 0;
+  const disposition = normalizeDispositionRow(row);
+  const disposed = !mature && disposition?.state === DISPOSITION_STATES.IRRECONCILABLE_DISPOSED;
 
   return {
     order_id: row.order_id,
     market_id: row.market_id || null,
     created_at: row.created_at,
     eligible,
-    mature: blocking.length === 0,
-    maturity_status: blocking.length === 0 ? 'MATURE' : 'IMMATURE',
+    mature,
+    maturity_status: mature
+      ? 'MATURE'
+      : (disposed ? 'IRRECONCILABLE_DISPOSED' : 'IMMATURE'),
+    watermark_passable: mature || disposed,
     criteria,
     blocking_reasons: blocking.map((c) => c.code),
+    disposition,
+    disposition_effective: disposed,
     evidence_generated_at: new Date().toISOString(),
   };
 }
 
-async function getOrderMaturity(orderId) {
-  const { rows } = await db.query(`
+async function getOrderMaturity(orderId, client = db) {
+  const { rows } = await client.query(`
     SELECT
       o.id AS order_id,
       o.market_id,
       o.created_at,
       o.status,
       o.payment_status,
+
+      disp.id AS disposition_event_id,
+      disp.state AS disposition_state,
+      disp.reason_code AS disposition_reason_code,
+      disp.rationale AS disposition_rationale,
+      disp.evidence_ref AS disposition_evidence_ref,
+      disp.decided_by AS disposition_decided_by,
+      disp.decided_at AS disposition_decided_at,
 
       (SELECT COUNT(*)::int
          FROM order_items oi
@@ -389,6 +433,14 @@ async function getOrderMaturity(orderId) {
         WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT') AS import_items_linked_to_shipment_count
 
     FROM orders o
+    LEFT JOIN LATERAL (
+      SELECT d.id, d.state, d.reason_code, d.rationale, d.evidence_ref,
+             d.decided_by, d.decided_at
+        FROM pricing_maturity_disposition_events d
+       WHERE d.order_id = o.id
+       ORDER BY d.decided_at DESC, d.id DESC
+       LIMIT 1
+    ) disp ON TRUE
     WHERE o.id = $1
   `, [orderId]);
 
@@ -396,7 +448,134 @@ async function getOrderMaturity(orderId) {
   return _evaluateEvidence(rows[0]);
 }
 
-function deriveMaturityWatermark(orderMaturities = []) {
+async function getCurrentMaturityDisposition(orderId, client = db) {
+  const { rows } = await client.query(`
+    SELECT id, order_id, market_id, state, reason_code, rationale,
+           evidence_ref, decided_by, decided_at
+      FROM pricing_maturity_disposition_events
+     WHERE order_id = $1
+     ORDER BY decided_at DESC, id DESC
+     LIMIT 1
+  `, [orderId]);
+  return rows[0] || null;
+}
+
+function validateDispositionTransitionInput(input, actorUserId) {
+  const state = String(input?.state || '').trim().toUpperCase();
+  const reasonCode = String(input?.reason_code || '').trim().toUpperCase();
+  const rationale = String(input?.rationale || '').trim();
+  const evidenceRef = String(input?.evidence_ref || '').trim();
+
+  if (!Object.values(DISPOSITION_STATES).includes(state)) {
+    throw new Error('invalid maturity disposition state');
+  }
+  if (!REASON_CODE_RE.test(reasonCode)) {
+    throw new Error('invalid maturity disposition reason_code');
+  }
+  if (rationale.length < 10 || rationale.length > 2000) {
+    throw new Error('maturity disposition rationale must contain 10..2000 characters');
+  }
+  if (evidenceRef.length < 3 || evidenceRef.length > 1000) {
+    throw new Error('maturity disposition evidence_ref must contain 3..1000 characters');
+  }
+  if (!actorUserId) {
+    throw new Error('maturity disposition actor is required');
+  }
+
+  return { state, reasonCode, rationale, evidenceRef };
+}
+
+async function recordMaturityDisposition(orderId, input, actorUserId, client = db) {
+  if (!orderId) throw new Error('orderId is required');
+  const normalized = validateDispositionTransitionInput(input, actorUserId);
+
+  const orderRes = await client.query(
+    'SELECT id, market_id FROM orders WHERE id = $1',
+    [orderId]
+  );
+  if (!orderRes.rows.length) throw new Error('order not found');
+  const order = orderRes.rows[0];
+  if (!order.market_id) throw new Error('order market_id is required for maturity disposition');
+
+  const current = await getCurrentMaturityDisposition(orderId, client);
+  const currentState = current?.state || DISPOSITION_STATES.RECONCILIABLE;
+  if (currentState === normalized.state) {
+    throw new Error('maturity disposition state unchanged');
+  }
+
+  if (normalized.state === DISPOSITION_STATES.IRRECONCILABLE_DISPOSED) {
+    const maturity = await getOrderMaturity(orderId, client);
+    if (!maturity) throw new Error('order not found');
+    if (maturity.mature) {
+      throw new Error('cannot dispose an economically mature order');
+    }
+  }
+
+  const { rows } = await client.query(`
+    INSERT INTO pricing_maturity_disposition_events (
+      order_id, market_id, state, reason_code, rationale,
+      evidence_ref, decided_by
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, order_id, market_id, state, reason_code, rationale,
+              evidence_ref, decided_by, decided_at
+  `, [
+    orderId,
+    order.market_id,
+    normalized.state,
+    normalized.reasonCode,
+    normalized.rationale,
+    normalized.evidenceRef,
+    actorUserId,
+  ]);
+
+  return rows[0];
+}
+
+function normalizeDispositionPolicy(policy, disposedTotal) {
+  if (disposedTotal === 0) {
+    return {
+      configured: !!policy,
+      max_ratio: policy?.max_ratio ?? null,
+      source: policy?.source || null,
+      version: policy?.version || null,
+      status: 'NOT_REQUIRED',
+      decisional: true,
+    };
+  }
+
+  if (!policy) {
+    return {
+      configured: false,
+      max_ratio: null,
+      source: null,
+      version: null,
+      status: 'POLICY_REQUIRED',
+      decisional: false,
+    };
+  }
+
+  const maxRatio = Number(policy.max_ratio);
+  const source = String(policy.source || '').trim();
+  const version = policy.version == null ? null : String(policy.version).trim();
+
+  if (!Number.isFinite(maxRatio) || maxRatio < 0 || maxRatio > 1) {
+    throw new Error('disposition policy max_ratio must be between 0 and 1');
+  }
+  if (source.length < 3) {
+    throw new Error('disposition policy source is required');
+  }
+
+  return {
+    configured: true,
+    max_ratio: maxRatio,
+    source,
+    version: version || null,
+    status: 'PENDING_RATIO_EVALUATION',
+    decisional: null,
+  };
+}
+
+function deriveMaturityWatermark(orderMaturities = [], options = {}) {
   const rows = [...orderMaturities]
     .filter(Boolean)
     .sort((a, b) => {
@@ -407,15 +586,36 @@ function deriveMaturityWatermark(orderMaturities = []) {
 
   const total = rows.length;
   const matureTotal = rows.filter((r) => r.mature).length;
+  const disposedRows = rows.filter((r) => isEffectiveDisposition(r));
+  const disposedTotal = disposedRows.length;
+  const unresolvedImmatureTotal = rows.filter((r) => !isWatermarkPassable(r)).length;
   const maturityRatio = total > 0 ? Number((matureTotal / total).toFixed(4)) : null;
+  const dispositionRatio = total > 0 ? Number((disposedTotal / total).toFixed(4)) : null;
+  const effectivePassRatio = total > 0
+    ? Number(((matureTotal + disposedTotal) / total).toFixed(4))
+    : null;
+
+  const dispositionGate = normalizeDispositionPolicy(options.dispositionPolicy, disposedTotal);
+  if (disposedTotal > 0 && dispositionGate.configured) {
+    const exceeded = dispositionRatio > dispositionGate.max_ratio;
+    dispositionGate.status = exceeded ? 'LIMIT_EXCEEDED' : 'WITHIN_LIMIT';
+    dispositionGate.decisional = !exceeded;
+  }
 
   if (total === 0) {
     return {
       status: 'EMPTY',
+      decision_status: 'NOT_DECISIONAL',
       total_orders: 0,
       mature_orders: 0,
+      disposed_orders: 0,
+      unresolved_immature_orders: 0,
       immature_orders: 0,
       maturity_ratio: null,
+      disposition_ratio: null,
+      effective_pass_ratio: null,
+      disposition_gate: dispositionGate,
+      disposed_order_ids: [],
       safe_prefix_order_count: 0,
       watermark_at: null,
       watermark_order_ids: [],
@@ -436,29 +636,44 @@ function deriveMaturityWatermark(orderMaturities = []) {
     group.rows.push(row);
   }
 
-  const firstBlockingIndex = groups.findIndex((g) => g.rows.some((r) => !r.mature));
+  const firstBlockingIndex = groups.findIndex((g) => g.rows.some((r) => !isWatermarkPassable(r)));
   const safeGroups = firstBlockingIndex === -1 ? groups : groups.slice(0, firstBlockingIndex);
   const safeRows = safeGroups.flatMap((g) => g.rows);
   const lastSafeGroup = safeGroups[safeGroups.length - 1] || null;
   const blockingGroup = firstBlockingIndex === -1 ? null : groups[firstBlockingIndex];
 
-  let status = 'FULLY_MATURE';
+  let status = disposedTotal > 0 ? 'PASSABLE_WITH_DISPOSITIONS' : 'FULLY_MATURE';
   if (blockingGroup && safeRows.length === 0) status = 'BLOCKED_AT_START';
   else if (blockingGroup) status = 'PARTIAL';
 
+  const decisionStatus = blockingGroup || dispositionGate.decisional === false
+    ? 'NOT_DECISIONAL'
+    : 'READY_FOR_NEXT_GATE';
+
   return {
     status,
+    decision_status: decisionStatus,
     total_orders: total,
     mature_orders: matureTotal,
+    disposed_orders: disposedTotal,
+    unresolved_immature_orders: unresolvedImmatureTotal,
     immature_orders: total - matureTotal,
     maturity_ratio: maturityRatio,
+    disposition_ratio: dispositionRatio,
+    effective_pass_ratio: effectivePassRatio,
+    disposition_gate: dispositionGate,
+    disposed_order_ids: disposedRows.map((r) => r.order_id),
     safe_prefix_order_count: safeRows.length,
     watermark_at: lastSafeGroup ? lastSafeGroup.key : null,
     watermark_order_ids: lastSafeGroup ? lastSafeGroup.rows.map((r) => r.order_id) : [],
     first_blocking_at: blockingGroup ? blockingGroup.key : null,
-    first_blocking_order_ids: blockingGroup ? blockingGroup.rows.filter((r) => !r.mature).map((r) => r.order_id) : [],
+    first_blocking_order_ids: blockingGroup
+      ? blockingGroup.rows.filter((r) => !isWatermarkPassable(r)).map((r) => r.order_id)
+      : [],
     first_blocking_reasons: blockingGroup
-      ? [...new Set(blockingGroup.rows.filter((r) => !r.mature).flatMap((r) => r.blocking_reasons || []))]
+      ? [...new Set(blockingGroup.rows
+        .filter((r) => !isWatermarkPassable(r))
+        .flatMap((r) => r.blocking_reasons || []))]
       : [],
   };
 }
@@ -493,6 +708,10 @@ async function computeMarketMaturityWatermark(marketId, options = {}) {
     if (maturity) evaluations.push(maturity);
   }
 
+  const watermark = deriveMaturityWatermark(evaluations, {
+    dispositionPolicy: options.dispositionPolicy || null,
+  });
+
   return {
     market_id: marketId,
     cohort: {
@@ -500,17 +719,23 @@ async function computeMarketMaturityWatermark(marketId, options = {}) {
       to: options.to,
       policy: 'externally_fixed_canonical_bounds',
     },
-    ...deriveMaturityWatermark(evaluations),
+    ...watermark,
+    disposition_threshold_applied: watermark.disposed_orders > 0
+      && watermark.disposition_gate.configured,
     threshold_applied: false,
     coverage_status: null,
   };
 }
 
 module.exports = {
+  DISPOSITION_STATES,
   getOrderMaturity,
+  getCurrentMaturityDisposition,
+  recordMaturityDisposition,
   deriveMaturityWatermark,
   computeMarketMaturityWatermark,
   _evaluateEvidence,
+  _isEffectiveDisposition: isEffectiveDisposition,
   _NON_SETTLEMENT_RELAY_SOURCES: NON_SETTLEMENT_RELAY_SOURCES,
   _PORT_COST_MAPPING: Object.freeze({ snapshot_key: PORT_SNAPSHOT_KEY, real_cost_type: PORT_REAL_COST_TYPE }),
 };
