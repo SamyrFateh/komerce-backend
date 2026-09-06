@@ -24,6 +24,9 @@ jobs:
       - run: npm ci
       - run: npm --prefix public/boutique ci
 
+      - name: Repair temporary patcher
+        run: node scripts/repair-impact-circle-3-patcher-once.js
+
       - name: Apply permanent fixes
         run: node scripts/impact-circle-3-fix-once.js
 
