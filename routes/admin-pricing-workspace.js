@@ -11,7 +11,7 @@
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -155,11 +155,19 @@ router.get('/market/:marketCode', async (req, res, next) => {
       access,
       capabilities: {
         ...(projection.capabilities || {}),
+        simulation: true,
         cost_overrides: access.can_manage_costs,
         reset_to_global: access.can_manage_costs,
       },
     });
   } catch (error) { handleError(error, res, next); }
+});
+
+// La simulation n'écrit rien : viewer et manager peuvent explorer un scénario
+// tant qu'ils possèdent l'accès serveur au marché.
+router.post('/market/:marketCode/simulate-impact', async (req, res, next) => {
+  try { sendAction(res, 'simulate_impact', await workspace.simulateImpact(req.body || {}, req.workspaceMarket)); }
+  catch (error) { handleError(error, res, next); }
 });
 
 router.post('/market/:marketCode/cost-components/:key/update', requireMarketPricingManager, async (req, res, next) => {
@@ -206,6 +214,11 @@ router.get('/', async (req, res, next) => {
 
 router.post('/simulate', async (req, res, next) => {
   try { sendAction(res, 'simulate', await workspace.simulate(req.body || {})); }
+  catch (error) { handleError(error, res, next); }
+});
+
+router.post('/simulate-impact', async (req, res, next) => {
+  try { sendAction(res, 'simulate_impact', await workspace.simulateImpact(req.body || {})); }
   catch (error) { handleError(error, res, next); }
 });
 
