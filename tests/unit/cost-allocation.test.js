@@ -30,30 +30,24 @@ const {
 
 beforeEach(() => jest.clearAllMocks());
 
-// ════════════════════════════════════════════════════════════════
-// 1. Constantes doctrine
-// ════════════════════════════════════════════════════════════════
-
 describe('COST_TYPES — constantes doctrine', () => {
-  it('contient les 14 types canoniques (migration 043)', () => {
+  it('contient les 14 types canoniques historiques', () => {
     expect(COST_TYPES).toContain('product_purchase');
     expect(COST_TYPES).toContain('freight');
     expect(COST_TYPES).toContain('customs');
+    expect(COST_TYPES).toContain('risk_provision');
     expect(COST_TYPES).toContain('fixed_overhead');
     expect(COST_TYPES).toContain('incident');
     expect(COST_TYPES).toHaveLength(14);
   });
 
-  it('VARIABLE + FIXED + EXCEPTIONAL couvrent les cost_types sans chevauchement', () => {
+  it('VARIABLE + FIXED + EXCEPTIONAL restent sans chevauchement', () => {
     const all = [...VARIABLE_COST_TYPES, ...FIXED_COST_TYPES, ...EXCEPTIONAL_COST_TYPES];
     const unique = new Set(all);
     expect(unique.size).toBe(all.length);
+    expect(VARIABLE_COST_TYPES).not.toContain('risk_provision');
   });
 });
-
-// ════════════════════════════════════════════════════════════════
-// 2. shareByWeight (pure)
-// ════════════════════════════════════════════════════════════════
 
 describe('shareByWeight', () => {
   it('ventile proportionnellement au poids', () => {
@@ -98,10 +92,6 @@ describe('shareByWeight', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// 3. taxableWeight (pure)
-// ════════════════════════════════════════════════════════════════
-
 describe('taxableWeight', () => {
   it('sea : facteur 1000 — poids volumétrique = volume × 1000', () => {
     expect(taxableWeight(10, 0.5, 'sea')).toBe(500);
@@ -125,20 +115,17 @@ describe('taxableWeight', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// 4. computeOrderCostVariance — périmètre N1 + N2
-// ════════════════════════════════════════════════════════════════
-
 describe('computeOrderCostVariance', () => {
   const ORDER_ID = 'order-001';
 
-  it('compare le reel variable a N1+N2 et isole N3', async () => {
+  it('compare le réel transactionnel à N1+payment et isole N3', async () => {
     db.query
       .mockResolvedValueOnce({
         rows: [{
           landed: '800',
           business_complete: '1000',
           business_variable: '100',
+          risk_provision: '0',
           fixed_overhead: '100',
           imputations_count: 1,
           missing_variable_snapshot_count: 0,
@@ -155,18 +142,18 @@ describe('computeOrderCostVariance', () => {
     const result = await computeOrderCostVariance(ORDER_ID);
 
     expect(result.order_id).toBe(ORDER_ID);
-    expect(result.estimated.business_kmf).toBe(1000); // alias CDR legacy
+    expect(result.estimated.business_kmf).toBe(1000);
     expect(result.estimated.variable_total_kmf).toBe(900);
     expect(result.real.total_kmf).toBe(700);
     expect(result.real.variable_total_kmf).toBe(600);
     expect(result.real.structure_total_kmf).toBe(100);
-    expect(result.variance).toEqual({ scope: 'N1+N2', total_kmf: -300, total_pct: -33.33 });
+    expect(result.variance).toEqual({ scope: 'N1+payment', total_kmf: -300, total_pct: -33.33 });
   });
 
-  it('variance pct null si N1+N2 estime = 0', async () => {
+  it('variance pct null si le périmètre estimé = 0', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{
-        landed: '0', business_complete: '0', business_variable: '0', fixed_overhead: '0',
+        landed: '0', business_complete: '0', business_variable: '0', risk_provision: '0', fixed_overhead: '0',
         imputations_count: 1, missing_variable_snapshot_count: 0,
       }] })
       .mockResolvedValueOnce({ rows: [] });
@@ -178,7 +165,7 @@ describe('computeOrderCostVariance', () => {
   it('ne calcule pas de variance si le split N2 manque', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{
-        landed: '800', business_complete: '1000', business_variable: null, fixed_overhead: null,
+        landed: '800', business_complete: '1000', business_variable: null, risk_provision: '0', fixed_overhead: null,
         imputations_count: 1, missing_variable_snapshot_count: 1,
       }] })
       .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '600', all_actual: true }] });
@@ -189,14 +176,10 @@ describe('computeOrderCostVariance', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// 5. computeProductCostVariance
-// ════════════════════════════════════════════════════════════════
-
 describe('computeProductCostVariance', () => {
   const PRODUCT_ID = 'prod-001';
 
-  it('retourne variance N1+N2 pour un produit avec données', async () => {
+  it('retourne variance N1+payment pour un produit avec données', async () => {
     db.query.mockResolvedValueOnce({
       rows: [{
         product_id: PRODUCT_ID,
@@ -204,8 +187,12 @@ describe('computeProductCostVariance', () => {
         orders_count: 3,
         missing_variable_snapshot_count: 0,
         total_estimated_variable_kmf: '5000',
+        total_estimated_contribution_cost_kmf: '5200',
+        total_estimated_risk_provision_kmf: '200',
         total_real_variable_kmf: '4500',
+        total_real_provision_kmf: '250',
         total_real_structure_kmf: '800',
+        total_real_unknown_kmf: '0',
       }],
     });
 
@@ -218,7 +205,8 @@ describe('computeProductCostVariance', () => {
     expect(result.total_real_structure_kmf).toBe(800);
     expect(result.variance_kmf).toBe(-500);
     expect(result.variance_pct).toBeCloseTo(-10, 1);
-    expect(result.variance_scope).toBe('N1+N2');
+    expect(result.variance_scope).toBe('N1+payment');
+    expect(result.risk_provision_status).toBe('period_reconciliation_pending');
   });
 
   it('retourne { no_data: true } si aucune imputation', async () => {
@@ -227,10 +215,6 @@ describe('computeProductCostVariance', () => {
     expect(result.no_data).toBe(true);
   });
 });
-
-// ════════════════════════════════════════════════════════════════
-// 6. getOrderCostTruth — logique cost_status legacy + split N2/N3
-// ════════════════════════════════════════════════════════════════
 
 const ORDER_ROW = {
   id: 'order-001',
@@ -249,6 +233,17 @@ const EST_ROW_FULL = {
   estimated_business: '8000',
   estimated_business_variable: '1500',
   estimated_fixed_overhead: '1500',
+  estimated_risk_provision: '200',
+  expected_product_purchase: '3000',
+  expected_sourcing: '0',
+  expected_hub: '400',
+  expected_packaging: '0',
+  expected_freight: '1000',
+  expected_customs: '500',
+  expected_port_transitary: '0',
+  expected_local_distribution: '200',
+  expected_relay: '300',
+  expected_payment: '100',
   missing_variable_snapshot_count: '0',
   estimated_margin: '2000',
 };
@@ -256,19 +251,19 @@ const EST_ROW_FULL = {
 function allRealTypes() {
   return [
     { cost_type: 'product_purchase', amount: '3000', all_actual: true },
-    { cost_type: 'freight',          amount: '1000', all_actual: true },
-    { cost_type: 'customs',          amount: '500',  all_actual: true },
+    { cost_type: 'freight', amount: '1000', all_actual: true },
+    { cost_type: 'customs', amount: '500', all_actual: true },
     { cost_type: 'local_distribution', amount: '200', all_actual: true },
-    { cost_type: 'relay',            amount: '300',  all_actual: true },
-    { cost_type: 'hub',              amount: '400',  all_actual: true },
-    { cost_type: 'risk_provision',   amount: '200',  all_actual: true },
-    { cost_type: 'fixed_overhead',   amount: '300',  all_actual: true },
-    { cost_type: 'payment',          amount: '100',  all_actual: true },
+    { cost_type: 'relay', amount: '300', all_actual: true },
+    { cost_type: 'hub', amount: '400', all_actual: true },
+    { cost_type: 'risk_provision', amount: '200', all_actual: true },
+    { cost_type: 'fixed_overhead', amount: '300', all_actual: true },
+    { cost_type: 'payment', amount: '100', all_actual: true },
   ];
 }
 
 describe('getOrderCostTruth — cost_status = actual', () => {
-  it('retourne actual si tous les types attendus sont présents', async () => {
+  it('conserve actual quand toutes les preuves transactionnelles attendues sont présentes', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [ORDER_ROW] })
       .mockResolvedValueOnce({ rows: [EST_ROW_FULL] })
@@ -277,9 +272,11 @@ describe('getOrderCostTruth — cost_status = actual', () => {
     const result = await getOrderCostTruth('order-001');
 
     expect(result.cost_status).toBe('actual');
+    expect(result.cost_status_scope).toBe('transaction_variable_actual_with_period_risk_provision');
     expect(result.missing_cost_fields).toHaveLength(0);
     expect(result.real.margin_kmf).not.toBeNull();
     expect(result.estimated.business_variable_cost_kmf).toBe(1500);
+    expect(result.estimated.risk_provision_kmf).toBe(200);
     expect(result.estimated.fixed_overhead_kmf).toBe(1500);
   });
 });
@@ -300,7 +297,7 @@ describe('getOrderCostTruth — cost_status = estimated', () => {
 });
 
 describe('getOrderCostTruth — cost_status = partial_real', () => {
-  it('retourne partial_real si freight manquant', async () => {
+  it('retourne partial_real si freight attendu est manquant', async () => {
     const realWithoutFreight = allRealTypes().filter(r => r.cost_type !== 'freight');
 
     db.query
@@ -337,7 +334,7 @@ describe('getOrderCostTruth — order introuvable', () => {
 });
 
 describe('getOrderCostTruth — variance', () => {
-  it('calcule la variance sur N1+N2 et exclut fixed_overhead du réel', async () => {
+  it('calcule la variance sur N1+payment et exclut provision risque + fixed_overhead du réel', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [ORDER_ROW] })
       .mockResolvedValueOnce({ rows: [EST_ROW_FULL] })
@@ -345,11 +342,11 @@ describe('getOrderCostTruth — variance', () => {
 
     const result = await getOrderCostTruth('order-001');
     const variableReal = allRealTypes()
-      .filter(r => r.cost_type !== 'fixed_overhead')
+      .filter(r => !['fixed_overhead', 'risk_provision'].includes(r.cost_type))
       .reduce((s, r) => s + Number(r.amount), 0);
-    const estimatedVariable = 5000 + 1500;
+    const estimatedVariable = 5000 + 1500 - 200;
 
-    expect(result.variance.scope).toBe('N1+N2');
+    expect(result.variance.scope).toBe('N1+payment');
     expect(result.variance.total_kmf).toBe(Math.round(variableReal - estimatedVariable));
     expect(typeof result.variance.total_pct).toBe('number');
   });
