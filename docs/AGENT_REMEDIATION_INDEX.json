@@ -1,7 +1,7 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-09-05",
+  "generatedAt": "2026-09-06",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
@@ -452,7 +452,7 @@
         "gate": "gate:feature-guard",
         "scope": "boutique",
         "status": "ok",
-        "errorCount": 0,
+        "errorCount": 1,
         "warningCount": 0
       },
       {
@@ -467,7 +467,7 @@
         "scope": "boutique",
         "status": "ok",
         "errorCount": 0,
-        "warningCount": 2
+        "warningCount": 3
       },
       {
         "gate": "check:body-classes",
@@ -501,7 +501,7 @@
         "gate": "check:css-specificity-guard",
         "scope": "boutique",
         "status": "ok",
-        "errorCount": 0,
+        "errorCount": 1,
         "warningCount": 0
       },
       {
@@ -554,7 +554,7 @@
         "warningCount": 0
       }
     ],
-    "currentFindings": 2
+    "currentFindings": 5
   },
   "catalog": {
     "BACKEND-ARCH": {
