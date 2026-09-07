@@ -172,7 +172,7 @@ test.describe('Pricing Workspace — décision économique pays', () => {
     await expect(page.getByText('560 000 KMF', { exact: true })).toBeVisible();
     await expect(page.getByText('500 000 KMF', { exact: true })).toBeVisible();
     await expect(page.getByText('96 %', { exact: true })).toBeVisible();
-    await expect(page.getByText('CM-E2E-V1', { exact: true })).toBeVisible();
+    await expect(page.locator('.kmc-market-policy-title')).toHaveText('CM-E2E-V1');
     await expect(page.getByText('Enregistrer une nouvelle version de politique')).toBeVisible();
     await expectDecisionBeforeCosts(page);
   });
