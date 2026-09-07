@@ -97,7 +97,9 @@ module.exports = {
       // Payment-specific uniquement. Le tunnel général b-checkout* appartient
       // désormais à la projection frontend de orders.
       'js/b-paypal.js',
+      'js/b-mobile-money.js',
       'css/paypal.css',
+      'css/mobile-money.css',
     ],
     tests: [
       'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
@@ -122,13 +124,14 @@ module.exports = {
       'tests/unit/mobile-money-providers.test.js',
       'tests/unit/payment-mobile-money.test.js',
       'tests/unit/mobile-money-reconciliation.test.js',
+      'public/boutique/tests/unit/b-mobile-money.test.js',
     ],
   },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
-    boutique: 'js/b-paypal.js + css/paypal.css — dépôt "bout", checkout général rattaché à orders',
+    boutique: 'js/b-paypal.js + js/b-mobile-money.js + css/paypal.css + css/mobile-money.css — dépôt "bout", checkout général rattaché à orders',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

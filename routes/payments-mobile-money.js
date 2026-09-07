@@ -8,7 +8,7 @@
  * @outputs       availability, mobile_money_transaction
  * @depends       db.js, middleware/auth-guest.js, services/payment-mobile-money.js
  * @used-by       bootstrap/api-routes.js, boutique checkout, providers
- * @db-read       orders, markets, mobile_money_transactions
+ * @db-read       orders, markets, mobile_money_transactions, relais
  * @db-write      none
  * @db-txn        delegated_to_payment_mobile_money
  * @doctrine      route_auth_ownership_facade, callback_reconciles_server_to_server
@@ -54,13 +54,35 @@ function ownsOrder(user, order) {
 }
 
 router.get('/availability', async (req, res, next) => {
-  const marketCode = String(req.query.market_code || '').trim().toUpperCase();
-  if (!MARKET_CODE_RE.test(marketCode)) {
-    return res.status(400).json({ error: 'market_code invalide', code: 'invalid_market_code' });
-  }
   try {
-    return res.json(await getAvailability(marketCode));
-  } catch (err) { return handleError(res, next, err); }
+    const relayId = String(req.query.relais_id || '').trim();
+    let marketCode = String(req.query.market_code || '').trim().toUpperCase();
+
+    if (relayId) {
+      if (relayId.length > 80) {
+        return res.status(400).json({ error: 'relais_id invalide' });
+      }
+      const { rows } = await db.query(
+        `SELECT m.code AS market_code
+ FROM relais r
+ JOIN markets m ON m.id = r.market_id
+WHERE r.id = $1
+  AND r.is_active = TRUE
+  AND m.is_active = TRUE
+LIMIT 1`,
+        [relayId]
+      );
+      if (!rows.length) {
+        return res.json({ available: false, reason: 'relay_not_found' });
+      }
+      marketCode = rows[0].market_code;
+    }
+
+    if (!/^[A-Z]{2}$/.test(marketCode)) {
+      return res.status(400).json({ error: 'market_code ou relais_id requis' });
+    }
+    res.json(await getAvailability(marketCode));
+  } catch (err) { next(err); }
 });
 
 router.post('/initiate', authenticateOrCreateGuest, async (req, res, next) => {

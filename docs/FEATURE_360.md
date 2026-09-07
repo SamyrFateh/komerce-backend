@@ -1362,12 +1362,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 49 fichier(s) déclaré(s), boutique: 3 fichier(s)
-  - boutique : 2
+**Implementation** : 52 fichier(s) déclaré(s), boutique: 6 fichier(s)
+  - boutique : 4
   - migrations : 3
   - routes : 5
   - services : 17
-  - tests : 22
+  - tests : 23
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 

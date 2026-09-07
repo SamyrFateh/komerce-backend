@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 508,
-    "filesWithFullHeaders": 463,
+    "scannedCodeFiles": 515,
+    "filesWithFullHeaders": 470,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 508,
+    "filesWithAnyHeaders": 515,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1131,
-    "edges": 5869,
-    "dbTables": 132,
-    "doctrines": 317,
+    "graphNodes": 1157,
+    "edges": 5948,
+    "dbTables": 135,
+    "doctrines": 333,
     "impactAreas": 174,
-    "unresolvedCodeEdges": 575,
+    "unresolvedCodeEdges": 582,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -45,10 +45,10 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
+    "payment": 24,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
-    "payment": 17,
     "tracking": 1,
     "wallet": 3,
     "providers-services": 6,
@@ -81,6 +81,7 @@
     "ui-renderer": 11,
     "ui-page": 5,
     "ui-service": 5,
+    "ui-boundary": 2,
     "view-model": 7,
     "ui-controller": 3,
     "ui-state": 2,
@@ -95,14 +96,13 @@
     "api-client": 2,
     "presenter": 1,
     "domain-logic": 1,
-    "ui-boundary": 1,
     "ui-adapter": 1,
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 114,
+    "route": 115,
     "entrypoint": 1,
-    "service": 222,
+    "service": 227,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -111,9 +111,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 70,
+    "critical": 75,
     "medium": 123,
-    "high": 262,
+    "high": 264,
     "low": 53
   },
   "nodes": [
@@ -137,6 +137,7 @@
       "depends": [
         "routes/orders.js",
         "routes/payments.js",
+        "routes/payments-mobile-money.js",
         "routes/otp.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
@@ -176,7 +177,7 @@
         "boutique",
         "product-detail"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "bootstrap/boot-guard.js",
@@ -235,8 +236,7 @@
       ],
       "depends": [
         "services/cash-reminder-service.js",
-        "services/inventory-service.js",
-        "utils/rules.js"
+        "services/inventory-service.js"
       ],
       "usedBy": [
         "server.js"
@@ -257,15 +257,17 @@
       "dbTxn": [],
       "doctrine": [
         "idempotence_cron",
-        "retention_snapshots"
+        "retention_snapshots",
+        "bounded_mobile_money_reconciliation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
-        "economic-engine"
+        "economic-engine",
+        "payments"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "bootstrap/env.js",
@@ -1953,7 +1955,8 @@
         "b-phone.js",
         "routes/local-stock.js",
         "routes/orders.js",
-        "routes/payments.js"
+        "routes/payments.js",
+        "routes/payments-mobile-money.js"
       ],
       "usedBy": [
         "boutique.js",
@@ -2373,6 +2376,49 @@
         "responsive-layout"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-mobile-money.js",
+      "file": "public/boutique/js/b-mobile-money.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-mobile-money-client",
+      "domain": "payment",
+      "layer": "ui-boundary",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "relay_id",
+        "order_reference",
+        "msisdn",
+        "transaction_id"
+      ],
+      "outputs": [
+        "provider_availability",
+        "payment_transaction_status"
+      ],
+      "depends": [
+        "b-utils.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "usedBy": [
+        "b-checkout.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "provider_availability_server_authoritative",
+        "no_silent_fallback",
+        "bounded_polling"
+      ],
+      "impactAreas": [
+        "checkout",
+        "payments"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/b-modal-buybox-shared.js",
@@ -9824,6 +9870,58 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/payments-mobile-money.js",
+      "file": "routes/payments-mobile-money.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "route-payment-mobile-money",
+      "domain": "payment",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_code",
+        "order_reference",
+        "msisdn",
+        "provider_callback"
+      ],
+      "outputs": [
+        "availability",
+        "mobile_money_transaction"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth-guest.js",
+        "services/payment-mobile-money.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "boutique checkout",
+        "providers"
+      ],
+      "dbRead": [
+        "orders",
+        "markets",
+        "mobile_money_transactions",
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "delegated_to_payment_mobile_money"
+      ],
+      "doctrine": [
+        "route_auth_ownership_facade",
+        "callback_reconciles_server_to_server"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/payments-paypal.js",
       "file": "routes/payments-paypal.js",
       "type": "file",
@@ -14891,6 +14989,7 @@
       ],
       "dbRead": [
         "invoices",
+        "mobile_money_transactions",
         "order_items",
         "orders",
         "parcels",
@@ -14906,13 +15005,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "invoice_displays_actual_payment_currency"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "payment"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/local-stock-checkout-preview.js",
@@ -15118,6 +15219,172 @@
         "market",
         "dashboard",
         "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/mobile-money-reconciliation.js",
+      "file": "services/mobile-money-reconciliation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-reconciliation",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "pending_mobile_money_transactions"
+      ],
+      "outputs": [
+        "provider_reconciliation_attempts"
+      ],
+      "depends": [
+        "db.js",
+        "services/payment-mobile-money.js"
+      ],
+      "usedBy": [
+        "bootstrap/crons.js"
+      ],
+      "dbRead": [
+        "mobile_money_transactions"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "provider_http_outside_db_tx"
+      ],
+      "doctrine": [
+        "callback_not_required",
+        "bounded_reconciliation",
+        "idempotent_provider_refresh"
+      ],
+      "impactAreas": [
+        "payment",
+        "operations"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/mobile-money/mtn-momo-cg.js",
+      "file": "services/mobile-money/mtn-momo-cg.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authoritative_amount",
+        "msisdn",
+        "callback_url"
+      ],
+      "outputs": [
+        "provider_transaction",
+        "normalized_status"
+      ],
+      "depends": [
+        "MTN MoMo Collections API"
+      ],
+      "usedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/mobile-money/orange-money-cm.js",
+      "file": "services/mobile-money/orange-money-cm.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authoritative_amount",
+        "order_reference",
+        "callback_url"
+      ],
+      "outputs": [
+        "provider_transaction",
+        "payment_redirect",
+        "normalized_status"
+      ],
+      "depends": [
+        "Orange Money Web Payment API"
+      ],
+      "usedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/mobile-money/registry.js",
+      "file": "services/mobile-money/registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-provider-registry",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "provider_key"
+      ],
+      "outputs": [
+        "provider_adapter",
+        "public_provider_config"
+      ],
+      "depends": [
+        "services/mobile-money/orange-money-cm.js",
+        "services/mobile-money/mtn-momo-cg.js"
+      ],
+      "usedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "market_selects_provider",
+        "runtime_registry_only",
+        "no_credentials"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
       ],
       "version": "2026-09"
     },
@@ -16923,6 +17190,71 @@
         "sourcing"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/payment-mobile-money.js",
+      "file": "services/payment-mobile-money.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "payment-mobile-money",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order",
+        "msisdn",
+        "provider_callback"
+      ],
+      "outputs": [
+        "mobile_money_transaction",
+        "payment_confirmation"
+      ],
+      "depends": [
+        "db.js",
+        "utils/currency.js",
+        "services/order-payment-confirmation.js"
+      ],
+      "usedBy": [
+        "routes/payments-mobile-money.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_payment_providers",
+        "mobile_money_transactions",
+        "orders"
+      ],
+      "dbWrite": [
+        "mobile_money_transactions",
+        "alerts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-payment-confirmation",
+          "tables": [
+            "orders",
+            "stock",
+            "invoices"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "provider_http_outside_db_tx",
+        "finalization_atomic"
+      ],
+      "doctrine": [
+        "payment_to_stock_single_entry",
+        "provider_callback_never_trusted"
+      ],
+      "impactAreas": [
+        "payment",
+        "orders",
+        "stock",
+        "purchasing",
+        "notifications"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/payment-paypal-events.js",
@@ -24278,6 +24610,11 @@
       "table": "pickup_verify_attempts"
     },
     {
+      "id": "db:mobile_money_transactions",
+      "type": "db-table",
+      "table": "mobile_money_transactions"
+    },
+    {
       "id": "db:stripe_events_processed",
       "type": "db-table",
       "table": "stripe_events_processed"
@@ -24463,6 +24800,16 @@
       "table": "suppliers_stats"
     },
     {
+      "id": "db:market_payment_providers",
+      "type": "db-table",
+      "table": "market_payment_providers"
+    },
+    {
+      "id": "db:stock",
+      "type": "db-table",
+      "table": "stock"
+    },
+    {
       "id": "db:paypal_events_processed",
       "type": "db-table",
       "table": "paypal_events_processed"
@@ -24581,6 +24928,11 @@
       "id": "doctrine:retention_snapshots",
       "type": "doctrine",
       "doctrine": "retention_snapshots"
+    },
+    {
+      "id": "doctrine:bounded_mobile_money_reconciliation",
+      "type": "doctrine",
+      "doctrine": "bounded_mobile_money_reconciliation"
     },
     {
       "id": "doctrine:feature_first",
@@ -24811,6 +25163,21 @@
       "id": "doctrine:wallet_visible_client",
       "type": "doctrine",
       "doctrine": "wallet_visible_client"
+    },
+    {
+      "id": "doctrine:provider_availability_server_authoritative",
+      "type": "doctrine",
+      "doctrine": "provider_availability_server_authoritative"
+    },
+    {
+      "id": "doctrine:no_silent_fallback",
+      "type": "doctrine",
+      "doctrine": "no_silent_fallback"
+    },
+    {
+      "id": "doctrine:bounded_polling",
+      "type": "doctrine",
+      "doctrine": "bounded_polling"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
@@ -25388,6 +25755,16 @@
       "doctrine": "test_mode_never_prod"
     },
     {
+      "id": "doctrine:route_auth_ownership_facade",
+      "type": "doctrine",
+      "doctrine": "route_auth_ownership_facade"
+    },
+    {
+      "id": "doctrine:callback_reconciles_server_to_server",
+      "type": "doctrine",
+      "doctrine": "callback_reconciles_server_to_server"
+    },
+    {
       "id": "doctrine:route = auth + ownership + validate + appel service + réponse HTTP",
       "type": "doctrine",
       "doctrine": "route = auth + ownership + validate + appel service + réponse HTTP"
@@ -25688,6 +26065,11 @@
       "doctrine": "preserve_caller_transaction"
     },
     {
+      "id": "doctrine:invoice_displays_actual_payment_currency",
+      "type": "doctrine",
+      "doctrine": "invoice_displays_actual_payment_currency"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
@@ -25696,6 +26078,51 @@
       "id": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_persistence_boundary"
+    },
+    {
+      "id": "doctrine:callback_not_required",
+      "type": "doctrine",
+      "doctrine": "callback_not_required"
+    },
+    {
+      "id": "doctrine:bounded_reconciliation",
+      "type": "doctrine",
+      "doctrine": "bounded_reconciliation"
+    },
+    {
+      "id": "doctrine:idempotent_provider_refresh",
+      "type": "doctrine",
+      "doctrine": "idempotent_provider_refresh"
+    },
+    {
+      "id": "doctrine:provider_adapter_no_business_mutation",
+      "type": "doctrine",
+      "doctrine": "provider_adapter_no_business_mutation"
+    },
+    {
+      "id": "doctrine:secrets_env_only",
+      "type": "doctrine",
+      "doctrine": "secrets_env_only"
+    },
+    {
+      "id": "doctrine:fail_closed",
+      "type": "doctrine",
+      "doctrine": "fail_closed"
+    },
+    {
+      "id": "doctrine:market_selects_provider",
+      "type": "doctrine",
+      "doctrine": "market_selects_provider"
+    },
+    {
+      "id": "doctrine:runtime_registry_only",
+      "type": "doctrine",
+      "doctrine": "runtime_registry_only"
+    },
+    {
+      "id": "doctrine:no_credentials",
+      "type": "doctrine",
+      "doctrine": "no_credentials"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -25806,6 +26233,11 @@
       "id": "doctrine:cash_validation_tracee",
       "type": "doctrine",
       "doctrine": "cash_validation_tracee"
+    },
+    {
+      "id": "doctrine:provider_callback_never_trusted",
+      "type": "doctrine",
+      "doctrine": "provider_callback_never_trusted"
     },
     {
       "id": "doctrine:payment_status_single_entry",
@@ -26093,11 +26525,6 @@
       "doctrine": "provider_adapter_isole"
     },
     {
-      "id": "doctrine:secrets_env_only",
-      "type": "doctrine",
-      "doctrine": "secrets_env_only"
-    },
-    {
       "id": "doctrine:auth_cookie_single_source_of_truth",
       "type": "doctrine",
       "doctrine": "auth_cookie_single_source_of_truth"
@@ -26196,6 +26623,11 @@
       "id": "impact:auth-security",
       "type": "impact-area",
       "area": "auth-security"
+    },
+    {
+      "id": "impact:payments",
+      "type": "impact-area",
+      "area": "payments"
     },
     {
       "id": "impact:whatsapp",
@@ -26401,11 +26833,6 @@
       "id": "impact:orders",
       "type": "impact-area",
       "area": "orders"
-    },
-    {
-      "id": "impact:payments",
-      "type": "impact-area",
-      "area": "payments"
     },
     {
       "id": "impact:favorites",
@@ -27023,6 +27450,12 @@
     },
     {
       "from": "bootstrap/api-routes.js",
+      "to": "routes/payments-mobile-money.js",
+      "type": "depends",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
       "to": "routes/otp.js",
       "type": "depends",
       "label": "routes/otp.js"
@@ -27220,12 +27653,6 @@
       "label": "services/inventory-service.js"
     },
     {
-      "from": "bootstrap/crons.js",
-      "to": "utils/rules.js",
-      "type": "depends",
-      "label": "utils/rules.js"
-    },
-    {
       "from": "server.js",
       "to": "bootstrap/crons.js",
       "type": "uses",
@@ -27293,6 +27720,12 @@
     },
     {
       "from": "bootstrap/crons.js",
+      "to": "doctrine:bounded_mobile_money_reconciliation",
+      "type": "doctrine",
+      "label": "bounded_mobile_money_reconciliation"
+    },
+    {
+      "from": "bootstrap/crons.js",
       "to": "impact:cash-reminders",
       "type": "impact",
       "label": "cash-reminders"
@@ -27314,6 +27747,12 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
     },
     {
       "from": "bootstrap/env.js",
@@ -29854,6 +30293,12 @@
       "label": "routes/payments.js"
     },
     {
+      "from": "public/boutique/js/b-checkout.js",
+      "to": "routes/payments-mobile-money.js",
+      "type": "depends",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
       "from": "public/boutique/js/boutique.js",
       "to": "public/boutique/js/b-checkout.js",
       "type": "uses",
@@ -30398,6 +30843,54 @@
       "to": "impact:responsive-layout",
       "type": "impact",
       "label": "responsive-layout"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "depends",
+      "label": "b-utils.js"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "routes/payments-mobile-money.js",
+      "type": "depends",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
+      "to": "public/boutique/js/b-mobile-money.js",
+      "type": "uses",
+      "label": "b-checkout.js"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "doctrine:provider_availability_server_authoritative",
+      "type": "doctrine",
+      "label": "provider_availability_server_authoritative"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "doctrine:no_silent_fallback",
+      "type": "doctrine",
+      "label": "no_silent_fallback"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "doctrine:bounded_polling",
+      "type": "doctrine",
+      "label": "bounded_polling"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "public/boutique/js/b-mobile-money.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
     },
     {
       "from": "public/boutique/js/b-modal-buybox-shared.js",
@@ -40818,6 +41311,90 @@
       "label": "logistics"
     },
     {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "middleware/auth-guest.js",
+      "type": "depends",
+      "label": "middleware/auth-guest.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/payment-mobile-money.js",
+      "type": "depends",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/payments-mobile-money.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "boutique checkout",
+      "to": "routes/payments-mobile-money.js",
+      "type": "uses",
+      "label": "boutique checkout"
+    },
+    {
+      "from": "providers",
+      "to": "routes/payments-mobile-money.js",
+      "type": "uses",
+      "label": "providers"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-read",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "doctrine:route_auth_ownership_facade",
+      "type": "doctrine",
+      "label": "route_auth_ownership_facade"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "doctrine:callback_reconciles_server_to_server",
+      "type": "doctrine",
+      "label": "callback_reconciles_server_to_server"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "routes/payments-paypal.js",
       "to": "db.js",
       "type": "depends",
@@ -48507,6 +49084,12 @@
     },
     {
       "from": "services/invoice-service.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-read",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "services/invoice-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -48555,6 +49138,12 @@
     },
     {
       "from": "services/invoice-service.js",
+      "to": "doctrine:invoice_displays_actual_payment_currency",
+      "type": "doctrine",
+      "label": "invoice_displays_actual_payment_currency"
+    },
+    {
+      "from": "services/invoice-service.js",
       "to": "impact:orders",
       "type": "impact",
       "label": "orders"
@@ -48564,6 +49153,12 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/invoice-service.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
     },
     {
       "from": "services/local-stock-checkout-preview.js",
@@ -48841,6 +49436,192 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "services/payment-mobile-money.js",
+      "type": "depends",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "services/mobile-money-reconciliation.js",
+      "type": "uses",
+      "label": "bootstrap/crons.js"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-read",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "doctrine:callback_not_required",
+      "type": "doctrine",
+      "label": "callback_not_required"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "doctrine:bounded_reconciliation",
+      "type": "doctrine",
+      "label": "bounded_reconciliation"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "doctrine:idempotent_provider_refresh",
+      "type": "doctrine",
+      "label": "idempotent_provider_refresh"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "impact:operations",
+      "type": "impact",
+      "label": "operations"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "MTN MoMo Collections API",
+      "type": "depends",
+      "label": "MTN MoMo Collections API"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/mobile-money/mtn-momo-cg.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "doctrine:provider_adapter_no_business_mutation",
+      "type": "doctrine",
+      "label": "provider_adapter_no_business_mutation"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "doctrine:secrets_env_only",
+      "type": "doctrine",
+      "label": "secrets_env_only"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "Orange Money Web Payment API",
+      "type": "depends",
+      "label": "Orange Money Web Payment API"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/mobile-money/orange-money-cm.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "doctrine:provider_adapter_no_business_mutation",
+      "type": "doctrine",
+      "label": "provider_adapter_no_business_mutation"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "doctrine:secrets_env_only",
+      "type": "doctrine",
+      "label": "secrets_env_only"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "services/mobile-money/orange-money-cm.js",
+      "type": "depends",
+      "label": "services/mobile-money/orange-money-cm.js"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "services/mobile-money/mtn-momo-cg.js",
+      "type": "depends",
+      "label": "services/mobile-money/mtn-momo-cg.js"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/mobile-money/registry.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "doctrine:market_selects_provider",
+      "type": "doctrine",
+      "label": "market_selects_provider"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "doctrine:runtime_registry_only",
+      "type": "doctrine",
+      "label": "runtime_registry_only"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "doctrine:no_credentials",
+      "type": "doctrine",
+      "label": "no_credentials"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money/registry.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "services/monitoring.js",
@@ -51823,6 +52604,129 @@
       "to": "impact:sourcing",
       "type": "impact",
       "label": "sourcing"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/order-payment-confirmation.js",
+      "type": "depends",
+      "label": "services/order-payment-confirmation.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/payment-mobile-money.js",
+      "type": "uses",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:market_payment_providers",
+      "type": "db-read",
+      "label": "market_payment_providers"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-read",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-write",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-payment-confirmation"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:stock",
+      "type": "db-write-via",
+      "label": "stock",
+      "via": "order-payment-confirmation"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db:invoices",
+      "type": "db-write-via",
+      "label": "invoices",
+      "via": "order-payment-confirmation"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "doctrine:payment_to_stock_single_entry",
+      "type": "doctrine",
+      "label": "payment_to_stock_single_entry"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "doctrine:provider_callback_never_trusted",
+      "type": "doctrine",
+      "label": "provider_callback_never_trusted"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "impact:stock",
+      "type": "impact",
+      "label": "stock"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
     },
     {
       "from": "services/payment-paypal-events.js",
@@ -62408,6 +63312,7 @@
       "directDependsOn": [
         "routes/orders.js",
         "routes/payments.js",
+        "routes/payments-mobile-money.js",
         "routes/otp.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
@@ -62546,6 +63451,7 @@
         "routes/parcel-api-v2/scans.js",
         "routes/parcel-label.js",
         "routes/parcels.js",
+        "routes/payments-mobile-money.js",
         "routes/payments-paypal.js",
         "routes/payments.js",
         "routes/pickup-pay-cash.js",
@@ -62608,8 +63514,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/cash-reminder-service.js",
-        "services/inventory-service.js",
-        "utils/rules.js"
+        "services/inventory-service.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -62630,28 +63535,33 @@
       "dbWriteVia": [],
       "doctrines": [
         "idempotence_cron",
-        "retention_snapshots"
+        "retention_snapshots",
+        "bounded_mobile_money_reconciliation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
-        "economic-engine"
+        "economic-engine",
+        "payments"
       ],
       "mustCheck": [
         "db:economic_snapshots",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:revoked_tokens",
+        "doctrine:bounded_mobile_money_reconciliation",
         "doctrine:idempotence_cron",
         "doctrine:retention_snapshots",
         "impact:auth-security",
         "impact:cash-reminders",
         "impact:economic-engine",
         "impact:inventory",
+        "impact:payments",
         "server.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js",
+        "services/mobile-money-reconciliation.js",
         "utils/logger.js",
         "utils/rules.js"
       ]
@@ -62935,6 +63845,7 @@
         "doctrine:no_guest_checkout",
         "impact:auth",
         "routes/orders/create.js",
+        "routes/payments-mobile-money.js",
         "routes/payments-paypal.js",
         "routes/providers-services.js",
         "routes/shared-cart.js",
@@ -64374,7 +65285,8 @@
         "public/boutique/js/b-phone.js",
         "routes/local-stock.js",
         "routes/orders.js",
-        "routes/payments.js"
+        "routes/payments.js",
+        "routes/payments-mobile-money.js"
       ],
       "directUsedBy": [
         "public/boutique/js/boutique.js",
@@ -64420,6 +65332,7 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-checkout-render.js",
         "public/boutique/js/b-identity.js",
+        "public/boutique/js/b-mobile-money.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-paypal.js",
         "public/boutique/js/b-phone.js",
@@ -64430,6 +65343,7 @@
         "public/boutique/js/group/group-checkout-adapter.js",
         "routes/local-stock.js",
         "routes/orders.js",
+        "routes/payments-mobile-money.js",
         "routes/payments.js",
         "routes/wallet.js"
       ]
@@ -64825,6 +65739,44 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js"
+      ]
+    },
+    "public/boutique/js/b-mobile-money.js": {
+      "role": "boutique-mobile-money-client",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-utils.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-checkout.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_availability_server_authoritative",
+        "no_silent_fallback",
+        "bounded_polling"
+      ],
+      "impactAreas": [
+        "checkout",
+        "payments"
+      ],
+      "mustCheck": [
+        "doctrine:bounded_polling",
+        "doctrine:no_silent_fallback",
+        "doctrine:provider_availability_server_authoritative",
+        "impact:checkout",
+        "impact:payments",
+        "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-utils.js",
+        "routes/payments-mobile-money.js"
       ]
     },
     "public/boutique/js/b-modal-buybox-shared.js": {
@@ -66347,6 +67299,7 @@
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-komerce.js",
         "public/boutique/js/b-mini-cart.js",
+        "public/boutique/js/b-mobile-money.js",
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
@@ -72175,6 +73128,56 @@
         "utils/reference.js"
       ]
     },
+    "routes/payments-mobile-money.js": {
+      "role": "route-payment-mobile-money",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth-guest.js",
+        "services/payment-mobile-money.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "boutique checkout",
+        "providers"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "markets",
+        "mobile_money_transactions",
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "route_auth_ownership_facade",
+        "callback_reconciles_server_to_server"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:markets",
+        "db:mobile_money_transactions",
+        "db:orders",
+        "db:relais",
+        "doctrine:callback_reconciles_server_to_server",
+        "doctrine:route_auth_ownership_facade",
+        "impact:checkout",
+        "impact:payment",
+        "middleware/auth-guest.js",
+        "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-mobile-money.js",
+        "services/payment-mobile-money.js"
+      ]
+    },
     "routes/payments-paypal.js": {
       "role": "route-payment-paypal",
       "domain": "payment",
@@ -77138,6 +78141,7 @@
       "ownedFiles": [],
       "dbRead": [
         "invoices",
+        "mobile_money_transactions",
         "order_items",
         "orders",
         "parcels",
@@ -77150,23 +78154,28 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "invoice_displays_actual_payment_currency"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "payment"
       ],
       "mustCheck": [
         "db:invoices",
+        "db:mobile_money_transactions",
         "db:order_items",
         "db:orders",
         "db:parcels",
         "db:products",
         "db:recipients",
         "db:relais",
+        "doctrine:invoice_displays_actual_payment_currency",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
+        "impact:payment",
         "routes/documents.js",
         "routes/invoices.js",
         "services/documents/pdf-renderer.js",
@@ -77356,6 +78365,156 @@
         "impact:admin-dashboard",
         "impact:dashboard",
         "impact:market"
+      ]
+    },
+    "services/mobile-money-reconciliation.js": {
+      "role": "mobile-money-reconciliation",
+      "domain": "payment",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/payment-mobile-money.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/crons.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "mobile_money_transactions"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "callback_not_required",
+        "bounded_reconciliation",
+        "idempotent_provider_refresh"
+      ],
+      "impactAreas": [
+        "payment",
+        "operations"
+      ],
+      "mustCheck": [
+        "bootstrap/crons.js",
+        "db:mobile_money_transactions",
+        "doctrine:bounded_reconciliation",
+        "doctrine:callback_not_required",
+        "doctrine:idempotent_provider_refresh",
+        "impact:operations",
+        "impact:payment",
+        "services/payment-mobile-money.js"
+      ]
+    },
+    "services/mobile-money/mtn-momo-cg.js": {
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "MTN MoMo Collections API"
+      ],
+      "directUsedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:fail_closed",
+        "doctrine:provider_adapter_no_business_mutation",
+        "doctrine:secrets_env_only",
+        "impact:checkout",
+        "impact:payment",
+        "services/mobile-money/registry.js",
+        "services/payment-mobile-money.js"
+      ]
+    },
+    "services/mobile-money/orange-money-cm.js": {
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "Orange Money Web Payment API"
+      ],
+      "directUsedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:fail_closed",
+        "doctrine:provider_adapter_no_business_mutation",
+        "doctrine:secrets_env_only",
+        "impact:checkout",
+        "impact:payment",
+        "services/mobile-money/registry.js",
+        "services/payment-mobile-money.js"
+      ]
+    },
+    "services/mobile-money/registry.js": {
+      "role": "mobile-money-provider-registry",
+      "domain": "payment",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/mobile-money/orange-money-cm.js",
+        "services/mobile-money/mtn-momo-cg.js"
+      ],
+      "directUsedBy": [
+        "services/payment-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_selects_provider",
+        "runtime_registry_only",
+        "no_credentials"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:market_selects_provider",
+        "doctrine:no_credentials",
+        "doctrine:runtime_registry_only",
+        "impact:checkout",
+        "impact:payment",
+        "services/mobile-money/mtn-momo-cg.js",
+        "services/mobile-money/orange-money-cm.js",
+        "services/payment-mobile-money.js"
       ]
     },
     "services/monitoring.js": {
@@ -78473,6 +79632,7 @@
         "services/invoice-service.js",
         "services/order-status-machine.js",
         "services/payment-cash-confirm.js",
+        "services/payment-mobile-money.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
@@ -79184,6 +80344,77 @@
         "services/order-payment-confirmation.js",
         "utils/alerts.js",
         "utils/logger.js"
+      ]
+    },
+    "services/payment-mobile-money.js": {
+      "role": "payment-mobile-money",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "utils/currency.js",
+        "services/order-payment-confirmation.js"
+      ],
+      "directUsedBy": [
+        "routes/payments-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "market_payment_providers",
+        "mobile_money_transactions",
+        "orders"
+      ],
+      "dbWrite": [
+        "mobile_money_transactions",
+        "alerts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-payment-confirmation",
+          "tables": [
+            "orders",
+            "stock",
+            "invoices"
+          ]
+        }
+      ],
+      "doctrines": [
+        "payment_to_stock_single_entry",
+        "provider_callback_never_trusted"
+      ],
+      "impactAreas": [
+        "payment",
+        "orders",
+        "stock",
+        "purchasing",
+        "notifications"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:invoices",
+        "db:market_payment_providers",
+        "db:markets",
+        "db:mobile_money_transactions",
+        "db:orders",
+        "db:stock",
+        "doctrine:payment_to_stock_single_entry",
+        "doctrine:provider_callback_never_trusted",
+        "impact:notifications",
+        "impact:orders",
+        "impact:payment",
+        "impact:purchasing",
+        "impact:stock",
+        "routes/payments-mobile-money.js",
+        "services/mobile-money-reconciliation.js",
+        "services/mobile-money/mtn-momo-cg.js",
+        "services/mobile-money/orange-money-cm.js",
+        "services/mobile-money/registry.js",
+        "services/order-payment-confirmation.js",
+        "utils/currency.js"
       ]
     },
     "services/payment-paypal-events.js": {
@@ -84859,7 +86090,8 @@
         "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
         "impact:economic-engine",
         "impact:market",
-        "services/order-display-snapshot.js"
+        "services/order-display-snapshot.js",
+        "services/payment-mobile-money.js"
       ]
     },
     "utils/documents/customs-invoice-html.js": {
@@ -86029,7 +87261,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 19,
+      "writerCount": 20,
       "writers": [
         "services/admin-order-refund.js",
         "services/cash-operations.js",
@@ -86038,6 +87270,7 @@
         "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/payment-cash-confirm.js",
+        "services/payment-mobile-money.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
         "services/pickup-authorization-service.js",
@@ -88141,6 +89374,24 @@
       "label": "services/*"
     },
     {
+      "from": "routes/payments-mobile-money.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "boutique checkout",
+      "to": "routes/payments-mobile-money.js",
+      "type": "uses",
+      "label": "boutique checkout"
+    },
+    {
+      "from": "providers",
+      "to": "routes/payments-mobile-money.js",
+      "type": "uses",
+      "label": "providers"
+    },
+    {
       "from": "routes/payments-paypal.js",
       "to": "db.js",
       "type": "depends",
@@ -89077,6 +90328,24 @@
       "label": "dashboard"
     },
     {
+      "from": "services/mobile-money-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/mobile-money/mtn-momo-cg.js",
+      "to": "MTN MoMo Collections API",
+      "type": "depends",
+      "label": "MTN MoMo Collections API"
+    },
+    {
+      "from": "services/mobile-money/orange-money-cm.js",
+      "to": "Orange Money Web Payment API",
+      "type": "depends",
+      "label": "Orange Money Web Payment API"
+    },
+    {
       "from": "services/notifications/internals.js",
       "to": "db.js",
       "type": "depends",
@@ -89249,6 +90518,12 @@
       "to": "services/payment-cash-confirm.js",
       "type": "uses",
       "label": "relais-dashboard"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/payment-paypal.js",

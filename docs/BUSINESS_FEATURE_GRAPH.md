@@ -76,9 +76,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 29 | 29 | 404 | 404 | 0 |
+| backend | 29 | 29 | 410 | 410 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 104 | 104 | 0 |
+| boutique | 16 | 16 | 105 | 105 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -441,8 +441,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 17
 - routes: 5
 - migrations: 3
-- boutique: 2
-- tests: 22
+- boutique: 4
+- tests: 23
 - tables owned (lifecycle): 5 — `cash_collections`, `cash_deposits`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`
 - tables written: 5
 - interfaces exposed: 24
@@ -1705,7 +1705,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 1083 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 214 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 216 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1890,7 +1890,7 @@ Meta Graph monté : oui.
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
-| orders | payments | static-code, interface | 7 | **DECLARED_AND_OBSERVED** |
+| orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
@@ -1907,7 +1907,7 @@ Meta Graph monté : oui.
 | payments | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code, data-read | 25 | **DECLARED_AND_OBSERVED** |
-| payments | platform-ops | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | purchasing | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |

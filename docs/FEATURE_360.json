@@ -16361,12 +16361,22 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "css/mobile-money.css",
+                "resolvedPath": "public/boutique/css/mobile-money.css",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "css/paypal.css",
                 "resolvedPath": "public/boutique/css/paypal.css",
                 "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/b-mobile-money.js",
+                "resolvedPath": "public/boutique/js/b-mobile-money.js",
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/b-paypal.js",
@@ -16406,7 +16416,7 @@
               {
                 "declared": "routes/payments-mobile-money.js",
                 "resolvedPath": "routes/payments-mobile-money.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "routes/payments-paypal.js",
@@ -16456,22 +16466,22 @@
               {
                 "declared": "services/mobile-money-reconciliation.js",
                 "resolvedPath": "services/mobile-money-reconciliation.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/mobile-money/mtn-momo-cg.js",
                 "resolvedPath": "services/mobile-money/mtn-momo-cg.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/mobile-money/orange-money-cm.js",
                 "resolvedPath": "services/mobile-money/orange-money-cm.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/mobile-money/registry.js",
                 "resolvedPath": "services/mobile-money/registry.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/payment-cash-confirm.js",
@@ -16481,7 +16491,7 @@
               {
                 "declared": "services/payment-mobile-money.js",
                 "resolvedPath": "services/payment-mobile-money.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/payment-paypal-events.js",
@@ -16516,8 +16526,13 @@
             ]
           },
           "tests": {
-            "count": 22,
+            "count": 23,
             "files": [
+              {
+                "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
+                "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
@@ -16631,11 +16646,18 @@
             ]
           }
         },
-        "totalFiles": 49,
+        "totalFiles": 52,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 6,
           "files": [
+            {
+              "declared": "../css/mobile-money.css",
+              "resolvedPath": "public/boutique/css/mobile-money.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../css/paypal.css",
               "resolvedPath": "public/boutique/css/paypal.css",
@@ -16644,9 +16666,23 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/b-mobile-money.js",
+              "resolvedPath": "public/boutique/js/b-mobile-money.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../js/b-paypal.js",
               "resolvedPath": "public/boutique/js/b-paypal.js",
               "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-mobile-money.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
+              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             },

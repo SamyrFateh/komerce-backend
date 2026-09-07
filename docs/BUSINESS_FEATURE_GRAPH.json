@@ -9373,35 +9373,35 @@
         "category": "services",
         "declared": "services/payment-mobile-money.js",
         "resolvedPath": "services/payment-mobile-money.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
         "category": "services",
         "declared": "services/mobile-money-reconciliation.js",
         "resolvedPath": "services/mobile-money-reconciliation.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
         "category": "services",
         "declared": "services/mobile-money/registry.js",
         "resolvedPath": "services/mobile-money/registry.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
         "category": "services",
         "declared": "services/mobile-money/orange-money-cm.js",
         "resolvedPath": "services/mobile-money/orange-money-cm.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
         "category": "services",
         "declared": "services/mobile-money/mtn-momo-cg.js",
         "resolvedPath": "services/mobile-money/mtn-momo-cg.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
@@ -9436,7 +9436,7 @@
         "category": "routes",
         "declared": "routes/payments-mobile-money.js",
         "resolvedPath": "routes/payments-mobile-money.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
@@ -9469,8 +9469,22 @@
       {
         "feature": "payments",
         "category": "boutique",
+        "declared": "js/b-mobile-money.js",
+        "resolvedPath": "public/boutique/js/b-mobile-money.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "boutique",
         "declared": "css/paypal.css",
         "resolvedPath": "public/boutique/css/paypal.css",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "boutique",
+        "declared": "css/mobile-money.css",
+        "resolvedPath": "public/boutique/css/mobile-money.css",
         "status": "resolved-on-disk-no-header"
       },
       {
@@ -9625,6 +9639,13 @@
         "category": "tests",
         "declared": "tests/unit/mobile-money-reconciliation.test.js",
         "resolvedPath": "tests/unit/mobile-money-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19398,6 +19419,14 @@
       },
       {
         "boutiqueManifest": "payment",
+        "category": "js",
+        "declared": "../js/b-mobile-money.js",
+        "resolvedPath": "public/boutique/js/b-mobile-money.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "payment",
         "category": "css",
         "declared": "../css/paypal.css",
         "resolvedPath": "public/boutique/css/paypal.css",
@@ -19406,9 +19435,25 @@
       },
       {
         "boutiqueManifest": "payment",
+        "category": "css",
+        "declared": "../css/mobile-money.css",
+        "resolvedPath": "public/boutique/css/mobile-money.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "payment",
         "category": "tests",
         "declared": "../tests/unit/b-paypal.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-paypal.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "payment",
+        "category": "tests",
+        "declared": "../tests/unit/b-mobile-money.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -27479,6 +27524,10 @@
                 "targetFile": "public/boutique/js/b-paypal.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-checkout.js",
+                "targetFile": "public/boutique/js/b-mobile-money.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
                 "targetFile": "routes/payments.js"
               },
@@ -28515,6 +28564,14 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-paypal.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-mobile-money.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-mobile-money.test.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
@@ -31139,7 +31196,7 @@
         "filesObserved": 1083
       },
       "boutique": {
-        "filesObserved": 214,
+        "filesObserved": 216,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -33449,8 +33506,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 404,
-        "technicalNodesOwned": 404,
+        "technicalNodesTotal": 410,
+        "technicalNodesOwned": 410,
         "technicalOrphans": 0
       },
       "dash": {
@@ -33464,8 +33521,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 104,
-        "technicalNodesOwned": 104,
+        "technicalNodesTotal": 105,
+        "technicalNodesOwned": 105,
         "technicalOrphans": 0
       }
     },

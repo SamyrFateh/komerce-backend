@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 508
-- Files with full headers: 463
+- Scanned code files: 515
+- Files with full headers: 470
 - Files with lite headers: 45
-- Files with any headers: 508
+- Files with any headers: 515
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1131
-- Edges: 5869
-- DB tables: 132
-- Doctrines: 317
+- Graph nodes: 1157
+- Edges: 5948
+- DB tables: 135
+- Doctrines: 333
 - Impact areas: 174
-- Unresolved code edges: 575
+- Unresolved code edges: 582
 - Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -49,7 +49,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification: 21
 - operations: 11
 - orders: 29
-- payment: 17
+- payment: 24
 - providers-services: 6
 - purchasing: 8
 - recommendations: 6
@@ -79,17 +79,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 20
 - presenter: 1
-- route: 114
+- route: 115
 - route-manifest: 1
 - schema: 1
-- service: 222
+- service: 227
 - service-policy: 1
 - state: 1
 - state-store: 1
 - ui-adapter: 1
 - ui-behavior: 1
 - ui-bootstrap: 4
-- ui-boundary: 1
+- ui-boundary: 2
 - ui-component: 40
 - ui-controller: 3
 - ui-enhancer: 3
@@ -111,6 +111,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap/crons.js — operational-crons (infrastructure, critical, full)
 - public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
 - public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
+- public/boutique/js/b-mobile-money.js — boutique-mobile-money-client (payment, critical, full)
 - public/boutique/js/b-share-cart.js — shared-list-creation-from-boutique (shared-cart, critical, full)
 - public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
 - public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
@@ -131,6 +132,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/orders/parcels.js — orders-parcels (orders, critical, full)
 - routes/orders/qr.js — orders-qr (orders, critical, full)
 - routes/orders/status.js — orders-status (orders, critical, full)
+- routes/payments-mobile-money.js — route-payment-mobile-money (payment, critical, full)
 - routes/payments-paypal.js — route-payment-paypal (payment, critical, full)
 - routes/payments.js — payment-http-facade (payment, critical, full)
 - routes/pickup-pay-cash.js — payment-pickup-pay-cash (payment, critical, full)
@@ -144,6 +146,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
+- services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
+- services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)
 - services/order-checkout-persistence.js — orders-checkout-persistence (orders, critical, full)
 - services/order-checkout-service.js — orders-checkout-orchestrator (orders, critical, full)
@@ -153,6 +157,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
 - services/parcel-item-mutation-service.js — logistics-parcel-item-mutation-service (logistics, critical, full)
 - services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
+- services/payment-mobile-money.js — payment-mobile-money (payment, critical, full)
 - services/payment-paypal-events.js — payment-payment-paypal-events (payment, critical, full)
 - services/payment-paypal.js — payment-paypal (payment, critical, full)
 - services/payment-service.js — orders-payment-status-mutation-boundary (orders, critical, full)
@@ -353,6 +358,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
+- services/mobile-money-reconciliation.js — mobile-money-reconciliation (payment, high, full)
+- services/mobile-money/registry.js — mobile-money-provider-registry (payment, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
 - services/notifications/internals.js — notification-internals (notification, high, full)
 - services/notifications/notification-service.js — customer-notification-orchestrator (notification, high, full)
@@ -497,6 +504,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/notification-service.js -> alerts
 - WRITE services/order-payment-confirmation.js -> alerts
 - WRITE services/payment-cash-confirm.js -> alerts
+- WRITE services/payment-mobile-money.js -> alerts
 - WRITE services/payment-paypal.js -> alerts
 - WRITE services/payment-stripe.js -> alerts
 - WRITE services/pickup-authorization-service.js -> alerts
@@ -581,6 +589,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/payment-mobile-money.js -> mobile_money_transactions
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
 - WRITE services/notifications/loyalty.js -> notification_log
@@ -608,8 +617,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/order-item-availability-service.js -> order_items
 - WRITE services/order-status-machine.js -> order_items
 - WRITE services/scan-engine.js -> order_items
-- WRITE routes/admin/delete-order-cascade.js -> order_status_history
-- WRITE routes/admin/system.js -> order_status_history
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -632,6 +639,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> incidents (via scan-engine)
 - WRITE routes/providers-services.js -> inquiries (via providers-inquiry-service)
 - WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
+- WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
 - WRITE routes/admin/users.js -> operator_market_scopes (via market-scope-admin-service)
 - WRITE services/shipping-customs-workspace.js -> order_item_real_cost_allocations (via customs-shipment-service)
 - WRITE routes/orders/create.js -> order_items (via order-checkout-service)
@@ -655,6 +663,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/pickup-secret.js -> orders (via order-mutation-service)
 - WRITE services/operations-workspace.js -> orders (via inventory-service)
 - WRITE services/operations-workspace.js -> orders (via parcel-auto-create-service)
+- WRITE services/payment-mobile-money.js -> orders (via order-payment-confirmation)
 - WRITE services/pickup-collection-recorder.js -> orders (via order-status-machine)
 - WRITE services/pickup-collection-recorder.js -> orders (via order-mutation-service)
 - WRITE services/pickup-collection-service.js -> orders (via order-status-machine)
@@ -731,13 +740,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/sourcing-mutations.js -> product_variants (via catalog-product-mutation-service)
 - WRITE services/sourcing-workspace.js -> product_variants (via sourcing-candidate-actions)
 - WRITE utils/parcelSync.js -> product_variants (via order-status-machine)
-- WRITE services/apply-pricing-updates.js -> products (via catalog-product-mutation-service)
-- WRITE services/operations-workspace.js -> products (via order-status-machine)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
 - orders: 31 écrivains directs — routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/create-stripe-order-intent.js, services/customs-shipment-service.js, services/inventory-service.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-cost-snapshot.js, services/order-mutation-service.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/pickup-secret-access-service.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/scan-operations.js, services/verify-qr-collection.js
-- alerts: 19 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
+- alerts: 20 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 16 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
 - parcel_items: 10 écrivains directs — routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
 - scans: 10 écrivains directs — routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
@@ -826,6 +833,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-039-french-descriptions.js (scripts/migration-039-french-descriptions.js)
 - depends: bootstrap/startup-migrations.js -> scripts/run-migrations.js (scripts/run-migrations.js)
+- uses: boutique checkout -> routes/payments-mobile-money.js (boutique checkout)
 - uses: boutique-discovery-rail -> routes/boutique-suggestions.js (boutique-discovery-rail)
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
 - uses: canonical sourcing workspace -> routes/admin-sourcing-workspace.js (canonical sourcing workspace)
@@ -883,6 +891,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
 - uses: pickup authorization mutations -> middleware/require-recent-auth.js (pickup authorization mutations)
 - uses: pricing workspace -> services/pricing-market-coverage.js (pricing workspace)
+- uses: providers -> routes/payments-mobile-money.js (providers)
 - uses: public/boutique/index.html -> public/boutique/js/b-service-worker-refresh.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
@@ -927,8 +936,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-customs-categories.js -> services/* (services/*)
 - depends: routes/admin-customs-shipments.js -> db.js (db.js)
 - depends: routes/admin-customs-shipments.js -> services/* (services/*)
-- depends: routes/admin-dashboard-market.js -> db (db)
-- depends: routes/admin-dashboard-market.js -> middleware/auth (middleware/auth)
 
 ## Files Still Without Headers Or Aggregation
 

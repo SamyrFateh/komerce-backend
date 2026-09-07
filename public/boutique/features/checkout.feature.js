@@ -47,7 +47,7 @@ module.exports = {
     ],
     out: [
       'cycle de vie backend de la commande (feature orders, owner canonique)',
-      'encaissement Stripe/PayPal/cash (feature payments, capacité consommée)',
+      'encaissement Stripe/PayPal/Mobile Money/cash (feature payments, capacité consommée)',
       'calcul de classement des suggestions (feature recommendations, owner canonique — checkout consomme GET /api/boutique/suggestions sans le posséder)',
     ],
   },
@@ -91,7 +91,7 @@ module.exports = {
       'auth — b-checkout.js importe b-identity.js, b-phone.js',
       'boutique — b-checkout.js importe b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-scroll-owner.js',
       'catalogue — historique local canonique state.viewedHistory et produits déjà chargés',
-      'payment — b-checkout.js importe b-paypal.js ; l’encaissement reste possédé par payments',
+      'payment — b-checkout.js importe b-paypal.js et b-mobile-money.js ; l’encaissement reste possédé par payments',
       'wallet — b-checkout.js appelle /api/wallet',
       'local-stock — b-checkout.js consomme GET /api/local-stock/checkout-preview après sélection du relais ; projection read-only, jamais une réservation ni l’autorité finale',
       'recommendations — b-checkout.js appelle GET /api/boutique/suggestions (signal cart_product_ids) pour le rail de suggestions du checkout de liste partagée, freeze 22-08-2026',

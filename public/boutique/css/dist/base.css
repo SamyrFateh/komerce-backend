@@ -2863,55 +2863,57 @@ body.spike-shell-vertical .k-hero-cats-sticky {
  * @domain        catalog
  * @layer         ui
  * @owner         public/boutique/css/hero.css
- * @purpose       Extension mobile additive du hero H1 : boîte récit ultra-compacte.
+ * @purpose       Extension mobile additive du hero H1 : signature de marque compacte avant exploration.
  *                Le slogan court reste visible ; sous-texte et CTA restent masqués.
  * @impact-areas  boutique, hero, mobile
- * @version       2026-08
+ * @version       2026-09
  */
 
 /*
- * HERO ULTRA MOBILE — CANONIQUE COMPACT
- * Cible : 102–110 px de hauteur utile.
- * Ce fichier possède uniquement la géométrie et le cadrage du détourage.
- * La surface visuelle (fond, rayon, ombre) est possédée par
- * mobile-catalog-convergence.css afin d'éviter deux sources de cascade.
+ * HERO ULTRA MOBILE — KOMERCE COMPACT BRAND MASTHEAD
+ * Cible : 50–58 px de hauteur utile sous le header 44 px.
+ *
+ * Mesure Playwright live V2.9.2 (390x844) :
+ * hero 54.6 px, catégories à y=102.6, Disponible ici à y=172.6.
+ * Le hero reste stable pendant le scroll des pages catégories.
  */
 @media (max-width: 899px) {
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(102px, 27.5vw, 110px);
+    height: clamp(50px, 14vw, 58px);
     margin-top: 0;
     margin-bottom: 0;
   }
 
   .k-hero-media .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    background-size: auto 92%;
-    background-position: 70% 12%;
+    /* Ne plus pousser une image agrandie contre le bord haut du conteneur :
+       .k-hero-media est volontairement overflow:hidden pour le rayon de carte.
+       À 100% + top 0%, les coiffures restent entièrement dans la boîte,
+       sans perdre le téléphone ni réagrandir le masthead. */
+    background-size: auto 100%;
+    background-position: 70% 0%;
     -webkit-mask-image: none;
     mask-image: none;
   }
 
-  /* Le cluster personnages occupe le centre/droite du dérivé mobile.
-     La signature courte utilise donc la réserve blanche à gauche au lieu
-     de recouvrir les visages. Aucun changement de hauteur du hero. */
   .k-hero-media .k-hero-mini-slogan--premium {
     inset: 0 auto 0 0;
-    width: 36%;
-    padding: 12px 0 0 10px;
+    width: 35%;
+    padding: 2px 0 0 9px;
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
   }
 
   .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: clamp(13px, 3.35vw, 15px);
-    line-height: 1.05;
+    font-size: clamp(10px, 2.7vw, 12px);
+    line-height: 1.01;
   }
 
   .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
     margin-top: 1px;
-    font-size: clamp(13px, 3.45vw, 15px);
-    line-height: 1.05;
+    font-size: clamp(10px, 2.8vw, 12px);
+    line-height: 1.01;
   }
 }
 
@@ -2923,9 +2925,9 @@ body.spike-shell-vertical .k-hero-cats-sticky {
  * @domain        boutique
  * @layer         css
  * @owner         public/boutique/css/layout.css
- * @purpose       Aligne le shell mobile sur la toile blanche fluide desktop : header et bottom-nav ouverts, recherche matérialisée sans filet permanent.
+ * @purpose       Aligne le shell mobile sur une composition compacte : header ouvert, loupe globale légère, bottom-nav légère.
  * @impact-areas  mobile, header, search, bottom-nav
- * @version       2026-08
+ * @version       2026-09
  */
 
 @media (max-width: 899px) {
@@ -2937,16 +2939,94 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
 
+  /* La recherche mobile est un outil global : au repos, une simple loupe dans
+     le header. Aucun second launcher visible ne consomme de hauteur dans Tout. */
   .k-search {
-    background: var(--surface-sand-97);
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    margin-left: auto;
+    position: relative;
+    border-radius: 50%;
+    background: var(--surface-white-96);
     border: 1px solid var(--border-text-08);
     box-shadow: none;
   }
 
-  .k-search:focus-within {
+  .k-search input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+    caret-color: transparent;
+  }
+
+  .k-search .k-search-icon {
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    color: var(--ocean-dark-deep);
+  }
+
+  /* Le focus est un vrai état du HEADER, pas une surface flottante au-dessus
+     de la Boutique. Le chrome habituel disparaît temporairement, le header
+     devient opaque, mais sa hauteur reste strictement inchangée : Hero,
+     catégories, Discovery et pager gardent donc exactement leur géométrie. */
+  .k-header:has(.k-search:focus-within) {
     background: var(--white);
-    border-color: rgba(42,122,62,.30);
-    box-shadow: 0 0 0 3px rgba(100,175,90,.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .k-header:has(.k-search:focus-within) .k-header-inner > .k-logo,
+  .k-header:has(.k-search:focus-within) .k-header-inner > .k-header-actions {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .k-search:focus-within {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 5px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    height: 34px;
+    margin: 0;
+    z-index: 190;
+    border-radius: 17px;
+    background: var(--white);
+    border-color: rgba(42,122,62,.28);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.06);
+  }
+
+  .k-search:focus-within input {
+    position: static;
+    width: 100%;
+    height: 34px;
+    padding: 0 12px 0 36px;
+    opacity: 1;
+    color: var(--text);
+    caret-color: auto;
+    cursor: text;
+  }
+
+  .k-search:focus-within .k-search-icon {
+    left: 13px;
+    transform: translateY(-50%);
+  }
+
+  /* Seul le résultat de recherche est autorisé à recouvrir la Boutique :
+     cette superposition intervient après une intention explicite de recherche. */
+  .k-search:focus-within .k-search-dropdown {
+    top: calc(100% + 5px);
+    max-height: min(50vh, 360px);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px var(--border-text-10);
   }
 
   .k-bnav {
