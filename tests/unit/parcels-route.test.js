@@ -104,12 +104,27 @@ describe('routes/parcels', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ data: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } });
+      expect(mockDbQuery.mock.calls[0][1]).toEqual([null, null, null, null, false, 'admin-1']);
     });
 
     test('400 si un paramètre de requête est invalide (validate réel)', async () => {
       const res = await request(buildApp()).get('/api/parcels').query({ order_id: 'pas-un-uuid' });
       expect(res.status).toBe(400);
       expect(mockDbQuery).not.toHaveBeenCalled();
+    });
+
+    test('les filtres restent dans les paramètres et jamais dans le SQL', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
+
+      const res = await request(buildApp()).get('/api/parcels').query({ status: 'shipped', search: 'COL-1' });
+      expect(res.status).toBe(200);
+      const countSql = mockDbQuery.mock.calls[0][0];
+      const countParams = mockDbQuery.mock.calls[0][1];
+      expect(countSql).not.toContain('COL-1');
+      expect(countParams[0]).toBe('shipped');
+      expect(countParams[3]).toBe('%COL-1%');
     });
 
     test('agent_relais est restreint à son point relais', async () => {
@@ -122,7 +137,8 @@ describe('routes/parcels', () => {
 
       expect(res.status).toBe(200);
       const countSql = mockDbQuery.mock.calls[0][0];
-      expect(countSql).toMatch(/relais r WHERE r.phone/);
+      expect(countSql).toMatch(/FROM relais r\s+WHERE r\.phone/);
+      expect(mockDbQuery.mock.calls[0][1][4]).toBe(true);
     });
   });
 

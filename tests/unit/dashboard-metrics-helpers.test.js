@@ -16,6 +16,7 @@
  */
 const {
   buildFiltersClause,
+  assertParameterizedWhereClause,
   buildPreviousPeriod,
   computeDelta,
   makeKpi,
@@ -87,6 +88,17 @@ describe('buildFiltersClause', () => {
     const result = buildFiltersClause({ status: 'paid' });
     expect(result.where).toBe('1=1 AND o.status::text = $1');
     expect(result.params).toEqual(['paid']);
+  });
+});
+
+describe('assertParameterizedWhereClause', () => {
+  it('accepte uniquement la grammaire paramétrée produite par le builder', () => {
+    expect(assertParameterizedWhereClause('1=1 AND o.created_at >= $1 AND o.market_id = $2')).toBe('1=1 AND o.created_at >= $1 AND o.market_id = $2');
+  });
+
+  it('rejette une clause hors grammaire ou contenant du SQL additionnel', () => {
+    expect(() => assertParameterizedWhereClause('1=1; DROP TABLE orders')).toThrow(/Unsafe dashboard WHERE clause/);
+    expect(() => assertParameterizedWhereClause("1=1 AND o.status::text = 'paid'")) .toThrow(/Unsafe dashboard WHERE clause/);
   });
 });
 

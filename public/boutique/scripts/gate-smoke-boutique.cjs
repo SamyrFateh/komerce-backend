@@ -20,14 +20,13 @@
  */
 
 const { chromium } = require('@playwright/test');
-const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
 const driver = require('./lib/t030-capture.cjs');
 
-const PORT = process.env.GATE_SMOKE_PORT || 4173;
+const PORT = Number(process.env.GATE_SMOKE_PORT) || 4173;
 const BASE_URL = process.env.T030_BASE_URL || `http://127.0.0.1:${PORT}/boutique/`;
 const SERVE_ROOT = path.resolve(__dirname, '..', '..'); // public/
 const ARTIFACTS_DIR = path.resolve(__dirname, '..', '..', '..', '.agent', 'evidence', 'GATE-SMOKE-BOUTIQUE');
@@ -57,34 +56,80 @@ function waitForServer(url, timeoutMs) {
   });
 }
 
-function resolveServeScript() {
-  const pkgPath = require.resolve('serve/package.json');
-  const pkg = require(pkgPath);
-  const binRel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.serve;
-  return path.join(path.dirname(pkgPath), binRel);
+function resolveStaticFile(requestUrl) {
+  let pathname;
+  try { pathname = decodeURIComponent(new URL(requestUrl || '/', BASE_URL).pathname); }
+  catch { return null; }
+
+  const relative = pathname.replace(/^\/+/, '');
+  let candidate = path.resolve(SERVE_ROOT, relative);
+  const rootPrefix = SERVE_ROOT.endsWith(path.sep) ? SERVE_ROOT : SERVE_ROOT + path.sep;
+  if (candidate !== SERVE_ROOT && !candidate.startsWith(rootPrefix)) return null;
+
+  try {
+    if (fs.statSync(candidate).isDirectory()) candidate = path.join(candidate, 'index.html');
+    if (!fs.statSync(candidate).isFile()) return null;
+  } catch { return null; }
+  return candidate;
+}
+
+function contentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return ({
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.mjs': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.ico': 'image/x-icon',
+  })[ext] || 'application/octet-stream';
 }
 
 async function startServer() {
-  if (process.env.GATE_SMOKE_NO_SERVER) return null; // réutilise un serveur déjà lancé (dev local)
-  // On lance `node <serve/build/main.js> ...` directement (process.execPath),
-  // au lieu de `npx serve`. npx passe par un .cmd sous Windows, ce qui force
-  // shell:true — et spawn(shell:true) plante par intermittence avec EINVAL
-  // sur certaines installations Windows/Node (bug connu côté Node, pas côté
-  // ce script). En invoquant le binaire node directement, on n'a plus besoin
-  // de shell du tout, sur aucun OS.
-  const serveScript = resolveServeScript();
-  const child = spawn(process.execPath, [serveScript, SERVE_ROOT, '-l', String(PORT), '--no-clipboard'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+  if (process.env.GATE_SMOKE_NO_SERVER) return null;
+
+  const server = http.createServer((req, res) => {
+    if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
+      res.writeHead(405, { Allow: 'GET, HEAD' });
+      return res.end();
+    }
+    const filePath = resolveStaticFile(req.url);
+    if (!filePath) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Not found');
+    }
+    res.writeHead(200, { 'Content-Type': contentType(filePath) });
+    if (req.method === 'HEAD') return res.end();
+    fs.createReadStream(filePath).pipe(res);
   });
-  child.stdout.on('data', () => {});
-  child.stderr.on('data', () => {});
-  await waitForServer(BASE_URL, 15_000);
-  return child;
+
+  await new Promise((resolve, reject) => {
+    const onError = (error) => reject(error);
+    server.once('error', onError);
+    server.listen(PORT, '127.0.0.1', () => {
+      server.off('error', onError);
+      resolve();
+    });
+  });
+
+  try { await waitForServer(BASE_URL, 15_000); }
+  catch (error) {
+    await stopServer(server);
+    throw error;
+  }
+  return server;
 }
 
-function stopServer(child) {
-  if (!child) return;
-  child.kill();
+async function stopServer(server) {
+  if (!server) return;
+  await new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
 }
 
 // ── Parcours 1 — Catalogue (6 viewports) ────────────────────────────────
@@ -205,7 +250,7 @@ async function main() {
     allResults = [...p1, ...p2];
   } finally {
     await browser.close();
-    stopServer(serverProcess);
+    await stopServer(serverProcess);
   }
 
   const failed = allResults.filter((r) => !r.ok);
@@ -237,4 +282,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, runParcours1, runParcours2, BASE_URL, ARTIFACTS_DIR };
+module.exports = { main, runParcours1, runParcours2, startServer, stopServer, BASE_URL, ARTIFACTS_DIR };
