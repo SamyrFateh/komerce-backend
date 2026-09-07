@@ -5,13 +5,13 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload
- * @outputs       canonical_pricing_projection, market_cost_projection, action_results
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_price_decisions, action_results
  * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_price_is_overlay_not_catalog_mutation
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -61,7 +61,7 @@ async function resolveRequestedMarket(req, res, next) {
   }
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, minor_unit
          FROM markets
         WHERE code = $1 AND is_active = TRUE
         LIMIT 1`,
@@ -76,8 +76,6 @@ async function resolveRequestedMarket(req, res, next) {
 async function requireMarketPricingAccess(req, res, next) {
   const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
 
-  // L'autorité Pricing centrale d'un admin reste prioritaire sur un éventuel
-  // grant local. Un market_operator n'emprunte jamais cette branche.
   if (req.user && req.user.role === 'admin') {
     try {
       if (await hasPricingGlobalAuthority(req.user.id)) {
@@ -96,6 +94,7 @@ async function marketAccessProjection(req) {
       role: 'global_admin',
       read_only: false,
       can_manage_costs: true,
+      can_decide_prices: true,
     };
   }
 
@@ -103,12 +102,13 @@ async function marketAccessProjection(req) {
   const scopeRole = req.user && req.user.role === 'market_operator'
     ? await resolveMarketScopeRole(req.user.id, targetMarketId)
     : null;
-  const canManageCosts = scopeRole === 'manager';
+  const canManage = scopeRole === 'manager';
 
   return {
     role: scopeRole || 'viewer',
-    read_only: !canManageCosts,
-    can_manage_costs: canManageCosts,
+    read_only: !canManage,
+    can_manage_costs: canManage,
+    can_decide_prices: canManage,
   };
 }
 
@@ -130,7 +130,11 @@ function sendAction(res, action, result, status = 200) {
 
 function handleError(error, res, next) {
   if (error && error.status) {
-    return res.status(error.status).json({ error: error.message, code: error.code || null });
+    return res.status(error.status).json({
+      error: error.message,
+      code: error.code || null,
+      ...(error.details ? { details: error.details } : {}),
+    });
   }
   return next(error);
 }
@@ -158,16 +162,38 @@ router.get('/market/:marketCode', async (req, res, next) => {
         simulation: true,
         cost_overrides: access.can_manage_costs,
         reset_to_global: access.can_manage_costs,
+        market_price_decision: access.can_decide_prices,
+        reset_market_price: access.can_decide_prices,
       },
     });
   } catch (error) { handleError(error, res, next); }
 });
 
-// La simulation n'écrit rien : viewer et manager peuvent explorer un scénario
-// tant qu'ils possèdent l'accès serveur au marché.
 router.post('/market/:marketCode/simulate-impact', async (req, res, next) => {
   try { sendAction(res, 'simulate_impact', await workspace.simulateImpact(req.body || {}, req.workspaceMarket)); }
   catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/products/:productRef/price-decision', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    sendAction(res, 'decide_market_price', await workspace.decideMarketPrice(
+      req.workspaceMarket,
+      req.params.productRef,
+      req.body || {},
+      req.user
+    ));
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/products/:productRef/price-decision/reset', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    sendAction(res, 'reset_market_price', await workspace.resetMarketPrice(
+      req.workspaceMarket,
+      req.params.productRef,
+      req.body || {},
+      req.user
+    ));
+  } catch (error) { handleError(error, res, next); }
 });
 
 router.post('/market/:marketCode/cost-components/:key/update', requireMarketPricingManager, async (req, res, next) => {
@@ -201,8 +227,6 @@ router.post('/market/:marketCode/cost-components/:key/reset', requireMarketPrici
   } catch (error) { handleError(error, res, next); }
 });
 
-// Global Pricing remains a distinct central authority. A market_operator can
-// never fall through to these routes because the role guard is admin-only.
 router.use(authenticate, requireRole(['admin']), requirePricingGlobalAuthority, rejectBrowserAuthority);
 
 router.get('/', async (req, res, next) => {
