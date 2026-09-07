@@ -16,11 +16,18 @@ const {
   getCurrentMarketDecisionPolicy,
   canonicalPeriod,
   evaluateMarketDecision,
+  _buildBreakEvenTarget,
 } = require('../../services/pricing-market-decision-policy');
 
 const MARKET = '11111111-1111-4111-8111-111111111111';
 const ACTOR = '22222222-2222-4222-8222-222222222222';
 const NOW = new Date('2026-09-07T08:00:00.000Z');
+const MATURE_ORDERS = [
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4',
+];
 
 function policyInput(overrides = {}) {
   return {
@@ -104,6 +111,7 @@ test('evaluateMarketDecision fail-closed si aucune politique n existe', async ()
   expect(result.decision_status).toBe('NOT_DECISIONAL');
   expect(result.authorization).toBe('DENY_NEW_UNDER_CDR_POSITION');
   expect(result.reason).toBe('MARKET_DECISION_POLICY_REQUIRED');
+  expect(result.flow_break_even).toBeNull();
   expect(computeMarketCoverage).not.toHaveBeenCalled();
 });
 
@@ -118,6 +126,7 @@ test('evaluateMarketDecision injecte la politique versionnée dans le gate exist
   const result = await evaluateMarketDecision(MARKET, { at: NOW, allocationPolicies: [] });
 
   expect(result.decision_status).toBe('COVERED');
+  expect(result.flow_break_even.reason).toBe('BREAK_EVEN_INPUTS_UNAVAILABLE');
   expect(computeMarketCoverage).toHaveBeenCalledWith(expect.objectContaining({
     marketId: MARKET,
     coveragePolicy: expect.objectContaining({
@@ -128,4 +137,84 @@ test('evaluateMarketDecision injecte la politique versionnée dans le gate exist
     dispositionPolicy: expect.objectContaining({ max_ratio: 0.05 }),
     allocationPolicies: [],
   }));
+});
+
+test('le point d équilibre traduit le même gap en commandes, articles et colis équivalents au mix observé', async () => {
+  db.query
+    .mockResolvedValueOnce({ rows: [policyRow({ coverage_threshold: 1.1 })] })
+    .mockResolvedValueOnce({ rows: [{ article_units: '10', parcel_count: 2 }] });
+  computeMarketCoverage.mockResolvedValueOnce({
+    coverage_status: 'UNCOVERED',
+    authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+    reason: 'COVERAGE_THRESHOLD_NOT_MET',
+    coverage_ratio: 0.72,
+    numerator_contribution_kmf: 720,
+    denominator_n3_kmf: 1000,
+    mature_order_ids: MATURE_ORDERS,
+    contribution: { mature_order_count: 4 },
+  });
+
+  const result = await evaluateMarketDecision(MARKET, { at: NOW });
+  const flow = result.flow_break_even;
+
+  expect(flow.status).toBe('READY');
+  expect(flow.basis).toBe('CURRENT_RECONCILED_MIX');
+  expect(flow.observed_mix).toMatchObject({
+    mature_orders: 4,
+    article_units: 10,
+    parcels: 2,
+    articles_per_order: 2.5,
+    articles_per_parcel: 5,
+    contribution_per_order_kmf: 180,
+    contribution_per_article_kmf: 72,
+    contribution_per_parcel_kmf: 360,
+  });
+  expect(flow.economic_break_even).toMatchObject({
+    target_coverage_ratio: 1,
+    gap_kmf: 280,
+    additional_equivalent_orders: 2,
+    additional_equivalent_articles: 4,
+    additional_equivalent_parcels: 1,
+  });
+  expect(flow.policy_safety_target).toMatchObject({
+    target_coverage_ratio: 1.1,
+    gap_kmf: 380,
+    additional_equivalent_orders: 3,
+    additional_equivalent_articles: 6,
+    additional_equivalent_parcels: 2,
+  });
+  expect(flow.assumptions.unmodelled_capacity_step_excluded).toBe(true);
+  expect(db.query.mock.calls[1][0]).toContain('FROM order_items');
+  expect(db.query.mock.calls[1][0]).toContain('FROM parcels');
+});
+
+test('un mix à contribution non positive ne fabrique jamais un volume de break-even fini', () => {
+  const target = _buildBreakEvenTarget(1, 1000, -200, {
+    contribution_per_order_kmf: -50,
+    contribution_per_article_kmf: -20,
+    contribution_per_parcel_kmf: -100,
+  });
+
+  expect(target.status).toBe('CURRENT_MIX_NOT_PROJECTABLE');
+  expect(target.gap_kmf).toBe(1200);
+  expect(target.additional_equivalent_orders).toBeNull();
+  expect(target.additional_equivalent_articles).toBeNull();
+  expect(target.additional_equivalent_parcels).toBeNull();
+});
+
+test('une couverture non décisionnelle ne déclenche aucune fausse projection de forme du flux', async () => {
+  db.query.mockResolvedValueOnce({ rows: [policyRow()] });
+  computeMarketCoverage.mockResolvedValueOnce({
+    coverage_status: 'NOT_DECISIONAL',
+    authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+    reason: 'MATURITY_THRESHOLD_NOT_MET',
+  });
+
+  const result = await evaluateMarketDecision(MARKET, { at: NOW });
+
+  expect(result.flow_break_even).toMatchObject({
+    status: 'NOT_DECISIONAL',
+    reason: 'COVERAGE_TRUTH_NOT_DECISIONAL',
+  });
+  expect(db.query).toHaveBeenCalledTimes(1);
 });
