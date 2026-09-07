@@ -77,7 +77,8 @@ async function getCmdsCreees(filters = {}) {
   const prev = buildPreviousPeriod(filters);
   if (prev) {
     const prevQuery = buildFiltersClause(prev);
-    const prevR = await db.query(`SELECT COUNT(*)::int AS value FROM orders o WHERE ${prevQuery.where}`, prevQuery.params); // AUD-07: same trusted filter builder; values remain parameterized
+    const prevSql = 'SELECT COUNT(*)::int AS value FROM orders o WHERE ' + prevQuery.where;
+    const prevR = await db.query(prevSql, prevQuery.params);
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
 

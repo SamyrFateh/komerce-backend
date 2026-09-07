@@ -618,34 +618,41 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
       allocation_notes,
     } = req.body || {};
 
-    // Validation basique
-    const FINANCE_CONFIG_NUMERIC_COLS = ['avg_articles_per_order', 'avg_articles_per_parcel', 'avg_articles_per_shipment', 'avg_orders_per_month']; // AUD-07
-    const fields = { avg_articles_per_order, avg_articles_per_parcel, avg_articles_per_shipment, avg_orders_per_month };
-    const updates = [];
-    const params = [];
-    let i = 1;
-    for (const [key, value] of Object.entries(fields)) {
-      if (!FINANCE_CONFIG_NUMERIC_COLS.includes(key)) continue; // AUD-07: allowlist guard
-      if (value != null && Number.isFinite(Number(value)) && Number(value) > 0) {
-        updates.push(`${key} = $${i++}`);
-        params.push(Number(value));
-      }
-    }
-    if (allocation_confidence && ['low', 'medium', 'high'].includes(allocation_confidence)) {
-      updates.push(`allocation_confidence = $${i++}`);
-      params.push(allocation_confidence);
-    }
-    if (allocation_notes != null) {
-      updates.push(`allocation_notes = $${i++}`);
-      params.push(String(allocation_notes));
-    }
-    updates.push(`allocation_calibrated_at = NOW()`);
+    // Recalibrage : forme SQL fixe. Les flags booléens décident si une colonne
+    // reçoit une nouvelle valeur ; aucune clé de requête ne peut devenir un identifiant SQL.
+    const validPositive = (value) => value != null && Number.isFinite(Number(value)) && Number(value) > 0;
+    const applyAvgOrder = validPositive(avg_articles_per_order);
+    const applyAvgParcel = validPositive(avg_articles_per_parcel);
+    const applyAvgShipment = validPositive(avg_articles_per_shipment);
+    const applyAvgMonth = validPositive(avg_orders_per_month);
+    const applyConfidence = !!(allocation_confidence && ['low', 'medium', 'high'].includes(allocation_confidence));
+    const applyNotes = allocation_notes != null;
 
-    if (updates.length === 1) {
+    if (![applyAvgOrder, applyAvgParcel, applyAvgShipment, applyAvgMonth, applyConfidence, applyNotes].some(Boolean)) {
       return res.status(400).json({ error: 'Aucun champ valide a appliquer' });
     }
 
-    await db.query(`UPDATE finance_config SET ${updates.join(', ')} WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)`, params); // AUD-07: updates[] contains allowlisted column names; values remain bound in params
+    const params = [
+      applyAvgOrder, applyAvgOrder ? Number(avg_articles_per_order) : null,
+      applyAvgParcel, applyAvgParcel ? Number(avg_articles_per_parcel) : null,
+      applyAvgShipment, applyAvgShipment ? Number(avg_articles_per_shipment) : null,
+      applyAvgMonth, applyAvgMonth ? Number(avg_orders_per_month) : null,
+      applyConfidence, applyConfidence ? allocation_confidence : null,
+      applyNotes, applyNotes ? String(allocation_notes) : null,
+    ];
+
+    const updateSql = `
+      UPDATE finance_config
+      SET avg_articles_per_order = CASE WHEN $1::boolean THEN $2::numeric ELSE avg_articles_per_order END,
+          avg_articles_per_parcel = CASE WHEN $3::boolean THEN $4::numeric ELSE avg_articles_per_parcel END,
+          avg_articles_per_shipment = CASE WHEN $5::boolean THEN $6::numeric ELSE avg_articles_per_shipment END,
+          avg_orders_per_month = CASE WHEN $7::boolean THEN $8::numeric ELSE avg_orders_per_month END,
+          allocation_confidence = CASE WHEN $9::boolean THEN $10::text ELSE allocation_confidence END,
+          allocation_notes = CASE WHEN $11::boolean THEN $12::text ELSE allocation_notes END,
+          allocation_calibrated_at = NOW()
+      WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)
+    `;
+    await db.query(updateSql, params);
 
     const r = await db.query(`SELECT
       avg_articles_per_order, avg_articles_per_parcel,

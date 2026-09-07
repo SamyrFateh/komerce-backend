@@ -134,38 +134,45 @@ router.get('/', ...adminAgentRelais, validate({ query: parcels.list }), async (r
     const safeLimit = Math.min(parseInt(limit) || 50, 100);
     const safePage = Math.max(parseInt(page) || 1, 1);
     const offset = (safePage - 1) * safeLimit;
+    const restrictToRelay = req.user.role === 'agent_relais';
+    const searchPattern = search ? `%${search}%` : null;
+    const filterParams = [
+      status || null,
+      shipment_id || null,
+      order_id || null,
+      searchPattern,
+      restrictToRelay,
+      req.user.id,
+    ];
 
-    const conditions = [];
-    const params = [];
-    let idx = 1;
+    const filterSql = `
+      WHERE ($1::text IS NULL OR p.status::text = $1::text)
+        AND ($2::text IS NULL OR p.shipment_id::text = $2::text)
+        AND ($3::text IS NULL OR p.order_id::text = $3::text)
+        AND ($4::text IS NULL OR p.reference ILIKE $4::text OR p.external_code ILIKE $4::text)
+        AND ($5::boolean = FALSE OR o.relais_id IN (
+          SELECT r.id
+          FROM relais r
+          WHERE r.phone = (SELECT u.phone FROM users u WHERE u.id::text = $6::text)
+        ))
+    `;
 
-    if (status) { conditions.push(`p.status = $${idx++}`); params.push(status); }
-    if (shipment_id) { conditions.push(`p.shipment_id = $${idx++}`); params.push(shipment_id); }
-    if (order_id) { conditions.push(`p.order_id = $${idx++}`); params.push(order_id); }
-    if (search) { conditions.push(`(p.reference ILIKE $${idx} OR p.external_code ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
-
-    // Agent relais: only see parcels for their relay point's orders
-    if (req.user.role === 'agent_relais') {
-      conditions.push(`o.relais_id IN (SELECT r.id FROM relais r WHERE r.phone = (SELECT u.phone FROM users u WHERE u.id = $${idx++}))`);
-      params.push(req.user.id);
-    }
-
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params); // AUD-07: where = parameterized condition templates; values remain bound in params
+    const countSql = 'SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ' + filterSql;
+    const countResult = await db.query(countSql, filterParams);
     const total = parseInt(countResult.rows[0].count);
 
-    const { rows } = await db.query(`
+    const listSql = `
       SELECT p.*, p.external_code,
              o.reference AS order_reference, o.status AS order_status,
              o.destination_island, o.routing_mode,
              (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
-      ${where} /* AUD-07: parameterized condition templates */
+    ` + filterSql + `
       ORDER BY p.created_at DESC
-      LIMIT $${idx++} OFFSET $${idx++}
-    `, [...params, safeLimit, offset]);
+      LIMIT $7 OFFSET $8
+    `;
+    const { rows } = await db.query(listSql, [...filterParams, safeLimit, offset]);
 
     res.json({ data: rows, pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) } });
   } catch(e) { next(e); }
