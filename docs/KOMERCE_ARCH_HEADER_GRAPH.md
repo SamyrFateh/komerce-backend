@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 515
-- Files with full headers: 470
+- Scanned code files: 520
+- Files with full headers: 475
 - Files with lite headers: 45
-- Files with any headers: 515
+- Files with any headers: 520
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1159
-- Edges: 5952
-- DB tables: 135
-- Doctrines: 334
-- Impact areas: 175
-- Unresolved code edges: 582
-- Tables multi-écrivains directs (>=2): 63
+- Graph nodes: 1186
+- Edges: 6051
+- DB tables: 137
+- Doctrines: 353
+- Impact areas: 176
+- Unresolved code edges: 586
+- Tables multi-écrivains directs (>=2): 65
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 54
+- economic-engine: 55
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -46,6 +46,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - logistics: 45
 - loyalty: 3
 - market: 3
+- market-autonomy: 4
 - notification: 21
 - operations: 11
 - orders: 29
@@ -82,7 +83,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 115
 - route-manifest: 1
 - schema: 1
-- service: 227
+- service: 232
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -146,6 +147,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
+- services/market-local-price-activation-service.js — market-local-price-activation-orchestrator (market-autonomy, critical, full)
+- services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
+- services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)
@@ -357,6 +361,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
+- services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
 - services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
 - services/mobile-money-reconciliation.js — mobile-money-reconciliation (payment, high, full)
 - services/mobile-money/registry.js — mobile-money-provider-registry (payment, high, full)
@@ -392,6 +397,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
 - services/pricing-market-decision-policy.js — economic-engine-pricing-market-decision-policy (economic-engine, high, full)
+- services/pricing-market-decision-projection.js — economic-engine-pricing-market-decision-projection (economic-engine, high, full)
 - services/pricing-maturity.js — economic-engine-pricing-maturity (economic-engine, high, full)
 - services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
 - services/pricing-period-structure.js — economic-engine-pricing-period-structure (economic-engine, high, full)
@@ -795,14 +801,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
 - paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
 - pickup_verify_attempts: 2 écrivains directs — routes/parcels.js, routes/tracking.js
+- product_market_price_draft_events: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
+- product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 - recipients: 2 écrivains directs — routes/admin/users.js, services/order-checkout-service.js
 - refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
 - relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
 - revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
 - shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
-- signals: 2 écrivains directs — services/signal-admin-service.js, services/signal-service.js
-- sourcing_candidate_events: 2 écrivains directs — services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

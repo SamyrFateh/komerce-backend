@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 515,
-    "filesWithFullHeaders": 470,
+    "scannedCodeFiles": 520,
+    "filesWithFullHeaders": 475,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 515,
+    "filesWithAnyHeaders": 520,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1159,
-    "edges": 5952,
-    "dbTables": 135,
-    "doctrines": 334,
-    "impactAreas": 175,
-    "unresolvedCodeEdges": 582,
+    "graphNodes": 1186,
+    "edges": 6051,
+    "dbTables": 137,
+    "doctrines": 353,
+    "impactAreas": 176,
+    "unresolvedCodeEdges": 586,
     "dbWriteViaOverlapWarnings": 7,
-    "multiWriterTables": 63
+    "multiWriterTables": 65
   },
   "byDomain": {
     "infrastructure": 20,
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 54,
+    "economic-engine": 55,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -65,6 +65,7 @@
     "purchasing": 8,
     "unsold-resolution": 1,
     "incident-management": 2,
+    "market-autonomy": 4,
     "refunds": 2,
     "shared": 1
   },
@@ -102,7 +103,7 @@
     "schema": 1,
     "route": 115,
     "entrypoint": 1,
-    "service": 227,
+    "service": 232,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -111,9 +112,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 75,
+    "critical": 78,
     "medium": 123,
-    "high": 264,
+    "high": 266,
     "low": 53
   },
   "nodes": [
@@ -2796,7 +2797,8 @@
         "modal_lifecycle",
         "product_id",
         "product_detail_v1",
-        "responsive_breakpoint"
+        "responsive_breakpoint",
+        "market_context"
       ],
       "outputs": [
         "shared_modal_selection_state",
@@ -2807,7 +2809,8 @@
         "b-store.js",
         "b-modal-mobile-product.js",
         "b-modal-desktop-product.js",
-        "view-models/modal-selection-model.js"
+        "view-models/modal-selection-model.js",
+        "market-context.js"
       ],
       "usedBy": [
         "main.js"
@@ -2818,16 +2821,18 @@
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "market_display_matches_buyer_price"
       ],
       "impactAreas": [
         "product-modal",
         "mobile",
         "desktop",
         "product-detail",
-        "sku-selection"
+        "sku-selection",
+        "market-autonomy"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/b-modal-product-fields.js",
@@ -4884,16 +4889,19 @@
       "inputs": [
         "raw_products",
         "cache_state",
-        "availability_flags"
+        "availability_flags",
+        "market_context"
       ],
       "outputs": [
         "normalized_products",
-        "cached_products",
+        "market_scoped_cached_products",
         "promo_products"
       ],
       "depends": [
         "localStorage",
-        "shop-schema.js"
+        "shop-schema.js",
+        "market-context.js",
+        "komerce-api.js"
       ],
       "usedBy": [
         "b-catalog.js",
@@ -4907,15 +4915,17 @@
       "doctrine": [
         "product_source_unique",
         "catalogue_cache_fallback",
-        "produit_reference_stable"
+        "produit_reference_stable",
+        "market_cache_isolation"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
         "suggestions",
-        "offline-fallback"
+        "offline-fallback",
+        "market-autonomy"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/providers-services-api.js",
@@ -6343,6 +6353,8 @@
         "canonical_pricing_projection",
         "market_cost_projection",
         "market_decision_projection",
+        "market_price_decisions",
+        "activation_preview",
         "action_results"
       ],
       "depends": [
@@ -6351,7 +6363,10 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
         "services/pricing-workspace.js",
-        "services/pricing-market-decision-policy.js"
+        "services/pricing-market-decision-policy.js",
+        "services/pricing-market-decision-projection.js",
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-activation-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -6367,9 +6382,11 @@
       "doctrine": [
         "global_pricing_authority_or_server_market_scope",
         "viewer_reads_manager_writes",
+        "country_manager_owns_local_strategy",
         "browser_business_refs_only",
         "simulation_is_read_only",
-        "market_decision_policy_is_append_only"
+        "market_decision_policy_is_append_only",
+        "one_contribution_many_views"
       ],
       "impactAreas": [
         "pricing",
@@ -7675,7 +7692,8 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "product_id"
+        "product_id",
+        "optional_market_code"
       ],
       "outputs": [
         "public_product_detail_v1"
@@ -7683,7 +7701,8 @@
       "depends": [
         "db.js",
         "services/catalog-product-detail.js",
-        "services/catalog-public-view.js"
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
         "routes/products.js",
@@ -7698,12 +7717,14 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "catalog",
         "product-detail",
-        "modal"
+        "modal",
+        "market-autonomy"
       ],
       "version": "2026-09"
     },
@@ -10225,18 +10246,20 @@
       "inputs": [
         "product_filters",
         "product_id",
+        "optional_market_code",
         "admin_product_payload"
       ],
       "outputs": [
-        "product_list",
-        "product_detail",
+        "market_aware_product_list",
+        "market_aware_product_detail",
         "product_mutation_result"
       ],
       "depends": [
         "db.js",
         "validators.js",
         "middleware/auth.js",
-        "services/catalog-public-view.js"
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
@@ -10258,14 +10281,16 @@
       "doctrine": [
         "catalogue_source_db",
         "produit_reference_stable",
-        "produit_desactive_non_supprime"
+        "produit_desactive_non_supprime",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
         "modal",
         "admin-products",
-        "suggestions"
+        "suggestions",
+        "market-autonomy"
       ],
       "version": "2026-09"
     },
@@ -15174,6 +15199,227 @@
       "version": "2026-06"
     },
     {
+      "id": "services/market-commercial-price-service.js",
+      "file": "services/market-commercial-price-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-commercial-price-decision-owner",
+      "domain": "market-autonomy",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_resolved_market",
+        "product_ref",
+        "local_amount",
+        "reason",
+        "actor_id",
+        "authorization_snapshot"
+      ],
+      "outputs": [
+        "market_price_decision_projection",
+        "audited_set_reset_authorize_results"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/market-local-price-activation-service.js"
+      ],
+      "dbRead": [
+        "products",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "product_market_price_drafts",
+        "product_market_price_draft_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [
+        "country_strategy_is_local",
+        "global_catalog_price_untouched",
+        "local_currency_from_server_market",
+        "authorization_distinct_from_buyer_cutover"
+      ],
+      "impactAreas": [
+        "pricing",
+        "market",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-local-price-activation-service.js",
+      "file": "services/market-local-price-activation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-local-price-activation-orchestrator",
+      "domain": "market-autonomy",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_resolved_market",
+        "product_ref",
+        "actor_id"
+      ],
+      "outputs": [
+        "activation_preview",
+        "authorized_and_active_local_price"
+      ],
+      "depends": [
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-resolution-service.js",
+        "services/market-local-price-state-transition.js",
+        "services/pricing-engine.js",
+        "services/pricing-cdr.js",
+        "services/pricing-market-decision-policy.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "writes_delegated_to_market_autonomy_state_owners"
+      ],
+      "doctrine": [
+        "local_human_decides_system_checks_no_central_approval",
+        "under_cdr_requires_market_coverage",
+        "destructive_price_never_activates"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "catalog",
+        "checkout",
+        "shared-cart"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-local-price-resolution-service.js",
+      "file": "services/market-local-price-resolution-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-active-local-price-buyer-boundary",
+      "domain": "market-autonomy",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_market_id_or_code",
+        "canonical_product_rows",
+        "checkout_items"
+      ],
+      "outputs": [
+        "effective_kmf_price",
+        "local_price_metadata",
+        "repriced_checkout_total"
+      ],
+      "depends": [
+        "db.js",
+        "utils/currency.js",
+        "services/product-sellable-service.js"
+      ],
+      "usedBy": [
+        "routes/products.js",
+        "routes/catalog-product-detail.js",
+        "services/order-checkout-service.js",
+        "services/shared-cart-creation.js",
+        "services/market-local-price-activation-service.js"
+      ],
+      "dbRead": [
+        "markets",
+        "products",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "participates_in_caller_transaction_when_executor_is_provided"
+      ],
+      "doctrine": [
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "market_from_server_context",
+        "granular_sku_prices_fail_closed"
+      ],
+      "impactAreas": [
+        "market",
+        "catalog",
+        "checkout",
+        "shared-cart",
+        "pricing"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-local-price-state-transition.js",
+      "file": "services/market-local-price-state-transition.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-local-price-active-state-transition",
+      "domain": "market-autonomy",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_resolved_market",
+        "product_ref",
+        "activation_snapshot",
+        "actor_id"
+      ],
+      "outputs": [
+        "LOCAL_ACTIVE_decision"
+      ],
+      "depends": [
+        "db.js",
+        "services/market-commercial-price-service.js"
+      ],
+      "usedBy": [
+        "services/market-local-price-activation-service.js"
+      ],
+      "dbRead": [
+        "products",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "product_market_price_drafts",
+        "product_market_price_draft_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [
+        "activation_only_from_authorized_state",
+        "activation_is_audited",
+        "amount_and_currency_are_frozen_across_cutover"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "checkout",
+        "catalog"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/market-scope-admin-service.js",
       "file": "services/market-scope-admin-service.js",
       "type": "file",
@@ -16206,15 +16452,17 @@
       "doctrine": [
         "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "explicit_relay_market_anchor",
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "orders",
         "checkout",
         "shared-cart",
-        "local-stock"
+        "local-stock",
+        "market-autonomy"
       ],
-      "version": "2026-09 (LOCAL_STOCK/IMPORT + transport commercial IMPORT-only)"
+      "version": "2026-09 (LOCAL_STOCK/IMPORT + market-local commercial price cutover)"
     },
     {
       "id": "services/order-cost-snapshot.js",
@@ -18535,6 +18783,44 @@
       "version": "2026-09"
     },
     {
+      "id": "services/pricing-market-decision-projection.js",
+      "file": "services/pricing-market-decision-projection.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-market-decision-projection",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "canonical_market_decision"
+      ],
+      "outputs": [
+        "enriched_market_decision_projection"
+      ],
+      "depends": [
+        "services/pricing-market-decision-policy.js output contract"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "one_contribution_many_views",
+        "rolling_flow_cadence_is_projection_not_cost_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/pricing-maturity.js",
       "file": "services/pricing-maturity.js",
       "type": "file",
@@ -20554,7 +20840,8 @@
       "depends": [
         "db.js",
         "services/shared-cart-internals.js",
-        "services/product-admin-service.js"
+        "services/product-admin-service.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -20564,6 +20851,7 @@
         "baskets",
         "product_skus",
         "products",
+        "relais",
         "shared_carts",
         "users"
       ],
@@ -20581,12 +20869,15 @@
       ],
       "doctrine": [
         "domaine_minimal_boutique_first",
-        "snapshot_fige"
+        "snapshot_fige",
+        "relay_market_is_server_price_anchor",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
-        "creator-flow"
+        "creator-flow",
+        "market-autonomy"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/shared-cart-engine.js",
@@ -21108,7 +21399,7 @@
         "orders",
         "logistics"
       ],
-      "version": "2026-09"
+      "version": "2026-06"
     },
     {
       "id": "services/simulator/cleanup.js",
@@ -24800,6 +25091,16 @@
       "table": "local_stock_allocations"
     },
     {
+      "id": "db:product_market_price_drafts",
+      "type": "db-table",
+      "table": "product_market_price_drafts"
+    },
+    {
+      "id": "db:product_market_price_draft_events",
+      "type": "db-table",
+      "table": "product_market_price_draft_events"
+    },
+    {
       "id": "db:suppliers_stats",
       "type": "db-table",
       "table": "suppliers_stats"
@@ -25210,6 +25511,11 @@
       "doctrine": "image_produit_inspectable"
     },
     {
+      "id": "doctrine:market_display_matches_buyer_price",
+      "type": "doctrine",
+      "doctrine": "market_display_matches_buyer_price"
+    },
+    {
       "id": "doctrine:fiche_produit_lisible",
       "type": "doctrine",
       "doctrine": "fiche_produit_lisible"
@@ -25480,6 +25786,11 @@
       "doctrine": "produit_reference_stable"
     },
     {
+      "id": "doctrine:market_cache_isolation",
+      "type": "doctrine",
+      "doctrine": "market_cache_isolation"
+    },
+    {
       "id": "doctrine:taxonomy_source_unique",
       "type": "doctrine",
       "doctrine": "taxonomy_source_unique"
@@ -25610,6 +25921,11 @@
       "doctrine": "viewer_reads_manager_writes"
     },
     {
+      "id": "doctrine:country_manager_owns_local_strategy",
+      "type": "doctrine",
+      "doctrine": "country_manager_owns_local_strategy"
+    },
+    {
       "id": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "doctrine": "browser_business_refs_only"
@@ -25623,6 +25939,11 @@
       "id": "doctrine:market_decision_policy_is_append_only",
       "type": "doctrine",
       "doctrine": "market_decision_policy_is_append_only"
+    },
+    {
+      "id": "doctrine:one_contribution_many_views",
+      "type": "doctrine",
+      "doctrine": "one_contribution_many_views"
     },
     {
       "id": "doctrine:product_ref_is_business_identity",
@@ -25693,6 +26014,11 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md"
+    },
+    {
+      "id": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "doctrine": "only_LOCAL_ACTIVE_is_buyer_effective"
     },
     {
       "id": "doctrine:moteur_economique_lisible",
@@ -26080,6 +26406,66 @@
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
+      "id": "doctrine:country_strategy_is_local",
+      "type": "doctrine",
+      "doctrine": "country_strategy_is_local"
+    },
+    {
+      "id": "doctrine:global_catalog_price_untouched",
+      "type": "doctrine",
+      "doctrine": "global_catalog_price_untouched"
+    },
+    {
+      "id": "doctrine:local_currency_from_server_market",
+      "type": "doctrine",
+      "doctrine": "local_currency_from_server_market"
+    },
+    {
+      "id": "doctrine:authorization_distinct_from_buyer_cutover",
+      "type": "doctrine",
+      "doctrine": "authorization_distinct_from_buyer_cutover"
+    },
+    {
+      "id": "doctrine:local_human_decides_system_checks_no_central_approval",
+      "type": "doctrine",
+      "doctrine": "local_human_decides_system_checks_no_central_approval"
+    },
+    {
+      "id": "doctrine:under_cdr_requires_market_coverage",
+      "type": "doctrine",
+      "doctrine": "under_cdr_requires_market_coverage"
+    },
+    {
+      "id": "doctrine:destructive_price_never_activates",
+      "type": "doctrine",
+      "doctrine": "destructive_price_never_activates"
+    },
+    {
+      "id": "doctrine:market_from_server_context",
+      "type": "doctrine",
+      "doctrine": "market_from_server_context"
+    },
+    {
+      "id": "doctrine:granular_sku_prices_fail_closed",
+      "type": "doctrine",
+      "doctrine": "granular_sku_prices_fail_closed"
+    },
+    {
+      "id": "doctrine:activation_only_from_authorized_state",
+      "type": "doctrine",
+      "doctrine": "activation_only_from_authorized_state"
+    },
+    {
+      "id": "doctrine:activation_is_audited",
+      "type": "doctrine",
+      "doctrine": "activation_is_audited"
+    },
+    {
+      "id": "doctrine:amount_and_currency_are_frozen_across_cutover",
+      "type": "doctrine",
+      "doctrine": "amount_and_currency_are_frozen_across_cutover"
+    },
+    {
       "id": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_persistence_boundary"
@@ -26310,6 +26696,11 @@
       "doctrine": "pricing_flow_break_even_is_projection_not_cost_truth"
     },
     {
+      "id": "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
+      "type": "doctrine",
+      "doctrine": "rolling_flow_cadence_is_projection_not_cost_truth"
+    },
+    {
       "id": "doctrine:pricing_market_viability_maturity_watermark",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_maturity_watermark"
@@ -26408,6 +26799,11 @@
       "id": "doctrine:snapshot_fige",
       "type": "doctrine",
       "doctrine": "snapshot_fige"
+    },
+    {
+      "id": "doctrine:relay_market_is_server_price_anchor",
+      "type": "doctrine",
+      "doctrine": "relay_market_is_server_price_anchor"
     },
     {
       "id": "doctrine:backend_source_verite",
@@ -26958,6 +27354,11 @@
       "id": "impact:discovery-rail",
       "type": "impact-area",
       "area": "discovery-rail"
+    },
+    {
+      "id": "impact:market-autonomy",
+      "type": "impact-area",
+      "area": "market-autonomy"
     },
     {
       "id": "impact:single-ownership",
@@ -31478,6 +31879,12 @@
       "label": "view-models/modal-selection-model.js"
     },
     {
+      "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
+      "to": "public/boutique/js/market-context.js",
+      "type": "depends",
+      "label": "market-context.js"
+    },
+    {
       "from": "public/boutique/js/main.js",
       "to": "public/boutique/js/b-modal-product-detail-bootstrap.js",
       "type": "uses",
@@ -31494,6 +31901,12 @@
       "to": "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
       "type": "doctrine",
       "label": "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
+      "to": "doctrine:market_display_matches_buyer_price",
+      "type": "doctrine",
+      "label": "market_display_matches_buyer_price"
     },
     {
       "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
@@ -31524,6 +31937,12 @@
       "to": "impact:sku-selection",
       "type": "impact",
       "label": "sku-selection"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "public/boutique/js/b-modal-product-fields.js",
@@ -34196,6 +34615,18 @@
       "label": "shop-schema.js"
     },
     {
+      "from": "public/boutique/js/product-store.js",
+      "to": "public/boutique/js/market-context.js",
+      "type": "depends",
+      "label": "market-context.js"
+    },
+    {
+      "from": "public/boutique/js/product-store.js",
+      "to": "public/boutique/js/komerce-api.js",
+      "type": "depends",
+      "label": "komerce-api.js"
+    },
+    {
       "from": "public/boutique/js/b-catalog.js",
       "to": "public/boutique/js/product-store.js",
       "type": "uses",
@@ -34233,6 +34664,12 @@
     },
     {
       "from": "public/boutique/js/product-store.js",
+      "to": "doctrine:market_cache_isolation",
+      "type": "doctrine",
+      "label": "market_cache_isolation"
+    },
+    {
+      "from": "public/boutique/js/product-store.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
@@ -34254,6 +34691,12 @@
       "to": "impact:offline-fallback",
       "type": "impact",
       "label": "offline-fallback"
+    },
+    {
+      "from": "public/boutique/js/product-store.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "public/boutique/js/providers-services-api.js",
@@ -36243,6 +36686,24 @@
       "label": "services/pricing-market-decision-policy.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-decision-projection.js",
+      "type": "depends",
+      "label": "services/pricing-market-decision-projection.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "depends",
+      "label": "services/market-commercial-price-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-local-price-activation-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-activation-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-pricing-workspace.js",
       "type": "uses",
@@ -36280,6 +36741,12 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:country_manager_owns_local_strategy",
+      "type": "doctrine",
+      "label": "country_manager_owns_local_strategy"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "doctrine:browser_business_refs_only",
       "type": "doctrine",
       "label": "browser_business_refs_only"
@@ -36295,6 +36762,12 @@
       "to": "doctrine:market_decision_policy_is_append_only",
       "type": "doctrine",
       "label": "market_decision_policy_is_append_only"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:one_contribution_many_views",
+      "type": "doctrine",
+      "label": "one_contribution_many_views"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -38199,6 +38672,12 @@
       "label": "services/catalog-public-view.js"
     },
     {
+      "from": "routes/catalog-product-detail.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
       "from": "routes/products.js",
       "to": "routes/catalog-product-detail.js",
       "type": "uses",
@@ -38236,6 +38715,12 @@
     },
     {
       "from": "routes/catalog-product-detail.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
@@ -38251,6 +38736,12 @@
       "to": "impact:modal",
       "type": "impact",
       "label": "modal"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "routes/categories.js",
@@ -41843,6 +42334,12 @@
       "label": "services/catalog-public-view.js"
     },
     {
+      "from": "routes/products.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/products.js",
       "type": "uses",
@@ -41904,6 +42401,12 @@
     },
     {
       "from": "routes/products.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "routes/products.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
@@ -41931,6 +42434,12 @@
       "to": "impact:suggestions",
       "type": "impact",
       "label": "suggestions"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "routes/providers-services.js",
@@ -49405,6 +49914,408 @@
       "label": "loyalty"
     },
     {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "uses",
+      "label": "services/market-local-price-activation-service.js"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-write",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db:product_market_price_draft_events",
+      "type": "db-write",
+      "label": "product_market_price_draft_events"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "doctrine:country_strategy_is_local",
+      "type": "doctrine",
+      "label": "country_strategy_is_local"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "doctrine:global_catalog_price_untouched",
+      "type": "doctrine",
+      "label": "global_catalog_price_untouched"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "doctrine:local_currency_from_server_market",
+      "type": "doctrine",
+      "label": "local_currency_from_server_market"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "doctrine:authorization_distinct_from_buyer_cutover",
+      "type": "doctrine",
+      "label": "authorization_distinct_from_buyer_cutover"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-commercial-price-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "depends",
+      "label": "services/market-commercial-price-service.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-local-price-state-transition.js",
+      "type": "depends",
+      "label": "services/market-local-price-state-transition.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/pricing-cdr.js",
+      "type": "depends",
+      "label": "services/pricing-cdr.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/pricing-market-decision-policy.js",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-local-price-activation-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "doctrine:local_human_decides_system_checks_no_central_approval",
+      "type": "doctrine",
+      "label": "local_human_decides_system_checks_no_central_approval"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "doctrine:under_cdr_requires_market_coverage",
+      "type": "doctrine",
+      "label": "under_cdr_requires_market_coverage"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "doctrine:destructive_price_never_activates",
+      "type": "doctrine",
+      "label": "destructive_price_never_activates"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "services/product-sellable-service.js",
+      "type": "depends",
+      "label": "services/product-sellable-service.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "uses",
+      "label": "routes/products.js"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "uses",
+      "label": "routes/catalog-product-detail.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "uses",
+      "label": "services/shared-cart-creation.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "uses",
+      "label": "services/market-local-price-activation-service.js"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "doctrine:market_from_server_context",
+      "type": "doctrine",
+      "label": "market_from_server_context"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "doctrine:granular_sku_prices_fail_closed",
+      "type": "doctrine",
+      "label": "granular_sku_prices_fail_closed"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "depends",
+      "label": "services/market-commercial-price-service.js"
+    },
+    {
+      "from": "services/market-local-price-activation-service.js",
+      "to": "services/market-local-price-state-transition.js",
+      "type": "uses",
+      "label": "services/market-local-price-activation-service.js"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-write",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db:product_market_price_draft_events",
+      "type": "db-write",
+      "label": "product_market_price_draft_events"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "doctrine:activation_only_from_authorized_state",
+      "type": "doctrine",
+      "label": "activation_only_from_authorized_state"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "doctrine:activation_is_audited",
+      "type": "doctrine",
+      "label": "activation_is_audited"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "doctrine:amount_and_currency_are_frozen_across_cutover",
+      "type": "doctrine",
+      "label": "amount_and_currency_are_frozen_across_cutover"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
       "from": "dashboard",
       "to": "services/market-scope-admin-service.js",
       "type": "uses",
@@ -51091,6 +52002,12 @@
     },
     {
       "from": "services/order-checkout-service.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "services/order-checkout-service.js",
       "to": "impact:orders",
       "type": "impact",
       "label": "orders"
@@ -51112,6 +52029,12 @@
       "to": "impact:local-stock",
       "type": "impact",
       "label": "local-stock"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "services/order-cost-snapshot.js",
@@ -54728,6 +55651,48 @@
       "label": "operational-flow"
     },
     {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "services/pricing-market-decision-policy.js output contract",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js output contract"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-decision-projection.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "doctrine:one_contribution_many_views",
+      "type": "doctrine",
+      "label": "one_contribution_many_views"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
+      "type": "doctrine",
+      "label": "rolling_flow_cadence_is_projection_not_cost_truth"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/pricing-maturity.js",
       "to": "db",
       "type": "depends",
@@ -57693,6 +58658,12 @@
       "label": "services/product-admin-service.js"
     },
     {
+      "from": "services/shared-cart-creation.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-creation.js",
       "type": "uses",
@@ -57721,6 +58692,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
     },
     {
       "from": "services/shared-cart-creation.js",
@@ -57778,9 +58755,27 @@
     },
     {
       "from": "services/shared-cart-creation.js",
+      "to": "doctrine:relay_market_is_server_price_anchor",
+      "type": "doctrine",
+      "label": "relay_market_is_server_price_anchor"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
       "to": "impact:creator-flow",
       "type": "impact",
       "label": "creator-flow"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
     },
     {
       "from": "services/shared-cart-engine.js",
@@ -66219,7 +67214,8 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-desktop-product.js",
-        "public/boutique/js/view-models/modal-selection-model.js"
+        "public/boutique/js/view-models/modal-selection-model.js",
+        "public/boutique/js/market-context.js"
       ],
       "directUsedBy": [
         "public/boutique/js/main.js"
@@ -66230,19 +67226,23 @@
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "market_display_matches_buyer_price"
       ],
       "impactAreas": [
         "product-modal",
         "mobile",
         "desktop",
         "product-detail",
-        "sku-selection"
+        "sku-selection",
+        "market-autonomy"
       ],
       "mustCheck": [
         "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "doctrine:market_display_matches_buyer_price",
         "impact:desktop",
+        "impact:market-autonomy",
         "impact:mobile",
         "impact:product-detail",
         "impact:product-modal",
@@ -66252,6 +67252,7 @@
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/main.js",
+        "public/boutique/js/market-context.js",
         "public/boutique/js/view-models/modal-selection-model.js",
         "routes/catalog-product-detail.js"
       ]
@@ -68189,6 +69190,7 @@
         "impact:shared-cart",
         "impact:tracking",
         "public/boutique/js/boutique.js",
+        "public/boutique/js/product-store.js",
         "routes/products.js"
       ]
     },
@@ -68302,8 +69304,10 @@
         "impact:footer",
         "impact:hero",
         "impact:home",
+        "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/market-context.js",
-        "public/boutique/js/market-hydration.js"
+        "public/boutique/js/market-hydration.js",
+        "public/boutique/js/product-store.js"
       ]
     },
     "public/boutique/js/market-hydration.js": {
@@ -68369,7 +69373,9 @@
       "purpose": null,
       "directDependsOn": [
         "localStorage",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/shop-schema.js",
+        "public/boutique/js/market-context.js",
+        "public/boutique/js/komerce-api.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-catalog.js",
@@ -68383,24 +69389,30 @@
       "doctrines": [
         "product_source_unique",
         "catalogue_cache_fallback",
-        "produit_reference_stable"
+        "produit_reference_stable",
+        "market_cache_isolation"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
         "suggestions",
-        "offline-fallback"
+        "offline-fallback",
+        "market-autonomy"
       ],
       "mustCheck": [
         "doctrine:catalogue_cache_fallback",
+        "doctrine:market_cache_isolation",
         "doctrine:product_source_unique",
         "doctrine:produit_reference_stable",
         "impact:catalog",
+        "impact:market-autonomy",
         "impact:offline-fallback",
         "impact:product-discovery",
         "impact:suggestions",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/boutique.js",
+        "public/boutique/js/komerce-api.js",
+        "public/boutique/js/market-context.js",
         "public/boutique/js/shop-schema.js"
       ]
     },
@@ -69784,7 +70796,10 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
         "services/pricing-workspace.js",
-        "services/pricing-market-decision-policy.js"
+        "services/pricing-market-decision-policy.js",
+        "services/pricing-market-decision-projection.js",
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-activation-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -69800,9 +70815,11 @@
       "doctrines": [
         "global_pricing_authority_or_server_market_scope",
         "viewer_reads_manager_writes",
+        "country_manager_owns_local_strategy",
         "browser_business_refs_only",
         "simulation_is_read_only",
-        "market_decision_policy_is_append_only"
+        "market_decision_policy_is_append_only",
+        "one_contribution_many_views"
       ],
       "impactAreas": [
         "pricing",
@@ -69816,8 +70833,10 @@
         "db:operator_market_scopes",
         "db:pricing_global_access_grants",
         "doctrine:browser_business_refs_only",
+        "doctrine:country_manager_owns_local_strategy",
         "doctrine:global_pricing_authority_or_server_market_scope",
         "doctrine:market_decision_policy_is_append_only",
+        "doctrine:one_contribution_many_views",
         "doctrine:simulation_is_read_only",
         "doctrine:viewer_reads_manager_writes",
         "impact:admin-dashboard",
@@ -69828,7 +70847,10 @@
         "middleware/require-market-scope.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-activation-service.js",
         "services/pricing-market-decision-policy.js",
+        "services/pricing-market-decision-projection.js",
         "services/pricing-workspace.js"
       ]
     },
@@ -71052,7 +72074,8 @@
       "directDependsOn": [
         "db.js",
         "services/catalog-product-detail.js",
-        "services/catalog-public-view.js"
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
         "routes/products.js",
@@ -71067,12 +72090,14 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "catalog",
         "product-detail",
-        "modal"
+        "modal",
+        "market-autonomy"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -71080,13 +72105,16 @@
         "db:product_variants",
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
         "impact:catalog",
+        "impact:market-autonomy",
         "impact:modal",
         "impact:product-detail",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "routes/products.js",
         "services/catalog-product-detail.js",
-        "services/catalog-public-view.js"
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ]
     },
     "routes/categories.js": {
@@ -73515,7 +74543,8 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
-        "services/catalog-public-view.js"
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -73534,14 +74563,16 @@
       "doctrines": [
         "catalogue_source_db",
         "produit_reference_stable",
-        "produit_desactive_non_supprime"
+        "produit_desactive_non_supprime",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
         "modal",
         "admin-products",
-        "suggestions"
+        "suggestions",
+        "market-autonomy"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -73549,10 +74580,12 @@
         "db:product_variants",
         "db:products",
         "doctrine:catalogue_source_db",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
         "doctrine:produit_desactive_non_supprime",
         "doctrine:produit_reference_stable",
         "impact:admin-products",
         "impact:catalog",
+        "impact:market-autonomy",
         "impact:modal",
         "impact:product-discovery",
         "impact:suggestions",
@@ -73564,6 +74597,7 @@
         "public/boutique/js/komerce-api.js",
         "routes/catalog-product-detail.js",
         "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
         "utils/logger.js"
       ]
@@ -78369,6 +79403,230 @@
         "utils/logger.js"
       ]
     },
+    "services/market-commercial-price-service.js": {
+      "role": "market-commercial-price-decision-owner",
+      "domain": "market-autonomy",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/market-local-price-activation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "product_market_price_drafts",
+        "product_market_price_draft_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "country_strategy_is_local",
+        "global_catalog_price_untouched",
+        "local_currency_from_server_market",
+        "authorization_distinct_from_buyer_cutover"
+      ],
+      "impactAreas": [
+        "pricing",
+        "market",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:product_market_price_draft_events",
+        "db:product_market_price_drafts",
+        "db:products",
+        "doctrine:authorization_distinct_from_buyer_cutover",
+        "doctrine:country_strategy_is_local",
+        "doctrine:global_catalog_price_untouched",
+        "doctrine:local_currency_from_server_market",
+        "impact:admin-dashboard",
+        "impact:market",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "services/market-local-price-activation-service.js",
+        "services/market-local-price-state-transition.js"
+      ]
+    },
+    "services/market-local-price-activation-service.js": {
+      "role": "market-local-price-activation-orchestrator",
+      "domain": "market-autonomy",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-resolution-service.js",
+        "services/market-local-price-state-transition.js",
+        "services/pricing-engine.js",
+        "services/pricing-cdr.js",
+        "services/pricing-market-decision-policy.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "local_human_decides_system_checks_no_central_approval",
+        "under_cdr_requires_market_coverage",
+        "destructive_price_never_activates"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "catalog",
+        "checkout",
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:product_market_price_drafts",
+        "db:product_skus",
+        "db:product_variants",
+        "doctrine:destructive_price_never_activates",
+        "doctrine:local_human_decides_system_checks_no_central_approval",
+        "doctrine:under_cdr_requires_market_coverage",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:market",
+        "impact:pricing",
+        "impact:shared-cart",
+        "routes/admin-pricing-workspace.js",
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-resolution-service.js",
+        "services/market-local-price-state-transition.js",
+        "services/pricing-cdr.js",
+        "services/pricing-engine.js",
+        "services/pricing-market-decision-policy.js"
+      ]
+    },
+    "services/market-local-price-resolution-service.js": {
+      "role": "market-active-local-price-buyer-boundary",
+      "domain": "market-autonomy",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "utils/currency.js",
+        "services/product-sellable-service.js"
+      ],
+      "directUsedBy": [
+        "routes/products.js",
+        "routes/catalog-product-detail.js",
+        "services/order-checkout-service.js",
+        "services/shared-cart-creation.js",
+        "services/market-local-price-activation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "products",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "market_from_server_context",
+        "granular_sku_prices_fail_closed"
+      ],
+      "impactAreas": [
+        "market",
+        "catalog",
+        "checkout",
+        "shared-cart",
+        "pricing"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:product_market_price_drafts",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "doctrine:granular_sku_prices_fail_closed",
+        "doctrine:market_from_server_context",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:market",
+        "impact:pricing",
+        "impact:shared-cart",
+        "routes/catalog-product-detail.js",
+        "routes/products.js",
+        "services/market-local-price-activation-service.js",
+        "services/order-checkout-service.js",
+        "services/product-sellable-service.js",
+        "services/shared-cart-creation.js",
+        "utils/currency.js"
+      ]
+    },
+    "services/market-local-price-state-transition.js": {
+      "role": "market-local-price-active-state-transition",
+      "domain": "market-autonomy",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/market-commercial-price-service.js"
+      ],
+      "directUsedBy": [
+        "services/market-local-price-activation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "product_market_price_drafts",
+        "product_market_price_draft_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "activation_only_from_authorized_state",
+        "activation_is_audited",
+        "amount_and_currency_are_frozen_across_cutover"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "checkout",
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:product_market_price_draft_events",
+        "db:product_market_price_drafts",
+        "db:products",
+        "doctrine:activation_is_audited",
+        "doctrine:activation_only_from_authorized_state",
+        "doctrine:amount_and_currency_are_frozen_across_cutover",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:market",
+        "impact:pricing",
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-activation-service.js"
+      ]
+    },
     "services/market-scope-admin-service.js": {
       "role": "market-operator-scope-admin-boundary",
       "domain": "market",
@@ -79382,13 +80640,15 @@
       "doctrines": [
         "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "explicit_relay_market_anchor",
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "orders",
         "checkout",
         "shared-cart",
-        "local-stock"
+        "local-stock",
+        "market-autonomy"
       ],
       "mustCheck": [
         "db:order_items",
@@ -79403,13 +80663,16 @@
         "db:shared_carts",
         "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
         "doctrine:explicit_relay_market_anchor",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:local-stock",
+        "impact:market-autonomy",
         "impact:orders",
         "impact:shared-cart",
         "routes/orders/create.js",
         "services/cart-share-service.js",
+        "services/market-local-price-resolution-service.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
         "services/order-post-commit-hooks.js"
@@ -81417,6 +82680,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "services/cost-component-market-service.js",
+        "services/market-local-price-activation-service.js",
         "services/pricing-engine.js",
         "utils/rates.js"
       ]
@@ -81553,6 +82817,7 @@
         "routes/pricing.js",
         "routes/sourcing-scanner.js",
         "services/apply-pricing-updates.js",
+        "services/market-local-price-activation-service.js",
         "services/order-cost-snapshot.js",
         "services/pricing-cdr.js",
         "services/pricing-dashboard.js",
@@ -81689,7 +82954,43 @@
         "impact:operational-flow",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/market-local-price-activation-service.js",
         "services/pricing-market-coverage.js"
+      ]
+    },
+    "services/pricing-market-decision-projection.js": {
+      "role": "economic-engine-pricing-market-decision-projection",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/pricing-market-decision-policy.js output contract"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "one_contribution_many_views",
+        "rolling_flow_cadence_is_projection_not_cost_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:one_contribution_many_views",
+        "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js"
       ]
     },
     "services/pricing-maturity.js": {
@@ -82364,6 +83665,7 @@
         "impact:checkout",
         "impact:orders",
         "impact:shared-cart",
+        "services/market-local-price-resolution-service.js",
         "services/order-checkout-item-resolution.js",
         "services/product-sku-service.js"
       ]
@@ -83620,7 +84922,8 @@
       "directDependsOn": [
         "db.js",
         "services/shared-cart-internals.js",
-        "services/product-admin-service.js"
+        "services/product-admin-service.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -83631,6 +84934,7 @@
         "baskets",
         "product_skus",
         "products",
+        "relais",
         "shared_carts",
         "users"
       ],
@@ -83644,24 +84948,32 @@
       "dbWriteVia": [],
       "doctrines": [
         "domaine_minimal_boutique_first",
-        "snapshot_fige"
+        "snapshot_fige",
+        "relay_market_is_server_price_anchor",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
-        "creator-flow"
+        "creator-flow",
+        "market-autonomy"
       ],
       "mustCheck": [
         "db:basket_items",
         "db:baskets",
         "db:product_skus",
         "db:products",
+        "db:relais",
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
         "db:users",
         "doctrine:domaine_minimal_boutique_first",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+        "doctrine:relay_market_is_server_price_anchor",
         "doctrine:snapshot_fige",
         "impact:creator-flow",
+        "impact:market-autonomy",
         "routes/shared-cart.js",
+        "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
         "services/shared-cart-internals.js"
       ]
@@ -86137,6 +87449,7 @@
         "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
         "impact:economic-engine",
         "impact:market",
+        "services/market-local-price-resolution-service.js",
         "services/order-display-snapshot.js",
         "services/payment-mobile-money.js"
       ]
@@ -87840,6 +89153,22 @@
       "writers": [
         "routes/parcels.js",
         "routes/tracking.js"
+      ]
+    },
+    {
+      "table": "product_market_price_draft_events",
+      "writerCount": 2,
+      "writers": [
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-state-transition.js"
+      ]
+    },
+    {
+      "table": "product_market_price_drafts",
+      "writerCount": 2,
+      "writers": [
+        "services/market-commercial-price-service.js",
+        "services/market-local-price-state-transition.js"
       ]
     },
     {
@@ -90369,6 +91698,24 @@
       "label": "db"
     },
     {
+      "from": "services/market-commercial-price-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/market-local-price-state-transition.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "dashboard",
       "to": "services/market-scope-admin-service.js",
       "type": "uses",
@@ -90703,6 +92050,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
+      "to": "services/pricing-market-decision-policy.js output contract",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js output contract"
     },
     {
       "from": "services/pricing-maturity.js",

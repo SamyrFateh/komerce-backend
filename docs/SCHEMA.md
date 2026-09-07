@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 131 | Vérifié sur le dump live Railway. |
+| Tables | 133 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 352 | Performance + contraintes uniques |
-| Foreign keys | 221 | Cohérence relationnelle |
+| Index | 355 | Performance + contraintes uniques |
+| Foreign keys | 227 | Cohérence relationnelle |
 | Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 37 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -216,23 +216,11 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `economic_risk_cost_events` | Journal append-only des coûts de risque N2 réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `product_market_price_drafts` | Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
 
-<!-- schema-pending
-object: product_market_price_drafts
-kind: table
-migration: 170
-section: ### 4.8 Pricing et économie (19 tables)
-role: Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE.
--->
 
-<!-- schema-pending
-object: product_market_price_draft_events
-kind: table
-migration: 170
-section: ### 4.8 Pricing et économie (19 tables)
-role: Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique.
--->
 
 ### 4.9 Douane (4 tables)
 

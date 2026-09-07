@@ -4109,6 +4109,79 @@ COMMENT ON COLUMN public.product_content_sections.content_json IS 'Forme dépend
 
 
 --
+-- Name: product_market_price_draft_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_market_price_draft_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    action character varying(16) NOT NULL,
+    old_amount numeric(18,4),
+    new_amount numeric(18,4),
+    currency character varying(3) NOT NULL,
+    old_status character varying(48),
+    new_status character varying(48),
+    decision_snapshot jsonb,
+    reason text NOT NULL,
+    source character varying(80) DEFAULT 'market_manager'::character varying NOT NULL,
+    actor_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT product_market_price_draft_events_action_check CHECK (((action)::text = ANY ((ARRAY['SET'::character varying, 'RESET'::character varying, 'AUTHORIZE'::character varying, 'ACTIVATE'::character varying])::text[]))),
+    CONSTRAINT product_market_price_draft_events_currency_check CHECK (((currency)::text ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT product_market_price_draft_events_reason_check CHECK ((char_length(btrim(reason)) >= 3))
+);
+
+
+--
+-- Name: TABLE product_market_price_draft_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_market_price_draft_events IS 'Append-only audit of country price SET/RESET/AUTHORIZE/ACTIVATE actions.';
+
+
+--
+-- Name: product_market_price_drafts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_market_price_drafts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    amount numeric(18,4) NOT NULL,
+    currency character varying(3) NOT NULL,
+    status character varying(48) DEFAULT 'DRAFT_PENDING_GATE'::character varying NOT NULL,
+    reason text NOT NULL,
+    source character varying(80) DEFAULT 'market_manager'::character varying NOT NULL,
+    decided_by uuid,
+    authorized_at timestamp with time zone,
+    authorization_snapshot jsonb,
+    active_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT product_market_price_authorization_state_check CHECK (((((status)::text = 'DRAFT_PENDING_GATE'::text) AND (authorized_at IS NULL) AND (authorization_snapshot IS NULL) AND (active_at IS NULL)) OR (((status)::text = 'LOCAL_AUTHORIZED_PENDING_CUTOVER'::text) AND (authorized_at IS NOT NULL) AND (authorization_snapshot IS NOT NULL) AND (active_at IS NULL)) OR (((status)::text = 'LOCAL_ACTIVE'::text) AND (authorized_at IS NOT NULL) AND (authorization_snapshot IS NOT NULL) AND (active_at IS NOT NULL)))),
+    CONSTRAINT product_market_price_drafts_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT product_market_price_drafts_currency_check CHECK (((currency)::text ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT product_market_price_drafts_reason_check CHECK ((char_length(btrim(reason)) >= 3)),
+    CONSTRAINT product_market_price_drafts_status_check CHECK (((status)::text = ANY ((ARRAY['DRAFT_PENDING_GATE'::character varying, 'LOCAL_AUTHORIZED_PENDING_CUTOVER'::character varying, 'LOCAL_ACTIVE'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE product_market_price_drafts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_market_price_drafts IS 'Current market-owned commercial price decision. Currency is resolved from markets server-side; economic authorization is distinct from buyer cutover.';
+
+
+--
+-- Name: COLUMN product_market_price_drafts.authorization_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_market_price_drafts.authorization_snapshot IS 'Immutable-at-authorization evidence snapshot: local->KMF projection, CDR and market gate decision used to authorize this exact amount.';
+
+
+--
 -- Name: product_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -7106,6 +7179,30 @@ ALTER TABLE ONLY public.product_content_sections
 
 
 --
+-- Name: product_market_price_draft_events product_market_price_draft_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_draft_events
+    ADD CONSTRAINT product_market_price_draft_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_market_price_drafts product_market_price_drafts_market_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_drafts
+    ADD CONSTRAINT product_market_price_drafts_market_id_product_id_key UNIQUE (market_id, product_id);
+
+
+--
+-- Name: product_market_price_drafts product_market_price_drafts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_drafts
+    ADD CONSTRAINT product_market_price_drafts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: product_sku_media product_sku_media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9107,6 +9204,27 @@ CREATE INDEX idx_product_attributes_product ON public.product_attributes USING b
 --
 
 CREATE INDEX idx_product_content_sections_product ON public.product_content_sections USING btree (product_id, display_order) WHERE (is_active = true);
+
+
+--
+-- Name: idx_product_market_price_draft_events_market_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_market_price_draft_events_market_product ON public.product_market_price_draft_events USING btree (market_id, product_id, created_at DESC);
+
+
+--
+-- Name: idx_product_market_price_drafts_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_market_price_drafts_market ON public.product_market_price_drafts USING btree (market_id, updated_at DESC);
+
+
+--
+-- Name: idx_product_market_price_drafts_market_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_market_price_drafts_market_status ON public.product_market_price_drafts USING btree (market_id, status, updated_at DESC);
 
 
 --
@@ -11570,6 +11688,54 @@ ALTER TABLE ONLY public.product_content_profile
 
 ALTER TABLE ONLY public.product_content_sections
     ADD CONSTRAINT product_content_sections_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_market_price_draft_events product_market_price_draft_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_draft_events
+    ADD CONSTRAINT product_market_price_draft_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
+-- Name: product_market_price_draft_events product_market_price_draft_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_draft_events
+    ADD CONSTRAINT product_market_price_draft_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: product_market_price_draft_events product_market_price_draft_events_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_draft_events
+    ADD CONSTRAINT product_market_price_draft_events_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_market_price_drafts product_market_price_drafts_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_drafts
+    ADD CONSTRAINT product_market_price_drafts_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id);
+
+
+--
+-- Name: product_market_price_drafts product_market_price_drafts_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_drafts
+    ADD CONSTRAINT product_market_price_drafts_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: product_market_price_drafts product_market_price_drafts_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_price_drafts
+    ADD CONSTRAINT product_market_price_drafts_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --
