@@ -325,9 +325,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 82,
-    totalRoutes: 84,
-    note: "82/84 routes protégées (dont 11 routes Canonical Pricing 4F sous grant global explicite). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
+    authedRoutesDetected: 85,
+    totalRoutes: 87,
+    note: "85/87 routes protégées (dont les routes Canonical Pricing pays, y compris décision de prix local sous scope marché). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
   },
   contract: {
     exposes: [
@@ -344,6 +344,9 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',
       'GET /api/admin/workspaces/pricing/market/:marketCode',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset',
@@ -437,6 +440,7 @@ module.exports = {
       'business-rules (dépendance data cross-feature observée et gouvernée par O5)',
       'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',
+      'market-autonomy (décisions commerciales locales market-scoped composées dans Pricing Canonical ; le moteur consomme le service propriétaire sans reprendre sa vérité)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
 'catalog (donnees produit source)',
