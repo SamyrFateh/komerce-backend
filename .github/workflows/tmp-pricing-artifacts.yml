@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JWT_SECRET: ${{ github.sha }}
+      META_WA_APP_SECRET: ${{ github.sha }}
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
