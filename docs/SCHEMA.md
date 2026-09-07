@@ -213,6 +213,20 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `economic_risk_cost_events` | Journal append-only des coûts de risque N2 réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
+<!-- schema-pending
+object: product_market_price_drafts
+kind: table
+migration: 168
+section: ### 4.8 Pricing et économie (19 tables)
+role: Décision commerciale locale courante par marché et produit, en devise du marché résolue serveur ; DRAFT_PENDING_GATE tant que l'activation acheteur n'est pas autorisée.
+-->
+<!-- schema-pending
+object: product_market_price_draft_events
+kind: table
+migration: 168
+section: ### 4.8 Pricing et économie (19 tables)
+role: Journal append-only des SET/RESET de décisions de prix commerciales locales par marché et produit.
+-->
 
 ### 4.9 Douane (4 tables)
 
