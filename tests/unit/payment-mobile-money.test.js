@@ -10,7 +10,7 @@ const mockDb = {
   query: jest.fn(),
   getClient: jest.fn(),
 };
-const fakeAdapter = {
+const mockAdapter = {
   name: 'orange_money',
   label: 'Orange Money',
   requiresMsisdn: false,
@@ -32,7 +32,7 @@ jest.mock('../../utils/currency', () => ({
   roundToMinorUnit: jest.fn((n) => Math.round(n)),
 }));
 jest.mock('../../services/mobile-money/registry', () => ({
-  getAdapter: jest.fn(() => fakeAdapter),
+  getAdapter: jest.fn(() => mockAdapter),
 }));
 jest.mock('../../services/order-payment-confirmation', () => ({ confirmPaymentCycle: jest.fn() }));
 jest.mock('../../services/order-mutation-service', () => ({ appendOrderNote: jest.fn() }));
@@ -49,7 +49,7 @@ function q(rows) { return Promise.resolve({ rows }); }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  fakeAdapter.isConfigured.mockReturnValue(true);
+  mockAdapter.isConfigured.mockReturnValue(true);
   process.env.PUBLIC_BASE_URL = 'https://staging.komerce.test';
 });
 
@@ -83,7 +83,7 @@ describe('getAvailability', () => {
   });
 
   test('provider activé en DB mais secrets absents = fail-closed', async () => {
-    fakeAdapter.isConfigured.mockReturnValue(false);
+    mockAdapter.isConfigured.mockReturnValue(false);
     mockDb.query.mockResolvedValueOnce({ rows: [{
       market_id: 'market-cm', market_code: 'CM', market_name: 'Cameroun',
       market_currency: 'XAF', minor_unit: 0,
@@ -106,7 +106,7 @@ describe('initiateMobileMoney', () => {
 
   test('projette côté serveur puis fige le montant avant appel provider', async () => {
     currency.projectAmount.mockResolvedValueOnce(13334.1);
-    fakeAdapter.initiate.mockResolvedValueOnce({
+    mockAdapter.initiate.mockResolvedValueOnce({
       externalTransactionId: 'PAY-1', status: 'pending', providerStatus: 'PENDING',
       safePayload: {}, clientAction: { type: 'redirect', url: 'https://orange.test/pay/PAY-1' },
     });
@@ -133,7 +133,7 @@ describe('initiateMobileMoney', () => {
     const result = await mobileMoney.initiateMobileMoney({ orderReference: 'K-CM-001' });
 
     expect(currency.projectAmount).toHaveBeenCalledWith(10000, 'KMF', 'XAF');
-    expect(fakeAdapter.initiate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockAdapter.initiate).toHaveBeenCalledWith(expect.objectContaining({
       orderReference: 'K-CM-001',
       amount: 13334,
       currency: 'XAF',
@@ -160,7 +160,7 @@ describe('initiateMobileMoney', () => {
     const result = await mobileMoney.initiateMobileMoney({ orderReference: 'K-CM-001' });
     expect(result.reused).toBe(true);
     expect(result.transaction.id).toBe('22222222-2222-4222-8222-222222222222');
-    expect(fakeAdapter.initiate).not.toHaveBeenCalled();
+    expect(mockAdapter.initiate).not.toHaveBeenCalled();
     expect(currency.projectAmount).not.toHaveBeenCalled();
   });
 });
