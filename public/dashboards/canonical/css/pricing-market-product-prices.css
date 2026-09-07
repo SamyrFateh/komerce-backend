@@ -1,0 +1,79 @@
+/* Pricing market product prices — Canonical only */
+.kmc-market-price-doctrine {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #475569;
+}
+.kmc-market-price-doctrine strong { color: #0f172a; }
+.kmc-market-price-category,
+.kmc-market-price-source,
+.kmc-market-price-validity {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 11px;
+}
+.kmc-market-price-source.is-local { color: #166534; font-weight: 800; }
+.kmc-market-price-position {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.kmc-market-price-position.is-covered { background: #dcfce7; color: #166534; }
+.kmc-market-price-position.is-under_cdr { background: #fef3c7; color: #92400e; }
+.kmc-market-price-position.is-destructive { background: #fee2e2; color: #991b1b; }
+.kmc-market-price-table td:last-child { white-space: nowrap; }
+.kmc-market-price-table td:last-child .kmc-workspace-action + .kmc-workspace-action { margin-left: 6px; }
+.kmc-market-price-editor-row > td,
+.kmc-market-price-history-row > td { background: #f8fafc; }
+.kmc-market-price-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 6px 2px;
+}
+.kmc-market-price-form label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; }
+.kmc-market-price-form label.is-wide { grid-column: 1 / -1; }
+.kmc-market-price-form input,
+.kmc-market-price-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+.kmc-market-price-help { grid-column: 1 / -1; margin: 0; color: #64748b; font-size: 12px; }
+.kmc-market-price-form-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.kmc-market-price-history-list { display: grid; gap: 8px; }
+.kmc-market-price-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 11px 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+.kmc-market-price-history-item p,
+.kmc-market-price-history-item small { grid-column: 1 / -1; margin: 0; color: #64748b; }
+@media (max-width: 760px) {
+  .kmc-market-price-form { grid-template-columns: 1fr; }
+  .kmc-market-price-form label.is-wide,
+  .kmc-market-price-help,
+  .kmc-market-price-form-actions { grid-column: 1; }
+  .kmc-market-price-history-item { grid-template-columns: 1fr; }
+}
