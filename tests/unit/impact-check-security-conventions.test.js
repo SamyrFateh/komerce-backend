@@ -1,3 +1,4 @@
+const fs = require('fs');
 'use strict';
 
 const { scanSecurity, suppressSecurity } = require('../../scripts/impact-check');
@@ -27,5 +28,18 @@ describe('impact-check security conventions', () => {
     expect(suppressSecurity('xss', 'template.innerHTML = strings[0];', guarded)).toBe(true);
     expect(suppressSecurity('xss', 'el.innerHTML = userHtml;', guarded)).toBe(false);
     expect(suppressSecurity('xss', 'template.innerHTML = strings[0];', 'function unsafe(strings) { template.innerHTML = strings[0]; }')).toBe(false);
+  });
+
+  test('les quatre anciennes surfaces ne nécessitent plus aucune exception nommée', () => {
+    const files = [
+      'services/dashboard-metrics/control-tower.js',
+      'routes/admin-costing.js',
+      'routes/parcels.js',
+      'public/boutique/scripts/gate-smoke-boutique.cjs',
+    ];
+    for (const file of files) {
+      const issues = scanSecurity(file, fs.readFileSync(file, 'utf8'), null);
+      expect(issues).toEqual([]);
+    }
   });
 });
