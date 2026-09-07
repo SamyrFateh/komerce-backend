@@ -20,6 +20,8 @@
         "features/logistics.feature.js",
         "features/loyalty.feature.js",
         "features/market.feature.js",
+        "features/market-autonomy.feature.js",
+        "features/market-operator-dashboard.feature.js",
         "features/notifications.feature.js",
         "features/orders.feature.js",
         "features/payments.feature.js",
@@ -45,17 +47,17 @@
     }
   },
   "summary": {
-    "features": 33,
-    "healthy": 33,
-    "attention": 0,
+    "features": 35,
+    "healthy": 34,
+    "attention": 1,
     "blocked": 0,
-    "businessDependencies": 241,
+    "businessDependencies": 250,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 0,
-    "gateHealthy": 30,
+    "debtItemsTotal": 3,
+    "gateHealthy": 32,
     "gateBlocked": 2
   },
   "projectionIntegrity": {
@@ -4007,6 +4009,13 @@
           ]
         },
         {
+          "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -4105,6 +4114,14 @@
         },
         {
           "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "market-autonomy",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
@@ -5486,8 +5503,13 @@
             ]
           },
           "tests": {
-            "count": 65,
+            "count": 66,
             "files": [
+              {
+                "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+                "resolvedPath": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/test-dashboard.js",
                 "resolvedPath": "tests/test-dashboard.js",
@@ -5816,7 +5838,7 @@
             ]
           }
         },
-        "totalFiles": 213,
+        "totalFiles": 214,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7597,7 +7619,7 @@
             ]
           },
           "services": {
-            "count": 37,
+            "count": 38,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -7725,6 +7747,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-market-decision-projection.js",
+                "resolvedPath": "services/pricing-market-decision-projection.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-maturity.js",
                 "resolvedPath": "services/pricing-maturity.js",
                 "status": "resolved-in-technical-graph"
@@ -7787,7 +7814,7 @@
             ]
           },
           "tests": {
-            "count": 68,
+            "count": 69,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -8035,6 +8062,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-market-decision-projection.test.js",
+                "resolvedPath": "tests/unit/pricing-market-decision-projection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-maturity-disposition-migration.test.js",
                 "resolvedPath": "tests/unit/pricing-maturity-disposition-migration.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8152,7 +8184,7 @@
             ]
           }
         },
-        "totalFiles": 154,
+        "totalFiles": 156,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -8914,6 +8946,13 @@
           ]
         },
         {
+          "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -8978,6 +9017,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -11218,6 +11264,20 @@
         },
         {
           "consumer": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-operator-dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -14241,6 +14301,14 @@
           ]
         },
         {
+          "consumer": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14306,6 +14374,528 @@
       "architecturalDebt": {
         "debtCount": 0,
         "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "market-autonomy",
+      "kind": "business-feature",
+      "status": "staging",
+      "manifestFile": "features/market-autonomy.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "market-autonomy",
+        "kind": "business-feature",
+        "status": "staging"
+      },
+      "service": "Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.",
+      "perimeter": {
+        "in": [
+          "décision de prix commercial locale par market_id + product_id",
+          "devise résolue exclusivement depuis le marché serveur",
+          "audit append-only SET/RESET/AUTHORIZE/ACTIVATE de la décision locale",
+          "preview économique CDR + couverture marché avant activation",
+          "transition DRAFT_PENDING_GATE -> LOCAL_AUTHORIZED_PENDING_CUTOVER -> LOCAL_ACTIVE",
+          "projection du prix LOCAL_ACTIVE vers le KMF canonique sans modifier products.price_kmf",
+          "consommation LOCAL_ACTIVE par catalogue, liste partagée et checkout via boundary propriétaire",
+          "refus fail-closed si une granularité SKU/variante explicite entrerait en conflit",
+          "projection manager/viewer de la capacité réellement disponible",
+          "surface Canonical de test de l’autonomie pays"
+        ],
+        "out": [
+          "mutation de products.price_kmf global",
+          "validation humaine centrale de la stratégie commerciale pays",
+          "création/activation d’un marché",
+          "settlement et mouvements financiers",
+          "rôles terrain implicites",
+          "prix local par SKU — tant que cette granularité n’est pas modélisée explicitement"
+        ]
+      },
+      "authority": "backend-core — la stratégie locale appartient au manager du marché ; le moteur économique peut refuser une activation destructive ou sous-couverte non autorisée, mais aucun admin central ne valide le choix commercial pays.",
+      "invariants": [
+        {
+          "statement": "une décision locale ne modifie jamais products.price_kmf",
+          "test": "tests/unit/market-commercial-price-service.test.js"
+        },
+        {
+          "statement": "la devise faisant foi vient du marché résolu côté serveur",
+          "test": "tests/unit/market-local-price-resolution-service.test.js"
+        },
+        {
+          "statement": "seul LOCAL_ACTIVE est buyer_effective et peut remplacer le prix global",
+          "test": "tests/unit/market-local-price-resolution-service.test.js"
+        },
+        {
+          "statement": "un prix destructif ne peut jamais être activé",
+          "test": "tests/unit/market-local-price-activation-service.test.js"
+        },
+        {
+          "statement": "un prix sous CDR exige ALLOW_NEW_UNDER_CDR_POSITION",
+          "test": "tests/unit/market-local-price-activation-service.test.js"
+        },
+        {
+          "statement": "un prix pays produit n’écrase jamais silencieusement un prix SKU/variante explicite",
+          "test": "tests/unit/market-local-price-resolution-service.test.js"
+        },
+        {
+          "statement": "SET RESET AUTHORIZE ACTIVATE sont auditables et scoped par market_id + product_id",
+          "test": "tests/unit/market-commercial-price-service.test.js"
+        },
+        {
+          "statement": "seul un market_operator manager peut persister ou activer une stratégie de prix locale",
+          "test": "tests/unit/market-commercial-price-service.test.js"
+        }
+      ],
+      "implementation": {
+        "byCategory": {
+          "dash": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "dashboards/canonical/js/market-autonomy.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-autonomy.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/market-autonomy.html",
+                "resolvedPath": "public/dashboards/canonical/market-autonomy.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/170_market_commercial_price_drafts.sql",
+                "resolvedPath": "migrations/170_market_commercial_price_drafts.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "services": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "services/market-commercial-price-service.js",
+                "resolvedPath": "services/market-commercial-price-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-local-price-activation-service.js",
+                "resolvedPath": "services/market-local-price-activation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-local-price-resolution-service.js",
+                "resolvedPath": "services/market-local-price-resolution-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-local-price-state-transition.js",
+                "resolvedPath": "services/market-local-price-state-transition.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "tests/unit/market-commercial-price-service.test.js",
+                "resolvedPath": "tests/unit/market-commercial-price-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-local-price-activation-service.test.js",
+                "resolvedPath": "tests/unit/market-local-price-activation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-local-price-resolution-service.test.js",
+                "resolvedPath": "tests/unit/market-local-price-resolution-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 10,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "product_market_price_draft_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_market_price_drafts",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "product_market_price_draft_events",
+            "mode": "W",
+            "lifecycleOwner": "market-autonomy",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_market_price_drafts",
+            "mode": "RW",
+            "lifecycleOwner": "market-autonomy",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "currency_parities",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "product_market_price_draft_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_market_price_drafts",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "product_market_price_draft_events",
+            "mode": "W",
+            "lifecycleOwner": "market-autonomy",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_market_price_drafts",
+            "mode": "RW",
+            "lifecycleOwner": "market-autonomy",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "currency_parities",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        }
+      ],
+      "consumedBy": [
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "market-operator-dashboard",
+      "kind": "unclassified",
+      "status": "staging",
+      "manifestFile": "features/market-operator-dashboard.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "market-operator-dashboard",
+        "kind": "unclassified",
+        "status": "staging"
+      },
+      "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de piloter son marché (KPIs, commandes, clients, ventes, relais, Hub, pricing en lecture), de gérer ses relais partenaires, et de superviser les opérations Hub de son marché — sans jamais voir les données d'un autre marché ni effectuer d'opérations physiques Hub.",
+      "perimeter": {
+        "in": [
+          "Operations Workspace (routes/admin-operations-workspace.js, possédé par `dashboard`) : rattachement d'une ligne de rôle, lecture ouverte au market_operator (mutations restent agent_hub/agent_relais)",
+          "Navigation Canonical : filtrage des utility links par rôle (Accès pays et Démo = admin only)",
+          "Remontage navigation après résolution async de la session pour appliquer le filtrage rôle",
+          "Script CLI provision-market-operator.js : création utilisateur + scope atomique, idempotent",
+          "Parcours complet : login → context → 4 dashboards scopés → workspaces scopés → partners CRUD"
+        ],
+        "out": [
+          "Dashboard Legacy (admin/) — gelé, market_operator volontairement exclu de ROLE_SHELLS",
+          "Mutations Hub physiques (scan, pack, seal, ship) — réservées agent_hub",
+          "Catalogue global, sourcing, douane, comptabilité — réservés admin/finance/sourcing",
+          "Pricing mutations globales (apply strategy, update competitor) — réservées admin/sourcing",
+          "Refacturation multi-marché (Railway, Hub fixe) — chantier séparé, dépend du ratio de couverture",
+          "Ratio de couverture par marché — chantier pricing Phase 3d, pas ce lot"
+        ]
+      },
+      "authority": "backend-core — tout changement de rôle ou de scope marché sur cette surface doit être validé par le propriétaire de middleware/require-market-scope.js.",
+      "invariants": [
+        "Le scope serveur est l'autorité — le navigateur ne choisit jamais son marché",
+        "Un market_operator sans scope actif dans operator_market_scopes n'accède à rien",
+        "Les mutations physiques Hub (scan/pack/seal/ship) restent exclusivement agent_hub + admin",
+        "Les mutations terrain relais (réception/remise/cash) restent exclusivement agent_relais + admin",
+        "Les 4 dashboards primaires restent visibles pour tous les rôles autorisés — le scope des données est serveur",
+        "Les utility links admin (Accès pays, Démo) sont masqués pour les non-admin",
+        "agent_hub garde la vue Hub globale (tous les marchés, Hub unique)",
+        "agent_relais reste limité à son relais_id physique",
+        "Le dashboard Legacy (admin/) ne reçoit jamais market_operator dans ROLE_SHELLS — il est gelé",
+        "Le provisioning est idempotent — ne recrée ni user ni scope existants"
+      ],
+      "implementation": {
+        "byCategory": {
+          "scripts": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "scripts/provision-market-operator.js",
+                "resolvedPath": "scripts/provision-market-operator.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "tests": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "tests/unit/canonical-navigation.test.js",
+                "resolvedPath": "tests/unit/canonical-navigation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-operations-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-operations-workspace-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 3,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "consumedBy": [],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 3,
+        "declaredNotObservedEvidence": [
+          "auth",
+          "dashboard",
+          "market"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 3,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"auth\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"dashboard\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -16041,6 +16631,13 @@
         },
         {
           "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-autonomy",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -20299,6 +20896,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-autonomy",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

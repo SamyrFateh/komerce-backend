@@ -65,15 +65,13 @@ module.exports = {
   ],
 
   // ── Fichiers de ce lot ───────────────────────────────────────────────────
-  // routes/admin-operations-workspace.js n'est PAS listé ici : le fichier est
-  // possédé par la feature `dashboard` (cf. APP_FEATURE_REGISTRY.md #19/#22).
-  // Ce lot ne fait qu'un rattachement — une ligne de rôle ajoutée à
-  // requireWorkspaceReadRole — sans transférer la propriété du fichier.
+  // routes/admin-operations-workspace.js, public/dashboards/canonical/js/navigation.js
+  // et public/dashboards/canonical/js/app.js ne sont PAS listés ici : ce sont
+  // des fichiers possédés par la feature `dashboard` (canonical/** + workspace
+  // routes, cf. APP_FEATURE_REGISTRY.md). Ce lot ne fait que des rattachements
+  // ciblés dans ces fichiers (rôle ajouté, filtrage par rôle, remount post-
+  // session) sans transférer la propriété.
   files: {
-    frontend: [
-      'public/dashboards/canonical/js/navigation.js',
-      'public/dashboards/canonical/js/app.js',
-    ],
     scripts: [
       'scripts/provision-market-operator.js',
     ],
@@ -103,7 +101,8 @@ module.exports = {
     consumes: [
       'market (operator_market_scopes, markets)',
       'auth (authenticate, requireRole)',
-      'dashboard (admin-dashboard-market routes, admin-context)',
+      'dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace)',
+      'infrastructure (db.js — pool utilisé par scripts/provision-market-operator.js)',
     ],
   },
 
