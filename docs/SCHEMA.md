@@ -227,6 +227,13 @@ migration: 168
 section: ### 4.8 Pricing et économie (19 tables)
 role: Journal append-only des SET/RESET de décisions de prix commerciales locales par marché et produit.
 -->
+<!-- schema-pending
+object: pricing_market_decision_policy_events
+kind: table
+migration: 169
+section: ### 4.8 Pricing et économie (19 tables)
+role: Journal append-only des politiques économiques de décision par marché ; chaque version borne le gate de couverture et autorise ou refuse techniquement une décision locale sans approbation humaine centrale.
+-->
 
 ### 4.9 Douane (4 tables)
 
@@ -234,7 +241,7 @@ role: Journal append-only des SET/RESET de décisions de prix commerciales local
 |---|---|
 | `customs_categories` | Catégories douane. |
 | `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
-| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
+| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema`)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
 | `customs_history` | Historique taux effectifs. |
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
@@ -291,8 +298,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `pricing_global_access_grants` | Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur. **Migration 152 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `decision_signal_global_access_grants` | Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses. **Migration 153 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
-
-
 ### 4.13 Monitoring et alertes (10 tables)
 
 | Table | Rôle |
@@ -321,7 +326,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `physical_offers` | Produits physiques proposés par un tiers local, séparés des prestations de service. **Migration 156 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `local_stock_allocations` | Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente. **Migration 157 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
-
 ---
 
 ## 5. Vues critiques
@@ -345,7 +349,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `product_variants_ordered` | Variantes commandées. | Admin |
 | `v_parcel_reconciliation` | Réconciliation colis (dernier event, poids, écarts). Détectée non documentée et non déployée par gate:migration-doc le 2026-07-03. **Migration 094 — promue le 2026-07-14 (schema-promote, dump live verifie).** | Admin logistique |
 | `v_shipment_density` | Densité par shipment : poids, volume, tonnage taxable W/M, fill_rate_pct, margin_kmf_per_m3 (KPI doctrinal). Lecture seule, tolère les volumes NULL. Doctrine : DOCTRINE_DENSITE_VALEUR. **Migration 095 — promue le 2026-07-14 (schema-promote, dump live verifie).** | Admin logistique / calibration V-5 (docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md) |
-
 
 ---
 
