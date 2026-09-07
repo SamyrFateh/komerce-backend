@@ -31,25 +31,37 @@ Le service publie séparément :
 ```text
 revenue_kmf
 transaction_variable_cost_kmf      # N1 + paiement réellement réconciliables
-estimated_risk_provision_kmf       # provision de snapshot, informative
+estimated_risk_provision_kmf       # provision de snapshot, benchmark de calibration
 contribution_before_risk_kmf
 provisional_contribution_after_estimated_risk_kmf
-reconciled_risk_cost_kmf           # uniquement si vérité de période fournie
+reconciled_risk_cost_kmf           # vérité canonique de période
 reconciled_contribution_kmf
+risk_variance_vs_provision_kmf
 ```
 
 ## 3. Risque : absence d'incident != zéro
 
 La provision risque appartient à N2 mais sa vérité est de période. Le service n'autorise donc **jamais** un ratio avec un zéro de risque déduit de l'absence d'événement.
 
-Pour devenir décisionnel, le gate exige une réconciliation de risque portant exactement sur :
+La vérité canonique est lue depuis `pricing-risk-period.js`, qui s'appuie sur :
 
-- le même `market_id` ;
-- le même `from/to` ;
-- un `actual_risk_cost_kmf` explicite, y compris zéro ;
-- une source, une version et une référence de preuve.
+```text
+economic_risk_cost_events
++ economic_risk_watermark_events
+```
 
-À ce stade, cette vérité de risque est un **contrat d'entrée interne**, pas encore une table canonique ni une route. Tant que son producteur append-only / gouverné n'est pas matérialisé, le gate ne doit pas être branché à une autorisation commerciale réelle.
+Pour devenir décisionnel, le risque doit porter exactement sur le même `market_id` et la même fenêtre canonique. Une période sans perte n'est reconnue à `0 KMF` que lorsqu'un watermark de revue explicite certifie la borne `closed_through` correspondante.
+
+Un fait de risque backdaté mais enregistré après le watermark rend la certification `STALE` jusqu'à une nouvelle revue. Le gate repasse alors `NOT_DECISIONAL`.
+
+La provision de snapshot reste publiée uniquement comme référence de calibration :
+
+```text
+risk_variance_vs_provision_kmf
+  = risque réel réconcilié - provision estimée
+```
+
+Aucun `refund`, `dispute`, incident, impayé relais ou compensation n'est automatiquement transformé en coût risque par ce contrat. Chaque source devra disposer d'une règle de reconnaissance explicite pour empêcher les doubles comptes.
 
 ## 4. Dénominateur
 
@@ -103,12 +115,13 @@ Effet : `DENY_NEW_UNDER_CDR_POSITION`.
 
 Exemples :
 
-- watermark non prêt ;
+- watermark de maturité non prêt ;
 - maturité sous seuil ;
 - N3 marché non décisionnel ;
 - coût variable réel inconnu ;
 - jeu de commandes MATURE incohérent ;
-- vérité risque absente ;
+- watermark risque absent, insuffisant ou stale ;
+- vérité risque non réconciliée ;
 - N3 nul/négatif ne permettant pas un ratio honnête.
 
 Effet identique à `UNCOVERED` pour l'autorisation, mais sans fabriquer un ratio.
@@ -120,10 +133,12 @@ Effet identique à `UNCOVERED` pour l'autorisation, mais sans fabriquer un ratio
 - aucune écriture de stratégie ;
 - aucune refacturation partenaire ;
 - aucune table de politique de couverture ;
-- aucune table de vérité risque ;
+- aucun auto-mapping de `refunds` / `disputes` / incidents vers le risque ;
 - aucun budget de conquête automatique ;
 - aucun corridor marché.
 
-## 8. Prochain verrou après ce contrat
+## 8. Prochain verrou après la vérité risque
 
-Matérialiser la **vérité risque de période** de façon append-only / gouvernée, puis résoudre la **politique canonique de fenêtre et de seuils**. Ce n'est qu'après ces deux producteurs de vérité que `COVERED` pourra avoir une autorité commerciale réelle.
+Une fois la migration 167 vérifiée live en staging, le verrou restant avant autorité commerciale est de matérialiser la **politique canonique de fenêtre et de seuils** : largeur de fenêtre, `maturity_threshold`, `coverage_threshold`, politique de dispositions et version/evidence associées.
+
+Ce n'est qu'après ce producteur de politique que `COVERED` pourra piloter une autorisation commerciale réelle. Le prix lui-même reste une décision distincte ; `computePrices` n'est pas modifié par ce contrat.
