@@ -6,9 +6,7 @@
  * @test-requires none
  */
 
-jest.mock('../../db', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../db', () => ({ query: jest.fn() }));
 
 jest.mock('../../services/pricing-maturity', () => ({
   computeMarketMaturityWatermark: jest.fn(),
@@ -19,17 +17,21 @@ jest.mock('../../services/pricing-period-structure', () => ({
   computePeriodStructureTruth: jest.fn(),
 }));
 
+jest.mock('../../services/pricing-risk-period', () => ({
+  computePeriodRiskTruth: jest.fn(),
+}));
+
 const db = require('../../db');
 const {
   computeMarketMaturityWatermark,
   getOrderMaturity,
 } = require('../../services/pricing-maturity');
 const { computePeriodStructureTruth } = require('../../services/pricing-period-structure');
+const { computePeriodRiskTruth } = require('../../services/pricing-risk-period');
 const {
   COVERAGE_STATUSES,
   computeMarketCoverage,
   _normalizeCoveragePolicy,
-  _normalizeRiskReconciliation,
   _loadMatureOrderIds,
 } = require('../../services/pricing-market-coverage');
 
@@ -55,14 +57,12 @@ function coveragePolicy(overrides = {}) {
 
 function riskTruth(overrides = {}) {
   return {
-    status: 'RECONCILED',
+    status: 'RISK_PERIOD_TRUTH_AVAILABLE',
     market_id: MARKET_ID,
-    from: FROM,
-    to: TO,
+    period: { from: FROM, to: TO, bounds: '[from,to)' },
     actual_risk_cost_kmf: 5000,
-    source: 'risk-period-close',
-    version: 'risk-v1',
-    evidence_ref: 'risk-close://cm/2026-09',
+    watermark: { event_id: 'wm-1', closed_through: TO },
+    evidence_event_count: 1,
     ...overrides,
   };
 }
@@ -104,9 +104,10 @@ function aggregateContributionRow(overrides = {}) {
   };
 }
 
-function arrangeHappyPath({ contributionRow = {}, maturity = {}, structure = {}, orderMaturities = null } = {}) {
+function arrangeHappyPath({ contributionRow = {}, maturity = {}, structure = {}, risk = {}, orderMaturities = null } = {}) {
   computeMarketMaturityWatermark.mockResolvedValue(maturityTruth(maturity));
   computePeriodStructureTruth.mockResolvedValue(structureTruth(structure));
+  computePeriodRiskTruth.mockResolvedValue(riskTruth(risk));
   getOrderMaturity
     .mockResolvedValueOnce(orderMaturities?.[0] || { mature: true })
     .mockResolvedValueOnce(orderMaturities?.[1] || { mature: true });
@@ -115,9 +116,7 @@ function arrangeHappyPath({ contributionRow = {}, maturity = {}, structure = {},
     .mockResolvedValueOnce({ rows: [aggregateContributionRow(contributionRow)] });
 }
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+beforeEach(() => jest.clearAllMocks());
 
 describe('pricing-market-coverage — politique gouvernée', () => {
   test('aucun seuil ni traitement de disposition implicite', () => {
@@ -134,17 +133,6 @@ describe('pricing-market-coverage — politique gouvernée', () => {
       effective_from: '2026-09-15T00:00:00.000Z',
     }), period)).toThrow('does not cover canonical period');
   });
-
-  test('la réconciliation risque doit porter exactement le même marché et la même fenêtre', () => {
-    const period = { from: new Date(FROM), to: new Date(TO) };
-    expect(() => _normalizeRiskReconciliation(riskTruth({
-      market_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    }), MARKET_ID, period)).toThrow('market_id mismatch');
-
-    expect(() => _normalizeRiskReconciliation(riskTruth({
-      to: '2026-09-30T00:00:00.000Z',
-    }), MARKET_ID, period)).toThrow('exact canonical period');
-  });
 });
 
 describe('pricing-market-coverage — numérateur de contribution', () => {
@@ -158,13 +146,12 @@ describe('pricing-market-coverage — numérateur de contribution', () => {
       from: new Date(FROM),
       to: new Date(TO),
     });
-
     expect(ids).toEqual([ORDER_1]);
   });
 });
 
 describe('pricing-market-coverage — gate', () => {
-  test('COVERED seulement avec maturité, N3 et risque réconciliés', async () => {
+  test('COVERED seulement avec maturité, N3 et risque de période réconciliés', async () => {
     arrangeHappyPath();
 
     const result = await computeMarketCoverage({
@@ -174,7 +161,6 @@ describe('pricing-market-coverage — gate', () => {
       coveragePolicy: coveragePolicy(),
       dispositionPolicy: null,
       allocationPolicies: [{ charge_id: 'charge-1' }],
-      riskReconciliation: riskTruth(),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.COVERED);
@@ -184,10 +170,11 @@ describe('pricing-market-coverage — gate', () => {
     expect(result.contribution.provisional_contribution_after_estimated_risk_kmf).toBe(27000);
     expect(result.contribution.risk_variance_vs_provision_kmf).toBe(2000);
     expect(result.authorization).toBe('ALLOW_NEW_UNDER_CDR_POSITION');
-    expect(computePeriodStructureTruth).toHaveBeenCalledWith(expect.objectContaining({
+    expect(computePeriodRiskTruth).toHaveBeenCalledWith({
+      from: FROM,
+      to: TO,
       marketId: MARKET_ID,
-      allocationPolicies: [{ charge_id: 'charge-1' }],
-    }));
+    });
   });
 
   test('UNCOVERED quand le ratio réconcilié reste sous le seuil', async () => {
@@ -202,7 +189,6 @@ describe('pricing-market-coverage — gate', () => {
       to: TO,
       coveragePolicy: coveragePolicy(),
       allocationPolicies: [],
-      riskReconciliation: riskTruth({ actual_risk_cost_kmf: 5000 }),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.UNCOVERED);
@@ -210,8 +196,11 @@ describe('pricing-market-coverage — gate', () => {
     expect(result.authorization).toBe('DENY_NEW_UNDER_CDR_POSITION');
   });
 
-  test('absence de vérité risque reste NOT_DECISIONAL même si la provision estimée vaut zéro', async () => {
-    arrangeHappyPath({ contributionRow: { estimated_risk_kmf: '0' } });
+  test('période risque ouverte reste NOT_DECISIONAL même si la provision estimée vaut zéro', async () => {
+    arrangeHappyPath({
+      contributionRow: { estimated_risk_kmf: '0' },
+      risk: { status: 'NOT_DECISIONAL_RISK_PERIOD_OPEN', actual_risk_cost_kmf: null },
+    });
 
     const result = await computeMarketCoverage({
       marketId: MARKET_ID,
@@ -223,8 +212,25 @@ describe('pricing-market-coverage — gate', () => {
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
     expect(result.coverage_ratio).toBeNull();
-    expect(result.reason).toBe('RISK_RECONCILIATION_REQUIRED');
+    expect(result.reason).toBe('RISK_PERIOD_NOT_DECISIONAL');
     expect(result.authorization).toBe('DENY_NEW_UNDER_CDR_POSITION');
+  });
+
+  test('watermark risque stale reste NOT_DECISIONAL', async () => {
+    arrangeHappyPath({
+      risk: { status: 'NOT_DECISIONAL_RISK_WATERMARK_STALE', actual_risk_cost_kmf: null },
+    });
+
+    const result = await computeMarketCoverage({
+      marketId: MARKET_ID,
+      from: FROM,
+      to: TO,
+      coveragePolicy: coveragePolicy(),
+      allocationPolicies: [],
+    });
+
+    expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
+    expect(result.reason).toBe('RISK_PERIOD_NOT_DECISIONAL');
   });
 
   test('maturité insuffisante bloque avant toute autorisation', async () => {
@@ -236,7 +242,6 @@ describe('pricing-market-coverage — gate', () => {
       to: TO,
       coveragePolicy: coveragePolicy({ maturity_threshold: 0.9 }),
       allocationPolicies: [],
-      riskReconciliation: riskTruth(),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
@@ -258,7 +263,6 @@ describe('pricing-market-coverage — gate', () => {
       to: TO,
       coveragePolicy: coveragePolicy(),
       allocationPolicies: [],
-      riskReconciliation: riskTruth(),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
@@ -275,7 +279,6 @@ describe('pricing-market-coverage — gate', () => {
       to: TO,
       coveragePolicy: coveragePolicy(),
       allocationPolicies: [],
-      riskReconciliation: riskTruth(),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
@@ -291,7 +294,6 @@ describe('pricing-market-coverage — gate', () => {
       to: TO,
       coveragePolicy: coveragePolicy(),
       allocationPolicies: [],
-      riskReconciliation: riskTruth(),
     });
 
     expect(result.coverage_status).toBe(COVERAGE_STATUSES.NOT_DECISIONAL);
