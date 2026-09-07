@@ -10,15 +10,17 @@ Komerce répond à la **taille CSS réellement disponible**, jamais au nombre de
 
 Le breakpoint fonctionnel mobile/desktop reste unique à `900px`. Au-dessus, la composition desktop change seulement de **densité** : aucun second parcours, aucune logique métier parallèle.
 
+Le repo conserve ses deux seuils canoniques de largeur (`900` et `1200`). Au-delà de `1200`, le nombre de colonnes n'est plus lié à une série de breakpoints artificiels : CSS Grid l'adapte à la **largeur réellement restante**, notamment quand le side-cart est ouvert.
+
 ## Matrice de largeur
 
 | Largeur CSS | Profil | Grille catalogue | Side-cart |
-|---:|---|---:|---:|
+|---:|---|---|---:|
 | `< 900` | Mobile / tablette portrait | contrat mobile existant | contrat mobile |
 | `900–1199` | Desktop compact / tablette paysage / laptop zoomé | 3 colonnes | `208–224px` adaptatifs |
-| `1200–1439` | Laptop standard | 4 colonnes | `260–276px` adaptatifs |
-| `1440–1599` | Desktop | 4 colonnes | coque canonique `296px` |
-| `>= 1600` | Grand desktop | 5 colonnes | coque canonique `296px` |
+| `>= 1200` | Laptop / desktop / grand desktop | `auto-fit`, cartes `>=260px` : 3/4/5+ colonnes selon largeur utile | `260→296px` fluide puis plafonné |
+
+Ainsi un grand écran sans panier peut exploiter davantage de colonnes, tandis que le même écran avec un panier ouvert réduit naturellement le nombre de colonnes avant de réduire la largeur des cartes.
 
 ## Matrice de hauteur
 
@@ -46,12 +48,12 @@ Cette série couvre aussi indirectement les cas fréquents de zoom OS : par exem
 ## Invariants
 
 1. Aucun scroll horizontal du document.
-2. Aucune carte catalogue desktop utile sous `180px` de large dans la matrice de référence.
+2. En desktop compact, aucune carte catalogue utile sous `180px` ; à partir de `1200px`, les tracks fluides visent `260px` minimum.
 3. Le catalogue et le header ne passent jamais sous le side-cart réservé.
 4. La largeur réservée au side-cart est exactement sa largeur rendue.
 5. L'étagère des huit catégories ne déborde pas horizontalement sur desktop.
 6. Les écrans bas compactent la navigation sans changer le parcours utilisateur ni forcer le hero hors de son owner.
-7. Le breakpoint fonctionnel `900px` reste unique : les profils desktop sont des adaptations CSS, pas de nouveaux moteurs JS.
+7. Les seuls seuils de largeur du responsive Boutique restent les seuils canoniques `900/1200`; le grand desktop s'adapte sans multiplication des breakpoints.
 8. Mobile, modal, checkout et Discovery conservent leurs contrats propres ; la matrice ne les remplace pas.
 9. La matrice responsive reste à dette `!important` nulle.
 
