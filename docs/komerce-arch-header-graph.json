@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 504,
-    "filesWithFullHeaders": 459,
+    "scannedCodeFiles": 505,
+    "filesWithFullHeaders": 460,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 504,
+    "filesWithAnyHeaders": 505,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1118,
-    "edges": 5818,
-    "dbTables": 128,
-    "doctrines": 312,
+    "graphNodes": 1121,
+    "edges": 5828,
+    "dbTables": 129,
+    "doctrines": 313,
     "impactAreas": 174,
-    "unresolvedCodeEdges": 568,
+    "unresolvedCodeEdges": 570,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 50,
+    "economic-engine": 51,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 218,
+    "service": 219,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
   "byCriticality": {
     "critical": 70,
     "medium": 123,
-    "high": 258,
+    "high": 259,
     "low": 53
   },
   "nodes": [
@@ -18187,6 +18187,54 @@
       "version": "2026-06"
     },
     {
+      "id": "services/pricing-period-structure.js",
+      "file": "services/pricing-period-structure.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-period-structure",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "structure_cost_event",
+        "canonical_period_bounds",
+        "optional_market_id"
+      ],
+      "outputs": [
+        "append_only_structure_fact",
+        "period_structure_truth"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "future pricing coverage gate"
+      ],
+      "dbRead": [
+        "charges",
+        "economic_structure_cost_events",
+        "markets"
+      ],
+      "dbWrite": [
+        "economic_structure_cost_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "append_only_fact_recording"
+      ],
+      "doctrine": [
+        "pricing_market_viability_period_structure_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/pricing-rates.js",
       "file": "services/pricing-rates.js",
       "type": "file",
@@ -24276,6 +24324,11 @@
       "table": "pricing_maturity_disposition_events"
     },
     {
+      "id": "db:economic_structure_cost_events",
+      "type": "db-table",
+      "table": "economic_structure_cost_events"
+    },
+    {
       "id": "db:competitor_prices",
       "type": "db-table",
       "table": "competitor_prices"
@@ -25629,6 +25682,11 @@
       "id": "doctrine:pricing_market_viability_maturity_watermark",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_maturity_watermark"
+    },
+    {
+      "id": "doctrine:pricing_market_viability_period_structure_truth",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_period_structure_truth"
     },
     {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -53491,6 +53549,66 @@
       "label": "economic-engine"
     },
     {
+      "from": "services/pricing-period-structure.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "future pricing coverage gate",
+      "to": "services/pricing-period-structure.js",
+      "type": "uses",
+      "label": "future pricing coverage gate"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "doctrine:pricing_market_viability_period_structure_truth",
+      "type": "doctrine",
+      "label": "pricing_market_viability_period_structure_truth"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
       "from": "services/pricing-rates.js",
       "to": "db",
       "type": "depends",
@@ -79840,6 +79958,47 @@
         "services/pricing-engine.js"
       ]
     },
+    "services/pricing-period-structure.js": {
+      "role": "economic-engine-pricing-period-structure",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "future pricing coverage gate"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "charges",
+        "economic_structure_cost_events",
+        "markets"
+      ],
+      "dbWrite": [
+        "economic_structure_cost_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_period_structure_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:charges",
+        "db:economic_structure_cost_events",
+        "db:markets",
+        "doctrine:pricing_market_viability_period_structure_truth",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing"
+      ]
+    },
     "services/pricing-rates.js": {
       "role": "economic-engine-pricing-rates",
       "domain": "economic-engine",
@@ -88619,6 +88778,18 @@
     {
       "from": "future pricing coverage gate",
       "to": "services/pricing-maturity.js",
+      "type": "uses",
+      "label": "future pricing coverage gate"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "future pricing coverage gate",
+      "to": "services/pricing-period-structure.js",
       "type": "uses",
       "label": "future pricing coverage gate"
     },
