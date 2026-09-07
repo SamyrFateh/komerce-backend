@@ -12,6 +12,9 @@ jobs:
   refresh:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ github.sha }}
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
         with:
