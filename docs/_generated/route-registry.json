@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-06T04:33:07.960Z",
+  "generatedAt": "2026-09-07T08:59:41.250Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 550,
+  "count": 555,
   "routes": [
     {
       "method": "GET",
@@ -2042,6 +2042,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/commercial-prices",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/commercial-prices",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -2073,6 +2083,36 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price/reset",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/simulate-impact",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/simulate-impact",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/products/:productRef/apply-price",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/products/:productRef/apply-price",
@@ -2086,6 +2126,16 @@
       "fullPath": "/api/admin/workspaces/pricing/simulate",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/simulate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/simulate-impact",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/simulate-impact",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

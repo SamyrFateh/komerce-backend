@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06T15:32:11.054Z",
+  "generatedAt": "2026-09-07T08:59:43.341Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 571,
-    "protected": 520,
+    "total": 574,
+    "protected": 523,
     "public": 51,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1844,6 +1844,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/commercial-prices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
       "level": "PROTECTED",
       "roles": [
@@ -1861,6 +1869,22 @@
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price",
       "level": "PROTECTED",
       "roles": [
         "admin",

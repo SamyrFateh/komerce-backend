@@ -233,6 +233,10 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute', method: 'post', schema: null },
   // LOT 4U — Market-scoped Pricing cost workshop
+// MARKET AUTONOMY — local commercial price decision contracts
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle', method: 'post', schema: null },
@@ -1971,6 +1975,10 @@ const KNOWN_RESPONSES = {
     post: { fields: ['ok','success','cleared','purged'], source: 'route-read' }
   },
 
+  // MARKET AUTONOMY — réponses lues dans routes/admin-pricing-workspace.js et services/market-commercial-price-service.js
+  '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices': { get: { fields: ['market','authority','products'], source: 'service-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset': { post: { fields: ['ok','action','result'], source: 'route-read' } },
   // DEBT ZERO — réponses historiques prouvées par route/service/tests (2026-09-06)
   '/api/admin/demo/orders/{orderId}/timeline': { get: { fields: ['order','history','notifications','invoices','documents'], source: 'route-read' } },
   '/api/admin/entities/clients': { get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' } },
