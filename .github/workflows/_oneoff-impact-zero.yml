@@ -20,7 +20,9 @@ jobs:
         with:
           node-version: 20
       - name: Apply permanent refactors
-        run: node scripts/_oneoff-impact-zero.js
+        run: |
+          node scripts/_oneoff-impact-zero.js
+          node scripts/_oneoff-impact-zero-server-fix.js
       - name: Declare in-process static server dependency
         working-directory: public/boutique
         run: npm install --package-lock-only --ignore-scripts --save-dev serve-handler@6.1.7
@@ -44,6 +46,7 @@ jobs:
             'routes/admin-costing.js',
             'routes/parcels.js',
             'public/boutique/scripts/gate-smoke-boutique.cjs',
+            'public/boutique/scripts/lib/static-server.cjs',
           ];
           let count = 0;
           for (const file of files) {
@@ -65,6 +68,6 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add services/dashboard-metrics/control-tower.js routes/admin-costing.js routes/parcels.js scripts/impact-suppressions.json tests/unit/admin-costing.test.js tests/unit/parcels-route.test.js public/boutique/scripts/gate-smoke-boutique.cjs public/boutique/tests/unit/gate-smoke-server.test.js public/boutique/package.json public/boutique/package-lock.json
+          git add services/dashboard-metrics/control-tower.js routes/admin-costing.js routes/parcels.js scripts/impact-suppressions.json tests/unit/admin-costing.test.js tests/unit/parcels-route.test.js public/boutique/scripts/gate-smoke-boutique.cjs public/boutique/scripts/lib/static-server.cjs public/boutique/tests/unit/gate-smoke-server.test.js public/boutique/package.json public/boutique/package-lock.json
           git commit -m 'fix(governance): retire final impact suppressions [impact-zero-generated]'
           git push origin HEAD:governance/impact-suppressions-zero-work
