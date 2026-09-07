@@ -14,7 +14,8 @@
  *
  * Adaptation tardive du bundle desktop. Les owners principaux restent les
  * fichiers canoniques ; ce fichier ne change que leur densité selon le viewport.
- * Le breakpoint fonctionnel mobile/desktop reste 900px.
+ * Le breakpoint fonctionnel mobile/desktop reste 900px. Le système de gates
+ * autorise 900/1200 ; au-delà, la grille s'adapte continûment à l'espace utile.
  */
 
 /* ── DESKTOP COMPACT : 900–1199 CSS px ─────────────────────────
@@ -72,27 +73,23 @@
   }
 }
 
-/* ── LAPTOP STANDARD : 1200–1439 CSS px ────────────────────────
- * Quatre colonnes restent idéales, mais 296px de panier prennent trop de
- * place sur 1280/1366. On garde la pleine coque sur ≥1440.
+/* ── DESKTOP FLUIDE : ≥1200 CSS px ─────────────────────────────
+ * Le panier passe progressivement de 260 à 296px sans nouveau breakpoint.
+ * La grille choisit automatiquement 3/4/5 colonnes selon la largeur réellement
+ * disponible : elle réagit donc aussi à l'ouverture du side-cart et au zoom.
  */
-@media (min-width: 1200px) and (max-width: 1439px) {
+@media (min-width: 1200px) {
   :root {
-    --sc-reserve-w: clamp(260px, 20vw, 276px);
+    --sc-reserve-w: clamp(260px, calc(80px + 15vw), 296px);
   }
 
   .k-side-cart {
     width: var(--sc-reserve-w);
   }
-}
 
-/* ── GRAND DESKTOP : ≥1600 CSS px ──────────────────────────────
- * Utilise la largeur disponible sans étirer excessivement quatre cartes.
- */
-@media (min-width: 1600px) {
   .k-grid,
   .k-sec-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: clamp(14px, 1vw, 18px);
   }
 }
