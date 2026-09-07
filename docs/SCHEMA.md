@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 125 | Vérifié sur le dump live Railway. |
+| Tables | 126 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 338 | Performance + contraintes uniques |
-| Foreign keys | 205 | Cohérence relationnelle |
-| Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 33 | Triggers présents dans le dump live Railway. |
+| Index | 342 | Performance + contraintes uniques |
+| Foreign keys | 209 | Cohérence relationnelle |
+| Fonctions | 17 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 34 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -209,14 +209,8 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
 | `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
+| `economic_structure_cost_events` | Journal append-only des charges économiques N3 de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: economic_structure_cost_events
-kind: table
-migration: 166
-section: ### 4.8 Pricing et économie (19 tables)
-role: Journal append-only des charges économiques N3 de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique.
--->
 
 ### 4.9 Douane (4 tables)
 
