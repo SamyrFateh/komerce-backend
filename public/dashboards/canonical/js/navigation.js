@@ -94,9 +94,22 @@
     return link;
   }
 
+  // ── Rôle-aware visibility ────────────────────────────────────────────────
+  // Les quatre dashboards primaires sont toujours visibles : les API sous-
+  // jacentes sont scopées côté serveur par le market_id autorisé, donc un
+  // market_operator ne voit que ses données même s'il clique sur Finance.
+  //
+  // Les utilités (Accès pays, Démo staging) sont réservées à l'admin.
+  // Un market_operator n'administre pas les accès pays des autres opérateurs
+  // et n'a pas besoin du flux de démo staging.
+  function isAdmin(user) {
+    return user && user.role === 'admin';
+  }
+
   function mount(options = {}) {
     const doc = options.document || global.document;
     const pathname = options.pathname || (global.location && global.location.pathname) || '/admin/pilotage';
+    const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
     if (!doc || !doc.body || typeof doc.createElement !== 'function') {
       throw new Error('canonical_navigation_document_missing');
     }
@@ -154,25 +167,30 @@
     }
     utilities.appendChild(actionCenter);
 
-    const marketAccess = doc.createElement('a');
-    marketAccess.className = 'kmc-admin-utility-link';
-    marketAccess.href = '/dashboards/canonical/access.html';
-    marketAccess.textContent = 'Accès pays';
-    if (surface === 'market-access') {
-      marketAccess.className += ' is-active';
-      marketAccess.setAttribute('aria-current', 'page');
-    }
-    utilities.appendChild(marketAccess);
+    // Accès pays et Démo staging : admin uniquement.
+    // Un market_operator gère son propre marché, il n'administre pas les
+    // grants des autres opérateurs et n'a pas besoin du flux de démo.
+    if (isAdmin(user)) {
+      const marketAccess = doc.createElement('a');
+      marketAccess.className = 'kmc-admin-utility-link';
+      marketAccess.href = '/dashboards/canonical/access.html';
+      marketAccess.textContent = 'Accès pays';
+      if (surface === 'market-access') {
+        marketAccess.className += ' is-active';
+        marketAccess.setAttribute('aria-current', 'page');
+      }
+      utilities.appendChild(marketAccess);
 
-    const demo = doc.createElement('a');
-    demo.className = 'kmc-admin-utility-link kmc-admin-demo-link';
-    demo.href = '/admin/demo';
-    demo.textContent = 'Démo staging';
-    if (surface === 'demo') {
-      demo.className += ' is-active';
-      demo.setAttribute('aria-current', 'page');
+      const demo = doc.createElement('a');
+      demo.className = 'kmc-admin-utility-link kmc-admin-demo-link';
+      demo.href = '/admin/demo';
+      demo.textContent = 'Démo staging';
+      if (surface === 'demo') {
+        demo.className += ' is-active';
+        demo.setAttribute('aria-current', 'page');
+      }
+      utilities.appendChild(demo);
     }
-    utilities.appendChild(demo);
 
     inner.appendChild(identity);
     inner.appendChild(primary);
