@@ -53,8 +53,12 @@ describe('Boutique responsive matrix', () => {
   });
 
   test('aucune règle responsive ne crée un troisième breakpoint de largeur', () => {
-    const widthBreakpoints = [...css.matchAll(/(?:min|max)-width:\s*(\d+)px/g)]
-      .map(match => Number(match[1]));
+    const mediaPreludes = [...css.matchAll(/@media\s*([^\{]+)\{/g)]
+      .map(match => match[1]);
+    const widthBreakpoints = mediaPreludes.flatMap((prelude) =>
+      [...prelude.matchAll(/(?:min|max)-width:\s*(\d+)px/g)]
+        .map(match => Number(match[1]))
+    );
     expect(new Set(widthBreakpoints)).toEqual(new Set([900, 1199, 1200]));
   });
 });
