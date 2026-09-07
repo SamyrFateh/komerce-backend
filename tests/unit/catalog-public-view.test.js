@@ -114,7 +114,8 @@ describe('catalogue distant unique + projection marché', () => {
   it('MarketContext reste une projection de navigation non autorisante', () => {
     expect(marketContext).toContain('MarketContext = navigation');
     expect(marketContext).toContain('NON autorisant');
-    expect(marketContext).not.toContain('operator_market_scopes');
+    expect(marketContext).not.toMatch(/\brequire\s*\(/);
+    expect(marketContext).not.toMatch(/\bauthenticate\b|\brequireRole\b/);
   });
 
   it('la doctrine interdit explicitement de dupliquer le catalogue distant par marché', () => {
