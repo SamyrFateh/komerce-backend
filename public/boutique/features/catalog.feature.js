@@ -28,6 +28,7 @@ module.exports = {
       'rendu des catégories, sections, favoris et cartes produit',
       'continuité visuelle des médias produit pendant leur lazy-load',
       'adaptations visuelles desktop de la découverte produit',
+      'matrice responsive du catalogue desktop selon largeur et hauteur CSS disponibles, sans second moteur fonctionnel',
       'surface frontend du rail Discovery local sur l accueil Tout et, sur mobile uniquement, à l entrée d une catégorie par bump vertical ; sans possession des vérités local-stock/providers-services/recommendations',
       'contrat de présentation Discovery : géométrie commune de carte et entrée unique vers le détail Komerce',
       'projection desktop One Card de Discovery : réutilisation du shell produit canonique, rail horizontal borné et verbes Acheter / Commander / Demander',
@@ -97,6 +98,7 @@ module.exports = {
       '../css/category-cutout-navigation.css',
       '../css/category-cutout-navigation-desktop.css',
       '../css/mobile-catalog-convergence.css',
+      '../css/responsive-desktop-matrix.css',
     ],
     assets: [
       '../../images/komerce_hero_catalog_canonical_v4.webp',
@@ -139,6 +141,8 @@ module.exports = {
       '../tests/unit/product-image-loading-source.test.js',
       '../tests/unit/catalog-image-loading-readme.test.js',
       '../tests/unit/product-image-loading-css-contract.test.js',
+      '../tests/unit/responsive-desktop-matrix.test.js',
+      '../tests/e2e/catalog-responsive-matrix.spec.js',
     ],
   },
 
@@ -148,6 +152,7 @@ module.exports = {
     'docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
     'docs/MOBILE_BOUTIQUE_FIXES.md',
     'docs/komerce-categories-design.md',
+    'docs/BOUTIQUE_RESPONSIVE_MATRIX.md',
     '../../docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md',
   ],
 
@@ -168,6 +173,7 @@ module.exports = {
       'discovery-actions.js / requestDiscovery — producteur unique discovery:request pour request|callback avec requestedWindow/requesterNote',
       'discovery-rail.js / setupDiscoveryRail / refreshDiscoveryRail / openDiscoveryDetail — entrée unique du détail depuis carte ou CTA',
       'discovery-desktop-v2.css / projection desktop One Card réutilisant le shell k-card canonique sans modifier le mobile',
+      'responsive-desktop-matrix.css / adaptation tardive de densité desktop par largeur et hauteur CSS',
       'modal-selection-model.js / createModalSelection / selectModalOption',
     ],
     consumes: [
@@ -190,6 +196,8 @@ module.exports = {
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
     'sur desktop premium, catégories et sous-catégories forment un stack compact de même largeur sans modifier le rail mobile',
+    'le breakpoint fonctionnel reste 900 CSS px ; 900–1199 utilise trois colonnes, 1200–1599 quatre, >=1600 cinq, et les écrans <=800px de haut compactent seulement la densité visuelle',
+    'la largeur réservée au side-cart reste identique à sa largeur rendue et le catalogue ne passe jamais dessous, y compris sur laptop compact',
     'Disponible ici est natif sur l accueil Tout ; sur mobile une catégorie ne le montre que lors d une entrée par bump vertical, jamais lors d un tap ou swipe horizontal ; desktop reste Tout uniquement',
     'les huit images du rail sont déclarées une seule fois dans shop-schema et partagent un format panoramique cohérent',
     'le hero desktop conserve son texte et les deux visages lisibles avec ou sans réserve du side cart, sans modifier le hero mobile',
