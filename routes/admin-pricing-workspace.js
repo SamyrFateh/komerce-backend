@@ -160,6 +160,10 @@ router.get('/market/:marketCode', async (req, res, next) => {
     const access = await marketAccessProjection(req);
     res.json({
       ...projection,
+      scope: {
+        ...(projection.scope || {}),
+        market_minor_unit: Number(req.workspaceMarket.minor_unit) || 0,
+      },
       market_prices: marketPriceProjection,
       access,
       capabilities: {
@@ -186,6 +190,7 @@ router.post('/market/:marketCode/products/:productRef/price-decision', requireMa
       productRef: req.params.productRef,
       priceAmount: req.body && req.body.price_amount,
       rationale: req.body && req.body.rationale,
+      durationDays: req.body && req.body.duration_days,
       actorId: req.user && req.user.id,
     }));
   } catch (error) { handleError(error, res, next); }
