@@ -50,6 +50,7 @@ module.exports = {
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
       'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
+      'vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché',
       'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
@@ -106,6 +107,7 @@ module.exports = {
       'services/pricing-maturity.js',
       'services/pricing-period-structure.js',
       'services/pricing-market-coverage.js',
+      'services/pricing-risk-period.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -153,6 +155,7 @@ module.exports = {
       'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
       'migrations/165_pricing_maturity_disposition_events.sql',
       'migrations/166_economic_structure_cost_events.sql',
+      'migrations/167_economic_risk_period_truth.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -176,6 +179,7 @@ module.exports = {
       'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/pricing-maturity-disposition-migration.test.js',
       'tests/unit/economic-structure-cost-events-migration.test.js',
+      'tests/unit/economic-risk-period-truth-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -188,6 +192,7 @@ module.exports = {
       'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-period-structure.test.js',
       'tests/unit/pricing-market-coverage.test.js',
+      'tests/unit/pricing-risk-period.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -257,6 +262,7 @@ module.exports = {
     'docs/chantier/PRICING_MATURITY_WATERMARK.md',
     'docs/chantier/PRICING_PERIOD_STRUCTURE_TRUTH.md',
     'docs/chantier/PRICING_MARKET_COVERAGE.md',
+    'docs/chantier/PRICING_PERIOD_RISK_TRUTH.md',
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
@@ -281,6 +287,8 @@ module.exports = {
       'customs_categories: R',
       'customs_shipment_parcels: R',
       'customs_shipments: R',
+      'economic_risk_cost_events: RW!',
+      'economic_risk_watermark_events: RW!',
       'economic_snapshots: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'economic_structure_cost_events: RW!',
       'economic_variables: R',
@@ -475,6 +483,7 @@ module.exports = {
     'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
     'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
     'une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
+    'un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro',
     'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite',
   ],
 
