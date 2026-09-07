@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        market_id, canonical_period_bounds, coverage_policy, disposition_policy, allocation_policies, risk_reconciliation
+ * @inputs        market_id, canonical_period_bounds, coverage_policy, disposition_policy, allocation_policies
  * @outputs       market_coverage_truth
- * @depends       db, services/pricing-maturity.js, services/pricing-period-structure.js, services/cost-allocation/cost-types.js
+ * @depends       db, services/pricing-maturity.js, services/pricing-period-structure.js, services/pricing-risk-period.js, services/cost-allocation/cost-types.js
  * @used-by       future pricing strategy gate, pricing workspace
  * @db-read       orders, order_item_cost_imputations, order_item_real_cost_allocations
  * @db-write      none
@@ -27,9 +27,8 @@
  * - une disposition peut faire avancer le watermark mais ne fabrique jamais
  *   une contribution réelle ;
  * - N3 vient exclusivement de la vérité de période + allocation GROUP ;
- * - la provision risque estimée reste provisoire. Le gate exige toujours une
- *   réconciliation de période explicite, y compris lorsque le coût de risque
- *   réel est zéro : absence d'événement != preuve de zéro ;
+ * - le risque réalisé vient exclusivement de pricing-risk-period, dont un
+ *   watermark de revue explicite certifie aussi les périodes à zéro perte ;
  * - seuils, fenêtre, dispositions et allocations sont fournis par politiques
  *   externes versionnées : aucun chiffre autorisant n'est hardcodé ici ;
  * - ce service n'applique aucun prix et n'écrit aucune stratégie.
@@ -43,6 +42,7 @@ const {
   getOrderMaturity,
 } = require('./pricing-maturity');
 const { computePeriodStructureTruth } = require('./pricing-period-structure');
+const { computePeriodRiskTruth } = require('./pricing-risk-period');
 const {
   RECONCILIABLE_VARIABLE_COST_TYPES,
   N2_PROVISION_COST_TYPES,
@@ -121,40 +121,6 @@ function normalizeCoveragePolicy(policy, period) {
     effective_from: effectiveFrom.toISOString(),
     effective_to: effectiveTo ? effectiveTo.toISOString() : null,
     covers_period: true,
-  };
-}
-
-function normalizeRiskReconciliation(input, marketId, period) {
-  if (!input || typeof input !== 'object') return null;
-
-  const status = String(input.status || '').trim().toUpperCase();
-  const inputMarketId = String(input.market_id || '').trim();
-  const from = new Date(input.from);
-  const to = new Date(input.to);
-  const actualRiskCostKmf = finiteNumber(input.actual_risk_cost_kmf, 'risk_reconciliation.actual_risk_cost_kmf');
-  const source = requiredText(input.source, 'risk_reconciliation.source', 3, 500);
-  const version = requiredText(input.version, 'risk_reconciliation.version', 1, 100);
-  const evidenceRef = requiredText(input.evidence_ref, 'risk_reconciliation.evidence_ref', 3, 1000);
-
-  if (status !== 'RECONCILED') throw new Error('risk reconciliation status must be RECONCILED');
-  if (inputMarketId !== String(marketId)) throw new Error('risk reconciliation market_id mismatch');
-  if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime())) {
-    throw new Error('risk reconciliation bounds are invalid');
-  }
-  if (from.getTime() !== period.from.getTime() || to.getTime() !== period.to.getTime()) {
-    throw new Error('risk reconciliation must use the exact canonical period');
-  }
-  if (actualRiskCostKmf < 0) throw new Error('risk reconciliation actual_risk_cost_kmf must be >= 0');
-
-  return {
-    status: 'RECONCILED',
-    market_id: inputMarketId,
-    from: from.toISOString(),
-    to: to.toISOString(),
-    actual_risk_cost_kmf: actualRiskCostKmf,
-    source,
-    version,
-    evidence_ref: evidenceRef,
   };
 }
 
@@ -297,6 +263,12 @@ async function computeMarketCoverage(options = {}) {
     allocationPolicies: options.allocationPolicies,
   });
 
+  const risk = await computePeriodRiskTruth({
+    from: period.from.toISOString(),
+    to: period.to.toISOString(),
+    marketId,
+  });
+
   const matureOrderIds = await loadMatureOrderIds(marketId, period);
   const contribution = await loadMatureContributionTruth(marketId, period, matureOrderIds);
 
@@ -306,9 +278,9 @@ async function computeMarketCoverage(options = {}) {
     policy,
     maturity,
     structure,
+    risk_truth: risk,
     contribution,
     mature_order_ids: matureOrderIds,
-    risk_reconciliation: null,
   };
 
   if (maturity.decision_status !== 'READY_FOR_NEXT_GATE') {
@@ -326,23 +298,15 @@ async function computeMarketCoverage(options = {}) {
   if (contribution.unknown_actual_cost_kmf !== 0) {
     return notDecisional(base, 'UNKNOWN_ACTUAL_VARIABLE_COST_TYPE');
   }
-
-  const risk = normalizeRiskReconciliation(options.riskReconciliation, marketId, period);
-  if (!risk) {
-    return notDecisional(base, 'RISK_RECONCILIATION_REQUIRED', {
-      risk_reconciliation: {
-        status: 'PENDING_PERIOD_TRUTH',
-        estimated_provision_kmf: contribution.estimated_risk_provision_kmf,
-      },
-    });
+  if (risk.status !== 'RISK_PERIOD_TRUTH_AVAILABLE' || risk.actual_risk_cost_kmf == null) {
+    return notDecisional(base, 'RISK_PERIOD_NOT_DECISIONAL');
   }
 
-  const actualRiskCost = risk.actual_risk_cost_kmf;
+  const actualRiskCost = Number(risk.actual_risk_cost_kmf);
   const reconciledContribution = roundKmf(contribution.contribution_before_risk_kmf - actualRiskCost);
   const n3 = Number(structure.market_n3_total_kmf);
   const enrichedBase = {
     ...base,
-    risk_reconciliation: risk,
     contribution: {
       ...contribution,
       reconciled_risk_cost_kmf: roundKmf(actualRiskCost),
@@ -375,7 +339,6 @@ module.exports = {
   DISPOSED_TREATMENTS,
   computeMarketCoverage,
   _normalizeCoveragePolicy: normalizeCoveragePolicy,
-  _normalizeRiskReconciliation: normalizeRiskReconciliation,
   _loadMatureOrderIds: loadMatureOrderIds,
   _loadMatureContributionTruth: loadMatureContributionTruth,
 };
