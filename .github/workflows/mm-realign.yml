@@ -44,60 +44,49 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          for name in [
-              'bootstrap/api-routes.js',
-              'bootstrap/crons.js',
-              'features/payments.feature.js',
-              'migrations/169_mobile_money_foundation.sql',
-          ]:
+          for name in ['bootstrap/api-routes.js','bootstrap/crons.js','features/payments.feature.js','migrations/169_mobile_money_foundation.sql']:
               p = Path(name)
               s = p.read_text()
               s = s.replace('168_mobile_money_foundation.sql', '169_mobile_money_foundation.sql')
               s = s.replace('Migration 168', 'Migration 169')
               s = s.replace('migration 168', 'migration 169')
               p.write_text(s)
-
           p = Path('docs/SCHEMA.md')
           s = p.read_text()
-
           old = "| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash` | `routes/orders/create.js` |"
           new = "| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash`; **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `mobile_money`, rail Komerce distinct du provider opérateur. | `routes/orders/create.js` + `services/payment-mobile-money.js` |"
           if old not in s and 'Migration 169' not in s:
               raise SystemExit('payment_mode anchor not found')
           s = s.replace(old, new)
-
           s = s.replace('### 4.4 Paiements et finance (9 tables)', '### 4.4 Paiements et finance (9 tables live + 2 visées)')
-
           old_invoice = "| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. |"
           new_invoice = "| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |"
           if old_invoice not in s and 'payment_total_amount' not in s:
               raise SystemExit('invoice anchor not found')
           s = s.replace(old_invoice, new_invoice)
-
-          pending = """<!-- schema-pending
-object: market_payment_providers
-kind: table
-migration: 169
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime.
--->
-
-<!-- schema-pending
-object: mobile_money_transactions
-kind: table
-migration: 169
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock.
--->
-
-"""
+          pending_lines = [
+              '<!-- schema-pending',
+              'object: market_payment_providers',
+              'kind: table',
+              'migration: 169',
+              'section: ### 4.4 Paiements et finance (9 tables live + 2 visées)',
+              "role: Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime.",
+              '-->',
+              '',
+              '<!-- schema-pending',
+              'object: mobile_money_transactions',
+              'kind: table',
+              'migration: 169',
+              'section: ### 4.4 Paiements et finance (9 tables live + 2 visées)',
+              'role: Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock.',
+              '-->',
+              '',
+          ]
           marker = '### 4.5 Paniers et catalogue'
           if 'object: market_payment_providers' not in s:
               if marker not in s:
                   raise SystemExit('section 4.5 anchor not found')
-              s = s.replace(marker, pending + marker, 1)
-
+              s = s.replace(marker, '\n'.join(pending_lines) + marker, 1)
           p.write_text(s)
           PY
       - name: Refresh canonical derived projections
