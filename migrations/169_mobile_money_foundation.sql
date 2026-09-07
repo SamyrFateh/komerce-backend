@@ -1,4 +1,4 @@
--- @migration 168_mobile_money_foundation.sql
+-- @migration 169_mobile_money_foundation.sql
 -- @domain    payment
 -- @purpose   Socle Mobile Money multi-provider / multi-marché.
 --
@@ -15,9 +15,9 @@ BEGIN
       AND enumtypid = 'payment_mode'::regtype
   ) THEN
     ALTER TYPE payment_mode ADD VALUE 'mobile_money';
-    RAISE NOTICE 'Migration 168 : payment_mode += mobile_money';
+    RAISE NOTICE 'Migration 169 : payment_mode += mobile_money';
   ELSE
-    RAISE NOTICE 'Migration 168 : mobile_money déjà présent — skip ADD VALUE';
+    RAISE NOTICE 'Migration 169 : mobile_money déjà présent — skip ADD VALUE';
   END IF;
 END $$;
 

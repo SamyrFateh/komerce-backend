@@ -369,7 +369,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.",
+        "service": "Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -4471,6 +4471,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/pricing-cost-explainability.js",
+        "resolvedPath": "services/pricing-cost-explainability.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-workspace.js",
         "resolvedPath": "services/pricing-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -4536,6 +4543,13 @@
         "category": "services",
         "declared": "services/cost-allocation/_helpers.js",
         "resolvedPath": "services/cost-allocation/_helpers.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/cost-allocation/cost-types.js",
+        "resolvedPath": "services/cost-allocation/cost-types.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -4641,6 +4655,41 @@
         "category": "services",
         "declared": "services/pricing-cdr.js",
         "resolvedPath": "services/pricing-cdr.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-maturity.js",
+        "resolvedPath": "services/pricing-maturity.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-period-structure.js",
+        "resolvedPath": "services/pricing-period-structure.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-market-coverage.js",
+        "resolvedPath": "services/pricing-market-coverage.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-risk-period.js",
+        "resolvedPath": "services/pricing-risk-period.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-market-decision-policy.js",
+        "resolvedPath": "services/pricing-market-decision-policy.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -4897,6 +4946,41 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/164_order_item_cost_imputations_split_n2_n3.sql",
+        "resolvedPath": "migrations/164_order_item_cost_imputations_split_n2_n3.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/165_pricing_maturity_disposition_events.sql",
+        "resolvedPath": "migrations/165_pricing_maturity_disposition_events.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/166_economic_structure_cost_events.sql",
+        "resolvedPath": "migrations/166_economic_structure_cost_events.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/167_economic_risk_period_truth.sql",
+        "resolvedPath": "migrations/167_economic_risk_period_truth.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/168_pricing_market_decision_policy_events.sql",
+        "resolvedPath": "migrations/168_pricing_market_decision_policy_events.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -5003,6 +5087,41 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/order-cost-imputation-n2-n3-migration.test.js",
+        "resolvedPath": "tests/unit/order-cost-imputation-n2-n3-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-maturity-disposition-migration.test.js",
+        "resolvedPath": "tests/unit/pricing-maturity-disposition-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-structure-cost-events-migration.test.js",
+        "resolvedPath": "tests/unit/economic-structure-cost-events-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-risk-period-truth-migration.test.js",
+        "resolvedPath": "tests/unit/economic-risk-period-truth-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-market-decision-policy-migration.test.js",
+        "resolvedPath": "tests/unit/pricing-market-decision-policy-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/eco-bridge.test.js",
         "resolvedPath": "tests/unit/eco-bridge.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5061,6 +5180,41 @@
         "category": "tests",
         "declared": "tests/unit/pricing-engine.test.js",
         "resolvedPath": "tests/unit/pricing-engine.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-maturity.test.js",
+        "resolvedPath": "tests/unit/pricing-maturity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-period-structure.test.js",
+        "resolvedPath": "tests/unit/pricing-period-structure.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-market-coverage.test.js",
+        "resolvedPath": "tests/unit/pricing-market-coverage.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-risk-period.test.js",
+        "resolvedPath": "tests/unit/pricing-risk-period.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-market-decision-policy.test.js",
+        "resolvedPath": "tests/unit/pricing-market-decision-policy.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5243,6 +5397,13 @@
         "category": "tests",
         "declared": "tests/unit/cost-component-market-service.test.js",
         "resolvedPath": "tests/unit/cost-component-market-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-cost-explainability.test.js",
+        "resolvedPath": "tests/unit/pricing-cost-explainability.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7203,6 +7364,13 @@
         "category": "config",
         "declared": "railway.toml",
         "resolvedPath": "railway.toml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/impact-check-security-conventions.test.js",
+        "resolvedPath": "tests/unit/impact-check-security-conventions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9202,6 +9370,41 @@
       },
       {
         "feature": "payments",
+        "category": "services",
+        "declared": "services/payment-mobile-money.js",
+        "resolvedPath": "services/payment-mobile-money.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
+        "declared": "services/mobile-money-reconciliation.js",
+        "resolvedPath": "services/mobile-money-reconciliation.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
+        "declared": "services/mobile-money/registry.js",
+        "resolvedPath": "services/mobile-money/registry.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
+        "declared": "services/mobile-money/orange-money-cm.js",
+        "resolvedPath": "services/mobile-money/orange-money-cm.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
+        "declared": "services/mobile-money/mtn-momo-cg.js",
+        "resolvedPath": "services/mobile-money/mtn-momo-cg.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
         "category": "routes",
         "declared": "routes/cash.js",
         "resolvedPath": "routes/cash.js",
@@ -9230,6 +9433,13 @@
       },
       {
         "feature": "payments",
+        "category": "routes",
+        "declared": "routes/payments-mobile-money.js",
+        "resolvedPath": "routes/payments-mobile-money.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
         "category": "migrations",
         "declared": "migrations/079_paypal_payment_mode.sql",
         "resolvedPath": "migrations/079_paypal_payment_mode.sql",
@@ -9240,6 +9450,13 @@
         "category": "migrations",
         "declared": "migrations/148_cash_deposit_business_reference.sql",
         "resolvedPath": "migrations/148_cash_deposit_business_reference.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/169_mobile_money_foundation.sql",
+        "resolvedPath": "migrations/169_mobile_money_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9310,13 +9527,6 @@
         "category": "tests",
         "declared": "tests/unit/paypal-client.test.js",
         "resolvedPath": "tests/unit/paypal-client.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "payments",
-        "category": "tests",
-        "declared": "tests/unit/paypal-webhook.test.js",
-        "resolvedPath": "tests/unit/paypal-webhook.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9394,6 +9604,27 @@
         "category": "tests",
         "declared": "tests/unit/reconciliation-service.test.js",
         "resolvedPath": "tests/unit/reconciliation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/mobile-money-providers.test.js",
+        "resolvedPath": "tests/unit/mobile-money-providers.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/payment-mobile-money.test.js",
+        "resolvedPath": "tests/unit/payment-mobile-money.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/mobile-money-reconciliation.test.js",
+        "resolvedPath": "tests/unit/mobile-money-reconciliation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12784,6 +13015,30 @@
       },
       {
         "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/decision",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/decision",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/decision-policy/history",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/decision-policy",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
         "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update",
@@ -14420,6 +14675,54 @@
         "method": "POST",
         "path": "/api/payments/cash/confirm",
         "routeFile": "routes/payments.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "GET /api/payments/mobile-money/availability",
+        "method": "GET",
+        "path": "/api/payments/mobile-money/availability",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "POST /api/payments/mobile-money/initiate",
+        "method": "POST",
+        "path": "/api/payments/mobile-money/initiate",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "GET /api/payments/mobile-money/transactions/:transactionId",
+        "method": "GET",
+        "path": "/api/payments/mobile-money/transactions/{id}",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "POST /api/payments/mobile-money/transactions/:transactionId/refresh",
+        "method": "POST",
+        "path": "/api/payments/mobile-money/transactions/{id}/refresh",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "POST /api/payments/mobile-money/callback/:provider/:transactionId",
+        "method": "POST",
+        "path": "/api/payments/mobile-money/callback/{id}/{id}",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
+        "entry": "GET /api/payments/mobile-money/admin/pending",
+        "method": "GET",
+        "path": "/api/payments/mobile-money/admin/pending",
+        "routeFile": "routes/payments-mobile-money.js",
         "status": "resolved-owned"
       },
       {
@@ -17023,67 +17326,73 @@
       {
         "from": "payments",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "raw": "infrastructure (DB, logger, Currency Boundary et bootstrap)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "platform-ops",
-        "raw": "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",
+        "raw": "platform-ops (monitoring et exploitation technique)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "auth",
-        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/cash.js -> middleware/auth.js ; routes/payments.js -> middleware/auth.js ; routes/pickup-pay-cash.js -> middleware/auth.js ; +2)",
+        "raw": "auth (garde de route et contexte identité)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "refunds",
-        "raw": "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/payment-paypal.js -> services/refund-service.js)",
+        "raw": "refunds (orchestration du remboursement)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "documents",
-        "raw": "documents (FF-C1 2026-07-29 — émission ou lecture documentaire ; preuve: services/payment-paypal.js -> services/documents/refund-receipt.js)",
+        "raw": "documents (émission facture/reçu)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "notifications",
-        "raw": "notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/cash-reminder-service.js -> services/notification-service.js ; services/payment-paypal.js -> services/notification-service.js ; services/payment-cash-confirm.js -> services/notification-service.js ; +2)",
+        "raw": "notifications (émission de message)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "business-rules",
-        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/cash-reminder-service.js -> utils/rules.js)",
+        "raw": "business-rules (lecture du référentiel de règles métier)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "orders",
-        "raw": "orders (commande a payer)",
+        "raw": "orders (commande a payer et point d entrée unique payment -> stock)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "market",
+        "raw": "market (market_id et devise native du rail)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "logistics",
-        "raw": "logistics (generation du code retrait pickup au moment du paiement — services/pickup-secret-service.js ; lecture du statut agrege colis pour reconciliation — utils/parcels.js ; O7.2 Cycle B)",
+        "raw": "logistics (generation du code retrait pickup au moment du paiement)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "loyalty",
-        "raw": "loyalty (declenche le recalcul de palier apres paiement confirme — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)",
+        "raw": "loyalty (recalcul de palier apres paiement confirme)",
         "resolved": true
       },
       {
         "from": "payments",
         "to": "purchasing",
-        "raw": "purchasing (declenche verification/reapprovisionnement apres encaissement — services/purchasing-trigger-service.js triggerPurchasing, O7.3 provider purchasing)",
+        "raw": "purchasing (verification/reapprovisionnement apres encaissement)",
         "resolved": true
       },
       {
@@ -18265,6 +18574,14 @@
       },
       {
         "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/responsive-desktop-matrix.css",
+        "resolvedPath": "public/boutique/css/responsive-desktop-matrix.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
         "category": "assets",
         "declared": "../categories/cat-all-v3.webp",
         "resolvedPath": "public/boutique/categories/cat-all-v3.webp",
@@ -18548,6 +18865,22 @@
         "category": "tests",
         "declared": "../tests/unit/product-image-loading-css-contract.test.js",
         "resolvedPath": "public/boutique/tests/unit/product-image-loading-css-contract.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/responsive-desktop-matrix.test.js",
+        "resolvedPath": "public/boutique/tests/unit/responsive-desktop-matrix.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/e2e/catalog-responsive-matrix.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/catalog-responsive-matrix.spec.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -22137,6 +22470,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/dashboard-metrics/_helpers.js",
+                "targetFile": "services/cost-allocation/cost-types.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-ops-queries.js",
                 "targetFile": "services/economic-config.js"
               },
@@ -23649,6 +23986,26 @@
                 "targetFile": "utils/rates.js"
               },
               {
+                "sourceFileId": "services/pricing-maturity.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-period-structure.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-market-coverage.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-risk-period.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-market-decision-policy.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-analysis.js",
                 "targetFile": "utils/logger.js"
               },
@@ -23742,6 +24099,26 @@
               },
               {
                 "sourceFileId": "tests/unit/pricing-engine.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-maturity.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-period-structure.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-market-coverage.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-risk-period.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-market-decision-policy.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -24588,11 +24965,19 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/payments-mobile-money.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/cash.js"
               },
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/cash-reminder-service.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/mobile-money-reconciliation.js"
               }
             ]
           }
@@ -27474,6 +27859,10 @@
               {
                 "sourceFileId": "routes/payments-paypal.js",
                 "targetFile": "middleware/auth-guest.js"
+              },
+              {
+                "sourceFileId": "routes/payments-mobile-money.js",
+                "targetFile": "middleware/auth-guest.js"
               }
             ]
           }
@@ -27537,6 +27926,10 @@
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
                 "targetFile": "services/invoice-service.js"
               },
               {
@@ -27653,6 +28046,30 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/mobile-money-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/mobile-money-reconciliation.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/mobile-money/orange-money-cm.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/mobile-money/mtn-momo-cg.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "db.js"
               },
@@ -27689,6 +28106,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/payments-mobile-money.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/payments-mobile-money.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "tests/unit/payment-cash-confirm.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -27699,10 +28124,6 @@
               {
                 "sourceFileId": "tests/unit/payments-webhook.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/paypal-webhook.test.js",
-                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
@@ -27795,6 +28216,10 @@
                 "targetFile": "utils/parcels.js"
               },
               {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
@@ -27860,8 +28285,32 @@
                 "targetFile": "services/loyalty-service.js"
               },
               {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "services/loyalty-service.js"
+              },
+              {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "services/loyalty-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "payments",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-mobile-money.test.js",
+                "targetFile": "utils/currency.js"
               }
             ]
           }
@@ -27910,6 +28359,14 @@
               {
                 "sourceFileId": "services/cash-operations.js",
                 "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "services/notification-service.js"
               },
               {
                 "sourceFileId": "routes/cash.js",
@@ -27992,6 +28449,14 @@
                 "targetFile": "services/order-payment-confirmation.js"
               },
               {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-paypal.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
@@ -28002,10 +28467,6 @@
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
                 "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/paypal-webhook.test.js",
-                "targetFile": "services/order-payment-confirmation.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
@@ -28074,6 +28535,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-mobile-money.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               },
               {
@@ -30671,10 +31136,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1056
+        "filesObserved": 1083
       },
       "boutique": {
-        "filesObserved": 212,
+        "filesObserved": 214,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -32129,6 +32594,32 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
     },
+    "economic_risk_cost_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_risk_watermark_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "economic_snapshots": {
       "writers": [
         {
@@ -32142,6 +32633,19 @@
           "mode": "W",
           "declaredOwner": false,
           "technical": true
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_structure_cost_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
@@ -32273,6 +32777,32 @@
       "readers": [],
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
+    },
+    "pricing_market_decision_policy_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "pricing_maturity_disposition_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "pricing_strategies": {
       "writers": [
@@ -32649,6 +33179,27 @@
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
     },
+    "market_payment_providers": {
+      "writers": [],
+      "readers": [
+        "payments"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "mobile_money_transactions": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "single-writer"
+    },
     "paypal_events_processed": {
       "writers": [
         {
@@ -32898,8 +33449,8 @@
       "backend": {
         "manifestsDiscovered": 29,
         "manifestsConnected": 29,
-        "technicalNodesTotal": 397,
-        "technicalNodesOwned": 397,
+        "technicalNodesTotal": 404,
+        "technicalNodesOwned": 404,
         "technicalOrphans": 0
       },
       "dash": {

@@ -99,7 +99,7 @@ function startOperationalCrons() {
   startSnapshotRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
-  startMobileMoneyReconciliationCron(); // migration 168
+  startMobileMoneyReconciliationCron(); // migration 169
 }
 
 // Mobile Money — callback provider non requis pour progresser : toutes les

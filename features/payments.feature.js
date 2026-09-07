@@ -91,7 +91,7 @@ module.exports = {
     migrations: [
       'migrations/079_paypal_payment_mode.sql',
       'migrations/148_cash_deposit_business_reference.sql',
-      'migrations/168_mobile_money_foundation.sql',
+      'migrations/169_mobile_money_foundation.sql',
     ],
     boutique: [
       // Payment-specific uniquement. Le tunnel général b-checkout* appartient
