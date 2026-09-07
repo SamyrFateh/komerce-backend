@@ -17,12 +17,38 @@ CREATE TABLE IF NOT EXISTS product_market_price_decisions (
   pricing_zone          TEXT NOT NULL CHECK (pricing_zone IN ('at_or_above_cdr', 'under_cdr_contributive')),
   rationale             TEXT NOT NULL CHECK (char_length(btrim(rationale)) BETWEEN 3 AND 1000),
   source                TEXT NOT NULL DEFAULT 'manual_market_decision',
+
+  -- Seulement pour une position contributive sous CDR : preuve du gate qui
+  -- autorisait l'OUVERTURE de la position à l'instant de la décision.
+  decision_policy_version TEXT,
+  coverage_status       TEXT,
+  coverage_authorization TEXT,
+  coverage_ratio        NUMERIC(18,8),
+  coverage_evaluated_at TIMESTAMPTZ,
+  coverage_period_from  TIMESTAMPTZ,
+  coverage_period_to    TIMESTAMPTZ,
+  effective_until       TIMESTAMPTZ,
+
   decided_by            UUID REFERENCES users(id) ON DELETE SET NULL,
   decided_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
   revoked_at            TIMESTAMPTZ,
   revoked_by            UUID REFERENCES users(id) ON DELETE SET NULL,
   revoke_reason         TEXT,
-  CHECK (revoked_at IS NOT NULL OR revoked_by IS NULL)
+
+  CHECK (revoked_at IS NOT NULL OR revoked_by IS NULL),
+  CHECK (effective_until IS NULL OR effective_until > decided_at),
+  CHECK (
+    pricing_zone <> 'under_cdr_contributive'
+    OR (
+      decision_policy_version IS NOT NULL
+      AND coverage_status = 'COVERED'
+      AND coverage_authorization = 'ALLOW_NEW_UNDER_CDR_POSITION'
+      AND coverage_evaluated_at IS NOT NULL
+      AND coverage_period_from IS NOT NULL
+      AND coverage_period_to IS NOT NULL
+      AND effective_until IS NOT NULL
+    )
+  )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_product_market_price_decisions_active
@@ -42,3 +68,5 @@ COMMENT ON COLUMN product_market_price_decisions.price_amount IS
   'Commercial amount in the server-resolved market currency. Never a catalogue master price.';
 COMMENT ON COLUMN product_market_price_decisions.price_kmf IS
   'KMF economic snapshot at decision time for comparison with the canonical economic engine; not a public catalogue ownership field.';
+COMMENT ON COLUMN product_market_price_decisions.effective_until IS
+  'Mandatory expiry for an under-CDR contributive decision. The gate authorizes opening; it never silently creates an indefinite subsidy.';
