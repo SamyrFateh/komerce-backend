@@ -37,6 +37,7 @@ const CRITICAL_SELECTOR_OWNERSHIP = Object.freeze({
     owners: Object.freeze({
       'boutique-desktop.css': Object.freeze([BASE, DESKTOP]),
       'categories.css': Object.freeze([BASE]),
+      'responsive-desktop-matrix.css': Object.freeze([DESKTOP]),
     }),
   }),
   '.k-subchip': Object.freeze({
@@ -52,6 +53,7 @@ const CRITICAL_SELECTOR_OWNERSHIP = Object.freeze({
       'products.css': Object.freeze([BASE, DESKTOP]),
       'cart.css': Object.freeze([BASE]),
       'layout.css': Object.freeze([DESKTOP]),
+      'responsive-desktop-matrix.css': Object.freeze([DESKTOP]),
     }),
   }),
   '.k-sec-grid': Object.freeze({
@@ -59,6 +61,7 @@ const CRITICAL_SELECTOR_OWNERSHIP = Object.freeze({
     owners: Object.freeze({
       'products.css': Object.freeze([BASE, DESKTOP]),
       'categories.css': Object.freeze([BASE, DESKTOP]),
+      'responsive-desktop-matrix.css': Object.freeze([DESKTOP]),
     }),
   }),
   '.k-card': Object.freeze({
@@ -88,6 +91,7 @@ const CRITICAL_SELECTOR_OWNERSHIP = Object.freeze({
     owners: Object.freeze({
       'layout.css': Object.freeze([BASE]),
       'boutique-desktop.css': Object.freeze([DESKTOP]),
+      'responsive-desktop-matrix.css': Object.freeze([DESKTOP]),
     }),
   }),
   '#k-desktop-catalog-wrap': Object.freeze({
