@@ -196,7 +196,7 @@ module.exports = {
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
     'sur desktop premium, catégories et sous-catégories forment un stack compact de même largeur sans modifier le rail mobile',
-    'le breakpoint fonctionnel reste 900 CSS px ; 900–1199 utilise trois colonnes, 1200–1599 quatre, >=1600 cinq, et les écrans <=800px de haut compactent seulement la densité visuelle',
+    'le responsive de largeur conserve uniquement les seuils canoniques 900/1200 CSS px ; 900–1199 utilise trois colonnes et >=1200 adapte fluidement les tracks à un minimum de 260px selon la largeur réellement disponible ; les écrans <=800px de haut compactent seulement la densité visuelle',
     'la largeur réservée au side-cart reste identique à sa largeur rendue et le catalogue ne passe jamais dessous, y compris sur laptop compact',
     'Disponible ici est natif sur l accueil Tout ; sur mobile une catégorie ne le montre que lors d une entrée par bump vertical, jamais lors d un tap ou swipe horizontal ; desktop reste Tout uniquement',
     'les huit images du rail sont déclarées une seule fois dans shop-schema et partagent un format panoramique cohérent',
