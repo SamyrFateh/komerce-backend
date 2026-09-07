@@ -1,0 +1,70 @@
+name: oneoff-impact-zero
+
+on:
+  push:
+    branches:
+      - governance/impact-suppressions-zero-work
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-prove:
+    if: ${{ !contains(github.event.head_commit.message, '[impact-zero-generated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply permanent refactors
+        run: node scripts/_oneoff-impact-zero.js
+      - name: Declare in-process static server dependency
+        working-directory: public/boutique
+        run: npm install --package-lock-only --ignore-scripts --save-dev serve-handler@6.1.7
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+      - name: Backend behavioral tests
+        run: npx jest tests/unit/admin-costing.test.js tests/unit/parcels-route.test.js tests/unit/dashboard-metrics.test.js tests/unit/impact-check-security-conventions.test.js --runInBand
+      - name: Boutique in-process server test
+        working-directory: public/boutique
+        run: npx jest tests/unit/gate-smoke-server.test.js --runInBand
+      - name: Prove four former findings are zero without suppressions
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const { scanSecurity } = require('./scripts/impact-check');
+          const files = [
+            'services/dashboard-metrics/control-tower.js',
+            'routes/admin-costing.js',
+            'routes/parcels.js',
+            'public/boutique/scripts/gate-smoke-boutique.cjs',
+          ];
+          let count = 0;
+          for (const file of files) {
+            const issues = scanSecurity(file, fs.readFileSync(file, 'utf8'), null);
+            console.log(file, issues);
+            count += issues.length;
+          }
+          if (count !== 0) throw new Error(`Expected 0 security findings on cleaned surfaces, got ${count}`);
+          const ledger = JSON.parse(fs.readFileSync('scripts/impact-suppressions.json', 'utf8'));
+          if (!Array.isArray(ledger) || ledger.length !== 0) throw new Error('Impact suppression ledger is not empty');
+          NODE
+      - name: Suppression hygiene
+        run: npm run impact:suppressions:check
+      - name: Feature and governance smoke
+        run: |
+          node scripts/feature-schema-check.js --strict --full
+          node scripts/feature-guard.js --strict
+      - name: Commit generated permanent state
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add services/dashboard-metrics/control-tower.js routes/admin-costing.js routes/parcels.js scripts/impact-suppressions.json tests/unit/admin-costing.test.js tests/unit/parcels-route.test.js public/boutique/scripts/gate-smoke-boutique.cjs public/boutique/tests/unit/gate-smoke-server.test.js public/boutique/package.json public/boutique/package-lock.json
+          git commit -m 'fix(governance): retire final impact suppressions [impact-zero-generated]'
+          git push origin HEAD:governance/impact-suppressions-zero-work
