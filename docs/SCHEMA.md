@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 129 | Vérifié sur le dump live Railway. |
+| Tables | 131 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 348 | Performance + contraintes uniques |
-| Foreign keys | 218 | Cohérence relationnelle |
+| Index | 352 | Performance + contraintes uniques |
+| Foreign keys | 221 | Cohérence relationnelle |
 | Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 37 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -147,22 +147,10 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
+| `market_payment_providers` | Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: market_payment_providers
-kind: table
-migration: 169
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime.
--->
 
-<!-- schema-pending
-object: mobile_money_transactions
-kind: table
-migration: 169
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock.
--->
 ### 4.5 Paniers et catalogue
 
 | Table | Rôle |
