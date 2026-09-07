@@ -18,6 +18,8 @@
       "features/logistics.feature.js",
       "features/loyalty.feature.js",
       "features/market.feature.js",
+      "features/market-autonomy.feature.js",
+      "features/market-operator-dashboard.feature.js",
       "features/notifications.feature.js",
       "features/orders.feature.js",
       "features/payments.feature.js",
@@ -42,7 +44,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 33,
+    "businessManifestsResolved": 35,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -324,6 +326,38 @@
         "service": "Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:market-autonomy",
+        "name": "market-autonomy",
+        "file": "features/market-autonomy.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:market-operator-dashboard",
+        "name": "market-operator-dashboard",
+        "file": "features/market-operator-dashboard.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de piloter son marché (KPIs, commandes, clients, ventes, relais, Hub, pricing en lecture), de gérer ses relais partenaires, et de superviser les opérations Hub de son marché — sans jamais voir les données d'un autre marché ni effectuer d'opérations physiques Hub.",
+        "businessKind": "unclassified",
+        "kindSource": "none",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -3995,6 +4029,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/finance-accounting-workspace.test.js",
         "resolvedPath": "tests/unit/finance-accounting-workspace.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4695,6 +4736,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/pricing-market-decision-projection.js",
+        "resolvedPath": "services/pricing-market-decision-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/sourcing-analysis.js",
         "resolvedPath": "services/sourcing-analysis.js",
         "status": "resolved-in-technical-graph"
@@ -5215,6 +5263,13 @@
         "category": "tests",
         "declared": "tests/unit/pricing-market-decision-policy.test.js",
         "resolvedPath": "tests/unit/pricing-market-decision-policy.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-market-decision-projection.test.js",
+        "resolvedPath": "tests/unit/pricing-market-decision-projection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8491,6 +8546,97 @@
         "category": "tests",
         "declared": "tests/integration/market-open-congo.test.js",
         "resolvedPath": "tests/integration/market-open-congo.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "services",
+        "declared": "services/market-commercial-price-service.js",
+        "resolvedPath": "services/market-commercial-price-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "services",
+        "declared": "services/market-local-price-resolution-service.js",
+        "resolvedPath": "services/market-local-price-resolution-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "services",
+        "declared": "services/market-local-price-activation-service.js",
+        "resolvedPath": "services/market-local-price-activation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "services",
+        "declared": "services/market-local-price-state-transition.js",
+        "resolvedPath": "services/market-local-price-state-transition.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "migrations",
+        "declared": "migrations/170_market_commercial_price_drafts.sql",
+        "resolvedPath": "migrations/170_market_commercial_price_drafts.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/market-autonomy.html",
+        "resolvedPath": "public/dashboards/canonical/market-autonomy.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-autonomy.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-autonomy.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-commercial-price-service.test.js",
+        "resolvedPath": "tests/unit/market-commercial-price-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-local-price-resolution-service.test.js",
+        "resolvedPath": "tests/unit/market-local-price-resolution-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-local-price-activation-service.test.js",
+        "resolvedPath": "tests/unit/market-local-price-activation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-operator-dashboard",
+        "category": "scripts",
+        "declared": "scripts/provision-market-operator.js",
+        "resolvedPath": "scripts/provision-market-operator.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-operator-dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-operations-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-operations-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-operator-dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-navigation.test.js",
+        "resolvedPath": "tests/unit/canonical-navigation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16584,6 +16730,12 @@
       },
       {
         "from": "catalog",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (résolution buyer du prix LOCAL_ACTIVE par marché ; le catalogue reste propriétaire du produit global)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
         "to": "sourcing",
         "raw": "sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)",
         "resolved": true
@@ -16850,6 +17002,12 @@
         "from": "economic-engine",
         "to": "market",
         "raw": "market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (décision de prix local et activation LOCAL_ACTIVE consommées par la projection économique sans transfert d ownership)",
         "resolved": true
       },
       {
@@ -17177,6 +17335,54 @@
         "resolved": true
       },
       {
+        "from": "market-autonomy",
+        "to": "market",
+        "raw": "market — référentiel markets, currency_parities et scope serveur operator_market_scopes",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "economic-engine",
+        "raw": "economic-engine — CDR, politique marché et gate de couverture",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "catalog",
+        "raw": "catalog — products/SKU en lecture ; le prix global reste inchangé",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "infrastructure",
+        "raw": "infrastructure — db.js pour transaction et audit",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "market",
+        "raw": "market (operator_market_scopes, markets)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "auth",
+        "raw": "auth (authenticate, requireRole)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "dashboard",
+        "raw": "dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "infrastructure",
+        "raw": "infrastructure (db.js — pool utilisé par scripts/provision-market-operator.js)",
+        "resolved": true
+      },
+      {
         "from": "notifications",
         "to": "orders",
         "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
@@ -17258,6 +17464,12 @@
         "from": "orders",
         "to": "catalog",
         "raw": "catalog (lecture produit)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (prix LOCAL_ACTIVE résolu depuis le market_id serveur du relais avant snapshot de commande)",
         "resolved": true
       },
       {
@@ -17666,6 +17878,12 @@
         "from": "shared-cart",
         "to": "catalog",
         "raw": "catalog (lecture seule des produits)",
+        "resolved": true
+      },
+      {
+        "from": "shared-cart",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (prix LOCAL_ACTIVE du marché serveur lors de la création de liste ; aucune autorité marché navigateur)",
         "resolved": true
       },
       {
@@ -21593,6 +21811,26 @@
       },
       {
         "from": "catalog",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/products.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
+              {
+                "sourceFileId": "routes/catalog-product-detail.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
         "to": "notifications",
         "channels": [
           {
@@ -24334,6 +24572,26 @@
       },
       {
         "from": "economic-engine",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "services/market-commercial-price-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "services/market-local-price-activation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
         "to": "orders",
         "channels": [
           {
@@ -26463,6 +26721,136 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "market-autonomy",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-local-price-resolution-service.js",
+                "targetFile": "services/product-sellable-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              },
+              {
+                "table": "product_skus",
+                "mode": "R"
+              },
+              {
+                "table": "product_variants",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-autonomy",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-local-price-activation-service.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-activation-service.js",
+                "targetFile": "services/pricing-cdr.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-activation-service.js",
+                "targetFile": "services/pricing-market-decision-policy.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-autonomy",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-commercial-price-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-resolution-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-state-transition.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-autonomy",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-local-price-resolution-service.js",
+                "targetFile": "utils/currency.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
+              },
+              {
+                "table": "currency_parities",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/provision-market-operator.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-operations-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "notifications",
         "to": "auth",
         "channels": [
@@ -27438,6 +27826,22 @@
               {
                 "sourceFileId": "tests/unit/order-display-snapshot.test.js",
                 "targetFile": "utils/currency.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
               }
             ]
           }
@@ -30337,6 +30741,22 @@
       },
       {
         "from": "shared-cart",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/shared-cart-creation.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "shared-cart",
         "to": "notifications",
         "channels": [
           {
@@ -31193,10 +31613,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1083
+        "filesObserved": 1096
       },
       "boutique": {
-        "filesObserved": 216,
+        "filesObserved": 217,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -31824,6 +32244,7 @@
         "inventory",
         "local-stock",
         "logistics",
+        "market-autonomy",
         "orders",
         "platform-ops",
         "purchasing",
@@ -32026,6 +32447,7 @@
         }
       ],
       "readers": [
+        "market-autonomy",
         "sourcing"
       ],
       "lifecycleOwner": "catalog",
@@ -32058,6 +32480,7 @@
       "readers": [
         "economic-engine",
         "logistics",
+        "market-autonomy",
         "orders",
         "sourcing"
       ],
@@ -33017,6 +33440,7 @@
       ],
       "readers": [
         "local-stock",
+        "market-autonomy",
         "providers-services",
         "recommendations"
       ],
@@ -33148,8 +33572,36 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-autonomy"
+      ],
       "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
+    },
+    "product_market_price_drafts": {
+      "writers": [
+        {
+          "feature": "market-autonomy",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-autonomy",
+      "resolution": "declared-table-owner"
+    },
+    "product_market_price_draft_events": {
+      "writers": [
+        {
+          "feature": "market-autonomy",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-autonomy",
       "resolution": "declared-table-owner"
     },
     "alerts": {
@@ -33504,10 +33956,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 29,
-        "manifestsConnected": 29,
-        "technicalNodesTotal": 410,
-        "technicalNodesOwned": 410,
+        "manifestsDiscovered": 31,
+        "manifestsConnected": 31,
+        "technicalNodesTotal": 415,
+        "technicalNodesOwned": 415,
         "technicalOrphans": 0
       },
       "dash": {
@@ -33557,6 +34009,8 @@
         "logistics",
         "loyalty",
         "market",
+        "market-autonomy",
+        "market-operator-dashboard",
         "platform",
         "purchasing",
         "refunds",
@@ -33796,6 +34250,31 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-autonomy / GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices — lecture scopée",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-autonomy / GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview — preview économique scopée",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price — manager pays uniquement",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate — manager pays uniquement",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset — manager pays uniquement",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "orders / GET/POST /api/orders",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
@@ -33839,8 +34318,8 @@
       "signals": 0,
       "debt": 0,
       "expectedTopology": 33,
-      "generatorLimitations": 13,
-      "classifiedCandidates": 46
+      "generatorLimitations": 18,
+      "classifiedCandidates": 51
     }
   }
 }

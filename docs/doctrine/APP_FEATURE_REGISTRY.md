@@ -56,6 +56,7 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 25 | `unsold-resolution` | feature | backend | [`unsold-resolution.feature.js`](../../features/unsold-resolution.feature.js) | production | Arbitrage et liquidation de la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction) — scindé d'`inventory` (Lot O2, 2026-07-12) |
 | 26 | `incident-management` | transversal (business) | backend | [`incident-management.feature.js`](../../features/incident-management.feature.js) | production | Détection, qualification et résolution d'écarts opérationnels avec impact client traçable — scindé de `platform-ops` (Lot O2, 2026-07-12) |
 | 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, servi aux features consommatrices avec valeur de repli |
+| 28 | `market-operator-dashboard` | feature | backend + dash | [`market-operator-dashboard.feature.js`](../../features/market-operator-dashboard.feature.js) | staging | Accès market_operator au dashboard Canonical scopé marché — Operations Workspace en lecture, filtrage navigation par rôle, provisioning CLI |
 
 > ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
 > sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)

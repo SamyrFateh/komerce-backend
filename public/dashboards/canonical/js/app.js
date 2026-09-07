@@ -572,6 +572,17 @@
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
+
+    // La navigation se monte automatiquement sur DOMContentLoaded mais le
+    // user n'est pas encore résolu à ce moment (session asynchrone). On la
+    // remonte ici avec le user authentifié pour que le filtrage par rôle
+    // (masquage des utilités admin-only pour market_operator) s'applique.
+    if (global.KomerceCanonicalNavigation) {
+      const navEl = global.document.getElementById('canonical-admin-navigation');
+      if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
+      global.KomerceCanonicalNavigation.mount({ user, surface });
+    }
+
     await renderReady(root, user, adminContext);
     return user;
   }

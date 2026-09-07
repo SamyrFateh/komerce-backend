@@ -28,7 +28,9 @@ const log = require('../utils/logger').child({ module: 'admin-operations-workspa
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais']);
+// market_operator ajouté en lecture — les mutations restent exclusivement
+// agent_hub (requireHubWorkspaceAction) et agent_relais (requireRelayWorkspaceAction).
+const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireHubWorkspaceAction = requireRole(['admin', 'agent_hub']);
 const requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais']);
 

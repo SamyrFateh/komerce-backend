@@ -129,6 +129,7 @@ describe('canonical admin navigation', () => {
       document: env.document,
       pathname: '/dashboards/canonical/access.html',
       surface: 'market-access',
+      user: { role: 'admin' },
     });
     const inner = header.children[0];
     const primary = inner.children[1];
@@ -139,5 +140,41 @@ describe('canonical admin navigation', () => {
     expect(utilities.children[1].href).toBe('/dashboards/canonical/access.html');
     expect(utilities.children[1].attributes['aria-current']).toBe('page');
     expect(inner.children[0].children[1].href).toBe('/admin/pilotage');
+  });
+
+  test('market_operator voit les 4 dashboards mais pas les utilitaires admin', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'market_operator' },
+    });
+    const inner = header.children[0];
+    const primary = inner.children[1];
+    const utilities = inner.children[2];
+
+    // Les 4 dashboards primaires restent visibles (données scopées serveur)
+    expect(primary.children).toHaveLength(4);
+    expect(primary.children.map(l => l.textContent)).toEqual([
+      'Pilotage', 'Commerce', 'Opérations', 'Finance',
+    ]);
+
+    // Seul Action Center est visible — Accès pays et Démo staging masqués
+    expect(utilities.children.map(l => l.textContent)).toEqual(['Actions']);
+  });
+
+  test('sans user résolu, les utilitaires admin sont masqués par défaut', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      // pas de user → null → isAdmin(null) = false
+    });
+    const inner = header.children[0];
+    const utilities = inner.children[2];
+
+    expect(utilities.children.map(l => l.textContent)).toEqual(['Actions']);
   });
 });
