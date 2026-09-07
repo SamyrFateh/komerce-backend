@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload
  * @outputs       canonical_pricing_projection, market_cost_projection, market_price_decisions, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-price-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
@@ -30,6 +30,7 @@ const {
 } = require('../middleware/require-market-scope');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
+const marketPrices = require('../services/pricing-market-price-service');
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -152,10 +153,14 @@ router.use(
 router.get('/market/:marketCode', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    const projection = await workspace.buildMarketWorkspace({ market: req.workspaceMarket });
+    const [projection, marketPriceProjection] = await Promise.all([
+      workspace.buildMarketWorkspace({ market: req.workspaceMarket }),
+      marketPrices.listEffectivePrices(req.workspaceMarket),
+    ]);
     const access = await marketAccessProjection(req);
     res.json({
       ...projection,
+      market_prices: marketPriceProjection,
       access,
       capabilities: {
         ...(projection.capabilities || {}),
@@ -176,23 +181,24 @@ router.post('/market/:marketCode/simulate-impact', async (req, res, next) => {
 
 router.post('/market/:marketCode/products/:productRef/price-decision', requireMarketPricingManager, async (req, res, next) => {
   try {
-    sendAction(res, 'decide_market_price', await workspace.decideMarketPrice(
-      req.workspaceMarket,
-      req.params.productRef,
-      req.body || {},
-      req.user
-    ));
+    sendAction(res, 'decide_market_price', await marketPrices.decidePrice({
+      market: req.workspaceMarket,
+      productRef: req.params.productRef,
+      priceAmount: req.body && req.body.price_amount,
+      rationale: req.body && req.body.rationale,
+      actorId: req.user && req.user.id,
+    }));
   } catch (error) { handleError(error, res, next); }
 });
 
 router.post('/market/:marketCode/products/:productRef/price-decision/reset', requireMarketPricingManager, async (req, res, next) => {
   try {
-    sendAction(res, 'reset_market_price', await workspace.resetMarketPrice(
-      req.workspaceMarket,
-      req.params.productRef,
-      req.body || {},
-      req.user
-    ));
+    sendAction(res, 'reset_market_price', await marketPrices.resetPrice({
+      market: req.workspaceMarket,
+      productRef: req.params.productRef,
+      actorId: req.user && req.user.id,
+      reason: req.body && req.body.reason,
+    }));
   } catch (error) { handleError(error, res, next); }
 });
 
