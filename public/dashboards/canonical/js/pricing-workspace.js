@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, global_pricing_not_market_scoped, browser_business_refs_only, server_computes_pricing
+ * @doctrine      workspace_acts_dashboard_observes, server_authoritative_market_decision_policy, browser_business_refs_only, server_computes_pricing
  * @impact-areas  admin-dashboard, pricing, economic-engine
  * @version       2026-08
  */
@@ -96,7 +96,7 @@
     const marketMode = Boolean(context && context.requestedMarket);
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', marketMode ? `Modèle de coûts · ${context.requestedMarket}` : 'Comprendre, simuler et décider le prix'));
     copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', marketMode
-      ? 'Atelier pays · héritage du modèle central · seules les surcharges de ce marché sont modifiables'
+      ? 'Décision économique pays · vérité serveur, politique versionnée et coûts locaux explicables'
       : 'Surface centrale · moteur économique global'));
     node.appendChild(copy);
     const nav = doc.createElement('nav');
@@ -119,6 +119,255 @@
     const block = ui.Section.create({ title, description });
     rootNode.appendChild(block.element);
     return block.slot;
+  }
+
+  function formatRatio(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '—';
+    return `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)}×`;
+  }
+
+  function formatPercentRatio(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '—';
+    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(number * 100)} %`;
+  }
+
+  function formatDateTime(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  }
+
+  const MARKET_DECISION_META = Object.freeze({
+    COVERED: {
+      tone: 'positive',
+      label: 'Marché couvert',
+      summary: 'La contribution reconnue couvre le N3 de la fenêtre selon la politique active.',
+    },
+    UNCOVERED: {
+      tone: 'warning',
+      label: 'Couverture insuffisante',
+      summary: 'La contribution reconnue ne couvre pas encore le N3 au seuil de la politique active.',
+    },
+    NOT_DECISIONAL: {
+      tone: 'critical',
+      label: 'Décision impossible',
+      summary: 'Le moteur refuse de conclure tant que la vérité économique requise n’est pas suffisante.',
+    },
+  });
+
+  const MARKET_REASON_LABELS = Object.freeze({
+    MARKET_DECISION_POLICY_REQUIRED: 'Aucune politique de décision active pour ce marché.',
+    MATURITY_WATERMARK_NOT_READY: 'La maturité des commandes n’autorise pas encore la décision.',
+    MATURITY_THRESHOLD_NOT_MET: 'Le seuil de maturité défini par la politique n’est pas atteint.',
+    MARKET_N3_NOT_DECISIONAL: 'Le N3 de période n’est pas encore décisionnel.',
+    MATURE_ORDER_SET_MISMATCH: 'Le jeu de commandes matures n’est pas cohérent entre les vérités serveur.',
+    UNKNOWN_ACTUAL_VARIABLE_COST_TYPE: 'Un coût variable réel non reconnu empêche la décision.',
+    RISK_PERIOD_NOT_DECISIONAL: 'La vérité de risque de la période n’est pas encore décisionnelle.',
+    NON_POSITIVE_MARKET_N3: 'Le N3 du marché n’est pas positif sur la période.',
+    COVERAGE_THRESHOLD_MET: 'Le seuil de couverture de la politique est atteint.',
+    COVERAGE_THRESHOLD_NOT_MET: 'Le seuil de couverture de la politique n’est pas atteint.',
+  });
+
+  const MARKET_AUTHORIZATION_LABELS = Object.freeze({
+    ALLOW_NEW_UNDER_CDR_POSITION: 'Position sous CDR autorisée par le gate serveur',
+    DENY_NEW_UNDER_CDR_POSITION: 'Nouvelle position sous CDR bloquée par le gate serveur',
+  });
+
+  async function loadMarketDecisionData(context) {
+    const result = { decision: null, history: { policies: [] }, errors: [] };
+    try {
+      result.decision = await jsonRequest(context.fetch, `${endpointFor(context)}/decision`);
+    } catch (error) {
+      result.errors.push(`Décision : ${error.message}`);
+    }
+    try {
+      result.history = await jsonRequest(context.fetch, `${endpointFor(context)}/decision-policy/history`);
+    } catch (error) {
+      result.errors.push(`Historique : ${error.message}`);
+    }
+    return result;
+  }
+
+  function appendDecisionMetric(doc, host, label, value, helper) {
+    const card = doc.createElement('div');
+    card.className = 'kmc-market-decision-metric';
+    card.appendChild(text(doc, 'span', 'kmc-market-decision-metric-label', label));
+    card.appendChild(text(doc, 'strong', 'kmc-market-decision-metric-value', value));
+    if (helper) card.appendChild(text(doc, 'small', 'kmc-market-decision-metric-helper', helper));
+    host.appendChild(card);
+  }
+
+  function appendPolicySummary(doc, slot, policy) {
+    if (!policy) {
+      const missing = doc.createElement('div');
+      missing.className = 'kmc-market-policy is-missing';
+      missing.appendChild(text(doc, 'strong', 'kmc-market-policy-title', 'Politique active · absente'));
+      missing.appendChild(text(doc, 'p', 'kmc-market-policy-rationale', 'Aucun seuil n’est fabriqué : le gate reste fermé jusqu’à l’enregistrement d’une politique explicite.'));
+      slot.appendChild(missing);
+      return;
+    }
+    const policyCard = doc.createElement('div');
+    policyCard.className = 'kmc-market-policy';
+    const heading = doc.createElement('div');
+    heading.className = 'kmc-market-policy-heading';
+    heading.appendChild(text(doc, 'span', 'kmc-market-policy-kicker', 'POLITIQUE ACTIVE'));
+    heading.appendChild(text(doc, 'strong', 'kmc-market-policy-title', policy.version || 'Version non libellée'));
+    policyCard.appendChild(heading);
+    if (policy.rationale) policyCard.appendChild(text(doc, 'p', 'kmc-market-policy-rationale', policy.rationale));
+    const facts = doc.createElement('div');
+    facts.className = 'kmc-market-policy-facts';
+    [
+      ['Fenêtre', policy.window_days == null ? '—' : `${formatNumber(policy.window_days)} jours`],
+      ['Maturité minimale', formatPercentRatio(policy.maturity_threshold)],
+      ['Couverture minimale', formatRatio(policy.coverage_threshold)],
+      ['Dispositions max.', formatPercentRatio(policy.max_disposition_ratio)],
+      ['Source', policy.source || '—'],
+      ['Preuve', policy.evidence_ref || '—'],
+      ['Effective depuis', formatDateTime(policy.effective_from)],
+      ['Enregistrée', formatDateTime(policy.recorded_at)],
+    ].forEach(([label, value]) => {
+      const fact = doc.createElement('div');
+      fact.appendChild(text(doc, 'span', 'kmc-market-policy-fact-label', label));
+      fact.appendChild(text(doc, 'strong', 'kmc-market-policy-fact-value', value));
+      facts.appendChild(fact);
+    });
+    policyCard.appendChild(facts);
+    slot.appendChild(policyCard);
+  }
+
+  function appendPolicyHistory(doc, slot, policies = []) {
+    const details = doc.createElement('details');
+    details.className = 'kmc-market-policy-history';
+    details.appendChild(text(doc, 'summary', '', `Historique des politiques · ${policies.length}`));
+    if (!policies.length) {
+      details.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune politique enregistrée.'));
+      slot.appendChild(details);
+      return;
+    }
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table kmc-market-policy-table';
+    table.innerHTML = '<thead><tr><th>Version</th><th>Fenêtre</th><th>Maturité</th><th>Couverture</th><th>Source</th><th>Effective</th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    policies.forEach(policy => {
+      const row = doc.createElement('tr');
+      row.appendChild(td(doc, policy.version));
+      row.appendChild(td(doc, policy.window_days == null ? '—' : `${formatNumber(policy.window_days)} j`));
+      row.appendChild(td(doc, formatPercentRatio(policy.maturity_threshold)));
+      row.appendChild(td(doc, formatRatio(policy.coverage_threshold)));
+      row.appendChild(td(doc, policy.source));
+      row.appendChild(td(doc, formatDateTime(policy.effective_from)));
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    details.appendChild(wrap);
+    slot.appendChild(details);
+  }
+
+  function appendPolicyForm(doc, slot, currentPolicy) {
+    const details = doc.createElement('details');
+    details.className = 'kmc-market-policy-editor';
+    details.appendChild(text(doc, 'summary', '', '＋ Enregistrer une nouvelle version de politique'));
+    details.appendChild(text(doc, 'p', 'kmc-market-policy-editor-help', 'La nouvelle version est append-only : elle ne réécrit jamais l’historique. Aucun seuil n’est proposé automatiquement.'));
+    const form = doc.createElement('form');
+    form.className = 'kmc-market-policy-form';
+    form.dataset.marketDecisionPolicyForm = '';
+    const specs = [
+      ['version', 'Version', 'text', null],
+      ['window_days', 'Fenêtre (jours)', 'number', '1'],
+      ['maturity_threshold', 'Seuil de maturité (0–1)', 'number', '0.01'],
+      ['coverage_threshold', 'Seuil de couverture (ratio)', 'number', '0.01'],
+      ['max_disposition_ratio', 'Dispositions max. (0–1)', 'number', '0.01'],
+      ['source', 'Source de la politique', 'text', null],
+      ['evidence_ref', 'Référence de preuve', 'text', null],
+    ];
+    specs.forEach(([name, labelText, type, step]) => {
+      const label = doc.createElement('label');
+      label.className = 'kmc-market-policy-field';
+      label.appendChild(text(doc, 'span', '', labelText));
+      const input = doc.createElement('input');
+      input.name = name;
+      input.type = type;
+      input.required = true;
+      if (step) input.step = step;
+      if (name === 'window_days') input.min = '1';
+      if (name === 'maturity_threshold' || name === 'max_disposition_ratio') { input.min = '0'; input.max = '1'; }
+      if (name === 'coverage_threshold') input.min = '0.01';
+      if (currentPolicy && name !== 'version' && currentPolicy[name] != null) input.value = currentPolicy[name];
+      label.appendChild(input);
+      form.appendChild(label);
+    });
+    const rationaleLabel = doc.createElement('label');
+    rationaleLabel.className = 'kmc-market-policy-field is-wide';
+    rationaleLabel.appendChild(text(doc, 'span', '', 'Justification de cette version'));
+    const rationale = doc.createElement('textarea');
+    rationale.name = 'rationale';
+    rationale.required = true;
+    rationale.rows = 3;
+    rationaleLabel.appendChild(rationale);
+    form.appendChild(rationaleLabel);
+    const submit = button(doc, 'Enregistrer la nouvelle politique', 'submit-decision-policy');
+    submit.type = 'submit';
+    submit.removeAttribute('data-pricing-action');
+    form.appendChild(submit);
+    details.appendChild(form);
+    slot.appendChild(details);
+  }
+
+  function renderMarketDecision(rootNode, ui, doc, marketData, payload, context) {
+    const slot = section(rootNode, ui, 'Décision marché', 'Le serveur tranche à partir de la politique active et des vérités économiques de la fenêtre. Le navigateur n’invente ni seuil, ni période, ni autorisation.');
+    if (!marketData.decision) {
+      const unavailable = doc.createElement('div');
+      unavailable.className = 'kmc-market-decision-hero is-critical';
+      unavailable.appendChild(text(doc, 'span', 'kmc-market-decision-kicker', 'VÉRITÉ SERVEUR INDISPONIBLE'));
+      unavailable.appendChild(text(doc, 'strong', 'kmc-market-decision-title', 'Décision indisponible'));
+      unavailable.appendChild(text(doc, 'p', 'kmc-market-decision-summary', 'L’atelier reste consultable, mais aucune conclusion économique n’est fabriquée côté navigateur.'));
+      (marketData.errors || []).forEach(error => unavailable.appendChild(text(doc, 'small', 'kmc-market-decision-code', error)));
+      slot.appendChild(unavailable);
+      appendPolicyHistory(doc, slot, marketData.history?.policies || []);
+      return;
+    }
+    const decision = marketData.decision;
+    const meta = MARKET_DECISION_META[decision.decision_status] || { tone: 'neutral', label: `État serveur · ${decision.decision_status || 'inconnu'}`, summary: 'État non interprété par le navigateur.' };
+    const hero = doc.createElement('div');
+    hero.className = `kmc-market-decision-hero is-${meta.tone}`;
+    hero.appendChild(text(doc, 'span', 'kmc-market-decision-kicker', `DÉCISION · ${context.requestedMarket}`));
+    hero.appendChild(text(doc, 'strong', 'kmc-market-decision-title', meta.label));
+    hero.appendChild(text(doc, 'p', 'kmc-market-decision-summary', meta.summary));
+    const authorization = MARKET_AUTHORIZATION_LABELS[decision.authorization] || decision.authorization || 'Autorisation non fournie';
+    hero.appendChild(text(doc, 'div', 'kmc-market-decision-authorization', authorization));
+    const reason = MARKET_REASON_LABELS[decision.reason] || 'Voir le code serveur pour le motif exact.';
+    hero.appendChild(text(doc, 'p', 'kmc-market-decision-reason', reason));
+    hero.appendChild(text(doc, 'small', 'kmc-market-decision-code', `Motif serveur : ${decision.reason || '—'} · évalué ${formatDateTime(decision.evaluated_at)}`));
+    slot.appendChild(hero);
+    const coverage = decision.coverage || {};
+    const policy = decision.policy || null;
+    const metrics = doc.createElement('div');
+    metrics.className = 'kmc-market-decision-metrics';
+    appendDecisionMetric(doc, metrics, 'Couverture réelle', formatRatio(coverage.coverage_ratio), 'Contribution reconnue ÷ N3 de période');
+    appendDecisionMetric(doc, metrics, 'Seuil de couverture', formatRatio(policy?.coverage_threshold), 'Politique active');
+    appendDecisionMetric(doc, metrics, 'Contribution reconnue', formatKmf(coverage.numerator_contribution_kmf), 'Numérateur serveur');
+    appendDecisionMetric(doc, metrics, 'N3 de période', formatKmf(coverage.denominator_n3_kmf), 'Dénominateur serveur');
+    appendDecisionMetric(doc, metrics, 'Maturité constatée', formatPercentRatio(coverage.maturity?.maturity_ratio), `${formatNumber(coverage.contribution?.mature_order_count)} commandes matures`);
+    appendDecisionMetric(doc, metrics, 'Seuil de maturité', formatPercentRatio(policy?.maturity_threshold), 'Politique active');
+    slot.appendChild(metrics);
+    const period = decision.canonical_period;
+    if (period) {
+      const periodLine = doc.createElement('div');
+      periodLine.className = 'kmc-market-decision-period';
+      periodLine.appendChild(text(doc, 'strong', '', `Fenêtre canonique · ${formatNumber(period.width_days)} jours`));
+      periodLine.appendChild(text(doc, 'span', '', `${formatDateTime(period.from)} → ${formatDateTime(period.to)}`));
+      periodLine.appendChild(text(doc, 'small', '', 'Période dérivée côté serveur depuis la politique active.'));
+      slot.appendChild(periodLine);
+    }
+    appendPolicySummary(doc, slot, policy);
+    appendPolicyHistory(doc, slot, marketData.history?.policies || []);
+    if (payload.capabilities?.manage_decision_policy === true) appendPolicyForm(doc, slot, policy);
   }
 
   function metrics(summary = {}) {
@@ -563,6 +812,22 @@
           renderStrategyDetail(context.document, rootNode, payload, productRef, context);
         }
       }
+      if (event.target.matches('[data-market-decision-policy-form]')) {
+        event.preventDefault();
+        const data = new FormData(event.target);
+        const body = {
+          version: data.get('version'),
+          window_days: Number(data.get('window_days')),
+          maturity_threshold: Number(data.get('maturity_threshold')),
+          coverage_threshold: Number(data.get('coverage_threshold')),
+          max_disposition_ratio: Number(data.get('max_disposition_ratio')),
+          source: data.get('source'),
+          evidence_ref: data.get('evidence_ref'),
+          rationale: data.get('rationale'),
+        };
+        const result = await action(context, `${endpointFor(context)}/decision-policy`, body, 'Nouvelle politique enregistrée.');
+        if (result) await context.reload();
+      }
       if (event.target.matches('[data-pricing-cost-form]')) {
         event.preventDefault();
         const data = new FormData(event.target);
@@ -592,6 +857,8 @@
       rootNode.appendChild(header(context.document, context));
       rootNode.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element);
       if (context.requestedMarket) {
+        const marketData = await loadMarketDecisionData(context);
+        renderMarketDecision(rootNode, context.ui, context.document, marketData, payload, context);
         renderCosts(rootNode, context.ui, context.document, payload, context);
       } else {
         renderEconomicModel(rootNode, context.ui, context.document, payload);
@@ -608,5 +875,5 @@
     return load();
   }
 
-  return { ENDPOINT, endpointFor, mount, jsonRequest, metrics, recommendationByRef, formatEconomicValue };
+  return { ENDPOINT, endpointFor, mount, jsonRequest, metrics, recommendationByRef, formatEconomicValue, formatRatio, formatPercentRatio, MARKET_DECISION_META, MARKET_REASON_LABELS, MARKET_AUTHORIZATION_LABELS };
 });
