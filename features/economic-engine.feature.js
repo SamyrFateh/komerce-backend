@@ -52,6 +52,7 @@ module.exports = {
       'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
       'vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché',
       'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
+      'politique de décision économique marché explicite, versionnée et append-only',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -107,6 +108,7 @@ module.exports = {
       'services/pricing-maturity.js',
       'services/pricing-period-structure.js',
       'services/pricing-market-coverage.js',
+      'services/pricing-market-decision-policy.js',
       'services/pricing-risk-period.js',
     
       'services/sourcing-analysis.js',
@@ -156,6 +158,7 @@ module.exports = {
       'migrations/165_pricing_maturity_disposition_events.sql',
       'migrations/166_economic_structure_cost_events.sql',
       'migrations/167_economic_risk_period_truth.sql',
+      'migrations/169_pricing_market_decision_policy_events.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -180,6 +183,7 @@ module.exports = {
       'tests/unit/pricing-maturity-disposition-migration.test.js',
       'tests/unit/economic-structure-cost-events-migration.test.js',
       'tests/unit/economic-risk-period-truth-migration.test.js',
+      'tests/unit/pricing-market-decision-policy.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -308,6 +312,7 @@ module.exports = {
       'pricing_category_taxes: RW',
       'pricing_components: RW',
       'pricing_matrices_audit: W',
+      'pricing_market_decision_policy_events: RW!',
       'pricing_maturity_disposition_events: RW!',
       'pricing_strategies: RW',
       'pricing_global_access_grants: R',
