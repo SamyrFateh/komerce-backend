@@ -24,8 +24,9 @@ Le breakpoint fonctionnel mobile/desktop reste unique à `900px`. Au-dessus, la 
 
 La largeur ne suffit pas : un `1366×768` peut être plus contraint verticalement qu'un `1024×1180`.
 
-- Desktop `<= 800px` de haut : hero et étagère catégories sont compactés.
-- Desktop compact `<= 720px` de haut : compression renforcée.
+- Desktop `<= 800px` de haut : l'étagère catégories et la navigation contextuelle sont compactées.
+- Desktop compact `<= 720px` de haut : compression renforcée des objets de catégorie.
+- Le hero conserve son owner et sa géométrie canonique ; la matrice responsive n'ajoute aucun `!important` pour le forcer.
 - Aucun contenu métier n'est supprimé ; seule la densité change.
 
 ## Viewports de référence
@@ -49,9 +50,10 @@ Cette série couvre aussi indirectement les cas fréquents de zoom OS : par exem
 3. Le catalogue et le header ne passent jamais sous le side-cart réservé.
 4. La largeur réservée au side-cart est exactement sa largeur rendue.
 5. L'étagère des huit catégories ne déborde pas horizontalement sur desktop.
-6. Les écrans bas commencent le catalogue plus tôt sans changer le parcours utilisateur.
+6. Les écrans bas compactent la navigation sans changer le parcours utilisateur ni forcer le hero hors de son owner.
 7. Le breakpoint fonctionnel `900px` reste unique : les profils desktop sont des adaptations CSS, pas de nouveaux moteurs JS.
 8. Mobile, modal, checkout et Discovery conservent leurs contrats propres ; la matrice ne les remplace pas.
+9. La matrice responsive reste à dette `!important` nulle.
 
 ## Owners
 
