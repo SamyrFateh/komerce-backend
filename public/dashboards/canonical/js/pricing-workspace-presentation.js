@@ -450,7 +450,8 @@
     if (!marketMode) slot.appendChild(createGlobalComponentForm(doc));
 
     const firstOtherSection = Array.from(rootNode.querySelectorAll('.kmc-section')).find(section => section !== workshop);
-    if (firstOtherSection && workshop !== firstOtherSection) rootNode.insertBefore(workshop, firstOtherSection);
+    // En mode marché, Décision marché reste volontairement au-dessus de l'atelier.
+    if (!marketMode && firstOtherSection && workshop !== firstOtherSection) rootNode.insertBefore(workshop, firstOtherSection);
     return true;
   }
 

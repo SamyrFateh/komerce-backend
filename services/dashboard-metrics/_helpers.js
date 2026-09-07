@@ -106,7 +106,18 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.market_id);
   }
 
-  return { where: where.join(' AND '), params, nextParamIndex: i };
+  const whereSql = where.join(' AND ');
+  return { where: assertParameterizedWhereClause(whereSql), params, nextParamIndex: i };
+}
+
+function assertParameterizedWhereClause(where) {
+  const clause = String(where || '');
+  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id)\s*(?:=|>=|<=)\s*\$\d+)$/;
+  const parts = clause.split(' AND ');
+  if (!parts.length || parts.some((part) => !safePart.test(part))) {
+    throw new Error('Unsafe dashboard WHERE clause');
+  }
+  return clause;
 }
 
 function buildSignalMarketClause(filters = {}, signalAlias = 's', startParamIndex = 1) {
@@ -203,6 +214,7 @@ function makeKpi(key, label, value, unit, options = {}) {
 
 module.exports = {
   buildFiltersClause,
+  assertParameterizedWhereClause,
   buildSignalMarketClause,
   buildPreviousPeriod,
   computeDelta,
