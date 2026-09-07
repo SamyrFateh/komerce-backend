@@ -618,34 +618,33 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
       allocation_notes,
     } = req.body || {};
 
-    // Validation basique
-    const FINANCE_CONFIG_NUMERIC_COLS = ['avg_articles_per_order', 'avg_articles_per_parcel', 'avg_articles_per_shipment', 'avg_orders_per_month']; // AUD-07
-    const fields = { avg_articles_per_order, avg_articles_per_parcel, avg_articles_per_shipment, avg_orders_per_month };
-    const updates = [];
-    const params = [];
-    let i = 1;
-    for (const [key, value] of Object.entries(fields)) {
-      if (!FINANCE_CONFIG_NUMERIC_COLS.includes(key)) continue; // AUD-07: allowlist guard
-      if (value != null && Number.isFinite(Number(value)) && Number(value) > 0) {
-        updates.push(`${key} = $${i++}`);
-        params.push(Number(value));
-      }
-    }
-    if (allocation_confidence && ['low', 'medium', 'high'].includes(allocation_confidence)) {
-      updates.push(`allocation_confidence = $${i++}`);
-      params.push(allocation_confidence);
-    }
-    if (allocation_notes != null) {
-      updates.push(`allocation_notes = $${i++}`);
-      params.push(String(allocation_notes));
-    }
-    updates.push(`allocation_calibrated_at = NOW()`);
+    // SQL de forme fixe : aucune colonne n'est construite depuis la requête.
+    const positiveNumberOrNull = (value) =>
+      value != null && Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
+    const params = [
+      positiveNumberOrNull(avg_articles_per_order),
+      positiveNumberOrNull(avg_articles_per_parcel),
+      positiveNumberOrNull(avg_articles_per_shipment),
+      positiveNumberOrNull(avg_orders_per_month),
+      ['low', 'medium', 'high'].includes(allocation_confidence) ? allocation_confidence : null,
+      allocation_notes != null ? String(allocation_notes) : null,
+    ];
 
-    if (updates.length === 1) {
+    if (params.every((value) => value === null)) {
       return res.status(400).json({ error: 'Aucun champ valide a appliquer' });
     }
 
-    await db.query(`UPDATE finance_config SET ${updates.join(', ')} WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)`, params); // AUD-07: updates[] contains allowlisted column names; values remain bound in params
+    await db.query(`
+      UPDATE finance_config
+      SET avg_articles_per_order = COALESCE($1, avg_articles_per_order),
+          avg_articles_per_parcel = COALESCE($2, avg_articles_per_parcel),
+          avg_articles_per_shipment = COALESCE($3, avg_articles_per_shipment),
+          avg_orders_per_month = COALESCE($4, avg_orders_per_month),
+          allocation_confidence = COALESCE($5, allocation_confidence),
+          allocation_notes = COALESCE($6, allocation_notes),
+          allocation_calibrated_at = NOW()
+      WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)
+    `, params);
 
     const r = await db.query(`SELECT
       avg_articles_per_order, avg_articles_per_parcel,

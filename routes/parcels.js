@@ -127,6 +127,32 @@ const STATUS_TO_STEP = {
   cancelled:   'cancelled',
 };
 
+const PARCEL_LIST_FILTER_SQL = `
+  WHERE ($1::text IS NULL OR p.status::text = $1)
+    AND ($2::text IS NULL OR p.shipment_id::text = $2)
+    AND ($3::text IS NULL OR p.order_id::text = $3)
+    AND ($4::text IS NULL OR p.reference ILIKE $4 OR p.external_code ILIKE $4)
+    AND ($5::text IS NULL OR o.relais_id IN (
+      SELECT r.id FROM relais r
+      WHERE r.phone = (SELECT u.phone FROM users u WHERE u.id::text = $5)
+    ))
+`;
+
+const PARCEL_LIST_COUNT_SQL =
+  'SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id' + PARCEL_LIST_FILTER_SQL;
+
+const PARCEL_LIST_SQL = `
+  SELECT p.*, p.external_code,
+         o.reference AS order_reference, o.status AS order_status,
+         o.destination_island, o.routing_mode,
+         (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
+  FROM parcels p
+  LEFT JOIN orders o ON o.id = p.order_id
+` + PARCEL_LIST_FILTER_SQL + `
+  ORDER BY p.created_at DESC
+  LIMIT $6 OFFSET $7
+`;
+
 // GET /api/parcels
 router.get('/', ...adminAgentRelais, validate({ query: parcels.list }), async (req, res, next) => {
   try {
@@ -135,37 +161,18 @@ router.get('/', ...adminAgentRelais, validate({ query: parcels.list }), async (r
     const safePage = Math.max(parseInt(page) || 1, 1);
     const offset = (safePage - 1) * safeLimit;
 
-    const conditions = [];
-    const params = [];
-    let idx = 1;
+    const filterParams = [
+      status || null,
+      shipment_id || null,
+      order_id || null,
+      search ? `%${search}%` : null,
+      req.user.role === 'agent_relais' ? String(req.user.id) : null,
+    ];
 
-    if (status) { conditions.push(`p.status = $${idx++}`); params.push(status); }
-    if (shipment_id) { conditions.push(`p.shipment_id = $${idx++}`); params.push(shipment_id); }
-    if (order_id) { conditions.push(`p.order_id = $${idx++}`); params.push(order_id); }
-    if (search) { conditions.push(`(p.reference ILIKE $${idx} OR p.external_code ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
-
-    // Agent relais: only see parcels for their relay point's orders
-    if (req.user.role === 'agent_relais') {
-      conditions.push(`o.relais_id IN (SELECT r.id FROM relais r WHERE r.phone = (SELECT u.phone FROM users u WHERE u.id = $${idx++}))`);
-      params.push(req.user.id);
-    }
-
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params); // AUD-07: where = parameterized condition templates; values remain bound in params
+    const countResult = await db.query(PARCEL_LIST_COUNT_SQL, filterParams);
     const total = parseInt(countResult.rows[0].count);
 
-    const { rows } = await db.query(`
-      SELECT p.*, p.external_code,
-             o.reference AS order_reference, o.status AS order_status,
-             o.destination_island, o.routing_mode,
-             (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
-      FROM parcels p
-      LEFT JOIN orders o ON o.id = p.order_id
-      ${where} /* AUD-07: parameterized condition templates */
-      ORDER BY p.created_at DESC
-      LIMIT $${idx++} OFFSET $${idx++}
-    `, [...params, safeLimit, offset]);
+    const { rows } = await db.query(PARCEL_LIST_SQL, [...filterParams, safeLimit, offset]);
 
     res.json({ data: rows, pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) } });
   } catch(e) { next(e); }

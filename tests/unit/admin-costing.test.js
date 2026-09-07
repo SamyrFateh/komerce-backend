@@ -186,10 +186,11 @@ describe('admin-costing — POST /recalibration-apply (AUD-07 allowlist)', () =>
       .send({ avg_articles_per_order: 3.5, drop_table_or_whatever: 999, malicious_col: 1 });
 
     expect(res.status).toBe(200);
-    const updateSql = mockQuery.mock.calls[0][0];
+    const [updateSql, updateParams] = mockQuery.mock.calls[0];
     expect(updateSql).not.toMatch(/drop_table_or_whatever/);
     expect(updateSql).not.toMatch(/malicious_col/);
     expect(updateSql).toMatch(/avg_articles_per_order/);
+    expect(updateParams).toEqual([3.5, null, null, null, null, null]);
   });
 
   it('rejette une allocation_confidence hors enum low/medium/high', async () => {
@@ -202,8 +203,9 @@ describe('admin-costing — POST /recalibration-apply (AUD-07 allowlist)', () =>
       .send({ avg_articles_per_order: 3.5, allocation_confidence: 'super-high' });
 
     expect(res.status).toBe(200);
-    const updateSql = mockQuery.mock.calls[0][0];
-    expect(updateSql).not.toMatch(/allocation_confidence/);
+    const [updateSql, updateParams] = mockQuery.mock.calls[0];
+    expect(updateSql).toMatch(/allocation_confidence/);
+    expect(updateParams[4]).toBeNull();
   });
 
   it('accepte une allocation_confidence valide et invalide le cache après succès', async () => {
@@ -217,6 +219,7 @@ describe('admin-costing — POST /recalibration-apply (AUD-07 allowlist)', () =>
 
     expect(res.status).toBe(200);
     expect(res.body.applied).toEqual({ allocation_confidence: 'high' });
+    expect(mockQuery.mock.calls[0][1]).toEqual([3.5, null, null, null, 'high', null]);
     expect(mockInvalidateAllDashboards).toHaveBeenCalledTimes(1);
   });
 });

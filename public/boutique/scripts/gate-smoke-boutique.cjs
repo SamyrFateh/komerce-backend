@@ -20,9 +20,8 @@
  */
 
 const { chromium } = require('@playwright/test');
-const { spawn } = require('child_process');
-const http = require('http');
 const path = require('path');
+const { startStaticServer, stopStaticServer } = require('./lib/static-server.cjs');
 const fs = require('fs');
 
 const driver = require('./lib/t030-capture.cjs');
@@ -40,52 +39,17 @@ fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 // résolvent. Géré ici (pas via `playwright test`) car ce runner est un
 // script autonome, au même titre que le driver T-030 dont il hérite.
 
-function waitForServer(url, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  return new Promise((resolve, reject) => {
-    const attempt = () => {
-      const req = http.get(url, (res) => {
-        res.resume();
-        resolve();
-      });
-      req.on('error', () => {
-        if (Date.now() > deadline) return reject(new Error(`serveur non prêt après ${timeoutMs} ms (${url})`));
-        setTimeout(attempt, 300);
-      });
-    };
-    attempt();
-  });
-}
-
-function resolveServeScript() {
-  const pkgPath = require.resolve('serve/package.json');
-  const pkg = require(pkgPath);
-  const binRel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.serve;
-  return path.join(path.dirname(pkgPath), binRel);
-}
-
-async function startServer() {
+async function startServer(options = {}) {
   if (process.env.GATE_SMOKE_NO_SERVER) return null; // réutilise un serveur déjà lancé (dev local)
-  // On lance `node <serve/build/main.js> ...` directement (process.execPath),
-  // au lieu de `npx serve`. npx passe par un .cmd sous Windows, ce qui force
-  // shell:true — et spawn(shell:true) plante par intermittence avec EINVAL
-  // sur certaines installations Windows/Node (bug connu côté Node, pas côté
-  // ce script). En invoquant le binaire node directement, on n'a plus besoin
-  // de shell du tout, sur aucun OS.
-  const serveScript = resolveServeScript();
-  const child = spawn(process.execPath, [serveScript, SERVE_ROOT, '-l', String(PORT), '--no-clipboard'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+  return startStaticServer({
+    root: SERVE_ROOT,
+    port: options.port ?? PORT,
+    healthPath: '/boutique/',
+    timeoutMs: 15_000,
   });
-  child.stdout.on('data', () => {});
-  child.stderr.on('data', () => {});
-  await waitForServer(BASE_URL, 15_000);
-  return child;
 }
 
-function stopServer(child) {
-  if (!child) return;
-  child.kill();
-}
+const stopServer = stopStaticServer;
 
 // ── Parcours 1 — Catalogue (6 viewports) ────────────────────────────────
 // Assertion : #k-grid contient ≥ 1 carte réelle (pas l'état vide "bientôt
@@ -205,7 +169,7 @@ async function main() {
     allResults = [...p1, ...p2];
   } finally {
     await browser.close();
-    stopServer(serverProcess);
+    await stopServer(serverProcess);
   }
 
   const failed = allResults.filter((r) => !r.ok);
@@ -237,4 +201,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, runParcours1, runParcours2, BASE_URL, ARTIFACTS_DIR };
+module.exports = { main, runParcours1, runParcours2, startServer, stopServer, BASE_URL, ARTIFACTS_DIR };

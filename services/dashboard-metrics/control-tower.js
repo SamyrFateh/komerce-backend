@@ -29,17 +29,34 @@ const {
   EXPECTED_VARIABLE_COSTS, EXPECTED_FIXED_COSTS, EXPECTED_PAYMENT_COSTS,
 } = require('./_helpers');
 
+function composeOrderFilterSql(prefix, filterQuery, suffix = '') {
+  if (!filterQuery || typeof filterQuery.where !== 'string' || !Array.isArray(filterQuery.params)) {
+    throw new TypeError('filterQuery invalide');
+  }
+  const where = filterQuery.where.trim();
+  const allowed = /^1=1(?: AND o\.(?:created_at (?:>=|<=)|destination_island =|relais_id =|status::text =|payment_status::text =|market_id =) \$\d+)*$/;
+  if (!allowed.test(where)) throw new Error('Clause filtre SQL non canonique');
+  const indexes = [...where.matchAll(/\$(\d+)/g)].map((m) => Number(m[1]));
+  const maxIndex = indexes.length ? Math.max(...indexes) : 0;
+  if (maxIndex !== filterQuery.params.length) throw new Error('Paramètres filtre SQL incohérents');
+  return String(prefix) + where + String(suffix);
+}
+
 async function getCAEncaisse(filters = {}) {
-  const { where, params } = buildFiltersClause(filters);
-  const sql = `
+  const filterQuery = buildFiltersClause(filters);
+  const sql = composeOrderFilterSql(
+    `
     SELECT COALESCE(SUM(o.total_kmf), 0)::bigint AS value,
            COUNT(*)::int AS items_total
     FROM orders o
-    WHERE ${where}
+    WHERE `,
+    filterQuery,
+    `
       AND o.payment_status = 'paid'
       AND o.status NOT IN ('cancelled', 'refunded')
-  `;
-  const r = await db.query(sql, params);
+  `
+  );
+  const r = await db.query(sql, filterQuery.params);
   const value = Number(r.rows[0].value) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
 
@@ -47,13 +64,17 @@ async function getCAEncaisse(filters = {}) {
   const prev = buildPreviousPeriod(filters);
   if (prev) {
     const prevQuery = buildFiltersClause(prev);
-    const prevSql = `
+    const prevSql = composeOrderFilterSql(
+      `
       SELECT COALESCE(SUM(o.total_kmf), 0)::bigint AS value
       FROM orders o
-      WHERE ${prevQuery.where}
+      WHERE `,
+      prevQuery,
+      `
         AND o.payment_status = 'paid'
         AND o.status NOT IN ('cancelled', 'refunded')
-    `;
+    `
+    );
     const prevR = await db.query(prevSql, prevQuery.params);
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
@@ -77,7 +98,8 @@ async function getCmdsCreees(filters = {}) {
   const prev = buildPreviousPeriod(filters);
   if (prev) {
     const prevQuery = buildFiltersClause(prev);
-    const prevR = await db.query(`SELECT COUNT(*)::int AS value FROM orders o WHERE ${prevQuery.where}`, prevQuery.params); // AUD-07: same trusted filter builder; values remain parameterized
+    const prevSql = composeOrderFilterSql('SELECT COUNT(*)::int AS value FROM orders o WHERE ', prevQuery);
+    const prevR = await db.query(prevSql, prevQuery.params);
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
 

@@ -112,6 +112,25 @@ describe('routes/parcels', () => {
       expect(mockDbQuery).not.toHaveBeenCalled();
     });
 
+    test('les filtres de liste restent entièrement paramétrés', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
+
+      const res = await request(buildApp()).get('/api/parcels').query({
+        status: 'shipped',
+        shipment_id: VALID_UUID_1,
+        order_id: VALID_UUID_2,
+        search: 'COL-42',
+      });
+
+      expect(res.status).toBe(200);
+      const [countSql, countParams] = mockDbQuery.mock.calls[0];
+      expect(countSql).not.toContain('COL-42');
+      expect(countParams).toEqual(['shipped', VALID_UUID_1, VALID_UUID_2, '%COL-42%', null]);
+      expect(mockDbQuery.mock.calls[1][1]).toEqual(['shipped', VALID_UUID_1, VALID_UUID_2, '%COL-42%', null, 50, 0]);
+    });
+
     test('agent_relais est restreint à son point relais', async () => {
       mockUser = { id: 'agent-1', role: 'agent_relais' };
       mockDbQuery
@@ -121,8 +140,9 @@ describe('routes/parcels', () => {
       const res = await request(buildApp()).get('/api/parcels');
 
       expect(res.status).toBe(200);
-      const countSql = mockDbQuery.mock.calls[0][0];
-      expect(countSql).toMatch(/relais r WHERE r.phone/);
+      const [countSql, countParams] = mockDbQuery.mock.calls[0];
+      expect(countSql).toMatch(/relais r/);
+      expect(countParams[4]).toBe('agent-1');
     });
   });
 
