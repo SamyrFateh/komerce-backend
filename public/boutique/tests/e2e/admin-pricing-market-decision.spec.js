@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CANONICAL_INDEX = fs.readFileSync(
-  path.resolve(__dirname, '../../dashboards/canonical/index.html'),
+  path.resolve(__dirname, '../../../dashboards/canonical/index.html'),
   'utf8'
 );
 
