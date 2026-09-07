@@ -4,9 +4,18 @@ const fs = require('fs');
 const path = require('path');
 
 const root = process.cwd();
+const controlTowerPath = path.join(root, 'services/dashboard-metrics/control-tower.js');
 const smokePath = path.join(root, 'public/boutique/scripts/gate-smoke-boutique.cjs');
 const modulePath = path.join(root, 'public/boutique/scripts/lib/static-server.cjs');
 const testPath = path.join(root, 'public/boutique/tests/unit/gate-smoke-server.test.js');
+
+// Close the last dynamic previous-period query through the same validated filter boundary.
+let controlTower = fs.readFileSync(controlTowerPath, 'utf8');
+const previousCountBefore = "    const prevR = await db.query(`SELECT COUNT(*)::int AS value FROM orders o WHERE ${prevQuery.where}`, prevQuery.params); // AUD-07: same trusted filter builder; values remain parameterized";
+const previousCountAfter = "    const prevSql = composeOrderFilterSql('SELECT COUNT(*)::int AS value FROM orders o WHERE ', prevQuery);\n    const prevR = await db.query(prevSql, prevQuery.params);";
+if (!controlTower.includes(previousCountBefore)) throw new Error('control-tower previous count query not found');
+controlTower = controlTower.replace(previousCountBefore, previousCountAfter);
+fs.writeFileSync(controlTowerPath, controlTower);
 
 let smoke = fs.readFileSync(smokePath, 'utf8');
 
@@ -25,4 +34,4 @@ fs.writeFileSync(modulePath, `'use strict';\n\nconst http = require('http');\nco
 
 fs.writeFileSync(testPath, `'use strict';\n\nconst http = require('http');\nconst path = require('path');\nconst { startStaticServer, stopStaticServer } = require('../../scripts/lib/static-server.cjs');\n\nfunction get(url) {\n  return new Promise((resolve, reject) => {\n    http.get(url, (res) => {\n      let body = '';\n      res.setEncoding('utf8');\n      res.on('data', (chunk) => { body += chunk; });\n      res.on('end', () => resolve({ status: res.statusCode, body }));\n    }).on('error', reject);\n  });\n}\n\ndescribe('gate-smoke in-process static server', () => {\n  test('sert la boutique sans process enfant', async () => {\n    const root = path.resolve(__dirname, '..', '..', '..');\n    const server = await startStaticServer({ root, port: 0, healthPath: '/boutique/' });\n    try {\n      const port = server.address().port;\n      const res = await get(\`http://127.0.0.1:\${port}/boutique/\`);\n      expect(res.status).toBe(200);\n      expect(res.body).toMatch(/<!doctype html|<html/i);\n    } finally {\n      await stopStaticServer(server);\n    }\n  });\n});\n`);
 
-console.log('Playwright-free static server split applied');
+console.log('Playwright-free static server split + final control-tower guard applied');
