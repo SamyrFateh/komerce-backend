@@ -33,6 +33,14 @@ describe('migration 166 — economic structure cost events', () => {
     expect(migration).toContain('amount_kmf NUMERIC(18,2) NOT NULL');
   });
 
+  test('snapshotte famille, nom et récurrence sans fermer les familles N3 dans un enum', () => {
+    expect(migration).toContain('charge_family_snapshot TEXT NOT NULL');
+    expect(migration).toContain('charge_name_snapshot TEXT NOT NULL');
+    expect(migration).toContain('recurrence_period_snapshot TEXT NULL');
+    expect(migration).toContain('relais fixe périodique');
+    expect(migration).not.toMatch(/charge_family_snapshot\s+TEXT[^;]*CHECK\s*\([^)]*IN\s*\(/i);
+  });
+
   test('rend la table append-only au niveau DB', () => {
     expect(migration).toContain('prevent_economic_structure_cost_event_mutation');
     expect(migration).toContain('BEFORE UPDATE OR DELETE ON economic_structure_cost_events');
