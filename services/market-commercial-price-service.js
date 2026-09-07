@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          market-commercial-price-draft-owner
- * @domain        market
+ * @domain        market-autonomy
  * @layer         service
  * @criticality   high
  * @inputs        server_resolved_market, product_ref, local_amount, reason, actor_id
