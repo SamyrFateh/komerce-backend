@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 505
-- Files with full headers: 460
+- Scanned code files: 507
+- Files with full headers: 462
 - Files with lite headers: 45
-- Files with any headers: 505
+- Files with any headers: 507
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1121
-- Edges: 5828
-- DB tables: 129
-- Doctrines: 313
+- Graph nodes: 1127
+- Edges: 5856
+- DB tables: 131
+- Doctrines: 315
 - Impact areas: 174
-- Unresolved code edges: 570
+- Unresolved code edges: 574
 - Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 51
+- economic-engine: 53
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 219
+- service: 221
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -383,11 +383,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
 - services/pricing-maturity.js — economic-engine-pricing-maturity (economic-engine, high, full)
 - services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
 - services/pricing-period-structure.js — economic-engine-pricing-period-structure (economic-engine, high, full)
 - services/pricing-rates.js — economic-engine-pricing-rates (economic-engine, high, full)
 - services/pricing-recommend.js — economic-engine-pricing-recommend (economic-engine, high, full)
+- services/pricing-risk-period.js — economic-engine-pricing-risk-period (economic-engine, high, full)
 - services/pricing-strategy-service.js — economic-engine-pricing-strategy-service (economic-engine, high, full)
 - services/pricing-workspace.js — canonical-pricing-workspace-service (economic-engine, high, full)
 - services/product-360.js — canonical-product-360-service (admin-dashboard, high, full)
@@ -548,6 +550,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
+- WRITE services/pricing-risk-period.js -> economic_risk_cost_events
+- WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
 - WRITE services/pricing-period-structure.js -> economic_structure_cost_events
@@ -605,8 +609,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-engine.js -> order_items
 - WRITE routes/admin/delete-order-cascade.js -> order_status_history
 - WRITE routes/admin/system.js -> order_status_history
-- WRITE routes/admin/users.js -> order_status_history
-- WRITE routes/orders/cancel.js -> order_status_history
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -843,6 +845,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
 - uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
 - uses: future pricing coverage gate -> services/pricing-period-structure.js (future pricing coverage gate)
+- uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
@@ -878,6 +881,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: payments -> services/order-mutation-service.js (payments)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
 - uses: pickup authorization mutations -> middleware/require-recent-auth.js (pickup authorization mutations)
+- uses: pricing workspace -> services/pricing-market-coverage.js (pricing workspace)
 - uses: public/boutique/index.html -> public/boutique/js/b-service-worker-refresh.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
@@ -924,8 +928,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-customs-shipments.js -> services/* (services/*)
 - depends: routes/admin-dashboard-market.js -> db (db)
 - depends: routes/admin-dashboard-market.js -> middleware/auth (middleware/auth)
-- depends: routes/admin-dashboard-market.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
-- depends: routes/admin-dashboard-market.js -> middleware/require-market-scope (middleware/require-market-scope)
 
 ## Files Still Without Headers Or Aggregation
 
