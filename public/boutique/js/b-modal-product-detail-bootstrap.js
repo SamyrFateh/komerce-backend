@@ -4,16 +4,16 @@
  * @domain        catalog
  * @layer         ui-controller
  * @criticality   high
- * @inputs        modal_lifecycle, product_id, product_detail_v1, responsive_breakpoint
+ * @inputs        modal_lifecycle, product_id, product_detail_v1, responsive_breakpoint, market_context
  * @outputs       shared_modal_selection_state, responsive_product_modal_render
- * @depends       b-bus.js, b-store.js, b-modal-mobile-product.js, b-modal-desktop-product.js, view-models/modal-selection-model.js
+ * @depends       b-bus.js, b-store.js, b-modal-mobile-product.js, b-modal-desktop-product.js, view-models/modal-selection-model.js, market-context.js
  * @used-by       main.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
- * @impact-areas  product-modal, mobile, desktop, product-detail, sku-selection
- * @version       2026-07
+ * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md, market_display_matches_buyer_price
+ * @impact-areas  product-modal, mobile, desktop, product-detail, sku-selection, market-autonomy
+ * @version       2026-09
  */
 
 'use strict';
@@ -36,9 +36,6 @@ let _generation = 0;
 let _viewportMode = null;
 let _resizeTimer = null;
 
-// §4 — Unification viewport sur isDesktop() (b-scroll-owner.js, innerWidth>=900).
-// Remplace matchMedia('max-width:899px') qui créait un self-abort [899,900)
-// et obligeait les tests à mocker window.matchMedia.
 function viewportMode() {
   return isDesktop() ? 'desktop' : 'mobile';
 }
@@ -47,22 +44,18 @@ function currentProductId() {
   return state.modalProduct ? String(state.modalProduct.id) : null;
 }
 
+function currentMarketCode() {
+  const api = typeof window !== 'undefined' ? window.KomerceMarket : null;
+  if (!api) return null;
+  return (api.getPreviewOverride && api.getPreviewOverride()) || api.DEFAULT || null;
+}
+
 function clearProductDetailState() {
   clearDesktopProductDetailState();
   clearMobileProductDetailState();
-  // Doctrine §6 : un changement de produit (nouvelle ouverture ou navigation
-  // précédent/suivant sans fermeture de modal) réinitialise la sélection
-  // livraison. Sans ce reset, un rail choisi explicitement sur le produit A
-  // pourrait survivre silencieusement sur le produit B si les codes de rail
-  // coïncident (ex. deux produits SEA_STANDARD-only).
   state.modalDeliverySelection = { requested_transport_rail: null };
 }
 
-// PDC-6 : le chemin transactionnel (ajout panier, achat direct, stepper) ne
-// doit jamais rester actif sur la seule foi du paint legacy produit liste.
-// Il est donc verrouillé avant même de tenter le fetch /detail, et seul le
-// renderer PDC (renderActions, sur la base du contrat reçu) est habilité à
-// le déverrouiller en cas de succès.
 function transactionalControls() {
   const buyNow = document.getElementById('k-buy-now-btn');
   return [dom.addCartBtn, buyNow, dom.qtyMinus, dom.qtyPlus].filter(Boolean);
@@ -77,11 +70,6 @@ function clearLegacyVariantsPaint() {
   if (container) container.innerHTML = '';
 }
 
-// MDM-8 phase 2 : entre le paint legacy (openModal) et la résolution du
-// fetch /detail, #k-modal-variants restait vide — indiscernable d'une
-// modale cassée à l'œil (audit MDM8_AUDIT_PHASE1.md §1.3). Un skeleton
-// comble cette fenêtre ; renderResponsiveProductDetail() l'efface déjà
-// via son propre container.innerHTML = '' en cas de succès.
 function renderDetailSkeleton() {
   const container = dom.modalVariants || document.getElementById('k-modal-variants');
   if (!container) return;
@@ -97,9 +85,6 @@ function renderDetailSkeleton() {
   container.appendChild(el);
 }
 
-// Échec du fetch /detail (réseau lent/coupure) : le chemin transactionnel
-// reste verrouillé (fail-closed volontaire, PDC-6, non modifié ici) mais
-// l'utilisateur voit désormais un état explicite plutôt qu'un vide silencieux.
 function renderDetailUnavailable() {
   const container = dom.modalVariants || document.getElementById('k-modal-variants');
   if (!container) return;
@@ -118,9 +103,6 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
   } else {
     renderDesktopProductDetail(detail, selection, { forceMedia });
   }
-
-  // Le renderer termine son paint avant de publier la disponibilité du contrat.
-  // Le module panier reste propriétaire de sa projection UI et écoute ce signal.
   bus.emit('modal:detail-ready');
 }
 
@@ -134,14 +116,6 @@ function syncResponsiveComposition() {
     state.modalSelection,
     false
   );
-
-  // MDP-3 : le cœur PDC vient d'être re-rendu pour le nouveau viewport, mais
-  // les enrichissements périphériques (placement des actions desktop, entrée
-  // paiement) ont leur propre cycle de vie (b-modal-approche-c-hybrid.js,
-  // b-modal-desktop-enhancers.js) qui n'écoute que modal:opened/modal:closed.
-  // Sans ce signal, un resize en cours de session laissait ces enrichissements
-  // non réconciliés (D3). Émis une seule fois par transition de viewport —
-  // jamais en boucle — donc idempotent pour des resizes successifs.
   bus.emit('modal:composition-synced');
 }
 
@@ -157,14 +131,13 @@ async function loadProductDetail(product) {
   const generation = ++_generation;
   clearProductDetailState();
   _viewportMode = null;
-
-  // Verrouillage AVANT le fetch : tant que le contrat détail n'a pas résolu
-  // avec succès, aucune mutation panier SKU n'est permise.
   lockTransactionalPath();
   renderDetailSkeleton();
 
   try {
-    const response = await fetch(`/api/products/${productId}/detail`, {
+    const marketCode = currentMarketCode();
+    const marketQuery = marketCode ? `?market=${encodeURIComponent(marketCode)}` : '';
+    const response = await fetch(`/api/products/${productId}/detail${marketQuery}`, {
       credentials: 'include',
     });
     if (!response.ok) {
@@ -179,14 +152,8 @@ async function loadProductDetail(product) {
     const selection = createModalSelection(detail);
     state.modalProductDetail = detail;
     state.modalSelection = selection;
-    // Succès : c'est désormais le renderer PDC (renderActions, à partir du
-    // contrat détail) qui décide de l'état des CTA — jamais le paint legacy.
     renderResponsiveProductDetail(detail, selection, true);
   } catch (error) {
-    // Échec : fail closed. Le contrat détail n'a pas pu être vérifié, donc
-    // aucune mutation panier SKU ne doit rester possible : on purge le paint
-    // legacy (#k-modal-variants) au lieu de le laisser en place, et le
-    // chemin transactionnel reste verrouillé (jamais déverrouillé ici).
     if (generation === _generation && state.modalOpen && currentProductId() === productId) {
       clearLegacyVariantsPaint();
       renderDetailUnavailable();
@@ -204,12 +171,6 @@ export function setupProductDetailModal() {
     loadProductDetail(product);
   });
 
-  /* Garde late-install : si la modale est déjà ouverte au moment où ce module
-     se charge (race condition en chargement lazy — les 50+ modules JS + images
-     d'un produit SKU saturent le serveur de dev mono-thread ; modal:opened a
-     déjà ete emis avant que ce handler soit enregistre), on rejoue loadProductDetail
-     sur le produit courant. En production (CDN, modules en cache) ce chemin n'est
-     jamais emprunte — les modules chargent en < 200ms, bien avant tout clic humain. */
   if (state.modalOpen && state.modalProduct && !state.modalProductDetail) {
     loadProductDetail(state.modalProduct);
   }

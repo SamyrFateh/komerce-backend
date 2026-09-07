@@ -8,16 +8,17 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
- *                services/order-checkout-persistence.js, services/local-stock-service.js
+ *                services/order-checkout-persistence.js, services/local-stock-service.js,
+ *                services/market-local-price-resolution-service.js
  * @used-by       routes/orders/create.js
  * @db-read       orders, product_skus, product_variants, products, recipients, relais, shared_cart_items, shared_carts
  * @db-write      order_items, order_status_history, orders, recipients
  * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
  *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
  * @db-txn        owns_full_transaction
- * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, explicit_relay_market_anchor, resolve_before_behavior_change
- * @impact-areas  orders, checkout, shared-cart, local-stock
- * @version       2026-09 (LOCAL_STOCK/IMPORT + transport commercial IMPORT-only)
+ * @doctrine      docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md, explicit_relay_market_anchor, resolve_before_behavior_change, only_LOCAL_ACTIVE_is_buyer_effective
+ * @impact-areas  orders, checkout, shared-cart, local-stock, market-autonomy
+ * @version       2026-09 (LOCAL_STOCK/IMPORT + market-local commercial price cutover)
  */
 
 'use strict';
@@ -51,8 +52,8 @@
  *
  * Invariant marché : relais_id est obligatoire ici, y compris pour les appels
  * service directs. Le service ne choisit jamais un relais actif « par défaut » :
- * le relais explicite est l'ancre serveur du market_id, du routing et du
- * verdict LOCAL_STOCK/IMPORT.
+ * le relais explicite est l'ancre serveur du market_id, du routing, du prix
+ * commercial LOCAL_ACTIVE et du verdict LOCAL_STOCK/IMPORT.
  *
  * Résultat renvoyé à l'appelant (jamais de res.status/res.json ici) :
  *   { ok: true, order, creditApplied, relais }
@@ -71,6 +72,7 @@ const { quoteTransportPriceForOrder, TransportPricingError } = require('./transp
 const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
+const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -244,7 +246,17 @@ async function runOrderCheckout({ user, body }) {
       return fail(itemsResolved.status, itemsResolved.body);
     }
     const { productMap, cost_estimated, pickupCodeRecipientUserId } = itemsResolved;
-    let total_kmf = itemsResolved.total_kmf;
+
+    // Prix pays : uniquement LOCAL_ACTIVE et uniquement depuis market_id du
+    // relais résolu côté serveur. Cette boundary recalcule aussi le total à
+    // partir des prix effectifs (global/SKU quand aucun override, local actif
+    // sinon) avant transport, fidélité, wallet et snapshot order_items.
+    const marketPricing = await applyActiveMarketPricesToCheckoutItems(client, {
+      marketId: relais?.market_id || null,
+      items,
+      productMap,
+    });
+    let total_kmf = marketPricing.total_kmf;
 
     // ── Fulfillment mixte — Lots B/C/D ────────────────────────────────
     // Résolution serveur, sous la transaction orders déjà ouverte. Le owner

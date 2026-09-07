@@ -213,6 +213,7 @@ module.exports = {
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)',
       'catalog (lecture seule des produits)',
+      'market-autonomy (prix LOCAL_ACTIVE du marché serveur lors de la création de liste ; aucune autorité marché navigateur)',
       'notifications (émission uniquement — WhatsApp création de liste)',
       'auth',
       'auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)',

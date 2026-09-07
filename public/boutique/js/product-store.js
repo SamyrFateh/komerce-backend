@@ -4,29 +4,61 @@
  * @domain        catalog
  * @layer         state-store
  * @criticality   high
- * @inputs        raw_products, cache_state, availability_flags
- * @outputs       normalized_products, cached_products, promo_products
- * @depends       localStorage, shop-schema.js
+ * @inputs        raw_products, cache_state, availability_flags, market_context
+ * @outputs       normalized_products, market_scoped_cached_products, promo_products
+ * @depends       localStorage, shop-schema.js, market-context.js, komerce-api.js
  * @used-by       b-catalog.js, boutique.js, suggestion-modules
- * @doctrine      product_source_unique, catalogue_cache_fallback, produit_reference_stable
- * @impact-areas  catalog, product-discovery, suggestions, offline-fallback
- * @version       2026-06
+ * @doctrine      product_source_unique, catalogue_cache_fallback, produit_reference_stable, market_cache_isolation
+ * @impact-areas  catalog, product-discovery, suggestions, offline-fallback, market-autonomy
+ * @version       2026-09
  */
 'use strict';
-
-/**
- * @module product-store
- * @brief Source unique des produits normalises de la boutique.
- *
- * La grille, la recherche, la modale et les sections lisent
- * toutes cette meme couche de produits.
- */
 
 import { getDbKeysForCategory, matchesSubcategory, normalizeCategoryKey } from './shop-schema.js';
 
 const CACHE_KEY = 'komerce_products_cache';
-
 let productCache = [];
+
+function currentMarketCode() {
+  if (typeof window === 'undefined' || !window.KomerceMarket) return null;
+  const api = window.KomerceMarket;
+  return (api.getPreviewOverride && api.getPreviewOverride()) || api.DEFAULT || null;
+}
+
+function cacheKey() {
+  const marketCode = currentMarketCode();
+  return marketCode ? `${CACHE_KEY}_${marketCode}` : CACHE_KEY;
+}
+
+// b-catalog possède encore un appel historique direct K.products.list().
+// Tant que ce chemin n'est pas supprimé, on impose ici le market context sur
+// l'API commune au chargement du module. K est déjà chargé avant main.js dans
+// index.html. Le wrapper ne fabrique aucune autorité : il transmet seulement
+// un code marché de présentation au GET public ; le checkout reste ancré par
+// relais.market_id côté serveur.
+function installMarketAwareProductApi() {
+  const api = typeof globalThis !== 'undefined' ? globalThis.K?.products : null;
+  if (!api || api.__marketAwareListInstalled || typeof api.list !== 'function') return;
+  const originalList = api.list.bind(api);
+  api.list = function marketAwareList(filters = {}) {
+    const market = filters.market || currentMarketCode();
+    return originalList({ ...filters, ...(market ? { market } : {}) });
+  };
+  Object.defineProperty(api, '__marketAwareListInstalled', {
+    value: true,
+    configurable: false,
+    enumerable: false,
+  });
+}
+
+installMarketAwareProductApi();
+
+// Le fallback historique de b-catalog lit encore la clé non scopée. Pour un
+// marché non-KM on la supprime fail-closed : mieux vaut afficher « pas de
+// connexion » qu'une grille KM mise en cache sous ?market=CM/CG.
+if (typeof localStorage !== 'undefined' && currentMarketCode() && currentMarketCode() !== 'KM') {
+  localStorage.removeItem(CACHE_KEY);
+}
 
 function toArray(value) {
   if (Array.isArray(value)) return value;
@@ -96,7 +128,7 @@ export function getRecommendedProducts(product, limit = 12) {
 }
 
 function readCache() {
-  const cached = localStorage.getItem(CACHE_KEY);
+  const cached = localStorage.getItem(cacheKey());
   if (!cached) return [];
   try {
     return JSON.parse(cached);
@@ -106,7 +138,7 @@ function readCache() {
 }
 
 export function writeCache(products) {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+  localStorage.setItem(cacheKey(), JSON.stringify(products));
 }
 
 export async function fetchProducts() {
@@ -114,7 +146,11 @@ export async function fetchProducts() {
     if (typeof K === 'undefined' || !K.products) {
       throw new Error('K non disponible');
     }
-    const response = await K.products.list({ limit: 1000 });
+    const market = currentMarketCode();
+    const response = await K.products.list({
+      limit: 1000,
+      ...(market ? { market } : {}),
+    });
     const products = toArray(response).filter((product) => product.is_available !== false);
     writeCache(products);
     return setProducts(products);

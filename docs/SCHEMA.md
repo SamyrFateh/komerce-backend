@@ -218,6 +218,22 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
 
+<!-- schema-pending
+object: product_market_price_drafts
+kind: table
+migration: 170
+section: ### 4.8 Pricing et économie (19 tables)
+role: Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE.
+-->
+
+<!-- schema-pending
+object: product_market_price_draft_events
+kind: table
+migration: 170
+section: ### 4.8 Pricing et économie (19 tables)
+role: Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique.
+-->
+
 ### 4.9 Douane (4 tables)
 
 | Table | Rôle |
