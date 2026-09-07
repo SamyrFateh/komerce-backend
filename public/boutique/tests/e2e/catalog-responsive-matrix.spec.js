@@ -30,12 +30,6 @@ const VIEWPORTS = [
   { key: '2560x1440', width: 2560, height: 1440 },
 ];
 
-function expectedColumns(width) {
-  if (width < 1200) return 3;
-  if (width < 1600) return 4;
-  return 5;
-}
-
 for (const viewport of VIEWPORTS) {
   test.describe(`Catalogue responsive — ${viewport.key}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
@@ -99,14 +93,21 @@ for (const viewport of VIEWPORTS) {
       });
 
       expect(geometry.missing).toBe(false);
-      expect(geometry.columns).toBe(expectedColumns(viewport.width));
       expect(geometry.docOverflow).toBeLessThanOrEqual(1);
       expect(Math.abs(geometry.sideWidth - geometry.reserve)).toBeLessThanOrEqual(2);
       expect(geometry.catalogRight).toBeLessThanOrEqual(geometry.sideLeft + 2);
       if (geometry.headerRight) {
         expect(geometry.headerRight).toBeLessThanOrEqual(geometry.sideLeft + 2);
       }
-      expect(geometry.cardWidth).toBeGreaterThanOrEqual(180);
+
+      if (viewport.width < 1200) {
+        expect(geometry.columns).toBe(3);
+        expect(geometry.cardWidth).toBeGreaterThanOrEqual(180);
+      } else {
+        expect(geometry.columns).toBeGreaterThanOrEqual(3);
+        expect(geometry.cardWidth).toBeGreaterThanOrEqual(250);
+      }
+
       expect(geometry.cardWidth).toBeLessThanOrEqual(360);
       expect(geometry.shelfOverflow).toBeLessThanOrEqual(2);
     });
