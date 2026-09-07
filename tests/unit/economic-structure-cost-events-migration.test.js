@@ -38,7 +38,15 @@ describe('migration 166 — economic structure cost events', () => {
     expect(migration).toContain('charge_name_snapshot TEXT NOT NULL');
     expect(migration).toContain('recurrence_period_snapshot TEXT NULL');
     expect(migration).toContain('relais fixe périodique');
-    expect(migration).not.toMatch(/charge_family_snapshot\s+TEXT[^;]*CHECK\s*\([^)]*IN\s*\(/i);
+
+    // Borne l'assertion à la définition de la colonne famille. La regex
+    // précédente traversait les colonnes suivantes et capturait à tort le
+    // CHECK IN (...) de scope_kind.
+    const familyColumn = migration.match(
+      /charge_family_snapshot\s+TEXT\s+NOT NULL[\s\S]*?charge_name_snapshot\s+TEXT/i
+    )?.[0] || '';
+    expect(familyColumn).not.toBe('');
+    expect(familyColumn).not.toMatch(/\bIN\s*\(/i);
   });
 
   test('rend la table append-only au niveau DB', () => {
