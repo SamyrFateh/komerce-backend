@@ -24,7 +24,7 @@ describe('market commercial price draft boundary', () => {
   });
 
   test('migration keeps local price distinct from global products.price_kmf', () => {
-    const migration = read('migrations/167_market_commercial_price_drafts.sql');
+    const migration = read('migrations/168_market_commercial_price_drafts.sql');
     expect(migration).toMatch(/product_market_price_drafts/);
     expect(migration).toMatch(/UNIQUE \(market_id, product_id\)/);
     expect(migration).toMatch(/DRAFT_PENDING_GATE/);
