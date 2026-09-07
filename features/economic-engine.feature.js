@@ -41,7 +41,7 @@ module.exports = {
   },
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Calculer le prix, le cout et la marge d\'un produit ou d\'une commande selon une strategie tarifaire versionnee.',
+  service: 'Calculer le prix, le cout et la marge d\'un produit ou d\'une commande selon une strategie tarifaire versionnee, et gouverner les décisions de prix locales sans dupliquer le catalogue global.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -53,6 +53,7 @@ module.exports = {
       'vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché',
       'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
       'politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only',
+      'décision append-only du prix produit par marché : produit global inchangé, prix local résolu dans la devise du marché, plancher variable absolu et gate explicite sous CDR',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -110,6 +111,7 @@ module.exports = {
       'services/pricing-market-coverage.js',
       'services/pricing-risk-period.js',
       'services/pricing-market-decision-policy.js',
+      'services/pricing-market-price-service.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -159,6 +161,7 @@ module.exports = {
       'migrations/166_economic_structure_cost_events.sql',
       'migrations/167_economic_risk_period_truth.sql',
       'migrations/168_pricing_market_decision_policy_events.sql',
+      'migrations/169_product_market_price_decision_events.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -184,6 +187,7 @@ module.exports = {
       'tests/unit/economic-structure-cost-events-migration.test.js',
       'tests/unit/economic-risk-period-truth-migration.test.js',
       'tests/unit/pricing-market-decision-policy-migration.test.js',
+      'tests/unit/pricing-market-price-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -198,6 +202,7 @@ module.exports = {
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
       'tests/unit/pricing-market-decision-policy.test.js',
+      'tests/unit/pricing-market-price-service.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -223,6 +228,7 @@ module.exports = {
       'tests/unit/pricing-apply.test.js',
       'tests/unit/admin-pricing-workspace-route.test.js',
       'tests/unit/admin-pricing-workspace-market-route.test.js',
+      'tests/unit/admin-pricing-workspace-market-price-route.test.js',
       'tests/unit/cost-component-market-service.test.js',
       'tests/unit/pricing-cost-explainability.test.js',
       'tests/unit/pricing-workspace.test.js',
@@ -319,6 +325,7 @@ module.exports = {
       'pricing_strategies: RW',
       'pricing_global_access_grants: R',
       'pricing_strategy_history: W',
+      'product_market_price_decision_events: RW!',
       'product_variants: R',
       'products: R',
       'recipients: R',
@@ -332,9 +339,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 82,
-    totalRoutes: 84,
-    note: "82/84 routes protégées (dont 11 routes Canonical Pricing 4F sous grant global explicite). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
+    authedRoutesDetected: 86,
+    totalRoutes: 88,
+    note: "86/88 routes protégées (dont 15 routes Canonical Pricing 4F sous grant global ou scope marché explicite). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
   },
   contract: {
     exposes: [
@@ -354,6 +361,10 @@ module.exports = {
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision',
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history',
       'POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/product-prices',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/product-prices/:productRef/history',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/product-prices/:productRef',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/product-prices/:productRef/reset',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset',
@@ -439,6 +450,7 @@ module.exports = {
     internalApi: [
       { fn: 'recommend', file: 'services/pricing-engine.js' },
       { fn: 'recordProductPriceChange', file: 'services/economic-price-audit-service.js' },
+      { fn: 'resolveEffectiveMarketProductPrice', file: 'services/pricing-market-price-service.js' },
     ],
     consumes: [
       'refunds (dépendance data cross-feature observée et gouvernée par O5)',
@@ -496,6 +508,7 @@ module.exports = {
     'un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro',
     'la fenêtre et les seuils du gate de décision marché proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur',
     'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite',
+    'un prix produit pays est un overlay append-only sur le produit global : jamais sous coût variable complet ; sous CDR seulement avec autorisation serveur explicite et validité bornée ; RESET restaure l héritage global sans mutation du produit',
   ],
 
 };
