@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS product_market_price_decisions (
   coverage_evaluated_at TIMESTAMPTZ,
   coverage_period_from  TIMESTAMPTZ,
   coverage_period_to    TIMESTAMPTZ,
+  decision_duration_days INTEGER CHECK (decision_duration_days IS NULL OR decision_duration_days > 0),
   effective_until       TIMESTAMPTZ,
 
   decided_by            UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS product_market_price_decisions (
       AND coverage_evaluated_at IS NOT NULL
       AND coverage_period_from IS NOT NULL
       AND coverage_period_to IS NOT NULL
+      AND decision_duration_days IS NOT NULL
       AND effective_until IS NOT NULL
     )
   )
