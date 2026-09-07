@@ -1,0 +1,84 @@
+name: Market autonomy projection refresh
+
+on:
+  push:
+    branches:
+      - feat/market-country-autonomy-20260907
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-autonomy-projection-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: ${{ !contains(github.event.head_commit.message, '[projection-refresh]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-country-autonomy-20260907
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Register market autonomy response contracts
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'scripts/contract-generate.js';
+          let src = fs.readFileSync(file, 'utf8');
+          const marker = '// MARKET AUTONOMY — local commercial price decision contracts';
+          if (!src.includes(marker)) {
+            const routeAnchor = "  // LOT 4U — Market-scoped Pricing cost workshop\n";
+            const routeInsert = [
+              marker,
+              "  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices', method: 'get', schema: null },",
+              "  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price', method: 'post', schema: null },",
+              "  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset', method: 'post', schema: null },",
+              '',
+            ].join('\n');
+            if (!src.includes(routeAnchor)) throw new Error('route anchor not found');
+            src = src.replace(routeAnchor, routeAnchor + routeInsert);
+
+            const responseAnchor = "  // DEBT ZERO — réponses historiques prouvées par route/service/tests (2026-09-06)\n";
+            const responseInsert = [
+              "  // MARKET AUTONOMY — réponses lues dans routes/admin-pricing-workspace.js et services/market-commercial-price-service.js",
+              "  '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices': { get: { fields: ['market','authority','products'], source: 'service-read' } },",
+              "  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price': { post: { fields: ['ok','action','result'], source: 'route-read' } },",
+              "  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset': { post: { fields: ['ok','action','result'], source: 'route-read' } },",
+              '',
+            ].join('\n');
+            if (!src.includes(responseAnchor)) throw new Error('response anchor not found');
+            src = src.replace(responseAnchor, responseInsert + responseAnchor);
+            fs.writeFileSync(file, src);
+          }
+          NODE
+
+      - name: Regenerate canonical projections
+        run: |
+          npm run contract:generate
+          npm run security:360
+          node scripts/contract-check.js
+          npm run security:360:check
+
+      - name: Commit generated truth
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md docs/SECURITY_360.json docs/SECURITY_360.md
+          if git diff --cached --quiet; then
+            echo "No projection change to commit."
+            exit 0
+          fi
+          git commit -m "chore(governance): refresh autonomy projections [projection-refresh]"
+          git push origin HEAD:feat/market-country-autonomy-20260907
