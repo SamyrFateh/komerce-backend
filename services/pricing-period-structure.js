@@ -25,6 +25,12 @@
  * expose proviennent de `economic_structure_cost_events`, avec période,
  * preuve, auteur, FX et périmètre explicites.
  *
+ * N3 est volontairement large et non codé par cas particuliers : plateforme,
+ * Hub fixe, relais fixe périodique, personnel, locaux, logiciels, fonctions
+ * support ou toute nouvelle famille de structure passent par le même journal.
+ * La récurrence de `charges` n'est qu'un contexte de configuration : la vérité
+ * temporelle est portée par [economic_from,economic_to) sur chaque fait.
+ *
  * Ce lot ne mutualise PAS les pools GROUP vers les marchés. Un marché peut
  * recevoir des coûts MARKET_DIRECT réellement attribuables, mais dès qu'un
  * pool GROUP existe sur la fenêtre, la vérité N3 locale reste
@@ -63,6 +69,11 @@ function requiredText(value, field, min = 1, max = 2000) {
     throw new Error(`${field} length must be between ${min} and ${max}`);
   }
   return text;
+}
+
+function optionalText(value, max = 200) {
+  if (value == null || String(value).trim() === '') return null;
+  return requiredText(value, 'optional_text', 1, max);
 }
 
 function parsePeriod(fromValue, toValue) {
@@ -127,6 +138,14 @@ function validateScope(input) {
   return { scopeKind, marketId };
 }
 
+function snapshotFromCharge(charge) {
+  return {
+    family: requiredText(charge.family, 'charge.family', 1, 200),
+    name: requiredText(charge.name, 'charge.name', 1, 300),
+    recurrencePeriod: optionalText(charge.recurrence_period, 100),
+  };
+}
+
 async function recordStructureCostEvent(input = {}, actorId) {
   if (!actorId) throw new Error('actorId is required');
   if (!input.charge_id) throw new Error('charge_id is required');
@@ -147,7 +166,10 @@ async function recordStructureCostEvent(input = {}, actorId) {
     await client.query('BEGIN');
 
     const chargeRes = await client.query(
-      'SELECT id, is_active FROM charges WHERE id = $1 FOR SHARE',
+      `SELECT id, family, name, recurrence_period, is_active
+         FROM charges
+        WHERE id = $1
+        FOR SHARE`,
       [input.charge_id]
     );
     if (!chargeRes.rows.length) throw new Error('charge not found');
@@ -160,9 +182,13 @@ async function recordStructureCostEvent(input = {}, actorId) {
       if (!marketRes.rows.length) throw new Error('market not found or inactive');
     }
 
+    let chargeSnapshot = snapshotFromCharge(chargeRes.rows[0]);
+
     if (semantics.adjustsEventId) {
       const adjustedRes = await client.query(
-        `SELECT id, charge_id, scope_kind, market_id
+        `SELECT id, charge_id, scope_kind, market_id,
+                charge_family_snapshot, charge_name_snapshot,
+                recurrence_period_snapshot
            FROM economic_structure_cost_events
           WHERE id = $1
           FOR SHARE`,
@@ -176,30 +202,45 @@ async function recordStructureCostEvent(input = {}, actorId) {
       if (adjusted.scope_kind !== scope.scopeKind || String(adjusted.market_id || '') !== String(scope.marketId || '')) {
         throw new Error('adjustment must keep the original economic scope');
       }
+
+      // Une correction garde l'identité historique du fait corrigé, même si le
+      // catalogue `charges` a été renommé/reclassé entre-temps.
+      chargeSnapshot = {
+        family: adjusted.charge_family_snapshot,
+        name: adjusted.charge_name_snapshot,
+        recurrencePeriod: adjusted.recurrence_period_snapshot || null,
+      };
     }
 
     const insertRes = await client.query(
       `INSERT INTO economic_structure_cost_events (
-         charge_id, scope_kind, market_id, event_kind, adjusts_event_id,
+         charge_id, charge_family_snapshot, charge_name_snapshot,
+         recurrence_period_snapshot,
+         scope_kind, market_id, event_kind, adjusts_event_id,
          economic_from, economic_to,
          amount_original, currency, fx_rate_to_kmf, fx_source, amount_kmf,
          source_kind, evidence_ref, notes, recorded_by
        ) VALUES (
-         $1, $2, $3, $4, $5,
-         $6, $7,
-         $8, $9, $10, $11, $12,
-         $13, $14, $15, $16
+         $1, $2, $3, $4,
+         $5, $6, $7, $8,
+         $9, $10,
+         $11, $12, $13, $14, $15,
+         $16, $17, $18, $19
        )
-       RETURNING id, charge_id, scope_kind, market_id, event_kind, adjusts_event_id,
-                 economic_from, economic_to, amount_original, currency,
-                 fx_rate_to_kmf, fx_source, amount_kmf, source_kind,
-                 evidence_ref, notes, recorded_by, recorded_at`,
+       RETURNING id, charge_id, charge_family_snapshot, charge_name_snapshot,
+                 recurrence_period_snapshot, scope_kind, market_id,
+                 event_kind, adjusts_event_id, economic_from, economic_to,
+                 amount_original, currency, fx_rate_to_kmf, fx_source,
+                 amount_kmf, source_kind, evidence_ref, notes,
+                 recorded_by, recorded_at`,
       [
-        input.charge_id, scope.scopeKind, scope.marketId,
+        input.charge_id, chargeSnapshot.family, chargeSnapshot.name,
+        chargeSnapshot.recurrencePeriod,
+        scope.scopeKind, scope.marketId,
         semantics.eventKind, semantics.adjustsEventId,
         period.from.toISOString(), period.to.toISOString(),
-        money.amountOriginal, money.currency, money.fxRate, fxSource, money.amountKmf,
-        sourceKind, evidenceRef, notes, actorId,
+        money.amountOriginal, money.currency, money.fxRate, fxSource,
+        money.amountKmf, sourceKind, evidenceRef, notes, actorId,
       ]
     );
 
@@ -232,6 +273,7 @@ function aggregateRows(rows, period, marketId) {
   let otherMarketDirect = 0;
   let recognizedTotal = 0;
   const evidence = [];
+  const byFamily = {};
 
   for (const row of rows || []) {
     const ratio = overlapRatio(row, period.from, period.to);
@@ -247,10 +289,15 @@ function aggregateRows(rows, period, marketId) {
       otherMarketDirect += recognized;
     }
 
+    const family = row.charge_family_snapshot || 'unknown';
+    byFamily[family] = (byFamily[family] || 0) + recognized;
+
     evidence.push({
       event_id: row.id,
       charge_id: row.charge_id,
-      charge_name: row.charge_name || null,
+      charge_family: row.charge_family_snapshot || null,
+      charge_name: row.charge_name_snapshot || null,
+      configured_recurrence: row.recurrence_period_snapshot || null,
       scope_kind: row.scope_kind,
       market_id: row.market_id || null,
       event_kind: row.event_kind,
@@ -268,6 +315,9 @@ function aggregateRows(rows, period, marketId) {
   const groupPoolKmf = roundKmf(groupPool);
   const marketDirectKmf = roundKmf(marketDirect);
   const otherMarketDirectKmf = roundKmf(otherMarketDirect);
+  const byFamilyKmf = Object.fromEntries(
+    Object.entries(byFamily).map(([family, amount]) => [family, roundKmf(amount)])
+  );
 
   let status;
   if (eventCount === 0) status = 'NOT_DECISIONAL_NO_PERIOD_TRUTH';
@@ -288,6 +338,7 @@ function aggregateRows(rows, period, marketId) {
     market_direct_kmf: marketDirectKmf,
     other_market_direct_kmf: otherMarketDirectKmf,
     recognized_total_kmf: roundKmf(recognizedTotal),
+    by_family_kmf: byFamilyKmf,
     shared_allocation_applied: false,
     market_n3_decisional: !!marketId && eventCount > 0 && Math.abs(groupPoolKmf) === 0,
     evidence_event_count: eventCount,
@@ -300,13 +351,14 @@ async function computePeriodStructureTruth(options = {}) {
   const marketId = options.marketId || null;
 
   const { rows } = await db.query(
-    `SELECT e.id, e.charge_id, c.name AS charge_name,
+    `SELECT e.id, e.charge_id,
+            e.charge_family_snapshot, e.charge_name_snapshot,
+            e.recurrence_period_snapshot,
             e.scope_kind, e.market_id, e.event_kind, e.adjusts_event_id,
             e.economic_from, e.economic_to,
             e.amount_kmf, e.source_kind, e.evidence_ref,
             e.recorded_by, e.recorded_at
        FROM economic_structure_cost_events e
-       JOIN charges c ON c.id = e.charge_id
       WHERE e.economic_from < $2
         AND e.economic_to > $1
         AND ($3::uuid IS NULL OR e.scope_kind = 'GROUP' OR e.market_id = $3::uuid)
@@ -326,4 +378,5 @@ module.exports = {
   _overlapRatio: overlapRatio,
   _validateMoney: validateMoney,
   _validateScope: validateScope,
+  _snapshotFromCharge: snapshotFromCharge,
 };
