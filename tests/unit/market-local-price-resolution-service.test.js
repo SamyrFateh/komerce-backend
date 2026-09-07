@@ -66,7 +66,8 @@ describe('market local price buyer boundary', () => {
         .mockResolvedValueOnce({ rows: [{
           amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'XAF',
         }] })
-        .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
+        .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] })
+        .mockResolvedValueOnce({ rows: [] }),
     };
     const items = [
       { product_id: 'p1', quantity: 2, _effective_unit_price_kmf: 9000 },
@@ -80,9 +81,8 @@ describe('market local price buyer boundary', () => {
         p2: { id: 'p2', price_kmf: 5000 },
       },
     });
-    // p1=7500*2; p2 lookup then no decision is needed, so provide an empty third response.
-    // The executor above returns the last mock as fallback in Jest only once; append now is too late.
     expect(items[0]._effective_unit_price_kmf).toBe(7500);
-    expect(result.total_kmf).toBeGreaterThanOrEqual(15000);
+    expect(items[1]._effective_unit_price_kmf).toBe(5000);
+    expect(result.total_kmf).toBe(20000);
   });
 });
