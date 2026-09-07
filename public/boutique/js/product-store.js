@@ -4,13 +4,13 @@
  * @domain        catalog
  * @layer         state-store
  * @criticality   high
- * @inputs        raw_products, cache_state, availability_flags
- * @outputs       normalized_products, cached_products, promo_products
- * @depends       localStorage, shop-schema.js
+ * @inputs        raw_products, cache_state, availability_flags, market_context
+ * @outputs       normalized_products, market_scoped_cached_products, promo_products
+ * @depends       localStorage, shop-schema.js, market-context.js
  * @used-by       b-catalog.js, boutique.js, suggestion-modules
- * @doctrine      product_source_unique, catalogue_cache_fallback, produit_reference_stable
- * @impact-areas  catalog, product-discovery, suggestions, offline-fallback
- * @version       2026-06
+ * @doctrine      product_source_unique, catalogue_cache_fallback, produit_reference_stable, market_cache_isolation
+ * @impact-areas  catalog, product-discovery, suggestions, offline-fallback, market-autonomy
+ * @version       2026-09
  */
 'use strict';
 
@@ -27,6 +27,17 @@ import { getDbKeysForCategory, matchesSubcategory, normalizeCategoryKey } from '
 const CACHE_KEY = 'komerce_products_cache';
 
 let productCache = [];
+
+function currentMarketCode() {
+  if (typeof window === 'undefined' || !window.KomerceMarket) return null;
+  const api = window.KomerceMarket;
+  return (api.getPreviewOverride && api.getPreviewOverride()) || api.DEFAULT || null;
+}
+
+function cacheKey() {
+  const marketCode = currentMarketCode();
+  return marketCode ? `${CACHE_KEY}_${marketCode}` : CACHE_KEY;
+}
 
 function toArray(value) {
   if (Array.isArray(value)) return value;
@@ -96,7 +107,7 @@ export function getRecommendedProducts(product, limit = 12) {
 }
 
 function readCache() {
-  const cached = localStorage.getItem(CACHE_KEY);
+  const cached = localStorage.getItem(cacheKey());
   if (!cached) return [];
   try {
     return JSON.parse(cached);
@@ -106,7 +117,7 @@ function readCache() {
 }
 
 export function writeCache(products) {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+  localStorage.setItem(cacheKey(), JSON.stringify(products));
 }
 
 export async function fetchProducts() {
@@ -114,7 +125,11 @@ export async function fetchProducts() {
     if (typeof K === 'undefined' || !K.products) {
       throw new Error('K non disponible');
     }
-    const response = await K.products.list({ limit: 1000 });
+    const market = currentMarketCode();
+    const response = await K.products.list({
+      limit: 1000,
+      ...(market ? { market } : {}),
+    });
     const products = toArray(response).filter((product) => product.is_available !== false);
     writeCache(products);
     return setProducts(products);
