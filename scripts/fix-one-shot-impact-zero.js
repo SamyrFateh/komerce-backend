@@ -6,6 +6,10 @@ const anchor = "const fs = require('fs');\n";
 if (!src.includes(anchor)) throw new Error('one-shot anchor missing');
 if (!src.includes("const search = '${search}';")) {
   src = src.replace(anchor, anchor + "const search = '${search}';\n");
-  fs.writeFileSync(file, src);
 }
-console.log('one-shot literal fixed');
+// The generator contains template literals that themselves emit template literals.
+// GitHub source stores those delimiters as two backslashes + backtick; collapse to
+// the single escape required by the outer template literal before parsing it.
+src = src.split('\\\\`').join('\\`');
+fs.writeFileSync(file, src);
+console.log('one-shot literals fixed');
