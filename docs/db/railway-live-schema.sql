@@ -429,6 +429,19 @@ COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE 
 
 
 --
+-- Name: prevent_economic_structure_cost_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_economic_structure_cost_event_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic_structure_cost_events is append-only; record an ADJUSTMENT or REVERSAL event';
+END;
+$$;
+
+
+--
 -- Name: prevent_hard_delete_parcels(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1660,6 +1673,87 @@ CREATE TABLE public.economic_snapshots (
     trigger_event text,
     created_at timestamp with time zone DEFAULT now()
 );
+
+
+--
+-- Name: economic_structure_cost_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_structure_cost_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    charge_id uuid NOT NULL,
+    charge_family_snapshot text NOT NULL,
+    charge_name_snapshot text NOT NULL,
+    recurrence_period_snapshot text,
+    scope_kind text NOT NULL,
+    market_id uuid,
+    event_kind text NOT NULL,
+    adjusts_event_id uuid,
+    economic_from timestamp with time zone NOT NULL,
+    economic_to timestamp with time zone NOT NULL,
+    amount_original numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    fx_rate_to_kmf numeric(18,6) NOT NULL,
+    fx_source text NOT NULL,
+    amount_kmf numeric(18,2) NOT NULL,
+    source_kind text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_structure_cost_events_adjustment_link_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (adjusts_event_id IS NULL)) OR ((event_kind = ANY (ARRAY['ADJUSTMENT'::text, 'REVERSAL'::text])) AND (adjusts_event_id IS NOT NULL)))),
+    CONSTRAINT economic_structure_cost_events_amount_kmf_check CHECK ((amount_kmf <> (0)::numeric)),
+    CONSTRAINT economic_structure_cost_events_charge_family_snapshot_check CHECK (((char_length(btrim(charge_family_snapshot)) >= 1) AND (char_length(btrim(charge_family_snapshot)) <= 200))),
+    CONSTRAINT economic_structure_cost_events_charge_name_snapshot_check CHECK (((char_length(btrim(charge_name_snapshot)) >= 1) AND (char_length(btrim(charge_name_snapshot)) <= 300))),
+    CONSTRAINT economic_structure_cost_events_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_structure_cost_events_event_kind_check CHECK ((event_kind = ANY (ARRAY['ACCRUAL'::text, 'ADJUSTMENT'::text, 'REVERSAL'::text]))),
+    CONSTRAINT economic_structure_cost_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_structure_cost_events_fx_rate_to_kmf_check CHECK ((fx_rate_to_kmf > (0)::numeric)),
+    CONSTRAINT economic_structure_cost_events_fx_source_check CHECK (((char_length(btrim(fx_source)) >= 2) AND (char_length(btrim(fx_source)) <= 200))),
+    CONSTRAINT economic_structure_cost_events_kmf_fx_check CHECK (((currency <> 'KMF'::text) OR (fx_rate_to_kmf = (1)::numeric))),
+    CONSTRAINT economic_structure_cost_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_structure_cost_events_period_check CHECK ((economic_to > economic_from)),
+    CONSTRAINT economic_structure_cost_events_recurrence_period_snapshot_check CHECK (((recurrence_period_snapshot IS NULL) OR ((char_length(btrim(recurrence_period_snapshot)) >= 1) AND (char_length(btrim(recurrence_period_snapshot)) <= 100)))),
+    CONSTRAINT economic_structure_cost_events_scope_kind_check CHECK ((scope_kind = ANY (ARRAY['GROUP'::text, 'MARKET_DIRECT'::text]))),
+    CONSTRAINT economic_structure_cost_events_scope_market_check CHECK ((((scope_kind = 'GROUP'::text) AND (market_id IS NULL)) OR ((scope_kind = 'MARKET_DIRECT'::text) AND (market_id IS NOT NULL)))),
+    CONSTRAINT economic_structure_cost_events_sign_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (amount_kmf > (0)::numeric) AND (amount_original > (0)::numeric)) OR ((event_kind = 'REVERSAL'::text) AND (amount_kmf < (0)::numeric) AND (amount_original < (0)::numeric)) OR ((event_kind = 'ADJUSTMENT'::text) AND (amount_kmf <> (0)::numeric) AND (amount_original <> (0)::numeric)))),
+    CONSTRAINT economic_structure_cost_events_source_kind_check CHECK ((source_kind = ANY (ARRAY['INVOICE'::text, 'CONTRACT'::text, 'CONNECTOR'::text, 'MANUAL'::text, 'ADJUSTMENT'::text])))
+);
+
+
+--
+-- Name: TABLE economic_structure_cost_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_structure_cost_events IS 'Vérité append-only des charges économiques N3 de période. Générique pour toute charge de structure ; GROUP reste non alloué et MARKET_DIRECT est directement attribuable à un marché.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.charge_family_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.charge_family_snapshot IS 'Famille de structure figée au constat du fait (ex. overhead, relay, hub, platform) ; aucune liste fermée n’est imposée par le moteur.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.recurrence_period_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.recurrence_period_snapshot IS 'Récurrence de configuration au moment du constat, à titre explicatif uniquement ; la reconnaissance économique repose sur economic_from/economic_to.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.adjusts_event_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.adjusts_event_id IS 'Lien obligatoire vers l’événement corrigé pour ADJUSTMENT/REVERSAL ; aucune mutation du réel historique.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.amount_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.amount_kmf IS 'Montant économique en KMF pour toute la période de l’événement ; ne provient jamais automatiquement de charges.amount_kmf.';
 
 
 --
@@ -6260,6 +6354,14 @@ ALTER TABLE ONLY public.economic_snapshots
 
 
 --
+-- Name: economic_structure_cost_events economic_structure_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: economic_variables economic_variables_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9293,6 +9395,34 @@ CREATE INDEX idx_strategy_history_product ON public.pricing_strategy_history USI
 
 
 --
+-- Name: idx_structure_cost_events_charge_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_charge_time ON public.economic_structure_cost_events USING btree (charge_id, recorded_at DESC, id DESC);
+
+
+--
+-- Name: idx_structure_cost_events_family_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_family_period ON public.economic_structure_cost_events USING btree (charge_family_snapshot, economic_from, economic_to);
+
+
+--
+-- Name: idx_structure_cost_events_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_period ON public.economic_structure_cost_events USING btree (economic_from, economic_to);
+
+
+--
+-- Name: idx_structure_cost_events_scope_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_scope_period ON public.economic_structure_cost_events USING btree (scope_kind, market_id, economic_from, economic_to);
+
+
+--
 -- Name: idx_supplier_catalog_imports_import_ref; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9717,6 +9847,13 @@ CREATE TRIGGER trg_parcels_updated BEFORE UPDATE ON public.parcels FOR EACH ROW 
 --
 
 CREATE TRIGGER trg_partners_updated BEFORE UPDATE ON public.partners FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: economic_structure_cost_events trg_prevent_economic_structure_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_structure_cost_event_mutation BEFORE DELETE OR UPDATE ON public.economic_structure_cost_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_structure_cost_event_mutation();
 
 
 --
@@ -10198,6 +10335,38 @@ ALTER TABLE ONLY public.disputes
 
 ALTER TABLE ONLY public.disputes
     ADD CONSTRAINT disputes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(id);
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_adjusts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_adjusts_event_id_fkey FOREIGN KEY (adjusts_event_id) REFERENCES public.economic_structure_cost_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_charge_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_charge_id_fkey FOREIGN KEY (charge_id) REFERENCES public.charges(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --

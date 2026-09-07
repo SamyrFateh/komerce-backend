@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 125 | Vérifié sur le dump live Railway. |
+| Tables | 126 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 338 | Performance + contraintes uniques |
-| Foreign keys | 205 | Cohérence relationnelle |
-| Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 33 | Triggers présents dans le dump live Railway. |
+| Index | 342 | Performance + contraintes uniques |
+| Foreign keys | 209 | Cohérence relationnelle |
+| Fonctions | 17 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 34 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -209,6 +209,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
 | `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
+| `economic_structure_cost_events` | Journal append-only des charges économiques N3 de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
 
 ### 4.9 Douane (4 tables)
@@ -217,7 +218,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 |---|---|
 | `customs_categories` | Catégories douane. |
 | `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
-| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — snapshot volume au rattachement, miroir de `parcel_weight_kg`). Ventilation fret maritime au m³ dans `services/cost-allocation/allocate.js` : `by_volume` si snapshoté, répartition égale `confidence low` sinon — jamais le poids en maritime. |
+| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
 | `customs_history` | Historique taux effectifs. |
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
