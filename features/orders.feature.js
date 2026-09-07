@@ -271,6 +271,7 @@ module.exports = {
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
+      'market-autonomy (prix LOCAL_ACTIVE résolu depuis le market_id serveur du relais avant snapshot de commande)',
       'local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, ' +
         'consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions ' +
         'confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; ' +
