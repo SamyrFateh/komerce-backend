@@ -27,9 +27,9 @@
  * - une disposition peut faire avancer le watermark mais ne fabrique jamais
  *   une contribution réelle ;
  * - N3 vient exclusivement de la vérité de période + allocation GROUP ;
- * - la provision risque estimée reste provisoire. Si elle existe et qu'aucune
- *   réconciliation de période explicite n'est fournie, le gate reste
- *   NOT_DECISIONAL ;
+ * - la provision risque estimée reste provisoire. Le gate exige toujours une
+ *   réconciliation de période explicite, y compris lorsque le coût de risque
+ *   réel est zéro : absence d'événement != preuve de zéro ;
  * - seuils, fenêtre, dispositions et allocations sont fournis par politiques
  *   externes versionnées : aucun chiffre autorisant n'est hardcodé ici ;
  * - ce service n'applique aucun prix et n'écrit aucune stratégie.
@@ -38,7 +38,10 @@
 'use strict';
 
 const db = require('../db');
-const { computeMarketMaturityWatermark } = require('./pricing-maturity');
+const {
+  computeMarketMaturityWatermark,
+  getOrderMaturity,
+} = require('./pricing-maturity');
 const { computePeriodStructureTruth } = require('./pricing-period-structure');
 const {
   RECONCILIABLE_VARIABLE_COST_TYPES,
@@ -159,6 +162,27 @@ function roundKmf(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
+async function loadMatureOrderIds(marketId, period) {
+  const { rows } = await db.query(
+    `SELECT o.id
+       FROM orders o
+      WHERE o.market_id = $1
+        AND o.created_at >= $2
+        AND o.created_at < $3
+        AND o.payment_status = 'paid'
+        AND COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')
+      ORDER BY o.created_at ASC, o.id ASC`,
+    [marketId, period.from.toISOString(), period.to.toISOString()]
+  );
+
+  const matureOrderIds = [];
+  for (const row of rows || []) {
+    const maturity = await getOrderMaturity(row.id);
+    if (maturity?.mature) matureOrderIds.push(String(row.id));
+  }
+  return matureOrderIds;
+}
+
 async function loadMatureContributionTruth(marketId, period, matureOrderIds) {
   if (!matureOrderIds.length) {
     return {
@@ -273,9 +297,7 @@ async function computeMarketCoverage(options = {}) {
     allocationPolicies: options.allocationPolicies,
   });
 
-  const matureOrderIds = Array.isArray(maturity.mature_order_ids)
-    ? maturity.mature_order_ids.map(String)
-    : [];
+  const matureOrderIds = await loadMatureOrderIds(marketId, period);
   const contribution = await loadMatureContributionTruth(marketId, period, matureOrderIds);
 
   const base = {
@@ -285,12 +307,10 @@ async function computeMarketCoverage(options = {}) {
     maturity,
     structure,
     contribution,
+    mature_order_ids: matureOrderIds,
     risk_reconciliation: null,
   };
 
-  if (!Array.isArray(maturity.mature_order_ids)) {
-    return notDecisional(base, 'MATURE_ORDER_IDS_NOT_EXPOSED');
-  }
   if (maturity.decision_status !== 'READY_FOR_NEXT_GATE') {
     return notDecisional(base, 'MATURITY_WATERMARK_NOT_READY');
   }
@@ -308,18 +328,21 @@ async function computeMarketCoverage(options = {}) {
   }
 
   const risk = normalizeRiskReconciliation(options.riskReconciliation, marketId, period);
-  if (contribution.estimated_risk_provision_kmf > 0 && !risk) {
+  if (!risk) {
     return notDecisional(base, 'RISK_RECONCILIATION_REQUIRED', {
-      risk_reconciliation: { status: 'PENDING_PERIOD_TRUTH' },
+      risk_reconciliation: {
+        status: 'PENDING_PERIOD_TRUTH',
+        estimated_provision_kmf: contribution.estimated_risk_provision_kmf,
+      },
     });
   }
 
-  const actualRiskCost = risk ? risk.actual_risk_cost_kmf : 0;
+  const actualRiskCost = risk.actual_risk_cost_kmf;
   const reconciledContribution = roundKmf(contribution.contribution_before_risk_kmf - actualRiskCost);
   const n3 = Number(structure.market_n3_total_kmf);
   const enrichedBase = {
     ...base,
-    risk_reconciliation: risk || { status: 'NOT_APPLICABLE', actual_risk_cost_kmf: 0 },
+    risk_reconciliation: risk,
     contribution: {
       ...contribution,
       reconciled_risk_cost_kmf: roundKmf(actualRiskCost),
@@ -353,5 +376,6 @@ module.exports = {
   computeMarketCoverage,
   _normalizeCoveragePolicy: normalizeCoveragePolicy,
   _normalizeRiskReconciliation: normalizeRiskReconciliation,
+  _loadMatureOrderIds: loadMatureOrderIds,
   _loadMatureContributionTruth: loadMatureContributionTruth,
 };
