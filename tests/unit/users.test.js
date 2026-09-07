@@ -197,6 +197,16 @@ describe('POST /api/admin/users', () => {
     expect(res.status).toBe(400);
   });
 
+  it('mot de passe faible à la création → 400 WEAK_PASSWORD', async () => {
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Ibrahim', email: 'ibrahim@x.km', password: 'abcdefgh', role: 'market_operator',
+      market_scope: { market_code: 'CM', scope_role: 'manager' },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('WEAK_PASSWORD');
+    expect(bcrypt.hash).not.toHaveBeenCalled();
+  });
+
   it('market_operator sans scope → 400 MARKET_SCOPE_REQUIRED', async () => {
     const res = await request(app).post('/api/admin/users').send({
       full_name: 'Ibrahim', email: 'ibrahim@x.km', password: 'Abcdefg1', role: 'market_operator',
@@ -229,7 +239,7 @@ describe('POST /api/admin/users', () => {
     expect(res.status).toBe(201);
     expect(res.body.email).toBe('x@x.km');
     expect(res.body.market_scopes).toEqual([]);
-    expect(bcrypt.hash).toHaveBeenCalledWith('Abcdefg1', 10);
+    expect(bcrypt.hash).toHaveBeenCalledWith('Abcdefg1', 12);
   });
 
   it('crée atomiquement un market_operator manager CM', async () => {
