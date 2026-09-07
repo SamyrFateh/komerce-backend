@@ -1,8 +1,8 @@
 # Doctrine du Catalogue Komerce
 
-> **Version** : 1.1 — 2026-09-04
-> **Statut** : document fondamental — remplace l'approche « chantier CRUD » ; complète SOURCING_ENGINE.md, DOCTRINE_DENSITE_VALEUR.md et la doctrine de confiance
-> **Code porteur existant** : `services/suppliers/connectors/*` (LOT D), `services/supplier-catalog-scanner.js`, `services/sourcing-analysis.js`, `routes/products.js`
+> **Version** : 1.2 — 2026-09-07
+> **Statut** : document fondamental — remplace l'approche « chantier CRUD » ; complète SOURCING_ENGINE.md, DOCTRINE_DENSITE_VALEUR.md, la doctrine de confiance et DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md
+> **Code porteur existant** : `services/suppliers/connectors/*` (LOT D), `services/supplier-catalog-scanner.js`, `services/sourcing-analysis.js`, `routes/products.js`, `services/catalog-public-view.js`, `public/boutique/js/market-context.js`
 > **Contrainte fondatrice** : équipe informatique d'UNE personne — l'automatisation réduit la charge, mais ne remplace ni la maîtrise éditoriale ni la validation humaine
 
 ---
@@ -25,6 +25,60 @@ Budget d'effort cible : garder la préparation et la validation aussi légères 
 possible. Une fiche déjà propre en français ne doit déclencher aucun appel IA
 inutile. Une fiche étrangère ou médiocre peut être préparée manuellement ou avec
 une assistance IA, puis validée humainement.
+
+### 1.1 Catalogue distant unique — une vérité produit, N projections marché
+
+> **Komerce possède un seul catalogue distant canonique. Un marché ne possède pas
+> une copie du catalogue : il reçoit une projection commerciale de ce catalogue.**
+
+La référence produit, le contenu éditorial, les catégories, les médias, les axes de
+variantes et les SKU appartiennent au **catalogue maître global**. Ouvrir le Cameroun,
+le Congo, les Comores, Mayotte ou un futur marché ne crée jamais une nouvelle fiche
+produit pour la même référence.
+
+```text
+Catalogue maître global
+  products / product_skus / product_variants / media / contenu
+                    │
+                    ├── projection KM
+                    ├── projection CM
+                    ├── projection CG
+                    └── projection YT
+```
+
+La **projection marché** peut faire varier ce qui relève réellement du marché :
+
+- devise et format d'affichage ;
+- prix commercial décidé pour le marché, lorsqu'une autorité pricing canonique le porte ;
+- disponibilité commerciale et restrictions applicables au marché ;
+- promesse / rails de livraison déjà résolus par la logistique ;
+- moyens de paiement disponibles ;
+- merchandising et ordre de mise en avant local lorsque la feature propriétaire l'autorise.
+
+Ces overlays ne deviennent jamais une seconde vérité produit. Ils **référencent**
+le produit/SKU canonique et le marché ; ils ne recopient ni identité, ni contenu,
+ni médias, ni taxonomie du catalogue maître.
+
+Conséquences de modélisation :
+
+1. `products.market_id` est interdit pour le catalogue distant ;
+2. une table de type `product_market` qui dupliquerait la fiche produit par pays est interdite ;
+3. si une donnée marché doit être persistée, elle vit dans la feature qui la possède
+   (pricing, logistics, recommendations, payments, etc.) et référence `product_id` / `sku`
+   + `market_id` sans copier le produit ;
+4. le contexte de navigation public peut être commutable (`market-context.js`) mais
+   il n'est jamais une autorité d'accès ; toute mutation ou décision protégée résout
+   le scope marché côté serveur ;
+5. un `market_operator` peut piloter les overlays de **son** marché lorsque son rôle
+   et la feature propriétaire l'y autorisent ; ce rôle ne donne jamais, par lui-même,
+   l'autorité de modifier le catalogue maître global.
+
+La notion future `product_market_offer` reste distincte : elle concerne une **offre
+locale réelle** (ex. premier marchand local / « Disponible ici »), pas une copie du
+catalogue distant et pas le mécanisme de divergence de prix du catalogue maître.
+
+Ainsi, « Disponible ici » peut être physiquement market-scopé (stock/offre locale),
+alors que le catalogue distant reste global et simplement projeté selon le marché.
 
 ## 2. La raffinerie — six étages, une décision humaine de publication
 
@@ -130,6 +184,10 @@ L'approbation (étage ⑥) reste l'autorité de publication :
 
 ## 7. Ce que la doctrine interdit
 
+- Ne jamais créer une copie du catalogue distant par marché.
+- Ne jamais porter `market_id` dans `products` pour exprimer la vue pays du catalogue distant.
+- Ne jamais dupliquer identité, contenu, médias, catégories ou SKU dans un overlay marché.
+- Ne jamais confondre la projection du catalogue distant avec l'offre/stock local « Disponible ici ».
 - Ne jamais publier une source étrangère brute sous `connector_raw`.
 - Ne jamais publier un contenu IA non passé par l'approbation initiale.
 - Ne jamais modifier `name_source`, `description_source`, `source_locale` ou le
@@ -176,7 +234,9 @@ au workflow éditorial, ce contenu relève de la voie humaine `manual`.
 | K-3 | Préparation éditoriale FR : voie native FR + voie manuelle ; service IA conservé comme assistance facultative | K-1 |
 | K-4 | File d'approbation admin : fiche préparée → approve / reject / edit / override en 1 écran ; provenance et overrides tracés | K-3 |
 | K-5 | Auto-publication bornée des mises à jour + retraitement en masse optionnel selon la provenance du contenu | K-4 + terrain |
+| K-M | Projection marché du catalogue distant : composition des overlays propriétaires (pricing/logistics/payments/recommendations) sans duplication de produit | autorités marché correspondantes |
 
 **Principe final** : la qualité et la traçabilité sont obligatoires ; le moyen
 utilisé pour obtenir le contenu français ne l'est pas. La source reste la vérité,
-l'humain garde l'autorité de publication, et l'IA reste un accélérateur facultatif.
+l'humain garde l'autorité de publication, l'IA reste un accélérateur facultatif,
+et **le catalogue distant reste une vérité globale unique projetée par marché**.
