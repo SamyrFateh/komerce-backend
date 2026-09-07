@@ -37,11 +37,17 @@ describe('Boutique responsive matrix', () => {
     expect(css).toMatch(/@media\s*\(min-width:\s*1600px\)[\s\S]*?repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
   });
 
-  test('la hauteur est traitée indépendamment de la largeur', () => {
+  test('la hauteur compacte la navigation indépendamment de la largeur', () => {
     expect(css).toMatch(/@media\s*\(min-width:\s*900px\)\s*and\s*\(max-height:\s*800px\)/);
     expect(css).toMatch(/@media\s*\(min-width:\s*900px\)\s*and\s*\(max-width:\s*1199px\)\s*and\s*\(max-height:\s*720px\)/);
-    expect(css).toContain('height: 132px !important;');
-    expect(css).toContain('height: 116px !important;');
+    expect(css).toContain('min-height: 76px;');
+    expect(css).toContain('min-height: 66px;');
+    expect(css).toContain('width: 62px;');
+    expect(css).toContain('height: 50px;');
+  });
+
+  test('la matrice n introduit aucune dette important', () => {
+    expect(css).not.toContain('!important');
   });
 
   test('les adaptations critiques sont explicitement gouvernées en desktop', () => {
