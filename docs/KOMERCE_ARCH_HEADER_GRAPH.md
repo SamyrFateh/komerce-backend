@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 507
-- Files with full headers: 462
+- Scanned code files: 508
+- Files with full headers: 463
 - Files with lite headers: 45
-- Files with any headers: 507
+- Files with any headers: 508
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1127
-- Edges: 5856
-- DB tables: 131
-- Doctrines: 315
+- Graph nodes: 1131
+- Edges: 5869
+- DB tables: 132
+- Doctrines: 317
 - Impact areas: 174
-- Unresolved code edges: 574
+- Unresolved code edges: 575
 - Tables multi-écrivains directs (>=2): 63
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 53
+- economic-engine: 54
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -82,7 +82,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 114
 - route-manifest: 1
 - schema: 1
-- service: 221
+- service: 222
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -384,6 +384,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
+- services/pricing-market-decision-policy.js — economic-engine-pricing-market-decision-policy (economic-engine, high, full)
 - services/pricing-maturity.js — economic-engine-pricing-maturity (economic-engine, high, full)
 - services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
 - services/pricing-period-structure.js — economic-engine-pricing-period-structure (economic-engine, high, full)
