@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 505,
-    "filesWithFullHeaders": 460,
+    "scannedCodeFiles": 507,
+    "filesWithFullHeaders": 462,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 505,
+    "filesWithAnyHeaders": 507,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1121,
-    "edges": 5828,
-    "dbTables": 129,
-    "doctrines": 313,
+    "graphNodes": 1127,
+    "edges": 5856,
+    "dbTables": 131,
+    "doctrines": 315,
     "impactAreas": 174,
-    "unresolvedCodeEdges": 570,
+    "unresolvedCodeEdges": 574,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 51,
+    "economic-engine": 53,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 219,
+    "service": 221,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
   "byCriticality": {
     "critical": 70,
     "medium": 123,
-    "high": 259,
+    "high": 261,
     "low": 53
   },
   "nodes": [
@@ -18093,6 +18093,56 @@
       "version": "2026-06"
     },
     {
+      "id": "services/pricing-market-coverage.js",
+      "file": "services/pricing-market-coverage.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-market-coverage",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "canonical_period_bounds",
+        "coverage_policy",
+        "disposition_policy",
+        "allocation_policies"
+      ],
+      "outputs": [
+        "market_coverage_truth"
+      ],
+      "depends": [
+        "db",
+        "services/pricing-maturity.js",
+        "services/pricing-period-structure.js",
+        "services/pricing-risk-period.js",
+        "services/cost-allocation/cost-types.js"
+      ],
+      "usedBy": [
+        "future pricing strategy gate",
+        "pricing workspace"
+      ],
+      "dbRead": [
+        "orders",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "pricing_market_viability_coverage"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/pricing-maturity.js",
       "file": "services/pricing-maturity.js",
       "type": "file",
@@ -18200,11 +18250,13 @@
       "inputs": [
         "structure_cost_event",
         "canonical_period_bounds",
-        "optional_market_id"
+        "optional_market_id",
+        "optional_allocation_policies"
       ],
       "outputs": [
         "append_only_structure_fact",
-        "period_structure_truth"
+        "period_structure_truth",
+        "governed_group_allocation"
       ],
       "depends": [
         "db"
@@ -18215,7 +18267,8 @@
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
-        "markets"
+        "markets",
+        "orders"
       ],
       "dbWrite": [
         "economic_structure_cost_events"
@@ -18327,6 +18380,57 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/pricing-risk-period.js",
+      "file": "services/pricing-risk-period.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-risk-period",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "risk_cost_event",
+        "risk_review_watermark",
+        "market_period"
+      ],
+      "outputs": [
+        "append_only_risk_fact",
+        "risk_period_truth"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "services/pricing-market-coverage.js"
+      ],
+      "dbRead": [
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events",
+        "markets",
+        "orders",
+        "risk_provisions"
+      ],
+      "dbWrite": [
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "append_only_fact_recording"
+      ],
+      "doctrine": [
+        "pricing_market_viability_period_risk_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-strategy-service.js",
@@ -24329,6 +24433,16 @@
       "table": "economic_structure_cost_events"
     },
     {
+      "id": "db:economic_risk_cost_events",
+      "type": "db-table",
+      "table": "economic_risk_cost_events"
+    },
+    {
+      "id": "db:economic_risk_watermark_events",
+      "type": "db-table",
+      "table": "economic_risk_watermark_events"
+    },
+    {
       "id": "db:competitor_prices",
       "type": "db-table",
       "table": "competitor_prices"
@@ -25679,6 +25793,11 @@
       "doctrine": "n3_is_period_structure"
     },
     {
+      "id": "doctrine:pricing_market_viability_coverage",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_coverage"
+    },
+    {
       "id": "doctrine:pricing_market_viability_maturity_watermark",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_maturity_watermark"
@@ -25687,6 +25806,11 @@
       "id": "doctrine:pricing_market_viability_period_structure_truth",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_period_structure_truth"
+    },
+    {
+      "id": "doctrine:pricing_market_viability_period_risk_truth",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_period_risk_truth"
     },
     {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -53429,6 +53553,90 @@
       "label": "economic-engine"
     },
     {
+      "from": "services/pricing-market-coverage.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "services/pricing-maturity.js",
+      "type": "depends",
+      "label": "services/pricing-maturity.js"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "services/pricing-risk-period.js",
+      "type": "depends",
+      "label": "services/pricing-risk-period.js"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "depends",
+      "label": "services/cost-allocation/cost-types.js"
+    },
+    {
+      "from": "future pricing strategy gate",
+      "to": "services/pricing-market-coverage.js",
+      "type": "uses",
+      "label": "future pricing strategy gate"
+    },
+    {
+      "from": "pricing workspace",
+      "to": "services/pricing-market-coverage.js",
+      "type": "uses",
+      "label": "pricing workspace"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "doctrine:pricing_market_viability_coverage",
+      "type": "doctrine",
+      "label": "pricing_market_viability_coverage"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
       "from": "services/pricing-maturity.js",
       "to": "db",
       "type": "depends",
@@ -53577,6 +53785,12 @@
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
     },
     {
       "from": "services/pricing-period-structure.js",
@@ -53733,6 +53947,84 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/pricing-market-coverage.js",
+      "to": "services/pricing-risk-period.js",
+      "type": "uses",
+      "label": "services/pricing-market-coverage.js"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:economic_risk_cost_events",
+      "type": "db-read",
+      "label": "economic_risk_cost_events"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:economic_risk_watermark_events",
+      "type": "db-read",
+      "label": "economic_risk_watermark_events"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:risk_provisions",
+      "type": "db-read",
+      "label": "risk_provisions"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:economic_risk_cost_events",
+      "type": "db-write",
+      "label": "economic_risk_cost_events"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "db:economic_risk_watermark_events",
+      "type": "db-write",
+      "label": "economic_risk_watermark_events"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "doctrine:pricing_market_viability_period_risk_truth",
+      "type": "doctrine",
+      "label": "pricing_market_viability_period_risk_truth"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
     },
     {
       "from": "services/pricing-strategy-service.js",
@@ -74522,6 +74814,7 @@
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/variance.js",
         "services/dashboard-metrics/_helpers.js",
+        "services/pricing-market-coverage.js",
         "services/pricing-maturity.js"
       ]
     },
@@ -79876,6 +80169,54 @@
         "services/pricing-apply.js"
       ]
     },
+    "services/pricing-market-coverage.js": {
+      "role": "economic-engine-pricing-market-coverage",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/pricing-maturity.js",
+        "services/pricing-period-structure.js",
+        "services/pricing-risk-period.js",
+        "services/cost-allocation/cost-types.js"
+      ],
+      "directUsedBy": [
+        "future pricing strategy gate",
+        "pricing workspace"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_coverage"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "doctrine:pricing_market_viability_coverage",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing",
+        "services/cost-allocation/cost-types.js",
+        "services/pricing-maturity.js",
+        "services/pricing-period-structure.js",
+        "services/pricing-risk-period.js"
+      ]
+    },
     "services/pricing-maturity.js": {
       "role": "economic-engine-pricing-maturity",
       "domain": "economic-engine",
@@ -79928,7 +80269,8 @@
         "impact:economic-engine",
         "impact:governance",
         "impact:pricing",
-        "services/cost-allocation/cost-types.js"
+        "services/cost-allocation/cost-types.js",
+        "services/pricing-market-coverage.js"
       ]
     },
     "services/pricing-output.js": {
@@ -79975,7 +80317,8 @@
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
-        "markets"
+        "markets",
+        "orders"
       ],
       "dbWrite": [
         "economic_structure_cost_events"
@@ -79993,10 +80336,12 @@
         "db:charges",
         "db:economic_structure_cost_events",
         "db:markets",
+        "db:orders",
         "doctrine:pricing_market_viability_period_structure_truth",
         "impact:economic-engine",
         "impact:governance",
-        "impact:pricing"
+        "impact:pricing",
+        "services/pricing-market-coverage.js"
       ]
     },
     "services/pricing-rates.js": {
@@ -80084,6 +80429,53 @@
         "services/pricing-engine.js",
         "services/pricing-workspace.js",
         "utils/logger.js"
+      ]
+    },
+    "services/pricing-risk-period.js": {
+      "role": "economic-engine-pricing-risk-period",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "services/pricing-market-coverage.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events",
+        "markets",
+        "orders",
+        "risk_provisions"
+      ],
+      "dbWrite": [
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_period_risk_truth"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:economic_risk_cost_events",
+        "db:economic_risk_watermark_events",
+        "db:markets",
+        "db:orders",
+        "db:risk_provisions",
+        "doctrine:pricing_market_viability_period_risk_truth",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing",
+        "services/pricing-market-coverage.js"
       ]
     },
     "services/pricing-strategy-service.js": {
@@ -88770,6 +89162,24 @@
       "label": "db"
     },
     {
+      "from": "services/pricing-market-coverage.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "future pricing strategy gate",
+      "to": "services/pricing-market-coverage.js",
+      "type": "uses",
+      "label": "future pricing strategy gate"
+    },
+    {
+      "from": "pricing workspace",
+      "to": "services/pricing-market-coverage.js",
+      "type": "uses",
+      "label": "pricing workspace"
+    },
+    {
       "from": "services/pricing-maturity.js",
       "to": "db",
       "type": "depends",
@@ -88801,6 +89211,12 @@
     },
     {
       "from": "services/pricing-recommend.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/pricing-risk-period.js",
       "to": "db",
       "type": "depends",
       "label": "db"

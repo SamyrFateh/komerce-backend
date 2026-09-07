@@ -429,6 +429,19 @@ COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE 
 
 
 --
+-- Name: prevent_economic_risk_truth_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_economic_risk_truth_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION '% is append-only; record a new economic event instead', TG_TABLE_NAME;
+END;
+$$;
+
+
+--
 -- Name: prevent_economic_structure_cost_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1660,6 +1673,95 @@ CREATE TABLE public.disputes (
 --
 
 COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige liÃ© Ã  un service couture : type du service concernÃ©';
+
+
+--
+-- Name: economic_risk_cost_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_risk_cost_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    order_id uuid,
+    risk_provision_id uuid,
+    risk_key_snapshot text NOT NULL,
+    risk_label_snapshot text NOT NULL,
+    event_kind text NOT NULL,
+    adjusts_event_id uuid,
+    economic_at timestamp with time zone NOT NULL,
+    amount_original numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    fx_rate_to_kmf numeric(18,6) NOT NULL,
+    fx_source text NOT NULL,
+    amount_kmf numeric(18,2) NOT NULL,
+    source_kind text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_risk_cost_events_adjustment_link_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (adjusts_event_id IS NULL)) OR ((event_kind = ANY (ARRAY['ADJUSTMENT'::text, 'REVERSAL'::text])) AND (adjusts_event_id IS NOT NULL)))),
+    CONSTRAINT economic_risk_cost_events_amount_kmf_check CHECK ((amount_kmf <> (0)::numeric)),
+    CONSTRAINT economic_risk_cost_events_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_risk_cost_events_event_kind_check CHECK ((event_kind = ANY (ARRAY['ACCRUAL'::text, 'ADJUSTMENT'::text, 'REVERSAL'::text]))),
+    CONSTRAINT economic_risk_cost_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_risk_cost_events_fx_rate_to_kmf_check CHECK ((fx_rate_to_kmf > (0)::numeric)),
+    CONSTRAINT economic_risk_cost_events_fx_source_check CHECK (((char_length(btrim(fx_source)) >= 2) AND (char_length(btrim(fx_source)) <= 200))),
+    CONSTRAINT economic_risk_cost_events_kmf_fx_check CHECK (((currency <> 'KMF'::text) OR (fx_rate_to_kmf = (1)::numeric))),
+    CONSTRAINT economic_risk_cost_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_risk_cost_events_risk_key_snapshot_check CHECK (((char_length(btrim(risk_key_snapshot)) >= 1) AND (char_length(btrim(risk_key_snapshot)) <= 200))),
+    CONSTRAINT economic_risk_cost_events_risk_label_snapshot_check CHECK (((char_length(btrim(risk_label_snapshot)) >= 1) AND (char_length(btrim(risk_label_snapshot)) <= 300))),
+    CONSTRAINT economic_risk_cost_events_sign_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (amount_kmf > (0)::numeric) AND (amount_original > (0)::numeric)) OR ((event_kind = 'REVERSAL'::text) AND (amount_kmf < (0)::numeric) AND (amount_original < (0)::numeric)) OR ((event_kind = 'ADJUSTMENT'::text) AND (amount_kmf <> (0)::numeric) AND (amount_original <> (0)::numeric)))),
+    CONSTRAINT economic_risk_cost_events_source_kind_check CHECK (((char_length(btrim(source_kind)) >= 2) AND (char_length(btrim(source_kind)) <= 100)))
+);
+
+
+--
+-- Name: TABLE economic_risk_cost_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_risk_cost_events IS 'Vérité append-only des pertes/sinistres réalisés N2 par marché. risk_provisions reste une configuration ; aucune absence de ligne ne vaut zéro.';
+
+
+--
+-- Name: COLUMN economic_risk_cost_events.economic_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_risk_cost_events.economic_at IS 'Date économique du risque réalisé ; les corrections gardent la date du fait original afin de ne pas déplacer le coût entre fenêtres.';
+
+
+--
+-- Name: economic_risk_watermark_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_risk_watermark_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    closed_through timestamp with time zone NOT NULL,
+    review_version text NOT NULL,
+    source text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_risk_watermark_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_risk_watermark_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_risk_watermark_events_review_version_check CHECK (((char_length(btrim(review_version)) >= 1) AND (char_length(btrim(review_version)) <= 100))),
+    CONSTRAINT economic_risk_watermark_events_source_check CHECK (((char_length(btrim(source)) >= 3) AND (char_length(btrim(source)) <= 500)))
+);
+
+
+--
+-- Name: TABLE economic_risk_watermark_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_risk_watermark_events IS 'Certifications append-only de revue du risque par marché. Un closed_through explicite permet de prouver un zéro réalisé sans inventer un événement de coût nul.';
+
+
+--
+-- Name: COLUMN economic_risk_watermark_events.closed_through; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_risk_watermark_events.closed_through IS 'Borne exclusive de risque revue/certifiée. Toute écriture backdatée ultérieure dans une fenêtre déjà certifiée rend cette certification stale jusqu à une nouvelle revue.';
 
 
 --
@@ -6346,6 +6448,22 @@ ALTER TABLE ONLY public.disputes
 
 
 --
+-- Name: economic_risk_cost_events economic_risk_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: economic_snapshots economic_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7726,6 +7844,41 @@ CREATE INDEX idx_disputes_order ON public.disputes USING btree (order_id);
 --
 
 CREATE INDEX idx_disputes_status ON public.disputes USING btree (status);
+
+
+--
+-- Name: idx_economic_risk_cost_adjusts; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_adjusts ON public.economic_risk_cost_events USING btree (adjusts_event_id) WHERE (adjusts_event_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_cost_market_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_market_time ON public.economic_risk_cost_events USING btree (market_id, economic_at, recorded_at);
+
+
+--
+-- Name: idx_economic_risk_cost_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_order ON public.economic_risk_cost_events USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_cost_provision; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_provision ON public.economic_risk_cost_events USING btree (risk_provision_id) WHERE (risk_provision_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_watermark_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_watermark_market ON public.economic_risk_watermark_events USING btree (market_id, closed_through DESC, recorded_at DESC, id DESC);
 
 
 --
@@ -9850,6 +10003,20 @@ CREATE TRIGGER trg_partners_updated BEFORE UPDATE ON public.partners FOR EACH RO
 
 
 --
+-- Name: economic_risk_cost_events trg_prevent_economic_risk_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_risk_cost_event_mutation BEFORE DELETE OR UPDATE ON public.economic_risk_cost_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_risk_truth_mutation();
+
+
+--
+-- Name: economic_risk_watermark_events trg_prevent_economic_risk_watermark_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_risk_watermark_event_mutation BEFORE DELETE OR UPDATE ON public.economic_risk_watermark_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_risk_truth_mutation();
+
+
+--
 -- Name: economic_structure_cost_events trg_prevent_economic_structure_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -10335,6 +10502,62 @@ ALTER TABLE ONLY public.disputes
 
 ALTER TABLE ONLY public.disputes
     ADD CONSTRAINT disputes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(id);
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_adjusts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_adjusts_event_id_fkey FOREIGN KEY (adjusts_event_id) REFERENCES public.economic_risk_cost_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_risk_provision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_risk_provision_id_fkey FOREIGN KEY (risk_provision_id) REFERENCES public.risk_provisions(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
