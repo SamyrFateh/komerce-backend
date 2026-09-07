@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      single_master_catalog_market_price_is_overlay, viewer_reads_manager_decides, browser_never_sends_market_authority
+ * @doctrine      single_master_catalog_market_price_is_overlay, viewer_reads_manager_decides, browser_never_sends_market_authority, under_cdr_exception_is_bounded
  * @impact-areas  admin-dashboard, pricing, economic-engine, market-authorization
  * @version       2026-09
  */
@@ -50,6 +50,15 @@
     return `${formatNumber(price.amount, Number(price.minor_unit) || 0)} ${price.currency || fallbackCurrency}`.trim();
   }
 
+  function formatDecisionState(price) {
+    if (!price) return 'Aucune décision locale';
+    if (price.pricing_zone === 'under_cdr_contributive') {
+      const until = price.effective_until ? new Date(price.effective_until).toLocaleDateString('fr-FR') : '—';
+      return `Contributif sous CDR · autorisé jusqu’au ${until}`;
+    }
+    return 'Au-dessus du CDR';
+  }
+
   function setFeedback(rootNode, message, tone = 'neutral') {
     const target = rootNode.querySelector('[data-workspace-feedback]');
     if (!target) return;
@@ -77,11 +86,10 @@
       doc,
       'p',
       'kmc-section-description',
-      `Catalogue maître unique · décision commerciale en ${marketCurrency || 'devise locale'}. Le produit global n’est jamais modifié. Un prix sous CDR reste refusé tant que le gate de couverture marché n’est pas décisionnel.`
+      `Catalogue maître unique · décision commerciale en ${marketCurrency || 'devise locale'}. Le produit global n’est jamais modifié. Le moteur refuse toujours un prix destructif ; une position sous CDR exige une couverture marché autorisante et une durée explicite.`
     ));
     header.appendChild(copy);
-    const badge = el(doc, 'span', 'kmc-workspace-note', canDecide ? 'Manager · décision autorisée' : 'Viewer · lecture seule');
-    header.appendChild(badge);
+    header.appendChild(el(doc, 'span', 'kmc-workspace-note', canDecide ? 'Manager · décision autorisée' : 'Viewer · lecture seule'));
     section.appendChild(header);
 
     const slot = el(doc, 'div', 'kmc-section-slot');
@@ -96,7 +104,7 @@
 
     const wrap = el(doc, 'div', 'kmc-workspace-table-wrap');
     const table = el(doc, 'table', 'kmc-workspace-table');
-    table.innerHTML = '<thead><tr><th>Produit</th><th>Prix global</th><th>Prix marché</th><th>CDR à la décision</th><th>Justification</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Prix global</th><th>Prix marché</th><th>État</th><th>Durée sous CDR</th><th>Justification</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
 
     rows.forEach(row => {
@@ -117,7 +125,7 @@
       const priceInput = doc.createElement('input');
       priceInput.type = 'number';
       priceInput.min = '0';
-      priceInput.step = Number(row.market_price?.minor_unit || payload.scope?.market_minor_unit || 0) > 0 ? '0.01' : '1';
+      priceInput.step = Number(row.market_price?.minor_unit ?? payload.scope?.market_minor_unit ?? 0) > 0 ? '0.01' : '1';
       priceInput.placeholder = `Prix ${marketCurrency}`;
       priceInput.value = row.market_price?.amount == null ? '' : row.market_price.amount;
       priceInput.dataset.marketPriceAmount = row.product_ref;
@@ -125,7 +133,25 @@
       priceCell.appendChild(priceInput);
       tr.appendChild(priceCell);
 
-      tr.appendChild(el(doc, 'td', '', row.market_price ? formatKmf(row.market_price.cdr_complete_kmf) : '—'));
+      const stateCell = doc.createElement('td');
+      stateCell.appendChild(el(doc, 'span', 'kmc-workspace-note', formatDecisionState(row.market_price)));
+      if (row.market_price) {
+        stateCell.appendChild(el(doc, 'small', 'kmc-workspace-note', `CDR snapshot · ${formatKmf(row.market_price.cdr_complete_kmf)}`));
+      }
+      tr.appendChild(stateCell);
+
+      const durationCell = doc.createElement('td');
+      const duration = doc.createElement('input');
+      duration.type = 'number';
+      duration.min = '1';
+      duration.step = '1';
+      duration.placeholder = 'jours';
+      duration.value = row.market_price?.decision_duration_days || '';
+      duration.dataset.marketPriceDuration = row.product_ref;
+      duration.disabled = !canDecide;
+      duration.title = 'Requis uniquement si le prix décidé est sous le CDR complet.';
+      durationCell.appendChild(duration);
+      tr.appendChild(durationCell);
 
       const rationaleCell = doc.createElement('td');
       const rationale = doc.createElement('input');
@@ -163,9 +189,12 @@
     return section;
   }
 
-  function fieldFor(rootNode, selector, productRef) {
-    return Array.from(rootNode.querySelectorAll(selector)).find(node => {
-      return node.dataset.marketPriceAmount === productRef || node.dataset.marketPriceRationale === productRef;
+  function fieldFor(rootNode, attribute, productRef) {
+    return Array.from(rootNode.querySelectorAll(`[${attribute}]`)).find(node => {
+      if (attribute === 'data-market-price-amount') return node.dataset.marketPriceAmount === productRef;
+      if (attribute === 'data-market-price-rationale') return node.dataset.marketPriceRationale === productRef;
+      if (attribute === 'data-market-price-duration') return node.dataset.marketPriceDuration === productRef;
+      return false;
     }) || null;
   }
 
@@ -178,8 +207,10 @@
       button.disabled = true;
       try {
         if (button.dataset.marketPriceAction === 'decide') {
-          const amount = fieldFor(panel, '[data-market-price-amount]', productRef);
-          const rationale = fieldFor(panel, '[data-market-price-rationale]', productRef);
+          const amount = fieldFor(panel, 'data-market-price-amount', productRef);
+          const rationale = fieldFor(panel, 'data-market-price-rationale', productRef);
+          const duration = fieldFor(panel, 'data-market-price-duration', productRef);
+          const durationDays = duration?.value ? Number(duration.value) : null;
           await workspace.jsonRequest(
             options.fetch,
             `${base}/products/${encodeURIComponent(productRef)}/price-decision`,
@@ -188,6 +219,7 @@
               body: {
                 price_amount: Number(amount?.value),
                 rationale: rationale?.value || '',
+                ...(durationDays ? { duration_days: durationDays } : {}),
               },
             }
           );
@@ -235,6 +267,7 @@
 
   return {
     formatMarketPrice,
+    formatDecisionState,
     createPanel,
     installInto,
     install,
