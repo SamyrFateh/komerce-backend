@@ -6,13 +6,14 @@
  * @criticality   critical
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders
- * @depends       services/cash-reminder-service.js, services/inventory-service.js, utils/rules.js
+ * @depends       services/cash-reminder-service.js, services/inventory-service.js,
+ *                services/mobile-money-reconciliation.js, utils/rules.js
  * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
- * @db-read      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
+ * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
- * @doctrine      idempotence_cron, retention_snapshots
- * @impact-areas  cash-reminders, inventory, auth-security, economic-engine
- * @version       2026-06
+ * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation
+ * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments
+ * @version       2026-09
  */
 
 'use strict';
@@ -98,6 +99,38 @@ function startOperationalCrons() {
   startSnapshotRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
+  startMobileMoneyReconciliationCron(); // migration 168
+}
+
+// Mobile Money — callback provider non requis pour progresser : toutes les
+// 2 minutes, reprend un lot borné de pending après une courte période de grâce.
+// Un lock JS empêche le chevauchement sur une même instance ; l'idempotence DB
+// + provider rend le mécanisme sûr si plusieurs instances Railway le lancent.
+function startMobileMoneyReconciliationCron() {
+  const INTERVAL_MS = 2 * 60 * 1000;
+  let running = false;
+
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const { reconcilePendingMobileMoney } = require('../services/mobile-money-reconciliation');
+      const result = await reconcilePendingMobileMoney({ limit: 25 });
+      if (result.scanned > 0) {
+        log.info(result, 'Mobile Money reconciliation pass done');
+      }
+    } catch (err) {
+      // L'indisponibilité temporaire d'un opérateur ne doit jamais faire tomber
+      // le runtime ; la tentative reste pending et sera reprise au tour suivant.
+      log.error({ err }, 'Mobile Money reconciliation cron failed');
+    } finally {
+      running = false;
+    }
+  };
+
+  setTimeout(run, 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+  log.info({ interval_min: 2, batch_limit: 25 }, 'Mobile Money reconciliation cron scheduled');
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -190,6 +223,7 @@ module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
   startBackorderCron,
+  startMobileMoneyReconciliationCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
   startJwtRevocationCleanupCron,

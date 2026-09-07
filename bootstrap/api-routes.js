@@ -6,13 +6,13 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
  * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -78,6 +78,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const logisticsRouter  = require('../routes/logistics');
   const paymentsRouter   = require('../routes/payments');
   const paymentsPaypalRouter = require('../routes/payments-paypal'); // Migration 079
+  const paymentsMobileMoneyRouter = require('../routes/payments-mobile-money'); // Migration 168
   const scansRouter      = require('../routes/scans');
   const financeRouter    = require('../routes/finance');
   const purchasingRouter = require('../routes/purchasing');
@@ -206,6 +207,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/carriers',   carriersRouter);
   app.use('/api/wallet',     walletRouter);
   app.use('/api/payments/paypal', paymentsPaypalRouter); // Migration 079 — DOIT être avant /api/payments générique
+  app.use('/api/payments/mobile-money', paymentsMobileMoneyRouter); // Migration 168 — avant /api/payments générique
   app.use('/api/payments',   paymentsRouter);
   app.use('/api/scans',      scansRouter);
   app.use('/api/finance', (req, res) => {
