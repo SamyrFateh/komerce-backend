@@ -50,6 +50,7 @@ module.exports = {
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
       'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
+      'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -104,6 +105,7 @@ module.exports = {
       'services/pricing-cdr.js',
       'services/pricing-maturity.js',
       'services/pricing-period-structure.js',
+      'services/pricing-market-coverage.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -185,6 +187,7 @@ module.exports = {
       'tests/unit/pricing-engine.test.js',
       'tests/unit/pricing-maturity.test.js',
       'tests/unit/pricing-period-structure.test.js',
+      'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -253,6 +256,7 @@ module.exports = {
     'docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md',
     'docs/chantier/PRICING_MATURITY_WATERMARK.md',
     'docs/chantier/PRICING_PERIOD_STRUCTURE_TRUTH.md',
+    'docs/chantier/PRICING_MARKET_COVERAGE.md',
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
@@ -471,6 +475,7 @@ module.exports = {
     'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
     'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
     'une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
+    'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite',
   ],
 
 };
