@@ -297,6 +297,22 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
+  // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
+  '/api/admin/workspaces/pricing/market/{marketCode}/decision': {
+    get: { fields: ['market_id','decision_status','authorization','reason','policy','canonical_period','coverage','evaluated_at'], source: 'service-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history': {
+    get: { fields: ['market_code','policies'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/simulate-impact': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/simulate-impact': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
   '/api/admin/workspaces/pricing': { get: { fields: ['scope','summary','products','recommendations','cost_components','cost_meta','rates'], source: 'test' } },
   '/api/admin/workspaces/pricing/simulate': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/pricing/flow': { post: { fields: ['ok','action','result'], source: 'test' } },

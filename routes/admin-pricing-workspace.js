@@ -4,14 +4,14 @@
  * @domain        economic-engine
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload
- * @outputs       canonical_pricing_projection, market_cost_projection, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js
+ * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, action_results
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -30,6 +30,7 @@ const {
 } = require('../middleware/require-market-scope');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
+const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -96,6 +97,7 @@ async function marketAccessProjection(req) {
       role: 'global_admin',
       read_only: false,
       can_manage_costs: true,
+      can_manage_decision_policy: true,
     };
   }
 
@@ -103,12 +105,13 @@ async function marketAccessProjection(req) {
   const scopeRole = req.user && req.user.role === 'market_operator'
     ? await resolveMarketScopeRole(req.user.id, targetMarketId)
     : null;
-  const canManageCosts = scopeRole === 'manager';
+  const canManage = scopeRole === 'manager';
 
   return {
     role: scopeRole || 'viewer',
-    read_only: !canManageCosts,
-    can_manage_costs: canManageCosts,
+    read_only: !canManage,
+    can_manage_costs: canManage,
+    can_manage_decision_policy: canManage,
   };
 }
 
@@ -135,6 +138,23 @@ function handleError(error, res, next) {
   return next(error);
 }
 
+function handleDecisionPolicyError(error, res, next) {
+  if (error && error.code === '23505') {
+    return res.status(409).json({
+      error: 'Version ou date d’effet déjà utilisée pour ce marché',
+      code: 'pricing_market_decision_policy_conflict',
+    });
+  }
+  const message = String(error && error.message || '');
+  if (message === 'market not found or inactive') {
+    return res.status(404).json({ error: 'Marché introuvable ou inactif', code: 'market_not_found' });
+  }
+  if (message.startsWith('policy.') || message === 'policy actor is required') {
+    return res.status(400).json({ error: message, code: 'pricing_market_decision_policy_invalid' });
+  }
+  return handleError(error, res, next);
+}
+
 router.use(
   '/market/:marketCode',
   authenticate,
@@ -158,9 +178,45 @@ router.get('/market/:marketCode', async (req, res, next) => {
         simulation: true,
         cost_overrides: access.can_manage_costs,
         reset_to_global: access.can_manage_costs,
+        market_decision: true,
+        manage_decision_policy: access.can_manage_decision_policy,
       },
     });
   } catch (error) { handleError(error, res, next); }
+});
+
+// Surface de décision : aucune date n'est fournie par le navigateur. La fenêtre
+// est dérivée côté serveur depuis la politique courante du marché.
+router.get('/market/:marketCode/decision', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id));
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.get('/market/:marketCode/decision-policy/history', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json({
+      market_code: req.workspaceMarket.code,
+      policies: await marketDecisionPolicy.listMarketDecisionPolicyHistory(req.workspaceMarket.id),
+    });
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/decision-policy', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    sendAction(
+      res,
+      'record_market_decision_policy',
+      await marketDecisionPolicy.recordMarketDecisionPolicy(
+        req.workspaceMarket.id,
+        req.body || {},
+        req.user && req.user.id
+      ),
+      201
+    );
+  } catch (error) { handleDecisionPolicyError(error, res, next); }
 });
 
 // La simulation n'écrit rien : viewer et manager peuvent explorer un scénario

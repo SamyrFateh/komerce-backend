@@ -207,3 +207,44 @@ Les quatre routes market-scoped de LOT 4U font partie de l'inventaire OpenAPI g�
 runtime et les écritures synchrones du contrat, `contract-generate.js` termine explicitement le process :
 la génération est déterministe en local comme en CI et ne reste pas suspendue sur des timers ouverts par
 les modules chargés pendant l'introspection.
+
+
+## LOT 4V — Décision économique par marché
+
+Le Pricing Workspace market-scoped expose désormais la décision économique du marché sans permettre au navigateur de fabriquer sa fenêtre ou ses seuils.
+
+La politique effective est persistée par `pricing_market_decision_policy_events`, journal append-only par marché. Elle contient obligatoirement :
+
+- largeur de fenêtre `window_days` ;
+- seuil de maturité ;
+- seuil de couverture ;
+- plafond de dispositions ;
+- version, source, preuve, justification et date d'effet.
+
+Aucun seuil numérique n'a de fallback. Une politique manquante rend la projection `NOT_DECISIONAL` et refuse l'ouverture d'une nouvelle position sous CDR.
+
+### Routes market-scoped
+
+Sous `/api/admin/workspaces/pricing/market/:marketCode` :
+
+- `GET /decision` — projection canonique du gate ; aucune date de body/query ;
+- `GET /decision-policy/history` — historique append-only des politiques ;
+- `POST /decision-policy` — nouvelle version de politique, manager marché ou autorité Pricing globale uniquement.
+
+Le code marché dans l'URL reste un contexte demandé. Le serveur résout le `market_id`, vérifie le scope, puis le moteur dérive la fenêtre à partir de la politique effective.
+
+### Autorité manager pays
+
+Un `market_operator` avec `scope_role=manager` peut modifier la politique de son propre marché. Cette autonomie est volontaire : le central ne décide pas de la stratégie locale à sa place. La confiance repose sur la traçabilité, pas sur une tutelle implicite : chaque version exige source, preuve, justification et auteur ; aucune version historique n'est réécrite.
+
+Un viewer peut consulter la décision et l'historique mais ne peut pas enregistrer de politique.
+
+### Sémantique de la décision
+
+- `COVERED` : le gate autorise à **envisager** une nouvelle position sous CDR ;
+- `UNCOVERED` : nouvelle position sous CDR refusée ;
+- `NOT_DECISIONAL` : refus identique mais sans fabriquer de ratio lorsque la vérité manque.
+
+Le gate ne modifie jamais un prix, une stratégie ou `computePrices`. Il produit une autorisation économique explicable que la surface de décision du Workspace doit rendre immédiatement lisible.
+
+Si un pool N3 `GROUP` n'a pas encore de politique d'allocation gouvernée persistée, le résultat reste `NOT_DECISIONAL`. Aucun fallback égalitaire implicite n'est autorisé.

@@ -52,6 +52,7 @@ module.exports = {
       'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
       'vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché',
       'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
+      'politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -108,6 +109,7 @@ module.exports = {
       'services/pricing-period-structure.js',
       'services/pricing-market-coverage.js',
       'services/pricing-risk-period.js',
+      'services/pricing-market-decision-policy.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -156,6 +158,7 @@ module.exports = {
       'migrations/165_pricing_maturity_disposition_events.sql',
       'migrations/166_economic_structure_cost_events.sql',
       'migrations/167_economic_risk_period_truth.sql',
+      'migrations/168_pricing_market_decision_policy_events.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -180,6 +183,7 @@ module.exports = {
       'tests/unit/pricing-maturity-disposition-migration.test.js',
       'tests/unit/economic-structure-cost-events-migration.test.js',
       'tests/unit/economic-risk-period-truth-migration.test.js',
+      'tests/unit/pricing-market-decision-policy-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -193,6 +197,7 @@ module.exports = {
       'tests/unit/pricing-period-structure.test.js',
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
+      'tests/unit/pricing-market-decision-policy.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -263,6 +268,7 @@ module.exports = {
     'docs/chantier/PRICING_PERIOD_STRUCTURE_TRUTH.md',
     'docs/chantier/PRICING_MARKET_COVERAGE.md',
     'docs/chantier/PRICING_PERIOD_RISK_TRUTH.md',
+    'docs/chantier/PRICING_MARKET_DECISION_POLICY.md',
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
@@ -308,6 +314,7 @@ module.exports = {
       'pricing_category_taxes: RW',
       'pricing_components: RW',
       'pricing_matrices_audit: W',
+      'pricing_market_decision_policy_events: RW!',
       'pricing_maturity_disposition_events: RW!',
       'pricing_strategies: RW',
       'pricing_global_access_grants: R',
@@ -344,6 +351,9 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',
       'GET /api/admin/workspaces/pricing/market/:marketCode',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/decision',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset',
@@ -484,6 +494,7 @@ module.exports = {
     'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
     'une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
     'un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro',
+    'la fenêtre et les seuils du gate de décision marché proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur',
     'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite',
   ],
 
