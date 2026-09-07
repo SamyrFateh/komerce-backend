@@ -137,10 +137,3 @@
     height: 50px;
   }
 }
-
-/* Accessibilité : la matrice ne doit jamais imposer d'animation supplémentaire. */
-@media (prefers-reduced-motion: reduce) {
-  .k-side-cart {
-    transition-duration: 0s;
-  }
-}
