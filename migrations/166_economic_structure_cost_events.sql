@@ -11,6 +11,10 @@
 -- Invariants :
 --   - append-only : toute correction passe par ADJUSTMENT / REVERSAL ;
 --   - `charges` reste une configuration/référence, jamais une preuve réelle ;
+--   - N3 reste générique : plateforme, Hub fixe, relais fixe périodique,
+--     personnel, locaux, logiciels, fonctions support et toute autre structure ;
+--   - l'identité fonctionnelle de la charge est snapshotée sur le fait pour
+--     éviter qu'une édition ultérieure de `charges` réécrive l'histoire ;
 --   - GROUP = pool partagé non encore attribué ;
 --   - MARKET_DIRECT = charge directement attribuable à un marché, sans prorata ;
 --   - aucune allocation GROUP -> marché n'est effectuée par cette table ;
@@ -20,6 +24,19 @@
 CREATE TABLE IF NOT EXISTS economic_structure_cost_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   charge_id UUID NOT NULL REFERENCES charges(id) ON DELETE RESTRICT,
+
+  -- Snapshot de l'identité de la charge au moment où le fait est constaté.
+  -- `charges` reste éditable comme catalogue/configuration ; l'historique N3
+  -- ne doit donc jamais dépendre de son libellé ou de sa famille courante.
+  charge_family_snapshot TEXT NOT NULL
+    CHECK (char_length(btrim(charge_family_snapshot)) BETWEEN 1 AND 200),
+  charge_name_snapshot TEXT NOT NULL
+    CHECK (char_length(btrim(charge_name_snapshot)) BETWEEN 1 AND 300),
+  recurrence_period_snapshot TEXT NULL
+    CHECK (
+      recurrence_period_snapshot IS NULL
+      OR char_length(btrim(recurrence_period_snapshot)) BETWEEN 1 AND 100
+    ),
 
   scope_kind TEXT NOT NULL
     CHECK (scope_kind IN ('GROUP', 'MARKET_DIRECT')),
@@ -83,6 +100,9 @@ CREATE INDEX IF NOT EXISTS idx_structure_cost_events_scope_period
 CREATE INDEX IF NOT EXISTS idx_structure_cost_events_charge_time
   ON economic_structure_cost_events (charge_id, recorded_at DESC, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_structure_cost_events_family_period
+  ON economic_structure_cost_events (charge_family_snapshot, economic_from, economic_to);
+
 CREATE OR REPLACE FUNCTION prevent_economic_structure_cost_event_mutation()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -97,8 +117,12 @@ BEFORE UPDATE OR DELETE ON economic_structure_cost_events
 FOR EACH ROW EXECUTE FUNCTION prevent_economic_structure_cost_event_mutation();
 
 COMMENT ON TABLE economic_structure_cost_events IS
-  'Vérité append-only des charges économiques N3 de période. GROUP reste non alloué ; MARKET_DIRECT est directement attribuable à un marché.';
+  'Vérité append-only des charges économiques N3 de période. Générique pour toute charge de structure ; GROUP reste non alloué et MARKET_DIRECT est directement attribuable à un marché.';
 COMMENT ON COLUMN economic_structure_cost_events.amount_kmf IS
   'Montant économique en KMF pour toute la période de l’événement ; ne provient jamais automatiquement de charges.amount_kmf.';
 COMMENT ON COLUMN economic_structure_cost_events.adjusts_event_id IS
   'Lien obligatoire vers l’événement corrigé pour ADJUSTMENT/REVERSAL ; aucune mutation du réel historique.';
+COMMENT ON COLUMN economic_structure_cost_events.charge_family_snapshot IS
+  'Famille de structure figée au constat du fait (ex. overhead, relay, hub, platform) ; aucune liste fermée n’est imposée par le moteur.';
+COMMENT ON COLUMN economic_structure_cost_events.recurrence_period_snapshot IS
+  'Récurrence de configuration au moment du constat, à titre explicatif uniquement ; la reconnaissance économique repose sur economic_from/economic_to.';
