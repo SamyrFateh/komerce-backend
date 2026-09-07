@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
  * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -31,7 +31,6 @@ const {
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
-const marketDecisionProjection = require('../services/pricing-market-decision-projection');
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -156,6 +155,101 @@ function handleDecisionPolicyError(error, res, next) {
   return handleError(error, res, next);
 }
 
+function finiteProjection(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function roundProjection(value, digits = 2) {
+  const number = finiteProjection(value);
+  if (number == null) return null;
+  const factor = 10 ** digits;
+  return Math.round(number * factor) / factor;
+}
+
+function ceilEquivalent(targetKmf, contributionPerUnitKmf) {
+  const target = finiteProjection(targetKmf);
+  const productivity = finiteProjection(contributionPerUnitKmf);
+  if (target == null || target < 0 || productivity == null || productivity <= 0) return null;
+  return Math.ceil(target / productivity);
+}
+
+function ratePerDay(count, windowDays) {
+  const value = finiteProjection(count);
+  const days = finiteProjection(windowDays);
+  if (value == null || days == null || days <= 0) return null;
+  return roundProjection(value / days, 3);
+}
+
+function projectedDaysToBreakEven(gapKmf, contributionPerDayKmf) {
+  const gap = finiteProjection(gapKmf);
+  const velocity = finiteProjection(contributionPerDayKmf);
+  if (gap == null || gap < 0) return null;
+  if (gap === 0) return 0;
+  if (velocity == null || velocity <= 0) return null;
+  return roundProjection(gap / velocity, 1);
+}
+
+function enrichBreakEvenTarget(target, observedMix) {
+  if (!target || !observedMix) return target || null;
+  return {
+    ...target,
+    break_even_floor_orders: ceilEquivalent(target.target_contribution_kmf, observedMix.contribution_per_order_kmf),
+    break_even_floor_articles: ceilEquivalent(target.target_contribution_kmf, observedMix.contribution_per_article_kmf),
+    break_even_floor_parcels: ceilEquivalent(target.target_contribution_kmf, observedMix.contribution_per_parcel_kmf),
+  };
+}
+
+function decorateMarketDecision(decision) {
+  if (!decision || typeof decision !== 'object') return decision;
+  const flow = decision.flow_break_even;
+  if (!flow || flow.status !== 'READY') return decision;
+
+  const observedMix = flow.observed_mix || null;
+  const economicBreakEven = enrichBreakEvenTarget(flow.economic_break_even, observedMix);
+  const policySafetyTarget = enrichBreakEvenTarget(flow.policy_safety_target, observedMix);
+  const contribution = finiteProjection(decision.coverage?.numerator_contribution_kmf ?? observedMix?.reconciled_contribution_kmf);
+  const n3 = finiteProjection(decision.coverage?.denominator_n3_kmf);
+  const windowDays = finiteProjection(decision.canonical_period?.width_days);
+  const contributionPerDay = contribution == null || windowDays == null || windowDays <= 0
+    ? null
+    : roundProjection(contribution / windowDays, 2);
+
+  const flowVelocity = windowDays == null || windowDays <= 0 || !observedMix ? null : {
+    basis: 'ROLLING_CANONICAL_WINDOW_AVERAGE',
+    window_days: windowDays,
+    articles_per_day: ratePerDay(observedMix.article_units, windowDays),
+    orders_per_day: ratePerDay(observedMix.mature_orders, windowDays),
+    parcels_per_day: ratePerDay(observedMix.parcels, windowDays),
+    contribution_per_day_kmf: contributionPerDay,
+    projected_days_to_break_even: projectedDaysToBreakEven(economicBreakEven?.gap_kmf, contributionPerDay),
+    interpretation: 'Smoothed operational cadence over the canonical rolling window; one contribution pool, several flow views.',
+  };
+
+  return {
+    ...decision,
+    flow_break_even: {
+      ...flow,
+      economic_state: {
+        period_contribution_kmf: contribution,
+        period_n3_kmf: n3,
+        coverage_ratio: finiteProjection(decision.coverage?.coverage_ratio),
+        break_even_gap_kmf: finiteProjection(economicBreakEven?.gap_kmf),
+        period_result_kmf: contribution == null || n3 == null ? null : roundProjection(contribution - n3, 2),
+      },
+      economic_break_even: economicBreakEven,
+      policy_safety_target: policySafetyTarget,
+      flow_velocity: flowVelocity,
+      contribution_identity: {
+        source: 'ARTICLE_SALES_SINGLE_POOL',
+        order_view: 'AGGREGATION_ONLY',
+        parcel_view: 'AGGREGATION_ONLY',
+        double_counting_forbidden: true,
+      },
+    },
+  };
+}
+
 router.use(
   '/market/:marketCode',
   authenticate,
@@ -192,7 +286,7 @@ router.get('/market/:marketCode/decision', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const decision = await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id);
-    res.json(marketDecisionProjection.decorateMarketDecision(decision));
+    res.json(decorateMarketDecision(decision));
   } catch (error) { handleError(error, res, next); }
 });
 
@@ -326,5 +420,8 @@ router.post('/cost-components/:key/toggle', async (req, res, next) => {
   try { sendAction(res, 'toggle_cost_component', await workspace.toggleCostComponent(req.params.key, req.user)); }
   catch (error) { handleError(error, res, next); }
 });
+
+router._decorateMarketDecision = decorateMarketDecision;
+router._projectedDaysToBreakEven = projectedDaysToBreakEven;
 
 module.exports = router;
