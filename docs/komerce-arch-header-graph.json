@@ -20,11 +20,11 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1157,
-    "edges": 5948,
+    "graphNodes": 1159,
+    "edges": 5952,
     "dbTables": 135,
-    "doctrines": 333,
-    "impactAreas": 174,
+    "doctrines": 334,
+    "impactAreas": 175,
     "unresolvedCodeEdges": 582,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
@@ -18498,7 +18498,8 @@
       "outputs": [
         "append_only_policy_event",
         "current_policy",
-        "canonical_market_decision"
+        "canonical_market_decision",
+        "flow_break_even_projection"
       ],
       "depends": [
         "db",
@@ -18509,7 +18510,9 @@
       ],
       "dbRead": [
         "markets",
-        "pricing_market_decision_policy_events"
+        "pricing_market_decision_policy_events",
+        "order_items",
+        "parcels"
       ],
       "dbWrite": [
         "pricing_market_decision_policy_events"
@@ -18519,13 +18522,15 @@
         "append_only_policy_recording"
       ],
       "doctrine": [
-        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
+        "pricing_flow_break_even_is_projection_not_cost_truth"
       ],
       "impactAreas": [
         "economic-engine",
         "pricing",
         "governance",
-        "admin-dashboard"
+        "admin-dashboard",
+        "operational-flow"
       ],
       "version": "2026-09"
     },
@@ -26300,6 +26305,11 @@
       "doctrine": "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
     },
     {
+      "id": "doctrine:pricing_flow_break_even_is_projection_not_cost_truth",
+      "type": "doctrine",
+      "doctrine": "pricing_flow_break_even_is_projection_not_cost_truth"
+    },
+    {
       "id": "doctrine:pricing_market_viability_maturity_watermark",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_maturity_watermark"
@@ -27383,6 +27393,11 @@
       "id": "impact:governance",
       "type": "impact-area",
       "area": "governance"
+    },
+    {
+      "id": "impact:operational-flow",
+      "type": "impact-area",
+      "area": "operational-flow"
     },
     {
       "id": "impact:discovery-modal",
@@ -54654,6 +54669,18 @@
     },
     {
       "from": "services/pricing-market-decision-policy.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
       "to": "db:pricing_market_decision_policy_events",
       "type": "db-write",
       "label": "pricing_market_decision_policy_events"
@@ -54663,6 +54690,12 @@
       "to": "doctrine:pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
       "type": "doctrine",
       "label": "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "doctrine:pricing_flow_break_even_is_projection_not_cost_truth",
+      "type": "doctrine",
+      "label": "pricing_flow_break_even_is_projection_not_cost_truth"
     },
     {
       "from": "services/pricing-market-decision-policy.js",
@@ -54687,6 +54720,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "impact:operational-flow",
+      "type": "impact",
+      "label": "operational-flow"
     },
     {
       "from": "services/pricing-maturity.js",
@@ -81618,28 +81657,36 @@
       "ownedFiles": [],
       "dbRead": [
         "markets",
-        "pricing_market_decision_policy_events"
+        "pricing_market_decision_policy_events",
+        "order_items",
+        "parcels"
       ],
       "dbWrite": [
         "pricing_market_decision_policy_events"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
+        "pricing_flow_break_even_is_projection_not_cost_truth"
       ],
       "impactAreas": [
         "economic-engine",
         "pricing",
         "governance",
-        "admin-dashboard"
+        "admin-dashboard",
+        "operational-flow"
       ],
       "mustCheck": [
         "db:markets",
+        "db:order_items",
+        "db:parcels",
         "db:pricing_market_decision_policy_events",
+        "doctrine:pricing_flow_break_even_is_projection_not_cost_truth",
         "doctrine:pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
         "impact:admin-dashboard",
         "impact:economic-engine",
         "impact:governance",
+        "impact:operational-flow",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
         "services/pricing-market-coverage.js"

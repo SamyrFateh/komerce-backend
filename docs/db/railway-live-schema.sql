@@ -143,7 +143,8 @@ CREATE TYPE public.payment_mode AS ENUM (
     'stripe_eur',
     'cash_relais',
     'mixed_shared_cart_cash',
-    'paypal_eur'
+    'paypal_eur',
+    'mobile_money'
 );
 
 
@@ -2323,7 +2324,10 @@ CREATE TABLE public.invoices (
     pdf_filename text,
     pdf_generated_at timestamp with time zone,
     template_version text DEFAULT '2026-08-v1'::text NOT NULL,
-    total_eur numeric(10,2)
+    total_eur numeric(10,2),
+    payment_total_amount numeric(18,4),
+    payment_currency text,
+    payment_minor_unit integer
 );
 
 
@@ -2339,6 +2343,13 @@ COMMENT ON COLUMN public.invoices.public_token IS 'DEPRECATED 2026-08: aucune ro
 --
 
 COMMENT ON COLUMN public.invoices.total_eur IS 'Montant en EUR — snapshot de orders.total_eur au moment de l''émission. Affiché sur la facture UNIQUEMENT si payment_mode = stripe_eur ou paypal_eur (P4, freeze 22-08-2026) ; sinon total_kmf fait foi. NULL pour les factures antérieures à cette migration — aucun backfill fabriqué.';
+
+
+--
+-- Name: COLUMN invoices.payment_total_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.payment_total_amount IS 'Montant réellement encaissé dans payment_currency ; alimenté par les rails dont la devise n est pas déductible de total_kmf/total_eur (ex. Mobile Money XAF).';
 
 
 --
@@ -2465,6 +2476,31 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 
 --
+-- Name: market_payment_providers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_payment_providers (
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    currency text NOT NULL,
+    is_enabled boolean DEFAULT true NOT NULL,
+    priority integer DEFAULT 100 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_payment_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_payment_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT market_payment_providers_priority_check CHECK ((priority > 0))
+);
+
+
+--
+-- Name: TABLE market_payment_providers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_payment_providers IS 'Providers Mobile Money autorisés par marché. Aucune credential ici : activation métier distincte de la configuration secrète runtime.';
+
+
+--
 -- Name: markets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2499,6 +2535,41 @@ COMMENT ON COLUMN public.markets.code IS 'ISO 3166-1 alpha-2. Clé stable réfé
 --
 
 COMMENT ON COLUMN public.markets.minor_unit IS 'Décimales de la devise : 0 pour KMF/XAF, 2 pour EUR. Consommé par la boundary devise (M5) — cette table ne formate rien elle-même.';
+
+
+--
+-- Name: mobile_money_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mobile_money_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    msisdn text,
+    currency text NOT NULL,
+    minor_unit integer DEFAULT 0 NOT NULL,
+    amount_minor bigint NOT NULL,
+    external_transaction_id text,
+    status text DEFAULT 'initiated'::text NOT NULL,
+    provider_status text,
+    provider_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    completed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT mobile_money_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT mobile_money_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT mobile_money_status_chk CHECK ((status = ANY (ARRAY['initiated'::text, 'pending'::text, 'succeeded'::text, 'failed'::text, 'expired'::text]))),
+    CONSTRAINT mobile_money_transactions_amount_minor_check CHECK ((amount_minor > 0)),
+    CONSTRAINT mobile_money_transactions_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4)))
+);
+
+
+--
+-- Name: TABLE mobile_money_transactions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.mobile_money_transactions IS 'Transactions Mobile Money Komerce. Le provider externe ne confirme jamais directement stock/commande : passage obligatoire par order-payment-confirmation.';
 
 
 --
@@ -6675,6 +6746,14 @@ ALTER TABLE ONLY public.loyalty_tiers
 
 
 --
+-- Name: market_payment_providers market_payment_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_providers
+    ADD CONSTRAINT market_payment_providers_pkey PRIMARY KEY (market_id, provider);
+
+
+--
 -- Name: markets markets_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6688,6 +6767,14 @@ ALTER TABLE ONLY public.markets
 
 ALTER TABLE ONLY public.markets
     ADD CONSTRAINT markets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_pkey PRIMARY KEY (id);
 
 
 --
@@ -8145,6 +8232,20 @@ CREATE INDEX idx_loyalty_rewards_status ON public.loyalty_rewards USING btree (s
 --
 
 CREATE INDEX idx_loyalty_rewards_user ON public.loyalty_rewards USING btree (user_id);
+
+
+--
+-- Name: idx_mobile_money_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mobile_money_order ON public.mobile_money_transactions USING btree (order_id, created_at DESC);
+
+
+--
+-- Name: idx_mobile_money_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mobile_money_pending ON public.mobile_money_transactions USING btree (provider, status, created_at) WHERE (status = ANY (ARRAY['initiated'::text, 'pending'::text]));
 
 
 --
@@ -9884,6 +9985,20 @@ CREATE UNIQUE INDEX uniq_sc_supplier_ref ON public.sourcing_candidates USING btr
 
 
 --
+-- Name: uq_mobile_money_active_attempt; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_mobile_money_active_attempt ON public.mobile_money_transactions USING btree (order_id, provider) WHERE (status = ANY (ARRAY['initiated'::text, 'pending'::text]));
+
+
+--
+-- Name: uq_mobile_money_provider_external_tx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_mobile_money_provider_external_tx ON public.mobile_money_transactions USING btree (provider, external_transaction_id) WHERE (external_transaction_id IS NOT NULL);
+
+
+--
 -- Name: uq_orders_cash_ref_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10847,6 +10962,30 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 ALTER TABLE ONLY public.loyalty_rewards
     ADD CONSTRAINT loyalty_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_payment_providers market_payment_providers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_providers
+    ADD CONSTRAINT market_payment_providers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
 
 
 --
