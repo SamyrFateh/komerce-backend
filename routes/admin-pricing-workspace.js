@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
  * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -31,6 +31,8 @@ const {
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
+const marketDecisionProjection = require('../services/pricing-market-decision-projection');
+const { decorateMarketDecision } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -190,7 +192,8 @@ router.get('/market/:marketCode', async (req, res, next) => {
 router.get('/market/:marketCode/decision', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    res.json(await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id));
+    const decision = await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id);
+    res.json(decorateMarketDecision(decision));
   } catch (error) { handleError(error, res, next); }
 });
 
@@ -324,5 +327,8 @@ router.post('/cost-components/:key/toggle', async (req, res, next) => {
   try { sendAction(res, 'toggle_cost_component', await workspace.toggleCostComponent(req.params.key, req.user)); }
   catch (error) { handleError(error, res, next); }
 });
+
+router._decorateMarketDecision = decorateMarketDecision;
+router._projectedDaysToBreakEven = marketDecisionProjection._projectDays;
 
 module.exports = router;

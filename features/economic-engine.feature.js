@@ -110,6 +110,7 @@ module.exports = {
       'services/pricing-market-coverage.js',
       'services/pricing-risk-period.js',
       'services/pricing-market-decision-policy.js',
+      'services/pricing-market-decision-projection.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -198,6 +199,7 @@ module.exports = {
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
       'tests/unit/pricing-market-decision-policy.test.js',
+      'tests/unit/pricing-market-decision-projection.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',

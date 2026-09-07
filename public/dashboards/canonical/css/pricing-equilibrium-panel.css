@@ -1,0 +1,158 @@
+.kmc-flow-equilibrium-panel {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 54%);
+  display: grid;
+  gap: 16px;
+}
+
+.kmc-flow-equilibrium-head,
+.kmc-flow-equilibrium-copy,
+.kmc-flow-equilibrium-block {
+  display: grid;
+  gap: 6px;
+}
+
+.kmc-flow-equilibrium-kicker {
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.kmc-flow-equilibrium-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.15;
+}
+
+.kmc-flow-equilibrium-intro,
+.kmc-flow-equilibrium-rule,
+.kmc-flow-equilibrium-footnote,
+.kmc-flow-equilibrium-safety {
+  margin: 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.kmc-flow-equilibrium-state {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kmc-flow-equilibrium-metric,
+.kmc-flow-equilibrium-unit {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
+  background: rgba(255,255,255,.92);
+  display: grid;
+  gap: 4px;
+}
+
+.kmc-flow-equilibrium-metric.is-warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.kmc-flow-equilibrium-metric.is-positive {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.kmc-flow-equilibrium-label,
+.kmc-flow-equilibrium-unit-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.kmc-flow-equilibrium-value,
+.kmc-flow-equilibrium-unit-value {
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.kmc-flow-equilibrium-helper,
+.kmc-flow-equilibrium-unit-helper,
+.kmc-flow-equilibrium-footnote {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.kmc-flow-equilibrium-block {
+  padding-top: 2px;
+}
+
+.kmc-flow-equilibrium-block-title {
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.kmc-flow-equilibrium-units {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kmc-flow-equilibrium-block.is-remaining {
+  padding: 14px;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  background: #fffbeb;
+}
+
+.kmc-flow-equilibrium-block.is-cadence {
+  padding: 14px;
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  background: #eef2ff;
+}
+
+.kmc-flow-equilibrium-rule {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.kmc-flow-equilibrium-alert {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.kmc-flow-equilibrium-safety {
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kmc-flow-equilibrium-unavailable {
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 13px;
+  background: #fef2f2;
+  color: #991b1b;
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 900px) {
+  .kmc-flow-equilibrium-state { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .kmc-flow-equilibrium-panel { padding: 14px; }
+  .kmc-flow-equilibrium-state,
+  .kmc-flow-equilibrium-units { grid-template-columns: 1fr; }
+}
