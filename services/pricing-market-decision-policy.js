@@ -7,7 +7,7 @@
  * @inputs        market_id, policy_event, evaluation_time, optional_group_allocation_policies
  * @outputs       append_only_policy_event, current_policy, canonical_market_decision
  * @depends       db, services/pricing-market-coverage.js
- * @used-by       routes/admin-pricing-workspace.js, pricing workspace decision panel
+ * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, pricing_market_decision_policy_events
  * @db-write      pricing_market_decision_policy_events
  * @db-txn        append_only_policy_recording
