@@ -521,3 +521,42 @@
     flex: 1 1 auto;
   }
 }
+
+
+/* LOT 4W — Décision marché : vérité serveur avant atelier de coûts */
+.kmc-market-decision-hero { --decision-accent: #475569; --decision-surface: #f8fafc; border: 1px solid color-mix(in srgb, var(--decision-accent) 30%, transparent); border-left: 5px solid var(--decision-accent); border-radius: 16px; background: var(--decision-surface); padding: 20px; display: grid; gap: 8px; }
+.kmc-market-decision-hero.is-positive { --decision-accent: #15803d; --decision-surface: #f0fdf4; }
+.kmc-market-decision-hero.is-warning { --decision-accent: #b45309; --decision-surface: #fffbeb; }
+.kmc-market-decision-hero.is-critical { --decision-accent: #b91c1c; --decision-surface: #fef2f2; }
+.kmc-market-decision-hero.is-neutral { --decision-accent: #475569; --decision-surface: #f8fafc; }
+.kmc-market-decision-kicker, .kmc-market-policy-kicker { color: var(--decision-accent, #475569); font-size: 11px; font-weight: 800; letter-spacing: .09em; }
+.kmc-market-decision-title { color: #0f172a; font-size: clamp(22px, 3vw, 32px); line-height: 1.1; }
+.kmc-market-decision-summary, .kmc-market-decision-reason, .kmc-market-policy-rationale { margin: 0; color: #475569; line-height: 1.55; }
+.kmc-market-decision-authorization { width: fit-content; border-radius: 999px; background: color-mix(in srgb, var(--decision-accent) 12%, white); color: var(--decision-accent); font-weight: 800; padding: 7px 11px; font-size: 13px; }
+.kmc-market-decision-code { color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow-wrap: anywhere; }
+.kmc-market-decision-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.kmc-market-decision-metric { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 14px; display: grid; gap: 5px; }
+.kmc-market-decision-metric-label, .kmc-market-policy-fact-label { color: #64748b; font-size: 12px; font-weight: 700; }
+.kmc-market-decision-metric-value { color: #0f172a; font-size: 21px; }
+.kmc-market-decision-metric-helper { color: #94a3b8; }
+.kmc-market-decision-period { margin-top: 14px; border-radius: 12px; background: #eff6ff; color: #1e3a8a; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+.kmc-market-decision-period small { color: #64748b; flex-basis: 100%; }
+.kmc-market-policy { margin-top: 14px; border: 1px solid #c7d2fe; border-radius: 16px; background: #eef2ff; padding: 16px; }
+.kmc-market-policy.is-missing { border-color: #fecaca; background: #fff7ed; }
+.kmc-market-policy-heading { display: grid; gap: 3px; margin-bottom: 8px; }
+.kmc-market-policy-title { color: #1e1b4b; font-size: 18px; }
+.kmc-market-policy-facts { margin-top: 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.kmc-market-policy-facts > div { background: rgba(255, 255, 255, .75); border-radius: 10px; padding: 10px; display: grid; gap: 3px; }
+.kmc-market-policy-fact-value { color: #1e293b; overflow-wrap: anywhere; }
+.kmc-market-policy-history, .kmc-market-policy-editor { margin-top: 14px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; overflow: hidden; }
+.kmc-market-policy-history > summary, .kmc-market-policy-editor > summary { cursor: pointer; padding: 14px 16px; font-weight: 800; color: #334155; }
+.kmc-market-policy-history[open] > summary, .kmc-market-policy-editor[open] > summary { border-bottom: 1px solid #e2e8f0; }
+.kmc-market-policy-history .kmc-workspace-table-wrap { margin: 0; border: 0; border-radius: 0; }
+.kmc-market-policy-editor-help { margin: 14px 16px 0; color: #64748b; }
+.kmc-market-policy-form { padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.kmc-market-policy-field { display: grid; gap: 6px; color: #475569; font-size: 13px; font-weight: 700; }
+.kmc-market-policy-field.is-wide { grid-column: 1 / -1; }
+.kmc-market-policy-field input, .kmc-market-policy-field textarea { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 11px; background: #fff; color: #0f172a; font: inherit; }
+.kmc-market-policy-form > .kmc-workspace-action { justify-self: start; grid-column: 1 / -1; }
+@media (max-width: 900px) { .kmc-market-decision-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kmc-market-policy-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .kmc-market-decision-metrics, .kmc-market-policy-facts, .kmc-market-policy-form { grid-template-columns: 1fr; } .kmc-market-policy-field.is-wide, .kmc-market-policy-form > .kmc-workspace-action { grid-column: 1; } .kmc-market-decision-hero { padding: 16px; } }

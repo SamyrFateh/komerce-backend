@@ -81,12 +81,34 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
 test('Atelier market rend le viewer en lecture seule et réserve les mutations au manager', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1215');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1218');
   expect(presentation).toContain('payload.capabilities?.cost_overrides');
   expect(presentation).toContain("payload.access?.read_only !== true");
   expect(presentation).toContain('input.disabled = true');
   expect(presentation).toContain('Lecture seule');
   expect(presentation).toContain('manager pays');
+});
+
+test('Décision marché est lue du serveur, affichée avant l’atelier et reste fail-closed', () => {
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace.js'), 'utf8');
+  const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace.js?v=1218');
+  expect(source).toContain("`${endpointFor(context)}/decision`");
+  expect(source).toContain("`${endpointFor(context)}/decision-policy/history`");
+  expect(source).toContain('decision.decision_status');
+  expect(source).toContain('coverage.coverage_ratio');
+  expect(source).toContain('coverage.numerator_contribution_kmf');
+  expect(source).toContain('coverage.denominator_n3_kmf');
+  expect(source).toContain('payload.capabilities?.manage_decision_policy === true');
+  expect(source).toContain("`${endpointFor(context)}/decision-policy`");
+  expect(source).toMatch(/renderMarketDecision[\s\S]*renderCosts/);
+  expect(source).not.toContain('market_id');
+  expect(source).not.toContain('marketId');
+  expect(presentation).toContain('if (!marketMode && firstOtherSection');
+  expect(css).toContain('.kmc-market-decision-hero');
+  expect(css).toContain('.kmc-market-policy-form');
 });
 
 test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et vérité', () => {
@@ -95,7 +117,7 @@ test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
   const service = fs.readFileSync(path.join(ROOT, 'services', 'pricing-cost-explainability.js'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=1215');
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=1218');
   expect(presentation).toContain('Comprendre cette ligne');
   expect(presentation).toContain('D’où vient la valeur');
   expect(presentation).toContain('Hypothèse portée');
