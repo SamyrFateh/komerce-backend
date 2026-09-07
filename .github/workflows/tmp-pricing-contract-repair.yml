@@ -1,0 +1,63 @@
+name: Temporary Pricing Contract Repair
+
+on:
+  push:
+    branches:
+      - feat/pricing-market-decision-policy
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ github.sha }}
+      META_WA_APP_SECRET: ${{ github.sha }}
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pricing-market-decision-policy
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Register canonical response shapes without contract debt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/contract-generate.js')
+          text = path.read_text()
+          marker = "  // LOT 4F — réponses Pricing Workspace consommées par Canonical.\n"
+          block = """  // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.\n  '/api/admin/workspaces/pricing/market/{marketCode}/decision': {\n    get: { fields: ['market_id','decision_status','authorization','reason','policy','canonical_period','coverage','evaluated_at'], source: 'service-read' }\n  },\n  '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history': {\n    get: { fields: ['market_code','policies'], source: 'route-read' }\n  },\n  '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy': {\n    post: { fields: ['ok','action','result'], source: 'route-read' }\n  },\n  '/api/admin/workspaces/pricing/market/{marketCode}/simulate-impact': {\n    post: { fields: ['ok','action','result'], source: 'route-read' }\n  },\n  '/api/admin/workspaces/pricing/simulate-impact': {\n    post: { fields: ['ok','action','result'], source: 'route-read' }\n  },\n"""
+          if block not in text:
+              if marker not in text:
+                  raise SystemExit('Pricing response marker not found')
+              text = text.replace(marker, marker + block, 1)
+              path.write_text(text)
+          PY
+
+      - name: Regenerate and prove zero contract debt
+        run: |
+          node scripts/contract-generate.js
+          node scripts/contract-check.js
+          npm run security:360:check
+
+      - name: Commit canonical contract repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "fix(contract): cover pricing decision response shapes"
+          git push origin HEAD:feat/pricing-market-decision-policy
