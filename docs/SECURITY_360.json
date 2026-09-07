@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-07T09:55:54.956Z",
+  "generatedAt": "2026-09-07T11:38:59.498Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 574,
-    "protected": 523,
-    "public": 51,
+    "total": 580,
+    "protected": 527,
+    "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -136,6 +136,18 @@
       "kind": "EXPECTED_PUBLIC",
       "evidence": "routes/payments.js; features/payments.feature.js",
       "rationale": "Expose uniquement la configuration/les clés publiables nécessaires au checkout navigateur."
+    },
+    {
+      "key": "GET /api/payments/mobile-money/availability",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/payments-mobile-money.js; services/payment-mobile-money.js; features/payments.feature.js",
+      "rationale": "Expose uniquement la disponibilité commerciale du provider résolu serveur pour un code marché ; aucun secret, montant de commande ou identifiant client."
+    },
+    {
+      "key": "POST /api/payments/mobile-money/callback/{provider}/{transactionId}",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js",
+      "rationale": "Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique."
     },
     {
       "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
@@ -3198,6 +3210,36 @@
     {
       "key": "GET /api/payments/config",
       "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /api/payments/mobile-money/admin/pending",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/payments/mobile-money/availability",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/mobile-money/callback/{provider}/{transactionId}",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/mobile-money/initiate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/mobile-money/transactions/{transactionId}/refresh",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/payments/mobile-money/transactions/{transactionId}",
+      "level": "PROTECTED",
       "roles": []
     },
     {

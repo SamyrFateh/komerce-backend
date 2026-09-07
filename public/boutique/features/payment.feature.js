@@ -31,7 +31,7 @@ module.exports = {
   canonicalFeature: 'payments',
   sliceKind: 'frontend-slice',
 
-  service: "Integration paiement (PayPal) — rendu et orchestration du flux de paiement tiers.",
+  service: "Integration paiement (PayPal et Mobile Money) — rendu et orchestration du flux de paiement tiers.",
 
   perimeter: {
     in:  ['fichiers js/* annotes @domain payment'],
@@ -41,14 +41,17 @@ module.exports = {
   files: {
     js: [
       '../js/b-paypal.js',
+      '../js/b-mobile-money.js',
     ],
     css: [
       // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
       // deja declare cote features/payments.feature.js (racine).
       '../css/paypal.css',
+      '../css/mobile-money.css',
     ],
     tests: [
       '../tests/unit/b-paypal.test.js',
+      '../tests/unit/b-mobile-money.test.js',
       // teste b-paypal.js directement (require réel).
     ],
   },
@@ -61,10 +64,12 @@ module.exports = {
     // interne, pas une route HTTP.
     internalApi: [
       'b-paypal.js / renderPayPalButton / isPayPalEnabled',
+      'b-mobile-money.js / relay availability / initiation / bounded reconciliation',
     ],
     consumes: [
       'boutique — b-paypal.js importe b-cart-core.js, b-utils.js',
       'API — b-paypal.js appelle /api/public/config',
+      'API — b-mobile-money.js appelle /api/payments/mobile-money/* et résout la disponibilité depuis le relais',
     ],
   },
 

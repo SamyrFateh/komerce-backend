@@ -66,7 +66,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_status` | `pending`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
 | `parcel_status` | `draft`, `preparation`, `shipped`, `in_transit`, `arrived`, `available`, `collected`, `cancelled` | `routes/parcel-api-v2.js` + `services/parcel-service.js` |
 | `payment_status` | `pending`, `paid`, `failed`, `refunded`, `partially_paid` | `routes/payments.js` |
-| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash` | `routes/orders/create.js` |
+| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash`; **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `mobile_money`, rail Komerce distinct du provider opérateur. | `routes/orders/create.js` + `services/payment-mobile-money.js` |
 | `scan_step` | `preparation`, `hub_preparation`, `shipped`, `in_transit`, `relais_received`, `collected` | `routes/scans.js` + `services/scan-engine.js` |
 | `user_role` | définit les rôles auth | `middleware/auth.js` |
 | `basket_type` | type de panier (boutique / partagé / collectif) | `routes/baskets.js` |
@@ -134,20 +134,35 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (9 tables)
+### 4.4 Paiements et finance (9 tables live + 2 visées)
 
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
 | `cash_deposits` | Dépôts agents. |
 | `cash_reconciliation` | Réconciliation cash. |
-| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. |
+| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
 | `disputes` | Litiges. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
 
+<!-- schema-pending
+object: market_payment_providers
+kind: table
+migration: 169
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime.
+-->
+
+<!-- schema-pending
+object: mobile_money_transactions
+kind: table
+migration: 169
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock.
+-->
 ### 4.5 Paniers et catalogue
 
 | Table | Rôle |

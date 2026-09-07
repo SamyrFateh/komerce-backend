@@ -49,7 +49,7 @@
     "healthy": 33,
     "attention": 0,
     "blocked": 0,
-    "businessDependencies": 240,
+    "businessDependencies": 241,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -7320,6 +7320,11 @@
           "moteur de pricing et application des regles",
           "audit des changements de prix produit dans price_history",
           "allocation de cout",
+          "vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges",
+          "vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché",
+          "gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué",
+          "politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only",
+          "explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact",
           "strategies tarifaires et matrices admin",
           "gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain economic-engine au Lot O2, était @domain dashboard)"
         ],
@@ -7331,7 +7336,13 @@
       "authority": "backend-core — tout changement de formule de prix ou d audit price_history doit rester derrière les services propriétaires economic-engine",
       "invariants": [
         "une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee",
-        "aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js"
+        "aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js",
+        "chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel",
+        "une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée",
+        "une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité",
+        "un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro",
+        "la fenêtre et les seuils du gate de décision marché proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur",
+        "un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite"
       ],
       "implementation": {
         "byCategory": {
@@ -7381,7 +7392,7 @@
             ]
           },
           "migrations": {
-            "count": 21,
+            "count": 26,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -7487,6 +7498,31 @@
                 "declared": "migrations/159_cost_component_market_overrides.sql",
                 "resolvedPath": "migrations/159_cost_component_market_overrides.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/164_order_item_cost_imputations_split_n2_n3.sql",
+                "resolvedPath": "migrations/164_order_item_cost_imputations_split_n2_n3.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/165_pricing_maturity_disposition_events.sql",
+                "resolvedPath": "migrations/165_pricing_maturity_disposition_events.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/166_economic_structure_cost_events.sql",
+                "resolvedPath": "migrations/166_economic_structure_cost_events.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/167_economic_risk_period_truth.sql",
+                "resolvedPath": "migrations/167_economic_risk_period_truth.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/168_pricing_market_decision_policy_events.sql",
+                "resolvedPath": "migrations/168_pricing_market_decision_policy_events.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -7561,7 +7597,7 @@
             ]
           },
           "services": {
-            "count": 30,
+            "count": 37,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -7576,6 +7612,11 @@
               {
                 "declared": "services/cost-allocation/allocate.js",
                 "resolvedPath": "services/cost-allocation/allocate.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cost-allocation/cost-types.js",
+                "resolvedPath": "services/cost-allocation/cost-types.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -7654,6 +7695,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-cost-explainability.js",
+                "resolvedPath": "services/pricing-cost-explainability.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-dashboard.js",
                 "resolvedPath": "services/pricing-dashboard.js",
                 "status": "resolved-in-technical-graph"
@@ -7669,8 +7715,28 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-market-coverage.js",
+                "resolvedPath": "services/pricing-market-coverage.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pricing-market-decision-policy.js",
+                "resolvedPath": "services/pricing-market-decision-policy.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pricing-maturity.js",
+                "resolvedPath": "services/pricing-maturity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-output.js",
                 "resolvedPath": "services/pricing-output.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pricing-period-structure.js",
+                "resolvedPath": "services/pricing-period-structure.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -7681,6 +7747,11 @@
               {
                 "declared": "services/pricing-recommend.js",
                 "resolvedPath": "services/pricing-recommend.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pricing-risk-period.js",
+                "resolvedPath": "services/pricing-risk-period.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -7716,7 +7787,7 @@
             ]
           },
           "tests": {
-            "count": 57,
+            "count": 68,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -7839,8 +7910,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/economic-risk-period-truth-migration.test.js",
+                "resolvedPath": "tests/unit/economic-risk-period-truth-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/economic-route.test.js",
                 "resolvedPath": "tests/unit/economic-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-structure-cost-events-migration.test.js",
+                "resolvedPath": "tests/unit/economic-structure-cost-events-migration.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7889,6 +7970,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/order-cost-imputation-n2-n3-migration.test.js",
+                "resolvedPath": "tests/unit/order-cost-imputation-n2-n3-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-apply.test.js",
                 "resolvedPath": "tests/unit/pricing-apply.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7906,6 +7992,11 @@
               {
                 "declared": "tests/unit/pricing-chain.test.js",
                 "resolvedPath": "tests/unit/pricing-chain.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-cost-explainability.test.js",
+                "resolvedPath": "tests/unit/pricing-cost-explainability.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7929,8 +8020,38 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-market-coverage.test.js",
+                "resolvedPath": "tests/unit/pricing-market-coverage.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-market-decision-policy-migration.test.js",
+                "resolvedPath": "tests/unit/pricing-market-decision-policy-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-market-decision-policy.test.js",
+                "resolvedPath": "tests/unit/pricing-market-decision-policy.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-maturity-disposition-migration.test.js",
+                "resolvedPath": "tests/unit/pricing-maturity-disposition-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-maturity.test.js",
+                "resolvedPath": "tests/unit/pricing-maturity.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-output.test.js",
                 "resolvedPath": "tests/unit/pricing-output.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-period-structure.test.js",
+                "resolvedPath": "tests/unit/pricing-period-structure.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7941,6 +8062,11 @@
               {
                 "declared": "tests/unit/pricing-recommend.test.js",
                 "resolvedPath": "tests/unit/pricing-recommend.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-risk-period.test.js",
+                "resolvedPath": "tests/unit/pricing-risk-period.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8026,7 +8152,7 @@
             ]
           }
         },
-        "totalFiles": 131,
+        "totalFiles": 154,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -8064,7 +8190,19 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_risk_cost_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_risk_watermark_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_snapshots",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_structure_cost_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -8096,8 +8234,16 @@
             "resolution": "single-writer"
           },
           {
+            "table": "pricing_market_decision_policy_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pricing_matrices_audit",
             "resolution": "single-writer"
+          },
+          {
+            "table": "pricing_maturity_disposition_events",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "pricing_strategies",
@@ -8156,7 +8302,25 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "economic_risk_cost_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_risk_watermark_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "economic_snapshots",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_structure_cost_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8204,8 +8368,20 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "pricing_market_decision_policy_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "pricing_matrices_audit",
             "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pricing_maturity_disposition_events",
+            "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
           },
@@ -8346,7 +8522,19 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_risk_cost_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_risk_watermark_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_snapshots",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_structure_cost_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -8378,8 +8566,16 @@
             "resolution": "single-writer"
           },
           {
+            "table": "pricing_market_decision_policy_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pricing_matrices_audit",
             "resolution": "single-writer"
+          },
+          {
+            "table": "pricing_maturity_disposition_events",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "pricing_strategies",
@@ -8438,7 +8634,25 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "economic_risk_cost_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_risk_watermark_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "economic_snapshots",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_structure_cost_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8486,8 +8700,20 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "pricing_market_decision_policy_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "pricing_matrices_audit",
             "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pricing_maturity_disposition_events",
+            "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
           },
@@ -8611,7 +8837,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 88
+          "count": 91
         }
       },
       "businessDependencies": [
@@ -10498,7 +10724,7 @@
             ]
           },
           "tests": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
@@ -10538,6 +10764,11 @@
               {
                 "declared": "tests/unit/error-handler.test.js",
                 "resolvedPath": "tests/unit/error-handler.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/impact-check-security-conventions.test.js",
+                "resolvedPath": "tests/unit/impact-check-security-conventions.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10628,7 +10859,7 @@
             ]
           }
         },
-        "totalFiles": 281,
+        "totalFiles": 282,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14017,6 +14248,13 @@
           ]
         },
         {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "providers-services",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16079,12 +16317,14 @@
         "kind": "business-feature",
         "status": "production"
       },
-      "service": "Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.",
+      "service": "Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.",
       "perimeter": {
         "in": [
-          "integration Stripe et PayPal (intent, webhook, evenements)",
+          "integration Stripe et PayPal (intent, capture, webhook, evenements)",
+          "Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG)",
+          "réconciliation périodique des paiements Mobile Money pending si callback perdu",
           "paiement cash au retrait et relances cash",
-          "confirmation de paiement et idempotence webhook"
+          "confirmation de paiement et idempotence webhook/callback"
         ],
         "out": [
           "creation de la commande elle-meme (feature orders)",
@@ -16093,32 +16333,50 @@
           "credit wallet (feature wallet-loyalty)"
         ]
       },
-      "authority": "backend-core — tout changement de webhook ou de logique d'idempotence doit etre valide par le proprietaire de payment-status-validator.js",
+      "authority": "backend-core — tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriétaire payments.",
       "invariants": [
         {
-          "statement": "idempotence stricte sur tout webhook (Stripe, PayPal)",
+          "statement": "idempotence stricte sur tout webhook/callback externe",
           "test": "tests/invariants/payments.webhook-idempotency.test.js"
         },
         {
           "statement": "une capture PayPal ne confirme la commande que si elle est COMPLETED, en EUR et conforme au montant figé de la commande",
           "test": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js"
         },
+        {
+          "statement": "Mobile Money ne confirme jamais sur le body callback : le statut est relu chez le provider et montant/devise sont comparés au snapshot transactionnel",
+          "test": "tests/unit/payment-mobile-money.test.js"
+        },
+        {
+          "statement": "un callback Mobile Money perdu est repris par une réconciliation périodique bornée et idempotente",
+          "test": "tests/unit/mobile-money-reconciliation.test.js"
+        },
         "aucun secret de paiement en dur dans le code",
         {
           "statement": "un paiement confirme ne peut etre confirme deux fois",
           "test": "tests/invariants/payments.no-double-confirm.test.js"
         },
-        "tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande"
+        "un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)"
       ],
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "css/mobile-money.css",
+                "resolvedPath": "public/boutique/css/mobile-money.css",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "css/paypal.css",
                 "resolvedPath": "public/boutique/css/paypal.css",
                 "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/b-mobile-money.js",
+                "resolvedPath": "public/boutique/js/b-mobile-money.js",
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/b-paypal.js",
@@ -16128,7 +16386,7 @@
             ]
           },
           "migrations": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -16139,15 +16397,25 @@
                 "declared": "migrations/148_cash_deposit_business_reference.sql",
                 "resolvedPath": "migrations/148_cash_deposit_business_reference.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/169_mobile_money_foundation.sql",
+                "resolvedPath": "migrations/169_mobile_money_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "routes/cash.js",
                 "resolvedPath": "routes/cash.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/payments-mobile-money.js",
+                "resolvedPath": "routes/payments-mobile-money.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -16168,7 +16436,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 17,
             "files": [
               {
                 "declared": "services/cash-deposit-service.js",
@@ -16196,8 +16464,33 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/mobile-money-reconciliation.js",
+                "resolvedPath": "services/mobile-money-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/mobile-money/mtn-momo-cg.js",
+                "resolvedPath": "services/mobile-money/mtn-momo-cg.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/mobile-money/orange-money-cm.js",
+                "resolvedPath": "services/mobile-money/orange-money-cm.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/mobile-money/registry.js",
+                "resolvedPath": "services/mobile-money/registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/payment-cash-confirm.js",
                 "resolvedPath": "services/payment-cash-confirm.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/payment-mobile-money.js",
+                "resolvedPath": "services/payment-mobile-money.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -16233,8 +16526,13 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 23,
             "files": [
+              {
+                "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
+                "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
@@ -16276,8 +16574,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/mobile-money-providers.test.js",
+                "resolvedPath": "tests/unit/mobile-money-providers.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/mobile-money-reconciliation.test.js",
+                "resolvedPath": "tests/unit/mobile-money-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/payment-cash-confirm.test.js",
                 "resolvedPath": "tests/unit/payment-cash-confirm.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/payment-mobile-money.test.js",
+                "resolvedPath": "tests/unit/payment-mobile-money.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -16321,11 +16634,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/paypal-webhook.test.js",
-                "resolvedPath": "tests/unit/paypal-webhook.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/pickup-pay-cash.test.js",
                 "resolvedPath": "tests/unit/pickup-pay-cash.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16338,11 +16646,18 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 52,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 6,
           "files": [
+            {
+              "declared": "../css/mobile-money.css",
+              "resolvedPath": "public/boutique/css/mobile-money.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../css/paypal.css",
               "resolvedPath": "public/boutique/css/paypal.css",
@@ -16351,9 +16666,23 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/b-mobile-money.js",
+              "resolvedPath": "public/boutique/js/b-mobile-money.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../js/b-paypal.js",
               "resolvedPath": "public/boutique/js/b-paypal.js",
               "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-mobile-money.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-mobile-money.test.js",
+              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             },
@@ -16375,6 +16704,10 @@
           },
           {
             "table": "cash_deposits",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "mobile_money_transactions",
             "resolution": "single-writer"
           },
           {
@@ -16400,6 +16733,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "mobile_money_transactions",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -16416,6 +16755,10 @@
           {
             "table": "incidents",
             "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "market_payment_providers",
+            "lifecycleOwner": null
           },
           {
             "table": "order_items",
@@ -16454,6 +16797,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "mobile_money_transactions",
+            "resolution": "single-writer"
+          },
+          {
             "table": "paypal_events_processed",
             "resolution": "single-writer"
           },
@@ -16476,6 +16823,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "mobile_money_transactions",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -16492,6 +16845,10 @@
           {
             "table": "incidents",
             "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "market_payment_providers",
+            "lifecycleOwner": null
           },
           {
             "table": "order_items",
@@ -16522,7 +16879,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 18
+          "count": 24
         }
       },
       "businessDependencies": [
@@ -16580,6 +16937,13 @@
         },
         {
           "provider": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
