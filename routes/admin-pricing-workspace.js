@@ -4,14 +4,14 @@
  * @domain        economic-engine
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
- * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js
+ * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, market_product_price_decision
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_product_price_projection, action_results
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-price-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, global_product_market_price_overlay
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -31,6 +31,7 @@ const {
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
+const marketProductPrices = require('../services/pricing-market-price-service');
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -180,6 +181,8 @@ router.get('/market/:marketCode', async (req, res, next) => {
         reset_to_global: access.can_manage_costs,
         market_decision: true,
         manage_decision_policy: access.can_manage_decision_policy,
+        market_product_prices: true,
+        manage_market_product_prices: access.can_manage_costs,
       },
     });
   } catch (error) { handleError(error, res, next); }
@@ -217,6 +220,53 @@ router.post('/market/:marketCode/decision-policy', requireMarketPricingManager, 
       201
     );
   } catch (error) { handleDecisionPolicyError(error, res, next); }
+});
+
+// Prix produit par marché : le produit reste global. La décision locale est
+// append-only et la devise est toujours résolue côté serveur depuis le marché.
+router.get('/market/:marketCode/product-prices', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await marketProductPrices.listMarketProductPrices(req.workspaceMarket));
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.get('/market/:marketCode/product-prices/:productRef/history', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await marketProductPrices.listMarketProductPriceHistory(req.workspaceMarket, req.params.productRef));
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/product-prices/:productRef', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    sendAction(
+      res,
+      'set_market_product_price',
+      await marketProductPrices.setMarketProductPrice(
+        req.workspaceMarket,
+        req.params.productRef,
+        req.body || {},
+        req.user && req.user.id
+      ),
+      201
+    );
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/product-prices/:productRef/reset', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    sendAction(
+      res,
+      'reset_market_product_price',
+      await marketProductPrices.resetMarketProductPrice(
+        req.workspaceMarket,
+        req.params.productRef,
+        req.body || {},
+        req.user && req.user.id
+      )
+    );
+  } catch (error) { handleError(error, res, next); }
 });
 
 // La simulation n'écrit rien : viewer et manager peuvent explorer un scénario
