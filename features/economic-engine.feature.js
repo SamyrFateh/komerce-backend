@@ -49,6 +49,7 @@ module.exports = {
       'moteur de pricing et application des regles',
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
+      'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -102,6 +103,7 @@ module.exports = {
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
       'services/pricing-maturity.js',
+      'services/pricing-period-structure.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],
@@ -148,6 +150,7 @@ module.exports = {
       'migrations/159_cost_component_market_overrides.sql',
       'migrations/164_order_item_cost_imputations_split_n2_n3.sql',
       'migrations/165_pricing_maturity_disposition_events.sql',
+      'migrations/166_economic_structure_cost_events.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -170,6 +173,7 @@ module.exports = {
       'tests/unit/cost-allocation-variance.test.js',
       'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/pricing-maturity-disposition-migration.test.js',
+      'tests/unit/economic-structure-cost-events-migration.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
       'tests/unit/finance-annulations.test.js',
@@ -180,6 +184,7 @@ module.exports = {
       'tests/unit/pricing-cdr.test.js',
       'tests/unit/pricing-engine.test.js',
       'tests/unit/pricing-maturity.test.js',
+      'tests/unit/pricing-period-structure.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -242,8 +247,12 @@ module.exports = {
     'docs/doctrine/DOCTRINE_ECONOMIQUE_KOMERCE.md',
     'docs/doctrine/DOCTRINE_LEVIERS_MARGE.md',
     'docs/doctrine/DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md',
+    'docs/doctrine/DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md',
+    'docs/doctrine/DOCTRINE_REFACTURATION_RAILWAY.md',
+    'docs/doctrine/DOCTRINE_MUTUALISATION_HUB.md',
     'docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md',
     'docs/chantier/PRICING_MATURITY_WATERMARK.md',
+    'docs/chantier/PRICING_PERIOD_STRUCTURE_TRUTH.md',
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
@@ -269,6 +278,7 @@ module.exports = {
       'customs_shipment_parcels: R',
       'customs_shipments: R',
       'economic_snapshots: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'economic_structure_cost_events: RW!',
       'economic_variables: R',
       'exchange_rates: RW',
       'fabrics: R',
@@ -460,6 +470,7 @@ module.exports = {
     'aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js',
     'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
     'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
+    'une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
   ],
 
 };
