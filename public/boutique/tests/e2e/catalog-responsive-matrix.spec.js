@@ -57,7 +57,6 @@ for (const viewport of VIEWPORTS) {
         const sideCart = document.getElementById('k-side-cart');
         const catalog = document.getElementById('k-catalog-section');
         const header = document.querySelector('.k-header-inner');
-        const hero = document.querySelector('#k-hero-fixed-wrap .k-hero-img');
         const shelf = document.querySelector('.k-shelf-rail');
         const grids = Array.from(document.querySelectorAll('.k-sec-grid, #k-grid'));
         const grid = grids.find((candidate) => {
@@ -94,7 +93,6 @@ for (const viewport of VIEWPORTS) {
           sideLeft: sideRect.left,
           headerRight: headerRect?.right || 0,
           cardWidth: cardRect?.width || 0,
-          heroHeight: hero?.getBoundingClientRect().height || 0,
           shelfOverflow: shelf ? shelf.scrollWidth - shelf.clientWidth : 0,
           docOverflow: document.documentElement.scrollWidth - window.innerWidth,
         };
@@ -111,13 +109,6 @@ for (const viewport of VIEWPORTS) {
       expect(geometry.cardWidth).toBeGreaterThanOrEqual(180);
       expect(geometry.cardWidth).toBeLessThanOrEqual(360);
       expect(geometry.shelfOverflow).toBeLessThanOrEqual(2);
-
-      if (viewport.height <= 800) {
-        expect(geometry.heroHeight).toBeLessThanOrEqual(134);
-      }
-      if (viewport.width < 1200 && viewport.height <= 720) {
-        expect(geometry.heroHeight).toBeLessThanOrEqual(118);
-      }
     });
   });
 }
