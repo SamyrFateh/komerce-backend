@@ -1,6 +1,6 @@
 # Mobile Money Payment — contrat canonique Komerce
 
-Statut : **Phase 1 — socle provider multi-marché**  
+Statut : **Phase 1 — socle provider multi-marché + checkout boutique câblé**  
 Marchés initiaux : `CM` (Cameroun), `CG` (Congo-Brazzaville)
 
 ## Doctrine
@@ -23,6 +23,20 @@ Cette séparation évite les valeurs pays/opérateur du type `orange_money_cm` e
 | `CG` Congo-Brazzaville | XAF | `mtn_momo` | activable dès credentials Collections MTN |
 
 Les providers restent **fail-closed** : absence de credentials/configuration = moyen de paiement indisponible, jamais fallback silencieux vers cash/Stripe.
+
+## Checkout boutique
+
+Le checkout ne déduit jamais le provider depuis `?market=` ni depuis un contexte de prévisualisation frontend.
+
+1. Le client choisit un point relais actif.
+2. Le backend résout le `market_id` depuis ce `relais_id` : le relais est l'ancre marché autoritative.
+3. `GET /api/payments/mobile-money/availability?relais_id=...` expose uniquement le provider réellement activé et configuré pour ce marché.
+4. La puce Mobile Money reste masquée ou désactivée si le provider n'est pas disponible.
+5. Au Cameroun, le flow Orange Money utilise la redirection provider.
+6. Au Congo-Brazzaville, le flow MTN MoMo collecte le MSISDN puis attend l'approbation sur téléphone.
+7. L'écran **Commande confirmée** n'est affiché qu'après `succeeded` confirmé par la réconciliation serveur. Un état `pending` laisse la commande ouverte et ne devient jamais un faux succès.
+
+Toute modification du relais invalide une tentative Mobile Money en cours côté checkout afin qu'une tentative créée pour un marché ne puisse pas être réutilisée après changement de périmètre.
 
 ## Cycle canonique
 
