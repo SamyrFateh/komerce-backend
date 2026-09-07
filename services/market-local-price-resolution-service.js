@@ -8,7 +8,7 @@
  * @outputs       effective_kmf_price, local_price_metadata, repriced_checkout_total
  * @depends       db.js, utils/currency.js, services/product-sellable-service.js
  * @used-by       routes/products.js, routes/catalog-product-detail.js, services/order-checkout-service.js, services/shared-cart-creation.js, services/market-local-price-activation-service.js
- * @db-read       markets, product_market_price_drafts, product_skus, product_variants
+ * @db-read       markets, products, product_market_price_drafts, product_skus, product_variants
  * @db-write      none
  * @db-txn        participates_in_caller_transaction_when_executor_is_provided
  * @doctrine      only_LOCAL_ACTIVE_is_buyer_effective, market_from_server_context, granular_sku_prices_fail_closed
@@ -120,6 +120,19 @@ async function resolveActiveProductMarketPricing(executor = db, { marketId, prod
   };
 }
 
+async function resolveActiveProductMarketPricingById(executor = db, { marketId, productId }) {
+  if (!marketId || !productId) return null;
+  const { rows: [product] } = await executor.query(
+    `SELECT id, price_kmf, promo_pct, is_promo, promo_until
+       FROM products
+      WHERE id = $1::uuid AND is_active = TRUE
+      LIMIT 1`,
+    [productId]
+  );
+  if (!product) return null;
+  return resolveActiveProductMarketPricing(executor, { marketId, product });
+}
+
 async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId, items, productMap }) {
   let totalKmf = 0;
   const cache = new Map();
@@ -202,12 +215,16 @@ async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode,
     }
     const baseUnitPriceKmf = await projectLocalToKmf(decision.amount, decision.currency);
     const effectiveUnitPriceKmf = applyCanonicalPromotion(baseUnitPriceKmf, product);
+    const promoApplied = effectiveUnitPriceKmf < baseUnitPriceKmf;
     output.push({
       ...product,
       price_kmf: effectiveUnitPriceKmf,
       market_price_source: PRICE_STATUSES.ACTIVE,
       market_price_amount: Number(decision.amount),
       market_price_currency: decision.currency,
+      market_price_base_kmf: baseUnitPriceKmf,
+      market_price_promo_applied: promoApplied,
+      market_price_active_at: decision.active_at || null,
     });
   }
   return output;
@@ -219,6 +236,7 @@ module.exports = {
   assertProductPriceShapeCompatible,
   projectLocalToKmf,
   resolveActiveProductMarketPricing,
+  resolveActiveProductMarketPricingById,
   applyActiveMarketPricesToCheckoutItems,
   applyActiveMarketPricesToCatalogRows,
 };
