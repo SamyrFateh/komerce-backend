@@ -5,14 +5,14 @@
  * @layer         service
  * @criticality   high
  * @inputs        market_id, policy_event, evaluation_time, optional_group_allocation_policies
- * @outputs       append_only_policy_event, current_policy, canonical_market_decision
+ * @outputs       append_only_policy_event, current_policy, canonical_market_decision, flow_break_even_projection
  * @depends       db, services/pricing-market-coverage.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, pricing_market_decision_policy_events
+ * @db-read       markets, pricing_market_decision_policy_events, order_items, parcels
  * @db-write      pricing_market_decision_policy_events
  * @db-txn        append_only_policy_recording
- * @doctrine      pricing_market_viability_policy_is_explicit_versioned_and_market_scoped
- * @impact-areas  economic-engine, pricing, governance, admin-dashboard
+ * @doctrine      pricing_market_viability_policy_is_explicit_versioned_and_market_scoped, pricing_flow_break_even_is_projection_not_cost_truth
+ * @impact-areas  economic-engine, pricing, governance, admin-dashboard, operational-flow
  * @version       2026-09
  */
 
@@ -250,6 +250,139 @@ function dispositionPolicyFrom(policy) {
   };
 }
 
+function roundProjection(value, digits = 6) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const factor = 10 ** digits;
+  return Math.round(number * factor) / factor;
+}
+
+function positiveAverage(totalContribution, unitCount) {
+  const total = Number(totalContribution);
+  const count = Number(unitCount);
+  if (!Number.isFinite(total) || !Number.isFinite(count) || count <= 0) return null;
+  return roundProjection(total / count, 2);
+}
+
+function projectEquivalentUnits(gapKmf, contributionPerUnitKmf) {
+  const gap = Number(gapKmf);
+  const productivity = Number(contributionPerUnitKmf);
+  if (!Number.isFinite(gap) || gap < 0) return null;
+  if (gap === 0) return 0;
+  if (!Number.isFinite(productivity) || productivity <= 0) return null;
+  return Math.ceil(gap / productivity);
+}
+
+function buildBreakEvenTarget(targetCoverageRatio, n3Kmf, contributionKmf, productivity) {
+  const target = Number(targetCoverageRatio);
+  const n3 = Number(n3Kmf);
+  const contribution = Number(contributionKmf);
+  if (!(target > 0) || !(n3 > 0) || !Number.isFinite(contribution)) return null;
+
+  const targetContribution = roundProjection(n3 * target, 2);
+  const gap = roundProjection(Math.max(0, targetContribution - contribution), 2);
+  const reached = gap === 0;
+  const currentMixConverges = reached || Number(productivity.contribution_per_order_kmf) > 0;
+
+  return {
+    target_coverage_ratio: roundProjection(target),
+    target_contribution_kmf: targetContribution,
+    gap_kmf: gap,
+    status: reached
+      ? 'TARGET_REACHED'
+      : (currentMixConverges ? 'CURRENT_MIX_PROJECTABLE' : 'CURRENT_MIX_NOT_PROJECTABLE'),
+    additional_equivalent_orders: projectEquivalentUnits(gap, productivity.contribution_per_order_kmf),
+    additional_equivalent_articles: projectEquivalentUnits(gap, productivity.contribution_per_article_kmf),
+    additional_equivalent_parcels: projectEquivalentUnits(gap, productivity.contribution_per_parcel_kmf),
+  };
+}
+
+async function loadObservedFlowShape(matureOrderIds) {
+  if (!Array.isArray(matureOrderIds) || !matureOrderIds.length) {
+    return { article_units: 0, parcel_count: 0 };
+  }
+
+  const { rows } = await db.query(`
+    WITH scoped_orders AS (
+      SELECT unnest($1::uuid[]) AS order_id
+    ),
+    item_shape AS (
+      SELECT COALESCE(SUM(GREATEST(COALESCE(oi.quantity, 1), 0)), 0)::numeric AS article_units
+        FROM order_items oi
+        JOIN scoped_orders so ON so.order_id = oi.order_id
+    ),
+    parcel_shape AS (
+      SELECT COUNT(DISTINCT p.id)::int AS parcel_count
+        FROM parcels p
+        JOIN scoped_orders so ON so.order_id = p.order_id
+    )
+    SELECT item_shape.article_units, parcel_shape.parcel_count
+      FROM item_shape
+      CROSS JOIN parcel_shape
+  `, [matureOrderIds]);
+
+  const row = rows[0] || {};
+  return {
+    article_units: Number(row.article_units) || 0,
+    parcel_count: Number(row.parcel_count) || 0,
+  };
+}
+
+async function computeFlowBreakEvenProjection(coverage, policy) {
+  const base = {
+    status: 'NOT_DECISIONAL',
+    reason: 'COVERAGE_TRUTH_NOT_DECISIONAL',
+    basis: 'CURRENT_RECONCILED_MIX',
+    economic_break_even: null,
+    policy_safety_target: null,
+  };
+
+  if (!coverage || !['COVERED', 'UNCOVERED'].includes(coverage.coverage_status)) return base;
+
+  const n3 = Number(coverage.denominator_n3_kmf);
+  const contribution = Number(coverage.numerator_contribution_kmf);
+  if (!(n3 > 0) || !Number.isFinite(contribution)) {
+    return { ...base, reason: 'BREAK_EVEN_INPUTS_UNAVAILABLE' };
+  }
+
+  const matureOrderIds = Array.isArray(coverage.mature_order_ids) ? coverage.mature_order_ids : [];
+  const shape = await loadObservedFlowShape(matureOrderIds);
+  const matureOrders = Number(coverage.contribution?.mature_order_count) || matureOrderIds.length;
+  const articles = shape.article_units;
+  const parcels = shape.parcel_count;
+
+  const productivity = {
+    contribution_per_order_kmf: positiveAverage(contribution, matureOrders),
+    contribution_per_article_kmf: positiveAverage(contribution, articles),
+    contribution_per_parcel_kmf: positiveAverage(contribution, parcels),
+  };
+
+  const observedMix = {
+    mature_orders: matureOrders,
+    article_units: articles,
+    parcels,
+    articles_per_order: matureOrders > 0 ? roundProjection(articles / matureOrders, 3) : null,
+    articles_per_parcel: parcels > 0 ? roundProjection(articles / parcels, 3) : null,
+    reconciled_contribution_kmf: roundProjection(contribution, 2),
+    ...productivity,
+  };
+
+  return {
+    status: 'READY',
+    reason: 'CURRENT_RECONCILED_MIX_PROJECTED',
+    basis: 'CURRENT_RECONCILED_MIX',
+    observed_mix: observedMix,
+    economic_break_even: buildBreakEvenTarget(1, n3, contribution, productivity),
+    policy_safety_target: buildBreakEvenTarget(policy?.coverage_threshold, n3, contribution, productivity),
+    assumptions: {
+      structure_constant_within_projection: true,
+      current_mix_constant: true,
+      unmodelled_capacity_step_excluded: true,
+    },
+    interpretation: 'Equivalent operational units at the currently observed reconciled mix; not a sales forecast.',
+  };
+}
+
 async function evaluateMarketDecision(marketId, options = {}) {
   if (!marketId) throw new Error('marketId is required');
   const evaluationAt = parseInstant(options.at || new Date(), 'evaluation_at');
@@ -264,6 +397,7 @@ async function evaluateMarketDecision(marketId, options = {}) {
       policy: null,
       canonical_period: null,
       coverage: null,
+      flow_break_even: null,
       evaluated_at: evaluationAt.toISOString(),
     };
   }
@@ -278,6 +412,21 @@ async function evaluateMarketDecision(marketId, options = {}) {
     allocationPolicies: options.allocationPolicies == null ? null : options.allocationPolicies,
   });
 
+  let flowBreakEven;
+  try {
+    flowBreakEven = await computeFlowBreakEvenProjection(coverage, policy);
+  } catch (_) {
+    // La projection de flux est explicative : une panne de lecture de forme du
+    // flux ne doit jamais modifier l'autorisation canonique issue du gate.
+    flowBreakEven = {
+      status: 'NOT_AVAILABLE',
+      reason: 'FLOW_SHAPE_READ_FAILED',
+      basis: 'CURRENT_RECONCILED_MIX',
+      economic_break_even: null,
+      policy_safety_target: null,
+    };
+  }
+
   return {
     market_id: marketId,
     decision_status: coverage.coverage_status,
@@ -286,6 +435,7 @@ async function evaluateMarketDecision(marketId, options = {}) {
     policy,
     canonical_period: period,
     coverage,
+    flow_break_even: flowBreakEven,
     evaluated_at: evaluationAt.toISOString(),
   };
 }
@@ -300,4 +450,9 @@ module.exports = {
   coveragePolicyFrom,
   dispositionPolicyFrom,
   evaluateMarketDecision,
+  _positiveAverage: positiveAverage,
+  _projectEquivalentUnits: projectEquivalentUnits,
+  _buildBreakEvenTarget: buildBreakEvenTarget,
+  _loadObservedFlowShape: loadObservedFlowShape,
+  _computeFlowBreakEvenProjection: computeFlowBreakEvenProjection,
 };
