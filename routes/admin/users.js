@@ -51,6 +51,14 @@ const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin', 'market_operator'];
+const PASSWORD_HASH_ROUNDS = 12;
+
+function validatePasswordPolicy(password) {
+  if (typeof password !== 'string' || password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'Le mot de passe doit contenir au moins 8 caractères, 1 majuscule et 1 chiffre';
+  }
+  return null;
+}
 
 class ProvisioningError extends Error {
   constructor(status, code, message) {
@@ -179,6 +187,10 @@ router.post('/users', ...guard, async (req, res, next) => {
     const { full_name, email, phone, password, role = 'client', currency_pref = 'KMF' } = req.body;
     if (!full_name || !email || !password) return res.status(400).json({ error: 'full_name, email et password sont obligatoires' });
     if (!VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
+    const passwordPolicyError = validatePasswordPolicy(password);
+    if (passwordPolicyError) {
+      return res.status(400).json({ error: passwordPolicyError, code: 'WEAK_PASSWORD' });
+    }
 
     const marketScope = parseMarketScope(req.body);
     if (role === 'market_operator' && !marketScope) {
@@ -197,7 +209,7 @@ router.post('/users', ...guard, async (req, res, next) => {
     const normalizedEmail = email.toLowerCase().trim();
     const { rows: existing } = await db.query('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
     if (existing.length) return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà' });
-    const password_hash = await bcrypt.hash(password, 10);
+    const password_hash = await bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
 
     let user;
     let createdScope = null;
@@ -378,18 +390,10 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
     const { id } = req.params;
     const { password, current_password } = req.body;
 
-    if (!password || password.length < 8) {
-      return res.status(400).json({
-        error: 'Le mot de passe doit contenir au moins 8 caractères',
-        code: 'WEAK_PASSWORD',
-      });
-    }
-    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      return res.status(400).json({
-        error: 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre',
-        code: 'WEAK_PASSWORD',
-      });
-    }
+    const passwordPolicyError = validatePasswordPolicy(password);
+  if (passwordPolicyError) {
+    return res.status(400).json({ error: passwordPolicyError, code: 'WEAK_PASSWORD' });
+  }
 
     const { rows: [existing] } = await db.query(
       'SELECT id, full_name, email, password_hash FROM users WHERE id = $1::uuid',
@@ -422,7 +426,7 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
       });
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
+    const password_hash = await bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
     await setUserPasswordHash(db, {
       userId: id,
       passwordHash: password_hash,
