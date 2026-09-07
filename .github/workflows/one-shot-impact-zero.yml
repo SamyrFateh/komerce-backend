@@ -35,6 +35,9 @@ jobs:
       - name: Apply permanent refactors
         run: node scripts/one-shot-impact-zero.js
 
+      - name: Align parcel relay assertion
+        run: node scripts/fix-parcels-test-one-shot.js
+
       - name: Targeted backend proofs
         run: >-
           npx jest
