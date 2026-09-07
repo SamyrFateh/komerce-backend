@@ -17,6 +17,29 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[projection-refresh]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,6 +89,7 @@ jobs:
 
       - name: Regenerate canonical projections
         run: |
+          node scripts/gen-route-registry.js
           npm run contract:generate
           npm run security:360
           node scripts/contract-check.js
@@ -75,7 +99,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md docs/SECURITY_360.json docs/SECURITY_360.md
+          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json docs/contract/DEBT.md docs/SECURITY_360.json docs/SECURITY_360.md
           if git diff --cached --quiet; then
             echo "No projection change to commit."
             exit 0
