@@ -6,11 +6,11 @@
  * @criticality   critical
  * @inputs        server_resolved_market, product_ref, actor_id
  * @outputs       activation_preview, authorized_and_active_local_price
- * @depends       db.js, services/market-commercial-price-service.js, services/market-local-price-resolution-service.js, services/pricing-engine.js, services/pricing-cdr.js, services/pricing-market-decision-policy.js
+ * @depends       services/market-commercial-price-service.js, services/market-local-price-resolution-service.js, services/market-local-price-state-transition.js, services/pricing-engine.js, services/pricing-cdr.js, services/pricing-market-decision-policy.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       product_market_price_drafts, product_skus, product_variants
  * @db-write      none
- * @db-txn        writes_delegated_to_market_commercial_price_owner
+ * @db-txn        writes_delegated_to_market_autonomy_state_owners
  * @doctrine      local_human_decides_system_checks_no_central_approval, under_cdr_requires_market_coverage, destructive_price_never_activates
  * @impact-areas  market, pricing, catalog, checkout, shared-cart
  * @version       2026-09
@@ -22,6 +22,7 @@ const pricingEngine = require('./pricing-engine');
 const pricingCdr = require('./pricing-cdr');
 const pricingMarketDecisionPolicy = require('./pricing-market-decision-policy');
 const marketCommercialPrice = require('./market-commercial-price-service');
+const { activateMarketPriceDecision } = require('./market-local-price-state-transition');
 const {
   assertProductPriceShapeCompatible,
   projectLocalToKmf,
@@ -55,7 +56,12 @@ function activationVerdict(pricing, marketEvaluation) {
       };
     }
   }
-  return { allowed: true, reason: pricing.strategy_risk === 'covered' ? 'PRICE_COVERS_CDR' : 'MARKET_GATE_AUTHORIZES_UNDER_CDR_POSITION' };
+  return {
+    allowed: true,
+    reason: pricing.strategy_risk === 'covered'
+      ? 'PRICE_COVERS_CDR'
+      : 'MARKET_GATE_AUTHORIZES_UNDER_CDR_POSITION',
+  };
 }
 
 async function previewLocalPriceActivation({ market, productRef, at = new Date() }) {
@@ -108,7 +114,11 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
 
 async function activateLocalPrice({ market, productRef, actorId, reason, source = 'market_manager_activation' }) {
   if (!actorId) {
-    throw new marketCommercialPrice.MarketCommercialPriceError(400, 'market_price_actor_required', 'Acteur requis pour l’activation.');
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      400,
+      'market_price_actor_required',
+      'Acteur requis pour l’activation.'
+    );
   }
 
   const preview = await previewLocalPriceActivation({ market, productRef });
@@ -141,7 +151,7 @@ async function activateLocalPrice({ market, productRef, actorId, reason, source 
     );
   }
 
-  const decision = await marketCommercialPrice.activateMarketPriceDecision({
+  const decision = await activateMarketPriceDecision({
     market,
     productRef,
     activationSnapshot: preview.authorization_snapshot,
@@ -150,7 +160,7 @@ async function activateLocalPrice({ market, productRef, actorId, reason, source 
     actorId,
   });
 
-  return { preview, decision, already_active: false };
+  return { preview, decision, already_active: Boolean(decision.already_active) };
 }
 
 module.exports = {
