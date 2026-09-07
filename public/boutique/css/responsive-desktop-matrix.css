@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        viewport_width, viewport_height, side_cart_state
  * @outputs       desktop_density, catalog_columns, side_cart_reserve, vertical_compaction
- * @depends       layout.css, products.css, boutique-desktop.css, category-cutout-navigation-desktop.css, hero.css
+ * @depends       layout.css, products.css, boutique-desktop.css, category-cutout-navigation-desktop.css
  * @used-by       public/boutique/index.html
  * @doctrine      responsive_by_available_css_viewport_not_physical_inches
- * @impact-areas  desktop, laptop, tablet-landscape, catalog-grid, side-cart, hero, category-shelf
+ * @impact-areas  desktop, laptop, tablet-landscape, catalog-grid, side-cart, category-shelf
  * @version       2026-09
  *
  * Adaptation tardive du bundle desktop. Les owners principaux restent les
@@ -98,14 +98,11 @@
 }
 
 /* ── ÉCRANS BAS : desktop/laptop ≤800px de haut ────────────────
- * 1366×768, 1280×720 et leurs équivalents zoomés : le premier écran doit
- * montrer la navigation ET commencer le catalogue sans sacrifier le hero.
+ * 1366×768, 1280×720 et leurs équivalents zoomés : on compacte la
+ * navigation verticale sans forcer la géométrie du hero, qui reste possédée
+ * par son owner canonique.
  */
 @media (min-width: 900px) and (max-height: 800px) {
-  #k-hero-fixed-wrap .k-hero-img {
-    height: 132px !important;
-  }
-
   html.k-home-premium-v1 .k-shelf-rail,
   .k-shelf-rail {
     padding-top: 3px;
@@ -127,10 +124,6 @@
 
 /* Cas le plus contraint : petit desktop ET faible hauteur. */
 @media (min-width: 900px) and (max-width: 1199px) and (max-height: 720px) {
-  #k-hero-fixed-wrap .k-hero-img {
-    height: 116px !important;
-  }
-
   html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout:hover,
   .k-shelf-rail .k-cat-cutout:active,
