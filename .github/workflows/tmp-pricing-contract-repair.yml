@@ -47,6 +47,7 @@ jobs:
       - name: Regenerate and prove zero contract debt
         run: |
           node scripts/contract-generate.js
+          node scripts/contract-debt-sync.js --write
           node scripts/contract-check.js
           npm run security:360:check
 
