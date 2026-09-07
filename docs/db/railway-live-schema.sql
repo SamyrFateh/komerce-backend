@@ -502,6 +502,19 @@ $$;
 
 
 --
+-- Name: prevent_pricing_market_decision_policy_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_pricing_market_decision_policy_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'pricing_market_decision_policy_events is append-only; record a new policy event instead';
+END;
+$$;
+
+
+--
 -- Name: prevent_scan_event_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3757,6 +3770,60 @@ CREATE TABLE public.pricing_global_access_grants (
 
 
 --
+-- Name: pricing_market_decision_policy_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_market_decision_policy_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    version text NOT NULL,
+    window_days integer NOT NULL,
+    maturity_threshold numeric(7,6) CONSTRAINT pricing_market_decision_policy_even_maturity_threshold_not_null NOT NULL,
+    coverage_threshold numeric(12,6) CONSTRAINT pricing_market_decision_policy_even_coverage_threshold_not_null NOT NULL,
+    max_disposition_ratio numeric(7,6) CONSTRAINT pricing_market_decision_policy_e_max_disposition_ratio_not_null NOT NULL,
+    disposed_contribution_treatment text DEFAULT 'EXCLUDE_FROM_NUMERATOR'::text CONSTRAINT pricing_market_decision_pol_disposed_contribution_trea_not_null NOT NULL,
+    effective_from timestamp with time zone NOT NULL,
+    effective_to timestamp with time zone,
+    source text NOT NULL,
+    evidence_ref text NOT NULL,
+    rationale text NOT NULL,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pricing_market_decision_poli_disposed_contribution_treatm_check CHECK ((disposed_contribution_treatment = 'EXCLUDE_FROM_NUMERATOR'::text)),
+    CONSTRAINT pricing_market_decision_policy_even_max_disposition_ratio_check CHECK (((max_disposition_ratio >= (0)::numeric) AND (max_disposition_ratio <= (1)::numeric))),
+    CONSTRAINT pricing_market_decision_policy_events_coverage_threshold_check CHECK ((coverage_threshold > (0)::numeric)),
+    CONSTRAINT pricing_market_decision_policy_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT pricing_market_decision_policy_events_maturity_threshold_check CHECK (((maturity_threshold >= (0)::numeric) AND (maturity_threshold <= (1)::numeric))),
+    CONSTRAINT pricing_market_decision_policy_events_rationale_check CHECK (((char_length(btrim(rationale)) >= 10) AND (char_length(btrim(rationale)) <= 2000))),
+    CONSTRAINT pricing_market_decision_policy_events_source_check CHECK (((char_length(btrim(source)) >= 3) AND (char_length(btrim(source)) <= 500))),
+    CONSTRAINT pricing_market_decision_policy_events_version_check CHECK (((char_length(btrim(version)) >= 1) AND (char_length(btrim(version)) <= 100))),
+    CONSTRAINT pricing_market_decision_policy_events_window_days_check CHECK ((window_days > 0)),
+    CONSTRAINT pricing_market_decision_policy_period_check CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+);
+
+
+--
+-- Name: TABLE pricing_market_decision_policy_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.pricing_market_decision_policy_events IS 'Politique append-only du gate économique par marché : fenêtre mécanique, seuil de maturité, seuil de couverture et plafond de dispositions. Aucune valeur implicite.';
+
+
+--
+-- Name: COLUMN pricing_market_decision_policy_events.window_days; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_market_decision_policy_events.window_days IS 'Largeur mécanique de la fenêtre canonique ; les dates du gate sont dérivées côté serveur et ne sont jamais choisies ad hoc par le navigateur.';
+
+
+--
+-- Name: COLUMN pricing_market_decision_policy_events.coverage_threshold; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_market_decision_policy_events.coverage_threshold IS 'Seuil explicite de market_coverage_ratio autorisant une nouvelle position sous CDR ; toute modification est un nouvel événement auditable.';
+
+
+--
 -- Name: pricing_matrices_audit; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6872,6 +6939,30 @@ ALTER TABLE ONLY public.pricing_global_access_grants
 
 
 --
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_start_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_start_unique UNIQUE (market_id, effective_from);
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_version_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_version_unique UNIQUE (market_id, version);
+
+
+--
 -- Name: pricing_matrices_audit pricing_matrices_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8869,6 +8960,13 @@ CREATE INDEX idx_pricing_global_access_active ON public.pricing_global_access_gr
 
 
 --
+-- Name: idx_pricing_market_decision_policy_current; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_market_decision_policy_current ON public.pricing_market_decision_policy_events USING btree (market_id, effective_from DESC, recorded_at DESC, id DESC);
+
+
+--
 -- Name: idx_pricing_maturity_disposition_market_time; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10028,6 +10126,13 @@ CREATE TRIGGER trg_prevent_economic_structure_cost_event_mutation BEFORE DELETE 
 --
 
 CREATE TRIGGER trg_prevent_incident_delete BEFORE DELETE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.prevent_incident_delete();
+
+
+--
+-- Name: pricing_market_decision_policy_events trg_prevent_pricing_market_decision_policy_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_pricing_market_decision_policy_mutation BEFORE DELETE OR UPDATE ON public.pricing_market_decision_policy_events FOR EACH ROW EXECUTE FUNCTION public.prevent_pricing_market_decision_policy_mutation();
 
 
 --
@@ -11222,6 +11327,22 @@ ALTER TABLE ONLY public.pricing_global_access_grants
 
 ALTER TABLE ONLY public.pricing_global_access_grants
     ADD CONSTRAINT pricing_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --

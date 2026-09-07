@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 507,
-    "filesWithFullHeaders": 462,
+    "scannedCodeFiles": 508,
+    "filesWithFullHeaders": 463,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 507,
+    "filesWithAnyHeaders": 508,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1127,
-    "edges": 5856,
-    "dbTables": 131,
-    "doctrines": 315,
+    "graphNodes": 1131,
+    "edges": 5869,
+    "dbTables": 132,
+    "doctrines": 317,
     "impactAreas": 174,
-    "unresolvedCodeEdges": 574,
+    "unresolvedCodeEdges": 575,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 63
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 53,
+    "economic-engine": 54,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -102,7 +102,7 @@
     "schema": 1,
     "route": 114,
     "entrypoint": 1,
-    "service": 221,
+    "service": 222,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,7 +113,7 @@
   "byCriticality": {
     "critical": 70,
     "medium": 123,
-    "high": 261,
+    "high": 262,
     "low": 53
   },
   "nodes": [
@@ -6290,11 +6290,13 @@
         "authenticated_pricing_operator",
         "resolved_market_code",
         "business_refs",
-        "pricing_payload"
+        "pricing_payload",
+        "governed_market_decision_policy"
       ],
       "outputs": [
         "canonical_pricing_projection",
         "market_cost_projection",
+        "market_decision_projection",
         "action_results"
       ],
       "depends": [
@@ -6302,7 +6304,8 @@
         "middleware/auth.js",
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
-        "services/pricing-workspace.js"
+        "services/pricing-workspace.js",
+        "services/pricing-market-decision-policy.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -6319,7 +6322,8 @@
         "global_pricing_authority_or_server_market_scope",
         "viewer_reads_manager_writes",
         "browser_business_refs_only",
-        "simulation_is_read_only"
+        "simulation_is_read_only",
+        "market_decision_policy_is_append_only"
       ],
       "impactAreas": [
         "pricing",
@@ -18143,6 +18147,57 @@
       "version": "2026-09"
     },
     {
+      "id": "services/pricing-market-decision-policy.js",
+      "file": "services/pricing-market-decision-policy.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-market-decision-policy",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "policy_event",
+        "evaluation_time",
+        "optional_group_allocation_policies"
+      ],
+      "outputs": [
+        "append_only_policy_event",
+        "current_policy",
+        "canonical_market_decision"
+      ],
+      "depends": [
+        "db",
+        "services/pricing-market-coverage.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWrite": [
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "append_only_policy_recording"
+      ],
+      "doctrine": [
+        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/pricing-maturity.js",
       "file": "services/pricing-maturity.js",
       "type": "file",
@@ -24423,6 +24478,11 @@
       "table": "pricing_benchmarks"
     },
     {
+      "id": "db:pricing_market_decision_policy_events",
+      "type": "db-table",
+      "table": "pricing_market_decision_policy_events"
+    },
+    {
       "id": "db:pricing_maturity_disposition_events",
       "type": "db-table",
       "table": "pricing_maturity_disposition_events"
@@ -25188,6 +25248,11 @@
       "doctrine": "simulation_is_read_only"
     },
     {
+      "id": "doctrine:market_decision_policy_is_append_only",
+      "type": "doctrine",
+      "doctrine": "market_decision_policy_is_append_only"
+    },
+    {
       "id": "doctrine:product_ref_is_business_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_business_identity"
@@ -25796,6 +25861,11 @@
       "id": "doctrine:pricing_market_viability_coverage",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_coverage"
+    },
+    {
+      "id": "doctrine:pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
     },
     {
       "id": "doctrine:pricing_market_viability_maturity_watermark",
@@ -35659,6 +35729,12 @@
       "label": "services/pricing-workspace.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-decision-policy.js",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-pricing-workspace.js",
       "type": "uses",
@@ -35705,6 +35781,12 @@
       "to": "doctrine:simulation_is_read_only",
       "type": "doctrine",
       "label": "simulation_is_read_only"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:market_decision_policy_is_append_only",
+      "type": "doctrine",
+      "label": "market_decision_policy_is_append_only"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -53637,6 +53719,72 @@
       "label": "governance"
     },
     {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "services/pricing-market-coverage.js",
+      "type": "depends",
+      "label": "services/pricing-market-coverage.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-decision-policy.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db:pricing_market_decision_policy_events",
+      "type": "db-read",
+      "label": "pricing_market_decision_policy_events"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db:pricing_market_decision_policy_events",
+      "type": "db-write",
+      "label": "pricing_market_decision_policy_events"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "doctrine:pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
+      "type": "doctrine",
+      "label": "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/pricing-maturity.js",
       "to": "db",
       "type": "depends",
@@ -68643,7 +68791,8 @@
         "middleware/auth.js",
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
-        "services/pricing-workspace.js"
+        "services/pricing-workspace.js",
+        "services/pricing-market-decision-policy.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -68660,7 +68809,8 @@
         "global_pricing_authority_or_server_market_scope",
         "viewer_reads_manager_writes",
         "browser_business_refs_only",
-        "simulation_is_read_only"
+        "simulation_is_read_only",
+        "market_decision_policy_is_append_only"
       ],
       "impactAreas": [
         "pricing",
@@ -68675,6 +68825,7 @@
         "db:pricing_global_access_grants",
         "doctrine:browser_business_refs_only",
         "doctrine:global_pricing_authority_or_server_market_scope",
+        "doctrine:market_decision_policy_is_append_only",
         "doctrine:simulation_is_read_only",
         "doctrine:viewer_reads_manager_writes",
         "impact:admin-dashboard",
@@ -68685,6 +68836,7 @@
         "middleware/require-market-scope.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
+        "services/pricing-market-decision-policy.js",
         "services/pricing-workspace.js"
       ]
     },
@@ -80212,9 +80364,54 @@
         "impact:governance",
         "impact:pricing",
         "services/cost-allocation/cost-types.js",
+        "services/pricing-market-decision-policy.js",
         "services/pricing-maturity.js",
         "services/pricing-period-structure.js",
         "services/pricing-risk-period.js"
+      ]
+    },
+    "services/pricing-market-decision-policy.js": {
+      "role": "economic-engine-pricing-market-decision-policy",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/pricing-market-coverage.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWrite": [
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_policy_is_explicit_versioned_and_market_scoped"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:pricing_market_decision_policy_events",
+        "doctrine:pricing_market_viability_policy_is_explicit_versioned_and_market_scoped",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "services/pricing-market-coverage.js"
       ]
     },
     "services/pricing-maturity.js": {
@@ -89178,6 +89375,12 @@
       "to": "services/pricing-market-coverage.js",
       "type": "uses",
       "label": "pricing workspace"
+    },
+    {
+      "from": "services/pricing-market-decision-policy.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/pricing-maturity.js",
