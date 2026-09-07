@@ -4,14 +4,14 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        resolved_market, product_ref, local_price_amount, rationale, actor_id
+ * @inputs        resolved_market, product_ref, local_price_amount, rationale, optional_duration_days, actor_id
  * @outputs       effective_market_price_overlay, audited_market_price_decision
- * @depends       db.js, services/pricing-engine.js, utils/currency.js
- * @used-by       services/pricing-workspace.js
- * @db-read       products, product_market_price_decisions, markets, currency_parities
+ * @depends       db.js, services/pricing-engine.js, services/pricing-market-decision-policy.js, utils/currency.js
+ * @used-by       routes/admin-pricing-workspace.js
+ * @db-read       products, product_market_price_decisions, markets, currency_parities, pricing_market_decision_policy_events
  * @db-write      product_market_price_decisions
  * @db-txn        replace_active_decision_atomically
- * @doctrine      single_master_catalog_market_price_is_overlay, server_market_currency_is_authority, economic_floor_before_market_decision
+ * @doctrine      single_master_catalog_market_price_is_overlay, server_market_currency_is_authority, economic_floor_before_market_decision, under_cdr_requires_market_coverage_authorization
  * @impact-areas  pricing, economic-engine, catalog-projection, market-authorization
  * @version       2026-09
  */
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
+const marketDecisionPolicy = require('./pricing-market-decision-policy');
 const currencyBoundary = require('../utils/currency');
 
 class MarketPriceDecisionError extends Error {
@@ -51,6 +52,15 @@ function normalizeRationale(value) {
   return text;
 }
 
+function normalizeDurationDays(value) {
+  if (value == null || value === '') return null;
+  const days = Number(value);
+  if (!Number.isInteger(days) || days <= 0) {
+    throw new MarketPriceDecisionError(400, 'duration_days doit être un entier positif', 'pricing_market_price_duration_invalid');
+  }
+  return days;
+}
+
 function roundKmf(value) {
   return Math.round(Number(value) * 100) / 100;
 }
@@ -71,6 +81,13 @@ function projectDecisionRow(row, market) {
       cdr_complete_kmf: Number(row.cdr_complete_kmf),
       pricing_zone: row.pricing_zone,
       rationale: row.rationale,
+      decision_policy_version: row.decision_policy_version || null,
+      coverage_status: row.coverage_status || null,
+      coverage_authorization: row.coverage_authorization || null,
+      coverage_ratio: row.coverage_ratio == null ? null : Number(row.coverage_ratio),
+      coverage_evaluated_at: row.coverage_evaluated_at || null,
+      decision_duration_days: row.decision_duration_days == null ? null : Number(row.decision_duration_days),
+      effective_until: row.effective_until || null,
       decided_at: row.decided_at,
     },
     inherited_global: row.price_amount == null,
@@ -99,12 +116,16 @@ async function listEffectivePrices(market, q = db) {
   const { rows } = await q.query(
     `SELECT p.product_ref, p.name, p.category, p.price_kmf AS global_price_kmf,
             d.price_amount, d.currency, d.price_kmf, d.variable_cost_kmf,
-            d.cdr_complete_kmf, d.pricing_zone, d.rationale, d.decided_at
+            d.cdr_complete_kmf, d.pricing_zone, d.rationale,
+            d.decision_policy_version, d.coverage_status, d.coverage_authorization,
+            d.coverage_ratio, d.coverage_evaluated_at, d.decision_duration_days,
+            d.effective_until, d.decided_at
        FROM products p
        LEFT JOIN product_market_price_decisions d
          ON d.product_id = p.id
         AND d.market_id = $1
         AND d.revoked_at IS NULL
+        AND (d.effective_until IS NULL OR d.effective_until > NOW())
       WHERE p.is_active = TRUE
       ORDER BY d.decided_at DESC NULLS LAST, p.updated_at DESC NULLS LAST, p.name
       LIMIT 250`,
@@ -113,8 +134,9 @@ async function listEffectivePrices(market, q = db) {
   return rows.map(row => projectDecisionRow(row, market));
 }
 
-async function evaluateDecision(market, product, priceAmount) {
+async function evaluateDecision(market, product, priceAmount, options = {}) {
   const localAmount = finitePositive(priceAmount, 'price_amount');
+  const durationDays = normalizeDurationDays(options.durationDays);
   const projectedKmf = await currencyBoundary.projectAmount(localAmount, market.currency, 'KMF');
   const priceKmf = roundKmf(projectedKmf);
   const config = await pricingEngine.loadGlobalConfig({ marketId: market.id });
@@ -145,32 +167,100 @@ async function evaluateDecision(market, product, priceAmount) {
       { attempted_price_kmf: priceKmf, variable_cost_kmf: variableCost, cdr_complete_kmf: cdrComplete }
     );
   }
-  if (priceKmf < cdrComplete) {
-    throw new MarketPriceDecisionError(
-      409,
-      'Prix contributif mais sous CDR : le gate de couverture marché doit être décisionnel avant ouverture de cette position',
-      'pricing_market_price_under_cdr_not_authorized',
-      { attempted_price_kmf: priceKmf, variable_cost_kmf: variableCost, cdr_complete_kmf: cdrComplete }
-    );
-  }
 
-  return {
+  const base = {
     price_amount: currencyBoundary.roundToMinorUnit(localAmount, Number(market.minor_unit) || 0),
     currency: market.currency,
     price_kmf: priceKmf,
     variable_cost_kmf: roundKmf(variableCost),
     cdr_complete_kmf: roundKmf(cdrComplete),
-    pricing_zone: 'at_or_above_cdr',
+    decision_policy_version: null,
+    coverage_status: null,
+    coverage_authorization: null,
+    coverage_ratio: null,
+    coverage_evaluated_at: null,
+    coverage_period_from: null,
+    coverage_period_to: null,
+    decision_duration_days: null,
+    effective_until: null,
+  };
+
+  if (priceKmf >= cdrComplete) {
+    return { ...base, pricing_zone: 'at_or_above_cdr' };
+  }
+
+  if (!durationDays) {
+    throw new MarketPriceDecisionError(
+      400,
+      'Une durée en jours est requise pour une décision contributive sous CDR',
+      'pricing_market_price_under_cdr_duration_required'
+    );
+  }
+
+  const decision = await marketDecisionPolicy.evaluateMarketDecision(market.id);
+  if (decision.authorization !== 'ALLOW_NEW_UNDER_CDR_POSITION') {
+    throw new MarketPriceDecisionError(
+      409,
+      'Prix contributif sous CDR refusé par le gate de couverture du marché',
+      'pricing_market_price_under_cdr_not_authorized',
+      {
+        attempted_price_kmf: priceKmf,
+        variable_cost_kmf: variableCost,
+        cdr_complete_kmf: cdrComplete,
+        decision_status: decision.decision_status,
+        authorization: decision.authorization,
+        reason: decision.reason,
+      }
+    );
+  }
+
+  const evaluatedAt = new Date(decision.evaluated_at);
+  const effectiveUntil = new Date(evaluatedAt.getTime() + (durationDays * 86400000));
+  return {
+    ...base,
+    pricing_zone: 'under_cdr_contributive',
+    decision_policy_version: decision.policy && decision.policy.version,
+    coverage_status: decision.decision_status,
+    coverage_authorization: decision.authorization,
+    coverage_ratio: decision.coverage && decision.coverage.coverage_ratio == null
+      ? null
+      : Number(decision.coverage.coverage_ratio),
+    coverage_evaluated_at: decision.evaluated_at,
+    coverage_period_from: decision.canonical_period && decision.canonical_period.from,
+    coverage_period_to: decision.canonical_period && decision.canonical_period.to,
+    decision_duration_days: durationDays,
+    effective_until: effectiveUntil.toISOString(),
   };
 }
 
-async function decidePrice({ market, productRef, priceAmount, rationale, actorId = null }) {
+function publicSavedPrice(row, market) {
+  return {
+    amount: Number(row.price_amount),
+    currency: row.currency,
+    minor_unit: Number(market.minor_unit) || 0,
+    price_kmf_snapshot: Number(row.price_kmf),
+    variable_cost_kmf: Number(row.variable_cost_kmf),
+    cdr_complete_kmf: Number(row.cdr_complete_kmf),
+    pricing_zone: row.pricing_zone,
+    rationale: row.rationale,
+    decision_policy_version: row.decision_policy_version || null,
+    coverage_status: row.coverage_status || null,
+    coverage_authorization: row.coverage_authorization || null,
+    coverage_ratio: row.coverage_ratio == null ? null : Number(row.coverage_ratio),
+    coverage_evaluated_at: row.coverage_evaluated_at || null,
+    decision_duration_days: row.decision_duration_days == null ? null : Number(row.decision_duration_days),
+    effective_until: row.effective_until || null,
+    decided_at: row.decided_at,
+  };
+}
+
+async function decidePrice({ market, productRef, priceAmount, rationale, durationDays = null, actorId = null }) {
   if (!market || !market.id || !market.code || !market.currency) {
     throw new MarketPriceDecisionError(400, 'Marché pricing résolu requis', 'pricing_market_required');
   }
   const product = await resolveProduct(productRef);
   const reason = normalizeRationale(rationale);
-  const evaluated = await evaluateDecision(market, product, priceAmount);
+  const evaluated = await evaluateDecision(market, product, priceAmount, { durationDays });
 
   const client = await db.getClient();
   try {
@@ -183,11 +273,14 @@ async function decidePrice({ market, productRef, priceAmount, rationale, actorId
     );
     const current = currentRows[0] || null;
     const unchanged = current
+      && (current.effective_until == null || new Date(current.effective_until) > new Date())
       && Number(current.price_amount) === Number(evaluated.price_amount)
       && current.currency === evaluated.currency
       && Number(current.price_kmf) === Number(evaluated.price_kmf)
       && Number(current.variable_cost_kmf) === Number(evaluated.variable_cost_kmf)
       && Number(current.cdr_complete_kmf) === Number(evaluated.cdr_complete_kmf)
+      && current.pricing_zone === evaluated.pricing_zone
+      && Number(current.decision_duration_days || 0) === Number(evaluated.decision_duration_days || 0)
       && String(current.rationale || '') === reason;
 
     if (unchanged) {
@@ -196,17 +289,7 @@ async function decidePrice({ market, productRef, priceAmount, rationale, actorId
         product_ref: product.product_ref,
         market_code: market.code,
         unchanged: true,
-        market_price: {
-          amount: Number(current.price_amount),
-          currency: current.currency,
-          minor_unit: Number(market.minor_unit) || 0,
-          price_kmf_snapshot: Number(current.price_kmf),
-          variable_cost_kmf: Number(current.variable_cost_kmf),
-          cdr_complete_kmf: Number(current.cdr_complete_kmf),
-          pricing_zone: current.pricing_zone,
-          rationale: current.rationale,
-          decided_at: current.decided_at,
-        },
+        market_price: publicSavedPrice(current, market),
       };
     }
 
@@ -222,8 +305,12 @@ async function decidePrice({ market, productRef, priceAmount, rationale, actorId
     const { rows: [saved] } = await client.query(
       `INSERT INTO product_market_price_decisions
          (market_id, product_id, price_amount, currency, price_kmf,
-          variable_cost_kmf, cdr_complete_kmf, pricing_zone, rationale, source, decided_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'canonical_market_pricing_workspace',$10)
+          variable_cost_kmf, cdr_complete_kmf, pricing_zone, rationale, source,
+          decision_policy_version, coverage_status, coverage_authorization,
+          coverage_ratio, coverage_evaluated_at, coverage_period_from, coverage_period_to,
+          decision_duration_days, effective_until, decided_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'canonical_market_pricing_workspace',
+               $10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
       [
         market.id,
@@ -235,6 +322,15 @@ async function decidePrice({ market, productRef, priceAmount, rationale, actorId
         evaluated.cdr_complete_kmf,
         evaluated.pricing_zone,
         reason,
+        evaluated.decision_policy_version,
+        evaluated.coverage_status,
+        evaluated.coverage_authorization,
+        evaluated.coverage_ratio,
+        evaluated.coverage_evaluated_at,
+        evaluated.coverage_period_from,
+        evaluated.coverage_period_to,
+        evaluated.decision_duration_days,
+        evaluated.effective_until,
         actorId,
       ]
     );
@@ -243,17 +339,7 @@ async function decidePrice({ market, productRef, priceAmount, rationale, actorId
       product_ref: product.product_ref,
       market_code: market.code,
       unchanged: false,
-      market_price: {
-        amount: Number(saved.price_amount),
-        currency: saved.currency,
-        minor_unit: Number(market.minor_unit) || 0,
-        price_kmf_snapshot: Number(saved.price_kmf),
-        variable_cost_kmf: Number(saved.variable_cost_kmf),
-        cdr_complete_kmf: Number(saved.cdr_complete_kmf),
-        pricing_zone: saved.pricing_zone,
-        rationale: saved.rationale,
-        decided_at: saved.decided_at,
-      },
+      market_price: publicSavedPrice(saved, market),
     };
   } catch (error) {
     try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
@@ -290,6 +376,7 @@ async function resetPrice({ market, productRef, actorId = null, reason = 'reset_
 module.exports = {
   MarketPriceDecisionError,
   normalizeRationale,
+  normalizeDurationDays,
   projectDecisionRow,
   resolveProduct,
   listEffectivePrices,
