@@ -121,4 +121,5 @@ module.exports = {
   decorateMarketDecision,
   _ceilEquivalent: ceilEquivalent,
   _buildFlowVelocity: buildFlowVelocity,
+  _projectDays: projectDays,
 };
