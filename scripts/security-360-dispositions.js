@@ -200,6 +200,16 @@ const DISPOSITIONS = Object.freeze({
     evidence: 'routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js',
     rationale: 'Capture liée à un ordre PayPal opaque et réconciliée côté serveur ; l’identifiant PayPal sert de capacité.',
   },
+  'GET /api/payments/mobile-money/availability': {
+    kind: 'EXPECTED_PUBLIC',
+    evidence: 'routes/payments-mobile-money.js; services/payment-mobile-money.js; features/payments.feature.js',
+    rationale: 'Expose uniquement la disponibilité commerciale du provider résolu serveur pour un code marché ; aucun secret, montant de commande ou identifiant client.',
+  },
+  'POST /api/payments/mobile-money/callback/{provider}/{transactionId}': {
+    kind: 'APPLICATION_GUARD',
+    evidence: 'routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js',
+    rationale: 'Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique.',
+  },
 
   // ── Santé publique ────────────────────────────────────────────────────────
   'GET /health': {

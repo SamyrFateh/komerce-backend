@@ -209,7 +209,7 @@ const orders = {
         shared_cart_item_id: uuid.allow(null),
       })).min(1).required(),
       relais_id:             uuid,
-      payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur').required(),
+      payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur', 'mobile_money').required(),
       stripe_payment_intent: safeStr(200),
       tracking_phone:        phone.allow(null, ''),
       // Liste partagée : intention uniquement, jamais un téléphone fourni

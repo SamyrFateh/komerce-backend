@@ -140,9 +140,9 @@ async function runOrderCheckout({ user, body }) {
       return fail(400, { error: 'items[] obligatoire (tableau, min 1 article)' });
     }
 
-    if (!['stripe_eur', 'cash_relais', 'paypal_eur'].includes(payment_mode)) {
+    if (!['stripe_eur', 'cash_relais', 'paypal_eur', 'mobile_money'].includes(payment_mode)) {
       await client.query('ROLLBACK');
-      return fail(400, { error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais | paypal_eur' });
+      return fail(400, { error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais | paypal_eur | mobile_money' });
     }
 
     if (module_type && !MODULE_TYPES.includes(module_type)) {
