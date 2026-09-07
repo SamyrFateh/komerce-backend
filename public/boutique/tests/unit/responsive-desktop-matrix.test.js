@@ -27,14 +27,10 @@ describe('Boutique responsive matrix', () => {
     expect(css).toMatch(/--sc-reserve-w:\s*clamp\(208px,\s*21vw,\s*224px\)/);
   });
 
-  test('laptop standard 1200–1439 conserve quatre colonnes canoniques mais réduit la réserve', () => {
-    expect(css).toMatch(/@media\s*\(min-width:\s*1200px\)\s*and\s*\(max-width:\s*1439px\)/);
-    expect(css).toMatch(/--sc-reserve-w:\s*clamp\(260px,\s*20vw,\s*276px\)/);
-    expect(css).not.toMatch(/@media\s*\(min-width:\s*1200px\)\s*and\s*\(max-width:\s*1439px\)[\s\S]*?repeat\(3,/);
-  });
-
-  test('grand desktop ≥1600 exploite cinq colonnes', () => {
-    expect(css).toMatch(/@media\s*\(min-width:\s*1600px\)[\s\S]*?repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+  test('desktop ≥1200 devient fluide selon la largeur réellement disponible', () => {
+    expect(css).toMatch(/@media\s*\(min-width:\s*1200px\)/);
+    expect(css).toMatch(/--sc-reserve-w:\s*clamp\(260px,\s*calc\(80px\s*\+\s*15vw\),\s*296px\)/);
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(260px,\s*1fr\)\)/);
   });
 
   test('la hauteur compacte la navigation indépendamment de la largeur', () => {
@@ -56,8 +52,9 @@ describe('Boutique responsive matrix', () => {
     }
   });
 
-  test('aucune règle responsive ne transforme le breakpoint fonctionnel mobile/desktop', () => {
-    expect(css).not.toMatch(/max-width:\s*899px/);
-    expect(css).not.toMatch(/min-width:\s*(?:[1-8]\d\d)px/);
+  test('aucune règle responsive ne crée un troisième breakpoint de largeur', () => {
+    const widthBreakpoints = [...css.matchAll(/(?:min|max)-width:\s*(\d+)px/g)]
+      .map(match => Number(match[1]));
+    expect(new Set(widthBreakpoints)).toEqual(new Set([900, 1199, 1200]));
   });
 });
