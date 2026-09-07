@@ -18,6 +18,7 @@ const {
   _aggregateRows,
   _validateMoney,
   _validateScope,
+  _snapshotFromCharge,
 } = require('../../services/pricing-period-structure');
 
 function baseInput(overrides = {}) {
@@ -35,6 +36,17 @@ function baseInput(overrides = {}) {
     amount_kmf: 100000,
     source_kind: 'INVOICE',
     evidence_ref: 'invoice://railway/2026-09',
+    ...overrides,
+  };
+}
+
+function chargeRow(overrides = {}) {
+  return {
+    id: baseInput().charge_id,
+    family: 'platform',
+    name: 'Railway',
+    recurrence_period: 'monthly',
+    is_active: true,
     ...overrides,
   };
 }
@@ -73,6 +85,18 @@ describe('pricing-period-structure — validation fail-closed', () => {
       amount_kmf: 100,
     })).toThrow('amount_kmf is inconsistent');
   });
+
+  test('la famille N3 reste ouverte et snapshotée, sans enum métier fermé', () => {
+    expect(_snapshotFromCharge({
+      family: 'relay_network_fixed',
+      name: 'Forfait fixe relais Mutsamudu',
+      recurrence_period: 'monthly',
+    })).toEqual({
+      family: 'relay_network_fixed',
+      name: 'Forfait fixe relais Mutsamudu',
+      recurrencePeriod: 'monthly',
+    });
+  });
 });
 
 describe('pricing-period-structure — enregistrement append-only', () => {
@@ -82,16 +106,17 @@ describe('pricing-period-structure — enregistrement append-only', () => {
     const client = mockClient();
     client.query
       .mockResolvedValueOnce({}) // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: baseInput().charge_id, is_active: true }] })
+      .mockResolvedValueOnce({ rows: [chargeRow()] })
       .mockResolvedValueOnce({ rows: [{ id: 'event-1', ...baseInput(), recorded_by: 'actor-1' }] })
       .mockResolvedValueOnce({}); // COMMIT
 
     const result = await recordStructureCostEvent(baseInput(), 'actor-1');
 
     expect(result.id).toBe('event-1');
-    expect(client.query.mock.calls[1][0]).toContain('FROM charges WHERE id = $1 FOR SHARE');
+    expect(client.query.mock.calls[1][0]).toContain('FROM charges');
     expect(client.query.mock.calls[2][0]).toContain('INSERT INTO economic_structure_cost_events');
     expect(client.query.mock.calls[2][0]).not.toContain('charges.amount_kmf');
+    expect(client.query.mock.calls[2][1]).toEqual(expect.arrayContaining(['platform', 'Railway', 'monthly']));
     expect(client.release).toHaveBeenCalled();
   });
 
@@ -103,7 +128,7 @@ describe('pricing-period-structure — enregistrement append-only', () => {
     });
     client.query
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ id: input.charge_id, is_active: true }] })
+      .mockResolvedValueOnce({ rows: [chargeRow()] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({});
 
@@ -112,7 +137,7 @@ describe('pricing-period-structure — enregistrement append-only', () => {
     expect(client.query).toHaveBeenCalledWith('ROLLBACK');
   });
 
-  test('une correction conserve charge et scope de l événement original', async () => {
+  test('une correction conserve charge, scope et identité historique du fait original', async () => {
     const client = mockClient();
     const input = baseInput({
       event_kind: 'ADJUSTMENT',
@@ -123,18 +148,27 @@ describe('pricing-period-structure — enregistrement append-only', () => {
     });
     client.query
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ id: input.charge_id, is_active: true }] })
+      .mockResolvedValueOnce({ rows: [chargeRow({ family: 'renamed-current', name: 'Nom courant' })] })
       .mockResolvedValueOnce({ rows: [{
         id: 'event-old',
         charge_id: input.charge_id,
         scope_kind: 'GROUP',
         market_id: null,
+        charge_family_snapshot: 'relay_network_fixed',
+        charge_name_snapshot: 'Forfait relais historique',
+        recurrence_period_snapshot: 'monthly',
       }] })
       .mockResolvedValueOnce({ rows: [{ id: 'event-new' }] })
       .mockResolvedValueOnce({});
 
     const result = await recordStructureCostEvent(input, 'actor-1');
     expect(result.id).toBe('event-new');
+    const insertParams = client.query.mock.calls[3][1];
+    expect(insertParams.slice(1, 4)).toEqual([
+      'relay_network_fixed',
+      'Forfait relais historique',
+      'monthly',
+    ]);
   });
 });
 
@@ -145,7 +179,9 @@ describe('pricing-period-structure — lecture de période', () => {
     const result = _aggregateRows([{
       id: 'e1',
       charge_id: 'c1',
-      charge_name: 'Railway',
+      charge_family_snapshot: 'platform',
+      charge_name_snapshot: 'Railway',
+      recurrence_period_snapshot: 'monthly',
       scope_kind: 'GROUP',
       market_id: null,
       event_kind: 'ACCRUAL',
@@ -160,19 +196,48 @@ describe('pricing-period-structure — lecture de période', () => {
     }, null);
 
     expect(result.group_pool_kmf).toBe(5000);
+    expect(result.by_family_kmf.platform).toBe(5000);
     expect(result.evidence[0].overlap_ratio).toBe(0.5);
     expect(result.shared_allocation_applied).toBe(false);
+  });
+
+  test('un forfait relais périodique MARKET_DIRECT alimente N3 du marché et se prorate par période', () => {
+    const result = _aggregateRows([{
+      id: 'relay-1',
+      charge_id: 'charge-relay',
+      charge_family_snapshot: 'relay_network_fixed',
+      charge_name_snapshot: 'Forfait fixe relais Mutsamudu',
+      recurrence_period_snapshot: 'monthly',
+      scope_kind: 'MARKET_DIRECT',
+      market_id: 'market-km',
+      event_kind: 'ACCRUAL',
+      source_kind: 'CONTRACT',
+      evidence_ref: 'contract://relay/mutsamudu/2026',
+      economic_from: '2026-09-01T00:00:00Z',
+      economic_to: '2026-10-01T00:00:00Z',
+      amount_kmf: 30000,
+    }], {
+      from: new Date('2026-09-01T00:00:00Z'),
+      to: new Date('2026-09-16T00:00:00Z'),
+    }, 'market-km');
+
+    expect(result.market_direct_kmf).toBe(15000);
+    expect(result.by_family_kmf.relay_network_fixed).toBe(15000);
+    expect(result.evidence[0].configured_recurrence).toBe('monthly');
+    expect(result.status).toBe('DIRECT_MARKET_TRUTH_ONLY');
   });
 
   test('un marché avec pool GROUP reste NOT_DECISIONAL jusqu à la mutualisation', () => {
     const result = _aggregateRows([
       {
-        id: 'g1', charge_id: 'c1', scope_kind: 'GROUP', market_id: null,
+        id: 'g1', charge_id: 'c1', charge_family_snapshot: 'platform', charge_name_snapshot: 'Railway',
+        scope_kind: 'GROUP', market_id: null,
         event_kind: 'ACCRUAL', source_kind: 'INVOICE', evidence_ref: 'proof-g',
         economic_from: '2026-09-01T00:00:00Z', economic_to: '2026-10-01T00:00:00Z', amount_kmf: 60000,
       },
       {
-        id: 'm1', charge_id: 'c2', scope_kind: 'MARKET_DIRECT', market_id: 'market-cm',
+        id: 'm1', charge_id: 'c2', charge_family_snapshot: 'relay_network_fixed', charge_name_snapshot: 'Relais fixe',
+        scope_kind: 'MARKET_DIRECT', market_id: 'market-cm',
         event_kind: 'ACCRUAL', source_kind: 'CONTRACT', evidence_ref: 'proof-m',
         economic_from: '2026-09-01T00:00:00Z', economic_to: '2026-10-01T00:00:00Z', amount_kmf: 20000,
       },
@@ -210,6 +275,7 @@ describe('pricing-period-structure — lecture de période', () => {
     expect(result.status).toBe('NOT_DECISIONAL_NO_PERIOD_TRUTH');
     const [sql, params] = db.query.mock.calls[0];
     expect(sql).toContain("e.scope_kind = 'GROUP' OR e.market_id = $3::uuid");
+    expect(sql).toContain('charge_family_snapshot');
     expect(params[2]).toBe('22222222-2222-2222-2222-222222222222');
   });
 });
