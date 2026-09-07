@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  decision-signals, purchasing, orders, logistics
- * @version       2026-09
+ * @version       2026-06
  */
 
 
@@ -537,6 +537,7 @@ GENERATORS.preparation_stuck = async function() {
 async function generateSignals(types) {
   let expired = await expireOldSignals();
   let results = { expired: expired, generators: {} };
+
   let toRun = types || Object.keys(GENERATORS);
   for (let type of toRun) {
     if (GENERATORS[type]) {
