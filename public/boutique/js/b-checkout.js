@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        checkout_selection, identity, phone, relais, payment_mode
  * @outputs       checkout_state, order_creation_request, payment_initialization, order_success
- * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/local-stock.js, routes/orders.js, routes/payments.js
+ * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/local-stock.js, routes/orders.js, routes/payments.js, routes/payments-mobile-money.js
  * @used-by       boutique.js, b-nav.js, b-share-cart.js
  * @doctrine      paiement_seul_acte_engageant, otp_une_fois, recap_integre_checkout, surface_transactionnelle_unique, checkout_sans_friction
  * @impact-areas  checkout, orders, payments, otp, cart, shared-cart
@@ -26,6 +26,7 @@ import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
 import { showToast, saveCart } from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
+import { getMobileMoneyAvailabilityForRelay, initiateMobileMoneyPayment, waitForMobileMoneyPayment } from './b-mobile-money.js'; // Migration 169
 import { openCart, closeCart, renderCart, clearCart, addToCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity, openIdentityModal }  from './b-identity.js';
@@ -419,6 +420,8 @@ function _invalidateCheckoutPaymentAttempt() {
   state.checkoutAttemptKey = null;
   state.pendingStripeOrderRef = null;
   state.pendingPaypalOrderRef = null;
+  state.mobileMoneyAttemptKey = null;
+  state.pendingMobileMoneyOrderRef = null;
 }
 
 function _mergeRecentCartLineIntoCheckout(cartLine) {
@@ -818,6 +821,7 @@ export function checkoutCart(checkoutSelection = null) {
 
     state.orderData = {
       payment_mode: 'cash_relais',
+      mobileMoneyAvailability: null,
       checkoutSelection: selection,
     };
 
@@ -881,6 +885,93 @@ function setRelayStatus(od, status) {
   refreshCheckoutComputedUI();
 }
 
+function _renderMobileMoneyAvailability(od = state.orderData || {}) {
+  const availability = od.mobileMoneyAvailability || null;
+  const chip = document.getElementById('ck-chip-mobile-money');
+  const radio = chip?.querySelector('input[name="payment_mode"]');
+  const label = document.getElementById('ck-mobile-money-label');
+  const currency = document.getElementById('ck-mobile-money-currency');
+  const msisdnRow = document.getElementById('mobile-money-msisdn-row');
+  const title = document.getElementById('mobile-money-provider-title');
+  const providerCurrency = document.getElementById('mobile-money-provider-currency');
+  const status = document.getElementById('mobile-money-status');
+  const selected = od.payment_mode === 'mobile_money';
+  const available = availability?.available === true;
+
+  if (chip) {
+    chip.style.display = available || selected ? '' : 'none';
+    chip.classList.toggle('ck-pay-chip--off', !available);
+  }
+  if (radio) radio.disabled = !available;
+  if (label) label.textContent = availability?.label || 'Mobile Money';
+  if (currency) currency.textContent = availability?.currency || '';
+  if (title) title.textContent = availability?.label || 'Mobile Money';
+  if (providerCurrency) providerCurrency.textContent = availability?.currency || '';
+  if (msisdnRow) msisdnRow.classList.toggle('is-hidden', !availability?.requires_msisdn);
+  if (status && selected && !available) {
+    status.textContent = availability
+      ? 'Mobile Money indisponible pour ce point relais.'
+      : 'Vérification de la disponibilité Mobile Money…';
+  }
+}
+
+async function _refreshMobileMoneyAvailability(od = state.orderData || {}) {
+  const relayId = String(od.selectedRelaisId || '').trim();
+  od.mobileMoneyAvailability = null;
+  _renderMobileMoneyAvailability(od);
+  refreshCheckoutComputedUI();
+  if (!relayId) return;
+
+  try {
+    const availability = await getMobileMoneyAvailabilityForRelay(relayId);
+    if (String(od.selectedRelaisId || '').trim() !== relayId) return;
+    od.mobileMoneyAvailability = availability || { available: false, reason: 'availability_invalid' };
+  } catch (error) {
+    if (String(od.selectedRelaisId || '').trim() !== relayId) return;
+    od.mobileMoneyAvailability = { available: false, reason: 'availability_unreachable' };
+    console.warn('[checkout] Mobile Money availability:', error);
+  }
+  _renderMobileMoneyAvailability(od);
+  refreshCheckoutComputedUI();
+}
+
+function _setMobileMoneyTransactionUI(transaction) {
+  const statusEl = document.getElementById('mobile-money-status');
+  const actionEl = document.getElementById('mobile-money-action');
+  const action = transaction?.client_action || null;
+  const providerLabel = transaction?.provider_label || state.orderData?.mobileMoneyAvailability?.label || 'Mobile Money';
+
+  if (actionEl) {
+    actionEl.classList.remove('is-visible');
+    actionEl.removeAttribute('href');
+    if (action?.type === 'redirect' && action.url) {
+      try {
+        const url = new URL(action.url, window.location.origin);
+        if (url.protocol === 'https:') {
+actionEl.href = url.href;
+actionEl.textContent = 'Continuer vers ' + providerLabel;
+actionEl.classList.add('is-visible');
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (!statusEl) return;
+  if (transaction?.status === 'succeeded') {
+    statusEl.textContent = '✓ Paiement confirmé par ' + providerLabel + '.';
+  } else if (transaction?.status === 'failed') {
+    statusEl.textContent = 'Paiement refusé ou annulé par ' + providerLabel + '.';
+  } else if (transaction?.status === 'expired') {
+    statusEl.textContent = 'La demande de paiement a expiré.';
+  } else if (action?.type === 'approval') {
+    statusEl.textContent = action.message || ('Validez la demande ' + providerLabel + ' sur votre téléphone.');
+  } else if (action?.type === 'redirect') {
+    statusEl.textContent = 'Ouvrez ' + providerLabel + ', validez le paiement puis revenez ici.';
+  } else {
+    statusEl.textContent = 'Paiement en attente de confirmation opérateur…';
+  }
+}
+
 async function _loadRelaisSection(container, od) {
   // Abort toute requête relais précédente encore en cours
   if (_relaisAbortController) _relaisAbortController.abort();
@@ -921,6 +1012,7 @@ async function _loadRelaisSection(container, od) {
     _renderRelaisSummary(container, od, byIle, allIles);
     setRelayStatus(od, 'ready');
     _refreshCheckoutFulfillmentPreview(od);
+    _refreshMobileMoneyAvailability(od);
   } catch(e) {
     if (e && e.name === 'AbortError') return;
     // Erreur / timeout : état erreur lisible + Réessayer.
@@ -974,9 +1066,11 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
     onChange: () => {
       _openRelaisPicker(od, byIle, allIles, () => {
         clearRelaySelectionError();
+        _invalidateCheckoutPaymentAttempt();
         _renderRelaisSummary(container, od, byIle, allIles);
         refreshCheckoutComputedUI();
         _refreshCheckoutFulfillmentPreview(od);
+        _refreshMobileMoneyAvailability(od);
       });
     },
   });
@@ -1236,9 +1330,12 @@ function refreshCheckoutComputedUI() {
   // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
   // portant le montant net réellement dû (après déduction wallet).
   const mainText = '\u2713 Confirmer la commande · ' + fmt(netAmount, 'KMF');
+  const mobileMoneyLabel = od.mobileMoneyAvailability?.label || 'Mobile Money';
   let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
-    : (where ? 'Cash au relais • ' + where : 'Cash au relais');
+    : mode === 'mobile_money'
+      ? (where ? mobileMoneyLabel + ' • ' + where : mobileMoneyLabel)
+      : (where ? 'Cash au relais • ' + where : 'Cash au relais');
 
   // ── Verrou métier relais (FIX 2026-07-10) ────────────────────────
   // Un ordre (cash au relais OU stripe — le relais est toujours requis,
@@ -1246,6 +1343,7 @@ function refreshCheckoutComputedUI() {
   // sont pas chargés (ready) et qu'aucun relais n'est sélectionné.
   const relayStatus = od.relayStatus || 'idle';
   const relayOk = relayStatus === 'ready' && !!od.selectedRelaisId;
+  const mobileMoneyOk = mode !== 'mobile_money' || od.mobileMoneyAvailability?.available === true;
   const hasCheckoutItems = _checkoutItems().length > 0;
 
   if (!hasCheckoutItems && btn_busy(confirmBtn) === false) {
@@ -1255,8 +1353,10 @@ function refreshCheckoutComputedUI() {
     else if (relayStatus === 'error') subText = 'Impossible de charger les relais';
     else if (relayStatus === 'empty') subText = 'Aucun relais disponible';
     else subText = 'Choisissez un point relais';
+  } else if (!mobileMoneyOk && btn_busy(confirmBtn) === false) {
+    subText = 'Mobile Money indisponible pour ce point relais';
   }
-  confirmBtn.disabled = !hasCheckoutItems || !relayOk || btn_busy(confirmBtn);
+  confirmBtn.disabled = !hasCheckoutItems || !relayOk || !mobileMoneyOk || btn_busy(confirmBtn);
   confirmBtn.classList.toggle('is-disabled', confirmBtn.disabled);
   setCheckoutConfirmButton(confirmBtn, mainText, subText);
 }
@@ -1363,6 +1463,8 @@ function _setCheckoutLineIncluded(index, included) {
   state.checkoutAttemptKey = null;
   state.pendingStripeOrderRef = null;
   state.pendingPaypalOrderRef = null;
+  state.mobileMoneyAttemptKey = null;
+  state.pendingMobileMoneyOrderRef = null;
 
   refreshCheckoutComputedUI();
   updateWalletDisplay();
@@ -1937,10 +2039,10 @@ export function renderCheckout() {
       + '<input type="radio" name="payment_mode" value="cash_relais" checked>'
       + '<span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span>'
       + '</label>'
-      + '<label class="ck-pay-chip ck-pay-chip--off">'
-      + '<input type="radio" name="payment_mode" value="mvola" disabled>'
+      + '<label class="ck-pay-chip" id="ck-chip-mobile-money" style="display:none;">'
+      + '<input type="radio" name="payment_mode" value="mobile_money" disabled>'
       + '<span class="ck-chip-icon">📱</span>'
-      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">Bientôt</em></span>'
+      + '<span class="ck-chip-lbl"><span id="ck-mobile-money-label">Mobile Money</span><br><em id="ck-mobile-money-currency" class="ck-stripe-tag"></em></span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
       + '<input type="radio" name="payment_mode" value="stripe_eur">'
@@ -1951,6 +2053,19 @@ export function renderCheckout() {
       + '<span class="ck-chip-icon">🅿️</span><span class="ck-chip-lbl">PayPal<br><em class="ck-stripe-tag">4× possible</em></span>'
       + '</label>';
     checkoutAside.appendChild(payGrid);
+
+    const mobileMoneyWrap = document.createElement('div');
+    mobileMoneyWrap.id = 'mobile-money-wrap';
+    mobileMoneyWrap.className = 'k-mobile-money-wrap';
+    mobileMoneyWrap.innerHTML =
+      '<div class="k-mobile-money-title"><span>📱 <span id="mobile-money-provider-title">Mobile Money</span></span>'
+      + '<span id="mobile-money-provider-currency" class="k-mobile-money-currency"></span></div>'
+      + '<label id="mobile-money-msisdn-row" class="k-mobile-money-msisdn is-hidden">Numéro Mobile Money'
+      + '<input id="mobile-money-msisdn" class="k-mobile-money-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ex. +242 06 123 45 67"></label>'
+      + '<div id="mobile-money-status" class="k-mobile-money-status" role="status" aria-live="polite"></div>'
+      + '<a id="mobile-money-action" class="k-mobile-money-action" target="_blank" rel="noopener"></a>';
+    checkoutAside.appendChild(mobileMoneyWrap);
+    _renderMobileMoneyAvailability(od);
 
     // Point 8 : « Un code de paiement vous sera envoyé… » supprimé du formulaire.
     // L'info de paiement arrive au bon moment — sur l'écran de confirmation de commande.
@@ -2037,6 +2152,7 @@ export function renderCheckout() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       const isPaypal = mode && mode.value === 'paypal_eur';
+      const isMobileMoney = mode && mode.value === 'mobile_money';
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
       // Le titre de section est statique (règle §4) — plus de re-rendu ici.
@@ -2047,6 +2163,10 @@ export function renderCheckout() {
         const r = chip.querySelector('input[type=radio]');
         if (r && !r.disabled) chip.classList.toggle('ck-pay-chip--active', r.checked);
       });
+
+      const mmWrap = document.getElementById('mobile-money-wrap');
+      if (mmWrap) mmWrap.classList.toggle('is-visible', isMobileMoney);
+      _renderMobileMoneyAvailability(od);
 
       /* Toggle PayPal wrap + lazy render du bouton officiel */
       const ppWrap = document.getElementById('paypal-wrap');
@@ -2231,11 +2351,13 @@ function _togglePaymentMethodVisibility(fullyCovered) {
   const payGrid       = document.getElementById('ck-pay-grid');
   const stripeWrap    = document.getElementById('stripe-card-wrap');
   const paypalWrap    = document.getElementById('paypal-wrap');
+  const mobileMoneyWrap = document.getElementById('mobile-money-wrap');
   if (payHeaderSlot) payHeaderSlot.classList.toggle('ck-force-hidden', fullyCovered);
   if (fullCoverMsg)  fullCoverMsg.classList.toggle('is-visible', fullyCovered);
   if (payGrid)       payGrid.classList.toggle('ck-force-hidden', fullyCovered);
   if (stripeWrap)    stripeWrap.classList.toggle('ck-force-hidden', fullyCovered);
   if (paypalWrap)    paypalWrap.classList.toggle('ck-force-hidden', fullyCovered);
+  if (mobileMoneyWrap) mobileMoneyWrap.classList.toggle('ck-force-hidden', fullyCovered);
 }
 
 export function updateWalletDisplay() {
@@ -2289,6 +2411,19 @@ export async function submitOrder(btn) {
     showToast('Sélectionnez au moins un article à commander.', 'error');
     return;
   }
+
+  const isMobileMoney = od.payment_mode === 'mobile_money';
+  const mobileMoneyAvailability = od.mobileMoneyAvailability || null;
+  const mobileMoneyMsisdn = String(document.getElementById('mobile-money-msisdn')?.value || '').trim();
+  if (isMobileMoney && mobileMoneyAvailability?.available !== true) {
+    showToast('Mobile Money est indisponible pour ce point relais.', 'error');
+    return;
+  }
+  if (isMobileMoney && mobileMoneyAvailability?.requires_msisdn && !mobileMoneyMsisdn) {
+    document.getElementById('mobile-money-msisdn')?.focus();
+    showToast('Renseignez le numéro ' + (mobileMoneyAvailability.label || 'Mobile Money') + '.', 'error');
+    return;
+  }
   // ── OTP — identifie l'acheteur, seule identité de retrait ─────────────────
   // Lot 3 : plus de « qui récupère ? ». Le code de retrait est envoyé au
   // WhatsApp vérifié de l'acheteur ; nom/téléphone viennent uniquement de
@@ -2309,7 +2444,7 @@ export async function submitOrder(btn) {
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
-  setCheckoutConfirmButton(btn, isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…', '');
+  setCheckoutConfirmButton(btn, (isStripe || isMobileMoney) ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…', '');
   btn.style.opacity = '0.7';
 
   try {
@@ -2350,6 +2485,21 @@ export async function submitOrder(btn) {
       } else {
         orderData = { reference: state.pendingStripeOrderRef };
       }
+    } else if (isMobileMoney) {
+      if (!state.mobileMoneyAttemptKey) state.mobileMoneyAttemptKey = genIdempotencyKey();
+      if (!state.pendingMobileMoneyOrderRef) {
+        apiResult = await apiPost('/api/orders', {
+items, relais_id: od.selectedRelaisId || undefined,
+payment_mode: 'mobile_money', use_wallet: od.use_wallet || false,
+tracking_phone: trackingPhone || undefined,
+pickup_code_recipient: pickupCodeRecipient
+        }, { idempotencyKey: state.mobileMoneyAttemptKey });
+        orderData = apiResult.order || apiResult;
+        state.pendingMobileMoneyOrderRef = orderData.reference;
+        state.lastApiResult = apiResult;
+      } else {
+        orderData = state.lastApiResult?.order || { reference: state.pendingMobileMoneyOrderRef };
+      }
     } else {
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
@@ -2378,6 +2528,36 @@ export async function submitOrder(btn) {
       showToast('🎉 Paiement accepté !', 'success');
       state.checkoutAttemptKey = null;
       state.pendingStripeOrderRef = null;
+    }
+
+    if (isMobileMoney) {
+      const initiated = await initiateMobileMoneyPayment(orderData.reference, mobileMoneyMsisdn || undefined);
+      const initialTx = initiated?.transaction;
+      if (!initialTx?.id) throw new Error('Transaction Mobile Money invalide.');
+      _setMobileMoneyTransactionUI(initialTx);
+
+      const settled = await waitForMobileMoneyPayment(initialTx.id, {
+        onUpdate: _setMobileMoneyTransactionUI,
+      });
+      const finalTx = settled?.transaction;
+      if (finalTx?.status === 'failed') {
+        throw new Error('Le paiement Mobile Money a été refusé ou annulé.');
+      }
+      if (finalTx?.status === 'expired') {
+        throw new Error('La demande Mobile Money a expiré. Relancez le paiement.');
+      }
+      if (finalTx?.status !== 'succeeded') {
+        btn.dataset.busy = '0';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        refreshCheckoutComputedUI();
+        showToast('Paiement Mobile Money toujours en attente — la commande reste ouverte.', 'info');
+        return;
+      }
+
+      state.mobileMoneyAttemptKey = null;
+      state.pendingMobileMoneyOrderRef = null;
+      showToast('🎉 Paiement Mobile Money confirmé !', 'success');
     }
 
     _clearCommittedCheckoutSource();

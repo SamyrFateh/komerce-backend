@@ -6,39 +6,42 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       ../order-cost-snapshot
+ * @depends       ../order-cost-snapshot, ./cost-types
  * @used-by       allocate.js, variance.js (services/cost-allocation/*)
  * @db-read       (none)
  * @db-write      (none)
  * @db-txn        @none
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      pricing_market_viability_cost_scope
  * @impact-areas  economic-engine
- * @version       2026-06
+ * @version       2026-09
  */
 
 /**
  * KOMERCE — Cost Allocation — Helpers & constantes (Lot C5)
  * ════════════════════════════════════════════════════════════════════════
  *
- * Extrait de services/cost-allocation.js (914L) — Lot B/C Refacto.
- * Contient les briques communes utilisées par allocate.js et variance.js :
- * constantes doctrine, helpers purs de ventilation, et le verrouillage
- * des coûts estimés (délégué à order-cost-snapshot).
+ * La classification économique vient exclusivement de cost-types.js.
  *
- * COST_TYPES alignes sur cost_components (migration 043) :
- *   product_purchase, sourcing, hub, packaging,
- *   freight, customs, port_transitaire, local_distribution, relay,
- *   payment, risk_provision, fixed_overhead,
- *   incident, marketing
+ * Invariants :
+ *   - `hub` = Hub variable N1 dans order_item_real_cost_allocations ;
+ *   - `payment` = N2 transactionnel réconciliable commande ;
+ *   - `risk_provision` = N2 de contribution, réconcilié en période ;
+ *   - `fixed_overhead` = legacy structure/order-allocation seulement ;
+ *   - la structure Hub physique future est N3 de période, hors de cette table.
  */
 
 'use strict';
 
-// ─── Constantes doctrine (alignees sur cost_components migration 043) ──
+const {
+  VARIABLE_COST_TYPES,
+  CONTRIBUTION_COST_TYPES,
+  ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
+} = require('./cost-types');
+
+// Tous les types techniquement admis dans l'allocation historique.
 const COST_TYPES = Object.freeze([
-  'product_purchase', 'sourcing', 'hub', 'packaging',
-  'freight', 'customs', 'port_transitaire', 'local_distribution', 'relay',
-  'payment', 'risk_provision', 'fixed_overhead',
+  ...CONTRIBUTION_COST_TYPES,
+  ...ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
   'incident', 'marketing',
 ]);
 
@@ -47,32 +50,14 @@ const ALLOCATION_METHODS = Object.freeze([
   'per_item', 'per_order', 'manual', 'estimated_fallback',
 ]);
 
-// Cost types qui sont "variables tracables" (alloues au fil de l'eau)
-const VARIABLE_COST_TYPES = Object.freeze([
-  'product_purchase', 'sourcing', 'freight', 'customs',
-  'port_transitaire', 'local_distribution', 'relay', 'payment',
-]);
+// Alias de compatibilité : VARIABLE_COST_TYPES = coûts réellement
+// réconciliables au niveau commande (N1 + payment).
+const FIXED_COST_TYPES = ORDER_ALLOCATION_STRUCTURE_COST_TYPES;
 
-// Cost types qui sont "fixes mensuels" (alloues en fin de mois)
-const FIXED_COST_TYPES = Object.freeze([
-  'hub', 'packaging', 'risk_provision', 'fixed_overhead',
-]);
-
-// Cost types exceptionnels (tjrs is_actual=true, manuels)
 const EXCEPTIONAL_COST_TYPES = Object.freeze([
   'incident', 'marketing',
 ]);
 
-// ═══════════════════════════════════════════════════════════════════════
-// HELPERS PURS (testables sans BDD)
-// ═══════════════════════════════════════════════════════════════════════
-
-/**
- * Calcule les parts proportionnelles d'un total selon un poids.
- * @param {number} total
- * @param {Array<{id, weight}>} entries
- * @returns {Array<{id, share, share_pct}>}
- */
 function shareByWeight(total, entries) {
   const totalWeight = entries.reduce((s, e) => s + Number(e.weight || 0), 0);
   if (totalWeight === 0 || !entries.length) {
@@ -88,21 +73,13 @@ function shareByWeight(total, entries) {
   });
 }
 
-/**
- * Poids taxable selon norme transport (max poids reel vs volumetrique).
- */
 function taxableWeight(weightKg, volumeM3, mode = 'sea') {
   const factor = mode === 'air' ? 167 : 1000;
   const volumetricKg = (Number(volumeM3) || 0) * factor;
   return Math.max(Number(weightKg) || 0, volumetricKg);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// lockEstimatedCostsForOrder — delegue a order-cost-snapshot
-// ═══════════════════════════════════════════════════════════════════════
-
 async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
-  // Delegue a order-cost-snapshot pour eviter la duplication de logique.
   const snapshot = require('../order-cost-snapshot');
   return await snapshot.lockEstimatedCostsForOrder(orderId, dbClient, options);
 }

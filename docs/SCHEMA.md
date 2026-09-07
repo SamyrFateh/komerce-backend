@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 123 | Vérifié sur le dump live Railway. |
+| Tables | 131 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 335 | Performance + contraintes uniques |
-| Foreign keys | 202 | Cohérence relationnelle |
-| Fonctions | 16 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 33 | Triggers présents dans le dump live Railway. |
+| Index | 352 | Performance + contraintes uniques |
+| Foreign keys | 221 | Cohérence relationnelle |
+| Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 37 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -66,7 +66,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_status` | `pending`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
 | `parcel_status` | `draft`, `preparation`, `shipped`, `in_transit`, `arrived`, `available`, `collected`, `cancelled` | `routes/parcel-api-v2.js` + `services/parcel-service.js` |
 | `payment_status` | `pending`, `paid`, `failed`, `refunded`, `partially_paid` | `routes/payments.js` |
-| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash` | `routes/orders/create.js` |
+| `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash`; **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `mobile_money`, rail Komerce distinct du provider opérateur. | `routes/orders/create.js` + `services/payment-mobile-money.js` |
 | `scan_step` | `preparation`, `hub_preparation`, `shipped`, `in_transit`, `relais_received`, `collected` | `routes/scans.js` + `services/scan-engine.js` |
 | `user_role` | définit les rôles auth | `middleware/auth.js` |
 | `basket_type` | type de panier (boutique / partagé / collectif) | `routes/baskets.js` |
@@ -91,7 +91,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_incidents` | Incidents commande. |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
-| `order_item_cost_imputations` | Imputations de coûts par item (audit). |
+| `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer N2 (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable pour figer N3 séparément. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
 | `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). |
 
 ### 4.2 Logistique colis (5 tables)
@@ -134,25 +134,28 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (9 tables)
+### 4.4 Paiements et finance (9 tables live + 2 visées)
 
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
 | `cash_deposits` | Dépôts agents. |
 | `cash_reconciliation` | Réconciliation cash. |
-| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. |
+| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
 | `disputes` | Litiges. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
+| `market_payment_providers` | Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+
 
 ### 4.5 Paniers et catalogue
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema` — vérifié live Railway)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw \| ai_enriched \| manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema`)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw | ai_enriched | manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema`)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. |
 | `baskets` | Paniers (différents `basket_type`). |
@@ -208,6 +211,12 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `charges` | Charges fixes. |
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
+| `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
+| `economic_structure_cost_events` | Journal append-only des charges économiques N3 de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `economic_risk_cost_events` | Journal append-only des coûts de risque N2 réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+
 
 ### 4.9 Douane (4 tables)
 
@@ -215,7 +224,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 |---|---|
 | `customs_categories` | Catégories douane. |
 | `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
-| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — snapshot volume au rattachement, miroir de `parcel_weight_kg`). Ventilation fret maritime au m³ dans `services/cost-allocation/allocate.js` : `by_volume` si snapshoté, répartition égale `confidence low` sinon — jamais le poids en maritime. |
+| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
 | `customs_history` | Historique taux effectifs. |
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
@@ -234,6 +243,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sourcing_candidate_observations` | Historique immuable des observations fournisseur par batch et profil, avec hash de ligne et snapshot du contrat normalisé. Migration 110. |
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
+| `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
 
 ### 4.11 Scans et opérations terrain (5 tables)
 

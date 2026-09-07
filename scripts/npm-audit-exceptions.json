@@ -1,9 +1,1 @@
-[
-  {
-    "package": "brace-expansion",
-    "advisory": "GHSA-mh99-v99m-4gvg",
-    "expires": "2026-08-15",
-    "scope": "dev-only",
-    "reason": "Transitif des outils de développement Jest/nodemon uniquement. Aucun pattern utilisateur ne traverse cette chaîne en production. Réévaluer dès qu’un correctif compatible avec les consommateurs CJS 1.x/2.x est disponible."
-  }
-]
+[]

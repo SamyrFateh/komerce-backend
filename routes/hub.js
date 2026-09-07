@@ -6,14 +6,14 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, parcel_items, parcels, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-1)
+ * @impact-areas  logistics, market
+ * @version       2026-09
  */
 
 /**
@@ -27,13 +27,6 @@
  * GET  /api/hub/today       — query lecture seule (reste ici)
  * GET  /api/hub/search      — query lecture seule (reste ici)
  * GET  /api/hub/stats/week  — query lecture seule (reste ici)
- *
- * Doctrine : route = auth + validation + appel service + réponse.
- * Logique métier (transactions, FOR UPDATE, safeSyncScanToParcels)
- * → services/hub-operations.js
- *
- * Invariant I-09 : le colis reste une unité autonome.
- * Voir : docs/chantier/REFACTO_ROUTES_STATUS.md (LOT R2)
  */
 
 'use strict';
@@ -42,12 +35,23 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachAuthorizedMarketsForOperator } = require('../middleware/require-market-scope');
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
 const uploadHub = require('../middleware/upload-hub');
 
+// Les opérations physiques restent exclusivement terrain Hub.
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
+// Les lectures terrain peuvent être supervisées par un market_operator, mais
+// uniquement sur les orders.market_id résolus depuis operator_market_scopes.
+const hubRead = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+
+function addMarketScope(req, conditions, params, column = 'o.market_id') {
+  if (req.user.role !== 'market_operator') return;
+  conditions.push(`${column} = ANY($${params.length + 1}::uuid[])`);
+  params.push(req.authorizedMarkets ? Array.from(req.authorizedMarkets) : []);
+}
 
 // ── POST /scan ───────────────────────────────────────────────────────────────
 router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res, next) => {
@@ -77,10 +81,6 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, 
 });
 
 // ── POST /volume ─────────────────────────────────────────────────────────────
-// V-4 DOCTRINE_DENSITE_VALEUR : saisie de mesure volume par l'agent hub.
-// Consigne prescrite au scan (next_action measure_volume / repack) — l'agent
-// exécute la mesure, il ne décide rien (R2). Alimente la ventilation fret
-// (095) et la densité de valeur (V-2).
 router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, res, next) => {
   try {
     const { product_id, volume_cm3, repack_volume_cm3 } = req.body;
@@ -90,10 +90,6 @@ router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, r
 });
 
 // ── POST /photo ──────────────────────────────────────────────────────────────
-// Q-1 DOCTRINE_NON_CONFORMITE : photo au scellé Dubaï — borne 1 des fenêtres
-// de responsabilité. Une photo par colis (systématique), par carton maître
-// sur gros volume. Multipart : champ 'photo' + parcel_id. Les deux lignes de
-// défense (extension + magic bytes) sont portées par middleware/upload-hub.
 router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateMagicBytes, async (req, res, next) => {
   const removeUploadedFile = () => {
     if (!req.file || !req.file.path) return;
@@ -101,12 +97,9 @@ router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateM
   };
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Photo manquante (champ multipart 'photo')" });
-    }
+    if (!req.file) return res.status(400).json({ error: "Photo manquante (champ multipart 'photo')" });
     const { error, value } = hub.photo.validate({ parcel_id: req.body.parcel_id, notes: req.body.notes });
     if (error) {
-      // Fichier déjà écrit par multer : le nettoyer avant de rejeter
       removeUploadedFile();
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -130,10 +123,9 @@ router.post('/batch-scan', ...hubAuth, async (req, res, next) => {
 });
 
 // ── GET /search ──────────────────────────────────────────────────────────────
-router.get('/search', ...hubAuth, async (req, res, next) => {
+router.get('/search', ...hubRead, async (req, res, next) => {
   try {
     const { q, status, island, limit = 50, offset = 0 } = req.query;
-
     const conditions = ['1=1'];
     const params = [];
     let pi = 1;
@@ -153,7 +145,8 @@ router.get('/search', ...hubAuth, async (req, res, next) => {
       params.push(island);
       pi++;
     }
-
+    addMarketScope(req, conditions, params);
+    pi = params.length + 1;
     const where = conditions.join(' AND ');
 
     const { rows } = await db.query(`
@@ -183,39 +176,51 @@ router.get('/search', ...hubAuth, async (req, res, next) => {
 });
 
 // ── GET /stats/week ──────────────────────────────────────────────────────────
-router.get('/stats/week', ...hubAuth, async (req, res, next) => {
+router.get('/stats/week', ...hubRead, async (req, res, next) => {
   try {
+    const conditions = ["p.created_at >= CURRENT_DATE - INTERVAL '7 days'"];
+    const params = [];
+    addMarketScope(req, conditions, params);
+    const where = conditions.join(' AND ');
+
     const { rows } = await db.query(`
       SELECT
-        DATE(created_at) AS day,
-        COUNT(*) FILTER (WHERE status = 'preparation')   AS scanned,
-        COUNT(*) FILTER (WHERE notes ILIKE '%[PACKED]%') AS packed,
-        COUNT(*) FILTER (WHERE status = 'shipped')       AS sealed,
-        COUNT(*)                                          AS total
-      FROM parcels
-      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
-      GROUP BY DATE(created_at)
+        DATE(p.created_at) AS day,
+        COUNT(*) FILTER (WHERE p.status = 'preparation')   AS scanned,
+        COUNT(*) FILTER (WHERE p.notes ILIKE '%[PACKED]%') AS packed,
+        COUNT(*) FILTER (WHERE p.status = 'shipped')       AS sealed,
+        COUNT(*)                                            AS total
+      FROM parcels p
+      LEFT JOIN orders o ON o.id = p.order_id
+      WHERE ${where}
+      GROUP BY DATE(p.created_at)
       ORDER BY day ASC
-    `);
+    `, params);
 
+    const totalConditions = ['1=1'];
+    const totalParams = [];
+    addMarketScope(req, totalConditions, totalParams);
+    const totalWhere = totalConditions.join(' AND ');
     const { rows: [totals] } = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE status IN ('draft', 'preparation')) AS pending,
-        COUNT(*) FILTER (WHERE status = 'shipped'
-                         AND shipped_at >= CURRENT_DATE)           AS shipped_today,
-        AVG(EXTRACT(EPOCH FROM (shipped_at - prepared_at)) / 3600)
-          FILTER (WHERE shipped_at IS NOT NULL
-                  AND prepared_at IS NOT NULL
-                  AND shipped_at >= CURRENT_DATE - INTERVAL '7 days')
+        COUNT(*) FILTER (WHERE p.status IN ('draft', 'preparation')) AS pending,
+        COUNT(*) FILTER (WHERE p.status = 'shipped'
+                         AND p.shipped_at >= CURRENT_DATE)           AS shipped_today,
+        AVG(EXTRACT(EPOCH FROM (p.shipped_at - p.prepared_at)) / 3600)
+          FILTER (WHERE p.shipped_at IS NOT NULL
+                  AND p.prepared_at IS NOT NULL
+                  AND p.shipped_at >= CURRENT_DATE - INTERVAL '7 days')
           AS avg_processing_hours
-      FROM parcels
-    `);
+      FROM parcels p
+      LEFT JOIN orders o ON o.id = p.order_id
+      WHERE ${totalWhere}
+    `, totalParams);
 
     res.json({
       daily: rows,
       summary: {
-        pending:              Number(totals.pending || 0),
-        shipped_today:        Number(totals.shipped_today || 0),
+        pending: Number(totals.pending || 0),
+        shipped_today: Number(totals.shipped_today || 0),
         avg_processing_hours: totals.avg_processing_hours
           ? Math.round(Number(totals.avg_processing_hours) * 10) / 10
           : null,
@@ -225,8 +230,12 @@ router.get('/stats/week', ...hubAuth, async (req, res, next) => {
 });
 
 // ── GET /pending ─────────────────────────────────────────────────────────────
-router.get('/pending', ...hubAuth, async (req, res, next) => {
+router.get('/pending', ...hubRead, async (req, res, next) => {
   try {
+    const conditions = ["p.status IN ('draft', 'preparation')"];
+    const params = [];
+    addMarketScope(req, conditions, params);
+    const where = conditions.join(' AND ');
     const { rows } = await db.query(`
       SELECT p.id, p.reference, p.status, p.type, p.order_id, p.notes,
              p.created_at, p.updated_at,
@@ -237,27 +246,33 @@ router.get('/pending', ...hubAuth, async (req, res, next) => {
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
       LEFT JOIN users u ON u.id = o.user_id
-      WHERE p.status IN ('draft', 'preparation')
+      WHERE ${where}
       ORDER BY p.created_at ASC
-    `);
+    `, params);
     res.json({ data: rows, count: rows.length });
   } catch (err) { next(err); }
 });
 
 // ── GET /today ───────────────────────────────────────────────────────────────
-router.get('/today', ...hubAuth, async (req, res, next) => {
+router.get('/today', ...hubRead, async (req, res, next) => {
   try {
+    const conditions = ['1=1'];
+    const params = [];
+    addMarketScope(req, conditions, params);
+    const where = conditions.join(' AND ');
     const { rows } = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'preparation'
-                         AND prepared_at >= CURRENT_DATE)       AS scanned_today,
-        COUNT(*) FILTER (WHERE notes ILIKE '%[PACKED]%'
-                         AND updated_at >= CURRENT_DATE)        AS packed_today,
-        COUNT(*) FILTER (WHERE status = 'shipped'
-                         AND shipped_at >= CURRENT_DATE)        AS sealed_today,
-        COUNT(*) FILTER (WHERE status IN ('draft', 'preparation')) AS pending_total
-      FROM parcels
-    `);
+        COUNT(*) FILTER (WHERE p.status = 'preparation'
+                         AND p.prepared_at >= CURRENT_DATE)       AS scanned_today,
+        COUNT(*) FILTER (WHERE p.notes ILIKE '%[PACKED]%'
+                         AND p.updated_at >= CURRENT_DATE)        AS packed_today,
+        COUNT(*) FILTER (WHERE p.status = 'shipped'
+                         AND p.shipped_at >= CURRENT_DATE)        AS sealed_today,
+        COUNT(*) FILTER (WHERE p.status IN ('draft', 'preparation')) AS pending_total
+      FROM parcels p
+      LEFT JOIN orders o ON o.id = p.order_id
+      WHERE ${where}
+    `, params);
     res.json(rows[0]);
   } catch (err) { next(err); }
 });

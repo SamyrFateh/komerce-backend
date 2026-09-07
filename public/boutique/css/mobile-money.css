@@ -1,0 +1,63 @@
+/* Mobile Money checkout — provider-specific surface, fail-closed by default. */
+.k-mobile-money-wrap {
+  display: none;
+  margin: 8px 0 12px;
+  padding: 12px;
+  border: 1px solid rgba(31, 48, 36, .11);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .82);
+}
+
+.k-mobile-money-wrap.is-visible { display: grid; gap: 10px; }
+
+.k-mobile-money-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.k-mobile-money-currency {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: .68;
+}
+
+.k-mobile-money-msisdn {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.k-mobile-money-msisdn.is-hidden { display: none; }
+
+.k-mobile-money-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(31, 48, 36, .18);
+  border-radius: 10px;
+  background: var(--white);
+  font: inherit;
+}
+
+.k-mobile-money-status {
+  min-height: 18px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.k-mobile-money-action {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.k-mobile-money-action.is-visible { display: inline-flex; }

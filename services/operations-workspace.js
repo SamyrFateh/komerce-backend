@@ -16,9 +16,9 @@
  * @db-write-via:inventory-service inventory_items, parcel_items, orders
  * @db-write-via:parcel-auto-create-service orders, parcel_items, parcels, scan_events
  * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, no_client_market_authority, reuse_domain_mutation_authorities
+ * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, no_client_market_authority, reuse_domain_mutation_authorities, semantic_state_source_reuse
  * @impact-areas  admin-dashboard, logistics, inventory, orders, payments, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -330,11 +330,14 @@ async function markOrdered(reference, market, actor = {}) {
     );
   }
 
+  // La source de state machine décrit l'opération métier, pas l'écran qui la
+  // déclenche. Le Workspace réutilise donc la source forward-only historique
+  // `hub_mark_ordered`; la provenance UI/marché reste portée par la note.
   const result = await transitionOrderStatus({
     orderId: order.id,
     newStatus: 'ordered',
     actor: { id: actor.id || null, role: actor.role || 'admin' },
-    source: 'canonical_operations_workspace',
+    source: 'hub_mark_ordered',
     note: `Workspace Opérations ${resolvedMarket.code}: commande envoyée au sourcing`,
   });
   if (!result.success) {

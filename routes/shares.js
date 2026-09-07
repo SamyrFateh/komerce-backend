@@ -1,30 +1,42 @@
 /**
  * @komerce-arch
- * @role          shares
+ * @role          snapshot-share-link
  * @domain        shared-cart
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/rate-limit.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       cart_shares, products
  * @db-write      cart_shares
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @doctrine      snapshot_share_non_transactional, snapshot_share_not_shared_list
+ * @impact-areas  shared-cart, boutique-share-link
+ * @version       2026-09
  */
 
-
 'use strict';
-// routes/shares.js — partage simple de snapshot
+
+/**
+ * /api/shares — PARTAGE SNAPSHOT, distinct de la liste partagée canonique.
+ *
+ * Cette surface publie uniquement un instantané de sélection via capability
+ * token. Elle ne crée PAS de shared_carts/shared_cart_items, ne porte aucun
+ * lifecycle OPEN/CLOSED, aucune réclamation de ligne et aucun paiement.
+ *
+ * La liste partagée métier reste exclusivement sous /api/shared-carts.
+ * `cart_shares.type = 'simple'` est conservé pour compatibilité DB historique.
+ * L'enrichissement catalogue à la lecture peut refléter le libellé/prix courant :
+ * le snapshot fige la sélection, pas un engagement commercial.
+ */
 const express = require('express');
 const router  = express.Router();
 const crypto  = require('crypto');
 const db      = require('../db');
 const { sharedCartLimiter } = require('../middleware/rate-limit');
-const log = require('../utils/logger').child({ module: 'shares' });
+
+const SHARE_KIND = 'snapshot';
 
 // ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
 
@@ -72,17 +84,17 @@ async function enrichItems(items) {
   });
 }
 
-/* ── POST /api/shares — créer un lien simple ── */
+/* ── POST /api/shares — créer un lien snapshot simple ── */
 router.post('/', sharedCartLimiter, async (req, res, next) => {
   try {
-  
     const { cart_items, sharer_name = null } = req.body;
 
     if (!cart_items || !Array.isArray(cart_items) || cart_items.length === 0) {
       return res.status(400).json({ error: 'cart_items requis' });
     }
 
-    // Calculer le total snapshot
+    // Calculer le total indicatif au moment de la création du snapshot.
+    // Ce montant n'est jamais une autorité de paiement.
     const total_kmf = cart_items.reduce((sum, i) => {
       return sum + ((i.price_kmf || i.product?.price_kmf || 0) * (i.qty || 1));
     }, 0);
@@ -109,6 +121,7 @@ router.post('/', sharedCartLimiter, async (req, res, next) => {
 
     const host = process.env.APP_URL || `https://${req.headers.host}`;
     return res.json({
+      share_kind: SHARE_KIND,
       token,
       url:      `${host}/c/${token}`,
       redirect: `/boutique/?share=${token}`,
@@ -119,10 +132,9 @@ router.post('/', sharedCartLimiter, async (req, res, next) => {
   }
 });
 
-/* ── GET /api/shares/:token — lire un panier partagé ── */
+/* ── GET /api/shares/:token — lire un snapshot partagé ── */
 router.get('/:token', async (req, res, next) => {
   try {
-  
     const { token } = req.params;
     const { rows } = await db.query(
       `SELECT * FROM cart_shares WHERE share_token = $1`, [token]
@@ -130,6 +142,15 @@ router.get('/:token', async (req, res, next) => {
     if (!rows.length) return res.status(404).json({ error: 'Lien introuvable ou expiré' });
 
     const share = rows[0];
+
+    // Cette route ne doit jamais absorber une future ligne métier d'un autre
+    // type : /api/shares est contractuellement limité au snapshot simple.
+    if (share.type && share.type !== 'simple') {
+      return res.status(409).json({
+        error: 'Ce partage appartient à un autre parcours',
+        code: 'snapshot_share_type_mismatch',
+      });
+    }
 
     // Vérifier expiration
     if (share.expires_at && new Date(share.expires_at) < new Date()) {
@@ -145,6 +166,7 @@ router.get('/:token', async (req, res, next) => {
     const total_kmf = items.reduce((s, i) => s + (i.product.price_kmf * i.qty), 0);
 
     return res.json({
+      share_kind: SHARE_KIND,
       token,
       sharer_name: share.sharer_name || null,
       status:      share.status || 'active',
@@ -162,3 +184,4 @@ router.get('/:token', async (req, res, next) => {
 // utilisé. Voir tests/unit/shares-token-entropy.test.js pour la preuve complète.
 module.exports = router;
 module.exports.genToken = genToken;
+module.exports.SHARE_KIND = SHARE_KIND;

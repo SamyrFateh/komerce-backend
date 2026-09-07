@@ -1,35 +1,5 @@
 {
-  "_doctrine": "Cliquet : ne peut que rétrécir. Une entrée retirée d'ici doit le rester. Régénéré par --save.",
-  "_updated": "2026-06-28",
-  "exempt": [
-    "docs/AUDIT_CONFORMITE_PRE_GOLIVE_2026-06-08.md",
-    "docs/P4_1_CALIBRAGE_RUN2.md",
-    "docs/P4_1_PREMIER_RUN.md",
-    "docs/RECONCILIATION_2026-06-16.md",
-    "docs/SIGNOFF_REVERIF.md",
-    "docs/_logs/2026-04-07_09-53_sync.md",
-    "docs/_logs/2026-04-07_09-54_sync.md",
-    "docs/_logs/2026-04-07_phase1_parcels.md",
-    "docs/_logs/2026-04-07_phase2_parcels.md",
-    "docs/_logs/2026-04-07_phase4_cleanup.md",
-    "docs/_work/2026-04-07_phase2_parcels_analysis.md",
-    "docs/_work/AUDIT_CODE_VS_TRUTH_2025-04-07.md",
-    "docs/_work/audit-code-vs-truth-2026-04-07.md",
-    "docs/audit/AUDIT_BUGS.md",
-    "docs/audit/AUDIT_CODE_INTEGRITY.md",
-    "docs/audit/AUDIT_DELTA_BACKEND_2026-06-14.md",
-    "docs/audit/AUDIT_KOMERCE_3D.md",
-    "docs/audit/AUDIT_PREGOLIVE_2026-06-22.md",
-    "docs/audit/PROMPT_SONNET_DEPLOY_ORCHESTRATION_KOMERCE.md",
-    "docs/audit/PROMPT_SONNET_LOT387_KOMERCE.md",
-    "docs/audit/PROMPT_SONNET_NOTIFICATIONS_PROVIDER_KOMERCE.md",
-    "docs/audit/PROMPT_SONNET_OBSERVABILITY_LOGS_KOMERCE.md",
-    "docs/audit/PROMPT_SONNET_SECURITY_GOLIVE_KOMERCE.md",
-    "docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md",
-    "docs/backend/ROUTES_REFACTO_ANALYSIS_2026-06-14.md",
-    "docs/boutique/ROADMAP_MODAL_TEMU.md",
-    "docs/doctrine/AUDIT_FEATURE_DOCTRINE.md",
-    "docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md",
-    "docs/vision/ROADMAP_PILOTE_KOMERCE.md"
-  ]
+  "_doctrine": "Zéro dette : aucune exemption historique hors archive. Toute entrée future exige une décision humaine explicite et reste protégée par Debt Zero.",
+  "_updated": "2026-09-06",
+  "exempt": []
 }

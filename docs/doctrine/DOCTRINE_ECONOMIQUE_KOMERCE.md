@@ -1,155 +1,259 @@
 # Doctrine économique Komerce
 
-> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
-
-> **Statut** : document fondamental  
-> **Dernière consolidation** : 15 mai 2026  
-> **Sources vérifiées** : `services/pricing-engine.js`, `routes/pricing.js`, `routes/pricing-strategy.js`, `routes/admin-pricing-components.js`, `routes/admin-cost-components.js`, `routes/admin-risk-provisions.js`, `routes/admin-finance-config.js`.
+> **Version** : 2.0 — 2026-09-07  
+> **Statut** : document fondamental canonique  
+> **Classification des coûts** : `DOCTRINE_CLASSIFICATION_COUTS_N1_N2_N3.md`  
+> **Flux / équilibre** : `DOCTRINE_FLUX_CONTRIBUTION_POINT_EQUILIBRE.md`
 
 ---
 
 ## 1. Phrase de vérité
 
-Komerce ne cherche pas le prix parfait au lancement. Komerce cherche un **prix protégé** qui permet d'apprendre le marché sans vendre à perte, puis utilise les signaux réels pour décider quoi sourcer, renforcer, corriger ou arrêter.
+Komerce ne cherche pas un coefficient magique qui ferait payer toute la structure à chaque produit.
 
-Cette doctrine est volontairement pragmatique : aux Comores, le coût réel n'est jamais parfaitement connu à l'avance. La douane, le fret, le change, les délais, les ruptures et les coûts terrain doivent être intégrés comme des risques économiques, pas comme des détails comptables secondaires.
+> **Chaque vente doit d'abord couvrir ses coûts variables et contribuer positivement au flux. C'est le flux de la période qui absorbe la structure N3.**
+
+Le prix final reste un arbitrage entre vérité économique, marché, stratégie et gouvernance humaine.
 
 ---
 
-## 2. Les quatre unités économiques
+## 2. Les trois niveaux canoniques de coûts
+
+La nomenclature métier est désormais intangible :
+
+| Niveau | Nom canonique | Nature | Question de classification |
+|---|---|---|---|
+| **N1** | Variable opérationnel / logistique | Variable | Ce coût est-il causé par l'achat, l'acheminement ou l'exécution physique du flux ? |
+| **N2** | Variable business / transactionnel | Variable | Ce coût est-il causé par la transaction, le paiement ou le risque de la vente ? |
+| **N3** | Structure fixe / semi-fixe de période | Fixe / semi-fixe de période | Ce coût existe-t-il indépendamment d'une vente particulière ? |
+
+La séparation principale est :
+
+```text
+COÛTS VARIABLES = N1 + N2
+STRUCTURE DE PÉRIODE = N3
+```
+
+La fréquence de facturation ne détermine jamais seule la classification. La causalité économique tranche.
+
+---
+
+## 3. N1 — Variable opérationnel / logistique
+
+N1 porte les coûts variables nécessaires pour acheter, acheminer, traiter et rendre le produit disponible au client ou au relais.
+
+Exemples :
+
+- achat fournisseur ;
+- sourcing variable ;
+- fret lié au poids / volume / shipment ;
+- douane et taxes liées au flux ;
+- port / transitaire variable ;
+- emballage facturé par colis ;
+- distribution locale par livraison ;
+- commission relais par retrait.
+
+N1 peut être engagé à l'article, à la commande, au colis ou au shipment sans perdre sa nature variable.
+
+---
+
+## 4. N2 — Variable business / transactionnel
+
+N2 porte les coûts variables déclenchés par la transaction commerciale, le paiement et le risque économique de la vente.
+
+Exemples :
+
+- frais de paiement ;
+- commission transactionnelle ;
+- coût business facturé par commande ;
+- provision de risque liée à la vente ;
+- risque réel réconcilié selon la doctrine de période ;
+- autres coûts business qui augmentent avec les transactions.
+
+N2 n'est pas « tout ce qui varie ». **N1 est également variable.**
+
+---
+
+## 5. N3 — Structure fixe / semi-fixe de période
+
+N3 porte l'ensemble des coûts fixes ou semi-fixes nécessaires à l'activité normale, indépendants d'une vente particulière et reconnus sur une période économique.
+
+Exemples :
+
+- salaires fixes et fonctions support ;
+- loyer Hub / bureau ;
+- Railway et plateforme à composante fixe ;
+- SaaS et abonnements fixes ;
+- comptabilité / administration ;
+- assurances de structure ;
+- forfait fixe d'un relais ;
+- minimum garanti ;
+- marketing structurel ;
+- coûts fixes pays ;
+- quote-part de structure groupe allouée selon une politique gouvernée.
+
+N3 est lu sur une période économique : mois, trimestre, année ou autre fenêtre canonique.
+
+Un coût de structure peut évoluer par palier de capacité sans devenir variable par transaction : embauche, nouvel espace Hub, véhicule, capacité réservée, etc.
+
+---
+
+## 6. Coûts mixtes
+
+Une même facture peut contenir plusieurs natures et doit alors être décomposée.
+
+```text
+Relais :
+  forfait mensuel fixe     → N3
+  commission par retrait   → N1 ou N2 selon la fonction
+
+Plateforme :
+  abonnement fixe          → N3
+  usage par transaction    → N1 ou N2 selon la fonction
+```
+
+Il est interdit de classer silencieusement toute une facture dans une seule famille si les composantes sont identifiables.
+
+---
+
+## 7. Formules économiques canoniques
+
+### Coût variable complet
+
+```text
+Coût variable complet = N1 + N2
+```
+
+### Contribution
+
+```text
+Contribution = prix encaissé - (N1 + N2)
+```
+
+La contribution mesure ce que la vente ajoute au flux après couverture de ses coûts variables.
+
+### CDR complet de référence
+
+```text
+CDR complet de référence = N1 + N2 + N3 imputé
+```
+
+Le CDR sert à lire une couverture complète théorique / imputée. Il ne transforme pas N3 en dette du produit.
+
+### Couverture du flux
+
+```text
+Couverture = Σ contributions réconciliées / N3 réel de période
+```
+
+---
+
+## 8. Les trois zones économiques d'un prix
+
+```text
+Prix < N1 + N2
+→ vente destructrice
+
+N1 + N2 <= Prix < CDR complet
+→ vente contributive : elle couvre son variable et aide à absorber N3
+
+Prix >= CDR complet
+→ couverture complète de référence au niveau unitaire
+```
+
+La vérité globale de viabilité reste celle du flux de période, pas celle d'un SKU isolé.
+
+---
+
+## 9. N3 réel et N3 imputé ne doivent jamais être confondus
+
+### N3 réel de période
+
+C'est la vérité de structure reconnue sur la période. Elle sert au calcul de couverture et du point d'équilibre.
+
+### N3 imputé
+
+C'est une allocation de lecture / simulation vers un article ou un autre objet économique afin de construire un CDR complet de référence.
+
+> **N3 réel est absorbé par le flux. N3 imputé éclaire le CDR.**
+
+---
+
+## 10. Les unités économiques du flux
 
 | Unité | Rôle |
 |---|---|
-| **Produit** | Porte le coût d'achat, le prix affiché, la marge cible et la confiance marché. |
-| **Commande** | Porte le paiement, le client, le relais, les remises, le wallet et la preuve commerciale. |
-| **Colis** | Porte les coûts logistiques réels ou estimés : poids, volume, fret, douane, transit, distribution. |
-| **Shipment** | Porte la vérité terrain agrégée : conteneur, transport, douane réelle, arrivage, ventilation. |
+| **Article** | Porte une contribution marginale et certains coûts variables directs. |
+| **Commande** | Porte l'acte commercial, le paiement et certains coûts variables business. |
+| **Panier** | Décrit la composition commerciale d'une commande ; c'est un KPI commercial. |
+| **Colis** | Porte les coûts et la densité logistique. |
+| **Shipment** | Porte une cohorte logistique de fret / douane / transit. |
+| **Période** | Porte N3, la couverture et la vérité de viabilité du marché. |
 
-La rentabilité ne doit pas être lue uniquement au niveau produit. Dans Komerce, elle se lit au croisement produit × commande × colis × shipment.
-
----
-
-## 3. Les quatre prix
-
-Le moteur de pricing calcule quatre niveaux de prix. Ces niveaux ne sont pas décoratifs : ils servent à protéger l'entreprise pendant la phase d'apprentissage.
-
-| Prix | Sens métier | Usage |
-|---|---|---|
-| **Survival price** | Couvre le minimum variable immédiat. | Déstockage, promo exceptionnelle, test très encadré. |
-| **Minimum safe price** | Couvre variables + risques + part raisonnable de coûts fixes. | Seuil rouge : ne pas vendre durablement en dessous. |
-| **Recommended price** | Prix conseillé pour atteindre la marge cible. | Prix de référence interne. |
-| **Test market price** | Prix réellement testable sur le marché. | Peut être ajusté selon signal terrain, mais doit rester protégé. |
-
-Le pricing ne doit pas être un simple `cost × coefficient`. Il doit intégrer les familles de coûts, la marge cible, le risque et la confiance marché.
+La rentabilité ne se résume donc jamais au seul panier moyen.
 
 ---
 
-## 4. Les trois niveaux de coûts
+## 11. Point d'équilibre
 
-La doctrine actuelle suit une logique extensible en trois niveaux.
-
-### Niveau 1 — coûts variables par commande
-
-Exemples : sourcing, paiement, emballage, fret, douane estimée, relais, distribution locale.
-
-Ces coûts sont modélisés via `cost_components` lorsqu'elle est disponible, avec fallback legacy vers `pricing_components`.
-
-### Niveau 2 — charges fixes ventilées
-
-Exemples : charges mensuelles, outils, salaires, frais récurrents, structure.
-
-Le moteur calcule une part de charges fixes par commande :
+La structure est couverte lorsque :
 
 ```text
-fixed_cost_allocation_kmf = monthly_fixed_costs / target_orders_per_month
+Σ contributions réconciliées = N3 réel de période
 ```
 
-Si l'objectif mensuel n'est pas renseigné dans `finance_config`, le moteur applique une valeur par défaut conservatrice.
-
-### Niveau 3 — provisions risques
-
-Exemples : douane imprévisible, casse, perte, retour impossible, litige paiement, écart de change, retard, surcoût insulaire.
-
-Ces risques sont portés par `risk_provisions`. Ils doivent être visibles, discutables et modifiables, pas cachés dans un coefficient global opaque.
+Le moteur peut traduire la distance à l'équilibre en commandes, articles ou colis **équivalents à mix actuel**. Ces valeurs sont des traductions opérationnelles du même gap, pas trois vérités différentes.
 
 ---
 
-## 5. Statuts économiques
+## 12. Prix et marché
 
-### `health_status`
+Le pricing ne doit jamais être un simple `cost × coefficient`.
 
-| Statut | Sens |
-|---|---|
-| `loss` | Le prix vend à perte ou sous le seuil de survie. |
-| `danger` | Marge trop faible ; ne pas scaler. |
-| `fragile` | Viable mais sensible aux écarts terrain. |
-| `healthy` | Marge correctement protégée. |
-| `strong` | Très bonne marge ou protection élevée. |
-| `unknown` | Données insuffisantes. |
+Le moteur calcule les frontières économiques ; la stratégie choisit un prix dans un corridor de marché compatible avec :
 
-Les seuils doctrinaux sont dans `services/pricing-engine.js` : danger sous 15 %, fragile sous 25 %, healthy jusqu'à 40 %, strong au-delà.
+- l'acceptabilité client ;
+- la contribution recherchée ;
+- le rôle du produit dans le mix ;
+- le volume ;
+- la densité logistique ;
+- la politique de sécurité ;
+- la validation humaine.
 
-### `market_confidence`
-
-| Statut | Sens |
-|---|---|
-| `unknown` | Pas assez de ventes ou signaux. |
-| `testing` | Premières ventes observées. |
-| `validated` | Demande confirmée. |
-| `scaling` | Produit candidat au renforcement. |
-| `rejected` | Produit actif sans vente pendant une période longue. |
-
-Le code actuel utilise notamment : 1 vente pour `testing`, 6 pour `validated`, 20 pour `scaling`, et 60 jours sans vente pour `rejected`.
-
-### `sourcing_decision`
-
-| Décision | Action attendue |
-|---|---|
-| `PRIORITY` | Renforcer le sourcing, surveiller stock, négocier fournisseur. |
-| `TEST` | Tester prudemment, petite quantité, mesure rapide. |
-| `WATCH` | Surveiller sans pousser. |
-| `AVOID` | Ne pas recommander à l'achat. |
-| `LOSS` | Bloquer ou corriger : prix/coût dangereux. |
+Le marché borne le possible. Le moteur mesure les conséquences. La stratégie décide.
 
 ---
 
-## 6. Doctrine Comores
+## 13. Règles à ne pas casser
 
-Komerce opère dans un marché importateur, sensible au prix, où l'utilisateur final local et le payeur diaspora peuvent être deux personnes différentes.
-
-Conséquences :
-
-1. **Le prix doit être lisible pour la diaspora** : la personne qui paie veut comprendre ce qu'elle finance.
-2. **Le prix doit rester acceptable localement** : trop cher, le produit devient symbolique mais non scalable.
-3. **La douane n'est pas une constante** : elle doit être provisionnée puis réconciliée.
-4. **Le retour produit n'est pas un acquis** : le risque SAV doit être intégré en amont.
-5. **Le relais est une unité de confiance** : disponibilité, code retrait, preuve de collecte et cash doivent être tracés.
-6. **Le colis est économique** : un produit rentable seul peut devenir mauvais si son colis est lourd, volumineux ou mal ventilé.
-
----
-
-## 7. Règles à ne pas casser
-
-- Ne jamais remplacer le moteur de pricing par un coefficient unique.
-- Ne jamais masquer les risques dans une marge globale non documentée.
-- Ne jamais confondre prix affiché, prix conseillé et seuil minimum sûr.
-- Ne jamais scaler un produit `danger`, `loss` ou `unknown` sans justification terrain.
-- Ne jamais considérer un audit ancien comme vérité si le code ou la DB l'a dépassé.
-- Ne jamais faire porter toute la rentabilité au produit seul : commande, colis et shipment comptent.
+- N1 et N2 sont toujours variables dans la nomenclature métier canonique.
+- N3 est toujours une structure fixe / semi-fixe rattachée à une période économique.
+- La périodicité d'une facture ne suffit jamais à classifier un coût.
+- Un coût mixte doit être séparé entre sa part fixe et sa part variable lorsque cela est possible.
+- N3 ne devient jamais une dette du SKU.
+- Le coût variable complet est toujours `N1 + N2`.
+- La contribution est toujours `prix - (N1 + N2)`.
+- Le point d'équilibre réel compare la contribution cumulée au N3 réel de période.
+- Les nomenclatures historiques « niveau 2 = charges fixes » et « niveau 3 = provisions risques » sont supersédées et ne doivent plus alimenter UI, documentation métier ou nouvelles API.
+- Ne jamais masquer les risques dans une marge globale opaque.
+- Ne jamais présenter une hypothèse d'imputation comme un coût réel réconcilié.
 
 ---
 
-## 8. Fichiers de référence
+## 14. Phrase de contrôle
 
-| Fichier | Rôle |
-|---|---|
-| `services/pricing-engine.js` | Calcul des prix, statuts économiques et décision sourcing. |
-| `routes/pricing.js` | API principale de recommandation pricing. |
-| `routes/pricing-strategy.js` | Stratégie pricing avancée. |
-| `routes/admin-pricing-components.js` | Administration des composantes de prix. |
-| `routes/admin-cost-components.js` | Administration des composantes de coûts. |
-| `routes/admin-risk-provisions.js` | Administration des provisions de risque. |
-| `routes/admin-finance-config.js` | Configuration financière globale. |
-| `docs/ADR-009-source-verite-unifiee.md` | Décision source de vérité unifiée. |
-| `docs/ADR-010-pricing-reads-db.md` | Décision pricing lu depuis la DB. |
-| `docs/ADR-011-pricing-extensible-3-niveaux.md` | Décision pricing extensible en trois niveaux. |
+Pour chaque coût :
+
+> **Une vente supplémentaire fait-elle augmenter ce coût ?**
+
+- oui → coût variable : N1 ou N2 ;
+- non → N3 si le coût appartient à la structure normale de la période.
+
+Puis :
+
+> **Est-ce un coût d'exécution opérationnelle/logistique ou un coût business/transactionnel ?**
+
+- opérationnel / logistique → N1 ;
+- business / transactionnel → N2.
+
+Cette double question est la règle canonique de classification Komerce.

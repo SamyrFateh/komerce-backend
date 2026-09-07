@@ -1,0 +1,60 @@
+name: Production catalogue smoke
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[ops] catalog-prod-smoke-20260905'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate public catalogue media gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/products.json"
+          headers="$RUNNER_TEMP/headers.txt"
+          code="$(curl --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --header 'User-Agent: KomerceProductionCatalogueSmoke/1.0' \
+            --dump-header "$headers" --output "$body" --write-out '%{http_code}' \
+            'https://komerce.co/api/products?limit=1000')"
+
+          echo "HTTP $code"
+          test "$code" = '200' || { cat "$headers"; head -c 1000 "$body" || true; exit 1; }
+          jq -e '.products and (.products | type == "array")' "$body" >/dev/null
+
+          total="$(jq '.products | length' "$body")"
+          reported_total="$(jq '.total // -1' "$body")"
+          showcase="$(jq '[.products[] | select((.product_ref // "") | startswith("SHOWCASE-V2-"))] | length' "$body")"
+          inline="$(jq '[.products[] | select((.image_url // "") | test("^data:image/"; "i"))] | length' "$body")"
+          missing="$(jq '[.products[] | select((.image_url // "") | gsub("^\\s+|\\s+$"; "") | length == 0)] | length' "$body")"
+
+          echo "catalogue_public returned=$total reported_total=$reported_total showcase_v2=$showcase inline_data=$inline missing_hero=$missing"
+
+          test "$showcase" = '0' || { echo '::error::SHOWCASE-V2 fixture leaked into public catalogue'; exit 1; }
+          test "$inline" = '0' || { echo '::error::data:image synthetic media leaked into public catalogue'; exit 1; }
+          test "$missing" = '0' || { echo '::error::public product without hero image'; exit 1; }
+          test "$total" -gt 0 || { echo '::error::public catalogue unexpectedly empty'; exit 1; }
+
+          jq -r '.products[] | [.product_ref, .category, .subcategory, .image_url] | @tsv' "$body" | head -n 12
+
+      - name: Close command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Production catalogue smoke passed: no SHOWCASE-V2 fixture, no data:image hero, no missing hero in GET /api/products.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

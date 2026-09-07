@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -9,7 +8,7 @@
 const {
   actionableVulnerabilities,
   hasDirectAdvisory,
-  inheritedHighCriticalCount,
+  inheritedBlockingCount,
 } = require('../../scripts/lib/npm-audit-core');
 
 describe('npm audit v2 advisory classification', () => {
@@ -34,7 +33,7 @@ describe('npm audit v2 advisory classification', () => {
 
     expect(actionableVulnerabilities(vulnerabilities).map((v) => v.name))
       .toEqual(['brace-expansion']);
-    expect(inheritedHighCriticalCount(vulnerabilities)).toBe(2);
+    expect(inheritedBlockingCount(vulnerabilities)).toBe(2);
   });
 
   test('does not hide a critical entry carrying its own advisory object', () => {
@@ -48,16 +47,35 @@ describe('npm audit v2 advisory classification', () => {
     expect(actionableVulnerabilities({ direct: vulnerability })).toEqual([vulnerability]);
   });
 
-  test('ignores moderate advisories for the high/critical blocking gate', () => {
-    const vulnerabilities = {
-      moderate: {
-        name: 'moderate-only',
-        severity: 'moderate',
-        via: [{ source: 789, title: 'Moderate advisory', severity: 'moderate' }],
-      },
+  test('treats moderate advisories as blocking debt', () => {
+    const vulnerability = {
+      name: 'moderate-only',
+      severity: 'moderate',
+      via: [{ source: 789, title: 'Moderate advisory', severity: 'moderate' }],
     };
 
-    expect(actionableVulnerabilities(vulnerabilities)).toEqual([]);
-    expect(inheritedHighCriticalCount(vulnerabilities)).toBe(0);
+    expect(actionableVulnerabilities({ moderate: vulnerability })).toEqual([vulnerability]);
+    expect(inheritedBlockingCount({ moderate: vulnerability })).toBe(0);
+  });
+
+  test('still ignores low advisories in the blocking gate', () => {
+    const vulnerability = {
+      name: 'low-only',
+      severity: 'low',
+      via: [{ source: 790, title: 'Low advisory', severity: 'low' }],
+    };
+
+    expect(actionableVulnerabilities({ low: vulnerability })).toEqual([]);
+    expect(inheritedBlockingCount({ low: vulnerability })).toBe(0);
+  });
+});
+
+describe('npm audit dependency resolution', () => {
+  test('pins the patched qs release in both package policy and lock', () => {
+    const pkg = require('../../package.json');
+    const lock = require('../../package-lock.json');
+
+    expect(pkg.overrides?.qs).toBe('6.16.0');
+    expect(lock.packages?.['node_modules/qs']?.version).toBe('6.16.0');
   });
 });

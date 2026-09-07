@@ -1,16 +1,5 @@
 {
-  "_doctrine": "Cliquet : ne peut que rétrécir. Une carte retirée d'ici doit le rester (régression sinon). Régénéré par --save.",
-  "_updated": "2026-07-03",
-  "exempt": [
-    "catalog",
-    "customs",
-    "documents",
-    "economic-engine",
-    "inventory",
-    "logistics",
-    "orders",
-    "recommendations",
-    "refunds",
-    "shared-cart"
-  ]
+  "_doctrine": "Zéro dette : aucune carte sans preuve tests|verification|contracts. Les identités de carte sont des chemins de manifeste, jamais le seul champ name.",
+  "_updated": "2026-09-06",
+  "exempt": []
 }

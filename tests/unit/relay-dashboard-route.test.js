@@ -85,7 +85,7 @@ describe('routes/relay-dashboard', () => {
       const res = await request(buildApp()).get('/api/relay-dashboard/dashboard');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ pending: 3, delivered: 10 });
-      expect(queries.getDashboardKPIs).toHaveBeenCalledWith(mockUser);
+      expect(queries.getDashboardKPIs).toHaveBeenCalledWith(mockUser, { authorizedMarkets: undefined });
     });
 
     test('accessible à un admin', async () => {
@@ -99,12 +99,10 @@ describe('routes/relay-dashboard', () => {
   describe('GET /orders', () => {
     test('transmet les filtres de requête avec défauts limit/offset', async () => {
       queries.getOrders.mockResolvedValueOnce({ count: 0, orders: [] });
-
       await request(buildApp()).get('/api/relay-dashboard/orders').query({ status: 'available' });
-
       expect(queries.getOrders).toHaveBeenCalledWith(mockUser, {
         status: 'available', search: undefined, limit: 50, offset: 0,
-      });
+      }, { authorizedMarkets: undefined });
     });
   });
 
@@ -160,7 +158,7 @@ describe('routes/relay-dashboard', () => {
         .post('/api/relay-dashboard/orders/o1/incident')
         .send({ type: 'retard' });
       expect(res.status).toBe(403);
-      expect(mockDbQuery).toHaveBeenCalledTimes(1); // pas d'INSERT après le guard
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
     });
 
     test('un admin peut créer un incident sur n\'importe quel relais', async () => {
@@ -168,11 +166,9 @@ describe('routes/relay-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-AUTRE' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'inc1', type: 'retard' }] });
-
       const res = await request(buildApp())
         .post('/api/relay-dashboard/orders/o1/incident')
         .send({ type: 'retard', description: 'colis en retard', priority: 'high' });
-
       expect(res.status).toBe(201);
       expect(res.body).toEqual({ success: true, incident: { id: 'inc1', type: 'retard' } });
     });
@@ -181,11 +177,9 @@ describe('routes/relay-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'inc1', type: 'stock' }] });
-
       const res = await request(buildApp())
         .post('/api/relay-dashboard/orders/o1/incident')
         .send({ type: 'stock' });
-
       expect(res.status).toBe(201);
       expect(res.body.incident).toEqual({ id: 'inc1', type: 'stock' });
     });
@@ -195,10 +189,7 @@ describe('routes/relay-dashboard', () => {
     test('exige un texte non vide', async () => {
       const res1 = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({});
       expect(res1.status).toBe(400);
-
-      const res2 = await request(buildApp())
-        .post('/api/relay-dashboard/orders/o1/comment')
-        .send({ text: '   ' });
+      const res2 = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: '   ' });
       expect(res2.status).toBe(400);
     });
 
@@ -206,22 +197,14 @@ describe('routes/relay-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'c1', text: 'Bien reçu' }] });
-
-      const res = await request(buildApp())
-        .post('/api/relay-dashboard/orders/o1/comment')
-        .send({ text: 'Bien reçu' });
-
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'Bien reçu' });
       expect(res.status).toBe(201);
       expect(res.body.comment).toEqual({ id: 'c1', text: 'Bien reçu' });
     });
 
     test('403 IDOR sur commentaire hors relais', async () => {
-      mockDbQuery.mockResolvedValueOnce({
-        rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-AUTRE' }],
-      });
-      const res = await request(buildApp())
-        .post('/api/relay-dashboard/orders/o1/comment')
-        .send({ text: 'x' });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-AUTRE' }] });
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'x' });
       expect(res.status).toBe(403);
     });
   });
@@ -237,35 +220,23 @@ describe('routes/relay-dashboard', () => {
         .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'inc1' }] })
         .mockResolvedValueOnce({ rows: [] });
-
-      const res = await request(buildApp())
-        .post('/api/relay-dashboard/orders/o1/escalate')
-        .send({ reason: 'stock manquant' });
-
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/escalate').send({ reason: 'stock manquant' });
       expect(res.status).toBe(201);
       expect(res.body.message).toBe('Escalade envoyée au hub');
       expect(mockDbQuery).toHaveBeenCalledTimes(3);
     });
 
     test('403 IDOR sur escalade hors relais', async () => {
-      mockDbQuery.mockResolvedValueOnce({
-        rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-AUTRE' }],
-      });
-      const res = await request(buildApp())
-        .post('/api/relay-dashboard/orders/o1/escalate')
-        .send({ reason: 'x' });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-AUTRE' }] });
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/escalate').send({ reason: 'x' });
       expect(res.status).toBe(403);
     });
   });
 
   describe('PATCH /orders/:id/client-absent', () => {
     test('422 si la commande n\'est pas "available"', async () => {
-      mockDbQuery.mockResolvedValueOnce({
-        rows: [{ id: 'o1', reference: 'CMD-1', status: 'collected', relais_id: 'relais-1' }],
-      });
-
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'collected', relais_id: 'relais-1' }] });
       const res = await request(buildApp()).patch('/api/relay-dashboard/orders/o1/client-absent');
-
       expect(res.status).toBe(422);
     });
 
@@ -274,9 +245,7 @@ describe('routes/relay-dashboard', () => {
         .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-1' }] })
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [] });
-
       const res = await request(buildApp()).patch('/api/relay-dashboard/orders/o1/client-absent');
-
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ success: true, message: 'Client marqué absent, relance programmée' });
       expect(mockDbQuery).toHaveBeenCalledTimes(3);
@@ -286,6 +255,60 @@ describe('routes/relay-dashboard', () => {
       mockDbQuery.mockResolvedValueOnce({ rows: [] });
       const res = await request(buildApp()).patch('/api/relay-dashboard/orders/o1/client-absent');
       expect(res.status).toBe(404);
+    });
+  });
+
+  describe('market_operator', () => {
+    beforeEach(() => {
+      mockUser = { id: 'op-1', role: 'market_operator', full_name: 'Op Un' };
+    });
+
+    test('GET /dashboard : scope résolu depuis operator_market_scopes et transmis au service', async () => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] });
+      queries.getDashboardKPIs.mockResolvedValueOnce({ pending: 1 });
+      const res = await request(buildApp()).get('/api/relay-dashboard/dashboard');
+      expect(res.status).toBe(200);
+      const [, opts] = queries.getDashboardKPIs.mock.calls[0];
+      expect(opts.authorizedMarkets).toEqual(new Set(['km-uuid']));
+    });
+
+    test('POST /orders/:id/comment : autorisé pour un manager sur le marché de la commande', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid' }] })
+        .mockResolvedValueOnce({ rows: [{ role: 'manager' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'c1', text: 'ok' }] });
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+      expect(res.status).toBe(201);
+      expect(res.body.comment).toEqual({ id: 'c1', text: 'ok' });
+    });
+
+    test('POST /orders/:id/comment : 403 market_scope_role_insufficient pour un viewer', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid' }] })
+        .mockResolvedValueOnce({ rows: [{ role: 'viewer' }] });
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('market_scope_role_insufficient');
+    });
+
+    test('POST /orders/:id/comment : 403 market_scope_denied si le marché n\'est pas autorisé', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'yt-uuid' }] });
+      const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('market_scope_denied');
+    });
+
+    test('GET /orders/:id : accessible sans exiger le rôle manager (lecture)', async () => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] });
+      queries.getOrderDetail.mockResolvedValueOnce({ id: 'o1', reference: 'CMD-1' });
+      const res = await request(buildApp()).get('/api/relay-dashboard/orders/o1');
+      expect(res.status).toBe(200);
+      const [, , opts] = queries.getOrderDetail.mock.calls[0];
+      expect(opts.authorizedMarkets).toEqual(new Set(['km-uuid']));
     });
   });
 });

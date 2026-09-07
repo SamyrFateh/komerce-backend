@@ -123,16 +123,21 @@ describe('canonical admin navigation', () => {
     expect(header.children[0].children[1].children[3].attributes['aria-current']).toBe('page');
   });
 
-  test('Action Center et Démo restent des utilitaires, pas des dashboards principaux', () => {
-    const env = loadNavigation('/admin/action-center', 'action-center');
-    const header = env.api.mount({ document: env.document, pathname: '/admin/action-center', surface: 'action-center' });
+  test('Action Center, Accès pays et Démo restent des utilitaires, pas des dashboards principaux', () => {
+    const env = loadNavigation('/dashboards/canonical/access.html', 'market-access');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/dashboards/canonical/access.html',
+      surface: 'market-access',
+    });
     const inner = header.children[0];
     const primary = inner.children[1];
     const utilities = inner.children[2];
 
     expect(primary.children).toHaveLength(4);
-    expect(utilities.children.map(link => link.textContent)).toEqual(['Actions', 'Démo staging']);
-    expect(utilities.children[0].attributes['aria-current']).toBe('page');
+    expect(utilities.children.map(link => link.textContent)).toEqual(['Actions', 'Accès pays', 'Démo staging']);
+    expect(utilities.children[1].href).toBe('/dashboards/canonical/access.html');
+    expect(utilities.children[1].attributes['aria-current']).toBe('page');
     expect(inner.children[0].children[1].href).toBe('/admin/pilotage');
   });
 });

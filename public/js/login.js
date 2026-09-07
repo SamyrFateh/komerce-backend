@@ -4,10 +4,10 @@
  * @domain        dashboard
  * @layer         ui-bootstrap
  * @owner         dashboards
- * @purpose       Soumission du formulaire de connexion admin (/login.html) —
+ * @purpose       Soumission du formulaire de connexion admin / responsable pays (/login.html) —
  *                servi en <script src> same-origin.
- * @impact-areas  dashboard, auth, csp
- * @version       2026-07
+ * @impact-areas  dashboard, auth, csp, market
+ * @version       2026-09
  */
 
 /**
@@ -25,6 +25,8 @@
  * ── Contraintes de chargement ──
  *   1. Chargé en <script src> SYNCHRONE (jamais defer/async), à l'emplacement
  *      exact du bloc inline d'origine.
+ *   2. Cette page est l'entrée commune des surfaces Canonical pour `admin` et
+ *      `market_operator`. L'autorité de marché reste exclusivement côté serveur.
  *
  * Gate associé : scripts/check-inline-scripts.js (étendu à tout public/, pas
  * seulement public/boutique/).
@@ -38,14 +40,15 @@
       var passEl   = document.getElementById('password');
       var btn      = document.getElementById('btn-submit');
       var banner   = document.getElementById('error-banner');
+      var ALLOWED_DASHBOARD_ROLES = new Set(['admin', 'market_operator']);
 
       function nextUrl() {
         var params = new URLSearchParams(window.location.search);
         var next   = params.get('next');
-        if (!next) return '/admin/control-tower';
+        if (!next) return '/admin/pilotage';
         // Sécurité : accepter uniquement les chemins internes
         if (next.startsWith('/') && !next.startsWith('//')) return next;
-        return '/admin/control-tower';
+        return '/admin/pilotage';
       }
 
       function showError(msg) {
@@ -105,11 +108,13 @@
             return;
           }
 
-          // Vérifier le rôle admin avant de rediriger
+          // La page de login ouvre les surfaces Canonical aux rôles dashboard
+          // autorisés. Les permissions fines et le MarketScope restent vérifiés
+          // par les API côté serveur après redirection.
           var user = data.user || data;
-          if (user.role !== 'admin') {
+          if (!ALLOWED_DASHBOARD_ROLES.has(user.role)) {
             setLoading(false);
-            showError('Accès refusé — compte sans droits administrateur.');
+            showError('Accès refusé — compte sans droits dashboard.');
             return;
           }
 

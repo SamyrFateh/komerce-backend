@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        product_filters, product_id, admin_product_payload
  * @outputs       product_list, product_detail, product_mutation_result
- * @depends       db.js, validators.js, middleware/auth.js
+ * @depends       db.js, validators.js, middleware/auth.js, services/catalog-public-view.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-catalog.js, public/boutique/js/b-modal-core.js, komerce-api.js
  * @db-read       product_skus, product_variants, products
  * @db-write      none
  * @db-txn        product_reference_stable, deactivate_not_delete
  * @doctrine      catalogue_source_db, produit_reference_stable, produit_desactive_non_supprime
  * @impact-areas  catalog, product-discovery, modal, admin-products, suggestions
- * @version       2026-06
+ * @version       2026-09
  */
 
 
@@ -40,7 +40,11 @@ const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const productAdminService = require('../services/product-admin-service');
-const { publicProductColumns, toPublicProduct } = require('../services/catalog-public-view');
+const {
+  publicCatalogVisibilitySql,
+  publicProductColumns,
+  toPublicProduct,
+} = require('../services/catalog-public-view');
 const log = require('../utils/logger').child({ module: 'products' });
 
 // ─── UUID validation helper ───────────────────────────────────────────────────
@@ -71,7 +75,10 @@ router.get('/', async (req, res, next) => {
     const MAX_LIMIT = 1000;
     const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 100), MAX_LIMIT);
 
-    const conditions = ['p.is_active = TRUE'];
+    // Une seule frontière publique : active + vraie identité produit + média
+    // publiable. Les 500 fixtures SHOWCASE-V2 restent disponibles aux harnais
+    // mais ne polluent plus la Boutique ni ses comptages.
+    const conditions = [publicCatalogVisibilitySql('p')];
     const params     = [];
     let   pi         = 1;
 
@@ -134,12 +141,12 @@ router.get('/', async (req, res, next) => {
 router.get('/categories', async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT category, COUNT(*) AS count,
-              array_agg(DISTINCT subcategory) FILTER (WHERE subcategory IS NOT NULL) AS subcategories
-       FROM products
-       WHERE is_active = TRUE
-       GROUP BY category
-       ORDER BY category`
+      `SELECT p.category, COUNT(*) AS count,
+              array_agg(DISTINCT p.subcategory) FILTER (WHERE p.subcategory IS NOT NULL) AS subcategories
+       FROM products p
+       WHERE ${publicCatalogVisibilitySql('p')}
+       GROUP BY p.category
+       ORDER BY p.category`
     );
     res.json(rows);
   } catch (err) {
@@ -153,21 +160,21 @@ router.get('/categories', async (req, res, next) => {
 router.get('/subcategories', async (req, res, next) => {
   try {
     const { category } = req.query;
-    const conditions = ['is_active = TRUE', 'subcategory IS NOT NULL'];
+    const conditions = [publicCatalogVisibilitySql('p'), 'p.subcategory IS NOT NULL'];
     const params = [];
     let pi = 1;
 
     if (category) {
-      conditions.push(`category = $${pi++}`);
+      conditions.push(`p.category = $${pi++}`);
       params.push(category);
     }
 
     const { rows } = await db.query(
-      `SELECT category, subcategory, COUNT(*) AS count
-       FROM products
+      `SELECT p.category, p.subcategory, COUNT(*) AS count
+       FROM products p
        WHERE ${conditions.join(' AND ')}
-       GROUP BY category, subcategory
-       ORDER BY category, subcategory`,
+       GROUP BY p.category, p.subcategory
+       ORDER BY p.category, p.subcategory`,
       params
     );
     res.json(rows);
@@ -186,7 +193,7 @@ router.use(require('./catalog-product-detail'));
 router.get('/:id', requireUUID, async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM products WHERE id = $1 AND is_active = TRUE`,
+      `SELECT * FROM products p WHERE p.id = $1 AND ${publicCatalogVisibilitySql('p')}`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Produit introuvable' });

@@ -22,6 +22,7 @@
  */
 
 import { state } from '../b-store.js';
+import '../product-image-loading-ux.js';
 import {
   sanitize,
   renderProductCarousel,

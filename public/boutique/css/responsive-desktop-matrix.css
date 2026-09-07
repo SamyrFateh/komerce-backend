@@ -1,0 +1,139 @@
+/**
+ * @komerce-arch
+ * @role          boutique-responsive-desktop-matrix
+ * @domain        catalog
+ * @layer         css-adaptation
+ * @criticality   high
+ * @inputs        viewport_width, viewport_height, side_cart_state
+ * @outputs       desktop_density, catalog_columns, side_cart_reserve, vertical_compaction
+ * @depends       layout.css, products.css, boutique-desktop.css, category-cutout-navigation-desktop.css
+ * @used-by       public/boutique/index.html
+ * @doctrine      responsive_by_available_css_viewport_not_physical_inches
+ * @impact-areas  desktop, laptop, tablet-landscape, catalog-grid, side-cart, category-shelf
+ * @version       2026-09
+ *
+ * Adaptation tardive du bundle desktop. Les owners principaux restent les
+ * fichiers canoniques ; ce fichier ne change que leur densité selon le viewport.
+ * Le breakpoint fonctionnel mobile/desktop reste 900px. Le système de gates
+ * autorise 900/1200 ; au-delà, la grille s'adapte continûment à l'espace utile.
+ */
+
+/* ── DESKTOP COMPACT : 900–1199 CSS px ─────────────────────────
+ * Couvre tablette paysage, petit laptop et laptop zoomé 125/150 %.
+ * Quatre colonnes + side-cart 296px produisaient des cartes trop étroites.
+ */
+@media (min-width: 900px) and (max-width: 1199px) {
+  :root {
+    --sc-reserve-w: clamp(208px, 21vw, 224px);
+  }
+
+  .k-side-cart {
+    width: var(--sc-reserve-w);
+  }
+
+  .k-grid,
+  .k-sec-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.2vw, 14px);
+  }
+
+  /* Étagère catégories : même grammaire, densité laptop. */
+  html.k-home-premium-v1 .k-shelf-rail,
+  .k-shelf-rail {
+    grid-template-columns: repeat(8, minmax(58px, 1fr));
+    gap: 4px;
+    padding: 5px 8px 7px;
+  }
+
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout:hover,
+  .k-shelf-rail .k-cat-cutout:active,
+  .k-shelf-rail .k-cat-cutout.active {
+    min-height: 72px;
+    padding: 1px 3px 4px;
+  }
+
+  .k-cat-cutout .k-chip-photo,
+  .k-cat-cutout.active .k-chip-photo,
+  .k-cat-cutout[data-cat] .k-chip-photo,
+  .k-cat-cutout.active[data-cat] .k-chip-photo,
+  html.k-home-premium-v1 .k-shelf-rail .k-shelf-object-slot {
+    width: 68px;
+    height: 56px;
+  }
+
+  .k-cat-cutout .k-chip-label,
+  .k-cat-cutout.active .k-chip-label {
+    max-width: 86px;
+    font-size: 10.5px;
+  }
+
+  #k-subcats-wrap .k-subcats-rail {
+    gap: 10px;
+  }
+}
+
+/* ── DESKTOP FLUIDE : ≥1200 CSS px ─────────────────────────────
+ * Le panier passe progressivement de 260 à 296px sans nouveau breakpoint.
+ * La grille choisit automatiquement 3/4/5 colonnes selon la largeur réellement
+ * disponible : elle réagit donc aussi à l'ouverture du side-cart et au zoom.
+ */
+@media (min-width: 1200px) {
+  :root {
+    --sc-reserve-w: clamp(260px, calc(80px + 15vw), 296px);
+  }
+
+  .k-side-cart {
+    width: var(--sc-reserve-w);
+  }
+
+  .k-grid,
+  .k-sec-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: clamp(14px, 1vw, 18px);
+  }
+}
+
+/* ── ÉCRANS BAS : desktop/laptop ≤800px de haut ────────────────
+ * 1366×768, 1280×720 et leurs équivalents zoomés : on compacte la
+ * navigation verticale sans forcer la géométrie du hero, qui reste possédée
+ * par son owner canonique.
+ */
+@media (min-width: 900px) and (max-height: 800px) {
+  html.k-home-premium-v1 .k-shelf-rail,
+  .k-shelf-rail {
+    padding-top: 3px;
+    padding-bottom: 5px;
+  }
+
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout:hover,
+  .k-shelf-rail .k-cat-cutout:active,
+  .k-shelf-rail .k-cat-cutout.active {
+    min-height: 76px;
+  }
+
+  #k-subcats-wrap {
+    padding-top: 4px;
+    padding-bottom: 5px;
+  }
+}
+
+/* Cas le plus contraint : petit desktop ET faible hauteur. */
+@media (min-width: 900px) and (max-width: 1199px) and (max-height: 720px) {
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout:hover,
+  .k-shelf-rail .k-cat-cutout:active,
+  .k-shelf-rail .k-cat-cutout.active {
+    min-height: 66px;
+  }
+
+  .k-cat-cutout .k-chip-photo,
+  .k-cat-cutout.active .k-chip-photo,
+  .k-cat-cutout[data-cat] .k-chip-photo,
+  .k-cat-cutout.active[data-cat] .k-chip-photo,
+  html.k-home-premium-v1 .k-shelf-rail .k-shelf-object-slot {
+    width: 62px;
+    height: 50px;
+  }
+}

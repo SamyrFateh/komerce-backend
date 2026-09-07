@@ -14,6 +14,7 @@ jest.mock('../../services/discovery-rail-composer', () => ({
 const db = require('../../db');
 const { composeDiscoveryRail } = require('../../services/discovery-rail-composer');
 const {
+  MAX_EDITORIAL_CANDIDATES,
   isEnabled,
   parseEditorialCandidates,
   getDiscoveryRail,
@@ -84,6 +85,18 @@ describe('discovery-rail-service — politique éditoriale', () => {
       categoryKeys: ['Maison', 'Bricolage', 'Tech'],
     }));
     expect(parsed[1].categoryKeys).toEqual([]);
+  });
+
+  it('borne le pool éditorial à 18 cartes même si la variable contient davantage de candidats valides', () => {
+    const raw = Array.from({ length: 20 }, (_, index) => {
+      const id = `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
+      return `product:${id}`;
+    }).join(',');
+
+    const parsed = parseEditorialCandidates(raw);
+    expect(MAX_EDITORIAL_CANDIDATES).toBe(18);
+    expect(parsed).toHaveLength(18);
+    expect(parsed[17].id).toBe('00000000-0000-4000-8000-000000000018');
   });
 
   it('réapplique exactement l ordre éditorial et fusionne contexte source + contexte recommendations', async () => {

@@ -64,6 +64,20 @@ function fmtDateFr(iso) {
   } catch (_) { return null; }
 }
 
+// Rendu HTML réservé aux templates littéraux sans aucune substitution dynamique.
+// Les données runtime sont toujours posées ensuite via textContent/value/hidden.
+function staticHtml(target) {
+  return (strings, ...values) => {
+    if (!target) return;
+    if (!Array.isArray(strings?.raw) || values.length !== 0) {
+      throw new TypeError('staticHtml accepts only substitution-free tagged templates');
+    }
+    const template = document.createElement('template');
+    template.innerHTML = strings[0];
+    target.replaceChildren(template.content.cloneNode(true));
+  };
+}
+
 // ── Shell (unique, créé une seule fois) ────────────────────────────────────────
 
 function ensureShell() {
@@ -75,25 +89,22 @@ function ensureShell() {
   el.className = 'k-komerce-view';
   el.setAttribute('role', 'main');
   el.setAttribute('aria-label', 'Mon Komerce');
-  el.innerHTML = /* LOT4B_STATIC_ACCOUNT_SHELL */
-    '<header class="k-kmc-header">' +
-      '<h2 class="k-kmc-title">Mon Komerce</h2>' +
-      '<p class="k-kmc-subtitle">Compte personnel prot\u00e9g\u00e9</p>' +
-    '</header>' +
-    '<div class="k-kmc-page-grid">' +
-      '<div class="k-kmc-col-primary">' +
-        '<section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>' +
-        '<section id="k-kmc-wallet-block" class="k-kmc-block k-kmc-block--compact" aria-label="Mon wallet"></section>' +
-      '</div>' +
-      '<div class="k-kmc-col-secondary">' +
-        '<section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>' +
-        '<section id="k-kmc-security-block" class="k-kmc-block" aria-label="Retrait et s\u00e9curit\u00e9"></section>' +
-      '</div>' +
-    '</div>';
-
-  // "Mes listes" retiré de Mon Komerce (2026-08) : ce raccourci ne faisait
-  // que rediriger vers l'onglet Suivi > Listes, donnant l'impression de deux
-  // endroits différents pour la même chose. Suivi reste l'unique entrée.
+  staticHtml(el)`
+    <header class="k-kmc-header">
+      <h2 class="k-kmc-title">Mon Komerce</h2>
+      <p class="k-kmc-subtitle">Compte personnel protégé</p>
+    </header>
+    <div class="k-kmc-page-grid">
+      <div class="k-kmc-col-primary">
+        <section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>
+        <section id="k-kmc-wallet-block" class="k-kmc-block k-kmc-block--compact" aria-label="Mon wallet"></section>
+      </div>
+      <div class="k-kmc-col-secondary">
+        <section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>
+        <section id="k-kmc-security-block" class="k-kmc-block" aria-label="Retrait et sécurité"></section>
+      </div>
+    </div>
+  `;
 
   const anchor = document.getElementById('k-track-view')
     || document.getElementById('k-fav-view')
@@ -107,24 +118,26 @@ function ensureShell() {
 // ── États partagés ────────────────────────────────────────────────────────────
 
 function renderBlockLoading(block) {
-  block.innerHTML = /* LOT4B_STATIC_LOADING */
-    '<div class="k-kmc-loading">' +
-      '<div class="k-kmc-spin"></div>' +
-      '<p>Chargement\u2026</p>' +
-    '</div>';
+  staticHtml(block)`
+    <div class="k-kmc-loading">
+      <div class="k-kmc-spin"></div>
+      <p>Chargement…</p>
+    </div>
+  `;
 }
 
 function renderBlockError(block, err, onRetry) {
   const isTimeout = !!(err && (err.isTimeout || err.name === 'TimeoutError'));
-  block.innerHTML = /* LOT4B_STATIC_ERROR */
-    '<div class="k-kmc-empty">' +
-      '<div class="k-kmc-empty-icon">\u26a0\ufe0f</div>' +
-      '<div class="k-kmc-empty-title">' +
-        (isTimeout ? 'Cela met trop de temps \u00e0 r\u00e9pondre' : 'Impossible de charger') +
-      '</div>' +
-      '<div class="k-kmc-empty-sub">V\u00e9rifiez votre connexion puis r\u00e9essayez.</div>' +
-      '<button class="k-kmc-action-btn" id="k-kmc-retry">\ud83d\udd04 R\u00e9essayer</button>' +
-    '</div>';
+  staticHtml(block)`
+    <div class="k-kmc-empty">
+      <div class="k-kmc-empty-icon">⚠️</div>
+      <div class="k-kmc-empty-title"></div>
+      <div class="k-kmc-empty-sub">Vérifiez votre connexion puis réessayez.</div>
+      <button class="k-kmc-action-btn" id="k-kmc-retry">🔄 Réessayer</button>
+    </div>
+  `;
+  const title = block.querySelector('.k-kmc-empty-title');
+  if (title) title.textContent = isTimeout ? 'Cela met trop de temps à répondre' : 'Impossible de charger';
   block.querySelector('#k-kmc-retry')?.addEventListener('click', onRetry);
 }
 
@@ -135,20 +148,21 @@ function renderSessionExpired() {
   const secBlock     = document.getElementById('k-kmc-security-block');
   [walletBlock, documentsBlock, profileBlock, secBlock].forEach(b => { if (b) b.replaceChildren(); });
   if (walletBlock) {
-    walletBlock.innerHTML = /* LOT4B_STATIC_REAUTH */
-      '<div class="k-kmc-empty">' +
-        '<div class="k-kmc-empty-icon">\ud83d\udd10</div>' +
-        '<div class="k-kmc-empty-title">Session expir\u00e9e</div>' +
-        '<div class="k-kmc-empty-sub">Confirmez votre num\u00e9ro WhatsApp pour continuer.</div>' +
-        '<button class="k-kmc-action-btn" id="k-kmc-reauth">\ud83d\udcf2 M\u2019identifier</button>' +
-      '</div>';
+    staticHtml(walletBlock)`
+      <div class="k-kmc-empty">
+        <div class="k-kmc-empty-icon">🔐</div>
+        <div class="k-kmc-empty-title">Session expirée</div>
+        <div class="k-kmc-empty-sub">Confirmez votre numéro WhatsApp pour continuer.</div>
+        <button class="k-kmc-action-btn" id="k-kmc-reauth">📲 M’identifier</button>
+      </div>
+    `;
     walletBlock.querySelector('#k-kmc-reauth')?.addEventListener('click', async () => {
       const btn = walletBlock.querySelector('#k-kmc-reauth');
       btn.disabled = true;
-      btn.textContent = '\u23f3 Identification\u2026';
+      btn.textContent = '⏳ Identification…';
       const user = await requireIdentity({ reason: 'mon-komerce', title: 'Mon Komerce' });
       if (user) _loadAndRender(++_renderSeq);
-      else { btn.disabled = false; btn.textContent = '\ud83d\udcf2 M\u2019identifier'; }
+      else { btn.disabled = false; btn.textContent = '📲 M’identifier'; }
     });
   }
 }
@@ -174,21 +188,22 @@ function renderIdentityRequired({ focus = null } = {}) {
   });
 
   if (!documentsBlock) return;
-  documentsBlock.innerHTML = /* LOT4B_STATIC_IDENTITY_REQUIRED */
-    '<div class="k-kmc-empty">' +
-      '<div class="k-kmc-empty-icon">\ud83d\udd10</div>' +
-      '<div class="k-kmc-empty-title">Identifiez-vous pour acc\u00e9der \u00e0 Mon Komerce</div>' +
-      '<div class="k-kmc-empty-sub">Retrouvez vos documents, votre wallet et vos informations personnelles.</div>' +
-      '<button class="k-kmc-action-btn" id="k-kmc-identify">M\u2019identifier</button>' +
-    '</div>';
+  staticHtml(documentsBlock)`
+    <div class="k-kmc-empty">
+      <div class="k-kmc-empty-icon">🔐</div>
+      <div class="k-kmc-empty-title">Identifiez-vous pour accéder à Mon Komerce</div>
+      <div class="k-kmc-empty-sub">Retrouvez vos documents, votre wallet et vos informations personnelles.</div>
+      <button class="k-kmc-action-btn" id="k-kmc-identify">M’identifier</button>
+    </div>
+  `;
 
   documentsBlock.querySelector('#k-kmc-identify')?.addEventListener('click', async () => {
     const btn = documentsBlock.querySelector('#k-kmc-identify');
     if (!btn || btn.disabled) return;
     btn.disabled = true;
-    btn.textContent = '\u23f3 Identification\u2026';
+    btn.textContent = '⏳ Identification…';
 
-    const user = await requireIdentity({ reason: 'mon-komerce', title: 'Acc\u00e9der \u00e0 Mon Komerce' });
+    const user = await requireIdentity({ reason: 'mon-komerce', title: 'Accéder à Mon Komerce' });
     if (user) {
       _loadAndRender(++_renderSeq);
       focusRequestedBlock(focus);
@@ -196,7 +211,7 @@ function renderIdentityRequired({ focus = null } = {}) {
     }
 
     btn.disabled = false;
-    btn.textContent = 'M\u2019identifier';
+    btn.textContent = 'M’identifier';
   });
 }
 
@@ -342,51 +357,48 @@ function renderProfileBlock(block, me) {
   const fullName0 = me?.full_name || '';
   const currency0 = me?.currency_pref === 'EUR' ? 'EUR' : 'KMF';
 
-  // Note : email non modifiable — PUT /api/auth/me n'accepte que full_name et
-  // currency_pref. Email affiché en lecture seule si présent, sinon omis.
-  block.innerHTML = /* LOT4B_STATIC_PROFILE_SHELL */
-    '<form class="k-kmc-form" id="k-kmc-profile-form" novalidate>' +
-      '<h3 class="k-kmc-block-title">Mon profil</h3>' +
-      '<label class="k-kmc-field">' +
-        '<span>Nom complet</span>' +
-        '<input type="text" id="k-kmc-fullname" maxlength="100" autocomplete="name">' +
-      '</label>' +
-      (me?.email
-        ? '<label class="k-kmc-field k-kmc-field--readonly">' +
-            '<span>Email</span>' +
-            '<input type="text" id="k-kmc-email" disabled aria-readonly="true">' +
-          '</label>'
-        : '') +
-      '<label class="k-kmc-field k-kmc-field--readonly">' +
-        '<span>WhatsApp du compte</span>' +
-        '<input type="text" id="k-kmc-account-phone" disabled aria-readonly="true">' +
-      '</label>' +
-      '<p class="k-kmc-field-hint">Le WhatsApp du compte ne se modifie pas ici \u2014 il se confirme par code lors d\u2019une prochaine commande.</p>' +
-      '<label class="k-kmc-field">' +
-        '<span>Devise d\u2019affichage</span>' +
-        '<select id="k-kmc-currency">' +
-          '<option value="KMF"' + (currency0 === 'KMF' ? ' selected' : '') + '>Franc comorien (KMF)</option>' +
-          '<option value="EUR"' + (currency0 === 'EUR' ? ' selected' : '') + '>Euro (EUR)</option>' +
-        '</select>' +
-      '</label>' +
-      '<p class="k-kmc-save-status" id="k-kmc-save-status" role="status" aria-live="polite"></p>' +
-      '<button type="submit" class="k-kmc-action-btn" id="k-kmc-profile-save" disabled>' +
-        'Enregistrer mes modifications' +
-      '</button>' +
-    '</form>';
+  staticHtml(block)`
+    <form class="k-kmc-form" id="k-kmc-profile-form" novalidate>
+      <h3 class="k-kmc-block-title">Mon profil</h3>
+      <label class="k-kmc-field">
+        <span>Nom complet</span>
+        <input type="text" id="k-kmc-fullname" maxlength="100" autocomplete="name">
+      </label>
+      <label class="k-kmc-field k-kmc-field--readonly" id="k-kmc-email-field">
+        <span>Email</span>
+        <input type="text" id="k-kmc-email" disabled aria-readonly="true">
+      </label>
+      <label class="k-kmc-field k-kmc-field--readonly">
+        <span>WhatsApp du compte</span>
+        <input type="text" id="k-kmc-account-phone" disabled aria-readonly="true">
+      </label>
+      <p class="k-kmc-field-hint">Le WhatsApp du compte ne se modifie pas ici — il se confirme par code lors d’une prochaine commande.</p>
+      <label class="k-kmc-field">
+        <span>Devise d’affichage</span>
+        <select id="k-kmc-currency">
+          <option value="KMF">Franc comorien (KMF)</option>
+          <option value="EUR">Euro (EUR)</option>
+        </select>
+      </label>
+      <p class="k-kmc-save-status" id="k-kmc-save-status" role="status" aria-live="polite"></p>
+      <button type="submit" class="k-kmc-action-btn" id="k-kmc-profile-save" disabled>Enregistrer mes modifications</button>
+    </form>
+  `;
 
-  const form     = block.querySelector('#k-kmc-profile-form');
+  const form      = block.querySelector('#k-kmc-profile-form');
   const nameInput = block.querySelector('#k-kmc-fullname');
   const curSelect = block.querySelector('#k-kmc-currency');
   const saveBtn   = block.querySelector('#k-kmc-profile-save');
   const status    = block.querySelector('#k-kmc-save-status');
+  const emailField = block.querySelector('#k-kmc-email-field');
   const emailInput = block.querySelector('#k-kmc-email');
   const phoneInput = block.querySelector('#k-kmc-account-phone');
 
-  // Données API assignées comme propriétés DOM : jamais interpolées dans HTML.
   nameInput.value = String(fullName0);
+  if (emailField) emailField.hidden = !me?.email;
   if (emailInput) emailInput.value = String(me?.email || '');
-  if (phoneInput) phoneInput.value = phone || '\u2014';
+  if (phoneInput) phoneInput.value = phone || '—';
+  curSelect.value = currency0;
 
   let pendingSubmit = false;
 
@@ -407,16 +419,14 @@ function renderProfileBlock(block, me) {
 
     pendingSubmit = true;
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Enregistrement\u2026';
+    saveBtn.textContent = 'Enregistrement…';
     status.textContent = '';
 
     try {
       await apiPut('/api/auth/me', { full_name: newName, currency_pref: newCurrency });
-      status.textContent = '\u2705 Enregistr\u00e9';
-      // Update baselines so dirty-check reflects new state
-      // (re-render not needed; keep form values as-is)
+      status.textContent = '✅ Enregistré';
     } catch (_) {
-      status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+      status.textContent = '⚠️ Échec — réessayez';
       saveBtn.disabled = false;
     } finally {
       pendingSubmit = false;
@@ -430,30 +440,31 @@ function renderProfileBlock(block, me) {
 
 function renderSecurityBlock(block, me) {
   const phone = maskPhone(me?.phone);
-  block.innerHTML = /* LOT4B_STATIC_SECURITY_SHELL */
-    '<div class="k-kmc-security">' +
-      '<h3 class="k-kmc-block-title">Retrait &amp; s\u00e9curit\u00e9</h3>' +
-      '<div class="k-kmc-sec-row">' +
-        '<span class="k-kmc-sec-label">WhatsApp du compte</span>' +
-        '<span class="k-kmc-sec-value" id="k-kmc-security-phone"></span>' +
-      '</div>' +
-      '<div class="k-kmc-auth-block" id="k-kmc-passkeys-block">' +
-        '<h4 class="k-kmc-auth-title">Moyens de connexion</h4>' +
-        '<p class="k-kmc-field-hint">Vos passkeys permettent de vous connecter sans code WhatsApp. Révoquez uniquement un appareil que vous ne souhaitez plus autoriser.</p>' +
-        '<div id="k-kmc-passkeys-content"></div>' +
-      '</div>' +
-      '<div class="k-kmc-sec-doctrine">' +
-        '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp lorsque votre commande est pr\u00eate au relais. Vous pouvez le transmettre \u00e0 la personne de votre choix.</p>' +
-        '<p>Ce code est personnel et unique \u00e0 chaque commande : ne le partagez qu\u2019avec la personne qui viendra r\u00e9cup\u00e9rer votre colis.</p>' +
-      '</div>' +
-      '<div class="k-kmc-auth-block" id="k-kmc-auth-block">' +
-        '<h4 class="k-kmc-auth-title">Autorisation de retrait exceptionnel</h4>' +
-        '<p class="k-kmc-field-hint">Si le code n\u2019a pas \u00e9t\u00e9 re\u00e7u ou transmis, vous pouvez autoriser nomm\u00e9ment une personne \u2014 l\u2019agent relais contr\u00f4lera sa pi\u00e8ce d\u2019identit\u00e9 et comparera le nom, sans jamais conna\u00eetre \u00e0 l\u2019avance le nom attendu.</p>' +
-        '<div id="k-kmc-auth-content"></div>' +
-      '</div>' +
-    '</div>';
+  staticHtml(block)`
+    <div class="k-kmc-security">
+      <h3 class="k-kmc-block-title">Retrait &amp; sécurité</h3>
+      <div class="k-kmc-sec-row">
+        <span class="k-kmc-sec-label">WhatsApp du compte</span>
+        <span class="k-kmc-sec-value" id="k-kmc-security-phone"></span>
+      </div>
+      <div class="k-kmc-auth-block" id="k-kmc-passkeys-block">
+        <h4 class="k-kmc-auth-title">Moyens de connexion</h4>
+        <p class="k-kmc-field-hint">Vos passkeys permettent de vous connecter sans code WhatsApp. Révoquez uniquement un appareil que vous ne souhaitez plus autoriser.</p>
+        <div id="k-kmc-passkeys-content"></div>
+      </div>
+      <div class="k-kmc-sec-doctrine">
+        <p>Le code de retrait est envoyé sur votre WhatsApp lorsque votre commande est prête au relais. Vous pouvez le transmettre à la personne de votre choix.</p>
+        <p>Ce code est personnel et unique à chaque commande : ne le partagez qu’avec la personne qui viendra récupérer votre colis.</p>
+      </div>
+      <div class="k-kmc-auth-block" id="k-kmc-auth-block">
+        <h4 class="k-kmc-auth-title">Autorisation de retrait exceptionnel</h4>
+        <p class="k-kmc-field-hint">Si le code n’a pas été reçu ou transmis, vous pouvez autoriser nommément une personne — l’agent relais contrôlera sa pièce d’identité et comparera le nom, sans jamais connaître à l’avance le nom attendu.</p>
+        <div id="k-kmc-auth-content"></div>
+      </div>
+    </div>
+  `;
   const phoneValue = block.querySelector('#k-kmc-security-phone');
-  if (phoneValue) phoneValue.textContent = phone || '\u2014';
+  if (phoneValue) phoneValue.textContent = phone || '—';
 
   loadPasskeySecurity(block.querySelector('#k-kmc-passkeys-content'));
   _loadAuthSection(block.querySelector('#k-kmc-auth-content'));
@@ -481,28 +492,29 @@ async function _loadAuthSection(container) {
 }
 
 function _renderAuthActive(container, data) {
-  container.innerHTML = /* LOT5_STATIC_AUTH_ACTIVE */
-    '<div class="k-kmc-sec-row">' +
-      '<span class="k-kmc-sec-label">Personne autoris\u00e9e</span>' +
-      '<span class="k-kmc-sec-value" id="k-kmc-auth-name">' +
-        '<span id="k-kmc-auth-given"></span> <span id="k-kmc-auth-family"></span>' +
-      '</span>' +
-    '</div>' +
-    (fmtDateFr(data.updated_at)
-      ? '<p class="k-kmc-field-hint" id="k-kmc-auth-updated"></p>'
-      : '') +
-    '<p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>' +
-    '<div class="k-kmc-auth-actions">' +
-      '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-edit">Modifier</button>' +
-      '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--danger" id="k-kmc-auth-delete">Supprimer</button>' +
-    '</div>';
+  staticHtml(container)`
+    <div class="k-kmc-sec-row">
+      <span class="k-kmc-sec-label">Personne autorisée</span>
+      <span class="k-kmc-sec-value" id="k-kmc-auth-name"><span id="k-kmc-auth-given"></span> <span id="k-kmc-auth-family"></span></span>
+    </div>
+    <p class="k-kmc-field-hint" id="k-kmc-auth-updated"></p>
+    <p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>
+    <div class="k-kmc-auth-actions">
+      <button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-edit">Modifier</button>
+      <button type="button" class="k-kmc-action-btn k-kmc-action-btn--danger" id="k-kmc-auth-delete">Supprimer</button>
+    </div>
+  `;
 
   const givenEl  = container.querySelector('#k-kmc-auth-given');
   const familyEl = container.querySelector('#k-kmc-auth-family');
-  if (givenEl)  givenEl.textContent  = data.given_names;
+  if (givenEl) givenEl.textContent = data.given_names;
   if (familyEl) familyEl.textContent = data.family_name;
   const updatedEl = container.querySelector('#k-kmc-auth-updated');
-  if (updatedEl) updatedEl.textContent = `Enregistr\u00e9e le ${fmtDateFr(data.updated_at)}.`;
+  const updatedDate = fmtDateFr(data.updated_at);
+  if (updatedEl) {
+    updatedEl.hidden = !updatedDate;
+    updatedEl.textContent = updatedDate ? 'Enregistrée le ' + updatedDate + '.' : '';
+  }
 
   container.querySelector('#k-kmc-auth-edit')?.addEventListener('click', () => {
     _renderAuthForm(container, { given_names: data.given_names, family_name: data.family_name });
@@ -518,41 +530,43 @@ function _renderAuthActive(container, data) {
       _renderAuthForm(container, null);
     } catch (_) {
       btn.disabled = false;
-      if (status) status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+      if (status) status.textContent = '⚠️ Échec — réessayez';
     }
   });
 }
 
 function _renderAuthForm(container, prefill) {
   const isEdit = !!prefill;
-  container.innerHTML = /* LOT5_STATIC_AUTH_FORM */
-    '<form class="k-kmc-form" id="k-kmc-auth-form">' +
-      '<label class="k-kmc-field">' +
-        '<span>Pr\u00e9nom(s)</span>' +
-        '<input type="text" id="k-kmc-auth-given" maxlength="100" autocomplete="off">' +
-      '</label>' +
-      '<label class="k-kmc-field">' +
-        '<span>Nom de famille</span>' +
-        '<input type="text" id="k-kmc-auth-family" maxlength="100" autocomplete="off">' +
-      '</label>' +
-      '<p class="k-kmc-field-hint">Saisissez le nom exactement tel qu\u2019il figure sur la pi\u00e8ce d\u2019identit\u00e9 de la personne autoris\u00e9e.</p>' +
-      '<p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>' +
-      '<div class="k-kmc-auth-actions">' +
-        (isEdit ? '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-cancel">Annuler</button>' : '') +
-        '<button type="submit" class="k-kmc-action-btn" id="k-kmc-auth-save" disabled>' +
-          (isEdit ? 'Enregistrer les modifications' : 'Enregistrer l\u2019autorisation') +
-        '</button>' +
-      '</div>' +
-    '</form>';
+  staticHtml(container)`
+    <form class="k-kmc-form" id="k-kmc-auth-form">
+      <label class="k-kmc-field">
+        <span>Prénom(s)</span>
+        <input type="text" id="k-kmc-auth-given" maxlength="100" autocomplete="off">
+      </label>
+      <label class="k-kmc-field">
+        <span>Nom de famille</span>
+        <input type="text" id="k-kmc-auth-family" maxlength="100" autocomplete="off">
+      </label>
+      <p class="k-kmc-field-hint">Saisissez le nom exactement tel qu’il figure sur la pièce d’identité de la personne autorisée.</p>
+      <p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>
+      <div class="k-kmc-auth-actions">
+        <button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-cancel">Annuler</button>
+        <button type="submit" class="k-kmc-action-btn" id="k-kmc-auth-save" disabled></button>
+      </div>
+    </form>
+  `;
 
-  const form      = container.querySelector('#k-kmc-auth-form');
+  const form        = container.querySelector('#k-kmc-auth-form');
   const givenInput  = container.querySelector('#k-kmc-auth-given');
   const familyInput = container.querySelector('#k-kmc-auth-family');
-  const saveBtn   = container.querySelector('#k-kmc-auth-save');
-  const status    = container.querySelector('#k-kmc-auth-status');
+  const cancelBtn   = container.querySelector('#k-kmc-auth-cancel');
+  const saveBtn     = container.querySelector('#k-kmc-auth-save');
+  const status      = container.querySelector('#k-kmc-auth-status');
 
   givenInput.value  = prefill ? String(prefill.given_names) : '';
   familyInput.value = prefill ? String(prefill.family_name) : '';
+  cancelBtn.hidden = !isEdit;
+  saveBtn.textContent = isEdit ? 'Enregistrer les modifications' : 'Enregistrer l’autorisation';
 
   function checkFilled() {
     saveBtn.disabled = !givenInput.value.trim() || !familyInput.value.trim();
@@ -561,7 +575,7 @@ function _renderAuthForm(container, prefill) {
   familyInput.addEventListener('input', checkFilled);
   checkFilled();
 
-  container.querySelector('#k-kmc-auth-cancel')?.addEventListener('click', () => {
+  cancelBtn.addEventListener('click', () => {
     _loadAuthSection(container);
   });
 
@@ -572,7 +586,7 @@ function _renderAuthForm(container, prefill) {
     const familyName  = familyInput.value.trim();
 
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Enregistrement\u2026';
+    saveBtn.textContent = 'Enregistrement…';
     status.textContent = '';
 
     try {
@@ -581,9 +595,9 @@ function _renderAuthForm(container, prefill) {
       }));
       _renderAuthActive(container, result);
     } catch (_) {
-      status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+      status.textContent = '⚠️ Échec — réessayez';
       saveBtn.disabled = false;
-      saveBtn.textContent = isEdit ? 'Enregistrer les modifications' : 'Enregistrer l\u2019autorisation';
+      saveBtn.textContent = isEdit ? 'Enregistrer les modifications' : 'Enregistrer l’autorisation';
     }
   });
 }

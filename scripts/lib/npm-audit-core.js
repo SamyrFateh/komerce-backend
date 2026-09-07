@@ -1,28 +1,30 @@
 'use strict';
 
+const BLOCKING_SEVERITIES = new Set(['moderate', 'high', 'critical']);
+
 function hasDirectAdvisory(vulnerability) {
   return Array.isArray(vulnerability?.via)
     && vulnerability.via.some((entry) => entry && typeof entry === 'object');
 }
 
-function isHighOrCritical(vulnerability) {
-  return vulnerability?.severity === 'high' || vulnerability?.severity === 'critical';
+function isBlockingSeverity(vulnerability) {
+  return BLOCKING_SEVERITIES.has(vulnerability?.severity);
 }
 
 function actionableVulnerabilities(vulnerabilities = {}) {
   return Object.values(vulnerabilities)
-    .filter(isHighOrCritical)
+    .filter(isBlockingSeverity)
     .filter(hasDirectAdvisory);
 }
 
-function inheritedHighCriticalCount(vulnerabilities = {}) {
-  const all = Object.values(vulnerabilities).filter(isHighOrCritical);
+function inheritedBlockingCount(vulnerabilities = {}) {
+  const all = Object.values(vulnerabilities).filter(isBlockingSeverity);
   return all.length - actionableVulnerabilities(vulnerabilities).length;
 }
 
 module.exports = {
   actionableVulnerabilities,
   hasDirectAdvisory,
-  inheritedHighCriticalCount,
-  isHighOrCritical,
+  inheritedBlockingCount,
+  isBlockingSeverity,
 };

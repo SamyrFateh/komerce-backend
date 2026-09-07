@@ -84,9 +84,9 @@
  * Consommateurs déclarés (P3b) — tout écouteur observé hors de cette liste remonte
  * en ATTENTION comme consommateur non déclaré (un ajout légitime doit d'abord être
  * ajouté ici, pas seulement câblé) :
- *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
+ *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js, spike-vertical-shell.js
  *   modal:discovery-opened : b-modal-discovery-detail.js
- *   modal:closed     : b-modal-product-detail-bootstrap.js, b-modal-discovery-detail.js, b-pager.js, group-side-cart.js
+ *   modal:closed     : b-modal-product-detail-bootstrap.js, b-modal-discovery-detail.js, b-pager.js, group-side-cart.js, local-stock-badge-mount.js, spike-vertical-shell.js
  *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js
  *   discovery:request : discovery-inquiry.js
  *

@@ -8,22 +8,20 @@
  *   node scripts/deploy-css.js --dry    ← affiche ce qui changerait, ne touche rien
  *
  * Ce que ça fait en UNE commande :
- *   1. Compile les 4 bundles CSS dans css/dist/
+ *   1. Compile les bundles CSS dans css/dist/
  *   2. Calcule les hashes SHA-1 de chaque bundle
  *   3. Compare avec les hashes précédents (.cache-buster-state.json)
- *   4. Si un bundle a changé : bumpe CHAQUE ?v=N individuellement dans index.html
+ *   4. Si un bundle a changé : bumpe son ?v=N dans son fichier propriétaire
+ *      (index.html par défaut, loader JS explicite pour les bundles dynamiques)
  *   5. Met à jour le state avec les nouveaux hashes
  *   6. Bumpe la version du SW reset dans index.html si --sw-bump passé
  *
  * Différences clés vs l'ancien système :
  *   - Pas d'état intermédiaire : bundle + bump = une seule opération atomique
  *   - Chaque bundle a sa propre version indépendante (pas de version globale)
- *   - bumpVersion ne dépend pas d'une "version max" — il lit la version courante
- *     de CHAQUE bundle et la bumpe individuellement
- *   - Aucune édition manuelle de index.html ne peut casser le système
+ *   - Les bundles chargés dynamiquement déclarent versionFile dans css-bundles.js
+ *   - bumpVersion lit et modifie le propriétaire réel de chaque ?v=N
  */
-'use strict';
-
 'use strict';
 
 const fs     = require('fs');
@@ -73,13 +71,17 @@ function saveState(state) {
   if (!DRY) fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + '\n', 'utf8');
 }
 
+function versionOwnerPath(bundle) {
+  return path.join(ROOT, bundle.versionFile || 'index.html');
+}
+
 /**
- * Lit le ?v=N courant d'UN bundle spécifique dans le HTML.
+ * Lit le ?v=N courant d'UN bundle spécifique dans son contenu propriétaire.
  * Retourne le numéro (int) ou 1 si introuvable.
  */
-function readBundleVersion(html, bundleName) {
+function readBundleVersion(content, bundleName) {
   const re = new RegExp(`${bundleName.replace('.', '\\.')}\\?v=(\\d+)`, 'i');
-  const m  = re.exec(html);
+  const m  = re.exec(content);
   return m ? parseInt(m[1], 10) : 1;
 }
 
@@ -87,12 +89,12 @@ function readBundleVersion(html, bundleName) {
  * Remplace ?v=N par ?v=N+1 pour UN bundle spécifique.
  * Ne touche pas les autres bundles.
  */
-function bumpBundleVersion(html, bundleName, oldV, newV) {
+function bumpBundleVersion(content, bundleName, oldV, newV) {
   const re = new RegExp(
     `(${bundleName.replace('.', '\\.')}\\?v=)${oldV}`,
     'g'
   );
-  return html.replace(re, `$1${newV}`);
+  return content.replace(re, `$1${newV}`);
 }
 
 // ── Étape 1 : Compilation des bundles ─────────────────────────────────────────
@@ -137,7 +139,7 @@ for (const bundle of BUNDLES) {
     process.exit(1);
   }
 
-  // Hash sur les SOURCES uniquement (pas le header daté) → déterministe d'un jour à l'autre.
+  // Hash sur les SOURCES uniquement (pas le header) → déterministe.
   newHashes[bundle.out] = sha1(Buffer.from(parts.join('\n\n'), 'utf8'));
   console.log(`  ${GRN}✓${R}  ${bundle.out.padEnd(18)} ${(output.split('\n').length + ' lignes').padEnd(12)} ${DIM}← ${bundle.files.join(' + ')}${R}`);
 }
@@ -159,42 +161,54 @@ for (const bundle of BUNDLES) {
 }
 
 if (changed.length === 0) {
-  console.log(`\n${GRN}${BOLD}✔ Aucun changement — index.html inchangé.${R}\n`);
+  console.log(`\n${GRN}${BOLD}✔ Aucun changement — versions inchangées.${R}\n`);
   process.exit(0);
 }
 
 console.log(`\n  ${YLW}${changed.length} bundle(s) modifié(s) : ${changed.join(', ')}${R}`);
 
-// ── Étape 3 : Bump des versions dans index.html ───────────────────────────────
+// ── Étape 3 : Bump des versions dans leurs fichiers propriétaires ─────────────
 
-console.log(`\n${BOLD}3. Bump des ?v= dans index.html${R}`);
+console.log(`\n${BOLD}3. Bump des ?v= dans les propriétaires de version${R}`);
 
-let html = fs.readFileSync(INDEX_HTML, 'utf8');
+const ownerContents = new Map();
 const newVersions = { ...(prevState.versions || {}) };
 
-for (const bundleName of changed) {
-  const oldV = readBundleVersion(html, bundleName);
-  const newV = oldV + 1;
-  const updated = bumpBundleVersion(html, bundleName, oldV, newV);
+function getOwnerContent(ownerPath) {
+  if (!ownerContents.has(ownerPath)) {
+    ownerContents.set(ownerPath, fs.readFileSync(ownerPath, 'utf8'));
+  }
+  return ownerContents.get(ownerPath);
+}
 
-  // Vérification : le remplacement a bien eu lieu
+for (const bundle of BUNDLES.filter(item => changed.includes(item.out))) {
+  const bundleName = bundle.out;
+  const ownerPath = versionOwnerPath(bundle);
+  const owner = getOwnerContent(ownerPath);
+  const oldV = readBundleVersion(owner, bundleName);
+  const newV = oldV + 1;
+  const updated = bumpBundleVersion(owner, bundleName, oldV, newV);
+
   const check = readBundleVersion(updated, bundleName);
   if (check !== newV) {
+    const ownerLabel = path.relative(ROOT, ownerPath);
     console.error(`${RED}✖ Échec du bump pour ${bundleName} (attendu v=${newV}, obtenu v=${check})${R}`);
-    console.error(`${DIM}  Vérifier que index.html contient bien ${bundleName}?v=${oldV}${R}`);
+    console.error(`${DIM}  Vérifier que ${ownerLabel} contient bien ${bundleName}?v=${oldV}${R}`);
     process.exit(1);
   }
 
-  html = updated;
+  ownerContents.set(ownerPath, updated);
   newVersions[bundleName] = newV;
-  console.log(`  ${GRN}✓${R}  ${bundleName.padEnd(18)} ?v=${oldV} → ?v=${newV}`);
+  console.log(`  ${GRN}✓${R}  ${bundleName.padEnd(24)} ?v=${oldV} → ?v=${newV} ${DIM}(${path.relative(ROOT, ownerPath)})${R}`);
 }
 
-// Bundles non modifiés : on log juste leur version courante
+// Bundles non modifiés : log de leur version dans leur propriétaire réel.
 for (const bundle of BUNDLES) {
   if (!changed.includes(bundle.out)) {
-    const v = readBundleVersion(html, bundle.out);
-    console.log(`  ${DIM}  ${bundle.out.padEnd(18)} ?v=${v} (inchangé)${R}`);
+    const ownerPath = versionOwnerPath(bundle);
+    const content = getOwnerContent(ownerPath);
+    const v = readBundleVersion(content, bundle.out);
+    console.log(`  ${DIM}  ${bundle.out.padEnd(24)} ?v=${v} (inchangé)${R}`);
     newVersions[bundle.out] = v;
   }
 }
@@ -202,12 +216,14 @@ for (const bundle of BUNDLES) {
 // ── Étape 4 (optionnel) : bump SW reset ──────────────────────────────────────
 
 if (SW_BUMP) {
+  let html = getOwnerContent(INDEX_HTML);
   const swMatch = html.match(/sw_reset_v(\d+)/);
   if (swMatch) {
     const oldSW = parseInt(swMatch[1], 10);
     const newSW = oldSW + 1;
     html = html.replace(new RegExp(`sw_reset_v${oldSW}`, 'g'), `sw_reset_v${newSW}`);
     html = html.replace(new RegExp(`komerce-v${oldSW}`, 'g'), `komerce-v${newSW}`);
+    ownerContents.set(INDEX_HTML, html);
     console.log(`\n  ${GRN}✓${R}  SW reset : v${oldSW} → v${newSW}`);
   }
 }
@@ -215,7 +231,9 @@ if (SW_BUMP) {
 // ── Étape 5 : Écriture ────────────────────────────────────────────────────────
 
 if (!DRY) {
-  fs.writeFileSync(INDEX_HTML, html, 'utf8');
+  for (const [ownerPath, content] of ownerContents.entries()) {
+    fs.writeFileSync(ownerPath, content, 'utf8');
+  }
 
   saveState({
     versions:    newVersions,
@@ -225,7 +243,7 @@ if (!DRY) {
   });
 }
 
-// En mode --dry (check:cache), un bundle "modifié" = dist périmé vs sources.
+// En mode --dry (check:cache), un bundle "modifié" = state périmé vs sources.
 // On bloque : la règle « rebuild après modif source / dist jamais édité à la main »
 // devient exécutable (et non plus seulement informative). En pre-commit, le hook
 // régénère automatiquement, donc ce cas ne se présente qu'en bypass ou en CI.
@@ -236,4 +254,4 @@ if (DRY && changed.length > 0) {
 }
 
 console.log(`\n${GRN}${BOLD}✔ deploy-css terminé${DRY ? ' (dry-run — rien écrit)' : ''}.${R}`);
-console.log(`${DIM}  Pensez à commiter : index.html + .cache-buster-state.json${R}\n`);
+console.log(`${DIM}  Pensez à commiter les propriétaires de ?v= + .cache-buster-state.json.${R}\n`);

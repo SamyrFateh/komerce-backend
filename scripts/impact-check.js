@@ -436,6 +436,12 @@ function suppressSecurity(category, line, content) {
       return false;                                                        // valeur interpolee crue -> on GARDE
     }
     case 'xss': {
+      // Convention sûre : staticHtml(target)`...` refuse toute substitution et
+      // n'injecte que le segment littéral strings[0] dans un <template>.
+      if (/template\.innerHTML\s*=\s*strings\[0\]/.test(L)
+          && /Array\.isArray\(strings\?\.raw\)/.test(content)
+          && /values\.length\s*!==\s*0/.test(content)
+          && /substitution-free tagged templates/.test(content)) return true;
       if (!/innerHTML\s*\+?=/.test(L)) return false;       // autres patterns (document.write/res.send) : garder
       const rhs = (L.split(/innerHTML\s*\+?=/)[1] || '');
       if (/^\s*(?:''|""|``|'\s*'|"\s*")\s*;?\s*$/.test(rhs)) return true;      // = '' (vide)
@@ -448,7 +454,12 @@ function suppressSecurity(category, line, content) {
     }
     case 'hardcodedSecrets': {
       const m = L.match(/(?:password|passwd|secret|key|token|api[_-]?key|apikey)\s*[:=]\s*['"]([^'"]+)['"]/i);
-      if (!m) return false;                                // patterns STRIPE_/Bearer : garder
+      // Le pattern d'env est scanné en /i pour les autres catégories : un identifiant
+      // de données comme sms_log / stripe_events_processed ne doit pas devenir un secret.
+      // Si le nom contient réellement password/secret/key/token/api_key, `m` reste prioritaire.
+      if (!m && /\b(?:sms|stripe|jwt|db|smtp)_[a-z0-9_]+\s*[:=]\s*['"][^'"]+['"]/.test(L)
+          && !/\b(?:SMS|STRIPE|JWT|DB|SMTP)_[A-Z0-9_]+\s*[:=]/.test(L)) return true;
+      if (!m) return false;                                // vrais patterns STRIPE_/Bearer : garder
       const val = m[1];
       if (val.length < 16) return true;                    // trop court pour un secret reel
       if (/^[a-z][a-z0-9_]*$/.test(val)) return true;      // label snake_case (ex: estimated_price)
@@ -481,6 +492,10 @@ function scanSecurity(filePath, content, changedLines) {
   const lines = content.split('\n');
 
   for (const [category, config] of Object.entries(CONFIG.securityPatterns)) {
+    // XSS est un risque d'exécution navigateur. Les fixtures Jest ne sont jamais servies
+    // en production ; on continue en revanche à y scanner secrets et opérations dangereuses.
+    const normalizedFile = String(filePath).replace(/\\/g, '/');
+    if (category === 'xss' && /(?:^|\/)tests\//.test(normalizedFile)) continue;
     for (const pattern of config.patterns) {
       try {
         const regex = new RegExp(pattern, 'gi');

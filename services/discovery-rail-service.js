@@ -44,6 +44,10 @@ const { composeDiscoveryRail } = require('./discovery-rail-composer');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED_KINDS = new Set(['product', 'physical_offer', 'service']);
+// 18 reste un pool éditorial borné : mobile en sélectionne 4, desktop filtre
+// ensuite par catégorie. Ce plafond permet 2 produits par grand univers +
+// quelques services/offres partagés sans transformer Discovery en catalogue bis.
+const MAX_EDITORIAL_CANDIDATES = 18;
 
 function isEnabled() {
   const raw = String(process.env.DISCOVERY_RAIL_ENABLED || '').trim().toLowerCase();
@@ -84,7 +88,7 @@ function parseEditorialCandidates(raw = process.env.DISCOVERY_RAIL_CANDIDATES) {
       continue;
     }
 
-    if (candidates.length >= 12) continue;
+    if (candidates.length >= MAX_EDITORIAL_CANDIDATES) continue;
     const candidate = { kind, id, key, categoryKeys };
     candidates.push(candidate);
     byKey.set(key, candidate);
@@ -158,6 +162,7 @@ async function getDiscoveryRail({ marketCode }) {
 }
 
 module.exports = {
+  MAX_EDITORIAL_CANDIDATES,
   isEnabled,
   normalizeCategoryKeys,
   parseEditorialCandidates,

@@ -40,6 +40,7 @@
     'sourcing-workspace': 'commerce',
     'pricing-workspace': 'commerce',
     'action-center': 'pilotage',
+    'market-access': 'pilotage',
     'order-360': 'commerce',
     'client-index': 'commerce',
     'client-360': 'commerce',
@@ -55,6 +56,7 @@
     'sourcing-workspace': '/admin/commerce',
     'pricing-workspace': '/admin/commerce',
     'action-center': '/admin/pilotage',
+    'market-access': '/admin/pilotage',
     'order-360': '/admin/commerce',
     'client-index': '/admin/commerce',
     'client-360': '/admin/clients',
@@ -151,6 +153,16 @@
       actionCenter.setAttribute('aria-current', 'page');
     }
     utilities.appendChild(actionCenter);
+
+    const marketAccess = doc.createElement('a');
+    marketAccess.className = 'kmc-admin-utility-link';
+    marketAccess.href = '/dashboards/canonical/access.html';
+    marketAccess.textContent = 'Accès pays';
+    if (surface === 'market-access') {
+      marketAccess.className += ' is-active';
+      marketAccess.setAttribute('aria-current', 'page');
+    }
+    utilities.appendChild(marketAccess);
 
     const demo = doc.createElement('a');
     demo.className = 'kmc-admin-utility-link kmc-admin-demo-link';

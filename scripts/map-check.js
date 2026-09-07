@@ -92,7 +92,7 @@ const STEPS = [
   {
     label:    'Gate 2 — Schéma strict des cartes',
     category: 'gate',
-    cmd:      'node scripts/feature-schema-check.js --strict',
+    cmd:      'node scripts/feature-schema-check.js --strict --full',
   },
 
   // ── Gate 2b : invariants exécutables (P1 Bloc B) ──────────────────────

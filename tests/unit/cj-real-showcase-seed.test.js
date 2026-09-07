@@ -1,6 +1,8 @@
 'use strict';
 
 const {
+  ACTOR,
+  CJ_MIN_INTERVAL_MS,
   FAMILIES,
   TARGET,
   TARGET_PER_FAMILY,
@@ -8,6 +10,7 @@ const {
   slotSortOrder,
   frenchName,
   frenchDescription,
+  candidateUsable,
 } = require('../../scripts/cj-real-showcase-seed');
 
 describe('cj-real-showcase-seed contract', () => {
@@ -16,6 +19,28 @@ describe('cj-real-showcase-seed contract', () => {
     expect(TARGET_PER_FAMILY).toBe(3);
     expect(TARGET).toBe(63);
     expect(FAMILIES.length * TARGET_PER_FAMILY).toBe(TARGET);
+  });
+
+  it('uses a nullable operator actor because sourcing audit columns expect UUIDs', () => {
+    expect(ACTOR).toEqual({ id: null });
+  });
+
+  it('paces CJ imports above the provider 1 request/second QPS floor', () => {
+    expect(CJ_MIN_INTERVAL_MS).toBeGreaterThanOrEqual(1100);
+  });
+
+  it('skips fresh CJ candidates that cannot satisfy the canonical promotion price guard', () => {
+    const used = new Set();
+    const base = {
+      supplier_product_id: 'cj-1',
+      image_url: 'https://example.test/product.jpg',
+      state: 'scanned',
+      product_id: null,
+      scan_result: { sourcing_decision: 'WATCH' },
+    };
+    expect(candidateUsable(base, used)).toBe(false);
+    expect(candidateUsable({ ...base, scan_result: { sourcing_decision: 'WATCH', recommended_price_kmf: 12500 } }, used)).toBe(true);
+    expect(candidateUsable({ ...base, state: 'imported_to_catalog', product_id: 'product-uuid' }, used)).toBe(true);
   });
 
   it('allocates a unique stable sort slot to every planned product', () => {

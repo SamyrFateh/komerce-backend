@@ -13,7 +13,7 @@
  * @db-txn        caller transaction preserved; replaceVariantsForSourcing owns its legacy dedicated transaction
  * @doctrine      WRITES != OWNS — catalog owns products/product_variants lifecycle
  * @impact-areas  catalog, economic-engine
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -233,7 +233,7 @@ async function replaceVariantsForSourcing(dbPool, productId, variants) {
            JOIN orders o ON o.id = oi.order_id
           WHERE oi.product_id = $1
             AND oi.variant_combo IS NOT NULL
-            AND o.status IN ('pending', 'pending_group_payment')`,
+            AND o.status = 'pending'`,
         [productId]
       );
       for (const item of pendingItems) {

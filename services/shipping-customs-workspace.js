@@ -9,13 +9,13 @@
  * @depends       db, services/scan-engine.js, services/customs-shipment-service.js
  * @used-by       routes/admin-shipping-customs-workspace.js
  * @db-read       orders, parcels, parcel_items, users, relais, scan_events, customs_shipments, customs_shipment_parcels
- * @db-write      customs_shipments
+ * @db-write      none
  * @db-write-via:scan-engine parcels, scan_events, incidents, orders
  * @db-write-via:customs-shipment-service customs_shipments, customs_shipment_parcels, orders, parcels, order_item_real_cost_allocations
  * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, no_global_workspace_mutation, reuse_domain_mutation_authorities
+ * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, customs_market_snapshot_atomic_with_create, no_global_workspace_mutation, reuse_domain_mutation_authorities
  * @impact-areas  admin-dashboard, logistics, customs, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -294,28 +294,25 @@ function sanitizeCreateBody(body, parcelIds) {
 async function createCustomsShipment(body, market, actor = {}) {
   const resolved = requireMarket(market);
   const parcels = await resolveParcelRefs(body && body.parcel_refs, resolved.id);
-  let created;
-  try {
-    created = await customs.createShipment(
-      db,
-      sanitizeCreateBody(body, parcels.map(parcel => parcel.id)),
-      actor.id || null
-    );
-    const { rows } = await db.query(
-      `UPDATE customs_shipments
-          SET market_id = $2
-        WHERE id = $1 AND market_id IS NULL
-        RETURNING reference, status, is_active, shipment_date`,
-      [created.shipment.id, resolved.id]
-    );
-    if (!rows.length) throw new Error('customs_market_tag_failed');
-    return { shipment: rows[0], allocations: created.allocations || [] };
-  } catch (err) {
-    if (created && created.shipment && created.shipment.id) {
-      await customs.deleteShipment(db, created.shipment.id).catch(() => {});
-    }
-    throw err;
-  }
+  const created = await customs.createShipment(
+    db,
+    sanitizeCreateBody(body, parcels.map(parcel => parcel.id)),
+    actor.id || null,
+    { marketId: resolved.id }
+  );
+
+  // createShipment possède la transaction : market_id est écrit dans le même
+  // INSERT que l'expédition. Le Workspace ne fait plus de mutation de rattrapage
+  // ni de suppression compensatoire après COMMIT.
+  return {
+    shipment: {
+      reference: created.shipment.reference,
+      status: created.shipment.status,
+      is_active: created.shipment.is_active,
+      shipment_date: created.shipment.shipment_date,
+    },
+    allocations: created.allocations || [],
+  };
 }
 
 function sanitizeUpdateBody(body) {

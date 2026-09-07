@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -21,6 +20,12 @@ const {
   taxableWeight,
   lockEstimatedCostsForOrder,
 } = require('../../services/cost-allocation/_helpers');
+const {
+  SNAPSHOT_LANDED_TO_REAL_COST_TYPE,
+  N2_PROVISION_COST_TYPES,
+  CONTRIBUTION_COST_TYPES,
+  classifyOrderAllocationCostType,
+} = require('../../services/cost-allocation/cost-types');
 
 describe('cost-allocation/_helpers', () => {
   describe('constantes doctrine', () => {
@@ -35,9 +40,10 @@ describe('cost-allocation/_helpers', () => {
     it('chaque cost type variable/fixe/exceptionnel appartient bien a COST_TYPES', () => {
       const all = [...VARIABLE_COST_TYPES, ...FIXED_COST_TYPES, ...EXCEPTIONAL_COST_TYPES];
       all.forEach((type) => expect(COST_TYPES).toContain(type));
+      N2_PROVISION_COST_TYPES.forEach((type) => expect(COST_TYPES).toContain(type));
     });
 
-    it('les sous-categories variable/fixe/exceptionnelle sont mutuellement exclusives', () => {
+    it('les sous-categories transactionnelles/fixes/exceptionnelles sont mutuellement exclusives', () => {
       const variable = new Set(VARIABLE_COST_TYPES);
       const fixed = new Set(FIXED_COST_TYPES);
       const exceptional = new Set(EXCEPTIONAL_COST_TYPES);
@@ -46,6 +52,22 @@ describe('cost-allocation/_helpers', () => {
         expect(variable.has(t)).toBe(false);
         expect(fixed.has(t)).toBe(false);
       });
+    });
+
+    it('fige la classification économique sans traiter la provision risque comme cash commande', () => {
+      expect(VARIABLE_COST_TYPES).toEqual(expect.arrayContaining([
+        'product_purchase', 'sourcing', 'hub', 'packaging', 'freight', 'customs',
+        'port_transitaire', 'local_distribution', 'relay', 'payment',
+      ]));
+      expect(VARIABLE_COST_TYPES).not.toContain('risk_provision');
+      expect(CONTRIBUTION_COST_TYPES).toContain('risk_provision');
+      expect(FIXED_COST_TYPES).toEqual(['fixed_overhead']);
+      expect(classifyOrderAllocationCostType('risk_provision')).toBe('provision');
+      expect(classifyOrderAllocationCostType('made_up_cost')).toBe('unknown');
+    });
+
+    it('centralise la correspondance port_transitary snapshot vers port_transitaire réel', () => {
+      expect(SNAPSHOT_LANDED_TO_REAL_COST_TYPE.port_transitary).toBe('port_transitaire');
     });
   });
 
@@ -87,7 +109,6 @@ describe('cost-allocation/_helpers', () => {
 
   describe('taxableWeight', () => {
     it('retient le poids volumetrique si superieur au poids reel (mode sea, facteur 1000)', () => {
-      // volume 0.5 m3 * 1000 = 500 kg > 100 kg reel
       expect(taxableWeight(100, 0.5, 'sea')).toBe(500);
     });
 
@@ -96,9 +117,7 @@ describe('cost-allocation/_helpers', () => {
     });
 
     it('utilise le facteur 167 en mode air', () => {
-      // 0.1 m3 * 167 = 16.7 kg < poids reel 20 kg -> retient le reel
       expect(taxableWeight(20, 0.1, 'air')).toBe(20);
-      // 1 m3 * 167 = 167 kg > 20 kg reel -> retient le volumetrique
       expect(taxableWeight(20, 1, 'air')).toBe(167);
     });
 

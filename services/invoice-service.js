@@ -8,20 +8,21 @@
  * @outputs       immutable invoice snapshot, private PDF
  * @depends       db, services/documents/pdf-renderer.js, utils/documents/logo-base64.js
  * @used-by       routes/invoices.js, routes/documents.js, payment confirmation flows
- * @db-read       invoices, order_items, orders, parcels, products, recipients, relais
+ * @db-read       invoices, mobile_money_transactions, order_items, orders, parcels, products, recipients, relais
  * @db-write      invoices
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout
- * @version       2026-06
+ * @doctrine      resolve_before_behavior_change, invoice_displays_actual_payment_currency
+ * @impact-areas  orders, checkout, payment
+ * @version       2026-09
  */
 
 
 'use strict';
 /**
- * Invoice Service — Komerce v1.1
+ * Invoice Service — Komerce v1.2
  * Generates mini-invoices for client payments
- * 
+ *
+ * v1.2: snapshot de la devise réellement encaissée pour Mobile Money
  * v1.1: Suppression ligne "Livraison" — tout inclus dans le prix
  *
  * Supports:
@@ -58,8 +59,8 @@ class InvoiceService {
 
     // Load order + items + relay + recipient
     const orderRes = await db.query(`
-      SELECT 
-        o.id, o.reference, o.total_kmf, o.total_eur, o.cost_transport_kmf, 
+      SELECT
+        o.id, o.reference, o.total_kmf, o.total_eur, o.cost_transport_kmf,
         o.payment_mode, o.payment_status,
         o.relais_id, o.recipient_id, o.user_id,
         r.full_name AS client_name, r.phone AS client_phone,
@@ -81,9 +82,38 @@ class InvoiceService {
       throw new Error(`Commande ${order.reference} non payée (status: ${order.payment_status})`);
     }
 
+    // P5 Mobile Money — la devise réellement encaissée ne se déduit ni de
+    // total_kmf ni de total_eur. Elle vient du snapshot transactionnel figé
+    // AVANT le cycle de confirmation. Dans payment-mobile-money.js le statut
+    // succeeded est posé dans la même transaction DB avant confirmPaymentCycle,
+    // donc cette lecture voit la vérité atomique et rollbacke avec elle si le
+    // cycle échoue.
+    let paymentSnapshot = null;
+    if (order.payment_mode === 'mobile_money') {
+      const { rows: mmRows } = await db.query(
+        `SELECT amount_minor, minor_unit, currency
+           FROM mobile_money_transactions
+          WHERE order_id = $1
+            AND status = 'succeeded'
+          ORDER BY completed_at DESC NULLS LAST, created_at DESC
+          LIMIT 1`,
+        [orderId]
+      );
+      if (!mmRows.length) {
+        throw new Error(`Commande ${order.reference} Mobile Money payée sans snapshot transactionnel réussi`);
+      }
+      const mm = mmRows[0];
+      const minorUnit = Number(mm.minor_unit) || 0;
+      paymentSnapshot = {
+        amount: Number(mm.amount_minor) / Math.pow(10, minorUnit),
+        currency: String(mm.currency || '').toUpperCase(),
+        minorUnit,
+      };
+    }
+
     // Load items with product names
     const itemsRes = await db.query(`
-      SELECT 
+      SELECT
         oi.quantity, oi.price_kmf,
         p.name AS product_name
       FROM order_items oi
@@ -122,8 +152,9 @@ class InvoiceService {
         invoice_number, order_id, parcel_id,
         client_name, client_phone, relay_name,
         items_snapshot, subtotal_kmf, shipping_kmf, total_kmf,
-        payment_mode, payment_status, owner_user_id, total_eur
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        payment_mode, payment_status, owner_user_id, total_eur,
+        payment_total_amount, payment_currency, payment_minor_unit
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
       ON CONFLICT (order_id) DO UPDATE SET order_id = EXCLUDED.order_id
       RETURNING *
     `, [
@@ -141,6 +172,9 @@ class InvoiceService {
       order.payment_status,
       order.user_id,
       order.total_eur != null ? Number(order.total_eur) : null,
+      paymentSnapshot?.amount ?? null,
+      paymentSnapshot?.currency ?? null,
+      paymentSnapshot?.minorUnit ?? null,
     ]);
 
     const invoice = insertRes.rows[0];
@@ -218,39 +252,52 @@ class InvoiceService {
   generateHTML(invoice, opts = {}) {
     const mode = opts.mode || 'a5';
     const thermalClass = mode === 'thermal' ? ' thermal' : '';
-    const items = typeof invoice.items_snapshot === 'string' 
-      ? JSON.parse(invoice.items_snapshot) 
+    const items = typeof invoice.items_snapshot === 'string'
+      ? JSON.parse(invoice.items_snapshot)
       : invoice.items_snapshot;
 
     const orderRef = opts.orderRef || invoice.order_reference || invoice._order_reference || '—';
     const parcelRef = opts.parcelRef || invoice.parcel_reference || invoice._parcel_reference || '—';
 
-    const payIcon = invoice.payment_mode === 'cash_relais' ? '&#x1F4B5;' : '&#x1F4B3;';
-    const payLabel = invoice.payment_mode === 'cash_relais' ? 'Paiement Cash' : 'Paiement en ligne';
+    const isMobileMoney = invoice.payment_mode === 'mobile_money';
+    const payIcon = invoice.payment_mode === 'cash_relais'
+      ? '&#x1F4B5;'
+      : isMobileMoney ? '&#x1F4F1;' : '&#x1F4B3;';
+    const payLabel = invoice.payment_mode === 'cash_relais'
+      ? 'Paiement Cash'
+      : isMobileMoney ? 'Paiement Mobile Money' : 'Paiement en ligne';
     const statusLabel = invoice.payment_status === 'paid'
       ? 'PAYÉ'
       : String(invoice.payment_status || 'INCONNU').toUpperCase();
     const statusClass = invoice.payment_status === 'paid' ? 'badge badge-paid' : 'badge';
 
-    // P4 (freeze 22-08-2026) — Payment Boundary : la facture affiche ce qui
-    // a été RÉELLEMENT payé, jamais 'KMF' codé en dur. cash_relais paie en
-    // KMF ; stripe_eur/paypal_eur paient en EUR (orders.total_eur, déjà
-    // calculé à la création de commande — jamais recalculé ici). Ne touche
-    // ni currency_parities (P1) ni display_total_amount (P3) — c'est une
-    // correction de la Payment Boundary elle-même (finance_config), pas de
-    // la Currency Boundary.
+    // Payment Boundary — la facture affiche ce qui a été RÉELLEMENT payé.
+    // - cash_relais : orders.total_kmf
+    // - stripe_eur / paypal_eur : orders.total_eur
+    // - mobile_money : snapshot immuable invoices.payment_* alimenté depuis
+    //   mobile_money_transactions. Jamais display_total_amount.
     const isEurPayment = invoice.payment_mode === 'stripe_eur' || invoice.payment_mode === 'paypal_eur';
-    const totalAmount = isEurPayment ? Number(invoice.total_eur || 0) : Number(invoice.total_kmf || 0);
-    const totalCurrencyLabel = isEurPayment ? '€' : 'KMF';
-    const totalFormatted = isEurPayment
-      ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAmount)
-      : new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(totalAmount);
+    const paymentMinorUnit = isMobileMoney
+      ? Math.max(0, Number(invoice.payment_minor_unit) || 0)
+      : isEurPayment ? 2 : 0;
+    const totalAmount = isMobileMoney
+      ? Number(invoice.payment_total_amount || 0)
+      : isEurPayment ? Number(invoice.total_eur || 0) : Number(invoice.total_kmf || 0);
+    const paymentCurrency = isMobileMoney
+      ? String(invoice.payment_currency || '').toUpperCase()
+      : isEurPayment ? 'EUR' : 'KMF';
+    const totalCurrencyLabel = paymentCurrency === 'EUR' ? '€' : paymentCurrency;
+    const totalFormatted = new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: paymentMinorUnit,
+      maximumFractionDigits: paymentMinorUnit,
+    }).format(totalAmount);
 
     const date = new Date(invoice.created_at).toLocaleDateString('fr-FR', {
       day: '2-digit', month: '2-digit', year: 'numeric'
     });
 
     const fmt = (n) => Number(n).toLocaleString('fr-FR');
+    const itemCurrencySuffix = paymentCurrency !== 'KMF' ? ' (KMF)' : '';
 
     // Snapshot machine-readable contenu DANS le HTML canonique. Le PDFKit
     // renderer le consomme sans navigateur/Chromium et reste ainsi déployable
@@ -265,6 +312,7 @@ class InvoiceService {
       payment_status: invoice.payment_status || '',
       total_kmf: Number(invoice.total_kmf || 0),
       total_amount: totalAmount,
+      total_currency: paymentCurrency,
       total_currency_label: totalCurrencyLabel,
       created_at: invoice.created_at || null,
       items,
@@ -346,11 +394,11 @@ body{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;
     </div>
   </div>
   <table class="items-table">
-    <thead><tr><th>Article</th><th>Qté</th><th>P.U.</th><th>Total</th></tr></thead>
+    <thead><tr><th>Article</th><th>Qté</th><th>P.U.${itemCurrencySuffix}</th><th>Total${itemCurrencySuffix}</th></tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
   <div class="totals">
-    <div class="total-row grand"><span>TOTAL</span><span>${totalFormatted} ${totalCurrencyLabel}</span></div>
+    <div class="total-row grand"><span>TOTAL PAYÉ</span><span>${totalFormatted} ${totalCurrencyLabel}</span></div>
   </div>
   <div class="totals-note" style="font-size:9px;text-align:center;margin-bottom:8px;color:#555">
     <em>Livraison incluse — pas de frais supplémentaires</em>

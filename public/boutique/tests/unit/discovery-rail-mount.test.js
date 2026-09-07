@@ -5,10 +5,9 @@
  * @test-runner jest
  * @test-requires none
  *
- * Contrat V2.9 : chaque catégorie est un contexte complet sur mobile ET
- * desktop. « Disponible ici » est le premier contenu quand un sous-pool
- * local existe, puis vient le catalogue. Une catégorie sans local ne réserve
- * aucun slot visible. Un seul fetch backend alimente toutes les surfaces.
+ * Contrat HOME : « Disponible ici » appartient uniquement à l'accueil Tout.
+ * Les onglets catégorie restent des surfaces catalogue pures, sur mobile comme
+ * sur desktop. Un seul fetch backend alimente la surface quand elle est montée.
  */
 
 jest.mock('../../js/b-modal.js', () => ({
@@ -102,7 +101,7 @@ function shellFor(cat) {
   );
 }
 
-test('mobile + desktop: Disponible ici suit la catégorie, inclut Soldes, disparaît si vide et garde un seul fetch', async () => {
+test('mobile + desktop: Disponible ici reste sur Tout uniquement et garde un seul fetch', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
     <div class="k-chip active" data-cat="all"></div>
@@ -125,15 +124,9 @@ test('mobile + desktop: Disponible ici suit la catégorie, inclut Soldes, dispar
 
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
   expect(mockSetupInfiniteLoop).toHaveBeenCalled();
-  expect(document.getElementById('k-home-search-launcher')).toBeNull();
   expect(document.querySelector('#k-page-scroll > #k-discovery-local')).toBeNull();
 
   const allShell = shellFor('all');
-  const soldesShell = shellFor('Soldes');
-  const techShell = shellFor('Tech');
-  const maisonShell = shellFor('Maison');
-  const modeShell = shellFor('Mode');
-
   expect(allShell).not.toBeNull();
   expect(allShell.parentElement.firstElementChild).toBe(allShell);
   expect(allShell.hidden).toBe(false);
@@ -143,32 +136,13 @@ test('mobile + desktop: Disponible ici suit la catégorie, inclut Soldes, dispar
   expect(allShell.textContent).toContain('Ciment local');
   expect(allShell.textContent).toContain('Installation clim');
 
-  expect(soldesShell.parentElement.firstElementChild).toBe(soldesShell);
-  expect(soldesShell.hidden).toBe(false);
-  expect(soldesShell.textContent).toContain('Disponible ici');
-  expect(soldesShell.textContent).toContain('Ventilateur local en solde');
-  expect(soldesShell.textContent).not.toContain('Climatiseur local');
-  expect(soldesShell.textContent).not.toContain('Ciment local');
+  // Aucun onglet catégorie ne possède de rail local.
+  expect(shellFor('Soldes')).toBeNull();
+  expect(shellFor('Tech')).toBeNull();
+  expect(shellFor('Maison')).toBeNull();
+  expect(shellFor('Mode')).toBeNull();
 
-  expect(techShell.parentElement.firstElementChild).toBe(techShell);
-  expect(techShell.hidden).toBe(false);
-  expect(techShell.textContent).toContain('Climatiseur local');
-  expect(techShell.textContent).toContain('Ventilateur local en solde');
-  expect(techShell.textContent).toContain('Installation clim');
-  expect(techShell.textContent).not.toContain('Ciment local');
-
-  expect(maisonShell.parentElement.firstElementChild).toBe(maisonShell);
-  expect(maisonShell.hidden).toBe(false);
-  expect(maisonShell.textContent).toContain('Ciment local');
-  expect(maisonShell.textContent).not.toContain('Climatiseur local');
-
-  expect(modeShell.parentElement.firstElementChild).toBe(modeShell);
-  expect(modeShell.hidden).toBe(true);
-  expect(modeShell.innerHTML).toBe('');
-
-  const titleIds = Array.from(document.querySelectorAll('.k-discovery-title[id]')).map(el => el.id);
-  expect(new Set(titleIds).size).toBe(titleIds.length);
-
+  // Un rerender du pager remonte uniquement la surface Tout, sans refetch.
   const grid = document.getElementById('k-grid');
   grid.innerHTML = mobileCatalogMarkup('rerender');
   await flushDomWork();
@@ -176,52 +150,42 @@ test('mobile + desktop: Disponible ici suit la catégorie, inclut Soldes, dispar
   const rerenderedAll = document.querySelector('#k-grid > .k-cat-section[data-cat="all"]');
   expect(rerenderedAll.dataset.render).toBe('rerender');
   expect(rerenderedAll.firstElementChild).toBe(shellFor('all'));
-  expect(shellFor('Soldes').textContent).toContain('Ventilateur local en solde');
-  expect(shellFor('Tech').textContent).toContain('Installation clim');
-  expect(shellFor('Mode').hidden).toBe(true);
+  expect(shellFor('Soldes')).toBeNull();
+  expect(shellFor('Tech')).toBeNull();
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 
-  // Desktop : même règle de composition, pilotée par la même catégorie active.
+  // Desktop sur Tout : rail visible avant le catalogue.
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
   window.dispatchEvent(new Event('resize'));
   await flushDomWork();
 
   const catalogWrap = document.getElementById('k-desktop-catalog-wrap');
-  const desktopShell = document.getElementById('k-discovery-local');
+  let desktopShell = document.getElementById('k-discovery-local');
   expect(desktopShell).not.toBeNull();
   expect(catalogWrap.previousElementSibling).toBe(desktopShell);
-  expect(desktopShell.parentElement).toBe(document.getElementById('k-page-scroll'));
   expect(desktopShell.textContent).toContain('Climatiseur local');
-  expect(desktopShell.textContent).toContain('Ventilateur local en solde');
   expect(desktopShell.textContent).toContain('Ciment local');
-  expect(desktopShell.textContent).toContain('Installation clim');
   expect(document.querySelector('.k-discovery-shell[data-discovery-category]')).toBeNull();
 
+  // Tout autre onglet retire réellement le shell au lieu de le filtrer.
   bus.emit('catalog:cat-changed', 'Soldes');
   await flushDomWork();
-  expect(desktopShell.hidden).toBe(false);
-  expect(desktopShell.textContent).toContain('Ventilateur local en solde');
-  expect(desktopShell.textContent).not.toContain('Climatiseur local');
-  expect(desktopShell.textContent).not.toContain('Ciment local');
+  expect(document.getElementById('k-discovery-local')).toBeNull();
 
   bus.emit('catalog:cat-changed', 'Tech');
   await flushDomWork();
-  expect(desktopShell.hidden).toBe(false);
-  expect(desktopShell.textContent).toContain('Climatiseur local');
-  expect(desktopShell.textContent).toContain('Ventilateur local en solde');
-  expect(desktopShell.textContent).toContain('Installation clim');
-  expect(desktopShell.textContent).not.toContain('Ciment local');
+  expect(document.getElementById('k-discovery-local')).toBeNull();
 
   bus.emit('catalog:cat-changed', 'Maison');
   await flushDomWork();
-  expect(desktopShell.hidden).toBe(false);
-  expect(desktopShell.textContent).toContain('Ciment local');
-  expect(desktopShell.textContent).not.toContain('Climatiseur local');
-  expect(desktopShell.textContent).not.toContain('Installation clim');
+  expect(document.getElementById('k-discovery-local')).toBeNull();
 
-  bus.emit('catalog:cat-changed', 'Mode');
+  // Retour sur Tout : le rail est recréé depuis le cache local, sans refetch.
+  bus.emit('catalog:cat-changed', 'all');
   await flushDomWork();
-  expect(desktopShell.hidden).toBe(true);
-  expect(desktopShell.innerHTML).toBe('');
+  desktopShell = document.getElementById('k-discovery-local');
+  expect(desktopShell).not.toBeNull();
+  expect(catalogWrap.previousElementSibling).toBe(desktopShell);
+  expect(desktopShell.textContent).toContain('Ventilateur local en solde');
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 });

@@ -107,7 +107,6 @@ CREATE TYPE public.inquiry_status AS ENUM (
 
 CREATE TYPE public.order_status AS ENUM (
     'pending',
-    'pending_group_payment',
     'confirmed',
     'ordered',
     'preparation',
@@ -144,7 +143,8 @@ CREATE TYPE public.payment_mode AS ENUM (
     'stripe_eur',
     'cash_relais',
     'mixed_shared_cart_cash',
-    'paypal_eur'
+    'paypal_eur',
+    'mobile_money'
 );
 
 
@@ -430,6 +430,32 @@ COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE 
 
 
 --
+-- Name: prevent_economic_risk_truth_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_economic_risk_truth_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION '% is append-only; record a new economic event instead', TG_TABLE_NAME;
+END;
+$$;
+
+
+--
+-- Name: prevent_economic_structure_cost_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_economic_structure_cost_event_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic_structure_cost_events is append-only; record an ADJUSTMENT or REVERSAL event';
+END;
+$$;
+
+
+--
 -- Name: prevent_hard_delete_parcels(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -472,6 +498,19 @@ BEGIN
       USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: prevent_pricing_market_decision_policy_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_pricing_market_decision_policy_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'pricing_market_decision_policy_events is append-only; record a new policy event instead';
 END;
 $$;
 
@@ -1651,6 +1690,95 @@ COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige liÃ© Ã  un s
 
 
 --
+-- Name: economic_risk_cost_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_risk_cost_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    order_id uuid,
+    risk_provision_id uuid,
+    risk_key_snapshot text NOT NULL,
+    risk_label_snapshot text NOT NULL,
+    event_kind text NOT NULL,
+    adjusts_event_id uuid,
+    economic_at timestamp with time zone NOT NULL,
+    amount_original numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    fx_rate_to_kmf numeric(18,6) NOT NULL,
+    fx_source text NOT NULL,
+    amount_kmf numeric(18,2) NOT NULL,
+    source_kind text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_risk_cost_events_adjustment_link_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (adjusts_event_id IS NULL)) OR ((event_kind = ANY (ARRAY['ADJUSTMENT'::text, 'REVERSAL'::text])) AND (adjusts_event_id IS NOT NULL)))),
+    CONSTRAINT economic_risk_cost_events_amount_kmf_check CHECK ((amount_kmf <> (0)::numeric)),
+    CONSTRAINT economic_risk_cost_events_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_risk_cost_events_event_kind_check CHECK ((event_kind = ANY (ARRAY['ACCRUAL'::text, 'ADJUSTMENT'::text, 'REVERSAL'::text]))),
+    CONSTRAINT economic_risk_cost_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_risk_cost_events_fx_rate_to_kmf_check CHECK ((fx_rate_to_kmf > (0)::numeric)),
+    CONSTRAINT economic_risk_cost_events_fx_source_check CHECK (((char_length(btrim(fx_source)) >= 2) AND (char_length(btrim(fx_source)) <= 200))),
+    CONSTRAINT economic_risk_cost_events_kmf_fx_check CHECK (((currency <> 'KMF'::text) OR (fx_rate_to_kmf = (1)::numeric))),
+    CONSTRAINT economic_risk_cost_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_risk_cost_events_risk_key_snapshot_check CHECK (((char_length(btrim(risk_key_snapshot)) >= 1) AND (char_length(btrim(risk_key_snapshot)) <= 200))),
+    CONSTRAINT economic_risk_cost_events_risk_label_snapshot_check CHECK (((char_length(btrim(risk_label_snapshot)) >= 1) AND (char_length(btrim(risk_label_snapshot)) <= 300))),
+    CONSTRAINT economic_risk_cost_events_sign_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (amount_kmf > (0)::numeric) AND (amount_original > (0)::numeric)) OR ((event_kind = 'REVERSAL'::text) AND (amount_kmf < (0)::numeric) AND (amount_original < (0)::numeric)) OR ((event_kind = 'ADJUSTMENT'::text) AND (amount_kmf <> (0)::numeric) AND (amount_original <> (0)::numeric)))),
+    CONSTRAINT economic_risk_cost_events_source_kind_check CHECK (((char_length(btrim(source_kind)) >= 2) AND (char_length(btrim(source_kind)) <= 100)))
+);
+
+
+--
+-- Name: TABLE economic_risk_cost_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_risk_cost_events IS 'Vérité append-only des pertes/sinistres réalisés N2 par marché. risk_provisions reste une configuration ; aucune absence de ligne ne vaut zéro.';
+
+
+--
+-- Name: COLUMN economic_risk_cost_events.economic_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_risk_cost_events.economic_at IS 'Date économique du risque réalisé ; les corrections gardent la date du fait original afin de ne pas déplacer le coût entre fenêtres.';
+
+
+--
+-- Name: economic_risk_watermark_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_risk_watermark_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    closed_through timestamp with time zone NOT NULL,
+    review_version text NOT NULL,
+    source text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_risk_watermark_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_risk_watermark_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_risk_watermark_events_review_version_check CHECK (((char_length(btrim(review_version)) >= 1) AND (char_length(btrim(review_version)) <= 100))),
+    CONSTRAINT economic_risk_watermark_events_source_check CHECK (((char_length(btrim(source)) >= 3) AND (char_length(btrim(source)) <= 500)))
+);
+
+
+--
+-- Name: TABLE economic_risk_watermark_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_risk_watermark_events IS 'Certifications append-only de revue du risque par marché. Un closed_through explicite permet de prouver un zéro réalisé sans inventer un événement de coût nul.';
+
+
+--
+-- Name: COLUMN economic_risk_watermark_events.closed_through; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_risk_watermark_events.closed_through IS 'Borne exclusive de risque revue/certifiée. Toute écriture backdatée ultérieure dans une fenêtre déjà certifiée rend cette certification stale jusqu à une nouvelle revue.';
+
+
+--
 -- Name: economic_snapshots; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1661,6 +1789,87 @@ CREATE TABLE public.economic_snapshots (
     trigger_event text,
     created_at timestamp with time zone DEFAULT now()
 );
+
+
+--
+-- Name: economic_structure_cost_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_structure_cost_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    charge_id uuid NOT NULL,
+    charge_family_snapshot text NOT NULL,
+    charge_name_snapshot text NOT NULL,
+    recurrence_period_snapshot text,
+    scope_kind text NOT NULL,
+    market_id uuid,
+    event_kind text NOT NULL,
+    adjusts_event_id uuid,
+    economic_from timestamp with time zone NOT NULL,
+    economic_to timestamp with time zone NOT NULL,
+    amount_original numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    fx_rate_to_kmf numeric(18,6) NOT NULL,
+    fx_source text NOT NULL,
+    amount_kmf numeric(18,2) NOT NULL,
+    source_kind text NOT NULL,
+    evidence_ref text NOT NULL,
+    notes text,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_structure_cost_events_adjustment_link_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (adjusts_event_id IS NULL)) OR ((event_kind = ANY (ARRAY['ADJUSTMENT'::text, 'REVERSAL'::text])) AND (adjusts_event_id IS NOT NULL)))),
+    CONSTRAINT economic_structure_cost_events_amount_kmf_check CHECK ((amount_kmf <> (0)::numeric)),
+    CONSTRAINT economic_structure_cost_events_charge_family_snapshot_check CHECK (((char_length(btrim(charge_family_snapshot)) >= 1) AND (char_length(btrim(charge_family_snapshot)) <= 200))),
+    CONSTRAINT economic_structure_cost_events_charge_name_snapshot_check CHECK (((char_length(btrim(charge_name_snapshot)) >= 1) AND (char_length(btrim(charge_name_snapshot)) <= 300))),
+    CONSTRAINT economic_structure_cost_events_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_structure_cost_events_event_kind_check CHECK ((event_kind = ANY (ARRAY['ACCRUAL'::text, 'ADJUSTMENT'::text, 'REVERSAL'::text]))),
+    CONSTRAINT economic_structure_cost_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_structure_cost_events_fx_rate_to_kmf_check CHECK ((fx_rate_to_kmf > (0)::numeric)),
+    CONSTRAINT economic_structure_cost_events_fx_source_check CHECK (((char_length(btrim(fx_source)) >= 2) AND (char_length(btrim(fx_source)) <= 200))),
+    CONSTRAINT economic_structure_cost_events_kmf_fx_check CHECK (((currency <> 'KMF'::text) OR (fx_rate_to_kmf = (1)::numeric))),
+    CONSTRAINT economic_structure_cost_events_notes_check CHECK (((notes IS NULL) OR (char_length(notes) <= 2000))),
+    CONSTRAINT economic_structure_cost_events_period_check CHECK ((economic_to > economic_from)),
+    CONSTRAINT economic_structure_cost_events_recurrence_period_snapshot_check CHECK (((recurrence_period_snapshot IS NULL) OR ((char_length(btrim(recurrence_period_snapshot)) >= 1) AND (char_length(btrim(recurrence_period_snapshot)) <= 100)))),
+    CONSTRAINT economic_structure_cost_events_scope_kind_check CHECK ((scope_kind = ANY (ARRAY['GROUP'::text, 'MARKET_DIRECT'::text]))),
+    CONSTRAINT economic_structure_cost_events_scope_market_check CHECK ((((scope_kind = 'GROUP'::text) AND (market_id IS NULL)) OR ((scope_kind = 'MARKET_DIRECT'::text) AND (market_id IS NOT NULL)))),
+    CONSTRAINT economic_structure_cost_events_sign_check CHECK ((((event_kind = 'ACCRUAL'::text) AND (amount_kmf > (0)::numeric) AND (amount_original > (0)::numeric)) OR ((event_kind = 'REVERSAL'::text) AND (amount_kmf < (0)::numeric) AND (amount_original < (0)::numeric)) OR ((event_kind = 'ADJUSTMENT'::text) AND (amount_kmf <> (0)::numeric) AND (amount_original <> (0)::numeric)))),
+    CONSTRAINT economic_structure_cost_events_source_kind_check CHECK ((source_kind = ANY (ARRAY['INVOICE'::text, 'CONTRACT'::text, 'CONNECTOR'::text, 'MANUAL'::text, 'ADJUSTMENT'::text])))
+);
+
+
+--
+-- Name: TABLE economic_structure_cost_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_structure_cost_events IS 'Vérité append-only des charges économiques N3 de période. Générique pour toute charge de structure ; GROUP reste non alloué et MARKET_DIRECT est directement attribuable à un marché.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.charge_family_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.charge_family_snapshot IS 'Famille de structure figée au constat du fait (ex. overhead, relay, hub, platform) ; aucune liste fermée n’est imposée par le moteur.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.recurrence_period_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.recurrence_period_snapshot IS 'Récurrence de configuration au moment du constat, à titre explicatif uniquement ; la reconnaissance économique repose sur economic_from/economic_to.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.adjusts_event_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.adjusts_event_id IS 'Lien obligatoire vers l’événement corrigé pour ADJUSTMENT/REVERSAL ; aucune mutation du réel historique.';
+
+
+--
+-- Name: COLUMN economic_structure_cost_events.amount_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_structure_cost_events.amount_kmf IS 'Montant économique en KMF pour toute la période de l’événement ; ne provient jamais automatiquement de charges.amount_kmf.';
 
 
 --
@@ -2115,7 +2324,10 @@ CREATE TABLE public.invoices (
     pdf_filename text,
     pdf_generated_at timestamp with time zone,
     template_version text DEFAULT '2026-08-v1'::text NOT NULL,
-    total_eur numeric(10,2)
+    total_eur numeric(10,2),
+    payment_total_amount numeric(18,4),
+    payment_currency text,
+    payment_minor_unit integer
 );
 
 
@@ -2131,6 +2343,13 @@ COMMENT ON COLUMN public.invoices.public_token IS 'DEPRECATED 2026-08: aucune ro
 --
 
 COMMENT ON COLUMN public.invoices.total_eur IS 'Montant en EUR — snapshot de orders.total_eur au moment de l''émission. Affiché sur la facture UNIQUEMENT si payment_mode = stripe_eur ou paypal_eur (P4, freeze 22-08-2026) ; sinon total_kmf fait foi. NULL pour les factures antérieures à cette migration — aucun backfill fabriqué.';
+
+
+--
+-- Name: COLUMN invoices.payment_total_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.payment_total_amount IS 'Montant réellement encaissé dans payment_currency ; alimenté par les rails dont la devise n est pas déductible de total_kmf/total_eur (ex. Mobile Money XAF).';
 
 
 --
@@ -2257,6 +2476,31 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 
 --
+-- Name: market_payment_providers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_payment_providers (
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    currency text NOT NULL,
+    is_enabled boolean DEFAULT true NOT NULL,
+    priority integer DEFAULT 100 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_payment_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_payment_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT market_payment_providers_priority_check CHECK ((priority > 0))
+);
+
+
+--
+-- Name: TABLE market_payment_providers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_payment_providers IS 'Providers Mobile Money autorisés par marché. Aucune credential ici : activation métier distincte de la configuration secrète runtime.';
+
+
+--
 -- Name: markets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2291,6 +2535,41 @@ COMMENT ON COLUMN public.markets.code IS 'ISO 3166-1 alpha-2. Clé stable réfé
 --
 
 COMMENT ON COLUMN public.markets.minor_unit IS 'Décimales de la devise : 0 pour KMF/XAF, 2 pour EUR. Consommé par la boundary devise (M5) — cette table ne formate rien elle-même.';
+
+
+--
+-- Name: mobile_money_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mobile_money_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    msisdn text,
+    currency text NOT NULL,
+    minor_unit integer DEFAULT 0 NOT NULL,
+    amount_minor bigint NOT NULL,
+    external_transaction_id text,
+    status text DEFAULT 'initiated'::text NOT NULL,
+    provider_status text,
+    provider_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    completed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT mobile_money_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT mobile_money_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT mobile_money_status_chk CHECK ((status = ANY (ARRAY['initiated'::text, 'pending'::text, 'succeeded'::text, 'failed'::text, 'expired'::text]))),
+    CONSTRAINT mobile_money_transactions_amount_minor_check CHECK ((amount_minor > 0)),
+    CONSTRAINT mobile_money_transactions_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4)))
+);
+
+
+--
+-- Name: TABLE mobile_money_transactions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.mobile_money_transactions IS 'Transactions Mobile Money Komerce. Le provider externe ne confirme jamais directement stock/commande : passage obligatoire par order-payment-confirmation.';
 
 
 --
@@ -2408,8 +2687,24 @@ CREATE TABLE public.order_item_cost_imputations (
     allocation_confidence text,
     data_quality jsonb,
     pricing_source text DEFAULT 'pricing-engine'::text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    estimated_business_variable_cost_kmf numeric(12,2),
+    estimated_fixed_overhead_kmf numeric(12,2)
 );
+
+
+--
+-- Name: COLUMN order_item_cost_imputations.estimated_business_variable_cost_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_item_cost_imputations.estimated_business_variable_cost_kmf IS 'Snapshot N2 total de l order_item : paiement + provision risque. NULL si non reconstructible.';
+
+
+--
+-- Name: COLUMN order_item_cost_imputations.estimated_fixed_overhead_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_item_cost_imputations.estimated_fixed_overhead_kmf IS 'Snapshot N3 total de l order_item : allocation de structure pour lecture. NULL si non reconstructible.';
 
 
 --
@@ -3546,6 +3841,60 @@ CREATE TABLE public.pricing_global_access_grants (
 
 
 --
+-- Name: pricing_market_decision_policy_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_market_decision_policy_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    version text NOT NULL,
+    window_days integer NOT NULL,
+    maturity_threshold numeric(7,6) CONSTRAINT pricing_market_decision_policy_even_maturity_threshold_not_null NOT NULL,
+    coverage_threshold numeric(12,6) CONSTRAINT pricing_market_decision_policy_even_coverage_threshold_not_null NOT NULL,
+    max_disposition_ratio numeric(7,6) CONSTRAINT pricing_market_decision_policy_e_max_disposition_ratio_not_null NOT NULL,
+    disposed_contribution_treatment text DEFAULT 'EXCLUDE_FROM_NUMERATOR'::text CONSTRAINT pricing_market_decision_pol_disposed_contribution_trea_not_null NOT NULL,
+    effective_from timestamp with time zone NOT NULL,
+    effective_to timestamp with time zone,
+    source text NOT NULL,
+    evidence_ref text NOT NULL,
+    rationale text NOT NULL,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pricing_market_decision_poli_disposed_contribution_treatm_check CHECK ((disposed_contribution_treatment = 'EXCLUDE_FROM_NUMERATOR'::text)),
+    CONSTRAINT pricing_market_decision_policy_even_max_disposition_ratio_check CHECK (((max_disposition_ratio >= (0)::numeric) AND (max_disposition_ratio <= (1)::numeric))),
+    CONSTRAINT pricing_market_decision_policy_events_coverage_threshold_check CHECK ((coverage_threshold > (0)::numeric)),
+    CONSTRAINT pricing_market_decision_policy_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT pricing_market_decision_policy_events_maturity_threshold_check CHECK (((maturity_threshold >= (0)::numeric) AND (maturity_threshold <= (1)::numeric))),
+    CONSTRAINT pricing_market_decision_policy_events_rationale_check CHECK (((char_length(btrim(rationale)) >= 10) AND (char_length(btrim(rationale)) <= 2000))),
+    CONSTRAINT pricing_market_decision_policy_events_source_check CHECK (((char_length(btrim(source)) >= 3) AND (char_length(btrim(source)) <= 500))),
+    CONSTRAINT pricing_market_decision_policy_events_version_check CHECK (((char_length(btrim(version)) >= 1) AND (char_length(btrim(version)) <= 100))),
+    CONSTRAINT pricing_market_decision_policy_events_window_days_check CHECK ((window_days > 0)),
+    CONSTRAINT pricing_market_decision_policy_period_check CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+);
+
+
+--
+-- Name: TABLE pricing_market_decision_policy_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.pricing_market_decision_policy_events IS 'Politique append-only du gate économique par marché : fenêtre mécanique, seuil de maturité, seuil de couverture et plafond de dispositions. Aucune valeur implicite.';
+
+
+--
+-- Name: COLUMN pricing_market_decision_policy_events.window_days; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_market_decision_policy_events.window_days IS 'Largeur mécanique de la fenêtre canonique ; les dates du gate sont dérivées côté serveur et ne sont jamais choisies ad hoc par le navigateur.';
+
+
+--
+-- Name: COLUMN pricing_market_decision_policy_events.coverage_threshold; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_market_decision_policy_events.coverage_threshold IS 'Seuil explicite de market_coverage_ratio autorisant une nouvelle position sous CDR ; toute modification est un nouvel événement auditable.';
+
+
+--
 -- Name: pricing_matrices_audit; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3580,6 +3929,48 @@ CREATE SEQUENCE public.pricing_matrices_audit_id_seq
 --
 
 ALTER SEQUENCE public.pricing_matrices_audit_id_seq OWNED BY public.pricing_matrices_audit.id;
+
+
+--
+-- Name: pricing_maturity_disposition_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_maturity_disposition_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    state text NOT NULL,
+    reason_code text NOT NULL,
+    rationale text NOT NULL,
+    evidence_ref text NOT NULL,
+    decided_by uuid NOT NULL,
+    decided_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pricing_maturity_disposition_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT pricing_maturity_disposition_events_rationale_check CHECK (((char_length(btrim(rationale)) >= 10) AND (char_length(btrim(rationale)) <= 2000))),
+    CONSTRAINT pricing_maturity_disposition_events_reason_code_check CHECK ((reason_code ~ '^[A-Z][A-Z0-9_]{2,79}$'::text)),
+    CONSTRAINT pricing_maturity_disposition_events_state_check CHECK ((state = ANY (ARRAY['RECONCILIABLE'::text, 'IRRECONCILABLE_DISPOSED'::text])))
+);
+
+
+--
+-- Name: TABLE pricing_maturity_disposition_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.pricing_maturity_disposition_events IS 'Journal append-only des transitions de disposition de maturité économique.';
+
+
+--
+-- Name: COLUMN pricing_maturity_disposition_events.state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_maturity_disposition_events.state IS 'RECONCILIABLE ou IRRECONCILABLE_DISPOSED ; le dernier événement fait foi.';
+
+
+--
+-- Name: COLUMN pricing_maturity_disposition_events.evidence_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_maturity_disposition_events.evidence_ref IS 'Référence obligatoire vers la preuve ayant motivé la transition.';
 
 
 --
@@ -4975,6 +5366,37 @@ CREATE TABLE public.supplier_catalog_imports (
 
 
 --
+-- Name: supplier_catalog_sync_checkpoints; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_catalog_sync_checkpoints (
+    supplier_name text NOT NULL,
+    sync_key text NOT NULL,
+    category_id text NOT NULL,
+    category_path text,
+    next_page integer DEFAULT 1 NOT NULL,
+    total_pages integer,
+    total_records integer,
+    api_calls integer DEFAULT 0 NOT NULL,
+    accepted_items integer DEFAULT 0 NOT NULL,
+    rejected_items integer DEFAULT 0 NOT NULL,
+    capped_by_supplier boolean DEFAULT false NOT NULL,
+    completed boolean DEFAULT false NOT NULL,
+    last_request_id text,
+    last_error text,
+    last_synced_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT supplier_catalog_sync_checkpoints_accepted_items_check CHECK ((accepted_items >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_api_calls_check CHECK ((api_calls >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_next_page_check CHECK ((next_page >= 1)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_rejected_items_check CHECK ((rejected_items >= 0)),
+    CONSTRAINT supplier_catalog_sync_checkpoints_total_pages_check CHECK (((total_pages IS NULL) OR (total_pages >= 0))),
+    CONSTRAINT supplier_catalog_sync_checkpoints_total_records_check CHECK (((total_records IS NULL) OR (total_records >= 0)))
+);
+
+
+--
 -- Name: suppliers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6164,11 +6586,35 @@ ALTER TABLE ONLY public.disputes
 
 
 --
+-- Name: economic_risk_cost_events economic_risk_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: economic_snapshots economic_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.economic_snapshots
     ADD CONSTRAINT economic_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -6300,6 +6746,14 @@ ALTER TABLE ONLY public.loyalty_tiers
 
 
 --
+-- Name: market_payment_providers market_payment_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_providers
+    ADD CONSTRAINT market_payment_providers_pkey PRIMARY KEY (market_id, provider);
+
+
+--
 -- Name: markets markets_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6313,6 +6767,14 @@ ALTER TABLE ONLY public.markets
 
 ALTER TABLE ONLY public.markets
     ADD CONSTRAINT markets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_pkey PRIMARY KEY (id);
 
 
 --
@@ -6564,11 +7026,43 @@ ALTER TABLE ONLY public.pricing_global_access_grants
 
 
 --
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_start_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_start_unique UNIQUE (market_id, effective_from);
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_version_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_version_unique UNIQUE (market_id, version);
+
+
+--
 -- Name: pricing_matrices_audit pricing_matrices_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.pricing_matrices_audit
     ADD CONSTRAINT pricing_matrices_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -6961,6 +7455,14 @@ ALTER TABLE ONLY public.supplier_catalog_imports
 
 ALTER TABLE public.supplier_catalog_imports
     ADD CONSTRAINT supplier_catalog_imports_profile_traceability_check CHECK (((source_type <> 'json'::text) OR ((profile_id IS NOT NULL) AND (profile_version IS NOT NULL) AND (profile_hash IS NOT NULL)))) NOT VALID;
+
+
+--
+-- Name: supplier_catalog_sync_checkpoints supplier_catalog_sync_checkpoints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_sync_checkpoints
+    ADD CONSTRAINT supplier_catalog_sync_checkpoints_pkey PRIMARY KEY (supplier_name, sync_key, category_id);
 
 
 --
@@ -7523,6 +8025,41 @@ CREATE INDEX idx_disputes_status ON public.disputes USING btree (status);
 
 
 --
+-- Name: idx_economic_risk_cost_adjusts; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_adjusts ON public.economic_risk_cost_events USING btree (adjusts_event_id) WHERE (adjusts_event_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_cost_market_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_market_time ON public.economic_risk_cost_events USING btree (market_id, economic_at, recorded_at);
+
+
+--
+-- Name: idx_economic_risk_cost_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_order ON public.economic_risk_cost_events USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_cost_provision; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_cost_provision ON public.economic_risk_cost_events USING btree (risk_provision_id) WHERE (risk_provision_id IS NOT NULL);
+
+
+--
+-- Name: idx_economic_risk_watermark_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_risk_watermark_market ON public.economic_risk_watermark_events USING btree (market_id, closed_through DESC, recorded_at DESC, id DESC);
+
+
+--
 -- Name: idx_economic_snapshots_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7695,6 +8232,20 @@ CREATE INDEX idx_loyalty_rewards_status ON public.loyalty_rewards USING btree (s
 --
 
 CREATE INDEX idx_loyalty_rewards_user ON public.loyalty_rewards USING btree (user_id);
+
+
+--
+-- Name: idx_mobile_money_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mobile_money_order ON public.mobile_money_transactions USING btree (order_id, created_at DESC);
+
+
+--
+-- Name: idx_mobile_money_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mobile_money_pending ON public.mobile_money_transactions USING btree (provider, status, created_at) WHERE (status = ANY (ARRAY['initiated'::text, 'pending'::text]));
 
 
 --
@@ -8510,6 +9061,27 @@ CREATE INDEX idx_pricing_global_access_active ON public.pricing_global_access_gr
 
 
 --
+-- Name: idx_pricing_market_decision_policy_current; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_market_decision_policy_current ON public.pricing_market_decision_policy_events USING btree (market_id, effective_from DESC, recorded_at DESC, id DESC);
+
+
+--
+-- Name: idx_pricing_maturity_disposition_market_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_maturity_disposition_market_time ON public.pricing_maturity_disposition_events USING btree (market_id, decided_at DESC, id DESC);
+
+
+--
+-- Name: idx_pricing_maturity_disposition_order_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pricing_maturity_disposition_order_time ON public.pricing_maturity_disposition_events USING btree (order_id, decided_at DESC, id DESC);
+
+
+--
 -- Name: idx_pricing_strategies_category_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9175,10 +9747,45 @@ CREATE INDEX idx_strategy_history_product ON public.pricing_strategy_history USI
 
 
 --
+-- Name: idx_structure_cost_events_charge_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_charge_time ON public.economic_structure_cost_events USING btree (charge_id, recorded_at DESC, id DESC);
+
+
+--
+-- Name: idx_structure_cost_events_family_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_family_period ON public.economic_structure_cost_events USING btree (charge_family_snapshot, economic_from, economic_to);
+
+
+--
+-- Name: idx_structure_cost_events_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_period ON public.economic_structure_cost_events USING btree (economic_from, economic_to);
+
+
+--
+-- Name: idx_structure_cost_events_scope_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_structure_cost_events_scope_period ON public.economic_structure_cost_events USING btree (scope_kind, market_id, economic_from, economic_to);
+
+
+--
 -- Name: idx_supplier_catalog_imports_import_ref; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX idx_supplier_catalog_imports_import_ref ON public.supplier_catalog_imports USING btree (import_ref);
+
+
+--
+-- Name: idx_supplier_catalog_sync_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_catalog_sync_pending ON public.supplier_catalog_sync_checkpoints USING btree (supplier_name, sync_key, completed, updated_at);
 
 
 --
@@ -9375,6 +9982,20 @@ CREATE UNIQUE INDEX uniq_cash_deposits_deposit_ref ON public.cash_deposits USING
 --
 
 CREATE UNIQUE INDEX uniq_sc_supplier_ref ON public.sourcing_candidates USING btree (supplier_name, supplier_product_id) WHERE (supplier_product_id IS NOT NULL);
+
+
+--
+-- Name: uq_mobile_money_active_attempt; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_mobile_money_active_attempt ON public.mobile_money_transactions USING btree (order_id, provider) WHERE (status = ANY (ARRAY['initiated'::text, 'pending'::text]));
+
+
+--
+-- Name: uq_mobile_money_provider_external_tx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_mobile_money_provider_external_tx ON public.mobile_money_transactions USING btree (provider, external_transaction_id) WHERE (external_transaction_id IS NOT NULL);
 
 
 --
@@ -9595,10 +10216,38 @@ CREATE TRIGGER trg_partners_updated BEFORE UPDATE ON public.partners FOR EACH RO
 
 
 --
+-- Name: economic_risk_cost_events trg_prevent_economic_risk_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_risk_cost_event_mutation BEFORE DELETE OR UPDATE ON public.economic_risk_cost_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_risk_truth_mutation();
+
+
+--
+-- Name: economic_risk_watermark_events trg_prevent_economic_risk_watermark_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_risk_watermark_event_mutation BEFORE DELETE OR UPDATE ON public.economic_risk_watermark_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_risk_truth_mutation();
+
+
+--
+-- Name: economic_structure_cost_events trg_prevent_economic_structure_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_economic_structure_cost_event_mutation BEFORE DELETE OR UPDATE ON public.economic_structure_cost_events FOR EACH ROW EXECUTE FUNCTION public.prevent_economic_structure_cost_event_mutation();
+
+
+--
 -- Name: incidents trg_prevent_incident_delete; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_prevent_incident_delete BEFORE DELETE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.prevent_incident_delete();
+
+
+--
+-- Name: pricing_market_decision_policy_events trg_prevent_pricing_market_decision_policy_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_pricing_market_decision_policy_mutation BEFORE DELETE OR UPDATE ON public.pricing_market_decision_policy_events FOR EACH ROW EXECUTE FUNCTION public.prevent_pricing_market_decision_policy_mutation();
 
 
 --
@@ -10076,6 +10725,94 @@ ALTER TABLE ONLY public.disputes
 
 
 --
+-- Name: economic_risk_cost_events economic_risk_cost_events_adjusts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_adjusts_event_id_fkey FOREIGN KEY (adjusts_event_id) REFERENCES public.economic_risk_cost_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_cost_events economic_risk_cost_events_risk_provision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_cost_events
+    ADD CONSTRAINT economic_risk_cost_events_risk_provision_id_fkey FOREIGN KEY (risk_provision_id) REFERENCES public.risk_provisions(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_risk_watermark_events economic_risk_watermark_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_risk_watermark_events
+    ADD CONSTRAINT economic_risk_watermark_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_adjusts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_adjusts_event_id_fkey FOREIGN KEY (adjusts_event_id) REFERENCES public.economic_structure_cost_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_charge_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_charge_id_fkey FOREIGN KEY (charge_id) REFERENCES public.charges(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_structure_cost_events economic_structure_cost_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_structure_cost_events
+    ADD CONSTRAINT economic_structure_cost_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: incidents incidents_detected_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10225,6 +10962,30 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 ALTER TABLE ONLY public.loyalty_rewards
     ADD CONSTRAINT loyalty_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_payment_providers market_payment_providers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_providers
+    ADD CONSTRAINT market_payment_providers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: mobile_money_transactions mobile_money_transactions_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mobile_money_transactions
+    ADD CONSTRAINT mobile_money_transactions_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
 
 
 --
@@ -10708,11 +11469,51 @@ ALTER TABLE ONLY public.pricing_global_access_grants
 
 
 --
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_market_decision_policy_events pricing_market_decision_policy_events_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_market_decision_policy_events
+    ADD CONSTRAINT pricing_market_decision_policy_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: pricing_matrices_audit pricing_matrices_audit_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.pricing_matrices_audit
     ADD CONSTRAINT pricing_matrices_audit_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pricing_maturity_disposition_events pricing_maturity_disposition_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_maturity_disposition_events
+    ADD CONSTRAINT pricing_maturity_disposition_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
 
 
 --

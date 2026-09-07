@@ -4,16 +4,16 @@
  * @domain        orders
  * @layer         service
  * @criticality   critical
- * @inputs        order_id, options { client, cashPaidAt, guardPending }
+ * @inputs        order_id, options { client, cashPaidAt, paymentEvent }, simulation_target_status
  * @outputs       orders.payment_status, payment_timestamps
  * @depends       db.js, services/payment-status-validator.js
- * @used-by       services/admin-order-refund.js, services/payment-stripe.js, services/parcel-auto-create-service.js, services/payment-paypal.js
+ * @used-by       services/admin-order-refund.js, services/payment-stripe.js, services/parcel-auto-create-service.js, services/payment-paypal.js, services/simulator/state-advancer.js
  * @db-read       orders
  * @db-write      orders
  * @db-txn        payment_status_single_owner, optional_caller_transaction
  * @doctrine      resolve_before_behavior_change, payment_status_single_entry, payment_status_transition_matrix
- * @impact-areas  payments, orders, dashboards
- * @version       2026-07
+ * @impact-areas  payments, orders, dashboards, simulator
+ * @version       2026-09
  */
 
 'use strict';
@@ -34,21 +34,29 @@
  * Stripe (P3-A.3, 2026-06) : handleStripePaymentFailed pose désormais aussi
  * updated_at sur la transition pending→failed.
  *
- * GARDES (P5-N2/N3, 2026-07) : chaque mutation encode désormais sa clause
+ * GARDES (P5-N2/N3, 2026-07) : chaque mutation métier encode désormais sa clause
  * WHERE à partir de payment-status-validator.js (source unique de la matrice
  * de transitions, partagée avec order-status-machine.js). Plus aucune garde
- * n'est contournable par l'appelant — l'ancien flag guardPending de markFailed
- * est retiré : il permettait un `→ failed` depuis n'importe quel état, jamais
- * utilisé en pratique (aucun appelant ne passait guardPending:false) mais
- * ouvert. markPaid accepte désormais { paymentEvent } pour le seul cas
- * failed→paid autorisé (retry de paiement identifiable) ; sans lui, un ordre
- * en 'failed' n'est plus jamais réécrasé en 'paid' par un markPaid(orderId) nu.
+ * métier n'est contournable par l'appelant.
+ *
+ * SIMULATION (Debt Zero, 2026-09) : forcePaymentStatusForSimulation() est une
+ * primitive explicitement NON-PRODUCTION destinée au chaos-test. Elle permet
+ * au simulateur de fabriquer volontairement un état incohérent tout en gardant
+ * l'écriture physique de payment_status chez son owner canonique. Ce n'est pas
+ * une transition métier et cette fonction refuse de s'exécuter quand
+ * KOMERCE_ENV ou NODE_ENV vaut "production".
  */
 const db = require('../db');
 const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
 
 // Sélectionne le handle : client transactionnel si fourni, sinon le pool.
 const exec = (client) => (client && typeof client.query === 'function') ? client : db;
+
+function runtimeEnvironment() {
+  const komerceEnv = String(process.env.KOMERCE_ENV || '').trim().toLowerCase();
+  if (komerceEnv) return komerceEnv;
+  return String(process.env.NODE_ENV || '').trim().toLowerCase();
+}
 
 /**
  * payment_status = 'paid'.
@@ -73,9 +81,7 @@ async function markPaid(orderId, { client = null, cashPaidAt = false, paymentEve
  * payment_status = 'refunded'.
  * NE touche PAS orders.status — le statut 'refunded' passe par
  * transitionOrderStatus() (cf. le pattern correct de admin-order-refund.js).
- * Garde : source ∈ {pending, paid, failed} (cf. payment-status-validator —
- * seul paid→refunded est observé en usage réel, les deux autres sources
- * restent un point ouvert non tranché, laissé permissif à dessein).
+ * Garde : source ∈ {paid} (cf. payment-status-validator).
  * @returns {Promise<{changed:boolean, rowCount:number}>}
  */
 async function markRefunded(orderId, { client = null } = {}) {
@@ -101,4 +107,37 @@ async function markFailed(orderId, { client = null } = {}) {
   return { changed: r.rowCount > 0, rowCount: r.rowCount };
 }
 
-module.exports = { markPaid, markRefunded, markFailed };
+/**
+ * Mutation volontairement hors matrice pour le simulateur de chaos uniquement.
+ * Elle reste ici afin que services/payment-service.js demeure l'unique owner
+ * physique de orders.payment_status hors effet historique de la state machine.
+ *
+ * Garde fail-closed sur l'environnement métier : aucun appel possible en prod.
+ * Les seules cibles utiles au scénario desync_payment sont pending et paid.
+ */
+async function forcePaymentStatusForSimulation(orderId, targetStatus, { client = null } = {}) {
+  if (runtimeEnvironment() === 'production') {
+    throw Object.assign(
+      new Error('Mutation payment_status de simulation interdite en production'),
+      { code: 'SIMULATION_PRODUCTION_FORBIDDEN' }
+    );
+  }
+  if (!['pending', 'paid'].includes(targetStatus)) {
+    throw Object.assign(
+      new Error(`Statut de paiement chaos non autorisé: ${targetStatus}`),
+      { code: 'SIMULATION_PAYMENT_STATUS_INVALID' }
+    );
+  }
+  const r = await exec(client).query(
+    'UPDATE orders SET payment_status = $1, updated_at = NOW() WHERE id = $2',
+    [targetStatus, orderId]
+  );
+  return { changed: r.rowCount > 0, rowCount: r.rowCount };
+}
+
+module.exports = {
+  markPaid,
+  markRefunded,
+  markFailed,
+  forcePaymentStatusForSimulation,
+};

@@ -53,6 +53,7 @@ module.exports = {
       'tests/unit/loyalty-notification.test.js',
       'tests/unit/loyalty-route.test.js',
       'tests/unit/loyalty-service.test.js',
+      'tests/unit/admin-loyalty-route.test.js',
     ],
   },
 

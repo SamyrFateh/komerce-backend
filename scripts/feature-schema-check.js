@@ -116,17 +116,25 @@ function hasTestsProof(m) {
   const filesTests = m.files && Array.isArray(m.files.tests) && m.files.tests.length;
   return !!(filesTests || m.tests || m.verification || (m.contracts && Object.keys(m.contracts).length));
 }
+function isDeprecatedCard(m) {
+  return m && (
+    m.status === 'deprecated' ||
+    m.classification?.kind === 'deprecated' ||
+    m.classification?.decision === 'deprecated'
+  );
+}
 function governanceChecks(m) {
   const miss = [];
-  if (!m.perimeter || !Array.isArray(m.perimeter.in)  || !m.perimeter.in.length)  miss.push('perimeter.in');
+  const deprecated = isDeprecatedCard(m);
+  // Une tombstone deprecated doit conserver la FORME des champs, mais leur
+  // vacuité est précisément la preuve qu'elle n'exerce plus d'autorité.
+  if (!m.perimeter || !Array.isArray(m.perimeter.in) || (!deprecated && !m.perimeter.in.length)) miss.push('perimeter.in');
   if (!m.perimeter || !Array.isArray(m.perimeter.out) || !m.perimeter.out.length) miss.push('perimeter.out');
-  if (!m.files || !Object.keys(m.files).length) miss.push('files');
+  if (!m.files || typeof m.files !== 'object' || Array.isArray(m.files) || (!deprecated && !Object.keys(m.files).length)) miss.push('files');
   if (!m.authority) miss.push('authority');
   if (!m.contract || !Array.isArray(m.contract.exposes))  miss.push('contract.exposes');
   if (!m.contract || !Array.isArray(m.contract.consumes)) miss.push('contract.consumes');
-  if (!Array.isArray(m.invariants) || !m.invariants.length) miss.push('invariants');
-  // tests|verification|contracts retiré d'ici : gouverné séparément par le
-  // RATCHET ci-dessous (voir governanceChecksMinusTests + checkRatchet).
+  if (!Array.isArray(m.invariants) || (!deprecated && !m.invariants.length)) miss.push('invariants');
   return miss;
 }
 
@@ -144,6 +152,7 @@ function load() {
 }
 
 const cards = load();
+const featureKey = m => String(m.__file || m.name || '').replace(/\\/g, '/');
 const BASELINE_EXISTED = fs.existsSync(TESTS_BASELINE_FILE);
 const baseline = loadTestsBaseline();
 console.log(`\n${C.bld}Gate 2 — Schéma des cartes${C.r}  ${C.dim}(${cards.length} carte(s), racine ${ROOT})${C.r}\n`);
@@ -157,8 +166,9 @@ for (const m of cards) {
   const missGov = governanceChecks(m);
   const missingTests = !hasTestsProof(m);
 
-  if (missingTests) stillMissingTests.add(m.name);
-  const ratchetFail = missingTests && !baseline.has(m.name); // nouvelle carte / régression
+  const baselineKey = featureKey(m);
+  if (missingTests) stillMissingTests.add(baselineKey);
+  const ratchetFail = missingTests && !baseline.has(baselineKey); // nouvelle carte / régression
 
   errStruct += missStruct.length ? 1 : 0;
   errForbidden += forb.length ? 1 : 0;
@@ -175,6 +185,14 @@ for (const m of cards) {
     else              console.log(`    ${C.ylw}tests|verification|contracts manquant${C.r} ${C.dim}(dette pré-existante, baseline — npm run gate:schema -- --save pour rétrécir)${C.r}`);
   }
   if (missGov.length)    console.log(`    ${C.ylw}gouvernance${C.r}        : ${missGov.join(', ')} ${C.dim}(à backfiller)${C.r}`);
+}
+
+const staleBaseline = [...baseline].filter(key => !stillMissingTests.has(key));
+if (staleBaseline.length) {
+  errRatchet += staleBaseline.length;
+  console.log(`\n${C.red}✖ ${staleBaseline.length} exemption(s) tests devenue(s) inutile(s) :${C.r}`);
+  staleBaseline.forEach(key => console.log(`${C.red}   ↓ ${key}${C.r}`));
+  console.log(`${C.dim}  Rétrécir scripts/.feature-schema-tests-baseline.json ; une dette remboursée ne reste jamais baselinée.${C.r}`);
 }
 
 if (SAVE) {

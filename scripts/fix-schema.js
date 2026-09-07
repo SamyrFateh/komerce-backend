@@ -391,18 +391,15 @@ await run('customs_taux_mensuel view', `
       THEN ALTER TYPE payment_status ADD VALUE 'partially_paid'; END IF;
     END $$`);
 
-  // ── Migration 059b : pending + pending_group_payment dans order_status (LOT 5) ─
+  // ── Migration 059b legacy : `pending` reste requis. ─────────────────────
+  // `pending_group_payment` a été retiré du domaine par la migration 124
+  // (Boutique First) et ne doit jamais être ressuscité par ce réparateur de
+  // compatibilité au boot ou en preDeploy.
   await run('order_status enum pending',
     `DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending'
         AND enumtypid = 'order_status'::regtype)
       THEN ALTER TYPE order_status ADD VALUE 'pending' BEFORE 'confirmed'; END IF;
-    END $$`);
-  await run('order_status enum pending_group_payment',
-    `DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_group_payment'
-        AND enumtypid = 'order_status'::regtype)
-      THEN ALTER TYPE order_status ADD VALUE 'pending_group_payment' AFTER 'pending'; END IF;
     END $$`);
 
   // ── Migration 060b : pending_at / confirmed_at sur orders (LOT 5) ─────────

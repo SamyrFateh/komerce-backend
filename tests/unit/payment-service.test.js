@@ -11,9 +11,9 @@
  */
 const svc = require('../../services/payment-service');
 
-function fakeClient() {
+function fakeClient(rowCount = 1) {
   const calls = [];
-  return { calls, query: async (text, params) => { calls.push({ text, params }); return { rowCount: 1 }; } };
+  return { calls, query: async (text, params) => { calls.push({ text, params }); return { rowCount }; } };
 }
 
 describe('payment-service', () => {
@@ -46,11 +46,9 @@ describe('payment-service', () => {
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
-  test('markFailed : aucune option ne permet de contourner la garde (guardPending retiré)', async () => {
+  test('markFailed : aucune option ne permet de contourner la garde', async () => {
     const c = fakeClient();
     await svc.markFailed(9, { client: c, guardPending: false });
-    // guardPending n'existe plus dans la signature : ce paramètre est ignoré,
-    // la garde reste posée.
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
@@ -60,7 +58,7 @@ describe('payment-service', () => {
     expect(r).toEqual({ changed: true, rowCount: 1 });
   });
 
-  test('markPaid : sans paymentEvent, ne débloque que pending (pas failed)', async () => {
+  test('markPaid : sans paymentEvent, ne débloque que pending', async () => {
     const c = fakeClient();
     await svc.markPaid(42, { client: c });
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
@@ -72,15 +70,55 @@ describe('payment-service', () => {
     expect(c.calls[0].text).toMatch(/AND payment_status IN \('pending', 'failed'\)/);
   });
 
-  test('markPaid : paymentEvent incomplet (sans externalId) ne débloque rien de plus', async () => {
+  test('markPaid : paymentEvent incomplet ne débloque rien de plus', async () => {
     const c = fakeClient();
     await svc.markPaid(42, { client: c, paymentEvent: { type: 'stripe_retry' } });
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
-  test('markRefunded : garde source = paid uniquement (resserré réconciliation 2026-07-27 §4.5)', async () => {
+  test('markRefunded : garde source = paid uniquement', async () => {
     const c = fakeClient();
     await svc.markRefunded(7, { client: c });
     expect(c.calls[0].text).toMatch(/AND payment_status = 'paid'/);
+  });
+
+  describe('forcePaymentStatusForSimulation', () => {
+    const oldKomerceEnv = process.env.KOMERCE_ENV;
+    const oldNodeEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+      if (oldKomerceEnv === undefined) delete process.env.KOMERCE_ENV;
+      else process.env.KOMERCE_ENV = oldKomerceEnv;
+      if (oldNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = oldNodeEnv;
+    });
+
+    test('non-production : centralise le write chaos chez payment-service', async () => {
+      process.env.KOMERCE_ENV = 'development';
+      const c = fakeClient();
+      const r = await svc.forcePaymentStatusForSimulation('o1', 'pending', { client: c });
+      expect(c.calls).toHaveLength(1);
+      expect(c.calls[0].text).toMatch(/UPDATE orders SET payment_status = \$1/);
+      expect(c.calls[0].params).toEqual(['pending', 'o1']);
+      expect(r).toEqual({ changed: true, rowCount: 1 });
+    });
+
+    test('production : refuse avant toute requête SQL', async () => {
+      process.env.KOMERCE_ENV = 'production';
+      const c = fakeClient();
+      await expect(
+        svc.forcePaymentStatusForSimulation('o1', 'pending', { client: c })
+      ).rejects.toMatchObject({ code: 'SIMULATION_PRODUCTION_FORBIDDEN' });
+      expect(c.calls).toHaveLength(0);
+    });
+
+    test('refuse une cible hors contrat chaos', async () => {
+      process.env.KOMERCE_ENV = 'development';
+      const c = fakeClient();
+      await expect(
+        svc.forcePaymentStatusForSimulation('o1', 'refunded', { client: c })
+      ).rejects.toMatchObject({ code: 'SIMULATION_PAYMENT_STATUS_INVALID' });
+      expect(c.calls).toHaveLength(0);
+    });
   });
 });

@@ -511,6 +511,7 @@ module.exports = {
       'tests/unit/product-360-service.test.js',
       'tests/unit/shipping-customs-workspace.test.js',
       'tests/unit/canonical-pricing-workspace-boundary.test.js',
+      'public/boutique/tests/e2e/admin-pricing-market-decision.spec.js',
       'tests/unit/finance-accounting-workspace.test.js',
       'tests/unit/admin-finance-accounting-workspace-route.test.js',
       'tests/unit/dashboard-cache.test.js',

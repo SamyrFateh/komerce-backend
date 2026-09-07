@@ -33,7 +33,5 @@ watchPatterns = [
 ]
 
 [deploy]
-# Migration authority : exécuter le runner APRÈS le build et AVANT que la
-# nouvelle version commence à servir. Un exit != 0 doit bloquer le déploiement.
 preDeployCommand = ["node scripts/migrate.js"]
 startCommand = "node server.js"

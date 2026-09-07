@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        market_id, listes explicites de product_id/physical_offer_id/service_id
  * @outputs       DiscoveryCard[] — projection de lecture, jamais persistée
- * @depends       db, services/local-stock-service.js, services/providers-service.js
+ * @depends       db, services/local-stock-service.js, services/providers-service.js, services/catalog-public-view.js
  * @used-by       services/discovery-rail-service.js
  * @db-read       products
  * @db-read-via:local-stock-service local_stock, local_stock_allocations
@@ -40,6 +40,7 @@
 
 const db = require('../db');
 const { isStockExposable } = require('./local-stock-service');
+const { publicCatalogVisibilitySql } = require('./catalog-public-view');
 const {
   isServiceExposable, getService,
   isPhysicalOfferExposable, getPhysicalOffer,
@@ -73,10 +74,16 @@ async function productCard(productId, marketId) {
   const exposable = await isStockExposable(productId, marketId);
   if (!exposable) return null;
 
+  // Un Product du rail local reste exactement un Product public Komerce.
+  // Discovery ne possède pas un deuxième gate catalogue : il réutilise la
+  // frontière canonique qui exclut fixtures Showcase V2, médias inline et
+  // hero absent. Ainsi « Disponible maintenant » ne peut jamais réintroduire
+  // un produit que GET /api/products a volontairement masqué.
   const { rows } = await db.query(
-    `SELECT id, name, image_url, price_kmf, category, promo_pct
-       FROM products
-      WHERE id = $1 AND is_active = true`,
+    `SELECT p.id, p.name, p.image_url, p.price_kmf, p.category, p.promo_pct
+       FROM products p
+      WHERE p.id = $1
+        AND ${publicCatalogVisibilitySql('p')}`,
     [productId]
   );
   if (!rows.length) return null;

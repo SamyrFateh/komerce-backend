@@ -13,7 +13,11 @@ jest.mock('../../services/pricing-recommend', () => ({
 }));
 
 const mockFlow = jest.fn();
-jest.mock('../../services/pricing-engine', () => ({ recommend: (...args) => mockFlow(...args) }));
+const mockLoadGlobalConfig = jest.fn();
+jest.mock('../../services/pricing-engine', () => ({
+  recommend: (...args) => mockFlow(...args),
+  loadGlobalConfig: (...args) => mockLoadGlobalConfig(...args),
+}));
 
 const mockRates = jest.fn();
 jest.mock('../../services/pricing-rates', () => ({ getCurrentRates: (...args) => mockRates(...args) }));
@@ -81,6 +85,49 @@ test('simulation convertit product_ref en id uniquement pour le moteur', async (
   expect(result).toEqual({ recommended_price_kmf: 5000 });
 });
 
+test('simulation impact utilise le même moteur avant/après sans persister', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    id: 'internal-product', product_ref: 'KPR-000001', name: 'Phone', category: 'phones',
+    price_kmf: 8000, cost_kmf: 3000, weight_kg: 1, volume_m3: 0.01,
+  }] });
+  mockLoadGlobalConfig.mockResolvedValueOnce({
+    finance: {}, categories: {}, provisions: [], charges: [], cost_benchmarks: [],
+    components: [{ key: 'freight', label: 'Fret', family: 'landed_relay', category: 'freight', default_value: 1000, unit: 'kmf', source: 'default', confidence: 'medium' }],
+  });
+  mockFlow
+    .mockResolvedValueOnce({ n1_landed_relay_cost_kmf: 5000, n2_business_variable_cost_kmf: 500, n3_fixed_overhead_allocation_kmf: 700, variable_cost_complete_kmf: 5500, cdr_complete_kmf: 6200, contribution_kmf: 2500, minimum_safe_price_kmf: 5500, recommended_price_kmf: 8000, final_price_kmf: 8000 })
+    .mockResolvedValueOnce({ n1_landed_relay_cost_kmf: 5500, n2_business_variable_cost_kmf: 500, n3_fixed_overhead_allocation_kmf: 700, variable_cost_complete_kmf: 6000, cdr_complete_kmf: 6700, contribution_kmf: 2500, minimum_safe_price_kmf: 6000, recommended_price_kmf: 8500, final_price_kmf: 8500 });
+
+  const result = await workspace.simulateImpact({
+    product_ref: 'KPR-000001',
+    overrides: [{ key: 'freight', default_value: 1500 }],
+  });
+
+  expect(mockFlow).toHaveBeenCalledTimes(2);
+  expect(mockFlow.mock.calls[0][1].config.components[0].default_value).toBe(1000);
+  expect(mockFlow.mock.calls[1][1].config.components[0].default_value).toBe(1500);
+  expect(result.persisted).toBe(false);
+  expect(result.source_of_truth).toBe('pricing-engine');
+  expect(result.delta.n1_landed_relay_cost_kmf).toBe(500);
+  expect(result.delta.recommended_price_kmf).toBe(500);
+  expect(result.overrides[0]).toMatchObject({ key: 'freight', before: 1000, after: 1500, delta: 500 });
+});
+
+test('simulation impact marché charge le modèle effectif côté serveur', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{ id: 'internal-product', product_ref: 'KPR-000001', category: 'phones', cost_kmf: 3000 }] });
+  mockLoadGlobalConfig.mockResolvedValueOnce({ finance: {}, categories: {}, provisions: [], charges: [], cost_benchmarks: [], components: [] });
+  mockFlow.mockResolvedValue({});
+
+  await workspace.simulateImpact({ product_ref: 'KPR-000001', overrides: [] }, { id: 'market-cm', code: 'CM' });
+  expect(mockLoadGlobalConfig).toHaveBeenCalledWith({ marketId: 'market-cm' });
+});
+
+test('simulation impact refuse lignes dupliquées, inconnues et valeurs négatives', async () => {
+  expect(() => workspace.normalizeSimulationOverrides([{ key: 'freight', default_value: -1 }])).toThrow(expect.objectContaining({ code: 'pricing_simulation_override_value_invalid' }));
+  expect(() => workspace.normalizeSimulationOverrides([{ key: 'freight', default_value: 1 }, { key: 'freight', default_value: 2 }])).toThrow(expect.objectContaining({ code: 'pricing_simulation_override_duplicate' }));
+  expect(() => workspace.applySimulationOverrides({ components: [] }, [{ key: 'missing', default_value: 1 }])).toThrow(expect.objectContaining({ code: 'pricing_simulation_component_not_active' }));
+});
+
 test('apply price délègue à pricing-apply et n’expose pas id', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [{ id: 'internal-product', product_ref: 'KPR-000001' }] });
   mockApplyPrice.mockResolvedValueOnce({ status: 200, body: { old_price_kmf: 4000, new_price_kmf: 5000, product: { id: 'internal-product' } } });
@@ -109,7 +156,6 @@ test('stripInternalIds retire les identifiants internes récursivement', () => {
     nested: { component_id: 'cc', label: 'ok' },
   })).toEqual({ keep: 1, nested: { label: 'ok' } });
 });
-
 
 test('workspace absorbe la vérité économique globale sans exposer les ids internes', async () => {
   mockQuery.mockImplementation(async sql => {

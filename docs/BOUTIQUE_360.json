@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-09-01T21:46:59.065Z",
+  "generatedAt": "2026-09-06T12:06:00.855Z",
   "summary": {
-    "modules": 98,
-    "withHeader": 98,
+    "modules": 103,
+    "withHeader": 103,
     "events": 24,
     "declaredActive": 41,
     "declaredDead": 9,
-    "cssBundles": 3,
-    "endpoints": 61,
+    "cssBundles": 5,
+    "endpoints": 62,
     "orphanEmit": 0,
     "orphanListen": 0,
     "undeclared": 0,
     "notFoundEndpoints": 0,
-    "unprovenEndpoints": 42,
+    "unprovenEndpoints": 43,
     "dynamicEndpoints": 22,
     "ownedEvents": 5,
     "ownershipRed": 0,
-    "ownershipOrange": 1
+    "ownershipOrange": 0
   },
   "modules": [
     {
@@ -415,6 +415,7 @@
         "render-home-sections",
         "home-controller",
         "b-scroll-owner",
+        "spike-vertical-shell",
         "product-store"
       ],
       "bodyClasses": [],
@@ -479,6 +480,7 @@
         "b-identity.js",
         "b-checkout-render.js",
         "b-phone.js",
+        "routes/local-stock.js",
         "routes/orders.js",
         "routes/payments.js"
       ],
@@ -1503,6 +1505,23 @@
       ]
     },
     {
+      "file": "public/boutique/js/b-pager-end-bounce.js",
+      "id": "b-pager-end-bounce",
+      "hasHeader": true,
+      "role": "mobile-pager-end-bounce",
+      "domain": "catalog",
+      "layer": "ui-state",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/b-pager.js",
       "id": "b-pager",
       "hasHeader": true,
@@ -1513,29 +1532,30 @@
       "doctrine": [
         "navigation_sans_friction",
         "categorie_souscategorie_switch_fluide",
-        "mobile_desktop_coherence"
+        "mobile_desktop_coherence",
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
       ],
       "depends": [
         "b-bus.js",
+        "b-pager-end-bounce.js",
         "b-scroll-owner.js",
         "b-store.js"
       ],
       "usedBy": [
         "b-catalog.js",
         "b-subcat.js",
-        "b-nav.js"
+        "b-nav.js",
+        "discovery-rail.js"
       ],
       "emits": [
         "chip:center"
       ],
-      "listens": [
-        "modal:opened",
-        "modal:closed"
-      ],
+      "listens": [],
       "imports": [
         "b-bus",
         "b-store",
-        "b-scroll-owner"
+        "b-scroll-owner",
+        "b-pager-end-bounce"
       ],
       "bodyClasses": [],
       "emitCalls": [
@@ -2105,6 +2125,7 @@
         "b-tracking",
         "b-pager",
         "b-scroll-owner",
+        "spike-vertical-shell",
         "b-share-cart"
       ],
       "bodyClasses": [
@@ -2170,6 +2191,23 @@
         "b-cart",
         "cart-product-summary"
       ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/checkout-desktop-style.js",
+      "id": "checkout-desktop-style",
+      "hasHeader": true,
+      "role": "checkout-desktop-style-loader",
+      "domain": "checkout",
+      "layer": "ui-runtime",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
       "bodyClasses": [],
       "emitCalls": []
     },
@@ -2251,6 +2289,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/discovery-desktop-style.js",
+      "id": "discovery-desktop-style",
+      "hasHeader": true,
+      "role": "discovery-desktop-style-loader",
+      "domain": "catalog",
+      "layer": "ui-runtime",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/discovery-inquiry.js",
       "id": "discovery-inquiry",
       "hasHeader": true,
@@ -2286,12 +2341,20 @@
       "depends": [],
       "usedBy": [],
       "emits": [],
-      "listens": [],
+      "listens": [
+        "chip:center",
+        "catalog:cat-changed"
+      ],
       "imports": [
-        "discovery-actions",
+        "b-bus",
+        "b-store",
         "b-modal",
+        "b-cart",
+        "b-pager",
+        "b-pager-end-bounce",
         "discovery-api",
-        "render-discovery-rail"
+        "render-discovery-rail",
+        "discovery-desktop-style"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2351,6 +2414,7 @@
       "imports": [
         "b-store",
         "b-checkout",
+        "checkout-desktop-style",
         "group-price-variation"
       ],
       "bodyClasses": [],
@@ -2768,6 +2832,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/product-image-loading-ux.js",
+      "id": "product-image-loading-ux",
+      "hasHeader": true,
+      "role": "boutique-product-image-loading-ux",
+      "domain": "boutique",
+      "layer": "ui-behavior",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/product-store.js",
       "id": "product-store",
       "hasHeader": true,
@@ -2956,6 +3037,28 @@
       "listens": [],
       "imports": [],
       "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/spike-vertical-shell.js",
+      "id": "spike-vertical-shell",
+      "hasHeader": true,
+      "role": "catalog-spike-vertical-shell",
+      "domain": "catalog",
+      "layer": "ui-infrastructure",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:opened",
+        "modal:closed"
+      ],
+      "imports": [],
+      "bodyClasses": [
+        "spike-shell-vertical"
+      ],
       "emitCalls": []
     },
     {
@@ -3219,7 +3322,8 @@
       ],
       "listeners": [
         "b-catalog",
-        "b-home-premium-v1"
+        "b-home-premium-v1",
+        "discovery-rail"
       ]
     },
     "favorites:view-refresh": {
@@ -3235,7 +3339,8 @@
         "b-pager"
       ],
       "listeners": [
-        "b-catalog"
+        "b-catalog",
+        "discovery-rail"
       ]
     },
     "nav:goto-komerce-wallet": {
@@ -3296,9 +3401,9 @@
       "listeners": [
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
-        "b-pager",
         "b-pdp-curation-suggestions",
-        "boutique"
+        "boutique",
+        "spike-vertical-shell"
       ]
     },
     "modal:closed": {
@@ -3308,9 +3413,9 @@
       "listeners": [
         "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
-        "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount"
+        "local-stock-badge-mount",
+        "spike-vertical-shell"
       ]
     },
     "modal:composition-synced": {
@@ -3366,7 +3471,9 @@
         "categories",
         "category-cutout-navigation",
         "products",
+        "product-image-loading",
         "discovery-rail",
+        "spike-vertical-shell",
         "modal-shell",
         "modal-media",
         "modal-product",
@@ -3403,6 +3510,18 @@
         "side-cart-desktop-polish",
         "category-cutout-navigation-desktop"
       ]
+    },
+    {
+      "out": "checkout-desktop-v2.css",
+      "files": [
+        "checkout-desktop-v2"
+      ]
+    },
+    {
+      "out": "discovery-desktop-v2.css",
+      "files": [
+        "discovery-desktop-v2"
+      ]
     }
   ],
   "callEdges": [
@@ -3412,6 +3531,13 @@
       "raw": "/api/shares/",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/local-stock/checkout-preview",
+      "raw": "/api/local-stock/checkout-preview?",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "b-checkout",
@@ -4153,7 +4279,8 @@
         "boutique",
         "b-pdp-curation-suggestions",
         "b-pager",
-        "b-modal-desktop-enhancers"
+        "b-modal-desktop-enhancers",
+        "spike-vertical-shell"
       ],
       "modal:discovery-opened": [
         "b-modal-discovery-detail"
@@ -4162,7 +4289,9 @@
         "b-modal-product-detail-bootstrap",
         "b-modal-discovery-detail",
         "b-pager",
-        "group-side-cart"
+        "group-side-cart",
+        "local-stock-badge-mount",
+        "spike-vertical-shell"
       ],
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
@@ -4222,6 +4351,7 @@
       "/api/hub/pack",
       "/api/hub/scan",
       "/api/hub/seal",
+      "/api/local-stock/checkout-preview",
       "/api/logistics/shipments",
       "/api/orders",
       "/api/parcels",
@@ -4267,9 +4397,7 @@
       "/api/shares"
     ],
     "ownershipRed": [],
-    "ownershipOrange": [
-      "modal:closed"
-    ]
+    "ownershipOrange": []
   },
   "ownership": {
     "modal:opened": {
@@ -4285,14 +4413,15 @@
         "boutique",
         "b-pdp-curation-suggestions",
         "b-pager",
-        "b-modal-desktop-enhancers"
+        "b-modal-desktop-enhancers",
+        "spike-vertical-shell"
       ],
       "actualConsumers": [
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
-        "b-pager",
         "b-pdp-curation-suggestions",
-        "boutique"
+        "boutique",
+        "spike-vertical-shell"
       ],
       "consumerUndeclared": [],
       "payload": "value",
@@ -4328,18 +4457,18 @@
         "b-modal-product-detail-bootstrap",
         "b-modal-discovery-detail",
         "b-pager",
-        "group-side-cart"
+        "group-side-cart",
+        "local-stock-badge-mount",
+        "spike-vertical-shell"
       ],
       "actualConsumers": [
         "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
-        "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount"
+        "local-stock-badge-mount",
+        "spike-vertical-shell"
       ],
-      "consumerUndeclared": [
-        "local-stock-badge-mount"
-      ],
+      "consumerUndeclared": [],
       "payload": "none",
       "payloadMismatches": []
     },
@@ -4394,8 +4523,8 @@
       "msg": "propriété saine"
     },
     "modal:closed": {
-      "level": "orange",
-      "msg": "consommateur non déclaré : local-stock-badge-mount"
+      "level": "green",
+      "msg": "propriété saine"
     },
     "modal:composition-synced": {
       "level": "green",
@@ -4453,6 +4582,9 @@
       ],
       "k-view-": [
         "b-nav"
+      ],
+      "spike-shell-vertical": [
+        "spike-vertical-shell"
       ]
     }
   },
@@ -4484,6 +4616,7 @@
     "/api/hub/scan",
     "/api/hub/seal",
     "/api/local-stock/availability",
+    "/api/local-stock/checkout-preview",
     "/api/logistics/shipments",
     "/api/logistics/shipments/{id}",
     "/api/orders",

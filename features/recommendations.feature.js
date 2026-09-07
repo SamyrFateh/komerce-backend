@@ -43,6 +43,12 @@ module.exports = {
   },
 
   files: {
+    ci: [
+      '.github/workflows/discovery-cj-local-repair.yml',
+    ],
+    scripts: [
+      'scripts/discovery-cj-local-repair.js',
+    ],
     services: [
       'services/boutique-ranking-engine.js',
       'services/discovery-rail-composer.js',
@@ -56,6 +62,7 @@ module.exports = {
       'tests/unit/boutique-suggestions.test.js',
       'tests/unit/discovery-rail-composer.test.js',
       'tests/unit/discovery-rail-service.test.js',
+      'tests/unit/discovery-cj-local-repair.test.js',
     ],
   },
 
