@@ -683,17 +683,23 @@ async function allocateGroupPools(truth, period, marketId, rawPolicies) {
     }
 
     const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);
+    const marketShare = allocation.decisional
+      ? allocation.shares.find((share) => String(share.market_id) === String(marketId))
+      : null;
     charges.push({
       ...pool,
       ...allocation,
       policy,
       basis_source: basis.basis_source,
       basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),
+      market_share_kmf: allocation.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,
+      market_allocation_ratio: allocation.decisional && marketShare
+        ? Number(marketShare.allocation_ratio)
+        : null,
     });
 
     if (allocation.decisional) {
       allocatedGroupPool += pool.group_pool_kmf;
-      const marketShare = allocation.shares.find((share) => String(share.market_id) === String(marketId));
       marketPartial += Number(marketShare?.allocated_kmf || 0);
     }
   }

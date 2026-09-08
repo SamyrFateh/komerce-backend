@@ -184,6 +184,8 @@ async function projectToKmf(amount, currency) {
 function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
   return {
     selected_price_kmf: selectedPriceKmf,
+    purchase_cost_kmf: pricing.purchase_cost_kmf ?? null,
+    variable_cost_outside_purchase_kmf: pricing.variable_cost_outside_purchase_kmf ?? null,
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,
     cdr_reference_kmf: pricing.cdr_complete_kmf ?? null,
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
@@ -205,6 +207,30 @@ async function computeEconomics(product, market, selectedPriceKmf) {
   return projectUnitEconomics(pricing, selectedPriceKmf);
 }
 
+function projectSensitivityPoint(point, economics = {}) {
+  if (!point) return null;
+  const price = finitePositive(point.price_kmf);
+  const variableCost = finitePositive(economics.variable_cost_complete_kmf);
+  if (price == null || variableCost == null) return { ...point, economics: null };
+  return {
+    ...point,
+    economics: {
+      contribution_unit_kmf: Math.round(price - variableCost),
+      variable_cost_complete_kmf: variableCost,
+      authority: 'SERVER_DERIVED_FROM_CANONICAL_VARIABLE_COST',
+    },
+  };
+}
+
+function projectCorridorEconomics(corridor = {}, economics = {}) {
+  return {
+    ...corridor,
+    low: projectSensitivityPoint(corridor.low, economics),
+    target: projectSensitivityPoint(corridor.target, economics),
+    high: projectSensitivityPoint(corridor.high, economics),
+  };
+}
+
 async function buildMarketCorridor({ market, productRef }) {
   requireMarket(market);
   const product = await resolveProduct(productRef);
@@ -223,6 +249,7 @@ async function buildMarketCorridor({ market, productRef }) {
   const localCorridor = projectObservedCorridor(localRows, { currency: market.currency, scope: 'market' });
   const globalReference = projectObservedCorridor(globalRows, { currency: 'KMF', scope: 'global_reference' });
   const economics = await computeEconomics(product, market, effectivePriceKmf);
+  const localCorridorWithEconomics = projectCorridorEconomics(localCorridor, economics);
 
   let candidate = null;
   if (localDecision && localDecision.amount != null) {
@@ -255,7 +282,7 @@ async function buildMarketCorridor({ market, productRef }) {
       global_price_kmf: finitePositive(product.price_kmf),
     },
     corridor: {
-      local: localCorridor,
+      local: localCorridorWithEconomics,
       global_reference: globalReference,
       rule: localCorridor.sample_count > 0
         ? 'Le corridor pays est lu uniquement depuis les observations de ce marché.'
@@ -387,6 +414,7 @@ module.exports = {
   confidenceForCount,
   quantileObserved,
   projectObservedCorridor,
+  projectCorridorEconomics,
   buildMarketCorridor,
   recordMarketObservation,
   deactivateMarketObservation,

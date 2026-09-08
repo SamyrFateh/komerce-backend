@@ -27,25 +27,25 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createPricingWorkshopPresentation() {
   const GROUPS = Object.freeze([
     {
+      key: 'variable',
+      eyebrow: 'COÛTS VARIABLES · DIRECTS ET MUTUALISÉS',
+      title: 'Coûts variables',
+      description: 'Les coûts qui évoluent avec l’activité. Direct ou mutualisé décrit leur périmètre ; leur nature reste variable.',
+      formula: 'Achat + transport + douane + paiement + exécution variable + quote-parts variables mutualisées',
+    },
+    {
       key: 'fixed_direct',
-      eyebrow: 'CHARGES À COUVRIR · PROPRES AU PÉRIMÈTRE',
+      eyebrow: 'CHARGES STRUCTURELLES · PROPRES AU MARCHÉ',
       title: 'Charges fixes directes',
-      description: 'Les charges de période propres au marché ou au périmètre courant. Elles sont absorbées collectivement par la contribution du portefeuille.',
+      description: 'Les charges de période propres au marché. Elles sont absorbées collectivement par la contribution du portefeuille.',
       formula: 'Salaires + loyer + outils locaux + autres charges fixes propres',
     },
     {
-      key: 'mutualized',
-      eyebrow: 'CHARGES À COUVRIR · PARTAGÉES',
-      title: 'Charges mutualisées',
-      description: 'Hub régional, Railway, équipe centrale ou outils communs : la quote-part dépend d’une clé d’allocation explicite.',
-      formula: 'Coût commun × clé d’allocation gouvernée → quote-part du marché',
-    },
-    {
-      key: 'variable_direct',
-      eyebrow: 'COÛTS DU FLUX',
-      title: 'Charges variables',
-      description: 'Les coûts qui évoluent avec l’activité. Ils déterminent le coût variable complet et donc l’espace de contribution du produit.',
-      formula: 'Achat + transport + douane + paiement + exécution variable',
+      key: 'fixed_mutualized',
+      eyebrow: 'CHARGES STRUCTURELLES · PARTAGÉES',
+      title: 'Charges fixes mutualisées',
+      description: 'Hub, infrastructure, équipe centrale ou outils communs : une quote-part Market ID est déterminée par une clé d’allocation explicite.',
+      formula: 'Coût commun × clé d’allocation gouvernée → quote-part du Market ID',
     },
     {
       key: 'exceptional',
@@ -118,9 +118,9 @@
     if (component.family === 'exceptional' || component.is_exceptional) return 'exceptional';
     const nature = economicNature(component);
     const perimeter = allocationPerimeter(component);
-    if (perimeter === 'mutualized') return 'mutualized';
+    if (nature === 'fixed' && perimeter === 'mutualized') return 'fixed_mutualized';
     if (nature === 'fixed') return 'fixed_direct';
-    return 'variable_direct';
+    return 'variable';
   }
 
   function groupComponents(components = []) {
