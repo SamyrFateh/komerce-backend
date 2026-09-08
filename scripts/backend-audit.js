@@ -16,6 +16,7 @@
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { evaluateCollisionGovernance } = require('./migration-collision-policy');
+const { checkCollisionCountWording } = require('./collision-count-wording-check');
 
 const ROOT = process.env.ROOT || process.cwd();
 const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
@@ -95,10 +96,24 @@ function reclassifyLegacyOutput(stdout, reviewedExact) {
   return lines.join('\n').replace(/\n{4,}/g, '\n\n\n');
 }
 
+function printWordingFailure(violations) {
+  console.error('\n  ❌  Décompte en toutes lettres désynchronisé de GAPS.md :\n');
+  for (const v of violations) {
+    console.error(`     ✗  ${v.file} — ${v.message}`);
+  }
+  console.error('\n  → Mettre à jour le mot-nombre pour refléter le total réel de tokens COLLISION.\n');
+}
+
 function main() {
   const governance = evaluateCollisionGovernance({ migrationsDir: MIGRATIONS_DIR });
   if (governance.violations.length > 0) {
     printCollisionGovernanceFailure(governance.violations);
+    process.exit(1);
+  }
+
+  const wording = checkCollisionCountWording({ rootDir: ROOT });
+  if (wording.violations.length > 0) {
+    printWordingFailure(wording.violations);
     process.exit(1);
   }
 
