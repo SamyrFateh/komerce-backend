@@ -34,7 +34,7 @@ test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'direct'");
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'mutualized'");
   expect(source).toContain('Direct / mutualisé décrit le périmètre, jamais la nature de la charge.');
-  expect(source).toContain('quote-part lue pour ce Market ID');
+  expect(source).toContain('Toute quote-part mutualisée est rattachée au Market ID');
 });
 
 test('les valeurs calculées sont grisées et le prix final marché est le levier produit', () => {
@@ -50,9 +50,13 @@ test('les valeurs calculées sont grisées et le prix final marché est le levie
   expect(source).not.toMatch(/variable_cost_complete_kmf\s*-\s*.*purchase/i);
 });
 
-test('le cockpit lit les bornes et sensibilités du serveur sans fallback pays silencieux', () => {
+test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback pays silencieux', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   expect(source).toContain('/corridor?product_ref=');
+  expect(source).toContain('`${endpoint}/decision`');
+  expect(source).toContain('decision?.coverage?.structure');
+  expect(source).toContain('charge.market_share_kmf');
+  expect(source).toContain('Valeur effective ${marketCode}');
   expect(source).toContain('point?.economics?.contribution_unit_kmf');
   expect(source).toContain('Référence globale · informative');
   expect(source).toContain('Jamais utilisée silencieusement comme vérité locale.');
