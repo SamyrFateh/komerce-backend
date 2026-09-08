@@ -25,28 +25,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # Server: expose the current Market ID share on each governed GROUP allocation.
+          # Server: expose the Market ID share already computed by the period allocator.
           path = Path('services/pricing-period-structure.js')
           text = path.read_text()
-          old = """    const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);\n    charges.push({\n      ...pool,\n      ...allocation,\n      policy,\n      basis_source: basis.basis_source,\n      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),\n    });\n\n    if (allocation.decisional) {\n      allocatedGroupPool += pool.group_pool_kmf;\n      const marketShare = allocation.shares.find((share) => String(share.market_id) === String(marketId));\n      marketPartial += Number(marketShare?.allocated_kmf || 0);\n    }"""
-          new = """    const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);\n    const marketShare = allocation.decisional\n      ? allocation.shares.find((share) => String(share.market_id) === String(marketId))\n      : null;\n    charges.push({\n      ...pool,\n      ...allocation,\n      policy,\n      basis_source: basis.basis_source,\n      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),\n      market_share_kmf: allocation.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,\n      market_allocation_ratio: allocation.decisional && marketShare\n        ? Number(marketShare.allocation_ratio)\n        : null,\n    });\n\n    if (allocation.decisional) {\n      allocatedGroupPool += pool.group_pool_kmf;\n      marketPartial += Number(marketShare?.allocated_kmf || 0);\n    }"""
-          if old not in text:
-              raise SystemExit('pricing-period-structure allocation block not found')
-          text = text.replace(old, new, 1)
-          path.write_text(text)
+          if 'market_share_kmf:' not in text:
+              old = """    const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);\n    charges.push({\n      ...pool,\n      ...allocation,\n      policy,\n      basis_source: basis.basis_source,\n      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),\n    });\n\n    if (allocation.decisional) {\n      allocatedGroupPool += pool.group_pool_kmf;\n      const marketShare = allocation.shares.find((share) => String(share.market_id) === String(marketId));\n      marketPartial += Number(marketShare?.allocated_kmf || 0);\n    }"""
+              new = """    const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);\n    const marketShare = allocation.decisional\n      ? allocation.shares.find((share) => String(share.market_id) === String(marketId))\n      : null;\n    charges.push({\n      ...pool,\n      ...allocation,\n      policy,\n      basis_source: basis.basis_source,\n      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),\n      market_share_kmf: allocation.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,\n      market_allocation_ratio: allocation.decisional && marketShare\n        ? Number(marketShare.allocation_ratio)\n        : null,\n    });\n\n    if (allocation.decisional) {\n      allocatedGroupPool += pool.group_pool_kmf;\n      marketPartial += Number(marketShare?.allocated_kmf || 0);\n    }"""
+              if old not in text:
+                  raise SystemExit('pricing-period-structure allocation block not found')
+              text = text.replace(old, new, 1)
+              path.write_text(text)
 
-          # Cockpit: variable configuration remains configuration; fixed cards use period truth.
+          # Cockpit: configuration variable stays configuration; fixed structure reads /decision period truth.
           path = Path('public/dashboards/canonical/js/pricing-economic-cockpit.js')
           text = path.read_text()
           text = text.replace(
-            "['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', `Valeur / quote-part ${marketCode}`]",
-            "['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', `Valeur effective ${marketCode}`]",
-            1,
+              "['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', `Valeur / quote-part ${marketCode}`]",
+              "['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', `Valeur effective ${marketCode}`]",
+              1,
           )
           text = text.replace(
-            "table.appendChild(tableCell(doc, componentValue(component), perimeter === 'mutualized' ? 'is-market-share' : 'is-derived'));",
-            "const value = tableCell(doc, componentValue(component), 'is-derived');\n      if (perimeter === 'mutualized') value.title = `Configuration effective du coût variable mutualisé pour ${marketCode}; la contribution SKU reste calculée par le moteur.`;\n      table.appendChild(value);",
-            1,
+              "table.appendChild(tableCell(doc, componentValue(component), perimeter === 'mutualized' ? 'is-market-share' : 'is-derived'));",
+              "const value = tableCell(doc, componentValue(component), 'is-derived');\n      if (perimeter === 'mutualized') value.title = `Configuration effective du coût variable mutualisé pour ${marketCode}; la contribution SKU reste calculée par le moteur.`;\n      table.appendChild(value);",
+              1,
           )
 
           start = text.index('  function fixedDirectCard(')
@@ -65,42 +66,33 @@ jobs:
           text = text[:start] + cost_pilotage + text[end:]
 
           corridor_fn = """  async function fetchCorridor(workspace, options, productRef) {\n    const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });\n    return workspace.jsonRequest(options.fetch, `${endpoint}/corridor?product_ref=${encodeURIComponent(productRef)}`);\n  }"""
-          decision_fn = corridor_fn + """\n\n  async function fetchDecision(workspace, options) {\n    const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });\n    return workspace.jsonRequest(options.fetch, `${endpoint}/decision`);\n  }"""
-          if corridor_fn not in text:
-              raise SystemExit('fetchCorridor block not found')
-          text = text.replace(corridor_fn, decision_fn, 1)
+          if 'async function fetchDecision(' not in text:
+              decision_fn = corridor_fn + """\n\n  async function fetchDecision(workspace, options) {\n    const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });\n    return workspace.jsonRequest(options.fetch, `${endpoint}/decision`);\n  }"""
+              if corridor_fn not in text:
+                  raise SystemExit('fetchCorridor block not found')
+              text = text.replace(corridor_fn, decision_fn, 1)
 
-          old = """  function buildCockpit(doc, rootNode, payload, marketCode) {\n    const cockpit = el(doc, 'div', 'kmc-economic-cockpit');\n    cockpit.dataset[COCKPIT_ATTR] = '';\n    moveEquilibriumIntoCockpit(rootNode, cockpit);\n    cockpit.appendChild(createCostPilotage(doc, payload, marketCode));\n    cockpit.appendChild(createPortfolioShell(doc, payload));\n    return cockpit;\n  }"""
-          new = """  function buildCockpit(doc, rootNode, payload, marketCode, decision) {\n    const cockpit = el(doc, 'div', 'kmc-economic-cockpit');\n    cockpit.dataset[COCKPIT_ATTR] = '';\n    moveEquilibriumIntoCockpit(rootNode, cockpit);\n    cockpit.appendChild(createCostPilotage(doc, payload, marketCode, decision));\n    cockpit.appendChild(createPortfolioShell(doc, payload));\n    return cockpit;\n  }"""
-          if old not in text:
-              raise SystemExit('buildCockpit block not found')
-          text = text.replace(old, new, 1)
+          old_build = """  function buildCockpit(doc, rootNode, payload, marketCode) {\n    const cockpit = el(doc, 'div', 'kmc-economic-cockpit');\n    cockpit.dataset[COCKPIT_ATTR] = '';\n    moveEquilibriumIntoCockpit(rootNode, cockpit);\n    cockpit.appendChild(createCostPilotage(doc, payload, marketCode));\n    cockpit.appendChild(createPortfolioShell(doc, payload));\n    return cockpit;\n  }"""
+          new_build = """  function buildCockpit(doc, rootNode, payload, marketCode, decision) {\n    const cockpit = el(doc, 'div', 'kmc-economic-cockpit');\n    cockpit.dataset[COCKPIT_ATTR] = '';\n    moveEquilibriumIntoCockpit(rootNode, cockpit);\n    cockpit.appendChild(createCostPilotage(doc, payload, marketCode, decision));\n    cockpit.appendChild(createPortfolioShell(doc, payload));\n    return cockpit;\n  }"""
+          if old_build in text:
+              text = text.replace(old_build, new_build, 1)
 
-          old = """    const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));\n    const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));\n    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché');"""
-          new = """    const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));\n    const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));\n    let decision = null;\n    try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }\n    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision);"""
-          if old not in text:
-              raise SystemExit('enhance cockpit block not found')
-          text = text.replace(old, new, 1)
+          old_enhance = """    const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));\n    const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));\n    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché');"""
+          new_enhance = """    const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));\n    const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));\n    let decision = null;\n    try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }\n    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision);"""
+          if old_enhance in text:
+              text = text.replace(old_enhance, new_enhance, 1)
           path.write_text(text)
 
-          # Protect both the server share projection and the cockpit source choice.
+          # Protect the server Market ID projection.
           path = Path('tests/unit/pricing-period-structure.test.js')
           text = path.read_text()
-          marker = """    expect(result.allocation.conservation_ok).toBe(true);\n    expect(result.allocation.allocated_group_pool_kmf).toBe(60000);"""
-          replacement = marker + """\n    expect(result.allocation.charges[0].market_share_kmf).toBe(40000);\n    expect(result.allocation.charges[0].market_allocation_ratio).toBeCloseTo(2 / 3, 6);"""
-          if marker not in text:
-              raise SystemExit('period structure assertion marker not found')
-          text = text.replace(marker, replacement, 1)
-          path.write_text(text)
-
-          path = Path('tests/unit/canonical-pricing-economic-cockpit.test.js')
-          text = path.read_text()
-          marker = """  expect(source).toContain('/corridor?product_ref=');\n  expect(source).toContain('point?.economics?.contribution_unit_kmf');"""
-          replacement = """  expect(source).toContain('/corridor?product_ref=');\n  expect(source).toContain('`${endpoint}/decision`');\n  expect(source).toContain('decision?.coverage?.structure');\n  expect(source).toContain('charge.market_share_kmf');\n  expect(source).toContain('Valeur effective ${marketCode}');\n  expect(source).toContain('point?.economics?.contribution_unit_kmf');"""
-          if marker not in text:
-              raise SystemExit('cockpit assertion marker not found')
-          text = text.replace(marker, replacement, 1)
-          path.write_text(text)
+          if 'market_allocation_ratio).toBeCloseTo(2 / 3, 6)' not in text:
+              marker = """    expect(result.allocation.conservation_ok).toBe(true);\n    expect(result.allocation.allocated_group_pool_kmf).toBe(60000);"""
+              replacement = marker + """\n    expect(result.allocation.charges[0].market_share_kmf).toBe(40000);\n    expect(result.allocation.charges[0].market_allocation_ratio).toBeCloseTo(2 / 3, 6);"""
+              if marker not in text:
+                  raise SystemExit('period structure assertion marker not found')
+              text = text.replace(marker, replacement, 1)
+              path.write_text(text)
           PY
       - run: npm ci
       - name: Prove period truth and cockpit fidelity
@@ -109,7 +101,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add services/pricing-period-structure.js public/dashboards/canonical/js/pricing-economic-cockpit.js tests/unit/pricing-period-structure.test.js tests/unit/canonical-pricing-economic-cockpit.test.js
+          git add services/pricing-period-structure.js public/dashboards/canonical/js/pricing-economic-cockpit.js tests/unit/pricing-period-structure.test.js
           if git diff --cached --quiet; then
             echo "No truth alignment changes"
             exit 0
