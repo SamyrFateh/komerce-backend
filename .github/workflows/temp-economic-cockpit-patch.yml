@@ -1,0 +1,95 @@
+name: Temporary economic cockpit patch
+
+on:
+  push:
+    branches:
+      - feat/economic-workshop-mock-fidelity
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/economic-workshop-mock-fidelity
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Patch canonical economic contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # 1) Pricing engine: expose purchase + variable costs outside purchase as server truth.
+          path = Path('services/pricing-engine.js')
+          text = path.read_text()
+          old = """  const flowVariableCost = breakdown.landed_relay_cost_kmf;\n  const businessVariableCost = r((breakdown.business?.payment || 0) + (breakdown.business?.risk_provision || 0));\n  const variableComplete = r(flowVariableCost + businessVariableCost);\n  const structureAllocationReference = r(breakdown.business?.fixed_overhead || 0);"""
+          new = """  const flowVariableCost = breakdown.landed_relay_cost_kmf;\n  const businessVariableCost = r((breakdown.business?.payment || 0) + (breakdown.business?.risk_provision || 0));\n  const variableComplete = r(flowVariableCost + businessVariableCost);\n  const purchaseCostRaw = Number(merged.cost_kmf);\n  const purchaseCostKmf = Number.isFinite(purchaseCostRaw) ? r(purchaseCostRaw) : null;\n  const variableCostOutsidePurchase = purchaseCostKmf == null ? null : r(variableComplete - purchaseCostKmf);\n  const structureAllocationReference = r(breakdown.business?.fixed_overhead || 0);"""
+          if old in text:
+              text = text.replace(old, new, 1)
+          marker = """    flow_variable_cost_kmf: flowVariableCost,\n    business_variable_cost_kmf: businessVariableCost,\n    variable_cost_complete_kmf: variableComplete,"""
+          replacement = """    flow_variable_cost_kmf: flowVariableCost,\n    business_variable_cost_kmf: businessVariableCost,\n    purchase_cost_kmf: purchaseCostKmf,\n    variable_cost_outside_purchase_kmf: variableCostOutsidePurchase,\n    variable_cost_complete_kmf: variableComplete,"""
+          if marker in text:
+              text = text.replace(marker, replacement, 1)
+          path.write_text(text)
+
+          # 2) Market corridor: pass through server-derived split and server-project contribution on low/target/high.
+          path = Path('services/pricing-market-corridor.js')
+          text = path.read_text()
+          marker = """function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {\n  return {\n    selected_price_kmf: selectedPriceKmf,\n    variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,"""
+          replacement = """function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {\n  return {\n    selected_price_kmf: selectedPriceKmf,\n    purchase_cost_kmf: pricing.purchase_cost_kmf ?? null,\n    variable_cost_outside_purchase_kmf: pricing.variable_cost_outside_purchase_kmf ?? null,\n    variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,"""
+          if marker in text:
+              text = text.replace(marker, replacement, 1)
+          anchor = """async function computeEconomics(product, market, selectedPriceKmf) {\n  const config = await pricingCdr.loadGlobalConfig({ marketId: market.id });\n  const pricing = await pricingEngine.recommend({\n    product_id: product.id,\n    current_price_kmf: selectedPriceKmf,\n    final_price_kmf: selectedPriceKmf,\n    pricing_strategy: 'market_observed_chain',\n  }, { config });\n  return projectUnitEconomics(pricing, selectedPriceKmf);\n}\n"""
+          addition = anchor + """\nfunction projectSensitivityPoint(point, economics = {}) {\n  if (!point) return null;\n  const price = finitePositive(point.price_kmf);\n  const variableCost = finitePositive(economics.variable_cost_complete_kmf);\n  if (price == null || variableCost == null) return { ...point, economics: null };\n  return {\n    ...point,\n    economics: {\n      contribution_unit_kmf: Math.round(price - variableCost),\n      variable_cost_complete_kmf: variableCost,\n      authority: 'SERVER_DERIVED_FROM_CANONICAL_VARIABLE_COST',\n    },\n  };\n}\n\nfunction projectCorridorEconomics(corridor = {}, economics = {}) {\n  return {\n    ...corridor,\n    low: projectSensitivityPoint(corridor.low, economics),\n    target: projectSensitivityPoint(corridor.target, economics),\n    high: projectSensitivityPoint(corridor.high, economics),\n  };\n}\n"""
+          if anchor in text and 'function projectCorridorEconomics' not in text:
+              text = text.replace(anchor, addition, 1)
+          old = """  const economics = await computeEconomics(product, market, effectivePriceKmf);\n\n  let candidate = null;"""
+          new = """  const economics = await computeEconomics(product, market, effectivePriceKmf);\n  const localCorridorWithEconomics = projectCorridorEconomics(localCorridor, economics);\n\n  let candidate = null;"""
+          if old in text:
+              text = text.replace(old, new, 1)
+          text = text.replace('      local: localCorridor,\n      global_reference: globalReference,', '      local: localCorridorWithEconomics,\n      global_reference: globalReference,', 1)
+          export_marker = """  quantileObserved,\n  projectObservedCorridor,\n  buildMarketCorridor,"""
+          export_replacement = """  quantileObserved,\n  projectObservedCorridor,\n  projectCorridorEconomics,\n  buildMarketCorridor,"""
+          if export_marker in text:
+              text = text.replace(export_marker, export_replacement, 1)
+          path.write_text(text)
+
+          # 3) Cost workshop: mutualized is never a standalone nature bucket.
+          path = Path('public/dashboards/canonical/js/pricing-workspace-presentation.js')
+          text = path.read_text()
+          start = text.index('  const GROUPS = Object.freeze([')
+          end = text.index('\n\n  const CATEGORY_LABELS', start)
+          groups = """  const GROUPS = Object.freeze([\n    {\n      key: 'variable',\n      eyebrow: 'COÛTS VARIABLES · DIRECTS ET MUTUALISÉS',\n      title: 'Coûts variables',\n      description: 'Les coûts qui évoluent avec l’activité. Direct ou mutualisé décrit leur périmètre ; leur nature reste variable.',\n      formula: 'Achat + transport + douane + paiement + exécution variable + quote-parts variables mutualisées',\n    },\n    {\n      key: 'fixed_direct',\n      eyebrow: 'CHARGES STRUCTURELLES · PROPRES AU MARCHÉ',\n      title: 'Charges fixes directes',\n      description: 'Les charges de période propres au marché. Elles sont absorbées collectivement par la contribution du portefeuille.',\n      formula: 'Salaires + loyer + outils locaux + autres charges fixes propres',\n    },\n    {\n      key: 'fixed_mutualized',\n      eyebrow: 'CHARGES STRUCTURELLES · PARTAGÉES',\n      title: 'Charges fixes mutualisées',\n      description: 'Hub, infrastructure, équipe centrale ou outils communs : une quote-part Market ID est déterminée par une clé d’allocation explicite.',\n      formula: 'Coût commun × clé d’allocation gouvernée → quote-part du Market ID',\n    },\n    {\n      key: 'exceptional',\n      eyebrow: 'HORS FONCTIONNEMENT NORMAL',\n      title: 'Exceptionnel',\n      description: 'Les coûts ponctuels ou de crise restent séparés du fonctionnement courant.',\n      formula: 'Incidents + campagnes exceptionnelles + corrections gouvernées',\n    },\n  ]);"""
+          text = text[:start] + groups + text[end:]
+          start = text.index('  function groupKey(component = {}) {')
+          end = text.index('\n\n  function groupComponents', start)
+          group_key = """  function groupKey(component = {}) {\n    if (component.family === 'exceptional' || component.is_exceptional) return 'exceptional';\n    const nature = economicNature(component);\n    const perimeter = allocationPerimeter(component);\n    if (nature === 'fixed' && perimeter === 'mutualized') return 'fixed_mutualized';\n    if (nature === 'fixed') return 'fixed_direct';\n    return 'variable';\n  }"""
+          text = text[:start] + group_key + text[end:]
+          path.write_text(text)
+
+          # 4) Boundary test follows the frozen doctrine wording.
+          path = Path('tests/unit/canonical-pricing-workspace-boundary.test.js')
+          text = path.read_text()
+          text = text.replace("  expect(presentation).toContain('Charges mutualisées');\n  expect(presentation).toContain('Charges variables');", "  expect(presentation).toContain('Charges fixes mutualisées');\n  expect(presentation).toContain('Coûts variables');")
+          path.write_text(text)
+          PY
+      - run: npm ci
+      - name: Run focused economic cockpit tests
+        run: npx jest tests/unit/pricing-engine.test.js tests/unit/pricing-market-corridor.test.js tests/unit/canonical-pricing-workspace-boundary.test.js tests/unit/canonical-pricing-decision-chain.test.js tests/unit/canonical-pricing-economic-cockpit.test.js --runInBand
+      - name: Commit canonical cockpit patches
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add services/pricing-engine.js services/pricing-market-corridor.js public/dashboards/canonical/js/pricing-workspace-presentation.js tests/unit/canonical-pricing-workspace-boundary.test.js
+          if git diff --cached --quiet; then
+            echo "No patch changes"
+            exit 0
+          fi
+          git commit -m "feat(pricing): align engine and charge groups with cockpit doctrine"
+          git push origin HEAD:feat/economic-workshop-mock-fidelity
