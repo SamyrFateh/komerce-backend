@@ -34,7 +34,7 @@ test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'direct'");
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'mutualized'");
   expect(source).toContain('Direct / mutualisé décrit le périmètre, jamais la nature de la charge.');
-  expect(source).toContain('Toute quote-part mutualisée est rattachée au Market ID');
+  expect(source).toContain('Toute quote-part mutualisée est calculée par Market ID');
 });
 
 test('les valeurs calculées sont grisées et le prix final marché est le levier produit', () => {
