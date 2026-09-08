@@ -50,8 +50,21 @@
       : '—';
   }
 
-  function metric(doc, label, value, helper, tone) {
+  const METRIC_ICONS = {
+    'charges': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/></svg>', tone: 'blue' },
+    'contribution': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>', tone: 'green' },
+    'couverture': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".2"/></svg>', tone: 'green' },
+    'reste': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>', tone: 'red' },
+    'moyenne': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>', tone: 'blue' },
+  };
+
+  function metric(doc, label, value, helper, tone, iconKey) {
     const card = el(doc, 'div', `kmc-flow-equilibrium-metric is-derived${tone ? ` is-${tone}` : ''}`);
+    if (iconKey && METRIC_ICONS[iconKey]) {
+      const iconWrap = el(doc, 'div', `kmc-flow-equilibrium-icon is-${METRIC_ICONS[iconKey].tone}`);
+      iconWrap.innerHTML = METRIC_ICONS[iconKey].svg;
+      card.appendChild(iconWrap);
+    }
     card.appendChild(el(doc, 'span', 'kmc-flow-equilibrium-label', label));
     card.appendChild(el(doc, 'strong', 'kmc-flow-equilibrium-value', value));
     if (helper) card.appendChild(el(doc, 'small', 'kmc-flow-equilibrium-helper', helper));

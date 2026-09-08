@@ -3,7 +3,262 @@
 .kmc-economic-cockpit {
   display: grid;
   gap: 18px;
+  padding-bottom: 72px; /* room for sticky footer */
 }
+
+/* ── Page header ─────────────────────────────────────────── */
+.kmc-cockpit-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.kmc-cockpit-page-title {
+  margin: 0;
+  color: #0c1d3a;
+  font-size: 22px;
+  font-weight: 900;
+}
+.kmc-cockpit-page-subtitle {
+  margin: 3px 0 0;
+  color: #5e7089;
+  font-size: 12px;
+}
+.kmc-cockpit-page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.kmc-cockpit-period-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.kmc-cockpit-period-label {
+  color: #5e7089;
+  font-size: 11px;
+  font-weight: 700;
+}
+.kmc-cockpit-period-select {
+  padding: 7px 10px;
+  border: 1px solid #cbd7e5;
+  border-radius: 9px;
+  background: #fff;
+  color: #10213b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kmc-cockpit-live-badge {
+  display: grid;
+  gap: 1px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  background: #e8f8ee;
+  text-align: right;
+}
+.kmc-cockpit-live-badge strong { color: #166534; font-size: 11px; }
+.kmc-cockpit-live-badge small { color: #3d8b5c; font-size: 9px; }
+
+/* ── Equilibrium metric icons ────────────────────────────── */
+.kmc-flow-equilibrium-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.kmc-flow-equilibrium-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.kmc-flow-equilibrium-icon.is-blue { background: #eff6ff; color: #2563eb; }
+.kmc-flow-equilibrium-icon.is-green { background: #e8f8ee; color: #16a34a; }
+.kmc-flow-equilibrium-icon.is-red { background: #fef2f2; color: #dc2626; }
+
+/* ── Cost total rows ─────────────────────────────────────── */
+.kmc-cockpit-cost-total-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-column: 1 / -1;
+  border-top: 2px solid #d0dae8;
+  background: #f0f4fa;
+}
+.kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-total-label {
+  font-weight: 850;
+  color: #10213b;
+  font-size: 10px;
+  background: transparent;
+}
+.kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-total-value {
+  font-weight: 900;
+  color: #1d4ed8;
+  font-size: 11px;
+  text-align: right;
+  background: transparent;
+}
+
+/* ── Portfolio head actions ───────────────────────────────── */
+.kmc-cockpit-portfolio-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kmc-cockpit-outline-action.is-add {
+  padding: 8px 14px;
+  border-color: #1676e8;
+  color: #1676e8;
+  font-weight: 850;
+}
+.kmc-cockpit-outline-action.is-add:hover {
+  background: #eff6ff;
+}
+
+/* ── Portfolio totals row ────────────────────────────────── */
+.kmc-cockpit-product-row.is-totals {
+  background: #f0f4fa;
+  border-top: 2px solid #d0dae8;
+}
+.kmc-cockpit-product-row.is-totals .kmc-cockpit-cell.is-total-value {
+  font-weight: 900;
+  color: #1d4ed8;
+  background: transparent;
+}
+
+/* ── Portfolio overflow / voir tous ──────────────────────── */
+.kmc-cockpit-portfolio-overflow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  color: #718096;
+  font-size: 10px;
+}
+.kmc-cockpit-view-all {
+  color: #1676e8;
+  font-weight: 800;
+  font-size: 11px;
+  text-decoration: none;
+}
+.kmc-cockpit-view-all:hover { text-decoration: underline; }
+
+/* ── Row menu (three dots) ───────────────────────────────── */
+.kmc-cockpit-row-menu {
+  border: none;
+  background: transparent;
+  color: #718096;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.kmc-cockpit-row-menu:hover { background: #f1f5f9; }
+
+/* ── Product detail image ────────────────────────────────── */
+.kmc-cockpit-product-image {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e3eaf3;
+  flex-shrink: 0;
+}
+.kmc-cockpit-product-image-placeholder {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: #f0f4fa;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.kmc-cockpit-product-identity {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  color: #15365f;
+}
+.kmc-cockpit-product-identity-copy {
+  display: grid;
+  gap: 2px;
+}
+.kmc-cockpit-product-identity-copy small { color: #6b7c93; font-size: 10px; }
+.kmc-cockpit-product-link {
+  color: #1676e8;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 4px;
+}
+.kmc-cockpit-product-link:hover { text-decoration: underline; }
+
+/* ── Sensitivity table updates ───────────────────────────── */
+.kmc-cockpit-sensitivity-table > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(90px, 1fr) minmax(80px, 1fr);
+  gap: 5px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #edf1f6;
+  color: #4e6078;
+  font-size: 10px;
+}
+.kmc-cockpit-sensitivity-table > div.is-head {
+  font-weight: 850;
+  color: #405570;
+  font-size: 9px;
+  border-bottom: 2px solid #d0dae8;
+}
+.kmc-cockpit-sensitivity-table .is-negative { color: #dc2626; }
+
+/* ── Sticky footer ───────────────────────────────────────── */
+.kmc-cockpit-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  border-top: 1px solid #d0dae8;
+  background: #fff;
+  box-shadow: 0 -2px 12px rgb(15 23 42 / .06);
+  border-radius: 0 0 14px 14px;
+}
+.kmc-cockpit-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #718096;
+  font-size: 10px;
+}
+.kmc-cockpit-footer-info-icon { font-size: 14px; }
+.kmc-cockpit-footer-save {
+  flex-shrink: 0;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 10px;
+  background: #dc2626;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: background .15s;
+}
+.kmc-cockpit-footer-save:hover { background: #b91c1c; }
+.kmc-cockpit-final-price-form.is-dirty {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.kmc-cockpit-footer-info span[data-cockpit-footer-note] { transition: color .15s; }
 
 .kmc-flow-equilibrium-panel--cockpit {
   margin: 0;
@@ -157,7 +412,7 @@
 }
 
 .kmc-cockpit-cost-table.is-fixed-mutualized {
-  grid-template-columns: minmax(110px, 1.1fr) minmax(90px, .9fr) minmax(86px, .85fr) minmax(100px, 1fr);
+  grid-template-columns: minmax(100px, 1.1fr) minmax(85px, .85fr) minmax(80px, .8fr) 42px minmax(90px, .95fr);
 }
 
 .kmc-cockpit-cell {
@@ -241,6 +496,15 @@
 }
 
 .kmc-cockpit-principle li::marker { color: #2563eb; }
+.kmc-cockpit-principle-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #1676e8;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.kmc-cockpit-principle-link:hover { text-decoration: underline; }
 
 .kmc-cockpit-portfolio {
   display: grid;
@@ -304,8 +568,8 @@
 
 .kmc-cockpit-product-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.3fr) repeat(3, minmax(108px, .85fr)) repeat(3, minmax(96px, .8fr)) minmax(142px, 1fr) minmax(112px, .85fr);
-  min-width: 1040px;
+  grid-template-columns: minmax(140px, 1.2fr) repeat(3, minmax(90px, .75fr)) repeat(3, minmax(80px, .68fr)) minmax(120px, .9fr) minmax(90px, .72fr) 64px minmax(100px, .82fr) 36px;
+  min-width: 1180px;
   border-bottom: 1px solid #e9eef5;
 }
 
@@ -348,14 +612,7 @@
   font-size: 15px;
 }
 
-.kmc-cockpit-product-identity {
-  display: grid;
-  gap: 2px;
-  margin-bottom: 10px;
-  color: #15365f;
-}
-
-.kmc-cockpit-product-identity small { color: #6b7c93; }
+/* product identity moved to top of file */
 
 .kmc-cockpit-detail-metrics {
   display: grid;
@@ -418,19 +675,7 @@
   gap: 5px;
 }
 
-.kmc-cockpit-sensitivity-table > div {
-  display: grid;
-  grid-template-columns: 54px minmax(80px, 1fr) 18px minmax(90px, 1fr);
-  gap: 5px;
-  align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid #edf1f6;
-  color: #4e6078;
-  font-size: 10px;
-}
-
 .kmc-cockpit-sensitivity-table .is-positive { color: #18945d; }
-.kmc-cockpit-arrow { color: #708197; text-align: center; }
 .kmc-cockpit-detail-note { margin: 10px 0 0; color: #68798f; font-size: 9px; line-height: 1.4; }
 
 .kmc-cockpit-market-head {
@@ -557,15 +802,24 @@
   .kmc-cockpit-principle { grid-column: auto; }
   .kmc-cockpit-detail-grid { grid-template-columns: 1fr; }
   .kmc-cockpit-detail-card.is-product-decision { grid-column: auto; }
+  .kmc-cockpit-page-header { flex-direction: column; align-items: stretch; }
+  .kmc-cockpit-page-header-right { justify-content: space-between; }
 }
 
 @media (max-width: 640px) {
   .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-state { grid-template-columns: 1fr; }
   .kmc-cockpit-portfolio { padding: 10px; }
   .kmc-cockpit-portfolio-head { display: grid; }
-  .kmc-cockpit-portfolio-head input { width: 100%; }
+  .kmc-cockpit-portfolio-head-actions { flex-direction: column; align-items: stretch; }
+  .kmc-cockpit-portfolio-head-actions input { width: 100%; }
+  .kmc-cockpit-outline-action.is-add { width: 100%; text-align: center; }
   .kmc-cockpit-observation-form,
   .kmc-cockpit-final-price-form { grid-template-columns: 1fr; }
   .kmc-cockpit-price-reason { grid-column: auto; }
   .kmc-cockpit-observation-row { display: grid; }
+  .kmc-cockpit-page-header-right { flex-direction: column; align-items: stretch; gap: 8px; }
+  .kmc-cockpit-live-badge { text-align: left; }
+  .kmc-cockpit-footer { flex-direction: column; align-items: stretch; gap: 10px; border-radius: 0; }
+  .kmc-cockpit-footer-save { width: 100%; }
+  .kmc-cockpit-product-identity { flex-wrap: wrap; }
 }

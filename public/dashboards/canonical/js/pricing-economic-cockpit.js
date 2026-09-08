@@ -157,8 +157,14 @@
       table.appendChild(value);
     });
     if (!components.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucune charge variable active.'));
+    else {
+      const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row');
+      totalRow.appendChild(tableCell(doc, 'Coût variable complet (ex. moyen)', 'is-total-label'));
+      const totalValue = components.reduce((sum, c) => sum + (Number(c.default_value) || 0), 0);
+      totalRow.appendChild(tableCell(doc, formatKmf(totalValue), 'is-total-value'));
+      table.appendChild(totalRow);
+    }
     card.appendChild(table);
-    card.appendChild(el(doc, 'p', 'kmc-cockpit-card-foot', `${components.length} ligne${components.length > 1 ? 's' : ''} · les valeurs calculées restent non éditables ici.`));
     return card;
   }
 
@@ -177,8 +183,14 @@
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
     });
     if (!rows.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', structure ? 'Aucune charge fixe directe reconnue sur la période.' : 'Vérité de période indisponible.'));
+    else {
+      const totalDirect = rows.reduce((sum, item) => sum + (Number(item.recognized_amount_kmf) || 0), 0);
+      const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row');
+      totalRow.appendChild(tableCell(doc, 'Total fixes directes', 'is-total-label'));
+      totalRow.appendChild(tableCell(doc, formatKmf(totalDirect), 'is-total-value'));
+      table.appendChild(totalRow);
+    }
     card.appendChild(table);
-    card.appendChild(el(doc, 'p', 'kmc-cockpit-card-foot', `${rows.length} fait${rows.length > 1 ? 's' : ''} de période · source moteur.`));
     return card;
   }
 
@@ -187,27 +199,32 @@
     card.dataset.costSummary = 'fixed-mutualized';
     card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Pools structurels partagés, alloués par Market ID.', 'Gérer les mutualisations', 'fixed-mutualized'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
-    ['Élément', 'Coût global', 'Clé d’allocation', `Quote-part ${marketCode}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
+    ['Élément', 'Coût global (FCFA)', 'Clé d\u2019allocation', '%', `Quote-part ${marketCode}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
     charges.slice(0, 6).forEach(charge => {
       table.appendChild(tableCell(doc, charge.charge_name || charge.charge_family || 'Charge mutualisée'));
       table.appendChild(tableCell(doc, formatKmf(charge.group_pool_kmf), 'is-derived'));
       const policy = charge.policy;
-      table.appendChild(tableCell(doc, policy ? `${policy.basis_kind || '—'} · ${policy.policy_kind || '—'}` : 'Politique manquante', 'is-derived'));
-      const shareText = charge.market_share_kmf == null ? 'À gouverner' : formatKmf(charge.market_share_kmf);
-      const share = tableCell(doc, shareText, `is-derived ${charge.market_share_kmf == null ? '' : 'is-market-share'}`.trim());
-      if (charge.market_allocation_ratio != null) share.title = `Quote-part Market ID ${marketCode} : ${formatNumber(Number(charge.market_allocation_ratio) * 100, 2)} %`;
-      table.appendChild(share);
+      table.appendChild(tableCell(doc, policy ? (policy.basis_kind || '\u2014') : 'Politique manquante', 'is-derived'));
+      const ratioText = charge.market_allocation_ratio != null ? `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %` : '\u2014';
+      table.appendChild(tableCell(doc, ratioText, 'is-derived'));
+      const shareText = charge.market_share_kmf == null ? '\u00c0 gouverner' : formatKmf(charge.market_share_kmf);
+      table.appendChild(tableCell(doc, shareText, `is-derived ${charge.market_share_kmf == null ? '' : 'is-market-share'}`.trim()));
     });
     const groupPool = finite(structure?.group_pool_kmf);
     if (!charges.length && groupPool != null && groupPool !== 0) {
-      table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Pool mutualisé réel présent, mais politique d’allocation non décisionnelle : aucune quote-part n’est inventée.'));
+      table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Pool mutualisé réel présent, mais politique d\u2019allocation non décisionnelle : aucune quote-part n\u2019est inventée.'));
     } else if (!charges.length) {
       table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', structure ? 'Aucune charge fixe mutualisée reconnue sur la période.' : 'Vérité de période indisponible.'));
     }
+    if (charges.length) {
+      const totalMut = charges.reduce((sum, c) => sum + (Number(c.market_share_kmf) || 0), 0);
+      const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row is-mutualized');
+      totalRow.appendChild(tableCell(doc, 'Total fixes mutualisées (imputé au marché)', 'is-total-label'));
+      totalRow.appendChild(tableCell(doc, formatKmf(totalMut), 'is-total-value'));
+      table.appendChild(totalRow);
+    }
     card.appendChild(table);
-    const status = structure?.shared_allocation_applied ? `Quote-part ${marketCode} calculée par le moteur.` : 'Allocation fail-closed tant que la politique Market ID n’est pas gouvernée.';
-    card.appendChild(el(doc, 'p', 'kmc-cockpit-card-foot', status));
     return card;
   }
 
@@ -223,13 +240,18 @@
       'Les coûts variables déterminent l’espace de contribution.',
       'Les charges fixes sont couvertes collectivement par le portefeuille.',
       `Direct / mutualisé décrit le périmètre, jamais la nature de la charge.`,
-      `Toute quote-part mutualisée est rattachée au Market ID ${marketCode}.`,
+      `Toute quote-part mutualisée est calculée par Market ID.`,
+      'Les charges mutualisées peuvent aussi être variables (ex. fret, SAV).',
     ].forEach(text => {
       const item = doc.createElement('li');
       item.textContent = text;
       list.appendChild(item);
     });
     card.appendChild(list);
+    const docLink = el(doc, 'a', 'kmc-cockpit-principle-link', 'Voir la documentation \u2197');
+    docLink.href = '/admin/docs/pricing-doctrine';
+    docLink.target = '_blank';
+    card.appendChild(docLink);
     return card;
   }
 
@@ -260,11 +282,17 @@
     section.dataset.cockpitPortfolio = '';
     const head = el(doc, 'div', 'kmc-cockpit-portfolio-head');
     head.appendChild(el(doc, 'h3', '', 'Portefeuille produits'));
+    const headActions = el(doc, 'div', 'kmc-cockpit-portfolio-head-actions');
     const search = doc.createElement('input');
     search.type = 'search';
     search.placeholder = 'Rechercher un produit…';
     search.dataset.cockpitSearch = '';
-    head.appendChild(search);
+    headActions.appendChild(search);
+    const addBtn = el(doc, 'button', 'kmc-cockpit-outline-action is-add', '+ Ajouter un produit');
+    addBtn.type = 'button';
+    addBtn.dataset.cockpitAddProduct = '';
+    headActions.appendChild(addBtn);
+    head.appendChild(headActions);
     section.appendChild(head);
 
     const tabs = el(doc, 'div', 'kmc-cockpit-tabs');
@@ -295,8 +323,9 @@
 
   function portfolioHeader(doc) {
     const headers = [
-      'Produit', 'Coût d’achat', 'Coûts variables hors achat', 'Coût variable complet',
-      'Borne basse', 'Cible', 'Borne haute', 'Prix final marché retenu', 'Contribution unitaire',
+      'SKU', 'Coût d\u2019achat\n(FCFA)', 'Coûts variables\nhors achat (FCFA)', 'Coût variable\ncomplet (FCFA)',
+      'Borne marché (FCFA)\nBasse', 'Cible', 'Haute',
+      'Prix retenu\n(FCFA)', 'Contribution\nunitaire (FCFA)', 'Qté vendue', 'Contribution totale\n(FCFA)', '',
     ];
     const row = el(doc, 'div', 'kmc-cockpit-product-row is-head');
     headers.forEach(label => row.appendChild(tableCell(doc, label)));
@@ -307,7 +336,8 @@
     const row = el(doc, 'div', 'kmc-cockpit-product-row is-loading');
     row.dataset.productRef = product.product_ref;
     row.appendChild(tableCell(doc, product.name || product.product_ref));
-    for (let i = 0; i < 8; i += 1) row.appendChild(tableCell(doc, '…', 'is-derived'));
+    for (let i = 0; i < 10; i += 1) row.appendChild(tableCell(doc, '…', 'is-derived'));
+    row.appendChild(tableCell(doc, ''));
     return row;
   }
 
@@ -325,12 +355,21 @@
     row.appendChild(tableCell(doc, corridorAmount(local.target, currency), 'is-derived'));
     row.appendChild(tableCell(doc, corridorAmount(local.high, currency), 'is-derived'));
     const priceCell = tableCell(doc, '', 'is-price-decision');
-    const priceButton = el(doc, 'button', 'kmc-cockpit-price-button', `${selectedAmount(corridor)}  ▾`);
+    const priceButton = el(doc, 'button', 'kmc-cockpit-price-button', `${selectedAmount(corridor)}  \u25be`);
     priceButton.type = 'button';
     priceButton.dataset.cockpitSelectProduct = product.product_ref;
     priceCell.appendChild(priceButton);
     row.appendChild(priceCell);
     row.appendChild(tableCell(doc, formatKmf(economics.contribution_unit_kmf), 'is-derived is-contribution'));
+    const qtySold = finite(economics.quantity_sold) ?? finite(product.quantity_sold) ?? 0;
+    row.appendChild(tableCell(doc, formatNumber(qtySold), 'is-derived'));
+    const contribTotal = finite(economics.contribution_unit_kmf) != null && qtySold ? formatKmf(economics.contribution_unit_kmf * qtySold) : '\u2014';
+    row.appendChild(tableCell(doc, contribTotal, 'is-derived is-contribution'));
+    const menu = el(doc, 'button', 'kmc-cockpit-row-menu', '\u22ef');
+    menu.type = 'button';
+    menu.dataset.cockpitRowMenu = product.product_ref;
+    row.appendChild(tableCell(doc, ''));
+    row.lastChild.appendChild(menu);
     return row;
   }
 
@@ -356,20 +395,36 @@
     card.appendChild(el(doc, 'h4', '', 'Sensibilité prix'));
     const local = corridor?.corridor?.local || {};
     const currency = corridor?.market?.currency || 'KMF';
-    const rows = [
+    const selectedContrib = finite(corridor?.selected?.economics?.contribution_unit_kmf);
+    const points = [
       ['Basse', local.low], ['Cible', local.target], ['Haute', local.high],
     ];
+
     const table = el(doc, 'div', 'kmc-cockpit-sensitivity-table');
-    rows.forEach(([label, point]) => {
+    const headerRow = el(doc, 'div', 'is-head');
+    headerRow.appendChild(el(doc, 'span', '', 'Prix de vente'));
+    headerRow.appendChild(el(doc, 'span', '', 'Contribution unitaire'));
+    headerRow.appendChild(el(doc, 'span', '', 'Écart vs. actuel'));
+    table.appendChild(headerRow);
+
+    points.forEach(([label, point]) => {
+      const price = finite(point?.observed_amount);
+      const contrib = finite(point?.economics?.contribution_unit_kmf);
       const row = el(doc, 'div', '');
-      row.appendChild(el(doc, 'span', '', label));
-      row.appendChild(el(doc, 'strong', '', corridorAmount(point, currency)));
-      row.appendChild(el(doc, 'span', 'kmc-cockpit-arrow', '→'));
-      row.appendChild(el(doc, 'strong', 'is-positive', formatKmf(point?.economics?.contribution_unit_kmf)));
+      row.appendChild(el(doc, 'strong', '', price != null ? formatKmf(price) : '—'));
+      row.appendChild(el(doc, 'strong', 'is-positive', contrib != null ? formatKmf(contrib) : '—'));
+      let ecartText = '—';
+      let ecartCls = '';
+      if (contrib != null && selectedContrib != null) {
+        const diff = contrib - selectedContrib;
+        ecartText = (diff >= 0 ? '+' : '') + formatKmf(diff);
+        ecartCls = diff >= 0 ? 'is-positive' : 'is-negative';
+      }
+      row.appendChild(el(doc, 'span', ecartCls, ecartText));
       table.appendChild(row);
     });
     card.appendChild(table);
-    card.appendChild(el(doc, 'p', 'kmc-cockpit-detail-note', 'Le moteur projette la contribution à chaque borne. Le navigateur n’effectue aucun recalcul économique.'));
+    card.appendChild(el(doc, 'p', 'kmc-cockpit-detail-note', 'Le prix marché retenu est le levier de décision sur cette page. La contribution varie en fonction du prix.'));
     return card;
   }
 
@@ -431,10 +486,29 @@
     const local = corridor?.corridor?.local || {};
     const currency = corridor?.market?.currency || 'KMF';
     const card = el(doc, 'section', 'kmc-cockpit-detail-card is-product-decision');
-    card.appendChild(el(doc, 'h4', '', 'Détail du produit'));
+    card.appendChild(el(doc, 'h4', '', 'Détail d\'un produit'));
     const identity = el(doc, 'div', 'kmc-cockpit-product-identity');
-    identity.appendChild(el(doc, 'strong', '', corridor?.product?.name || corridor?.product?.product_ref || 'Produit'));
-    identity.appendChild(el(doc, 'small', '', `${corridor?.product?.product_ref || ''} · ${categoryLabel(corridor?.product?.category)}`));
+    const imageUrl = corridor?.product?.image_url || corridor?.product?.thumbnail_url;
+    if (imageUrl) {
+      const img = doc.createElement('img');
+      img.className = 'kmc-cockpit-product-image';
+      img.src = imageUrl;
+      img.alt = corridor?.product?.name || '';
+      img.loading = 'lazy';
+      identity.appendChild(img);
+    } else {
+      const placeholder = el(doc, 'div', 'kmc-cockpit-product-image-placeholder', '📦');
+      identity.appendChild(placeholder);
+    }
+    const identityCopy = el(doc, 'div', 'kmc-cockpit-product-identity-copy');
+    identityCopy.appendChild(el(doc, 'strong', '', corridor?.product?.name || corridor?.product?.product_ref || 'Produit'));
+    identityCopy.appendChild(el(doc, 'small', '', `SKU : ${corridor?.product?.product_ref || ''}`));
+    identityCopy.appendChild(el(doc, 'small', '', `Catégorie : ${categoryLabel(corridor?.product?.category)}`));
+    const viewLink = el(doc, 'a', 'kmc-cockpit-product-link', 'Voir la fiche complète ↗');
+    viewLink.href = `/admin/products/${encodeURIComponent(corridor?.product?.product_ref || '')}`;
+    viewLink.target = '_blank';
+    identityCopy.appendChild(viewLink);
+    identity.appendChild(identityCopy);
     card.appendChild(identity);
 
     const metrics = el(doc, 'div', 'kmc-cockpit-detail-metrics');
@@ -461,6 +535,7 @@
       input.value = corridor?.selected?.local_amount != null ? corridor.selected.local_amount : '';
       input.placeholder = `Prix final ${currency}`;
       input.dataset.finalMarketPrice = '';
+      input.dataset.originalValue = input.value;
       const save = el(doc, 'button', 'kmc-cockpit-primary-action', 'Enregistrer');
       save.type = 'submit';
       form.appendChild(input);
@@ -511,10 +586,11 @@
     if (!table) return;
     portfolio.__activeCategory = category;
     const searchValue = String(portfolio.querySelector('[data-cockpit-search]')?.value || '').trim().toLowerCase();
+    const effectiveLimit = portfolio.__categoryLimitOverride || MAX_CATEGORY_ROWS;
     const products = (portfolio.__products || [])
       .filter(product => (product.category || 'Autres') === category)
       .filter(product => !searchValue || `${product.name || ''} ${product.product_ref || ''}`.toLowerCase().includes(searchValue))
-      .slice(0, MAX_CATEGORY_ROWS);
+      .slice(0, effectiveLimit);
     table.replaceChildren(portfolioHeader(doc));
     products.forEach(product => table.appendChild(portfolioLoadingRow(doc, product)));
     if (!products.length) {
@@ -538,6 +614,35 @@
       if (result.corridor) current.replaceWith(portfolioProductRow(doc, result.product, result.corridor));
       else current.replaceChildren(tableCell(doc, result.product.name || result.product.product_ref), tableCell(doc, `Indisponible · ${result.error?.message || 'erreur'}`, 'is-error'));
     });
+
+    // Totals row
+    let totalQty = 0, totalContrib = 0;
+    results.forEach(r => {
+      if (!r.corridor) return;
+      const eco = r.corridor?.selected?.economics || {};
+      const qty = Number(eco.quantity_sold ?? r.product.quantity_sold ?? 0);
+      const unit = Number(eco.contribution_unit_kmf ?? 0);
+      totalQty += qty;
+      totalContrib += unit * qty;
+    });
+    const totalsRow = el(doc, 'div', 'kmc-cockpit-product-row is-totals');
+    for (let i = 0; i < 9; i++) totalsRow.appendChild(tableCell(doc, ''));
+    totalsRow.appendChild(tableCell(doc, formatNumber(totalQty), 'is-total-value'));
+    totalsRow.appendChild(tableCell(doc, formatKmf(totalContrib), 'is-total-value'));
+    totalsRow.appendChild(tableCell(doc, ''));
+    table.appendChild(totalsRow);
+
+    // "Voir tous les produits" link
+    const allProducts = (portfolio.__products || []).filter(p => (p.category || 'Autres') === category);
+    if (allProducts.length > effectiveLimit) {
+      const overflow = el(doc, 'div', 'kmc-cockpit-portfolio-overflow');
+      overflow.appendChild(el(doc, 'span', '', `… ${allProducts.length - effectiveLimit} autres produits`));
+      const viewAll = el(doc, 'a', 'kmc-cockpit-view-all', 'Voir tous les produits →');
+      viewAll.href = '#';
+      viewAll.dataset.cockpitViewAll = category;
+      overflow.appendChild(viewAll);
+      table.appendChild(overflow);
+    }
 
     const first = results.find(result => result.corridor);
     if (first && (!portfolio.__selectedProductRef || !portfolio.__corridors.has(portfolio.__selectedProductRef))) {
@@ -565,13 +670,75 @@
     cockpit.appendChild(equilibrium);
   }
 
+  function buildCockpitHeader(doc, payload, decision) {
+    const header = el(doc, 'div', 'kmc-cockpit-page-header');
+    const left = el(doc, 'div', 'kmc-cockpit-page-header-left');
+    left.appendChild(el(doc, 'h2', 'kmc-cockpit-page-title', 'Atelier économique'));
+    left.appendChild(el(doc, 'p', 'kmc-cockpit-page-subtitle', 'Pilotez votre rentabilité en temps réel. Toute modification est automatiquement recalculée.'));
+    header.appendChild(left);
+
+    const right = el(doc, 'div', 'kmc-cockpit-page-header-right');
+    const periodWrap = el(doc, 'div', 'kmc-cockpit-period-wrap');
+    periodWrap.appendChild(el(doc, 'span', 'kmc-cockpit-period-label', 'Période'));
+    const periodSelect = doc.createElement('select');
+    periodSelect.className = 'kmc-cockpit-period-select';
+    periodSelect.dataset.cockpitPeriod = '';
+    const now = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d);
+      const opt = doc.createElement('option');
+      opt.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      opt.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+      if (i === 0) opt.selected = true;
+      periodSelect.appendChild(opt);
+    }
+    periodWrap.appendChild(periodSelect);
+    right.appendChild(periodWrap);
+
+    const badge = el(doc, 'div', 'kmc-cockpit-live-badge');
+    badge.appendChild(el(doc, 'strong', '', 'Données réelles'));
+    const ts = decision?.coverage?.computed_at || decision?.computed_at;
+    const ago = ts ? timeSince(new Date(ts)) : 'temps réel';
+    badge.appendChild(el(doc, 'small', '', `Mises à jour ${ago}`));
+    right.appendChild(badge);
+    header.appendChild(right);
+    return header;
+  }
+
+  function timeSince(date) {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return 'à l\'instant';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `il y a ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    return `il y a ${hours}h`;
+  }
+
   function buildCockpit(doc, rootNode, payload, marketCode, decision) {
     const cockpit = el(doc, 'div', 'kmc-economic-cockpit');
     cockpit.dataset[COCKPIT_ATTR] = '';
+    cockpit.appendChild(buildCockpitHeader(doc, payload, decision));
     moveEquilibriumIntoCockpit(rootNode, cockpit);
     cockpit.appendChild(createCostPilotage(doc, payload, marketCode, decision));
     cockpit.appendChild(createPortfolioShell(doc, payload));
+    cockpit.appendChild(buildCockpitFooter(doc));
     return cockpit;
+  }
+
+  function buildCockpitFooter(doc) {
+    const footer = el(doc, 'div', 'kmc-cockpit-footer');
+    const info = el(doc, 'div', 'kmc-cockpit-footer-info');
+    info.appendChild(el(doc, 'span', 'kmc-cockpit-footer-info-icon', 'ⓘ'));
+    const note = el(doc, 'span', '', 'Les valeurs grisées sont calculées automatiquement par le moteur. Le prix final marché retenu est le levier de décision sur cette page.');
+    note.dataset.cockpitFooterNote = '';
+    info.appendChild(note);
+    footer.appendChild(info);
+    const save = el(doc, 'button', 'kmc-cockpit-footer-save', '✓ Enregistrer les ajustements');
+    save.type = 'button';
+    save.dataset.cockpitSaveAll = '';
+    footer.appendChild(save);
+    return footer;
   }
 
   function bindCockpit(rootObject, workspace, options, payload, cockpit, advanced) {
@@ -591,6 +758,7 @@
       const tab = event.target.closest('[data-cockpit-category]');
       if (tab) {
         cockpit.querySelectorAll('[data-cockpit-category]').forEach(node => node.classList.toggle('is-active', node === tab));
+        portfolio.__categoryLimitOverride = null;
         await loadCategory(doc, workspace, options, payload, portfolio, tab.dataset.cockpitCategory);
         return;
       }
@@ -633,7 +801,84 @@
         } catch (error) {
           portfolio.querySelector('[data-cockpit-product-detail]')?.prepend(el(doc, 'div', 'kmc-cockpit-error', `Retrait refusé : ${error.message}`));
         }
+        return;
       }
+
+      const addProduct = event.target.closest('[data-cockpit-add-product]');
+      if (addProduct) {
+        rootObject.location.href = '/admin/workspaces/catalog?intent=create-product';
+        return;
+      }
+
+      const viewAll = event.target.closest('[data-cockpit-view-all]');
+      if (viewAll) {
+        event.preventDefault();
+        portfolio.__categoryLimitOverride = Infinity;
+        await loadCategory(doc, workspace, options, payload, portfolio, viewAll.dataset.cockpitViewAll);
+        return;
+      }
+
+      const rowMenu = event.target.closest('[data-cockpit-row-menu]');
+      if (rowMenu) {
+        const corridor = portfolio.__corridors.get(rowMenu.dataset.cockpitRowMenu);
+        if (corridor) {
+          renderProductDetail(doc, portfolio, corridor, payload.capabilities?.local_strategy_owner === true);
+          portfolio.querySelector('[data-cockpit-product-detail]')?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+        }
+        return;
+      }
+
+      const saveAll = event.target.closest('[data-cockpit-save-all]');
+      if (saveAll) {
+        const dirtyForms = Array.from(cockpit.querySelectorAll('[data-cockpit-price-form].is-dirty'));
+        const footerNote = cockpit.querySelector('[data-cockpit-footer-note]');
+        if (!dirtyForms.length) {
+          if (footerNote) footerNote.textContent = 'Aucun ajustement en attente.';
+          return;
+        }
+        saveAll.disabled = true;
+        const originalLabel = saveAll.textContent;
+        saveAll.textContent = '⏳ Enregistrement…';
+        let savedCount = 0;
+        let firstError = null;
+        for (const form of dirtyForms) {
+          const data = new FormData(form);
+          const amount = Number(data.get('amount'));
+          const reason = String(data.get('reason') || '').trim() || 'Ajustement du prix final marché depuis Atelier économique';
+          const productRef = form.dataset.cockpitPriceForm;
+          const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+          try {
+            await workspace.jsonRequest(options.fetch, `${endpoint}/products/${encodeURIComponent(productRef)}/local-price`, {
+              method: 'POST', body: { amount, reason, source: 'economic_cockpit_final_market_price' },
+            });
+            portfolio.__corridors.delete(productRef);
+            savedCount += 1;
+          } catch (error) {
+            firstError = error;
+            break;
+          }
+        }
+        saveAll.disabled = false;
+        saveAll.textContent = originalLabel;
+        await loadCategory(doc, workspace, options, payload, portfolio, portfolio.__activeCategory);
+        if (footerNote) {
+          footerNote.textContent = firstError
+            ? `Échec après ${savedCount} ligne${savedCount > 1 ? 's' : ''} enregistrée${savedCount > 1 ? 's' : ''} · ${firstError.message}`
+            : `${savedCount} ajustement${savedCount > 1 ? 's' : ''} enregistré${savedCount > 1 ? 's' : ''}.`;
+        }
+        return;
+      }
+    });
+
+    cockpit.addEventListener('input', event => {
+      const priceInput = event.target.closest('[data-final-market-price]');
+      if (!priceInput) return;
+      const form = priceInput.closest('[data-cockpit-price-form]');
+      if (!form) return;
+      const isDirty = priceInput.dataset.originalValue !== priceInput.value;
+      form.classList.toggle('is-dirty', isDirty);
+      const footerNote = cockpit.querySelector('[data-cockpit-footer-note]');
+      if (footerNote) footerNote.textContent = isDirty ? 'Modifications non enregistrées.' : 'Les valeurs grisées sont calculées automatiquement par le moteur. Le prix final marché retenu est le levier de décision sur cette page.';
     });
 
     cockpit.addEventListener('submit', async event => {
