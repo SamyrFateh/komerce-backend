@@ -113,8 +113,7 @@ describe('bootstrap/env — loadAndValidateEnv', () => {
     });
 
     test('toutes les clés requises documentées sont bien vérifiées (pas de désynchro avec le header)', () => {
-      // Si une seule clé requise manque, elle doit apparaître — vérifie la liste complète d'un coup.
-      const result = loadAndValidateEnv({ exitOnMissing: false }); // rien n'est set → tout manque
+      const result = loadAndValidateEnv({ exitOnMissing: false });
       expect(result.missingRequired.sort()).toEqual([...REQUIRED_KEYS].sort());
       expect(result.requiredEnv).toEqual(REQUIRED_KEYS);
     });
@@ -140,7 +139,7 @@ describe('bootstrap/env — loadAndValidateEnv', () => {
     });
 
     test('recommandées manquantes n’affectent jamais missingRequired/ok', () => {
-      setAllRequired(process.env); // aucune recommandée définie
+      setAllRequired(process.env);
       const result = loadAndValidateEnv();
       expect(result.ok).toBe(true);
       expect(result.missingRecommended).toEqual(RECOMMENDED_KEYS);
@@ -151,7 +150,7 @@ describe('bootstrap/env — loadAndValidateEnv', () => {
     test('OTP_TEST_MODE=true en production → FATAL + process.exit(1)', () => {
       setAllRequired(process.env);
       process.env.NODE_ENV = 'production';
-      process.env.PAYPAL_ENV = 'production'; // évite de déclencher l'autre garde-fou dans ce test
+      process.env.PAYPAL_ENV = 'production';
       process.env.OTP_TEST_MODE = 'true';
       loadAndValidateEnv();
       expect(mockLog.error).toHaveBeenCalledWith(expect.stringMatching(/OTP_TEST_MODE\/BOUTIQUE_TEST_OTP_BYPASS interdit en production/));
@@ -230,6 +229,16 @@ describe('bootstrap/env — loadAndValidateEnv', () => {
       loadAndValidateEnv();
       expect(mockLog.error).not.toHaveBeenCalledWith(expect.stringMatching(/PAYPAL_ENV/));
     });
+
+    test('KOMERCE_ENV=staging prime sur NODE_ENV=production → PayPal sandbox autorisé', () => {
+      setAllRequired(process.env);
+      process.env.NODE_ENV = 'production';
+      process.env.KOMERCE_ENV = 'staging';
+      process.env.PAYPAL_ENV = 'sandbox';
+      loadAndValidateEnv();
+      expect(mockLog.error).not.toHaveBeenCalledWith(expect.stringMatching(/PAYPAL_ENV/));
+      expect(exitSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('cumul des deux garde-fous production', () => {
@@ -238,7 +247,7 @@ describe('bootstrap/env — loadAndValidateEnv', () => {
       process.env.NODE_ENV = 'production';
       process.env.OTP_TEST_MODE = 'true';
       process.env.PAYPAL_ENV = 'sandbox';
-      loadAndValidateEnv({ exitOnMissing: false }); // false pour observer les deux logs sans early-exit réel
+      loadAndValidateEnv({ exitOnMissing: false });
       expect(mockLog.error).toHaveBeenCalledWith(expect.stringMatching(/OTP_TEST_MODE/));
       expect(mockLog.error).toHaveBeenCalledWith(expect.stringMatching(/PAYPAL_ENV=sandbox/));
     });
