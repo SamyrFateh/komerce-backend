@@ -229,6 +229,39 @@ function canonicalPeriod(policy, atValue = new Date()) {
   };
 }
 
+const CALENDAR_MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
+
+function parseCalendarMonth(yearMonth) {
+  const match = CALENDAR_MONTH_PATTERN.exec(String(yearMonth || '').trim());
+  if (!match) throw new Error('period must match YYYY-MM');
+  return { year: Number(match[1]), month: Number(match[2]) };
+}
+
+function isValidCalendarMonth(yearMonth) {
+  return CALENDAR_MONTH_PATTERN.test(String(yearMonth || '').trim());
+}
+
+// Résout un mois calendaire explicite ([from,to) en UTC) plutôt que la fenêtre
+// glissante de policy.window_days. Le moteur de couverture (computeMarketCoverage)
+// est agnostique à la largeur de la période : ce mode ne recalcule rien de la
+// vérité économique, il ne fait que borner la période sur des frontières de mois
+// civil au lieu d'un nombre de jours glissant. width_days varie donc avec le mois
+// (28 à 31) — c'est intentionnel et reflète honnêtement la borne demandée.
+function calendarMonthPeriod(yearMonth) {
+  const { year, month } = parseCalendarMonth(yearMonth);
+  const from = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const to = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+  const widthDays = Math.round((to.getTime() - from.getTime()) / 86400000);
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    bounds: '[from,to)',
+    width_days: widthDays,
+    source: 'calendar_month_selection',
+    calendar_month: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`,
+  };
+}
+
 function coveragePolicyFrom(policy) {
   return {
     version: policy.version,
@@ -385,7 +418,15 @@ async function computeFlowBreakEvenProjection(coverage, policy) {
 
 async function evaluateMarketDecision(marketId, options = {}) {
   if (!marketId) throw new Error('marketId is required');
-  const evaluationAt = parseInstant(options.at || new Date(), 'evaluation_at');
+  const useCalendarPeriod = options.period != null && String(options.period).trim() !== '';
+  if (useCalendarPeriod && !isValidCalendarMonth(options.period)) {
+    throw new Error('period must match YYYY-MM');
+  }
+  const calendarPeriod = useCalendarPeriod ? calendarMonthPeriod(options.period) : null;
+  // Pour un mois calendaire explicite, on résout la politique en vigueur à la fin
+  // de ce mois plutôt qu'à "maintenant" — cohérent avec l'idée qu'on évalue une
+  // période passée avec la politique qui s'appliquait alors.
+  const evaluationAt = parseInstant(calendarPeriod ? calendarPeriod.to : (options.at || new Date()), 'evaluation_at');
   const policy = await getCurrentMarketDecisionPolicy(marketId, { at: evaluationAt });
 
   if (!policy) {
@@ -402,7 +443,7 @@ async function evaluateMarketDecision(marketId, options = {}) {
     };
   }
 
-  const period = canonicalPeriod(policy, evaluationAt);
+  const period = calendarPeriod || canonicalPeriod(policy, evaluationAt);
   const coverage = await computeMarketCoverage({
     marketId,
     from: period.from,
@@ -447,6 +488,8 @@ module.exports = {
   getCurrentMarketDecisionPolicy,
   listMarketDecisionPolicyHistory,
   canonicalPeriod,
+  calendarMonthPeriod,
+  isValidCalendarMonth,
   coveragePolicyFrom,
   dispositionPolicyFrom,
   evaluateMarketDecision,

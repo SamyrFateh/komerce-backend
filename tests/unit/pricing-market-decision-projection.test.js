@@ -99,6 +99,22 @@ test('cadence lissée utilise la fenêtre canonique et converge vers une seule d
   });
 });
 
+test('cadence lissée sur un mois calendaire porte un basis distinct de la fenêtre glissante', () => {
+  const velocity = _buildFlowVelocity(
+    { canonical_period: { width_days: 30, source: 'calendar_month_selection' } },
+    {
+      mature_orders: 90,
+      article_units: 300,
+      parcels: 60,
+      reconciled_contribution_kmf: 900000,
+    },
+    { gap_kmf: 300000 }
+  );
+
+  expect(velocity.basis).toBe('CALENDAR_MONTH_AVERAGE');
+  expect(velocity.window_days).toBe(30);
+});
+
 test('ne fabrique pas de cadence ou de durée lorsque le flux ne converge pas', () => {
   const velocity = _buildFlowVelocity(
     { canonical_period: { width_days: 30 } },

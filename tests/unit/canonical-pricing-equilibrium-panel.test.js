@@ -38,7 +38,8 @@ test('le backend enrichit la décision avec cadence et planchers sans recalcul d
   const projection = fs.readFileSync(path.join(ROOT, 'services', 'pricing-market-decision-projection.js'), 'utf8');
   const route = fs.readFileSync(path.join(ROOT, 'routes', 'admin-pricing-workspace.js'), 'utf8');
 
-  expect(projection).toContain("basis: 'ROLLING_CANONICAL_WINDOW_AVERAGE'");
+  expect(projection).toContain("'ROLLING_CANONICAL_WINDOW_AVERAGE'");
+  expect(projection).toContain("'CALENDAR_MONTH_AVERAGE'");
   expect(projection).toContain('break_even_floor_orders');
   expect(projection).toContain('break_even_floor_articles');
   expect(projection).toContain('break_even_floor_parcels');

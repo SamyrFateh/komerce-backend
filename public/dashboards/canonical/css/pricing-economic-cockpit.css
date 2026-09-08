@@ -51,6 +51,10 @@
   font-weight: 700;
   cursor: pointer;
 }
+.kmc-cockpit-period-select:disabled {
+  opacity: .55;
+  cursor: wait;
+}
 .kmc-cockpit-live-badge {
   display: grid;
   gap: 1px;
