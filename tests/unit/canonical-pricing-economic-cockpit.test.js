@@ -43,7 +43,7 @@ test('les valeurs calculées sont grisées et le prix final marché est le levie
   expect(source).toContain('Coûts variables hors achat');
   expect(source).toContain('economics.variable_cost_outside_purchase_kmf');
   expect(source).toContain('Prix final marché retenu');
-  expect(source).toContain('data.finalMarketPrice');
+  expect(source).toContain('dataset.finalMarketPrice');
   expect(source).toContain('Les valeurs grisées sont calculées automatiquement par le moteur');
   expect(css).toContain('.kmc-cockpit-cell.is-derived');
   expect(css).toContain('.kmc-cockpit-final-price');
