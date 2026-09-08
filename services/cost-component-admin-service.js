@@ -11,9 +11,9 @@
  * @db-read       cost_components, cost_component_events
  * @db-write      cost_components, cost_component_events
  * @db-txn        none
- * @doctrine      single_cost_component_mutation_authority, browser_uses_component_key
+ * @doctrine      single_cost_component_mutation_authority, browser_uses_component_key, charge_nature_is_distinct_from_allocation_perimeter
  * @impact-areas  pricing, economic-engine, admin-dashboard
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -36,6 +36,8 @@ const META = Object.freeze({
     business: ['payment', 'risk_provision', 'fixed_overhead'],
     exceptional: ['incident', 'marketing_campaign'],
   },
+  economic_natures: ['variable', 'fixed'],
+  allocation_perimeters: ['direct', 'mutualized'],
   units: ['kmf', 'pct', 'kmf_per_kg', 'kmf_per_m3', 'kmf_per_order', 'kmf_per_parcel', 'kmf_per_shipment', 'aed', 'eur', 'usd'],
   scopes: ['global', 'category', 'product', 'order', 'parcel', 'shipment', 'supplier', 'relay'],
   allocation_methods: ['none', 'per_order', 'per_item', 'by_value', 'by_weight', 'by_volume', 'by_taxable_weight', 'by_quantity', 'by_category_risk', 'manual'],
@@ -46,9 +48,9 @@ const META = Object.freeze({
 });
 
 const UPDATE_FIELDS = [
-  'label', 'emoji', 'description', 'family', 'category', 'default_value', 'unit', 'currency',
-  'scope', 'scope_value', 'allocation_method', 'source', 'confidence', 'channel', 'island',
-  'is_active', 'is_exceptional', 'active_from', 'active_until', 'notes',
+  'label', 'emoji', 'description', 'family', 'category', 'economic_nature', 'allocation_perimeter',
+  'default_value', 'unit', 'currency', 'scope', 'scope_value', 'allocation_method', 'source', 'confidence',
+  'channel', 'island', 'is_active', 'is_exceptional', 'active_from', 'active_until', 'notes',
 ];
 
 function validateFamilyCategory(family, category) {
@@ -62,11 +64,31 @@ function validateFamilyCategory(family, category) {
   }
 }
 
+function deriveEconomicNature(family, category) {
+  if (family === 'landed_relay') return 'variable';
+  if (family === 'business' && category === 'fixed_overhead') return 'fixed';
+  if (family === 'business') return 'variable';
+  return null;
+}
+
+function validateEconomicClassification(body = {}) {
+  if (body.economic_nature !== undefined && body.economic_nature !== null && body.economic_nature !== '') {
+    if (!META.economic_natures.includes(body.economic_nature)) {
+      throw new CostComponentAdminError(400, 'Nature économique invalide', 'cost_component_economic_nature_invalid');
+    }
+  }
+  if (body.allocation_perimeter !== undefined && body.allocation_perimeter !== null && body.allocation_perimeter !== '') {
+    if (!META.allocation_perimeters.includes(body.allocation_perimeter)) {
+      throw new CostComponentAdminError(400, 'Périmètre d’allocation invalide', 'cost_component_allocation_perimeter_invalid');
+    }
+  }
+}
+
 async function listComponents(filters = {}, q = db) {
   const conditions = [];
   const params = [];
   let i = 1;
-  for (const field of ['family', 'category', 'channel', 'island', 'scope']) {
+  for (const field of ['family', 'category', 'channel', 'island', 'scope', 'economic_nature', 'allocation_perimeter']) {
     if (filters[field]) {
       conditions.push(`${field} = $${i++}`);
       params.push(filters[field]);
@@ -120,19 +142,23 @@ async function createComponent(body = {}, actorId = null, q = db) {
     }
   }
   validateFamilyCategory(body.family, body.category);
+  validateEconomicClassification(body);
+  const economicNature = body.economic_nature || deriveEconomicNature(body.family, body.category);
+  const allocationPerimeter = body.allocation_perimeter || 'direct';
   let row;
   try {
     const { rows } = await q.query(
       `INSERT INTO cost_components (
-         key, label, emoji, description, family, category, default_value, unit, currency,
-         scope, scope_value, allocation_method, source, confidence, channel, island,
-         is_active, is_exceptional, active_from, active_until, notes, created_by, updated_by
+         key, label, emoji, description, family, category, economic_nature, allocation_perimeter,
+         default_value, unit, currency, scope, scope_value, allocation_method, source, confidence,
+         channel, island, is_active, is_exceptional, active_from, active_until, notes, created_by, updated_by
        ) VALUES (
-         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$22
+         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$24
        ) RETURNING *`,
       [
         body.key, body.label, body.emoji || null, body.description || null,
-        body.family, body.category, body.default_value, body.unit, body.currency || null,
+        body.family, body.category, economicNature, allocationPerimeter,
+        body.default_value, body.unit, body.currency || null,
         body.scope || 'global', body.scope_value || null, body.allocation_method || 'none',
         body.source || 'default', body.confidence || 'medium', body.channel || null, body.island || null,
         body.is_active !== false, !!body.is_exceptional, body.active_from || null, body.active_until || null,
@@ -159,13 +185,14 @@ async function updateComponent(selector, body = {}, actorId = null, q = db) {
   if (body.family !== undefined || body.category !== undefined) {
     validateFamilyCategory(body.family !== undefined ? body.family : oldComp.family, body.category !== undefined ? body.category : oldComp.category);
   }
+  validateEconomicClassification(body);
   const sets = [];
   const params = [];
   let i = 1;
   for (const field of UPDATE_FIELDS) {
     if (body[field] !== undefined) {
       sets.push(`${field} = $${i++}`);
-      params.push(body[field]);
+      params.push(body[field] === '' && field === 'economic_nature' ? null : body[field]);
     }
   }
   if (!sets.length) throw new CostComponentAdminError(400, 'Aucun champ à modifier', 'cost_component_no_changes');
@@ -182,6 +209,8 @@ async function updateComponent(selector, body = {}, actorId = null, q = db) {
   else if (body.is_active === true && !oldComp.is_active) eventType = 'activated';
   else if (body.is_active === false && oldComp.is_active) eventType = 'deactivated';
   else if (body.scope !== undefined && body.scope !== oldComp.scope) eventType = 'scope_changed';
+  else if (body.economic_nature !== undefined && body.economic_nature !== oldComp.economic_nature) eventType = 'economic_nature_changed';
+  else if (body.allocation_perimeter !== undefined && body.allocation_perimeter !== oldComp.allocation_perimeter) eventType = 'allocation_perimeter_changed';
   await q.query(
     `INSERT INTO cost_component_events
        (component_id, component_key, event_type, old_value, new_value, notes, triggered_by)
@@ -233,6 +262,8 @@ async function hardDeleteComponent(selector, actorId = null, q = db) {
 module.exports = {
   META,
   CostComponentAdminError,
+  deriveEconomicNature,
+  validateEconomicClassification,
   listComponents,
   resolveComponent,
   getComponent,

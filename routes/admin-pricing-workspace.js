@@ -5,13 +5,13 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
- * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, activation_preview, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -32,6 +32,7 @@ const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('..
 const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
 const marketDecisionProjection = require('../services/pricing-market-decision-projection');
+const pricingMarketCorridor = require('../services/pricing-market-corridor');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
 const { decorateMarketDecision } = marketDecisionProjection;
@@ -104,6 +105,7 @@ async function marketAccessProjection(req) {
       can_manage_decision_policy: true,
       can_draft_local_prices: false,
       can_activate_local_prices: false,
+      can_manage_market_observations: false,
       local_strategy_owner: false,
     };
   }
@@ -121,6 +123,7 @@ async function marketAccessProjection(req) {
     can_manage_decision_policy: canManage,
     can_draft_local_prices: canManage,
     can_activate_local_prices: canManage,
+    can_manage_market_observations: canManage,
     local_strategy_owner: canManage,
   };
 }
@@ -200,6 +203,8 @@ router.get('/market/:marketCode', async (req, res, next) => {
         cost_overrides: access.can_manage_costs,
         reset_to_global: access.can_manage_costs,
         market_decision: true,
+        market_corridor: true,
+        manage_market_price_observations: access.can_manage_market_observations,
         manage_decision_policy: access.can_manage_decision_policy,
         local_price_drafts: access.can_draft_local_prices,
         local_price_activation: access.can_activate_local_prices,
@@ -257,6 +262,40 @@ router.get('/market/:marketCode/commercial-prices', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json(await marketCommercialPrice.listMarketPriceDrafts(req.workspaceMarket));
+  } catch (error) { handleError(error, res, next); }
+});
+
+// Corridor de prix observé : la vérité locale est distincte de la référence
+// concurrence globale. Aucun fallback global n'est promu silencieusement.
+router.get('/market/:marketCode/corridor', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await pricingMarketCorridor.buildMarketCorridor({
+      market: req.workspaceMarket,
+      productRef: req.query.product_ref,
+    }));
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/price-observations', requireCountryStrategyManager, async (req, res, next) => {
+  try {
+    sendAction(res, 'record_market_price_observation', await pricingMarketCorridor.recordMarketObservation({
+      market: req.workspaceMarket,
+      productRef: req.body && req.body.product_ref,
+      body: req.body || {},
+      actorId: req.user.id,
+    }), 201);
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/market/:marketCode/price-observations/:observationRef/deactivate', requireCountryStrategyManager, async (req, res, next) => {
+  try {
+    sendAction(res, 'deactivate_market_price_observation', await pricingMarketCorridor.deactivateMarketObservation({
+      market: req.workspaceMarket,
+      observationRef: req.params.observationRef,
+      actorId: req.user.id,
+      reason: req.body && req.body.reason,
+    }));
   } catch (error) { handleError(error, res, next); }
 });
 

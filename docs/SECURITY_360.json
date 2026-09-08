@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-07T22:38:54.751Z",
+  "generatedAt": "2026-09-08T15:58:30.597Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 585,
-    "protected": 532,
+    "total": 588,
+    "protected": 535,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1872,6 +1872,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
       "level": "PROTECTED",
       "roles": [
@@ -1913,6 +1921,22 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations",
       "level": "PROTECTED",
       "roles": [
         "admin",

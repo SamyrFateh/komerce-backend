@@ -5,12 +5,13 @@ const {
   _buildFlowVelocity,
 } = require('../../services/pricing-market-decision-projection');
 
-test('enrichit le même pool de contribution avec seuils équivalents sans double comptage', () => {
+test('enrichit le même pool de contribution avec charges structurelles et seuils équivalents sans double comptage', () => {
   const decision = {
     canonical_period: { width_days: 30 },
     coverage: {
       coverage_ratio: 0.72,
       numerator_contribution_kmf: 720,
+      // Alias technique legacy accepté à l’entrée seulement.
       denominator_n3_kmf: 1000,
     },
     flow_break_even: {
@@ -43,8 +44,10 @@ test('enrichit le même pool de contribution avec seuils équivalents sans doubl
   const result = decorateMarketDecision(decision);
   const flow = result.flow_break_even;
 
-  expect(flow.economic_state).toEqual({
+  expect(result.coverage.structural_charges_kmf).toBe(1000);
+  expect(flow.economic_state).toMatchObject({
     period_contribution_kmf: 720,
+    period_structural_charges_kmf: 1000,
     period_n3_kmf: 1000,
     coverage_ratio: 0.72,
     break_even_gap_kmf: 280,
@@ -65,6 +68,11 @@ test('enrichit le même pool de contribution avec seuils équivalents sans doubl
     order_view: 'AGGREGATION_ONLY',
     parcel_view: 'AGGREGATION_ONLY',
     double_counting_forbidden: true,
+  });
+  expect(flow.structural_charge_identity).toEqual({
+    scope: 'MARKET_PERIOD_PORTFOLIO',
+    sku_debt: false,
+    pricing_authority: 'NONE',
   });
 });
 

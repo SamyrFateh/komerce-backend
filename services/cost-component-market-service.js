@@ -11,7 +11,7 @@
  * @db-read       cost_components, cost_component_market_overrides
  * @db-write      cost_component_market_overrides, cost_component_market_override_events
  * @db-txn        override_mutations_atomic
- * @doctrine      global_model_is_base_market_override_is_effective_value
+ * @doctrine      global_model_is_base_market_override_is_effective_value, charge_nature_is_distinct_from_allocation_perimeter
  * @impact-areas  pricing, economic-engine, market-authorization
  * @version       2026-09
  */
@@ -29,6 +29,14 @@ class MarketCostComponentError extends Error {
   }
 }
 
+function legacyEconomicNature(row = {}) {
+  if (row.economic_nature) return row.economic_nature;
+  if (row.family === 'landed_relay') return 'variable';
+  if (row.family === 'business' && row.category === 'fixed_overhead') return 'fixed';
+  if (row.family === 'business') return 'variable';
+  return null;
+}
+
 function effectiveRow(row) {
   const hasOverride = Boolean(row.override_id);
   return {
@@ -39,6 +47,8 @@ function effectiveRow(row) {
     description: row.description,
     family: row.family,
     category: row.category,
+    economic_nature: legacyEconomicNature(row),
+    allocation_perimeter: row.allocation_perimeter || 'direct',
     default_value: hasOverride && row.override_default_value != null
       ? Number(row.override_default_value)
       : Number(row.base_default_value),
@@ -74,6 +84,7 @@ async function listEffectiveComponents(marketId, q = db) {
   if (!marketId) throw new MarketCostComponentError(400, 'Marché requis', 'market_cost_market_required');
   const { rows } = await q.query(
     `SELECT cc.id, cc.key, cc.label, cc.emoji, cc.description, cc.family, cc.category,
+            cc.economic_nature, cc.allocation_perimeter,
             cc.default_value AS base_default_value, cc.unit, cc.currency, cc.scope, cc.scope_value,
             cc.allocation_method, cc.source, cc.confidence, cc.channel, cc.island,
             cc.is_active AS base_is_active, cc.is_exceptional, cc.active_from, cc.active_until,
@@ -239,6 +250,7 @@ async function resetOverride({ marketId, key, actorId = null }) {
 
 module.exports = {
   MarketCostComponentError,
+  legacyEconomicNature,
   effectiveRow,
   listEffectiveComponents,
   upsertOverride,
