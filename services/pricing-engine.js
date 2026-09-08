@@ -148,6 +148,9 @@ async function recommend(input, options = {}) {
   const flowVariableCost = breakdown.landed_relay_cost_kmf;
   const businessVariableCost = r((breakdown.business?.payment || 0) + (breakdown.business?.risk_provision || 0));
   const variableComplete = r(flowVariableCost + businessVariableCost);
+  const purchaseCostRaw = Number(merged.cost_kmf);
+  const purchaseCostKmf = Number.isFinite(purchaseCostRaw) ? r(purchaseCostRaw) : null;
+  const variableCostOutsidePurchase = purchaseCostKmf == null ? null : r(variableComplete - purchaseCostKmf);
   const structureAllocationReference = r(breakdown.business?.fixed_overhead || 0);
   const fullyLoadedAnalyticalReference = r(variableComplete + structureAllocationReference);
 
@@ -273,6 +276,8 @@ async function recommend(input, options = {}) {
     // Contrat économique canonique.
     flow_variable_cost_kmf: flowVariableCost,
     business_variable_cost_kmf: businessVariableCost,
+    purchase_cost_kmf: purchaseCostKmf,
+    variable_cost_outside_purchase_kmf: variableCostOutsidePurchase,
     variable_cost_complete_kmf: variableComplete,
     contribution_kmf: estimatedContribution !== null ? r(estimatedContribution) : null,
     contribution_rate_pct: estimatedContributionRate !== null ? Number(estimatedContributionRate.toFixed(1)) : null,

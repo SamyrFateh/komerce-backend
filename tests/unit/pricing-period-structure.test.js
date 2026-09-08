@@ -415,6 +415,8 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
     expect(result.market_n3_decisional).toBe(true);
     expect(result.allocation.conservation_ok).toBe(true);
     expect(result.allocation.allocated_group_pool_kmf).toBe(60000);
+    expect(result.allocation.charges[0].market_share_kmf).toBe(40000);
+    expect(result.allocation.charges[0].market_allocation_ratio).toBeCloseTo(2 / 3, 6);
 
     const [basisSql] = db.query.mock.calls[1];
     expect(basisSql).toContain("o.payment_status = 'paid'");

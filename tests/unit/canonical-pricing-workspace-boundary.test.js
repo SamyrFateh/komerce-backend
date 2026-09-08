@@ -87,8 +87,8 @@ test('Atelier expose nature, périmètre et allocation sans niveaux N dans sa pr
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
   const migration = fs.readFileSync(path.join(ROOT, 'migrations', '191_cost_component_economic_classification.sql'), 'utf8');
   expect(presentation).toContain('Charges fixes directes');
-  expect(presentation).toContain('Charges mutualisées');
-  expect(presentation).toContain('Charges variables');
+  expect(presentation).toContain('Charges fixes mutualisées');
+  expect(presentation).toContain('Coûts variables');
   expect(presentation).toContain('allocation_perimeter');
   expect(presentation).toContain('economic_nature');
   expect(presentation).toContain('Ajuster / affiner les charges');
