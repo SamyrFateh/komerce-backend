@@ -279,24 +279,39 @@
       generatePassword.type = 'button';
       generatePassword.addEventListener('click', () => {
         newPassword.value = `Kmc!${randomHex(7)}A9`;
-        setFeedback(feedback, `Mot de passe fort généré pour ${user.full_name || user.email}. Clique Réinitialiser pour l’appliquer.`, 'success');
+        setFeedback(feedback, `Mot de passe fort généré pour ${user.full_name || user.email}. Copie-le ou clique Réinitialiser pour l’appliquer.`, 'success');
       });
       passwordActions.appendChild(generatePassword);
+
+      const copyPassword = el(doc, 'button', 'kmc-access-button', 'Copier');
+      copyPassword.type = 'button';
+      copyPassword.addEventListener('click', async () => {
+        if (!newPassword.value) {
+          setFeedback(feedback, 'Génère ou saisis d’abord un mot de passe.', 'error');
+          return;
+        }
+        if (global.navigator && global.navigator.clipboard && typeof global.navigator.clipboard.writeText === 'function') {
+          await global.navigator.clipboard.writeText(newPassword.value);
+          setFeedback(feedback, `Mot de passe copié pour ${user.full_name || user.email}.`, 'success');
+        }
+      });
+      passwordActions.appendChild(copyPassword);
 
       const resetPassword = el(doc, 'button', 'kmc-access-button is-primary', 'Réinitialiser le mot de passe');
       resetPassword.type = 'button';
       resetPassword.addEventListener('click', async () => {
         resetPassword.disabled = true;
         generatePassword.disabled = true;
+        copyPassword.disabled = true;
         try {
           await resetOperatorPassword(fetchImpl, user.id, newPassword.value);
-          setFeedback(feedback, `Mot de passe réinitialisé pour ${user.full_name || user.email}.`, 'success');
-          newPassword.value = '';
+          setFeedback(feedback, `Mot de passe réinitialisé pour ${user.full_name || user.email}. Copie-le et transmets-le maintenant.`, 'success');
         } catch (error) {
           setFeedback(feedback, error.message, 'error');
         } finally {
           resetPassword.disabled = false;
           generatePassword.disabled = false;
+          copyPassword.disabled = false;
         }
       });
       passwordActions.appendChild(resetPassword);
