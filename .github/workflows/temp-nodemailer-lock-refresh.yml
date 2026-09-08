@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   refresh-lock:
-    if: github.event.head_commit.message != 'chore(deps): bump nodemailer to 9.1.1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +21,7 @@ jobs:
           cache: npm
       - name: Refresh safe nodemailer dependency
         run: npm install nodemailer@9.1.1 --save --package-lock-only
-      - name: Commit dependency metadata
+      - name: Commit dependency metadata when changed
         run: |
           if git diff --quiet -- package.json package-lock.json; then
             echo 'No dependency metadata change required.'
