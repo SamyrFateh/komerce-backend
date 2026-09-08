@@ -1300,10 +1300,14 @@ CREATE TABLE public.cost_components (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     created_by uuid,
     updated_by uuid,
+    economic_nature text,
+    allocation_perimeter text DEFAULT 'direct'::text NOT NULL,
     CONSTRAINT cost_components_allocation_check CHECK ((allocation_method = ANY (ARRAY['none'::text, 'per_order'::text, 'per_item'::text, 'by_value'::text, 'by_weight'::text, 'by_volume'::text, 'by_taxable_weight'::text, 'by_quantity'::text, 'by_category_risk'::text, 'manual'::text]))),
+    CONSTRAINT cost_components_allocation_perimeter_check CHECK ((allocation_perimeter = ANY (ARRAY['direct'::text, 'mutualized'::text]))),
     CONSTRAINT cost_components_category_check CHECK ((category = ANY (ARRAY['product_purchase'::text, 'sourcing'::text, 'hub'::text, 'packaging'::text, 'freight'::text, 'customs'::text, 'port_transitary'::text, 'local_distribution'::text, 'relay'::text, 'payment'::text, 'risk_provision'::text, 'fixed_overhead'::text, 'incident'::text, 'marketing_campaign'::text]))),
     CONSTRAINT cost_components_channel_check CHECK (((channel IS NULL) OR (channel = ANY (ARRAY['cash_relais'::text, 'diaspora'::text, 'mobile_money'::text])))),
     CONSTRAINT cost_components_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
+    CONSTRAINT cost_components_economic_nature_check CHECK (((economic_nature IS NULL) OR (economic_nature = ANY (ARRAY['variable'::text, 'fixed'::text])))),
     CONSTRAINT cost_components_family_category_consistency CHECK ((((family = 'landed_relay'::text) AND (category = ANY (ARRAY['product_purchase'::text, 'sourcing'::text, 'hub'::text, 'packaging'::text, 'freight'::text, 'customs'::text, 'port_transitary'::text, 'local_distribution'::text, 'relay'::text]))) OR ((family = 'business'::text) AND (category = ANY (ARRAY['payment'::text, 'risk_provision'::text, 'fixed_overhead'::text]))) OR ((family = 'exceptional'::text) AND (category = ANY (ARRAY['incident'::text, 'marketing_campaign'::text]))))),
     CONSTRAINT cost_components_family_check CHECK ((family = ANY (ARRAY['landed_relay'::text, 'business'::text, 'exceptional'::text]))),
     CONSTRAINT cost_components_island_check CHECK (((island IS NULL) OR (island = ANY (ARRAY['grande_comore'::text, 'moheli'::text, 'anjouan'::text, 'mayotte'::text])))),
@@ -1311,6 +1315,20 @@ CREATE TABLE public.cost_components (
     CONSTRAINT cost_components_source_check CHECK ((source = ANY (ARRAY['default'::text, 'category'::text, 'manual'::text, 'supplier'::text, 'real'::text, 'missing'::text]))),
     CONSTRAINT cost_components_unit_check CHECK ((unit = ANY (ARRAY['kmf'::text, 'pct'::text, 'kmf_per_kg'::text, 'kmf_per_m3'::text, 'kmf_per_order'::text, 'kmf_per_parcel'::text, 'kmf_per_shipment'::text, 'aed'::text, 'eur'::text, 'usd'::text])))
 );
+
+
+--
+-- Name: COLUMN cost_components.economic_nature; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cost_components.economic_nature IS 'Nature economique canonique: variable ou fixed. NULL uniquement lorsque la nature doit encore etre qualifiee explicitement.';
+
+
+--
+-- Name: COLUMN cost_components.allocation_perimeter; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cost_components.allocation_perimeter IS 'Perimetre canonique: direct ou mutualized. Independent de la nature economique.';
 
 
 --
@@ -2498,6 +2516,65 @@ CREATE TABLE public.market_payment_providers (
 --
 
 COMMENT ON TABLE public.market_payment_providers IS 'Providers Mobile Money autorisés par marché. Aucune credential ici : activation métier distincte de la configuration secrète runtime.';
+
+
+--
+-- Name: market_price_observation_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_price_observation_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    observation_id uuid,
+    observation_ref text NOT NULL,
+    market_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    action text NOT NULL,
+    snapshot jsonb NOT NULL,
+    reason text,
+    actor_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_price_observation_events_action_check CHECK ((action = ANY (ARRAY['RECORDED'::text, 'DEACTIVATED'::text])))
+);
+
+
+--
+-- Name: TABLE market_price_observation_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_price_observation_events IS 'Append-only audit trail for local market price observations.';
+
+
+--
+-- Name: market_price_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_price_observations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    observation_ref text NOT NULL,
+    market_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    category text,
+    competitor_name text NOT NULL,
+    observed_amount numeric(14,4) NOT NULL,
+    currency text NOT NULL,
+    price_kmf numeric(14,4) NOT NULL,
+    observed_at timestamp with time zone DEFAULT now() NOT NULL,
+    source text DEFAULT 'market_manager'::text NOT NULL,
+    notes text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_price_observations_observed_amount_check CHECK ((observed_amount > (0)::numeric)),
+    CONSTRAINT market_price_observations_price_kmf_check CHECK ((price_kmf > (0)::numeric))
+);
+
+
+--
+-- Name: TABLE market_price_observations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_price_observations IS 'Observed local market prices. Market scope is resolved server-side; corridor projection is informative evidence, not an automatic pricing gate.';
 
 
 --
@@ -6827,6 +6904,30 @@ ALTER TABLE ONLY public.market_payment_providers
 
 
 --
+-- Name: market_price_observation_events market_price_observation_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observation_events
+    ADD CONSTRAINT market_price_observation_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_price_observations market_price_observations_observation_ref_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observations
+    ADD CONSTRAINT market_price_observations_observation_ref_key UNIQUE (observation_ref);
+
+
+--
+-- Name: market_price_observations market_price_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observations
+    ADD CONSTRAINT market_price_observations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: markets markets_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8329,6 +8430,27 @@ CREATE INDEX idx_loyalty_rewards_status ON public.loyalty_rewards USING btree (s
 --
 
 CREATE INDEX idx_loyalty_rewards_user ON public.loyalty_rewards USING btree (user_id);
+
+
+--
+-- Name: idx_market_price_observation_events_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_price_observation_events_market ON public.market_price_observation_events USING btree (market_id, created_at DESC);
+
+
+--
+-- Name: idx_market_price_observations_market_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_price_observations_market_category ON public.market_price_observations USING btree (market_id, category, observed_at DESC) WHERE (is_active = true);
+
+
+--
+-- Name: idx_market_price_observations_market_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_price_observations_market_product ON public.market_price_observations USING btree (market_id, product_id, observed_at DESC) WHERE (is_active = true);
 
 
 --
@@ -11088,6 +11210,62 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 ALTER TABLE ONLY public.market_payment_providers
     ADD CONSTRAINT market_payment_providers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_price_observation_events market_price_observation_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observation_events
+    ADD CONSTRAINT market_price_observation_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_price_observation_events market_price_observation_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observation_events
+    ADD CONSTRAINT market_price_observation_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_price_observation_events market_price_observation_events_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observation_events
+    ADD CONSTRAINT market_price_observation_events_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.market_price_observations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_price_observation_events market_price_observation_events_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observation_events
+    ADD CONSTRAINT market_price_observation_events_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_price_observations market_price_observations_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observations
+    ADD CONSTRAINT market_price_observations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_price_observations market_price_observations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observations
+    ADD CONSTRAINT market_price_observations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_price_observations market_price_observations_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_price_observations
+    ADD CONSTRAINT market_price_observations_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --

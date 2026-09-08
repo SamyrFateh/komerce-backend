@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 520,
-    "filesWithFullHeaders": 475,
+    "scannedCodeFiles": 521,
+    "filesWithFullHeaders": 476,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 520,
+    "filesWithAnyHeaders": 521,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1186,
-    "edges": 6051,
-    "dbTables": 137,
-    "doctrines": 353,
+    "graphNodes": 1203,
+    "edges": 6087,
+    "dbTables": 139,
+    "doctrines": 367,
     "impactAreas": 176,
-    "unresolvedCodeEdges": 586,
+    "unresolvedCodeEdges": 587,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 65
   },
@@ -38,7 +38,7 @@
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market": 3,
-    "economic-engine": 55,
+    "economic-engine": 56,
     "sourcing": 6,
     "logistics": 45,
     "boutique": 21,
@@ -103,7 +103,7 @@
     "schema": 1,
     "route": 115,
     "entrypoint": 1,
-    "service": 232,
+    "service": 233,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,7 +114,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 123,
-    "high": 266,
+    "high": 267,
     "low": 53
   },
   "nodes": [
@@ -290,7 +290,8 @@
         "side_effects"
       ],
       "depends": [
-        "utils/logger.js"
+        "utils/logger.js",
+        "middleware/require-non-production.js"
       ],
       "usedBy": [
         "server.js"
@@ -305,7 +306,7 @@
       "impactAreas": [
         "bootstrap"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "bootstrap/feature-wiring.js",
@@ -6354,6 +6355,7 @@
         "market_cost_projection",
         "market_decision_projection",
         "market_price_decisions",
+        "market_corridor_projection",
         "activation_preview",
         "action_results"
       ],
@@ -6365,6 +6367,7 @@
         "services/pricing-workspace.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
+        "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js"
       ],
@@ -6386,7 +6389,8 @@
         "browser_business_refs_only",
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
-        "one_contribution_many_views"
+        "one_contribution_many_views",
+        "market_corridor_is_observation_not_gate"
       ],
       "impactAreas": [
         "pricing",
@@ -12964,14 +12968,15 @@
       "dbTxn": [],
       "doctrine": [
         "single_cost_component_mutation_authority",
-        "browser_uses_component_key"
+        "browser_uses_component_key",
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
         "economic-engine",
         "admin-dashboard"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/cost-component-market-service.js",
@@ -13014,7 +13019,8 @@
         "override_mutations_atomic"
       ],
       "doctrine": [
-        "global_model_is_base_market_override_is_effective_value"
+        "global_model_is_base_market_override_is_effective_value",
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
@@ -18527,7 +18533,7 @@
       "doctrine": [
         "explain_without_recompute",
         "never_promote_config_to_real",
-        "n3_is_period_structure"
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
@@ -18602,8 +18608,7 @@
         "request_or_service_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "economic_reference_and_market_decision_inputs"
       ],
       "depends": [
         "db",
@@ -18628,16 +18633,17 @@
       ],
       "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "fixed_structure_never_fabricates_sku_price",
+        "market_bounds_possible_human_decides",
+        "contribution_covers_structure_collectively"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-guards.js",
@@ -18675,6 +18681,65 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/pricing-market-corridor.js",
+      "file": "services/pricing-market-corridor.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pricing-market-corridor-owner",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_resolved_market",
+        "product_ref",
+        "local_market_price_observations"
+      ],
+      "outputs": [
+        "market_price_corridor",
+        "selected_price_economics",
+        "audited_observation_mutations"
+      ],
+      "depends": [
+        "db.js",
+        "services/pricing-engine.js",
+        "services/pricing-cdr.js",
+        "services/market-local-price-resolution-service.js",
+        "utils/currency.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "products",
+        "market_price_observations",
+        "competitor_prices",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "market_price_observations",
+        "market_price_observation_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "observation_mutations_atomic"
+      ],
+      "doctrine": [
+        "market_bounds_possible_human_decides",
+        "local_evidence_never_falls_back_silently",
+        "browser_never_supplies_market_id",
+        "corridor_is_observation_not_gate"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "market-autonomy",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-market-coverage.js",
@@ -18811,6 +18876,7 @@
       "dbTxn": [],
       "doctrine": [
         "one_contribution_many_views",
+        "contribution_covers_structural_charges_collectively",
         "rolling_flow_cadence_is_projection_not_cost_truth"
       ],
       "impactAreas": [
@@ -18893,8 +18959,9 @@
         "request_or_service_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "economic_price_reference",
+        "contribution_scenarios",
+        "diagnostics"
       ],
       "depends": [],
       "usedBy": [
@@ -18903,16 +18970,17 @@
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "market_bounds_possible_human_decides",
+        "fixed_structure_never_fabricates_sku_price",
+        "contribution_covers_structure_collectively"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-period-structure.js",
@@ -19123,14 +19191,17 @@
       "purpose": null,
       "inputs": [
         "runtime_context",
-        "request_or_service_payload"
+        "explicit_human_price_decision",
+        "product_or_category_target"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "strategy_read_model",
+        "explicit_strategy_mutation",
+        "contribution_candidates"
       ],
       "depends": [
         "db",
+        "services/pricing-engine.js",
         "services/catalog-product-mutation-service.js"
       ],
       "usedBy": [
@@ -19138,16 +19209,11 @@
         "services/pricing-workspace.js"
       ],
       "dbRead": [
-        "charges",
         "competitor_prices",
-        "customs_categories",
-        "finance_config",
         "order_items",
         "orders",
-        "pricing_components",
         "pricing_strategies",
         "products",
-        "risk_provisions",
         "users"
       ],
       "dbWrite": [
@@ -19165,15 +19231,20 @@
         }
       ],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "explicit_strategy_mutation_atomic"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "market_or_human_price_decision_explicit",
+        "contribution_vs_variable_cost",
+        "structural_charges_are_not_sku_debt",
+        "no_mechanical_price_authority"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing",
+        "admin-dashboard"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-workspace.js",
@@ -21762,13 +21833,16 @@
       ],
       "doctrine": [
         "single_sourcing_candidate_mutation_authority",
-        "catalog_promotion_owner_respected"
+        "catalog_promotion_owner_respected",
+        "engine_price_is_not_market_decision",
+        "explicit_human_price_required_before_promotion"
       ],
       "impactAreas": [
         "sourcing",
-        "catalog"
+        "catalog",
+        "economic-engine"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/sourcing-candidate-import-service.js",
@@ -25131,6 +25205,21 @@
       "table": "pricing_benchmarks"
     },
     {
+      "id": "db:market_price_observations",
+      "type": "db-table",
+      "table": "market_price_observations"
+    },
+    {
+      "id": "db:competitor_prices",
+      "type": "db-table",
+      "table": "competitor_prices"
+    },
+    {
+      "id": "db:market_price_observation_events",
+      "type": "db-table",
+      "table": "market_price_observation_events"
+    },
+    {
       "id": "db:pricing_market_decision_policy_events",
       "type": "db-table",
       "table": "pricing_market_decision_policy_events"
@@ -25154,11 +25243,6 @@
       "id": "db:economic_risk_watermark_events",
       "type": "db-table",
       "table": "economic_risk_watermark_events"
-    },
-    {
-      "id": "db:competitor_prices",
-      "type": "db-table",
-      "table": "competitor_prices"
     },
     {
       "id": "db:pricing_strategies",
@@ -25946,6 +26030,11 @@
       "doctrine": "one_contribution_many_views"
     },
     {
+      "id": "doctrine:market_corridor_is_observation_not_gate",
+      "type": "doctrine",
+      "doctrine": "market_corridor_is_observation_not_gate"
+    },
+    {
       "id": "doctrine:product_ref_is_business_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_business_identity"
@@ -26326,6 +26415,11 @@
       "doctrine": "browser_uses_component_key"
     },
     {
+      "id": "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
+      "type": "doctrine",
+      "doctrine": "charge_nature_is_distinct_from_allocation_perimeter"
+    },
+    {
       "id": "doctrine:global_model_is_base_market_override_is_effective_value",
       "type": "doctrine",
       "doctrine": "global_model_is_base_market_override_is_effective_value"
@@ -26676,9 +26770,34 @@
       "doctrine": "never_promote_config_to_real"
     },
     {
-      "id": "doctrine:n3_is_period_structure",
+      "id": "doctrine:fixed_structure_never_fabricates_sku_price",
       "type": "doctrine",
-      "doctrine": "n3_is_period_structure"
+      "doctrine": "fixed_structure_never_fabricates_sku_price"
+    },
+    {
+      "id": "doctrine:market_bounds_possible_human_decides",
+      "type": "doctrine",
+      "doctrine": "market_bounds_possible_human_decides"
+    },
+    {
+      "id": "doctrine:contribution_covers_structure_collectively",
+      "type": "doctrine",
+      "doctrine": "contribution_covers_structure_collectively"
+    },
+    {
+      "id": "doctrine:local_evidence_never_falls_back_silently",
+      "type": "doctrine",
+      "doctrine": "local_evidence_never_falls_back_silently"
+    },
+    {
+      "id": "doctrine:browser_never_supplies_market_id",
+      "type": "doctrine",
+      "doctrine": "browser_never_supplies_market_id"
+    },
+    {
+      "id": "doctrine:corridor_is_observation_not_gate",
+      "type": "doctrine",
+      "doctrine": "corridor_is_observation_not_gate"
     },
     {
       "id": "doctrine:pricing_market_viability_coverage",
@@ -26694,6 +26813,11 @@
       "id": "doctrine:pricing_flow_break_even_is_projection_not_cost_truth",
       "type": "doctrine",
       "doctrine": "pricing_flow_break_even_is_projection_not_cost_truth"
+    },
+    {
+      "id": "doctrine:contribution_covers_structural_charges_collectively",
+      "type": "doctrine",
+      "doctrine": "contribution_covers_structural_charges_collectively"
     },
     {
       "id": "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
@@ -26714,6 +26838,26 @@
       "id": "doctrine:pricing_market_viability_period_risk_truth",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_period_risk_truth"
+    },
+    {
+      "id": "doctrine:market_or_human_price_decision_explicit",
+      "type": "doctrine",
+      "doctrine": "market_or_human_price_decision_explicit"
+    },
+    {
+      "id": "doctrine:contribution_vs_variable_cost",
+      "type": "doctrine",
+      "doctrine": "contribution_vs_variable_cost"
+    },
+    {
+      "id": "doctrine:structural_charges_are_not_sku_debt",
+      "type": "doctrine",
+      "doctrine": "structural_charges_are_not_sku_debt"
+    },
+    {
+      "id": "doctrine:no_mechanical_price_authority",
+      "type": "doctrine",
+      "doctrine": "no_mechanical_price_authority"
     },
     {
       "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
@@ -26839,6 +26983,16 @@
       "id": "doctrine:catalog_promotion_owner_respected",
       "type": "doctrine",
       "doctrine": "catalog_promotion_owner_respected"
+    },
+    {
+      "id": "doctrine:engine_price_is_not_market_decision",
+      "type": "doctrine",
+      "doctrine": "engine_price_is_not_market_decision"
+    },
+    {
+      "id": "doctrine:explicit_human_price_required_before_promotion",
+      "type": "doctrine",
+      "doctrine": "explicit_human_price_required_before_promotion"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
@@ -28175,6 +28329,12 @@
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
+    },
+    {
+      "from": "bootstrap/env.js",
+      "to": "middleware/require-non-production.js",
+      "type": "depends",
+      "label": "middleware/require-non-production.js"
     },
     {
       "from": "server.js",
@@ -36693,6 +36853,12 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-corridor.js",
+      "type": "depends",
+      "label": "services/pricing-market-corridor.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "services/market-commercial-price-service.js",
       "type": "depends",
       "label": "services/market-commercial-price-service.js"
@@ -36768,6 +36934,12 @@
       "to": "doctrine:one_contribution_many_views",
       "type": "doctrine",
       "label": "one_contribution_many_views"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:market_corridor_is_observation_not_gate",
+      "type": "doctrine",
+      "label": "market_corridor_is_observation_not_gate"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -46323,6 +46495,12 @@
     },
     {
       "from": "services/cost-component-admin-service.js",
+      "to": "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
+      "type": "doctrine",
+      "label": "charge_nature_is_distinct_from_allocation_perimeter"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
@@ -46386,6 +46564,12 @@
       "to": "doctrine:global_model_is_base_market_override_is_effective_value",
       "type": "doctrine",
       "label": "global_model_is_base_market_override_is_effective_value"
+    },
+    {
+      "from": "services/cost-component-market-service.js",
+      "to": "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
+      "type": "doctrine",
+      "label": "charge_nature_is_distinct_from_allocation_perimeter"
     },
     {
       "from": "services/cost-component-market-service.js",
@@ -55250,9 +55434,9 @@
     },
     {
       "from": "services/pricing-cost-explainability.js",
-      "to": "doctrine:n3_is_period_structure",
+      "to": "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
       "type": "doctrine",
-      "label": "n3_is_period_structure"
+      "label": "charge_nature_is_distinct_from_allocation_perimeter"
     },
     {
       "from": "services/pricing-cost-explainability.js",
@@ -55448,15 +55632,33 @@
     },
     {
       "from": "services/pricing-engine.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:fixed_structure_never_fabricates_sku_price",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "fixed_structure_never_fabricates_sku_price"
+    },
+    {
+      "from": "services/pricing-engine.js",
+      "to": "doctrine:market_bounds_possible_human_decides",
+      "type": "doctrine",
+      "label": "market_bounds_possible_human_decides"
+    },
+    {
+      "from": "services/pricing-engine.js",
+      "to": "doctrine:contribution_covers_structure_collectively",
+      "type": "doctrine",
+      "label": "contribution_covers_structure_collectively"
     },
     {
       "from": "services/pricing-engine.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-engine.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
     },
     {
       "from": "services/pricing-apply.js",
@@ -55475,6 +55677,126 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "services/pricing-cdr.js",
+      "type": "depends",
+      "label": "services/pricing-cdr.js"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-market-corridor.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:market_price_observations",
+      "type": "db-read",
+      "label": "market_price_observations"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:competitor_prices",
+      "type": "db-read",
+      "label": "competitor_prices"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:market_price_observations",
+      "type": "db-write",
+      "label": "market_price_observations"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db:market_price_observation_events",
+      "type": "db-write",
+      "label": "market_price_observation_events"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "doctrine:market_bounds_possible_human_decides",
+      "type": "doctrine",
+      "label": "market_bounds_possible_human_decides"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "doctrine:local_evidence_never_falls_back_silently",
+      "type": "doctrine",
+      "label": "local_evidence_never_falls_back_silently"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "doctrine:browser_never_supplies_market_id",
+      "type": "doctrine",
+      "label": "browser_never_supplies_market_id"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "doctrine:corridor_is_observation_not_gate",
+      "type": "doctrine",
+      "label": "corridor_is_observation_not_gate"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/pricing-market-coverage.js",
@@ -55670,6 +55992,12 @@
     },
     {
       "from": "services/pricing-market-decision-projection.js",
+      "to": "doctrine:contribution_covers_structural_charges_collectively",
+      "type": "doctrine",
+      "label": "contribution_covers_structural_charges_collectively"
+    },
+    {
+      "from": "services/pricing-market-decision-projection.js",
       "to": "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
       "type": "doctrine",
       "label": "rolling_flow_cadence_is_projection_not_cost_truth"
@@ -55802,15 +56130,33 @@
     },
     {
       "from": "services/pricing-output.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:market_bounds_possible_human_decides",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "market_bounds_possible_human_decides"
+    },
+    {
+      "from": "services/pricing-output.js",
+      "to": "doctrine:fixed_structure_never_fabricates_sku_price",
+      "type": "doctrine",
+      "label": "fixed_structure_never_fabricates_sku_price"
+    },
+    {
+      "from": "services/pricing-output.js",
+      "to": "doctrine:contribution_covers_structure_collectively",
+      "type": "doctrine",
+      "label": "contribution_covers_structure_collectively"
     },
     {
       "from": "services/pricing-output.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-output.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
     },
     {
       "from": "services/pricing-period-structure.js",
@@ -56090,6 +56436,12 @@
     },
     {
       "from": "services/pricing-strategy-service.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
       "to": "services/catalog-product-mutation-service.js",
       "type": "depends",
       "label": "services/catalog-product-mutation-service.js"
@@ -56108,27 +56460,9 @@
     },
     {
       "from": "services/pricing-strategy-service.js",
-      "to": "db:charges",
-      "type": "db-read",
-      "label": "charges"
-    },
-    {
-      "from": "services/pricing-strategy-service.js",
       "to": "db:competitor_prices",
       "type": "db-read",
       "label": "competitor_prices"
-    },
-    {
-      "from": "services/pricing-strategy-service.js",
-      "to": "db:customs_categories",
-      "type": "db-read",
-      "label": "customs_categories"
-    },
-    {
-      "from": "services/pricing-strategy-service.js",
-      "to": "db:finance_config",
-      "type": "db-read",
-      "label": "finance_config"
     },
     {
       "from": "services/pricing-strategy-service.js",
@@ -56144,12 +56478,6 @@
     },
     {
       "from": "services/pricing-strategy-service.js",
-      "to": "db:pricing_components",
-      "type": "db-read",
-      "label": "pricing_components"
-    },
-    {
-      "from": "services/pricing-strategy-service.js",
       "to": "db:pricing_strategies",
       "type": "db-read",
       "label": "pricing_strategies"
@@ -56159,12 +56487,6 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
-    },
-    {
-      "from": "services/pricing-strategy-service.js",
-      "to": "db:risk_provisions",
-      "type": "db-read",
-      "label": "risk_provisions"
     },
     {
       "from": "services/pricing-strategy-service.js",
@@ -56205,15 +56527,45 @@
     },
     {
       "from": "services/pricing-strategy-service.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:market_or_human_price_decision_explicit",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "market_or_human_price_decision_explicit"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "doctrine:contribution_vs_variable_cost",
+      "type": "doctrine",
+      "label": "contribution_vs_variable_cost"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "doctrine:structural_charges_are_not_sku_debt",
+      "type": "doctrine",
+      "label": "structural_charges_are_not_sku_debt"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "doctrine:no_mechanical_price_authority",
+      "type": "doctrine",
+      "label": "no_mechanical_price_authority"
     },
     {
       "from": "services/pricing-strategy-service.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/pricing-workspace.js",
@@ -60155,6 +60507,18 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:engine_price_is_not_market_decision",
+      "type": "doctrine",
+      "label": "engine_price_is_not_market_decision"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:explicit_human_price_required_before_promotion",
+      "type": "doctrine",
+      "label": "explicit_human_price_required_before_promotion"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
       "to": "impact:sourcing",
       "type": "impact",
       "label": "sourcing"
@@ -60164,6 +60528,12 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
     },
     {
       "from": "services/suppliers/catalog-import-orchestrator.js",
@@ -64608,7 +64978,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "utils/logger.js"
+        "utils/logger.js",
+        "middleware/require-non-production.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -64626,6 +64997,7 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:bootstrap",
+        "middleware/require-non-production.js",
         "server.js",
         "utils/logger.js"
       ]
@@ -65411,6 +65783,7 @@
         "simulator"
       ],
       "mustCheck": [
+        "bootstrap/env.js",
         "doctrine:production_sensitive_routes_fail_closed_on_business_environment",
         "impact:admin-dashboard",
         "impact:security",
@@ -70798,6 +71171,7 @@
         "services/pricing-workspace.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
+        "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js"
       ],
@@ -70819,7 +71193,8 @@
         "browser_business_refs_only",
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
-        "one_contribution_many_views"
+        "one_contribution_many_views",
+        "market_corridor_is_observation_not_gate"
       ],
       "impactAreas": [
         "pricing",
@@ -70835,6 +71210,7 @@
         "doctrine:browser_business_refs_only",
         "doctrine:country_manager_owns_local_strategy",
         "doctrine:global_pricing_authority_or_server_market_scope",
+        "doctrine:market_corridor_is_observation_not_gate",
         "doctrine:market_decision_policy_is_append_only",
         "doctrine:one_contribution_many_views",
         "doctrine:simulation_is_read_only",
@@ -70849,6 +71225,7 @@
         "services/cost-component-market-service.js",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
+        "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
         "services/pricing-workspace.js"
@@ -77182,7 +77559,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "single_cost_component_mutation_authority",
-        "browser_uses_component_key"
+        "browser_uses_component_key",
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
@@ -77193,6 +77571,7 @@
         "db:cost_component_events",
         "db:cost_components",
         "doctrine:browser_uses_component_key",
+        "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
         "doctrine:single_cost_component_mutation_authority",
         "impact:admin-dashboard",
         "impact:economic-engine",
@@ -77226,7 +77605,8 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "global_model_is_base_market_override_is_effective_value"
+        "global_model_is_base_market_override_is_effective_value",
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
@@ -77237,6 +77617,7 @@
         "db:cost_component_market_override_events",
         "db:cost_component_market_overrides",
         "db:cost_components",
+        "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
         "doctrine:global_model_is_base_market_override_is_effective_value",
         "impact:economic-engine",
         "impact:market-authorization",
@@ -79572,6 +79953,7 @@
         "routes/products.js",
         "services/market-local-price-activation-service.js",
         "services/order-checkout-service.js",
+        "services/pricing-market-corridor.js",
         "services/product-sellable-service.js",
         "services/shared-cart-creation.js",
         "utils/currency.js"
@@ -82682,6 +83064,7 @@
         "services/cost-component-market-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-engine.js",
+        "services/pricing-market-corridor.js",
         "utils/rates.js"
       ]
     },
@@ -82703,7 +83086,7 @@
       "doctrines": [
         "explain_without_recompute",
         "never_promote_config_to_real",
-        "n3_is_period_structure"
+        "charge_nature_is_distinct_from_allocation_perimeter"
       ],
       "impactAreas": [
         "pricing",
@@ -82711,8 +83094,8 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "doctrine:charge_nature_is_distinct_from_allocation_perimeter",
         "doctrine:explain_without_recompute",
-        "doctrine:n3_is_period_structure",
         "doctrine:never_promote_config_to_real",
         "impact:admin-dashboard",
         "impact:economic-engine",
@@ -82802,17 +83185,23 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "fixed_structure_never_fabricates_sku_price",
+        "market_bounds_possible_human_decides",
+        "contribution_covers_structure_collectively"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing"
       ],
       "mustCheck": [
         "db:order_items",
         "db:orders",
         "db:products",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:contribution_covers_structure_collectively",
+        "doctrine:fixed_structure_never_fabricates_sku_price",
+        "doctrine:market_bounds_possible_human_decides",
         "impact:economic-engine",
+        "impact:pricing",
         "routes/modules.js",
         "routes/pricing.js",
         "routes/sourcing-scanner.js",
@@ -82821,8 +83210,10 @@
         "services/order-cost-snapshot.js",
         "services/pricing-cdr.js",
         "services/pricing-dashboard.js",
+        "services/pricing-market-corridor.js",
         "services/pricing-output.js",
         "services/pricing-recommend.js",
+        "services/pricing-strategy-service.js",
         "services/pricing-workspace.js",
         "services/sourcing-candidate-actions.js",
         "services/supplier-catalog-scanner.js",
@@ -82854,6 +83245,68 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "services/pricing-apply.js"
+      ]
+    },
+    "services/pricing-market-corridor.js": {
+      "role": "pricing-market-corridor-owner",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/pricing-engine.js",
+        "services/pricing-cdr.js",
+        "services/market-local-price-resolution-service.js",
+        "utils/currency.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "market_price_observations",
+        "competitor_prices",
+        "product_market_price_drafts"
+      ],
+      "dbWrite": [
+        "market_price_observations",
+        "market_price_observation_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_bounds_possible_human_decides",
+        "local_evidence_never_falls_back_silently",
+        "browser_never_supplies_market_id",
+        "corridor_is_observation_not_gate"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "market-autonomy",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:competitor_prices",
+        "db:market_price_observation_events",
+        "db:market_price_observations",
+        "db:product_market_price_drafts",
+        "db:products",
+        "doctrine:browser_never_supplies_market_id",
+        "doctrine:corridor_is_observation_not_gate",
+        "doctrine:local_evidence_never_falls_back_silently",
+        "doctrine:market_bounds_possible_human_decides",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:market-autonomy",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "services/market-local-price-resolution-service.js",
+        "services/pricing-cdr.js",
+        "services/pricing-engine.js",
+        "utils/currency.js"
       ]
     },
     "services/pricing-market-coverage.js": {
@@ -82977,6 +83430,7 @@
       "dbWriteVia": [],
       "doctrines": [
         "one_contribution_many_views",
+        "contribution_covers_structural_charges_collectively",
         "rolling_flow_cadence_is_projection_not_cost_truth"
       ],
       "impactAreas": [
@@ -82985,6 +83439,7 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "doctrine:contribution_covers_structural_charges_collectively",
         "doctrine:one_contribution_many_views",
         "doctrine:rolling_flow_cadence_is_projection_not_cost_truth",
         "impact:admin-dashboard",
@@ -83065,14 +83520,20 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "market_bounds_possible_human_decides",
+        "fixed_structure_never_fabricates_sku_price",
+        "contribution_covers_structure_collectively"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing"
       ],
       "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:contribution_covers_structure_collectively",
+        "doctrine:fixed_structure_never_fabricates_sku_price",
+        "doctrine:market_bounds_possible_human_decides",
         "impact:economic-engine",
+        "impact:pricing",
         "services/pricing-engine.js"
       ]
     },
@@ -83263,6 +83724,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "services/pricing-engine.js",
         "services/catalog-product-mutation-service.js"
       ],
       "directUsedBy": [
@@ -83271,16 +83733,11 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "charges",
         "competitor_prices",
-        "customs_categories",
-        "finance_config",
         "order_items",
         "orders",
-        "pricing_components",
         "pricing_strategies",
         "products",
-        "risk_provisions",
         "users"
       ],
       "dbWrite": [
@@ -83298,29 +83755,35 @@
         }
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "market_or_human_price_decision_explicit",
+        "contribution_vs_variable_cost",
+        "structural_charges_are_not_sku_debt",
+        "no_mechanical_price_authority"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "pricing",
+        "admin-dashboard"
       ],
       "mustCheck": [
-        "db:charges",
         "db:competitor_prices",
-        "db:customs_categories",
-        "db:finance_config",
         "db:order_items",
         "db:orders",
         "db:price_history",
-        "db:pricing_components",
         "db:pricing_strategies",
         "db:pricing_strategy_history",
         "db:products",
-        "db:risk_provisions",
         "db:users",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:contribution_vs_variable_cost",
+        "doctrine:market_or_human_price_decision_explicit",
+        "doctrine:no_mechanical_price_authority",
+        "doctrine:structural_charges_are_not_sku_debt",
+        "impact:admin-dashboard",
         "impact:economic-engine",
+        "impact:pricing",
         "routes/pricing-strategy.js",
         "services/catalog-product-mutation-service.js",
+        "services/pricing-engine.js",
         "services/pricing-workspace.js"
       ]
     },
@@ -85816,11 +86279,14 @@
       ],
       "doctrines": [
         "single_sourcing_candidate_mutation_authority",
-        "catalog_promotion_owner_respected"
+        "catalog_promotion_owner_respected",
+        "engine_price_is_not_market_decision",
+        "explicit_human_price_required_before_promotion"
       ],
       "impactAreas": [
         "sourcing",
-        "catalog"
+        "catalog",
+        "economic-engine"
       ],
       "mustCheck": [
         "db:catalog_media",
@@ -85832,8 +86298,11 @@
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
         "doctrine:catalog_promotion_owner_respected",
+        "doctrine:engine_price_is_not_market_decision",
+        "doctrine:explicit_human_price_required_before_promotion",
         "doctrine:single_sourcing_candidate_mutation_authority",
         "impact:catalog",
+        "impact:economic-engine",
         "impact:sourcing",
         "routes/sourcing-scanner.js",
         "services/catalog-candidate-product-service.js",
@@ -87451,7 +87920,8 @@
         "impact:market",
         "services/market-local-price-resolution-service.js",
         "services/order-display-snapshot.js",
-        "services/payment-mobile-money.js"
+        "services/payment-mobile-money.js",
+        "services/pricing-market-corridor.js"
       ]
     },
     "utils/documents/customs-invoice-html.js": {
@@ -92026,6 +92496,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pricing-market-coverage.js",
