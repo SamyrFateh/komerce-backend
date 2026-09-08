@@ -92,7 +92,7 @@ function decorateMarketDecision(decision) {
   const policySafetyTarget = enrichTarget(flow.policy_safety_target, observedMix);
   const contribution = finite(decision.coverage?.numerator_contribution_kmf ?? observedMix?.reconciled_contribution_kmf);
   // Compatibility read only: older coverage truth still exposes denominator_n3_kmf.
-  // The public projection immediately translates it to structural_charges_kmf.
+  // The canonical name is structural_charges_kmf.
   const structuralCharges = finite(
     decision.coverage?.structural_charges_kmf ?? decision.coverage?.denominator_n3_kmf
   );
@@ -107,6 +107,8 @@ function decorateMarketDecision(decision) {
       economic_state: {
         period_contribution_kmf: contribution,
         period_structural_charges_kmf: structuralCharges,
+        // Temporary compatibility alias for canonical UI consumers still being migrated.
+        period_n3_kmf: structuralCharges,
         coverage_ratio: finite(decision.coverage?.coverage_ratio),
         break_even_gap_kmf: finite(economicBreakEven?.gap_kmf),
         period_result_kmf: contribution == null || structuralCharges == null
