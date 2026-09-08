@@ -115,7 +115,8 @@ async function resolveProduct(productRef, q = db) {
   const ref = normalizeText(productRef, null, 120);
   if (!ref) throw new PricingMarketCorridorError(400, 'pricing_market_corridor_product_ref_required', 'product_ref requis.');
   const { rows } = await q.query(
-    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3,
+    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg,
+            (COALESCE(volume_cm3, 0) / 1000000.0) AS volume_m3,
             promo_pct, is_promo, promo_until, is_active
        FROM products
       WHERE product_ref = $1
