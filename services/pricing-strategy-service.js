@@ -303,11 +303,12 @@ async function getStrategy(dbOrClient, { product_id, category } = {}) {
   if (competitorStats.median) {
     const alignedPrice = arrondiPsycho(competitorStats.median);
     const premiumPrice = arrondiPsycho(competitorStats.median * 1.10);
-    const acquisitionPrice = arrondiPsycho(competitorStats.median * 0.90);
+    const acquisitionRawPrice = competitorStats.median * 0.90;
+    const acquisitionPrice = arrondiPsycho(acquisitionRawPrice);
     const candidates = [
       buildReferenceCandidate('competitor_aligned', 'Référence concurrence globale', 'Alignement indicatif sur la médiane globale. Décision humaine obligatoire.', alignedPrice, economics),
       buildReferenceCandidate('premium_10', 'Référence premium +10 %', 'Hypothèse globale informative. À confronter au corridor du marché local.', premiumPrice, economics),
-      acquisitionPrice >= Number(economics.minimum_safe_price_kmf || 0)
+      acquisitionRawPrice >= Number(economics.minimum_safe_price_kmf || 0)
         ? buildReferenceCandidate('acquisition_reference', 'Référence acquisition -10 %', 'Hypothèse basse uniquement si elle reste au-dessus du plancher variable sécurisé.', acquisitionPrice, economics)
         : null,
     ].filter(Boolean);
