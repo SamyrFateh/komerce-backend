@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 133 | Vérifié sur le dump live Railway. |
+| Tables | 135 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 355 | Performance + contraintes uniques |
-| Foreign keys | 227 | Cohérence relationnelle |
+| Index | 358 | Performance + contraintes uniques |
+| Foreign keys | 234 | Cohérence relationnelle |
 | Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 37 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -218,22 +218,10 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_drafts` | Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
+| `market_price_observation_events` | Journal append-only des créations et désactivations d'observations de prix marché avec acteur, raison et snapshot ; aucune réécriture historique. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: market_price_observations
-kind: table
-migration: 192
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global.
--->
 
-<!-- schema-pending
-object: market_price_observation_events
-kind: table
-migration: 192
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Journal append-only des créations et désactivations d'observations de prix marché avec acteur, raison et snapshot ; aucune réécriture historique.
--->
 
 ### 4.9 Douane (4 tables)
 

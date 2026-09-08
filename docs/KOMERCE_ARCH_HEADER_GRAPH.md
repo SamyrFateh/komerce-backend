@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 520
-- Files with full headers: 475
+- Scanned code files: 521
+- Files with full headers: 476
 - Files with lite headers: 45
-- Files with any headers: 520
+- Files with any headers: 521
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1186
-- Edges: 6051
-- DB tables: 137
-- Doctrines: 353
+- Graph nodes: 1203
+- Edges: 6087
+- DB tables: 139
+- Doctrines: 367
 - Impact areas: 176
-- Unresolved code edges: 586
+- Unresolved code edges: 587
 - Tables multi-écrivains directs (>=2): 65
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 55
+- economic-engine: 56
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
@@ -83,7 +83,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 115
 - route-manifest: 1
 - schema: 1
-- service: 232
+- service: 233
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -395,6 +395,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-market-corridor.js — pricing-market-corridor-owner (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
 - services/pricing-market-decision-policy.js — economic-engine-pricing-market-decision-policy (economic-engine, high, full)
 - services/pricing-market-decision-projection.js — economic-engine-pricing-market-decision-projection (economic-engine, high, full)
@@ -595,6 +596,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/pricing-market-corridor.js -> market_price_observation_events
+- WRITE services/pricing-market-corridor.js -> market_price_observations
 - WRITE services/payment-mobile-money.js -> mobile_money_transactions
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
@@ -621,8 +624,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/order-checkout-persistence.js -> order_items
 - WRITE services/order-checkout-service.js -> order_items
 - WRITE services/order-item-availability-service.js -> order_items
-- WRITE services/order-status-machine.js -> order_items
-- WRITE services/scan-engine.js -> order_items
 
 ## DB Write-Via Edges (délégation déclarée)
 
