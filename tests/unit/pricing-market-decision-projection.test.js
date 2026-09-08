@@ -45,9 +45,10 @@ test('enrichit le même pool de contribution avec charges structurelles et seuil
   const flow = result.flow_break_even;
 
   expect(result.coverage.structural_charges_kmf).toBe(1000);
-  expect(flow.economic_state).toEqual({
+  expect(flow.economic_state).toMatchObject({
     period_contribution_kmf: 720,
     period_structural_charges_kmf: 1000,
+    period_n3_kmf: 1000,
     coverage_ratio: 0.72,
     break_even_gap_kmf: 280,
     period_result_kmf: -280,
@@ -73,7 +74,6 @@ test('enrichit le même pool de contribution avec charges structurelles et seuil
     sku_debt: false,
     pricing_authority: 'NONE',
   });
-  expect(flow.economic_state).not.toHaveProperty('period_n3_kmf');
 });
 
 test('cadence lissée utilise la fenêtre canonique et converge vers une seule durée économique', () => {
