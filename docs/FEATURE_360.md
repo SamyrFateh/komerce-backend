@@ -802,7 +802,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 282 fichier(s) déclaré(s)
+**Implementation** : 283 fichier(s) déclaré(s)
   - assets : 29
   - bootstrap : 9
   - ci : 26
@@ -812,7 +812,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - middleware : 6
   - migrations : 8
   - routes : 1
-  - scripts : 91
+  - scripts : 92
   - tests : 19
   - utils : 4
   - validators : 1

@@ -10310,7 +10310,7 @@
             ]
           },
           "scripts": {
-            "count": 91,
+            "count": 92,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -10733,6 +10733,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/seed-market-test-data.js",
+                "resolvedPath": "scripts/seed-market-test-data.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/seed.js",
                 "resolvedPath": "scripts/seed.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10905,7 +10910,7 @@
             ]
           }
         },
-        "totalFiles": 282,
+        "totalFiles": 283,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

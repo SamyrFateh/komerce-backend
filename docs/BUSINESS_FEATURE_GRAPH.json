@@ -6367,6 +6367,13 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/seed-market-test-data.js",
+        "resolvedPath": "scripts/seed-market-test-data.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/setup-hooks.sh",
         "resolvedPath": "scripts/setup-hooks.sh",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -31613,7 +31620,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1096
+        "filesObserved": 1097
       },
       "boutique": {
         "filesObserved": 217,
