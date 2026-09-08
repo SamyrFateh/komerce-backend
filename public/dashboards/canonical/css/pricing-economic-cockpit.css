@@ -6,6 +6,10 @@
   padding-bottom: 72px; /* room for sticky footer */
 }
 
+.kmc-cockpit-outer-header-hidden {
+  display: none;
+}
+
 /* ── Page header ─────────────────────────────────────────── */
 .kmc-cockpit-page-header {
   display: flex;
@@ -740,12 +744,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 6px;
   margin-top: 9px;
-}
-
-.kmc-cockpit-calculated-note {
-  margin: 0;
-  color: #718096;
-  font-size: 10px;
 }
 
 .kmc-cockpit-advanced {

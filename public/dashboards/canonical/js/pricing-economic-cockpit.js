@@ -578,7 +578,6 @@
     grid.appendChild(marketDataCard(doc, corridor));
     detail.appendChild(grid);
     detail.appendChild(observationsEditor(doc, corridor, canManage));
-    detail.appendChild(el(doc, 'p', 'kmc-cockpit-calculated-note', 'ⓘ Les valeurs grisées sont calculées automatiquement par le moteur. Le prix final marché retenu est le levier de décision produit sur cette page.'));
     portfolio.__selectedProductRef = corridor?.product?.product_ref || null;
   }
 
@@ -983,6 +982,13 @@
     if (title) title.textContent = 'Atelier économique';
     const description = workshop.querySelector('.kmc-section-description');
     if (description) description.textContent = 'Pilotez votre rentabilité en temps réel. Toute modification est automatiquement recalculée par le moteur.';
+    // Le cockpit affiche son propre header (titre + sous-titre + période + badge),
+    // fidèle au mock. Le header générique de la section ('.kmc-section-header')
+    // ferait doublon à l'écran : on le masque plutôt que le supprimer, pour
+    // préserver le texte pour tout consommateur non visuel et ne rien casser
+    // dans findWorkshop (qui lit ce titre au premier passage).
+    const outerHeader = workshop.querySelector('.kmc-section-header');
+    if (outerHeader) outerHeader.classList.add('kmc-cockpit-outer-header-hidden');
     const slot = workshop.querySelector('[data-section-slot]') || workshop.querySelector('.kmc-section-body') || workshop;
     const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));
     const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));
