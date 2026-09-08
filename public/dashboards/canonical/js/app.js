@@ -138,6 +138,17 @@
     return code;
   }
 
+  // Convertit un code ISO 3166-1 alpha-2 en emoji drapeau via les Regional
+  // Indicator Symbols (U+1F1E6..U+1F1FF, un par lettre A-Z). Fonctionne pour
+  // tout code à 2 lettres sans table de correspondance à maintenir.
+  function regionFlagEmoji(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(normalized)) return '';
+    const base = 0x1f1e6;
+    const codePoints = [...normalized].map(letter => base + (letter.charCodeAt(0) - 65));
+    return String.fromCodePoint(...codePoints);
+  }
+
   function marketChoices(adminContext, options = {}) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) {
@@ -149,7 +160,9 @@
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
     }
     access.allowedMarkets.forEach(code => {
-      choices.push(Object.freeze({ value: code, marketCode: code, label: marketDisplayName(code) }));
+      const flag = regionFlagEmoji(code);
+      const label = flag ? `${flag} ${marketDisplayName(code)}` : marketDisplayName(code);
+      choices.push(Object.freeze({ value: code, marketCode: code, label }));
     });
     return Object.freeze(choices);
   }
@@ -594,6 +607,7 @@
     requireAdminContext,
     surfaceForPath,
     marketDisplayName,
+    regionFlagEmoji,
     marketChoices,
     initialRequestedMarket,
     mountMarketSelector,

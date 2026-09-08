@@ -78,6 +78,10 @@ function loadCanonicalApp() {
     },
     fetch,
     document,
+    // Le vrai navigateur expose Intl.DisplayNames (confirmé en staging : les
+    // libellés de marché affichent bien "KM · Comores", pas juste "KM"). Le
+    // stub doit s'aligner sur ce comportement réel plutôt que de le masquer.
+    Intl: global.Intl,
     KomerceAdminContext: {
       validateAdminContext,
       resolveMarketView: resolveMarketViewMock,
@@ -212,6 +216,29 @@ describe('canonical admin app — server AdminContext bootstrap', () => {
 });
 
 describe('canonical admin app — market selector', () => {
+  test('regionFlagEmoji convertit un code ISO alpha-2 en emoji drapeau via Regional Indicator Symbols', () => {
+    const env = loadCanonicalApp();
+    expect(env.api.regionFlagEmoji('CM')).toBe('🇨🇲');
+    expect(env.api.regionFlagEmoji('cm')).toBe('🇨🇲');
+    expect(env.api.regionFlagEmoji('KM')).toBe('🇰🇲');
+    expect(env.api.regionFlagEmoji('FR')).toBe('🇫🇷');
+    expect(env.api.regionFlagEmoji('')).toBe('');
+    expect(env.api.regionFlagEmoji(null)).toBe('');
+    expect(env.api.regionFlagEmoji('XYZ')).toBe('');
+  });
+
+  test('marketChoices préfixe chaque marché de son drapeau, jamais l’option Global', () => {
+    const env = loadCanonicalApp();
+    const adminContext = {
+      access: { mode: 'global', allowedMarkets: ['KM', 'CM', 'CG'], defaultMarket: null, capabilities: [] },
+    };
+    const choices = env.api.marketChoices(adminContext);
+    expect(choices[0]).toMatchObject({ value: '', label: 'Global · Tous les marchés' });
+    expect(choices[1].label).toBe('🇰🇲 KM · Comores');
+    expect(choices[2].label).toBe('🇨🇲 CM · Cameroun');
+    expect(choices[3].label).toBe('🇨🇬 CG · Congo-Brazzaville');
+  });
+
   test('central voit Global + marchés autorisés et recharge Pilotage sur CM', async () => {
     const env = loadCanonicalApp();
     const user = { id: 'hq-admin', role: 'admin' };
