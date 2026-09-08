@@ -6,18 +6,19 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       utils/logger.js
+ * @depends       utils/logger.js, middleware/require-non-production.js
  * @db-write      none
- * @db-read      none
+ * @db-read       none
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
- * @version       2026-06
+ * @version       2026-09
  */
 
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'env' });
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 
 /**
  * H1E — Environment bootstrap.
@@ -25,6 +26,10 @@ const log = require('../utils/logger').child({ module: 'env' });
  * Centralise dotenv + validation des variables d'environnement critiques.
  * Règle SEC-2 / FRESH-010 : toute variable dont l'absence provoque un
  * comportement silencieusement incorrect en prod doit être dans requiredEnv.
+ *
+ * IMPORTANT : l'identité métier du runtime est KOMERCE_ENV. NODE_ENV décrit
+ * seulement le mode d'exécution Node et peut donc valoir "production" en staging.
+ * resolveRuntimeEnvironment() applique déjà cette doctrine de façon canonique.
  *
  * REQUIRED — bloque le démarrage si absent :
  *   DATABASE_URL, JWT_SECRET, ADMIN_PASSWORD
@@ -68,16 +73,21 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
     'AUTHKEY_WEBHOOK_SECRET', // token webhook Authkey — requis en prod, fail-closed si absent
   ];
 
-  // Garde-fou supplémentaire : refuser explicitement un bypass OTP en prod
-  if (process.env.NODE_ENV === 'production') {
+  // Identité canonique du runtime : KOMERCE_ENV si présent, sinon NODE_ENV.
+  // Cela permet NODE_ENV=production en staging sans activer les garde-fous métier prod.
+  const { env: runtimeEnv } = resolveRuntimeEnvironment();
+
+  // Garde-fou supplémentaire : refuser explicitement un bypass OTP en prod métier.
+  if (runtimeEnv === 'production') {
     const otpBypass = process.env.OTP_TEST_MODE === 'true' || process.env.BOUTIQUE_TEST_OTP_BYPASS === 'true';
     if (otpBypass) {
       log.error('❌ FATAL: OTP_TEST_MODE/BOUTIQUE_TEST_OTP_BYPASS interdit en production — arrêt immédiat');
       if (exitOnMissing) process.exit(1);
     }
 
-    // Garde-fou PayPal : refuser le démarrage prod sur sandbox (config humaine douteuse).
-    // Si PAYPAL_ENV est absent ou 'sandbox' en prod, on bloque pour forcer la décision explicite.
+    // Garde-fou PayPal : refuser le démarrage de la PROD KOMERCE sur sandbox.
+    // En staging, PAYPAL_ENV=sandbox est au contraire le comportement attendu,
+    // même si NODE_ENV=production pour les optimisations/runtime Node.
     if (process.env.PAYPAL_ENV !== 'production') {
       log.error(`❌ FATAL: PAYPAL_ENV=${process.env.PAYPAL_ENV || '(absent)'} en production — devrait être 'production'`);
       if (exitOnMissing) process.exit(1);
