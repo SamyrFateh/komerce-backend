@@ -22,7 +22,7 @@ const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
 const GAPS_FILE = path.join(MIGRATIONS_DIR, 'GAPS.md');
 
 describe('migration collision governance — immutable history', () => {
-  test('les 7 collisions historiques du dépôt correspondent exactement à GAPS.md', () => {
+  test('les 8 collisions historiques du dépôt correspondent exactement à GAPS.md', () => {
     const result = evaluateCollisionGovernance({ migrationsDir: MIGRATIONS_DIR });
 
     expect(result.violations).toEqual([]);

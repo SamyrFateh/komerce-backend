@@ -32,7 +32,7 @@ Certains numéros ont des variantes avec suffixe lettre. Elles font partie de l'
 
 Le gate `I-BACK-10` groupe les migrations par token numérique + suffixe lettre optionnel (`014`, `072`, `072a`, `015b`, etc.).
 
-Les sept ensembles ci-dessous ont été réaudités le 2026-08-29. Ils sont désormais classés comme **historique immuable explicitement documenté**, et non comme dette à résoudre par renommage ou suppression.
+Les huit ensembles ci-dessous ont été réaudités le 2026-08-29. Ils sont désormais classés comme **historique immuable explicitement documenté**, et non comme dette à résoudre par renommage ou suppression.
 
 Cette classification ne relâche pas le garde-fou :
 
