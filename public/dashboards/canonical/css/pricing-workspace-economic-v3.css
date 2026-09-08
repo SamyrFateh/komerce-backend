@@ -4,8 +4,6 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
-.kmc-cost-formula-step.is-marché,
-.kmc-cost-formula-step.is-marché,
 .kmc-cost-formula-step.is-marché { border-top: 3px solid #2563eb; }
 .kmc-cost-formula-step.is-contribution { border-top: 3px solid #059669; }
 .kmc-cost-formula-step.is-couverture { border-top: 3px solid #7c3aed; }
@@ -96,6 +94,25 @@
 .kmc-flow-equilibrium-unit.is-derived {
   background: #f8fafc;
   border-color: #e2e8f0;
+}
+
+.kmc-flow-equilibrium-details {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 4px;
+}
+
+.kmc-flow-equilibrium-details > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kmc-flow-equilibrium-details-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 @media (max-width: 820px) {
