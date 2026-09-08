@@ -171,6 +171,7 @@ module.exports = {
       'scripts/run-integration-tests.js',
       'scripts/run-security-360.js',
       'scripts/seed.js',
+      'scripts/seed-market-test-data.js',
       'scripts/setup-hooks.sh',
       'scripts/test-settings-api.sh',
       'scripts/test_e2e_full.sh',
