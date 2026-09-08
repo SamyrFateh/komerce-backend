@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      one_contribution_many_views, rolling_flow_cadence_is_projection_not_cost_truth
+ * @doctrine      one_contribution_many_views, contribution_covers_structural_charges_collectively, rolling_flow_cadence_is_projection_not_cost_truth
  * @impact-areas  economic-engine, pricing, admin-dashboard
  * @version       2026-09
  */
@@ -91,18 +91,27 @@ function decorateMarketDecision(decision) {
   const economicBreakEven = enrichTarget(flow.economic_break_even, observedMix);
   const policySafetyTarget = enrichTarget(flow.policy_safety_target, observedMix);
   const contribution = finite(decision.coverage?.numerator_contribution_kmf ?? observedMix?.reconciled_contribution_kmf);
-  const n3 = finite(decision.coverage?.denominator_n3_kmf);
+  // Compatibility read only: older coverage truth still exposes denominator_n3_kmf.
+  // The public projection immediately translates it to structural_charges_kmf.
+  const structuralCharges = finite(
+    decision.coverage?.structural_charges_kmf ?? decision.coverage?.denominator_n3_kmf
+  );
 
   return {
     ...decision,
+    coverage: decision.coverage
+      ? { ...decision.coverage, structural_charges_kmf: structuralCharges }
+      : decision.coverage,
     flow_break_even: {
       ...flow,
       economic_state: {
         period_contribution_kmf: contribution,
-        period_n3_kmf: n3,
+        period_structural_charges_kmf: structuralCharges,
         coverage_ratio: finite(decision.coverage?.coverage_ratio),
         break_even_gap_kmf: finite(economicBreakEven?.gap_kmf),
-        period_result_kmf: contribution == null || n3 == null ? null : round(contribution - n3, 2),
+        period_result_kmf: contribution == null || structuralCharges == null
+          ? null
+          : round(contribution - structuralCharges, 2),
       },
       economic_break_even: economicBreakEven,
       policy_safety_target: policySafetyTarget,
@@ -112,6 +121,11 @@ function decorateMarketDecision(decision) {
         order_view: 'AGGREGATION_ONLY',
         parcel_view: 'AGGREGATION_ONLY',
         double_counting_forbidden: true,
+      },
+      structural_charge_identity: {
+        scope: 'MARKET_PERIOD_PORTFOLIO',
+        sku_debt: false,
+        pricing_authority: 'NONE',
       },
     },
   };
