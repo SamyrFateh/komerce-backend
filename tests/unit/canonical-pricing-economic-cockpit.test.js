@@ -53,7 +53,8 @@ test('les valeurs calculées sont grisées et le prix final marché est le levie
 test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback pays silencieux', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   expect(source).toContain('/corridor?product_ref=');
-  expect(source).toContain('`${endpoint}/decision`');
+  expect(source).toContain('`${endpoint}/decision${qs}`');
+  expect(source).toContain("period ? `?period=${encodeURIComponent(period)}` : ''");
   expect(source).toContain('decision?.coverage?.structure');
   expect(source).toContain('charge.market_share_kmf');
   expect(source).toContain('Valeur effective ${marketCode}');

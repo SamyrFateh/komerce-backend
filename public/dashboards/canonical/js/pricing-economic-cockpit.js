@@ -378,9 +378,10 @@
     return workspace.jsonRequest(options.fetch, `${endpoint}/corridor?product_ref=${encodeURIComponent(productRef)}`);
   }
 
-  async function fetchDecision(workspace, options) {
+  async function fetchDecision(workspace, options, period) {
     const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
-    return workspace.jsonRequest(options.fetch, `${endpoint}/decision`);
+    const qs = period ? `?period=${encodeURIComponent(period)}` : '';
+    return workspace.jsonRequest(options.fetch, `${endpoint}/decision${qs}`);
   }
 
   function detailMetric(doc, label, value, editable = false) {
@@ -670,6 +671,14 @@
     cockpit.appendChild(equilibrium);
   }
 
+  function styleEquilibriumForCockpit(equilibrium) {
+    if (!equilibrium) return equilibrium;
+    equilibrium.classList.add('kmc-flow-equilibrium-panel--cockpit');
+    const label = Array.from(equilibrium.querySelectorAll('.kmc-flow-equilibrium-label')).find(node => node.textContent.trim() === 'Charges à couvrir');
+    if (label) label.textContent = 'Charges structurelles à couvrir';
+    return equilibrium;
+  }
+
   function buildCockpitHeader(doc, payload, decision) {
     const header = el(doc, 'div', 'kmc-cockpit-page-header');
     const left = el(doc, 'div', 'kmc-cockpit-page-header-left');
@@ -697,10 +706,13 @@
     right.appendChild(periodWrap);
 
     const badge = el(doc, 'div', 'kmc-cockpit-live-badge');
+    badge.dataset.cockpitLiveBadge = '';
     badge.appendChild(el(doc, 'strong', '', 'Données réelles'));
-    const ts = decision?.coverage?.computed_at || decision?.computed_at;
+    const ts = decision?.evaluated_at;
     const ago = ts ? timeSince(new Date(ts)) : 'temps réel';
-    badge.appendChild(el(doc, 'small', '', `Mises à jour ${ago}`));
+    const badgeTime = el(doc, 'small', '', `Mises à jour ${ago}`);
+    badgeTime.dataset.cockpitLiveBadgeTime = '';
+    badge.appendChild(badgeTime);
     right.appendChild(badge);
     header.appendChild(right);
     return header;
@@ -929,6 +941,37 @@
 
     const search = cockpit.querySelector('[data-cockpit-search]');
     search?.addEventListener('input', () => loadCategory(doc, workspace, options, payload, portfolio, portfolio.__activeCategory));
+
+    const periodSelect = cockpit.querySelector('[data-cockpit-period]');
+    periodSelect?.addEventListener('change', async () => {
+      const period = periodSelect.value;
+      periodSelect.disabled = true;
+      let newDecision;
+      try {
+        newDecision = await fetchDecision(workspace, options, period);
+      } catch (error) {
+        periodSelect.disabled = false;
+        const badgeTime = cockpit.querySelector('[data-cockpit-live-badge-time]');
+        if (badgeTime) badgeTime.textContent = `Erreur de chargement · ${error.message}`;
+        return;
+      }
+      periodSelect.disabled = false;
+
+      const badgeTime = cockpit.querySelector('[data-cockpit-live-badge-time]');
+      if (badgeTime) {
+        const ts = newDecision?.evaluated_at;
+        badgeTime.textContent = `Mises à jour ${ts ? timeSince(new Date(ts)) : 'temps réel'}`;
+      }
+
+      const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
+      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision));
+
+      const oldEquilibrium = cockpit.querySelector('.kmc-flow-equilibrium-panel--cockpit');
+      if (oldEquilibrium && rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
+        const newEquilibrium = styleEquilibriumForCockpit(rootObject.KomercePricingEquilibriumPanel.buildPanel(doc, workspace, newDecision));
+        oldEquilibrium.replaceWith(newEquilibrium);
+      }
+    });
   }
 
   async function enhance(rootObject, workspace, options, payload) {

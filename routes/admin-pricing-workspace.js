@@ -221,7 +221,13 @@ router.get('/market/:marketCode', async (req, res, next) => {
 router.get('/market/:marketCode/decision', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    const decision = await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id);
+    const rawPeriod = typeof req.query.period === 'string' ? req.query.period.trim() : '';
+    if (rawPeriod && !marketDecisionPolicy.isValidCalendarMonth(rawPeriod)) {
+      return res.status(400).json({ error: 'period must match YYYY-MM', code: 'pricing_market_decision_period_invalid' });
+    }
+    const decision = rawPeriod
+      ? await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id, { period: rawPeriod })
+      : await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id);
     res.json(decorateMarketDecision(decision));
   } catch (error) { handleError(error, res, next); }
 });

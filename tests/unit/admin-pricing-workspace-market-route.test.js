@@ -69,6 +69,7 @@ const mockDecisionPolicy = {
     authorization: 'DENY_NEW_UNDER_CDR_POSITION',
     reason: 'MARKET_DECISION_POLICY_REQUIRED',
   })),
+  isValidCalendarMonth: jest.fn((value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value || '').trim())),
   listMarketDecisionPolicyHistory: jest.fn(async () => []),
   recordMarketDecisionPolicy: jest.fn(async () => ({
     version: 'CM-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
@@ -144,6 +145,19 @@ test('manager lit la décision canonique sans pouvoir choisir la fenêtre', asyn
   expect(res.status).toBe(200);
   expect(mockDecisionPolicy.evaluateMarketDecision).toHaveBeenCalledWith('market-cm');
   expect(res.body.reason).toBe('MARKET_DECISION_POLICY_REQUIRED');
+});
+
+test('manager peut demander un mois calendaire explicite via ?period=', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision?period=2025-04');
+  expect(res.status).toBe(200);
+  expect(mockDecisionPolicy.evaluateMarketDecision).toHaveBeenCalledWith('market-cm', { period: '2025-04' });
+});
+
+test('un ?period= malformé est rejeté avant tout appel au moteur', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision?period=2025-4');
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe('pricing_market_decision_period_invalid');
+  expect(mockDecisionPolicy.evaluateMarketDecision).not.toHaveBeenCalled();
 });
 
 test('manager peut enregistrer une nouvelle politique append-only sur son marché', async () => {

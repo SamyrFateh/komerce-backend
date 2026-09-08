@@ -15,6 +15,8 @@ const {
   recordMarketDecisionPolicy,
   getCurrentMarketDecisionPolicy,
   canonicalPeriod,
+  calendarMonthPeriod,
+  isValidCalendarMonth,
   evaluateMarketDecision,
   _buildBreakEvenTarget,
 } = require('../../services/pricing-market-decision-policy');
@@ -76,6 +78,62 @@ test('la fenêtre canonique est dérivée côté serveur depuis window_days', ()
   expect(period.from).toBe('2026-08-08T08:00:00.000Z');
   expect(period.width_days).toBe(30);
   expect(period.source).toBe('server_policy_window');
+});
+
+test('calendarMonthPeriod borne un mois civil exact, largeur variable selon le mois', () => {
+  const april = calendarMonthPeriod('2025-04');
+  expect(april.from).toBe('2025-04-01T00:00:00.000Z');
+  expect(april.to).toBe('2025-05-01T00:00:00.000Z');
+  expect(april.width_days).toBe(30);
+  expect(april.source).toBe('calendar_month_selection');
+  expect(april.calendar_month).toBe('2025-04');
+
+  const february = calendarMonthPeriod('2024-02');
+  expect(february.width_days).toBe(29); // année bissextile
+
+  const december = calendarMonthPeriod('2025-12');
+  expect(december.to).toBe('2026-01-01T00:00:00.000Z');
+});
+
+test('calendarMonthPeriod rejette un format autre que YYYY-MM', () => {
+  expect(() => calendarMonthPeriod('2025-4')).toThrow('period must match YYYY-MM');
+  expect(() => calendarMonthPeriod('2025-13')).toThrow('period must match YYYY-MM');
+  expect(() => calendarMonthPeriod('avril 2025')).toThrow('period must match YYYY-MM');
+});
+
+test('isValidCalendarMonth valide le format sans lever', () => {
+  expect(isValidCalendarMonth('2025-04')).toBe(true);
+  expect(isValidCalendarMonth('2025-4')).toBe(false);
+  expect(isValidCalendarMonth('')).toBe(false);
+  expect(isValidCalendarMonth(null)).toBe(false);
+});
+
+test('evaluateMarketDecision avec period utilise le mois calendaire au lieu de la fenêtre glissante', async () => {
+  db.query.mockResolvedValueOnce({ rows: [policyRow()] });
+  computeMarketCoverage.mockResolvedValueOnce({
+    coverage_status: 'COVERED',
+    authorization: 'ALLOW_NEW_UNDER_CDR_POSITION',
+    reason: 'COVERAGE_THRESHOLD_MET',
+  });
+
+  const result = await evaluateMarketDecision(MARKET, { period: '2025-04' });
+
+  expect(result.canonical_period.source).toBe('calendar_month_selection');
+  expect(result.canonical_period.from).toBe('2025-04-01T00:00:00.000Z');
+  expect(result.canonical_period.to).toBe('2025-05-01T00:00:00.000Z');
+  expect(result.canonical_period.width_days).toBe(30);
+  expect(computeMarketCoverage).toHaveBeenCalledWith(expect.objectContaining({
+    from: '2025-04-01T00:00:00.000Z',
+    to: '2025-05-01T00:00:00.000Z',
+  }));
+  // La politique résolue doit être celle en vigueur à la fin du mois demandé,
+  // pas "maintenant".
+  expect(db.query.mock.calls[0][1]).toContainEqual('2025-05-01T00:00:00.000Z');
+});
+
+test('evaluateMarketDecision rejette un period malformé', async () => {
+  await expect(evaluateMarketDecision(MARKET, { period: '2025/04' })).rejects.toThrow('period must match YYYY-MM');
+  expect(db.query).not.toHaveBeenCalled();
 });
 
 test('recordMarketDecisionPolicy écrit un nouvel événement append-only avec preuve', async () => {

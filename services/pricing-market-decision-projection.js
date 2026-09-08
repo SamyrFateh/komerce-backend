@@ -67,11 +67,12 @@ function buildFlowVelocity(decision, observedMix, target) {
   const windowDays = finite(decision?.canonical_period?.width_days);
   if (windowDays == null || windowDays <= 0 || !observedMix) return null;
 
+  const isCalendarPeriod = decision?.canonical_period?.source === 'calendar_month_selection';
   const contribution = finite(observedMix.reconciled_contribution_kmf);
   const contributionPerDay = contribution == null ? null : round(contribution / windowDays, 2);
 
   return {
-    basis: 'ROLLING_CANONICAL_WINDOW_AVERAGE',
+    basis: isCalendarPeriod ? 'CALENDAR_MONTH_AVERAGE' : 'ROLLING_CANONICAL_WINDOW_AVERAGE',
     window_days: windowDays,
     articles_per_day: ratePerDay(observedMix.article_units, windowDays),
     orders_per_day: ratePerDay(observedMix.mature_orders, windowDays),
