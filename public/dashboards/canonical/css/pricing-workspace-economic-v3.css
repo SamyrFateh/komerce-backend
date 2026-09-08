@@ -115,6 +115,14 @@
   margin-top: 12px;
 }
 
+/* Les anciennes métriques N restent des aliases techniques du moteur mais ne sont plus une lecture UI. */
+.kmc-sim-metric[data-sim-metric="n1_landed_relay_cost_kmf"],
+.kmc-sim-metric[data-sim-metric="n2_business_variable_cost_kmf"],
+.kmc-sim-metric[data-sim-metric="n3_fixed_overhead_allocation_kmf"],
+.kmc-sim-metric[data-sim-metric="cdr_complete_kmf"] {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .kmc-cost-classification-editor {
     grid-template-columns: 1fr;
