@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          market-delegation-write-service
- * @domain        market
+ * @domain        market-delegation
  * @layer         service
  * @criticality   high
  * @inputs        assignment, ceiling, memberships, member_capabilities, actor
