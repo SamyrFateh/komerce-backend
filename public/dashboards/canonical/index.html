@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-decision-chain.css?v=1302" />
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-economic-cockpit.css?v=1401" />
   <link rel="stylesheet" href="/dashboards/canonical/css/demo-order-flow.css" />
+  <!-- Paramètres (SettingsView portée depuis Legacy) — tokens purs, zéro
+       dépendance DOM au shell Legacy. Voir docs/admin-nav-capability-map.md §7. -->
+  <link rel="stylesheet" href="/dashboards/admin/css/tokens.css" />
 </head>
 <body data-admin-generation="canonical">
   <main id="canonical-admin-root" class="canonical-boot" aria-live="polite">
@@ -52,6 +55,11 @@
   <script src="/dashboards/canonical/js/client-360.js"></script>
   <script src="/dashboards/canonical/js/product-360.js"></script>
   <script src="/dashboards/canonical/js/demo-order-flow.js"></script>
+  <!-- Paramètres (SettingsView portée depuis Legacy). api-client.js n'a
+       aucun couplage DOM (BASE_API = '/api', fetch uniquement) — sûr à
+       charger ici. Voir docs/admin-nav-capability-map.md §7. -->
+  <script src="/dashboards/admin/js/api-client.js"></script>
+  <script src="/dashboards/admin/js/views/SettingsView.js"></script>
   <script src="/dashboards/canonical/js/app.js"></script>
   <script src="/dashboards/canonical/js/navigation.js?v=1501"></script>
 </body>
