@@ -44,7 +44,7 @@ FOR EACH ROW EXECUTE FUNCTION enforce_cash_policy_assignment_market();
 -- La capability était déjà dans le registre P0 et dans le ceiling template v1,
 -- mais restait MISSING tant qu'aucune API réelle ne l'exerçait.
 UPDATE capability_registry
-   SET implementation_status = 'LIVE', updated_at = NOW()
+   SET status = 'LIVE', updated_at = NOW()
  WHERE capability = 'cash_control.policy.manage';
 
 -- Ceinture de compatibilité : un assignment ancien doit bien contenir la capability
