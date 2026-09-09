@@ -99,6 +99,7 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       renderer,
       adminContext: marketContext(),
       contextContract: adminContextContract,
+      user: { role: 'admin' },
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
