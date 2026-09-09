@@ -19,7 +19,7 @@ describe('market-delegation team UI', () => {
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
-  test('la page invitation conserve le lien pendant login puis accepte explicitement côté serveur', () => {
+  test('la page invitation conserve le lien pendant login, permet de créer un compte client puis accepte explicitement', () => {
     const html = read('public/dashboards/canonical/team-invite.html');
     const js = read('public/dashboards/canonical/js/team-invite.js');
 
@@ -27,9 +27,15 @@ describe('market-delegation team UI', () => {
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
     expect(js).toContain("global.fetch('/api/auth/me'");
     expect(js).toContain("'/login.html?next='");
+    expect(js).toContain("request('/api/auth/register'");
+    expect(js).toContain('full_name: fullName.value.trim()');
+    expect(js).toContain('email: email.value.trim()');
+    expect(js).toContain('phone: phone.value.trim()');
+    expect(js).toContain('password: password.value');
     expect(js).toContain('/api/market-delegation/team/invitations/');
     expect(js).toContain('/accept');
     expect(js).toContain("method: 'POST'");
+    expect(js).not.toMatch(/role\s*:\s*['\"]market_operator['\"]/);
   });
 
   test('après acceptation le token est retiré et le Market ID vient du contexte serveur', () => {
