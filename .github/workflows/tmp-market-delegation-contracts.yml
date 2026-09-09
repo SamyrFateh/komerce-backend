@@ -1,0 +1,56 @@
+name: tmp-market-delegation-contracts
+
+on:
+  push:
+    branches:
+      - fix/market-delegation-runtime-bridge
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/market-delegation-runtime-bridge
+      - name: Declare canonical feature dependencies
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function edit(file, anchor, insertion) {
+            let s = fs.readFileSync(file, 'utf8');
+            if (s.includes(insertion.trim())) return;
+            if (!s.includes(anchor)) throw new Error(`${file}: missing anchor`);
+            s = s.replace(anchor, `${anchor}\n${insertion}`);
+            fs.writeFileSync(file, s);
+          }
+
+          edit(
+            'features/dashboard.feature.js',
+            "      'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',",
+            "      'market-delegation (bridge request-local des memberships projetées vers les surfaces dashboard qui admettent déjà market_operator)',"
+          );
+          edit(
+            'features/economic-engine.feature.js',
+            "      'market-autonomy (décision de prix local et activation LOCAL_ACTIVE consommées par la projection économique sans transfert d ownership)',",
+            "      'market-delegation (bridge request-local des memberships projetées vers Pricing marché, sans mutation du rôle global)',"
+          );
+          edit(
+            'features/logistics.feature.js',
+            "      'market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; jamais de market_id client)',",
+            "      'market-delegation (bridge request-local des memberships projetées vers les lectures Hub déjà ouvertes à market_operator)',"
+          );
+
+          const delegationFile = 'features/market-delegation.feature.js';
+          let d = fs.readFileSync(delegationFile, 'utf8');
+          d = d.replace("{ fn: 'requireRoleWithMarketDelegation', file: 'middleware/require-market-delegated-role.js' }", "{ fn: 'attachMarketDelegatedRoleFor', file: 'middleware/require-market-delegated-role.js' }");
+          fs.writeFileSync(delegationFile, d);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/
+          git commit -m "docs(governance): déclarer les consommateurs de market-delegation"
+          git push origin HEAD:fix/market-delegation-runtime-bridge
