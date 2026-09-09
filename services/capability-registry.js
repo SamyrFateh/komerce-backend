@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          market-delegation-capability-registry
- * @domain        market
+ * @domain        market-delegation
  * @layer         service
  * @criticality   high
  * @inputs        capability_registry
