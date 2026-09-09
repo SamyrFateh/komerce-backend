@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          market-delegation-scope-projector
- * @domain        market
+ * @domain        market-delegation
  * @layer         service
  * @criticality   high
  * @inputs        market_operating_assignments, assignment_memberships, membership_capabilities
