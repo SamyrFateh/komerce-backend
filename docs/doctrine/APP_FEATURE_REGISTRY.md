@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.8 — 2026-08 (Clôture AUTH : `auth-passkey` ajouté au registre canonique ; Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.3 : `sourcing` ajouté au registre canonique (précédemment absent malgré manifest et code déjà en place) ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` reclassé `transversal` dans ce tableau, `admin-dashboard` reclassé projection/ui-shell — gouvernance corrective, aucun code runtime déplacé ; Lot O2 : scission `unsold-resolution` d'`inventory` et `incident-management` de `platform-ops` ; retags `purchasing-admin-service.js` → `purchasing` et `admin-risk-provisions.js` → `economic-engine` ; correction du copié-collé `auth`/`auth-identity`)
+> **Version** : 1.9 — 2026-09 (`market-delegation` ajouté comme feature de première classe ; historique 1.8 conservé : clôture AUTH, lots O1/O2 et corrections d'ontologie antérieures)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -9,7 +9,7 @@
 >
 > **Komerce n'est pas un monorepo.** Trois dépôts distincts composent l'application :
 > `backend` (API + logique métier), `bout` (boutique client, dépôt séparé avec son
-> propre `package.json`), `dash` (dashboards admin/hub/relais). Une feature métier
+> propre `package.json`), `dash` (dashboards/hub/relais). Une feature métier
 > traverse souvent les trois. Le champ `repos` de chaque manifest dit explicitement
 > dans quel dépôt vit chaque groupe de fichiers — ne jamais supposer qu'un chemin
 > backend (`services/`, `routes/`) et un chemin boutique (`js/`, `css/`) partagent une
@@ -57,6 +57,7 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 26 | `incident-management` | transversal (business) | backend | [`incident-management.feature.js`](../../features/incident-management.feature.js) | production | Détection, qualification et résolution d'écarts opérationnels avec impact client traçable — scindé de `platform-ops` (Lot O2, 2026-07-12) |
 | 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, servi aux features consommatrices avec valeur de repli |
 | 28 | `market-operator-dashboard` | feature | backend + dash | [`market-operator-dashboard.feature.js`](../../features/market-operator-dashboard.feature.js) | staging | Accès market_operator au dashboard Canonical scopé marché — Operations Workspace en lecture, filtrage navigation par rôle, provisioning CLI |
+| 29 | `market-delegation` | feature | backend | [`market-delegation.feature.js`](../../features/market-delegation.feature.js) | staging | Mandat d'exploitation d'un Market ID, plafond de capacités, équipe locale, audit et projection d'autorisation |
 
 > ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
 > sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)
@@ -153,6 +154,12 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 > `services/otp-test-mode.js`, `services/authkey-client.js`). Les deux manifests restent
 > légitimement distincts (garde transverse pure côté `auth`, routes actives OTP/login côté
 > `auth-identity`) — seule l'étiquette de domaine était en cause, pas le découpage.
+
+> ℹ️ **Note sur la ligne #29 (`market-delegation`)** : cette feature est distincte de
+> `market`. `market` conserve le référentiel et la Currency Boundary ;
+> `market-delegation` porte le mandat d'exploitation, le plafond concédé par le central,
+> les memberships, les capabilities membres et la projection de compatibilité vers
+> `operator_market_scopes`. Les autorités `GROUP/CENTRAL_ONLY` restent hors plafond.
 
 ---
 
