@@ -32,6 +32,10 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
 jest.mock('../../middleware/validate', () => ({
   validate: () => (req, res, next) => next(),
 }));
