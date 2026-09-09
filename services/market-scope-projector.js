@@ -8,7 +8,7 @@
  * @outputs       desired market authorization projection
  * @depends       services/market-scope-admin-service.js
  * @used-by       market-delegation mutations
- * @db-read       market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities
+ * @db-read       market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, capability_registry
  * @db-write      none
  * @db-txn        caller-owned
  * @doctrine      operator_market_scopes_is_market_owned_projection, granular_members_fail_closed_on_legacy_roles
@@ -22,6 +22,21 @@ const {
   revokeProjectedMarketScopes,
   listProjectedMarketScopes,
 } = require('./market-scope-admin-service');
+
+// Compatibility contract for legacy routes that still understand only
+// viewer/manager. A granular membership receives NO legacy scope unless it
+// owns this complete read baseline. This prevents an empty/team-only
+// membership from gaining broad read access simply because it exists.
+const LEGACY_VIEWER_CAPABILITIES = Object.freeze([
+  'pricing.read',
+  'pricing.simulate',
+  'dashboard.market.read',
+  'operations.read',
+  'client.read',
+  'network.read',
+  'market_config.read',
+  'finance.read',
+]);
 
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') throw new TypeError('market-scope-projector: executor.query requis');
@@ -38,13 +53,25 @@ async function desiredScopesForAssignment(db, assignmentId) {
             CASE WHEN EXISTS (
               SELECT 1
                 FROM assignment_capability_ceiling acc_any
+                JOIN capability_registry registry_any
+                  ON registry_any.capability = acc_any.capability
                WHERE acc_any.assignment_id = a.id
                  AND acc_any.revoked_at IS NULL
+                 AND registry_any.class = 'DELEGATION'
+                 AND registry_any.authority_scope = 'MARKET'
+                 AND registry_any.delegation_mode = 'DELEGABLE'
+                 AND registry_any.status = 'LIVE'
             ) AND NOT EXISTS (
               SELECT 1
                 FROM assignment_capability_ceiling acc
+                JOIN capability_registry registry
+                  ON registry.capability = acc.capability
                WHERE acc.assignment_id = a.id
                  AND acc.revoked_at IS NULL
+                 AND registry.class = 'DELEGATION'
+                 AND registry.authority_scope = 'MARKET'
+                 AND registry.delegation_mode = 'DELEGABLE'
+                 AND registry.status = 'LIVE'
                  AND NOT EXISTS (
                    SELECT 1
                      FROM membership_capabilities mc
@@ -57,8 +84,19 @@ async function desiredScopesForAssignment(db, assignmentId) {
        JOIN assignment_memberships am ON am.assignment_id = a.id
       WHERE a.id = $1::uuid
         AND a.status = 'ACTIVE'
-        AND am.status = 'ACTIVE'`,
-    [assignmentId]
+        AND am.status = 'ACTIVE'
+        AND NOT EXISTS (
+          SELECT 1
+            FROM unnest($2::text[]) AS required(capability)
+           WHERE NOT EXISTS (
+             SELECT 1
+               FROM membership_capabilities mc_required
+              WHERE mc_required.membership_id = am.id
+                AND mc_required.capability = required.capability
+                AND mc_required.revoked_at IS NULL
+           )
+        )`,
+    [assignmentId, LEGACY_VIEWER_CAPABILITIES]
   );
   return rows;
 }
@@ -129,6 +167,7 @@ async function projectionDrift(executor, assignmentId) {
 }
 
 module.exports = {
+  LEGACY_VIEWER_CAPABILITIES,
   desiredScopesForAssignment,
   assignmentState,
   projectAssignment,
