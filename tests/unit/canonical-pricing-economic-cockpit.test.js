@@ -13,9 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1405');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1406');
   expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1404');
-  expect(source).toContain("title.textContent = 'Atelier économique'");
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -39,6 +38,12 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(source).not.toContain('pricingCockpitLegacyHidden');
   expect(source).not.toContain('createAdvancedDetails');
   expect(source).not.toContain('advanced.open');
+  // Au refresh, l'ancien pricing-workspace ne doit jamais peindre le root visible.
+  expect(source).toContain("const stagingRoot = options.document.createElement('div')");
+  expect(source).toContain('const payload = await originalMount({ ...options, root: stagingRoot })');
+  expect(source).toContain('await enhance(rootObject, workspace, options, payload)');
+  expect(source).not.toContain('const payload = await originalMount(options)');
+  expect(source).not.toContain('findWorkshop');
 });
 
 test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
