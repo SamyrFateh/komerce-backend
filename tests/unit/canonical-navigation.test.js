@@ -140,6 +140,7 @@ describe('canonical admin navigation — mock contract', () => {
       document: env.document,
       pathname: '/admin/orders/ORD-001',
       surface: 'order-360',
+      user: { role: 'admin' },
     });
 
     const inner = header.children[0];
@@ -208,5 +209,80 @@ describe('canonical admin navigation — mock contract', () => {
     const header = env.api.mount({ document: env.document, pathname: '/admin/finance', surface: 'finance' });
     const dashboard = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'dashboard');
     expect(dashboard.attributes['aria-current']).toBe('page');
+  });
+});
+
+describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capability-map.md)', () => {
+  test('admin voit les 6 onglets', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'admin' },
+    });
+    const primary = header.children[0].children[1];
+    const ids = primary.children.map(link => link.attributes['data-dashboard']);
+    expect(ids).toEqual(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings']);
+  });
+
+  test('market_operator voit 4 onglets — pas Catalogue ni Paramètres (admin only côté serveur)', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'market_operator' },
+    });
+    const primary = header.children[0].children[1];
+    const ids = primary.children.map(link => link.attributes['data-dashboard']);
+    expect(ids).toEqual(['dashboard', 'pricing', 'orders', 'markets']);
+    expect(ids).not.toContain('catalog');
+    expect(ids).not.toContain('settings');
+  });
+
+  test.each(['finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'])(
+    '%s ne voit que Dashboard tant que ses workspaces réels ne sont pas dans le mock',
+    (role) => {
+      const env = loadNavigation('/admin/pilotage', 'pilotage');
+      const header = env.api.mount({
+        document: env.document,
+        pathname: '/admin/pilotage',
+        surface: 'pilotage',
+        user: { role },
+      });
+      const primary = header.children[0].children[1];
+      const ids = primary.children.map(link => link.attributes['data-dashboard']);
+      expect(ids).toEqual(['dashboard']);
+    }
+  );
+
+  test('rôle inconnu voit uniquement Dashboard (défense en profondeur)', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'inconnu' },
+    });
+    const primary = header.children[0].children[1];
+    const ids = primary.children.map(link => link.attributes['data-dashboard']);
+    expect(ids).toEqual(['dashboard']);
+  });
+
+  test('visibleNavigationFor est exposée et cohérente avec le rendu de mount()', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const tabs = env.api.visibleNavigationFor({ role: 'market_operator' }, null);
+    expect(tabs.map(t => t.id)).toEqual(['dashboard', 'pricing', 'orders', 'markets']);
+  });
+
+  test('chaque rôle connu voit au moins Dashboard, toujours en premier', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const allRoles = ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'];
+    allRoles.forEach(role => {
+      const tabs = env.api.visibleNavigationFor({ role }, null);
+      expect(tabs.length).toBeGreaterThanOrEqual(1);
+      expect(tabs[0].id).toBe('dashboard');
+    });
   });
 });

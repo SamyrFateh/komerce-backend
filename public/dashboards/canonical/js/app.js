@@ -39,7 +39,28 @@
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
     DEMO: 'demo',
+    SETTINGS: 'settings',
   });
+
+  // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md.
+  // Chaque rôle atterrit sur le premier onglet qu'il peut réellement charger
+  // côté serveur ; aujourd'hui seuls admin et market_operator ont des
+  // onglets primaires au-delà de Dashboard.
+  const ROLE_DEFAULT_LANDING = Object.freeze({
+    admin:              '/admin/pilotage',
+    market_operator:    '/admin/pilotage',
+    finance:            '/admin/pilotage',
+    sourcing:           '/admin/pilotage',
+    agent_hub:          '/admin/pilotage',
+    agent_relais:       '/admin/pilotage',
+    agent_transitaire:  '/admin/pilotage',
+    support:            '/admin/pilotage',
+  });
+
+  function defaultLandingSurface(user) {
+    const role = (user && user.role) || '';
+    return ROLE_DEFAULT_LANDING[role] || '/admin/pilotage';
+  }
 
   function loginUrl() {
     const next = global.location.pathname + global.location.search + global.location.hash;
@@ -119,6 +140,7 @@
       return SURFACES.ACTION_CENTER;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
+    if (path === '/admin/settings') return SURFACES.SETTINGS;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
     if (path === '/admin/finance' || path === '/admin-next/finance') return SURFACES.FINANCE;
@@ -554,8 +576,22 @@
     });
   }
 
+  // Paramètres migré dans le shell Canonical : KomerceCanonicalSettingsWorkspace
+  // (public/dashboards/canonical/js/settings-workspace.js) est un module
+  // Canonical natif — fetch direct, zéro dépendance au shell Legacy.
+  async function renderSettingsWorkspace(root) {
+    root.innerHTML = '';
+    if (!global.KomerceCanonicalSettingsWorkspace || typeof global.KomerceCanonicalSettingsWorkspace.render !== 'function') {
+      root.innerHTML = '<p style="padding:40px;text-align:center;color:#dc2626">'
+        + '❌ KomerceCanonicalSettingsWorkspace indisponible — script non chargé</p>';
+      return;
+    }
+    await global.KomerceCanonicalSettingsWorkspace.render(root);
+  }
+
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
@@ -580,7 +616,7 @@
 
     const user = await requireSession();
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
@@ -594,6 +630,24 @@
       const navEl = global.document.getElementById('canonical-admin-navigation');
       if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
       global.KomerceCanonicalNavigation.mount({ user, surface });
+    }
+
+    // Landing intelligente : si la surface courante appartient à un onglet
+    // primaire que ce rôle ne peut pas voir (docs/admin-nav-capability-map.md),
+    // on redirige vers sa landing plutôt que de rendre une vue qui va 403.
+    // Dashboard est toujours autorisé pour tout rôle connu de ALLOWED_ROLES,
+    // donc la landing elle-même ne peut jamais redéclencher cette redirection.
+    if (global.KomerceCanonicalNavigation
+      && typeof global.KomerceCanonicalNavigation.visibleNavigationFor === 'function'
+      && typeof global.KomerceCanonicalNavigation.activePrimarySurface === 'function') {
+      const visibleTabs = global.KomerceCanonicalNavigation.visibleNavigationFor(user, adminContext);
+      const visibleIds = visibleTabs.map(tab => tab.id);
+      const activeParent = global.KomerceCanonicalNavigation.activePrimarySurface(surface);
+      if (!visibleIds.includes(activeParent)) {
+        const landing = defaultLandingSurface(user);
+        global.location.replace(landing);
+        return user;
+      }
     }
 
     await renderReady(root, user, adminContext);

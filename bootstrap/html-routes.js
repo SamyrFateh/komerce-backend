@@ -296,7 +296,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin',
     '/admin/sante',
     '/admin/shared-carts',
-    '/admin/settings',
     '/admin/simulator',
   ];
 
@@ -308,6 +307,14 @@ function mountHtmlRoutes(app, rootDir) {
       }
       sendLegacyAdmin(res);
     });
+  });
+
+  // Paramètres migré dans le shell Canonical (SettingsView portée telle
+  // quelle, montée dans le root Canonical). ?legacy=1 reste un rollback
+  // immédiat si la gouvernance le demande — même pattern que /admin/pilotage.
+  app.get('/admin/settings', (req, res) => {
+    if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    sendCanonicalAdmin(res);
   });
 
   ['/portail', '/pilotage'].forEach(routePath => {
