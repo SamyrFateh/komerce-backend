@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       operator_market_scopes, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
@@ -45,6 +45,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
@@ -75,8 +76,8 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 // hubAuth reste EXCLUSIVEMENT admin/agent_hub pour toute opération physique
 // sur le colis (scan, pack, seal, create-parcel, ready, ship, backorder) —
 // un market_operator ne scanne, n'emballe ni n'expédie jamais.
-const hubRead      = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
-const hubSupervise = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubRead      = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubSupervise = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 
 async function ensureMarketOperatorCanSupervise(req, marketId) {
   if (req.user.role !== 'market_operator') return null;
