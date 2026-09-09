@@ -25,6 +25,13 @@
   // Les dashboards Canonical Pilotage / Commerce / Opérations / Finance restent
   // les surfaces techniques sous-jacentes ; la barre expose les intentions
   // métier, pas l'architecture interne.
+  // Les 6 onglets du mock approuvé restent la référence visuelle contractuelle.
+  // Les 4 suivants n'ont pas de mock dédié : ils exposent tels quels des
+  // workspaces Canonical déjà existants et déjà testés (operations/
+  // shipping-customs/sourcing/accounting), pour que les rôles opérationnels
+  // aient enfin un onglet primaire pertinent au lieu d'être cantonnés à
+  // Dashboard. Aucune logique métier nouvelle : le shell choisit juste où
+  // les afficher — voir docs/admin-nav-capability-map.md §9.
   const PRIMARY_NAV = Object.freeze([
     Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
     Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
@@ -32,6 +39,10 @@
     Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce' }),
     Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/market-autonomy.html' }),
     Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings' }),
+    Object.freeze({ id: 'operations-workspace', label: 'Opérations', href: '/admin/workspaces/operations' }),
+    Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
+    Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing' }),
+    Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
   ]);
 
   // Onglets visibles par rôle, vérifiés contre les guards serveur réels
@@ -42,13 +53,13 @@
   // Ne pas élargir un rôle ici sans élargir d'abord le guard serveur
   // correspondant — l'UI ne doit jamais promettre un onglet qui 403.
   const ROLE_VISIBLE_TABS = Object.freeze({
-    admin:              Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings']),
-    market_operator:    Object.freeze(['dashboard', 'pricing', 'orders', 'markets']),
-    finance:            Object.freeze(['dashboard']),
-    sourcing:           Object.freeze(['dashboard']),
-    agent_hub:          Object.freeze(['dashboard']),
-    agent_relais:       Object.freeze(['dashboard']),
-    agent_transitaire:  Object.freeze(['dashboard']),
+    admin:              Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings', 'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace', 'accounting-workspace']),
+    market_operator:    Object.freeze(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']),
+    finance:            Object.freeze(['dashboard', 'accounting-workspace']),
+    sourcing:           Object.freeze(['dashboard', 'sourcing-workspace']),
+    agent_hub:          Object.freeze(['dashboard', 'operations-workspace', 'shipping-customs-workspace']),
+    agent_relais:       Object.freeze(['dashboard', 'operations-workspace', 'accounting-workspace']),
+    agent_transitaire:  Object.freeze(['dashboard', 'shipping-customs-workspace']),
     support:            Object.freeze(['dashboard']),
   });
 
@@ -65,16 +76,16 @@
     pilotage: 'dashboard',
     operations: 'dashboard',
     finance: 'dashboard',
-    'operations-workspace': 'dashboard',
-    'shipping-customs-workspace': 'dashboard',
-    'accounting-workspace': 'dashboard',
+    'operations-workspace': 'operations-workspace',
+    'shipping-customs-workspace': 'shipping-customs-workspace',
+    'accounting-workspace': 'accounting-workspace',
     'action-center': 'dashboard',
     demo: 'dashboard',
 
     'pricing-workspace': 'pricing',
 
     'catalog-workspace': 'catalog',
-    'sourcing-workspace': 'catalog',
+    'sourcing-workspace': 'sourcing-workspace',
     'product-360': 'catalog',
 
     commerce: 'orders',
@@ -89,10 +100,10 @@
 
   // Les onglets du mock remplacent le bouton Retour sur les workspaces
   // principaux. Retour reste réservé aux vrais drill-downs / surfaces 360.
+  // operations-workspace / shipping-customs-workspace / accounting-workspace
+  // sont désormais des onglets primaires directs (voir PRIMARY_NAV) — plus
+  // de Retour redondant pour elles.
   const BACK_TARGETS = Object.freeze({
-    'operations-workspace': '/admin/pilotage',
-    'shipping-customs-workspace': '/admin/pilotage',
-    'accounting-workspace': '/admin/pilotage',
     'action-center': '/admin/pilotage',
     'order-360': '/admin/commerce',
     'client-index': '/admin/commerce',

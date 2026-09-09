@@ -101,10 +101,10 @@ afterEach(() => {
 });
 
 describe('canonical admin navigation — mock contract', () => {
-  test('expose exactement les six onglets du mock approuvé dans le bon ordre', () => {
+  test('les 6 premiers onglets restent exactement le mock approuvé, dans l’ordre — les workspaces opérationnels viennent après', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
 
-    expect(env.api.PRIMARY_NAV.map(item => item.label)).toEqual([
+    expect(env.api.PRIMARY_NAV.slice(0, 6).map(item => item.label)).toEqual([
       'Dashboard',
       'Atelier économique',
       'Catalogue',
@@ -151,7 +151,9 @@ describe('canonical admin navigation — mock contract', () => {
     expect(identity.children[1].textContent).toBe('← Retour');
     expect(identity.children[1].href).toBe('/admin/commerce');
     expect(orders.attributes['aria-current']).toBe('page');
-    expect(primary.children.map(link => link.textContent)).not.toContain('Opérations');
+    // « Opérations » est désormais un onglet légitime (le workspace
+    // operations-workspace) — seul « Finance », jamais promu en onglet
+    // primaire (le tab s'appelle « Comptabilité »), doit rester absent.
     expect(primary.children.map(link => link.textContent)).not.toContain('Finance');
   });
 
@@ -213,7 +215,7 @@ describe('canonical admin navigation — mock contract', () => {
 });
 
 describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capability-map.md)', () => {
-  test('admin voit les 6 onglets', () => {
+  test('admin voit les 10 onglets — les 6 du mock + les 4 workspaces opérationnels', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = env.api.mount({
       document: env.document,
@@ -223,10 +225,13 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
     });
     const primary = header.children[0].children[1];
     const ids = primary.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings']);
+    expect(ids).toEqual([
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings',
+      'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace', 'accounting-workspace',
+    ]);
   });
 
-  test('market_operator voit 4 onglets — pas Catalogue ni Paramètres (admin only côté serveur)', () => {
+  test('market_operator voit 5 onglets — pas Catalogue ni Paramètres (admin only côté serveur)', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = env.api.mount({
       document: env.document,
@@ -236,14 +241,20 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
     });
     const primary = header.children[0].children[1];
     const ids = primary.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['dashboard', 'pricing', 'orders', 'markets']);
+    expect(ids).toEqual(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']);
     expect(ids).not.toContain('catalog');
     expect(ids).not.toContain('settings');
   });
 
-  test.each(['finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'])(
-    '%s ne voit que Dashboard tant que ses workspaces réels ne sont pas dans le mock',
-    (role) => {
+  test.each([
+    ['finance', ['dashboard', 'accounting-workspace']],
+    ['sourcing', ['dashboard', 'sourcing-workspace']],
+    ['agent_hub', ['dashboard', 'operations-workspace', 'shipping-customs-workspace']],
+    ['agent_relais', ['dashboard', 'operations-workspace', 'accounting-workspace']],
+    ['agent_transitaire', ['dashboard', 'shipping-customs-workspace']],
+  ])(
+    '%s voit Dashboard + son ou ses workspace(s) réel(s) — jamais un onglet qui 403',
+    (role, expected) => {
       const env = loadNavigation('/admin/pilotage', 'pilotage');
       const header = env.api.mount({
         document: env.document,
@@ -253,9 +264,22 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
       });
       const primary = header.children[0].children[1];
       const ids = primary.children.map(link => link.attributes['data-dashboard']);
-      expect(ids).toEqual(['dashboard']);
+      expect(ids).toEqual(expected);
     }
   );
+
+  test('support ne voit que Dashboard — aucun workspace Canonical dédié n’existe encore pour ce rôle', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'support' },
+    });
+    const primary = header.children[0].children[1];
+    const ids = primary.children.map(link => link.attributes['data-dashboard']);
+    expect(ids).toEqual(['dashboard']);
+  });
 
   test('rôle inconnu voit uniquement Dashboard (défense en profondeur)', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
@@ -273,7 +297,7 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
   test('visibleNavigationFor est exposée et cohérente avec le rendu de mount()', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const tabs = env.api.visibleNavigationFor({ role: 'market_operator' }, null);
-    expect(tabs.map(t => t.id)).toEqual(['dashboard', 'pricing', 'orders', 'markets']);
+    expect(tabs.map(t => t.id)).toEqual(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']);
   });
 
   test('chaque rôle connu voit au moins Dashboard, toujours en premier', () => {
@@ -283,6 +307,20 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
       const tabs = env.api.visibleNavigationFor({ role }, null);
       expect(tabs.length).toBeGreaterThanOrEqual(1);
       expect(tabs[0].id).toBe('dashboard');
+    });
+  });
+
+  test('operations-workspace / shipping-customs-workspace / accounting-workspace n’affichent plus de Retour redondant', () => {
+    const env = loadNavigation('/admin/workspaces/operations', 'operations-workspace');
+    ['operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].forEach(surface => {
+      const header = env.api.mount({
+        document: env.document,
+        pathname: `/admin/workspaces/${surface}`,
+        surface,
+        user: { role: 'admin' },
+      });
+      const back = header.children[0].children[0].children.find(node => node.className === 'kmc-admin-back');
+      expect(back).toBeUndefined();
     });
   });
 });
