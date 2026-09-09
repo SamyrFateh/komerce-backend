@@ -132,10 +132,12 @@
     copy.appendChild(el(doc, 'small', '', subtitle));
     identity.appendChild(copy);
     head.appendChild(identity);
-    const action = el(doc, 'button', 'kmc-cockpit-outline-action', actionText);
-    action.type = 'button';
-    action.dataset.openCostDetail = actionKey;
-    head.appendChild(action);
+    if (actionText) {
+      const action = el(doc, 'button', 'kmc-cockpit-outline-action', actionText);
+      action.type = 'button';
+      action.dataset.openCostDetail = actionKey;
+      head.appendChild(action);
+    }
     return head;
   }
 
@@ -171,7 +173,7 @@
   function fixedDirectCard(doc, structure) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-direct');
     card.dataset.costSummary = 'fixed-direct';
-    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Vérité structurelle de période propre au marché.', 'Ajuster les charges', 'fixed-direct'));
+    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Charges structurelles propres au marché.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-direct');
     table.appendChild(tableCell(doc, 'Élément', 'is-head'));
     table.appendChild(tableCell(doc, 'Montant reconnu', 'is-head'));
@@ -239,7 +241,6 @@
       'Le prix est borné par le marché.',
       'Les coûts variables déterminent l’espace de contribution.',
       'Les charges fixes sont couvertes collectivement par le portefeuille.',
-      `Direct / mutualisé décrit le périmètre, jamais la nature de la charge.`,
       `Toute quote-part mutualisée est calculée par Market ID.`,
       'Les charges mutualisées peuvent aussi être variables (ex. fret, SAV).',
     ].forEach(text => {
@@ -431,21 +432,27 @@
 
   function marketDataCard(doc, corridor) {
     const card = el(doc, 'section', 'kmc-cockpit-detail-card is-market');
-    card.appendChild(el(doc, 'h4', '', 'Données marché'));
+    const cardTitle = el(doc, 'h4', 'kmc-cockpit-detail-card-title');
+    cardTitle.appendChild(el(doc, 'span', 'kmc-cockpit-detail-card-icon is-blue', '📊'));
+    cardTitle.appendChild(el(doc, 'span', '', 'Données marché'));
+    card.appendChild(cardTitle);
     const local = corridor?.corridor?.local || {};
     const global = corridor?.corridor?.global_reference || {};
     const currency = corridor?.market?.currency || 'KMF';
     const localHead = el(doc, 'div', 'kmc-cockpit-market-head');
-    localHead.appendChild(el(doc, 'strong', '', `${corridor?.market?.name || corridor?.market?.code || 'Marché'} · observé`));
+    localHead.appendChild(el(doc, 'strong', '', `${corridor?.market?.name || corridor?.market?.code || 'Marché'} (observé)`));
     localHead.appendChild(badge(doc, local.sample_count ? 'Observé' : 'À alimenter', local.sample_count ? 'observed' : 'warning'));
     card.appendChild(localHead);
-    card.appendChild(detailMetric(doc, 'Prix médian observé', corridorAmount(local.target, currency)));
+    card.appendChild(detailMetric(doc, 'Prix moyen observé', corridorAmount(local.target, currency)));
     card.appendChild(detailMetric(doc, 'Nb. observations', formatNumber(local.sample_count)));
-    card.appendChild(detailMetric(doc, 'Dernière observation', formatDate(local.observations?.[0]?.observed_at)));
+    card.appendChild(detailMetric(doc, 'Dernière mise à jour', formatDate(local.observations?.[0]?.observed_at)));
     const globalBlock = el(doc, 'div', 'kmc-cockpit-global-reference');
-    globalBlock.appendChild(el(doc, 'strong', '', '🌐 Référence globale · informative'));
-    globalBlock.appendChild(el(doc, 'span', '', `Cible : ${corridorAmount(global.target, 'KMF')}`));
-    globalBlock.appendChild(el(doc, 'small', '', 'Jamais utilisée silencieusement comme vérité locale.'));
+    const globalTitle = el(doc, 'strong', 'kmc-cockpit-global-reference-title');
+    globalTitle.appendChild(el(doc, 'span', 'kmc-cockpit-detail-card-icon is-blue', '🌐'));
+    globalTitle.appendChild(el(doc, 'span', '', 'Référence globale (informative)'));
+    globalBlock.appendChild(globalTitle);
+    globalBlock.appendChild(detailMetric(doc, 'Prix moyen global', corridorAmount(global.target, 'KMF')));
+    globalBlock.appendChild(el(doc, 'small', '', 'Non utilisée comme vérité locale.'));
     card.appendChild(globalBlock);
     return card;
   }
