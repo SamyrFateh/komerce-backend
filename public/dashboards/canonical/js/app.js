@@ -576,23 +576,17 @@
     });
   }
 
-  // Paramètres migré dans le shell Canonical. SettingsView (Legacy) est
-  // porté tel quel — elle ne dépend que de global.KmcApi (api-client.js),
-  // sans couplage DOM au shell Legacy. Voir capability map §7 pour les
-  // assets requis (api-client.js + tokens.css, chargés dans index.html).
-  async function renderSettingsWorkspace(root, user) {
+  // Paramètres migré dans le shell Canonical : KomerceCanonicalSettingsWorkspace
+  // (public/dashboards/canonical/js/settings-workspace.js) est un module
+  // Canonical natif — fetch direct, zéro dépendance au shell Legacy.
+  async function renderSettingsWorkspace(root) {
     root.innerHTML = '';
-    if (typeof global.SettingsView !== 'function') {
+    if (!global.KomerceCanonicalSettingsWorkspace || typeof global.KomerceCanonicalSettingsWorkspace.render !== 'function') {
       root.innerHTML = '<p style="padding:40px;text-align:center;color:#dc2626">'
-        + '❌ SettingsView indisponible — script non chargé</p>';
+        + '❌ KomerceCanonicalSettingsWorkspace indisponible — script non chargé</p>';
       return;
     }
-    if (!global.KmcApi) {
-      root.innerHTML = '<p style="padding:40px;text-align:center;color:#dc2626">'
-        + '❌ KmcApi indisponible — api-client.js non chargé</p>';
-      return;
-    }
-    await global.SettingsView(root);
+    await global.KomerceCanonicalSettingsWorkspace.render(root);
   }
 
   function renderReady(root, user, adminContext) {
