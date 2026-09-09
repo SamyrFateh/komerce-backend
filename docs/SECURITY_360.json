@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-09T15:36:28.039Z",
+  "generatedAt": "2026-09-09T21:41:19.297Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 593,
-    "protected": 540,
+    "total": 599,
+    "protected": 546,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3054,6 +3054,36 @@
       "roles": [
         "admin"
       ]
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/team/{membershipId}/capabilities",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/market-delegation/markets/{marketCode}/team/{membershipId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/market-delegation/markets/{marketCode}/team/invitations/{invitationId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/team/invitations",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/team",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/team/invitations/{token}/accept",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "GET /api/modules/{type}",
