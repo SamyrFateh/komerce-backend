@@ -57,17 +57,19 @@ function container(doc) {
 }
 
 describe('LOT 2A-CANON — primitives dashboard', () => {
-  test('expose exactement la liste V1 fermée', () => {
+  test('expose la liste canonique et l’alias contractuel KpiStrip', () => {
     const ui = createPrimitives(fakeDocument());
     expect(Object.keys(ui)).toEqual([
       'UIState',
       'FilterBar',
       'Section',
+      'KpiStrip',
       'MetricStrip',
       'AlertPanel',
       'DataTable',
       'ChartPanel',
     ]);
+    expect(ui.KpiStrip).toBe(ui.MetricStrip);
     expect(Object.isFrozen(ui)).toBe(true);
   });
 

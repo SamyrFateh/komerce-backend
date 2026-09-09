@@ -43,9 +43,10 @@ describe('Canonical dashboard drills', () => {
     ]);
   });
 
-  test('Finance approfondit uniquement vers Comptabilité', () => {
+  test('Finance déclare Comptabilité et Pricing ; le rôle filtre ensuite la visibilité', () => {
     expect(finance.FINANCE_SCHEMA.drill).toEqual([
       { id: 'accounting-workspace', label: 'Comptabilité & encaissements', href: '/admin/workspaces/accounting' },
+      { id: 'pricing-workspace', label: 'Pricing & coûts', href: '/admin/workspaces/pricing' },
     ]);
   });
 
