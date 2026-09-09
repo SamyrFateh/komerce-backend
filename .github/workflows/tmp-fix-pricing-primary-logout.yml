@@ -1,0 +1,118 @@
+name: Temporary pricing primary + logout fix
+on:
+  push:
+    branches:
+      - fix/pricing-cockpit-primary-logout
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pricing-cockpit-primary-logout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Apply focused UI delta
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f'missing pattern in {path}: {old[:120]!r}')
+              p.write_text(s.replace(old, new, 1))
+
+          # 1) Atelier économique : toujours dans un contexte marché résolu.
+          replace_once(
+              'public/dashboards/canonical/js/app.js',
+              "      requireMarket: user && user.role === 'market_operator',",
+              "      requireMarket: true,",
+          )
+
+          # 2) Le cockpit devient la surface primaire : la décision technique reste
+          #    accessible dans Détails avancés, mais header/KPI bruts ne polluent plus.
+          cockpit = Path('public/dashboards/canonical/js/pricing-economic-cockpit.js')
+          s = cockpit.read_text()
+          old = """    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);\n    const advanced = createAdvancedDetails(options.document, advancedNodes);\n    slot.replaceChildren(cockpit, advanced);\n    bindCockpit(rootObject, workspace, options, payload, cockpit, advanced);\n"""
+          new = """    // Le cockpit approuvé est la surface primaire de l'Atelier. Les sections\n    // techniques produites par le workspace brut (ex. Décision marché / politique)\n    // restent disponibles sous Détails avancés, mais ne doivent jamais précéder le\n    // cockpit ni donner l'impression que l'ancienne vue est encore la page active.\n    const outerAdvancedNodes = Array.from(options.root.children || []).filter(node =>\n      node !== workshop && node.classList?.contains('kmc-section')\n    );\n    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);\n    const advanced = createAdvancedDetails(options.document, [...advancedNodes, ...outerAdvancedNodes]);\n    const workspaceFeedback = options.root.querySelector('[data-workspace-feedback]');\n    const advancedBody = advanced.querySelector('.kmc-cockpit-advanced-body');\n    if (workspaceFeedback && advancedBody?.prepend) advancedBody.prepend(workspaceFeedback);\n    slot.replaceChildren(cockpit, advanced);\n\n    // Les seuls enfants racine encore présents hors du workshop sont le chrome\n    // brut du workspace (header + KPI). On le conserve dans le DOM pour les\n    // contrats internes mais on le rend explicitement non visuel.\n    Array.from(options.root.children || []).forEach(node => {\n      if (node === workshop) return;\n      node.hidden = true;\n      if (node.dataset) node.dataset.pricingCockpitLegacyHidden = '';\n    });\n    workshop.dataset.pricingCockpitPrimary = '';\n    bindCockpit(rootObject, workspace, options, payload, cockpit, advanced);\n"""
+          if old not in s:
+              raise SystemExit('cockpit insertion point not found')
+          cockpit.write_text(s.replace(old, new, 1))
+
+          # 3) Logout visible dans le shell Canonical.
+          nav = Path('public/dashboards/canonical/js/navigation.js')
+          s = nav.read_text()
+          marker = """  function currentRequestedMarket(adminContext) {\n"""
+          insert = """  function createLogoutButton(doc) {\n    const button = textNode(doc, 'button', 'kmc-admin-logout', 'Déconnexion');\n    button.type = 'button';\n    button.setAttribute('aria-label', 'Se déconnecter');\n    button.addEventListener('click', async () => {\n      button.disabled = true;\n      try {\n        if (typeof global.fetch === 'function') {\n          await global.fetch('/api/auth/logout', {\n            method: 'POST',\n            credentials: 'include',\n            headers: { Accept: 'application/json' },\n          });\n        }\n      } catch (error) {\n        console.error('[canonical-admin] logout request failed', error);\n      } finally {\n        global.KOMERCE_CANONICAL_AUTH_USER = null;\n        global.KOMERCE_AUTH_USER = null;\n        if (global.location) {\n          if (typeof global.location.replace === 'function') global.location.replace('/login.html');\n          else global.location.href = '/login.html';\n        }\n      }\n    });\n    return button;\n  }\n\n  function currentRequestedMarket(adminContext) {\n"""
+          if marker not in s:
+              raise SystemExit('navigation insertion point not found')
+          s = s.replace(marker, insert, 1)
+          old = """    const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));\n    account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);\n    utilities.appendChild(account);\n"""
+          new = """    const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));\n    account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);\n    utilities.appendChild(account);\n    utilities.appendChild(createLogoutButton(doc));\n"""
+          if old not in s:
+              raise SystemExit('navigation account block not found')
+          nav.write_text(s.replace(old, new, 1))
+
+          # 4) Style compact mais toujours visible, y compris mobile.
+          css = Path('public/dashboards/canonical/css/navigation.css')
+          s = css.read_text()
+          marker = """.kmc-admin-account {\n"""
+          logout_css = """.kmc-admin-logout {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 34px;\n  padding: 0 10px;\n  color: rgb(255 255 255 / 0.78);\n  border: 1px solid rgb(255 255 255 / 0.14);\n  border-radius: 8px;\n  background: rgb(255 255 255 / 0.045);\n  font: inherit;\n  font-size: 11px;\n  font-weight: 750;\n  cursor: pointer;\n  white-space: nowrap;\n}\n\n.kmc-admin-logout:hover,\n.kmc-admin-logout:focus-visible {\n  color: #fff;\n  border-color: rgb(255 255 255 / 0.34);\n  background: rgb(255 255 255 / 0.10);\n  outline: none;\n}\n\n.kmc-admin-logout:disabled {\n  opacity: 0.55;\n  cursor: wait;\n}\n\n.kmc-admin-account {\n"""
+          if marker not in s:
+              raise SystemExit('navigation css insertion point not found')
+          css.write_text(s.replace(marker, logout_css, 1))
+
+          # 5) Cache bust explicite des scripts réellement modifiés.
+          index = Path('public/dashboards/canonical/index.html')
+          s = index.read_text()
+          replacements = {
+              '/dashboards/canonical/css/navigation.css?v=1501': '/dashboards/canonical/css/navigation.css?v=1502',
+              '/dashboards/canonical/js/pricing-economic-cockpit.js?v=1401': '/dashboards/canonical/js/pricing-economic-cockpit.js?v=1402',
+              '/dashboards/canonical/js/app.js': '/dashboards/canonical/js/app.js?v=1502',
+              '/dashboards/canonical/js/navigation.js?v=1501': '/dashboards/canonical/js/navigation.js?v=1502',
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  raise SystemExit(f'index cache bust pattern missing: {old}')
+              s = s.replace(old, new, 1)
+          index.write_text(s)
+
+          # 6) Tests de contrat.
+          test = Path('tests/unit/canonical-pricing-economic-cockpit.test.js')
+          s = test.read_text()
+          s = s.replace("expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1401');",
+                        "expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1402');")
+          anchor = """  expect(css).toContain('.kmc-cockpit-detail-grid');\n});\n"""
+          extra = """  expect(css).toContain('.kmc-cockpit-detail-grid');\n  expect(source).toContain('outerAdvancedNodes');\n  expect(source).toContain("node.dataset.pricingCockpitLegacyHidden = ''");\n  expect(source).toContain("workshop.dataset.pricingCockpitPrimary = ''");\n});\n"""
+          if anchor not in s:
+              raise SystemExit('cockpit test anchor missing')
+          test.write_text(s.replace(anchor, extra, 1))
+
+          navtest = Path('tests/unit/canonical-navigation.test.js')
+          s = navtest.read_text()
+          anchor = """  test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {\n"""
+          logout_test = """  test('Déconnexion appelle le endpoint auth puis revient au login', async () => {\n    const replace = jest.fn();\n    const fetch = jest.fn().mockResolvedValue({ ok: true });\n    const env = loadNavigation('/admin/pilotage', 'pilotage', {\n      window: {\n        fetch,\n        location: { pathname: '/admin/pilotage', search: '', href: 'https://komerce.test/admin/pilotage', replace },\n      },\n    });\n    const header = env.api.mount({\n      document: env.document,\n      pathname: '/admin/pilotage',\n      surface: 'pilotage',\n      user: { role: 'admin' },\n    });\n    const utilities = header.children[0].children[2];\n    const logout = utilities.children.find(node => node.className === 'kmc-admin-logout');\n\n    expect(logout).toBeDefined();\n    expect(logout.textContent).toBe('Déconnexion');\n    await logout.listeners.click();\n    expect(fetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({\n      method: 'POST',\n      credentials: 'include',\n    }));\n    expect(replace).toHaveBeenCalledWith('/login.html');\n  });\n\n  test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {\n"""
+          if anchor not in s:
+              raise SystemExit('navigation test anchor missing')
+          navtest.write_text(s.replace(anchor, logout_test, 1))
+          PY
+      - name: Targeted tests
+        run: npx jest tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-navigation.test.js --runInBand
+      - name: Broad canonical/admin regression
+        run: npx jest 'tests/unit/canonical-.*\.test\.js' 'tests/unit/admin-.*\.test\.js' --runInBand
+      - name: Commit final patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/tmp-fix-pricing-primary-logout.yml
+          git add public/dashboards/canonical tests/unit
+          git commit -m "fix(admin): make economic cockpit primary and add logout"
+          git push origin HEAD:fix/pricing-cockpit-primary-logout
