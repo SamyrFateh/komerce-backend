@@ -107,6 +107,9 @@ DECLARE
   v_scope TEXT;
   v_mode TEXT;
 BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.assignment_id IS DISTINCT FROM OLD.assignment_id THEN
+    RAISE EXCEPTION 'assignment ceiling rows cannot move between assignments';
+  END IF;
   SELECT authority_scope, delegation_mode
     INTO v_scope, v_mode
     FROM capability_registry
@@ -123,7 +126,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_assignment_ceiling_capability_guard ON assignment_capability_ceiling;
 CREATE TRIGGER trg_assignment_ceiling_capability_guard
-BEFORE INSERT OR UPDATE OF capability ON assignment_capability_ceiling
+BEFORE INSERT OR UPDATE OF capability, assignment_id ON assignment_capability_ceiling
 FOR EACH ROW EXECUTE FUNCTION enforce_assignment_ceiling_capability();
 
 CREATE OR REPLACE FUNCTION enforce_membership_capability_within_ceiling()
@@ -153,6 +156,38 @@ DROP TRIGGER IF EXISTS trg_membership_capability_ceiling_guard ON membership_cap
 CREATE TRIGGER trg_membership_capability_ceiling_guard
 BEFORE INSERT OR UPDATE OF capability, membership_id ON membership_capabilities
 FOR EACH ROW EXECUTE FUNCTION enforce_membership_capability_within_ceiling();
+
+CREATE OR REPLACE FUNCTION prevent_ceiling_removal_with_active_member_grants()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_assignment UUID := OLD.assignment_id;
+  v_capability TEXT := OLD.capability;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NOT (OLD.revoked_at IS NULL AND NEW.revoked_at IS NOT NULL) THEN
+    RETURN NEW;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM assignment_memberships am
+      JOIN membership_capabilities mc ON mc.membership_id = am.id
+     WHERE am.assignment_id = v_assignment
+       AND am.status = 'ACTIVE'
+       AND mc.capability = v_capability
+       AND mc.revoked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'cannot remove ceiling capability % while active member grants remain', v_capability;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_ceiling_removal_member_grants_guard ON assignment_capability_ceiling;
+CREATE TRIGGER trg_ceiling_removal_member_grants_guard
+BEFORE UPDATE OF revoked_at OR DELETE ON assignment_capability_ceiling
+FOR EACH ROW EXECUTE FUNCTION prevent_ceiling_removal_with_active_member_grants();
 
 WITH template_row AS (
   INSERT INTO ceiling_templates (name, version, is_current)
