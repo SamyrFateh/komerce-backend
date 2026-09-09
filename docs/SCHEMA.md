@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 135 | Vérifié sur le dump live Railway. |
+| Tables | 143 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 358 | Performance + contraintes uniques |
-| Foreign keys | 234 | Cohérence relationnelle |
-| Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 37 | Triggers présents dans le dump live Railway. |
+| Index | 367 | Performance + contraintes uniques |
+| Foreign keys | 255 | Cohérence relationnelle |
+| Fonctions | 22 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 40 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -285,63 +285,15 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sourcing_global_access_grants` | Grants persistés autorisant explicitement les surfaces Sourcing globales ; aucune autorité globale implicite. **Migration 149 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `pricing_global_access_grants` | Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur. **Migration 152 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `decision_signal_global_access_grants` | Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses. **Migration 153 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `capability_registry` | Registre exécutable des capabilities DELEGATION / EXECUTION / BOUNDARY, de leur portée et de leur statut ; le KPI d’autonomie ne prend que DELEGATION au dénominateur. **Migration 193 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_operating_assignments` | Mandat d’exploitation économique d’un Market ID ; au plus une ligne ACTIVE par marché. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `assignment_capability_ceiling` | Plafond effectif des capabilities MARKET/DELEGABLE concédées par le central à un assignment. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `assignment_memberships` | Membres agissant sous un Market Operating Assignment, avec historique explicite de révocation. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `membership_capabilities` | Capabilities actives de chaque membership, structurellement bornées par le ceiling de l’assignment. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `ceiling_templates` | Templates versionnés de plafond central ; un seul template peut être courant. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: capability_registry
-kind: table
-migration: 193
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Registre exécutable des capabilities DELEGATION / EXECUTION / BOUNDARY, de leur portée et de leur statut ; le KPI d’autonomie ne prend que DELEGATION au dénominateur.
--->
-<!-- schema-pending
-object: market_operating_assignments
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Mandat d’exploitation économique d’un Market ID ; au plus une ligne ACTIVE par marché.
--->
-<!-- schema-pending
-object: assignment_capability_ceiling
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Plafond effectif des capabilities MARKET/DELEGABLE concédées par le central à un assignment.
--->
-<!-- schema-pending
-object: assignment_memberships
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Membres agissant sous un Market Operating Assignment, avec historique explicite de révocation.
--->
-<!-- schema-pending
-object: membership_capabilities
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Capabilities actives de chaque membership, structurellement bornées par le ceiling de l’assignment.
--->
-<!-- schema-pending
-object: ceiling_templates
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Templates versionnés de plafond central ; un seul template peut être courant.
--->
-<!-- schema-pending
-object: ceiling_template_capabilities
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Association entre un template de ceiling et ses capabilities autorisées.
--->
-<!-- schema-pending
-object: market_delegation_audit
-kind: table
-migration: 194
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Journal append-only des mutations de délégation, distinct des faits économiques.
--->
 
 ### 4.13 Monitoring et alertes (10 tables)
 

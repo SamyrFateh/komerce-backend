@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 521
-- Files with full headers: 476
+- Scanned code files: 524
+- Files with full headers: 479
 - Files with lite headers: 45
-- Files with any headers: 521
+- Files with any headers: 524
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1203
-- Edges: 6087
-- DB tables: 139
-- Doctrines: 367
-- Impact areas: 176
-- Unresolved code edges: 587
+- Graph nodes: 1221
+- Edges: 6135
+- DB tables: 147
+- Doctrines: 372
+- Impact areas: 178
+- Unresolved code edges: 593
 - Tables multi-écrivains directs (>=2): 65
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -47,6 +47,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
+- market-delegation: 3
 - notification: 21
 - operations: 11
 - orders: 29
@@ -83,7 +84,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 115
 - route-manifest: 1
 - schema: 1
-- service: 233
+- service: 236
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -308,6 +309,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/authkey-client.js — authkey-whatsapp-adapter (notification, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/boutique-taxonomy-admin.js — boutique-taxonomy-admin-service (catalog, high, full)
+- services/capability-registry.js — market-delegation-capability-registry (market-delegation, high, full)
 - services/cash-deposit-service.js — payment-cash-deposit-service (payment, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-candidate-product-service.js — catalog-candidate-product-owner (catalog, high, full)
@@ -362,7 +364,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
+- services/market-delegation-service.js — market-delegation-write-service (market-delegation, high, full)
 - services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
+- services/market-scope-projector.js — market-delegation-scope-projector (market-delegation, high, full)
 - services/mobile-money-reconciliation.js — mobile-money-reconciliation (payment, high, full)
 - services/mobile-money/registry.js — mobile-money-provider-registry (payment, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
@@ -524,6 +528,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-operations.js -> alerts
 - WRITE utils/alerts.js -> alerts
 - WRITE utils/parcelSync.js -> alerts
+- WRITE services/market-delegation-service.js -> assignment_capability_ceiling
+- WRITE services/market-delegation-service.js -> assignment_memberships
 - WRITE routes/admin/system.js -> basket_items
 - WRITE services/shared-cart-creation.js -> basket_items
 - WRITE services/shared-cart-engine.js -> basket_items
@@ -596,8 +602,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/market-delegation-service.js -> market_delegation_audit
+- WRITE services/market-delegation-service.js -> market_operating_assignments
 - WRITE services/pricing-market-corridor.js -> market_price_observation_events
 - WRITE services/pricing-market-corridor.js -> market_price_observations
+- WRITE services/market-delegation-service.js -> membership_capabilities
 - WRITE services/payment-mobile-money.js -> mobile_money_transactions
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
@@ -619,11 +628,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cost-allocation/allocate.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation/index.js -> order_item_real_cost_allocations
 - WRITE services/transport-cost-allocation.js -> order_item_real_cost_allocations
-- WRITE routes/admin/delete-order-cascade.js -> order_items
-- WRITE routes/admin/system.js -> order_items
-- WRITE services/order-checkout-persistence.js -> order_items
-- WRITE services/order-checkout-service.js -> order_items
-- WRITE services/order-item-availability-service.js -> order_items
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -847,6 +851,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
 - uses: checkout -> routes/otp.js (checkout)
+- uses: CI -> services/capability-registry.js (CI)
 - depends: core/test-whatsapp-notifications.js -> services/authkey-client (services/authkey-client)
 - depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
 - uses: customs -> services/order-mutation-service.js (customs)
@@ -859,8 +864,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
 - uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
+- uses: future market-delegation routes -> services/market-delegation-service.js (future market-delegation routes)
 - uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
-- uses: future pricing coverage gate -> services/pricing-period-structure.js (future pricing coverage gate)
 - uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
@@ -870,6 +875,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: logistics -> services/order-mutation-service.js (logistics)
 - uses: magic-link validation -> utils/auth-session.js (magic-link validation)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
+- uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
+- uses: market-delegation-service -> services/capability-registry.js (market-delegation-service)
+- uses: market-delegation -> services/market-scope-admin-service.js (market-delegation)
+- uses: market-scope-projector -> services/market-delegation-service.js (market-scope-projector)
 - depends: middleware/auth-guest.js -> db (db)
 - depends: middleware/auth.js -> db (db)
 - depends: middleware/require-catalog-global-authority.js -> db.js (db.js)
@@ -938,11 +947,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-client-index.js -> middleware/require-market-scope (middleware/require-market-scope)
 - depends: routes/admin-client-index.js -> services/client-index (services/client-index)
 - depends: routes/admin-costing.js -> db.js (db.js)
-- depends: routes/admin-costing.js -> services/* (services/*)
-- depends: routes/admin-customs-categories.js -> db.js (db.js)
-- depends: routes/admin-customs-categories.js -> services/* (services/*)
-- depends: routes/admin-customs-shipments.js -> db.js (db.js)
-- depends: routes/admin-customs-shipments.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
