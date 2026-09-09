@@ -616,8 +616,21 @@
   async function boot() {
     const root = document.getElementById('canonical-admin-root');
     if (!root) throw new Error('canonical_admin_root_missing');
-
     const user = await requireSession();
+
+    // `/admin` est l'unique porte d'entrée interne. Une session déjà ouverte
+    // doit obtenir exactement la même landing métier qu'une session qui vient
+    // de passer par /login.html, avant tout chargement d'un AdminContext qui
+    // pourrait ne pas appartenir au rôle (Hub, Relais, Finance, etc.).
+    const entryPath = String(global.location.pathname || '');
+    if (entryPath === '/admin' || entryPath === '/admin/') {
+      const landing = defaultLandingSurface(user);
+      if (landing !== entryPath) {
+        global.location.replace(landing);
+        return user;
+      }
+    }
+
     const surface = surfaceForPath(global.location.pathname);
     const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
