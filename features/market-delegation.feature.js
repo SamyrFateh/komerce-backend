@@ -50,11 +50,11 @@ module.exports = {
       'memberships et capabilities membres, toujours sous le plafond',
       'règle de délégation grant(member) ⊆ grant(grantor) ⊆ ceiling(assignment)',
       'audit append-only des mutations de délégation',
-      'projection déterministe vers operator_market_scopes pour préserver le middleware existant',
+      'calcul déterministe de la projection vers operator_market_scopes, persistée exclusivement par la boundary de la feature market',
       'autonomy_rate calculé uniquement sur la classe DELEGATION',
     ],
     out: [
-      'référentiel markets et Currency Boundary : feature market',
+      'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
       'règles d’allocation GROUP et vérité économique consolidée : economic-engine',
       'fonctions Hub/transit mutualisées : hors Market Operating Assignment',
       'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents',
@@ -91,7 +91,6 @@ module.exports = {
       'market_delegation_audit: RW!',
       'markets: R',
       'users: R',
-      'operator_market_scopes: W',
     ],
   },
 
@@ -99,7 +98,7 @@ module.exports = {
     status: 'CONFIRMED_PROTECTED',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: 'P0 n’expose encore aucune route. Les futures mutations seront authentifiées, market-scopées et capability-aware. operator_market_scopes reste un read model ; require-market-scope.js ne change pas.',
+    note: 'P0 n’expose encore aucune route. Les futures mutations seront authentifiées, market-scopées et capability-aware. operator_market_scopes reste un read model persisté par market ; require-market-scope.js ne change pas.',
   },
 
   contract: {
@@ -113,16 +112,16 @@ module.exports = {
       { fn: 'projectAssignment', file: 'services/market-scope-projector.js' },
       { fn: 'projectionDrift', file: 'services/market-scope-projector.js' },
     ],
-    consumes: ['market', 'infrastructure'],
+    consumes: ['market', 'auth-identity', 'infrastructure'],
   },
 
-  authority: 'backend-core — cette feature possède la délégation d’autorité marché ; elle ne possède ni le référentiel market, ni les règles GROUP, ni les fonctions terrain mutualisées.',
+  authority: 'backend-core — cette feature possède la délégation d’autorité marché ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni les règles GROUP, ni les fonctions terrain mutualisées.',
 
   invariants: [
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },
-    { statement: 'operator_market_scopes est une projection de compatibilité ; require-market-scope.js ne dépend jamais directement des tables de délégation', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'operator_market_scopes est une projection de compatibilité persistée par sa lifecycle owner market ; require-market-scope.js ne dépend jamais directement des tables de délégation', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'une membership granulaire ne projette jamais manager sur les routes legacy sauf si elle détient 100 % du ceiling actif ; compatibilité legacy fail-closed', test: 'tests/unit/market-delegation-p0.test.js' },
   ],
 };
