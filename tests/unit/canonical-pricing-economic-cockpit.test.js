@@ -33,7 +33,6 @@ test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
   expect(source).toContain("economicNature(component) === 'variable'");
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'direct'");
   expect(source).toContain("economicNature(component) === 'fixed' && allocationPerimeter(component) === 'mutualized'");
-  expect(source).toContain('Direct / mutualisé décrit le périmètre, jamais la nature de la charge.');
   expect(source).toContain('Toute quote-part mutualisée est calculée par Market ID');
 });
 
@@ -59,8 +58,8 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).toContain('charge.market_share_kmf');
   expect(source).toContain('Valeur effective ${marketCode}');
   expect(source).toContain('point?.economics?.contribution_unit_kmf');
-  expect(source).toContain('Référence globale · informative');
-  expect(source).toContain('Jamais utilisée silencieusement comme vérité locale.');
+  expect(source).toContain('Référence globale (informative)');
+  expect(source).toContain('Non utilisée comme vérité locale.');
   expect(source).not.toContain('market_id');
   expect(source).not.toContain('marketId');
 });

@@ -51,9 +51,9 @@
   }
 
   const METRIC_ICONS = {
-    'charges': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/></svg>', tone: 'blue' },
+    'charges': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/><path d="M5 12v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6"/></svg>', tone: 'violet' },
     'contribution': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>', tone: 'green' },
-    'couverture': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".2"/></svg>', tone: 'green' },
+    'couverture': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".2"/></svg>', tone: 'teal' },
     'reste': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>', tone: 'red' },
     'moyenne': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>', tone: 'blue' },
   };
@@ -165,11 +165,11 @@
     const observed = flow.observed_mix || {};
     const target = flow.economic_break_even || {};
     const state = el(doc, 'div', 'kmc-flow-equilibrium-state');
-    state.appendChild(metric(doc, 'Charges à couvrir', formatKmf(coverage.denominator_n3_kmf), 'Charges fixes directes + quote-part fixe mutualisée'));
-    state.appendChild(metric(doc, 'Contribution générée', formatKmf(coverage.numerator_contribution_kmf ?? observed.reconciled_contribution_kmf), 'Contribution unique du portefeuille'));
-    state.appendChild(metric(doc, 'Couverture', formatRatioPercent(workspace, coverage.coverage_ratio), 'Contribution ÷ charges à couvrir'));
-    state.appendChild(metric(doc, 'Reste à couvrir', formatKmf(target.gap_kmf), target.status === 'TARGET_REACHED' ? 'Équilibre économique atteint' : 'Distance monétaire à 100 %', target.status === 'TARGET_REACHED' ? 'positive' : 'warning'));
-    state.appendChild(metric(doc, 'Contribution moyenne / article', formatKmf(observed.contribution_per_article_kmf), `${formatNumber(observed.article_units)} unités observées`));
+    state.appendChild(metric(doc, 'Charges à couvrir', formatKmf(coverage.denominator_n3_kmf), 'Fixes directes + quote-part fixes mutualisées', null, 'charges'));
+    state.appendChild(metric(doc, 'Contribution générée', formatKmf(coverage.numerator_contribution_kmf ?? observed.reconciled_contribution_kmf), 'Somme des contributions de tous les articles', null, 'contribution'));
+    state.appendChild(metric(doc, 'Couverture', formatRatioPercent(workspace, coverage.coverage_ratio), 'Contribution / charges structurelles', null, 'couverture'));
+    state.appendChild(metric(doc, 'Reste à couvrir', formatKmf(target.gap_kmf), target.status === 'TARGET_REACHED' ? 'Objectif atteint' : 'Distance restante avant l’équilibre', target.status === 'TARGET_REACHED' ? 'positive' : 'warning', 'reste'));
+    state.appendChild(metric(doc, 'Contribution moyenne / article', formatKmf(observed.contribution_per_article_kmf), 'Par article (mix réel)', null, 'moyenne'));
     panel.appendChild(state);
 
     panel.appendChild(buildFlowDetails(doc, flow));

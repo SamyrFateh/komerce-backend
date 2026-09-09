@@ -86,6 +86,8 @@
 .kmc-flow-equilibrium-icon.is-blue { background: #eff6ff; color: #2563eb; }
 .kmc-flow-equilibrium-icon.is-green { background: #e8f8ee; color: #16a34a; }
 .kmc-flow-equilibrium-icon.is-red { background: #fef2f2; color: #dc2626; }
+.kmc-flow-equilibrium-icon.is-violet { background: var(--kmc-violet-soft); color: var(--kmc-violet); }
+.kmc-flow-equilibrium-icon.is-teal { background: var(--kmc-teal-soft); color: var(--kmc-teal); }
 
 /* ── Cost total rows ─────────────────────────────────────── */
 .kmc-cockpit-cost-total-row {
@@ -619,6 +621,30 @@
   color: #11203a;
   font-size: 15px;
 }
+
+.kmc-cockpit-detail-card-title,
+.kmc-cockpit-global-reference-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: #11203a;
+  font-size: 15px;
+}
+
+.kmc-cockpit-global-reference-title { margin-bottom: 6px; font-size: 13px; }
+
+.kmc-cockpit-detail-card-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.kmc-cockpit-detail-card-icon.is-blue { background: #eff6ff; color: #2563eb; }
 
 /* product identity moved to top of file */
 
