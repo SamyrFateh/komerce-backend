@@ -45,6 +45,8 @@ module.exports = {
       'refus fail-closed si une granularité SKU/variante explicite entrerait en conflit',
       'projection manager/viewer de la capacité réellement disponible',
       'surface Canonical de test de l’autonomie pays',
+      'surface équipe pays intégrée : lecture, invitation, délégation et révocation de capabilities',
+      'parcours explicite d’acceptation d’invitation avec retour vers le Market ID résolu côté serveur',
     ],
     out: [
       'mutation de products.price_kmf global',
@@ -69,11 +71,16 @@ module.exports = {
     dash: [
       'dashboards/canonical/market-autonomy.html',
       'dashboards/canonical/js/market-autonomy.js',
+      'dashboards/canonical/css/market-team.css',
+      'dashboards/canonical/js/market-team.js',
+      'dashboards/canonical/team-invite.html',
+      'dashboards/canonical/js/team-invite.js',
     ],
     tests: [
       'tests/unit/market-commercial-price-service.test.js',
       'tests/unit/market-local-price-resolution-service.test.js',
       'tests/unit/market-local-price-activation-service.test.js',
+      'tests/unit/market-delegation-team-ui.test.js',
     ],
   },
 
@@ -94,7 +101,8 @@ module.exports = {
     authedRoutesDetected: 0,
     totalRoutes: 0,
     note: 'La feature compose ses actions dans Pricing Canonical après résolution market scope serveur. ' +
-      'Preview est lisible dans le scope ; décision, reset et activation exigent market_operator + scope manager.',
+      'Preview est lisible dans le scope ; décision, reset et activation exigent market_operator + scope manager. ' +
+      'La surface équipe consomme uniquement les routes market-delegation protégées et ne traite jamais un market_id navigateur comme autorité.',
   },
 
   contract: {
@@ -110,6 +118,8 @@ module.exports = {
       'economic-engine — CDR, politique marché et gate de couverture',
       'catalog — products/SKU en lecture ; le prix global reste inchangé',
       'infrastructure — db.js pour transaction et audit',
+      'market-delegation — memberships, capabilities team.* et acceptation d’invitation ; l’UI n’invente aucune autorité',
+      'auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite',
     ],
   },
 
@@ -126,5 +136,6 @@ module.exports = {
     { statement: 'un prix pays produit n’écrase jamais silencieusement un prix SKU/variante explicite', test: 'tests/unit/market-local-price-resolution-service.test.js' },
     { statement: 'SET RESET AUTHORIZE ACTIVATE sont auditables et scoped par market_id + product_id', test: 'tests/unit/market-commercial-price-service.test.js' },
     { statement: 'seul un market_operator manager peut persister ou activer une stratégie de prix locale', test: 'tests/unit/market-commercial-price-service.test.js' },
+    { statement: 'le lien d’invitation conserve next pendant le login, permet la création d’un compte client, l’acceptation est explicite, puis le token est retiré et le marché vient du contexte serveur', test: 'tests/unit/market-delegation-team-ui.test.js' },
   ],
 };
