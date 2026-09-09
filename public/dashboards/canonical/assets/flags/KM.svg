@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Drapeau des Comores">
+  <rect width="900" height="150" y="0" fill="#ffd100"/>
+  <rect width="900" height="150" y="150" fill="#ffffff"/>
+  <rect width="900" height="150" y="300" fill="#ef3340"/>
+  <rect width="900" height="150" y="450" fill="#003da5"/>
+  <path fill="#009639" d="M0 0l390 300L0 600z"/>
+  <path fill="#fff" d="M154 300a104 104 0 1 0 0-208 86 86 0 1 1 0 208z" transform="translate(0 104)"/>
+  <g fill="#fff">
+    <path d="M205 185l6 18h19l-15 11 6 18-16-11-15 11 6-18-15-11h19z"/>
+    <path d="M205 255l6 18h19l-15 11 6 18-16-11-15 11 6-18-15-11h19z"/>
+    <path d="M205 325l6 18h19l-15 11 6 18-16-11-15 11 6-18-15-11h19z"/>
+    <path d="M205 395l6 18h19l-15 11 6 18-16-11-15 11 6-18-15-11h19z"/>
+  </g>
+</svg>
