@@ -14,6 +14,7 @@ jest.mock('../../db', () => ({
 const db = require('../../db');
 const {
   recordStructureCostEvent,
+  listStructureCostEvents,
   computePeriodStructureTruth,
   _aggregateRows,
   _validateMoney,
@@ -473,5 +474,61 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
     expect(result.allocation.allocated_group_pool_kmf).toBe(60000);
     expect(result.allocation.unallocated_group_pool_kmf).toBe(30000);
     expect(result.allocation.market_shared_partial_kmf).toBe(30000);
+  });
+});
+
+describe('listStructureCostEvents', () => {
+  beforeEach(() => { db.query.mockReset(); });
+
+  test('filtre par charge_id, scope_kind et market_id, plus récent en premier', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'evt-1' }] });
+
+    const rows = await listStructureCostEvents({
+      chargeId: 'charge-1',
+      scopeKind: 'MARKET_DIRECT',
+      marketId: 'market-cm',
+    });
+
+    expect(rows).toEqual([{ id: 'evt-1' }]);
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toMatch(/ORDER BY ece\.recorded_at DESC/);
+    expect(sql).toMatch(/charge_id = \$1/);
+    expect(sql).toMatch(/scope_kind = \$2/);
+    expect(sql).toMatch(/market_id = \$3/);
+    expect(params).toEqual(['charge-1', 'MARKET_DIRECT', 'market-cm', 50]);
+  });
+
+  test('scope GROUP sans marketId filtre explicitement market_id IS NULL', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await listStructureCostEvents({ scopeKind: 'GROUP' });
+
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toMatch(/market_id IS NULL/);
+    expect(sql).toMatch(/scope_kind = \$1/);
+    expect(params).toEqual(['GROUP', 50]);
+  });
+
+  test('sans filtre, retourne tout borné par la limite par défaut', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await listStructureCostEvents();
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).not.toMatch(/WHERE/);
+    expect(params).toEqual([50]);
+  });
+
+  test('la limite est bornée entre 1 et 200', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await listStructureCostEvents({ limit: 5000 });
+    expect(db.query.mock.calls[0][1]).toEqual([200]);
+
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await listStructureCostEvents({ limit: -3 });
+    expect(db.query.mock.calls[1][1]).toEqual([1]);
+  });
+
+  test('scope_kind invalide lève une erreur avant toute requête', async () => {
+    await expect(listStructureCostEvents({ scopeKind: 'BOGUS' })).rejects.toThrow('invalid scope_kind');
+    expect(db.query).not.toHaveBeenCalled();
   });
 });

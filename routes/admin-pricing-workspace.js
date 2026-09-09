@@ -4,14 +4,14 @@
  * @domain        economic-engine
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy
- * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js
+ * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, pricing_global_access_grants
+ * @db-read       markets, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
  * @db-write      none
  * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -35,6 +35,7 @@ const marketDecisionProjection = require('../services/pricing-market-decision-pr
 const pricingMarketCorridor = require('../services/pricing-market-corridor');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
+const pricingPeriodStructure = require('../services/pricing-period-structure');
 const { decorateMarketDecision } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
@@ -383,9 +384,112 @@ router.post('/market/:marketCode/cost-components/:key/reset', requireMarketPrici
   } catch (error) { handleError(error, res, next); }
 });
 
+// Ajustements de charge structurelle (N3) — formulaire séparé côté client,
+// jamais un champ éditable inline. Le marché n'est jamais accepté du corps de
+// la requête : il vient exclusivement de req.workspaceMarket (résolu par
+// resolveRequestedMarket + attachAuthorizedMarkets ci-dessus). scope_kind est
+// forcé à MARKET_DIRECT ici — un market_operator ne peut jamais écrire un
+// fait GROUP (mutualisé), qui affecte tous les marchés.
+router.get('/market/:marketCode/charges', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const { rows } = await db.query(
+      `SELECT id, family, name, is_active, recurrence_period
+         FROM charges
+        WHERE is_active = TRUE
+        ORDER BY family, name`
+    );
+    res.json({ charges: rows });
+  } catch (error) { handleError(error, res, next); }
+});
+
+router.get('/market/:marketCode/structure-events', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const events = await pricingPeriodStructure.listStructureCostEvents({
+      chargeId: req.query.charge_id || null,
+      scopeKind: pricingPeriodStructure.SCOPE_KINDS.MARKET_DIRECT,
+      marketId: req.workspaceMarket.id,
+      limit: req.query.limit,
+    });
+    res.json({ events });
+  } catch (error) { handleStructureEventError(error, res, next); }
+});
+
+router.post('/market/:marketCode/structure-events', requireMarketPricingManager, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const event = await pricingPeriodStructure.recordStructureCostEvent(
+      {
+        ...body,
+        scope_kind: pricingPeriodStructure.SCOPE_KINDS.MARKET_DIRECT,
+        market_id: req.workspaceMarket.id,
+      },
+      req.user.id
+    );
+    sendAction(res, 'record_structure_cost_event', event, 201);
+  } catch (error) { handleStructureEventError(error, res, next); }
+});
+
+function handleStructureEventError(error, res, next) {
+  const message = String(error && error.message || '');
+  if (message === 'charge not found') {
+    return res.status(404).json({ error: 'Charge introuvable', code: 'structure_event_charge_not_found' });
+  }
+  if (message === 'market not found or inactive') {
+    return res.status(404).json({ error: 'Marché introuvable ou inactif', code: 'market_not_found' });
+  }
+  if (message === 'adjusted event not found') {
+    return res.status(404).json({ error: 'Fait à corriger introuvable', code: 'structure_event_not_found' });
+  }
+  if (
+    message.endsWith('is required')
+    || message.includes('must be')
+    || message.includes('length must be')
+    || message.includes('invalid')
+    || message.includes('cannot')
+    || message.includes('requires')
+    || message.includes('inconsistent')
+  ) {
+    return res.status(400).json({ error: message, code: 'structure_event_invalid' });
+  }
+  return handleError(error, res, next);
+}
+
 // Global Pricing remains a distinct central authority. A market_operator can
 // never fall through to these routes because the role guard is admin-only.
 router.use(authenticate, requireRole(['admin']), requirePricingGlobalAuthority, rejectBrowserAuthority);
+
+// Ajustements de charge structurelle mutualisée (N3, scope GROUP) — admin
+// only : un fait GROUP affecte la quote-part de tous les marchés à la fois,
+// jamais un seul. market_id est toujours forcé à null ici, quel que soit le
+// corps envoyé — server_market_scope_is_authority.
+router.get('/structure-events', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const events = await pricingPeriodStructure.listStructureCostEvents({
+      chargeId: req.query.charge_id || null,
+      scopeKind: pricingPeriodStructure.SCOPE_KINDS.GROUP,
+      limit: req.query.limit,
+    });
+    res.json({ events });
+  } catch (error) { handleStructureEventError(error, res, next); }
+});
+
+router.post('/structure-events', async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const event = await pricingPeriodStructure.recordStructureCostEvent(
+      {
+        ...body,
+        scope_kind: pricingPeriodStructure.SCOPE_KINDS.GROUP,
+        market_id: null,
+      },
+      req.user.id
+    );
+    sendAction(res, 'record_structure_cost_event', event, 201);
+  } catch (error) { handleStructureEventError(error, res, next); }
+});
 
 router.get('/', async (req, res, next) => {
   try {
