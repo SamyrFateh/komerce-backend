@@ -8,7 +8,7 @@ const path = require('path');
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
 const db = require('../../db');
-const auth = require('../../middleware/auth');
+const roleBridge = require('../../middleware/require-market-delegated-role');
 const projector = require('../../services/market-scope-projector');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -30,7 +30,7 @@ describe('market-delegation runtime compatibility bridge', () => {
     const res = responseDouble();
     const next = jest.fn();
 
-    await auth.requireRole(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(db.query).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('market-delegation runtime compatibility bridge', () => {
     const res = responseDouble();
     const next = jest.fn();
 
-    await auth.requireRole(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(res.status).not.toHaveBeenCalled();
@@ -72,7 +72,7 @@ describe('market-delegation runtime compatibility bridge', () => {
     const res = responseDouble();
     const next = jest.fn();
 
-    await auth.requireRole(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
@@ -84,7 +84,7 @@ describe('market-delegation runtime compatibility bridge', () => {
     const res = responseDouble();
     const next = jest.fn();
 
-    await auth.requireRole(['admin'])(req, res, next);
+    await roleBridge.requireRoleWithMarketDelegation(['admin'])(req, res, next);
 
     expect(db.query).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
