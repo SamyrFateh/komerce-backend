@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 521,
-    "filesWithFullHeaders": 476,
+    "scannedCodeFiles": 524,
+    "filesWithFullHeaders": 479,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 521,
+    "filesWithAnyHeaders": 524,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1203,
-    "edges": 6087,
-    "dbTables": 139,
-    "doctrines": 367,
-    "impactAreas": 176,
-    "unresolvedCodeEdges": 587,
+    "graphNodes": 1221,
+    "edges": 6135,
+    "dbTables": 147,
+    "doctrines": 372,
+    "impactAreas": 178,
+    "unresolvedCodeEdges": 593,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 65
   },
@@ -64,6 +64,7 @@
     "local-stock": 3,
     "purchasing": 8,
     "unsold-resolution": 1,
+    "market-delegation": 3,
     "incident-management": 2,
     "market-autonomy": 4,
     "refunds": 2,
@@ -103,7 +104,7 @@
     "schema": 1,
     "route": 115,
     "entrypoint": 1,
-    "service": 233,
+    "service": 236,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,7 +115,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 123,
-    "high": 267,
+    "high": 270,
     "low": 53
   },
   "nodes": [
@@ -6348,7 +6349,8 @@
         "resolved_market_code",
         "business_refs",
         "pricing_payload",
-        "governed_market_decision_policy"
+        "governed_market_decision_policy",
+        "structure_cost_event"
       ],
       "outputs": [
         "canonical_pricing_projection",
@@ -6357,7 +6359,9 @@
         "market_price_decisions",
         "market_corridor_projection",
         "activation_preview",
-        "action_results"
+        "action_results",
+        "structure_cost_event_fact",
+        "structure_cost_event_history"
       ],
       "depends": [
         "db.js",
@@ -6369,7 +6373,8 @@
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
-        "services/market-local-price-activation-service.js"
+        "services/market-local-price-activation-service.js",
+        "services/pricing-period-structure.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -6377,7 +6382,10 @@
       "dbRead": [
         "markets",
         "operator_market_scopes",
-        "pricing_global_access_grants"
+        "pricing_global_access_grants",
+        "charges",
+        "economic_structure_cost_events",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -6390,7 +6398,8 @@
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
         "one_contribution_many_views",
-        "market_corridor_is_observation_not_gate"
+        "market_corridor_is_observation_not_gate",
+        "pricing_market_viability_period_structure_truth"
       ],
       "impactAreas": [
         "pricing",
@@ -11645,6 +11654,50 @@
       "version": "2026-08"
     },
     {
+      "id": "services/capability-registry.js",
+      "file": "services/capability-registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-capability-registry",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "capability_registry"
+      ],
+      "outputs": [
+        "capability_reference",
+        "autonomy_rate",
+        "ceiling_validation"
+      ],
+      "depends": [
+        "config/market-delegation-capabilities.js"
+      ],
+      "usedBy": [
+        "market-delegation-service",
+        "CI"
+      ],
+      "dbRead": [
+        "capability_registry"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "market_delegation_capability_ceiling"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/cart-share-service.js",
       "file": "services/cart-share-service.js",
       "type": "file",
@@ -15260,6 +15313,66 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-delegation-service.js",
+      "file": "services/market-delegation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-write-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "assignment",
+        "ceiling",
+        "memberships",
+        "member_capabilities",
+        "actor"
+      ],
+      "outputs": [
+        "delegated_market_authority"
+      ],
+      "depends": [
+        "services/capability-registry.js"
+      ],
+      "usedBy": [
+        "future market-delegation routes",
+        "market-scope-projector"
+      ],
+      "dbRead": [
+        "markets",
+        "capability_registry",
+        "ceiling_templates",
+        "ceiling_template_capabilities",
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities"
+      ],
+      "dbWrite": [
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities",
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "one_active_assignment_per_market",
+        "delegated_rights_subset"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/market-local-price-activation-service.js",
       "file": "services/market-local-price-activation-service.js",
       "type": "file",
@@ -15439,9 +15552,10 @@
       "inputs": [
         "caller_owned_executor",
         "user_id",
-        "market_code",
+        "market_code_or_id",
         "scope_role",
-        "actor_id"
+        "actor_id",
+        "membership_id"
       ],
       "outputs": [
         "active_markets",
@@ -15451,7 +15565,8 @@
       ],
       "depends": [],
       "usedBy": [
-        "dashboard"
+        "dashboard",
+        "market-delegation"
       ],
       "dbRead": [
         "markets",
@@ -15470,7 +15585,55 @@
       "impactAreas": [
         "market",
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-delegation"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-scope-projector.js",
+      "file": "services/market-scope-projector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-scope-projector",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities"
+      ],
+      "outputs": [
+        "desired market authorization projection"
+      ],
+      "depends": [
+        "services/market-scope-admin-service.js"
+      ],
+      "usedBy": [
+        "market-delegation mutations"
+      ],
+      "dbRead": [
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "operator_market_scopes_is_market_owned_projection",
+        "granular_members_fail_closed_on_legacy_roles"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
       ],
       "version": "2026-09"
     },
@@ -19002,19 +19165,21 @@
       "outputs": [
         "append_only_structure_fact",
         "period_structure_truth",
-        "governed_group_allocation"
+        "governed_group_allocation",
+        "structure_cost_event_history"
       ],
       "depends": [
         "db"
       ],
       "usedBy": [
-        "future pricing coverage gate"
+        "routes/admin-pricing-workspace.js"
       ],
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
         "markets",
-        "orders"
+        "orders",
+        "users"
       ],
       "dbWrite": [
         "economic_structure_cost_events"
@@ -24775,6 +24940,11 @@
       "table": "pricing_category_taxes"
     },
     {
+      "id": "db:economic_structure_cost_events",
+      "type": "db-table",
+      "table": "economic_structure_cost_events"
+    },
+    {
       "id": "db:risk_provisions",
       "type": "db-table",
       "table": "risk_provisions"
@@ -25060,6 +25230,11 @@
       "table": "price_history"
     },
     {
+      "id": "db:capability_registry",
+      "type": "db-table",
+      "table": "capability_registry"
+    },
+    {
       "id": "db:shared_cart_items",
       "type": "db-table",
       "table": "shared_cart_items"
@@ -25175,6 +25350,41 @@
       "table": "product_market_price_draft_events"
     },
     {
+      "id": "db:ceiling_templates",
+      "type": "db-table",
+      "table": "ceiling_templates"
+    },
+    {
+      "id": "db:ceiling_template_capabilities",
+      "type": "db-table",
+      "table": "ceiling_template_capabilities"
+    },
+    {
+      "id": "db:market_operating_assignments",
+      "type": "db-table",
+      "table": "market_operating_assignments"
+    },
+    {
+      "id": "db:assignment_capability_ceiling",
+      "type": "db-table",
+      "table": "assignment_capability_ceiling"
+    },
+    {
+      "id": "db:assignment_memberships",
+      "type": "db-table",
+      "table": "assignment_memberships"
+    },
+    {
+      "id": "db:membership_capabilities",
+      "type": "db-table",
+      "table": "membership_capabilities"
+    },
+    {
+      "id": "db:market_delegation_audit",
+      "type": "db-table",
+      "table": "market_delegation_audit"
+    },
+    {
       "id": "db:suppliers_stats",
       "type": "db-table",
       "table": "suppliers_stats"
@@ -25228,11 +25438,6 @@
       "id": "db:pricing_maturity_disposition_events",
       "type": "db-table",
       "table": "pricing_maturity_disposition_events"
-    },
-    {
-      "id": "db:economic_structure_cost_events",
-      "type": "db-table",
-      "table": "economic_structure_cost_events"
     },
     {
       "id": "db:economic_risk_cost_events",
@@ -26035,6 +26240,11 @@
       "doctrine": "market_corridor_is_observation_not_gate"
     },
     {
+      "id": "doctrine:pricing_market_viability_period_structure_truth",
+      "type": "doctrine",
+      "doctrine": "pricing_market_viability_period_structure_truth"
+    },
+    {
       "id": "doctrine:product_ref_is_business_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_business_identity"
@@ -26295,6 +26505,11 @@
       "doctrine": "writer_not_owner_campaign_2026_08"
     },
     {
+      "id": "doctrine:market_delegation_capability_ceiling",
+      "type": "doctrine",
+      "doctrine": "market_delegation_capability_ceiling"
+    },
+    {
       "id": "doctrine:auto_close_when_fully_claimed",
       "type": "doctrine",
       "doctrine": "auto_close_when_fully_claimed"
@@ -26520,6 +26735,16 @@
       "doctrine": "authorization_distinct_from_buyer_cutover"
     },
     {
+      "id": "doctrine:one_active_assignment_per_market",
+      "type": "doctrine",
+      "doctrine": "one_active_assignment_per_market"
+    },
+    {
+      "id": "doctrine:delegated_rights_subset",
+      "type": "doctrine",
+      "doctrine": "delegated_rights_subset"
+    },
+    {
       "id": "doctrine:local_human_decides_system_checks_no_central_approval",
       "type": "doctrine",
       "doctrine": "local_human_decides_system_checks_no_central_approval"
@@ -26563,6 +26788,16 @@
       "id": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_persistence_boundary"
+    },
+    {
+      "id": "doctrine:operator_market_scopes_is_market_owned_projection",
+      "type": "doctrine",
+      "doctrine": "operator_market_scopes_is_market_owned_projection"
+    },
+    {
+      "id": "doctrine:granular_members_fail_closed_on_legacy_roles",
+      "type": "doctrine",
+      "doctrine": "granular_members_fail_closed_on_legacy_roles"
     },
     {
       "id": "doctrine:callback_not_required",
@@ -26828,11 +27063,6 @@
       "id": "doctrine:pricing_market_viability_maturity_watermark",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_maturity_watermark"
-    },
-    {
-      "id": "doctrine:pricing_market_viability_period_structure_truth",
-      "type": "doctrine",
-      "doctrine": "pricing_market_viability_period_structure_truth"
     },
     {
       "id": "doctrine:pricing_market_viability_period_risk_truth",
@@ -27860,6 +28090,11 @@
       "area": "cancellation"
     },
     {
+      "id": "impact:delegation",
+      "type": "impact-area",
+      "area": "delegation"
+    },
+    {
       "id": "impact:orders-create",
       "type": "impact-area",
       "area": "orders-create"
@@ -27928,6 +28163,11 @@
       "id": "impact:platform-ops",
       "type": "impact-area",
       "area": "platform-ops"
+    },
+    {
+      "id": "impact:market-delegation",
+      "type": "impact-area",
+      "area": "market-delegation"
     },
     {
       "id": "impact:pickup",
@@ -36870,6 +37110,12 @@
       "label": "services/market-local-price-activation-service.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-pricing-workspace.js",
       "type": "uses",
@@ -36892,6 +37138,24 @@
       "to": "db:pricing_global_access_grants",
       "type": "db-read",
       "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -36940,6 +37204,12 @@
       "to": "doctrine:market_corridor_is_observation_not_gate",
       "type": "doctrine",
       "label": "market_corridor_is_observation_not_gate"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:pricing_market_viability_period_structure_truth",
+      "type": "doctrine",
+      "label": "pricing_market_viability_period_structure_truth"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -44560,6 +44830,54 @@
       "label": "cancellation"
     },
     {
+      "from": "services/capability-registry.js",
+      "to": "config/market-delegation-capabilities.js",
+      "type": "depends",
+      "label": "config/market-delegation-capabilities.js"
+    },
+    {
+      "from": "market-delegation-service",
+      "to": "services/capability-registry.js",
+      "type": "uses",
+      "label": "market-delegation-service"
+    },
+    {
+      "from": "CI",
+      "to": "services/capability-registry.js",
+      "type": "uses",
+      "label": "CI"
+    },
+    {
+      "from": "services/capability-registry.js",
+      "to": "db:capability_registry",
+      "type": "db-read",
+      "label": "capability_registry"
+    },
+    {
+      "from": "services/capability-registry.js",
+      "to": "doctrine:market_delegation_capability_ceiling",
+      "type": "doctrine",
+      "label": "market_delegation_capability_ceiling"
+    },
+    {
+      "from": "services/capability-registry.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/capability-registry.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "services/capability-registry.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
       "from": "services/cart-share-service.js",
       "to": "db.js",
       "type": "depends",
@@ -50182,6 +50500,132 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/market-delegation-service.js",
+      "to": "services/capability-registry.js",
+      "type": "depends",
+      "label": "services/capability-registry.js"
+    },
+    {
+      "from": "future market-delegation routes",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "future market-delegation routes"
+    },
+    {
+      "from": "market-scope-projector",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "market-scope-projector"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:capability_registry",
+      "type": "db-read",
+      "label": "capability_registry"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:ceiling_templates",
+      "type": "db-read",
+      "label": "ceiling_templates"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:ceiling_template_capabilities",
+      "type": "db-read",
+      "label": "ceiling_template_capabilities"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-write",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-write",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-write",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-write",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write",
+      "label": "market_delegation_audit"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "doctrine:one_active_assignment_per_market",
+      "type": "doctrine",
+      "label": "one_active_assignment_per_market"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "doctrine:delegated_rights_subset",
+      "type": "doctrine",
+      "label": "delegated_rights_subset"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "services/market-delegation-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
       "from": "services/market-local-price-activation-service.js",
       "to": "services/market-commercial-price-service.js",
       "type": "depends",
@@ -50506,6 +50950,12 @@
       "label": "dashboard"
     },
     {
+      "from": "market-delegation",
+      "to": "services/market-scope-admin-service.js",
+      "type": "uses",
+      "label": "market-delegation"
+    },
+    {
       "from": "services/market-scope-admin-service.js",
       "to": "db:markets",
       "type": "db-read",
@@ -50546,6 +50996,78 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/market-scope-admin-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "services/market-scope-admin-service.js",
+      "type": "depends",
+      "label": "services/market-scope-admin-service.js"
+    },
+    {
+      "from": "market-delegation mutations",
+      "to": "services/market-scope-projector.js",
+      "type": "uses",
+      "label": "market-delegation mutations"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "doctrine:operator_market_scopes_is_market_owned_projection",
+      "type": "doctrine",
+      "label": "operator_market_scopes_is_market_owned_projection"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "doctrine:granular_members_fail_closed_on_legacy_roles",
+      "type": "doctrine",
+      "label": "granular_members_fail_closed_on_legacy_roles"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
     },
     {
       "from": "services/mobile-money-reconciliation.js",
@@ -56165,10 +56687,10 @@
       "label": "db"
     },
     {
-      "from": "future pricing coverage gate",
+      "from": "routes/admin-pricing-workspace.js",
       "to": "services/pricing-period-structure.js",
       "type": "uses",
-      "label": "future pricing coverage gate"
+      "label": "routes/admin-pricing-workspace.js"
     },
     {
       "from": "services/pricing-period-structure.js",
@@ -56193,6 +56715,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/pricing-period-structure.js",
@@ -71173,7 +71701,8 @@
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
-        "services/market-local-price-activation-service.js"
+        "services/market-local-price-activation-service.js",
+        "services/pricing-period-structure.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -71182,7 +71711,10 @@
       "dbRead": [
         "markets",
         "operator_market_scopes",
-        "pricing_global_access_grants"
+        "pricing_global_access_grants",
+        "charges",
+        "economic_structure_cost_events",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -71194,7 +71726,8 @@
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
         "one_contribution_many_views",
-        "market_corridor_is_observation_not_gate"
+        "market_corridor_is_observation_not_gate",
+        "pricing_market_viability_period_structure_truth"
       ],
       "impactAreas": [
         "pricing",
@@ -71204,15 +71737,19 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:charges",
+        "db:economic_structure_cost_events",
         "db:markets",
         "db:operator_market_scopes",
         "db:pricing_global_access_grants",
+        "db:users",
         "doctrine:browser_business_refs_only",
         "doctrine:country_manager_owns_local_strategy",
         "doctrine:global_pricing_authority_or_server_market_scope",
         "doctrine:market_corridor_is_observation_not_gate",
         "doctrine:market_decision_policy_is_append_only",
         "doctrine:one_contribution_many_views",
+        "doctrine:pricing_market_viability_period_structure_truth",
         "doctrine:simulation_is_read_only",
         "doctrine:viewer_reads_manager_writes",
         "impact:admin-dashboard",
@@ -71228,6 +71765,7 @@
         "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
+        "services/pricing-period-structure.js",
         "services/pricing-workspace.js"
       ]
     },
@@ -76296,6 +76834,43 @@
         "utils/logger.js"
       ]
     },
+    "services/capability-registry.js": {
+      "role": "market-delegation-capability-registry",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "config/market-delegation-capabilities.js"
+      ],
+      "directUsedBy": [
+        "market-delegation-service",
+        "CI"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "capability_registry"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_delegation_capability_ceiling"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
+      ],
+      "mustCheck": [
+        "db:capability_registry",
+        "doctrine:market_delegation_capability_ceiling",
+        "impact:authorization",
+        "impact:delegation",
+        "impact:market",
+        "services/market-delegation-service.js"
+      ]
+    },
     "services/cart-share-service.js": {
       "role": "shared-cart-orders-boundary",
       "domain": "shared-cart",
@@ -79835,6 +80410,66 @@
         "services/market-local-price-state-transition.js"
       ]
     },
+    "services/market-delegation-service.js": {
+      "role": "market-delegation-write-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/capability-registry.js"
+      ],
+      "directUsedBy": [
+        "future market-delegation routes",
+        "market-scope-projector"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "capability_registry",
+        "ceiling_templates",
+        "ceiling_template_capabilities",
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities"
+      ],
+      "dbWrite": [
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities",
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "one_active_assignment_per_market",
+        "delegated_rights_subset"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:capability_registry",
+        "db:ceiling_template_capabilities",
+        "db:ceiling_templates",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "doctrine:delegated_rights_subset",
+        "doctrine:one_active_assignment_per_market",
+        "impact:authorization",
+        "impact:delegation",
+        "impact:market",
+        "services/capability-registry.js"
+      ]
+    },
     "services/market-local-price-activation-service.js": {
       "role": "market-local-price-activation-orchestrator",
       "domain": "market-autonomy",
@@ -80018,7 +80653,8 @@
       "purpose": null,
       "directDependsOn": [],
       "directUsedBy": [
-        "dashboard"
+        "dashboard",
+        "market-delegation"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -80035,7 +80671,8 @@
       "impactAreas": [
         "market",
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-delegation"
       ],
       "mustCheck": [
         "db:markets",
@@ -80043,7 +80680,53 @@
         "doctrine:lifecycle_owner_persistence_boundary",
         "impact:admin-dashboard",
         "impact:dashboard",
-        "impact:market"
+        "impact:market",
+        "impact:market-delegation",
+        "services/market-scope-projector.js"
+      ]
+    },
+    "services/market-scope-projector.js": {
+      "role": "market-delegation-scope-projector",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-scope-admin-service.js"
+      ],
+      "directUsedBy": [
+        "market-delegation mutations"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_operating_assignments",
+        "assignment_capability_ceiling",
+        "assignment_memberships",
+        "membership_capabilities"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "operator_market_scopes_is_market_owned_projection",
+        "granular_members_fail_closed_on_legacy_roles"
+      ],
+      "impactAreas": [
+        "market",
+        "authorization",
+        "delegation"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:market_operating_assignments",
+        "db:membership_capabilities",
+        "doctrine:granular_members_fail_closed_on_legacy_roles",
+        "doctrine:operator_market_scopes_is_market_owned_projection",
+        "impact:authorization",
+        "impact:delegation",
+        "impact:market",
+        "services/market-scope-admin-service.js"
       ]
     },
     "services/mobile-money-reconciliation.js": {
@@ -83548,14 +84231,15 @@
         "db"
       ],
       "directUsedBy": [
-        "future pricing coverage gate"
+        "routes/admin-pricing-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
         "markets",
-        "orders"
+        "orders",
+        "users"
       ],
       "dbWrite": [
         "economic_structure_cost_events"
@@ -83574,10 +84258,12 @@
         "db:economic_structure_cost_events",
         "db:markets",
         "db:orders",
+        "db:users",
         "doctrine:pricing_market_viability_period_structure_truth",
         "impact:economic-engine",
         "impact:governance",
         "impact:pricing",
+        "routes/admin-pricing-workspace.js",
         "services/pricing-market-coverage.js"
       ]
     },
@@ -91514,6 +92200,24 @@
       "label": "db.js"
     },
     {
+      "from": "services/capability-registry.js",
+      "to": "config/market-delegation-capabilities.js",
+      "type": "depends",
+      "label": "config/market-delegation-capabilities.js"
+    },
+    {
+      "from": "market-delegation-service",
+      "to": "services/capability-registry.js",
+      "type": "uses",
+      "label": "market-delegation-service"
+    },
+    {
+      "from": "CI",
+      "to": "services/capability-registry.js",
+      "type": "uses",
+      "label": "CI"
+    },
+    {
       "from": "services/cart-share-service.js",
       "to": "db.js",
       "type": "depends",
@@ -92174,6 +92878,18 @@
       "label": "db.js"
     },
     {
+      "from": "future market-delegation routes",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "future market-delegation routes"
+    },
+    {
+      "from": "market-scope-projector",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "market-scope-projector"
+    },
+    {
       "from": "services/market-local-price-resolution-service.js",
       "to": "db.js",
       "type": "depends",
@@ -92190,6 +92906,18 @@
       "to": "services/market-scope-admin-service.js",
       "type": "uses",
       "label": "dashboard"
+    },
+    {
+      "from": "market-delegation",
+      "to": "services/market-scope-admin-service.js",
+      "type": "uses",
+      "label": "market-delegation"
+    },
+    {
+      "from": "market-delegation mutations",
+      "to": "services/market-scope-projector.js",
+      "type": "uses",
+      "label": "market-delegation mutations"
     },
     {
       "from": "services/mobile-money-reconciliation.js",
@@ -92550,12 +93278,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "future pricing coverage gate",
-      "to": "services/pricing-period-structure.js",
-      "type": "uses",
-      "label": "future pricing coverage gate"
     },
     {
       "from": "services/pricing-rates.js",

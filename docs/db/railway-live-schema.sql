@@ -387,6 +387,64 @@ $$;
 
 
 --
+-- Name: enforce_assignment_ceiling_capability(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_assignment_ceiling_capability() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_scope TEXT;
+  v_mode TEXT;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.assignment_id IS DISTINCT FROM OLD.assignment_id THEN
+    RAISE EXCEPTION 'assignment ceiling rows cannot move between assignments';
+  END IF;
+  SELECT authority_scope, delegation_mode
+    INTO v_scope, v_mode
+    FROM capability_registry
+   WHERE capability = NEW.capability;
+  IF v_scope IS NULL THEN
+    RAISE EXCEPTION 'unknown capability: %', NEW.capability;
+  END IF;
+  IF v_scope <> 'MARKET' OR v_mode <> 'DELEGABLE' THEN
+    RAISE EXCEPTION 'capability % cannot enter a market assignment ceiling', NEW.capability;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_membership_capability_within_ceiling(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_membership_capability_within_ceiling() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_assignment UUID;
+BEGIN
+  SELECT assignment_id INTO v_assignment
+    FROM assignment_memberships
+   WHERE id = NEW.membership_id;
+  IF v_assignment IS NULL THEN
+    RAISE EXCEPTION 'membership % not found', NEW.membership_id;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM assignment_capability_ceiling acc
+     WHERE acc.assignment_id = v_assignment
+       AND acc.capability = NEW.capability
+       AND acc.revoked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'capability % exceeds assignment ceiling', NEW.capability;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: flag_customs_anomaly(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -427,6 +485,39 @@ $$;
 --
 
 COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE si tous les POs non annulÃ©s ont received_qty >= qty.';
+
+
+--
+-- Name: prevent_ceiling_removal_with_active_member_grants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_ceiling_removal_with_active_member_grants() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_assignment UUID := OLD.assignment_id;
+  v_capability TEXT := OLD.capability;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NOT (OLD.revoked_at IS NULL AND NEW.revoked_at IS NOT NULL) THEN
+    RETURN NEW;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM assignment_memberships am
+      JOIN membership_capabilities mc ON mc.membership_id = am.id
+     WHERE am.assignment_id = v_assignment
+       AND am.status = 'ACTIVE'
+       AND mc.capability = v_capability
+       AND mc.revoked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'cannot remove ceiling capability % while active member grants remain', v_capability;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
 
 
 --
@@ -653,6 +744,53 @@ CREATE TABLE public.alerts (
 
 
 --
+-- Name: assignment_capability_ceiling; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assignment_capability_ceiling (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    assignment_id uuid NOT NULL,
+    capability text NOT NULL,
+    granted_by uuid,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_by uuid
+);
+
+
+--
+-- Name: TABLE assignment_capability_ceiling; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.assignment_capability_ceiling IS 'Maximum MARKET/DELEGABLE authority granted by central to one operating assignment.';
+
+
+--
+-- Name: assignment_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assignment_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    assignment_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    status text DEFAULT 'ACTIVE'::text NOT NULL,
+    granted_by uuid,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_by uuid,
+    CONSTRAINT assignment_membership_revocation_state_check CHECK ((((status = 'ACTIVE'::text) AND (revoked_at IS NULL)) OR ((status = 'REVOKED'::text) AND (revoked_at IS NOT NULL)))),
+    CONSTRAINT assignment_memberships_status_check CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'REVOKED'::text])))
+);
+
+
+--
+-- Name: TABLE assignment_memberships; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.assignment_memberships IS 'Users acting under one Market Operating Assignment; capabilities are granted separately.';
+
+
+--
 -- Name: basket_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -777,6 +915,36 @@ CREATE TABLE public.business_rules_history (
     change_reason text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: capability_registry; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.capability_registry (
+    capability text NOT NULL,
+    class text NOT NULL,
+    domain text NOT NULL,
+    authority_scope text NOT NULL,
+    delegation_mode text NOT NULL,
+    requires_audit boolean DEFAULT false NOT NULL,
+    status text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT capability_registry_authority_scope_check CHECK ((authority_scope = ANY (ARRAY['MARKET'::text, 'GROUP'::text]))),
+    CONSTRAINT capability_registry_class_check CHECK ((class = ANY (ARRAY['DELEGATION'::text, 'EXECUTION'::text, 'BOUNDARY'::text]))),
+    CONSTRAINT capability_registry_delegation_mode_check CHECK ((delegation_mode = ANY (ARRAY['DELEGABLE'::text, 'CENTRAL_ONLY'::text]))),
+    CONSTRAINT capability_registry_domain_check CHECK ((char_length(btrim(domain)) > 0)),
+    CONSTRAINT capability_registry_group_central_only CHECK (((authority_scope <> 'GROUP'::text) OR (delegation_mode = 'CENTRAL_ONLY'::text))),
+    CONSTRAINT capability_registry_status_check CHECK ((status = ANY (ARRAY['LIVE'::text, 'IMPLEMENTED_PENDING_MERGE'::text, 'CENTRAL_HELD'::text, 'READ_ONLY'::text, 'MISSING'::text])))
+);
+
+
+--
+-- Name: TABLE capability_registry; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.capability_registry IS 'Executable market-delegation registry. Only class DELEGATION belongs to the autonomy KPI denominator.';
 
 
 --
@@ -1069,6 +1237,31 @@ COMMENT ON TABLE public.catalog_media IS 'Média canonique catalogue (PDC-8 Lot 
 --
 
 COMMENT ON COLUMN public.catalog_media.source_media_id IS 'supplier_media_id V2 tel quel. NULL = source pauvre, aucune identité fournisseur fabriquée : pas d''unicité applicable, ré-promotion peut dupliquer honnêtement.';
+
+
+--
+-- Name: ceiling_template_capabilities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ceiling_template_capabilities (
+    template_id uuid NOT NULL,
+    capability text NOT NULL
+);
+
+
+--
+-- Name: ceiling_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ceiling_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    version integer NOT NULL,
+    is_current boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ceiling_templates_name_check CHECK ((char_length(btrim(name)) > 0)),
+    CONSTRAINT ceiling_templates_version_check CHECK ((version > 0))
+);
 
 
 --
@@ -2494,6 +2687,58 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 
 --
+-- Name: market_delegation_audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_delegation_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    actor_user_id uuid,
+    assignment_id uuid,
+    membership_id uuid,
+    capability text,
+    action text NOT NULL,
+    payload_before jsonb,
+    payload_after jsonb,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    correlation_id text,
+    CONSTRAINT market_delegation_audit_action_check CHECK ((char_length(btrim(action)) > 0))
+);
+
+
+--
+-- Name: TABLE market_delegation_audit; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_delegation_audit IS 'Append-only audit trail for market delegation mutations; distinct from economic facts.';
+
+
+--
+-- Name: market_operating_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_operating_assignments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    status text DEFAULT 'DRAFT'::text NOT NULL,
+    effective_from timestamp with time zone DEFAULT now() NOT NULL,
+    effective_until timestamp with time zone,
+    granted_by uuid,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_operating_assignment_period_check CHECK (((effective_until IS NULL) OR (effective_until > effective_from))),
+    CONSTRAINT market_operating_assignments_status_check CHECK ((status = ANY (ARRAY['DRAFT'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'ENDED'::text])))
+);
+
+
+--
+-- Name: TABLE market_operating_assignments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_operating_assignments IS 'Sole active economic operating mandate for a Market ID; at most one ACTIVE row per market.';
+
+
+--
 -- Name: market_payment_providers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2615,6 +2860,21 @@ COMMENT ON COLUMN public.markets.minor_unit IS 'Décimales de la devise : 0 pour
 
 
 --
+-- Name: membership_capabilities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.membership_capabilities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    membership_id uuid NOT NULL,
+    capability text NOT NULL,
+    granted_by uuid,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_by uuid
+);
+
+
+--
 -- Name: mobile_money_transactions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2679,6 +2939,7 @@ CREATE TABLE public.operator_market_scopes (
     granted_by uuid,
     revoked_at timestamp with time zone,
     revoked_by uuid,
+    projected_from_membership_id uuid,
     CONSTRAINT operator_market_scopes_role_check CHECK ((role = ANY (ARRAY['viewer'::text, 'manager'::text])))
 );
 
@@ -2702,6 +2963,13 @@ COMMENT ON COLUMN public.operator_market_scopes.id IS 'Identité du grant lui-m�
 --
 
 COMMENT ON COLUMN public.operator_market_scopes.revoked_at IS 'NULL = grant actif. Un grant révoqué n''est jamais supprimé : l''historique d''accès doit rester reconstructible à tout instant.';
+
+
+--
+-- Name: COLUMN operator_market_scopes.projected_from_membership_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.operator_market_scopes.projected_from_membership_id IS 'Non-null when this authorization read-model row is deterministically projected from market-delegation assignment membership.';
 
 
 --
@@ -6376,6 +6644,22 @@ ALTER TABLE ONLY public.alerts
 
 
 --
+-- Name: assignment_capability_ceiling assignment_capability_ceiling_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_capability_ceiling
+    ADD CONSTRAINT assignment_capability_ceiling_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: assignment_memberships assignment_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_memberships
+    ADD CONSTRAINT assignment_memberships_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: basket_items basket_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6445,6 +6729,14 @@ ALTER TABLE ONLY public.business_rules
 
 ALTER TABLE ONLY public.business_rules
     ADD CONSTRAINT business_rules_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: capability_registry capability_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.capability_registry
+    ADD CONSTRAINT capability_registry_pkey PRIMARY KEY (capability);
 
 
 --
@@ -6557,6 +6849,30 @@ ALTER TABLE ONLY public.catalog_glossary
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ceiling_template_capabilities ceiling_template_capabilities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ceiling_template_capabilities
+    ADD CONSTRAINT ceiling_template_capabilities_pkey PRIMARY KEY (template_id, capability);
+
+
+--
+-- Name: ceiling_templates ceiling_templates_name_version_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ceiling_templates
+    ADD CONSTRAINT ceiling_templates_name_version_key UNIQUE (name, version);
+
+
+--
+-- Name: ceiling_templates ceiling_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ceiling_templates
+    ADD CONSTRAINT ceiling_templates_pkey PRIMARY KEY (id);
 
 
 --
@@ -6896,6 +7212,22 @@ ALTER TABLE ONLY public.loyalty_tiers
 
 
 --
+-- Name: market_delegation_audit market_delegation_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_operating_assignments market_operating_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_operating_assignments
+    ADD CONSTRAINT market_operating_assignments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: market_payment_providers market_payment_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6941,6 +7273,14 @@ ALTER TABLE ONLY public.markets
 
 ALTER TABLE ONLY public.markets
     ADD CONSTRAINT markets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: membership_capabilities membership_capabilities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_capabilities
+    ADD CONSTRAINT membership_capabilities_pkey PRIMARY KEY (id);
 
 
 --
@@ -7845,6 +8185,13 @@ CREATE INDEX idx_alerts_severity ON public.alerts USING btree (severity);
 
 
 --
+-- Name: idx_assignment_memberships_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_assignment_memberships_user ON public.assignment_memberships USING btree (user_id, status);
+
+
+--
 -- Name: idx_basket_code; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8433,6 +8780,20 @@ CREATE INDEX idx_loyalty_rewards_user ON public.loyalty_rewards USING btree (use
 
 
 --
+-- Name: idx_market_delegation_audit_assignment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_delegation_audit_assignment ON public.market_delegation_audit USING btree (assignment_id, occurred_at DESC);
+
+
+--
+-- Name: idx_market_operating_assignments_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_operating_assignments_market ON public.market_operating_assignments USING btree (market_id, status, effective_from DESC);
+
+
+--
 -- Name: idx_market_price_observation_events_market; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8619,6 +8980,13 @@ CREATE INDEX idx_oirca_parcel ON public.order_item_real_cost_allocations USING b
 --
 
 CREATE INDEX idx_oirca_shipment ON public.order_item_real_cost_allocations USING btree (shipment_id) WHERE (shipment_id IS NOT NULL);
+
+
+--
+-- Name: idx_operator_market_scopes_projected_membership; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_operator_market_scopes_projected_membership ON public.operator_market_scopes USING btree (projected_from_membership_id) WHERE (projected_from_membership_id IS NOT NULL);
 
 
 --
@@ -10190,6 +10558,20 @@ CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts U
 
 
 --
+-- Name: uniq_active_assignment_ceiling_capability; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_assignment_ceiling_capability ON public.assignment_capability_ceiling USING btree (assignment_id, capability) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: uniq_active_assignment_membership; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_assignment_membership ON public.assignment_memberships USING btree (assignment_id, user_id) WHERE (status = 'ACTIVE'::text);
+
+
+--
 -- Name: uniq_active_catalog_global_access; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10204,6 +10586,20 @@ CREATE UNIQUE INDEX uniq_active_dashboard_global_access ON public.dashboard_glob
 
 
 --
+-- Name: uniq_active_market_assignment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_market_assignment ON public.market_operating_assignments USING btree (market_id) WHERE (status = 'ACTIVE'::text);
+
+
+--
+-- Name: uniq_active_membership_capability; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_membership_capability ON public.membership_capabilities USING btree (membership_id, capability) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: uniq_active_operator_scope; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10215,6 +10611,13 @@ CREATE UNIQUE INDEX uniq_active_operator_scope ON public.operator_market_scopes 
 --
 
 CREATE UNIQUE INDEX uniq_cash_deposits_deposit_ref ON public.cash_deposits USING btree (deposit_ref);
+
+
+--
+-- Name: uniq_current_ceiling_template; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_current_ceiling_template ON public.ceiling_templates USING btree ((1)) WHERE (is_current = true);
 
 
 --
@@ -10330,10 +10733,24 @@ CREATE UNIQUE INDEX ux_product_skus_supplier_identity ON public.product_skus USI
 
 
 --
+-- Name: assignment_capability_ceiling trg_assignment_ceiling_capability_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_assignment_ceiling_capability_guard BEFORE INSERT OR UPDATE OF capability, assignment_id ON public.assignment_capability_ceiling FOR EACH ROW EXECUTE FUNCTION public.enforce_assignment_ceiling_capability();
+
+
+--
 -- Name: catalog_media trg_catalog_media_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_catalog_media_updated BEFORE UPDATE ON public.catalog_media FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: assignment_capability_ceiling trg_ceiling_removal_member_grants_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_ceiling_removal_member_grants_guard BEFORE DELETE OR UPDATE OF revoked_at ON public.assignment_capability_ceiling FOR EACH ROW EXECUTE FUNCTION public.prevent_ceiling_removal_with_active_member_grants();
 
 
 --
@@ -10411,6 +10828,13 @@ CREATE TRIGGER trg_fabrics_updated BEFORE UPDATE ON public.fabrics FOR EACH ROW 
 --
 
 CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: membership_capabilities trg_membership_capability_ceiling_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_membership_capability_ceiling_guard BEFORE INSERT OR UPDATE OF capability, membership_id ON public.membership_capabilities FOR EACH ROW EXECUTE FUNCTION public.enforce_membership_capability_within_ceiling();
 
 
 --
@@ -10597,6 +11021,70 @@ ALTER TABLE ONLY public.alerts
 
 
 --
+-- Name: assignment_capability_ceiling assignment_capability_ceiling_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_capability_ceiling
+    ADD CONSTRAINT assignment_capability_ceiling_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assignment_capability_ceiling assignment_capability_ceiling_capability_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_capability_ceiling
+    ADD CONSTRAINT assignment_capability_ceiling_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+
+
+--
+-- Name: assignment_capability_ceiling assignment_capability_ceiling_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_capability_ceiling
+    ADD CONSTRAINT assignment_capability_ceiling_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: assignment_capability_ceiling assignment_capability_ceiling_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_capability_ceiling
+    ADD CONSTRAINT assignment_capability_ceiling_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: assignment_memberships assignment_memberships_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_memberships
+    ADD CONSTRAINT assignment_memberships_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assignment_memberships assignment_memberships_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_memberships
+    ADD CONSTRAINT assignment_memberships_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: assignment_memberships assignment_memberships_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_memberships
+    ADD CONSTRAINT assignment_memberships_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: assignment_memberships assignment_memberships_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assignment_memberships
+    ADD CONSTRAINT assignment_memberships_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: basket_items basket_items_added_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10714,6 +11202,22 @@ ALTER TABLE ONLY public.catalog_global_access_grants
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ceiling_template_capabilities ceiling_template_capabilities_capability_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ceiling_template_capabilities
+    ADD CONSTRAINT ceiling_template_capabilities_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+
+
+--
+-- Name: ceiling_template_capabilities ceiling_template_capabilities_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ceiling_template_capabilities
+    ADD CONSTRAINT ceiling_template_capabilities_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.ceiling_templates(id) ON DELETE CASCADE;
 
 
 --
@@ -11205,6 +11709,54 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 
 --
+-- Name: market_delegation_audit market_delegation_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: market_delegation_audit market_delegation_audit_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_delegation_audit market_delegation_audit_capability_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+
+
+--
+-- Name: market_delegation_audit market_delegation_audit_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.assignment_memberships(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_operating_assignments market_operating_assignments_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_operating_assignments
+    ADD CONSTRAINT market_operating_assignments_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: market_operating_assignments market_operating_assignments_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_operating_assignments
+    ADD CONSTRAINT market_operating_assignments_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
 -- Name: market_payment_providers market_payment_providers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -11269,6 +11821,38 @@ ALTER TABLE ONLY public.market_price_observations
 
 
 --
+-- Name: membership_capabilities membership_capabilities_capability_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_capabilities
+    ADD CONSTRAINT membership_capabilities_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+
+
+--
+-- Name: membership_capabilities membership_capabilities_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_capabilities
+    ADD CONSTRAINT membership_capabilities_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: membership_capabilities membership_capabilities_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_capabilities
+    ADD CONSTRAINT membership_capabilities_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.assignment_memberships(id) ON DELETE CASCADE;
+
+
+--
+-- Name: membership_capabilities membership_capabilities_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_capabilities
+    ADD CONSTRAINT membership_capabilities_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
 -- Name: mobile_money_transactions mobile_money_transactions_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -11298,6 +11882,14 @@ ALTER TABLE ONLY public.operator_market_scopes
 
 ALTER TABLE ONLY public.operator_market_scopes
     ADD CONSTRAINT operator_market_scopes_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: operator_market_scopes operator_market_scopes_projected_from_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_projected_from_membership_id_fkey FOREIGN KEY (projected_from_membership_id) REFERENCES public.assignment_memberships(id);
 
 
 --
