@@ -13,24 +13,16 @@ const projector = require('../../services/market-scope-projector');
 
 const ROOT = path.join(__dirname, '..', '..');
 
-function responseDouble() {
-  return {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-}
-
 describe('market-delegation runtime compatibility bridge', () => {
   beforeEach(() => {
     db.query.mockReset();
   });
 
-  test('un rôle persisté déjà autorisé passe sans requête de délégation', async () => {
+  test('un rôle persisté déjà admis passe sans requête de délégation', async () => {
     const req = { user: { id: 'u1', role: 'market_operator' } };
-    const res = responseDouble();
     const next = jest.fn();
 
-    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.attachMarketDelegatedRoleFor(['admin', 'market_operator'])(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(db.query).not.toHaveBeenCalled();
@@ -41,13 +33,11 @@ describe('market-delegation runtime compatibility bridge', () => {
   test('une membership projetée active fournit market_operator uniquement au runtime', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     const req = { user: { id: 'u2', role: 'client', email: 'member@example.com' } };
-    const res = responseDouble();
     const next = jest.fn();
 
-    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.attachMarketDelegatedRoleFor(['admin', 'market_operator'])(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(res.status).not.toHaveBeenCalled();
     expect(req.user).toMatchObject({
       id: 'u2',
       role: 'market_operator',
@@ -66,29 +56,27 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(params).toEqual(['u2']);
   });
 
-  test('une identité sans projection active reste refusée', async () => {
+  test('sans projection active le pré-guard laisse le rôle intact au requireRole aval', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     const req = { user: { id: 'u3', role: 'client' } };
-    const res = responseDouble();
     const next = jest.fn();
 
-    await roleBridge.requireRoleWithMarketDelegation(['admin', 'market_operator'])(req, res, next);
+    await roleBridge.attachMarketDelegatedRoleFor(['admin', 'market_operator'])(req, {}, next);
 
-    expect(next).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).toHaveBeenCalledTimes(1);
     expect(req.user.role).toBe('client');
+    expect(req.marketDelegationRole).toBeUndefined();
   });
 
-  test('une route sans market_operator ne consulte jamais la délégation', async () => {
+  test('une surface qui n’admet pas market_operator ne consulte jamais la délégation', async () => {
     const req = { user: { id: 'u4', role: 'client' } };
-    const res = responseDouble();
     const next = jest.fn();
 
-    await roleBridge.requireRoleWithMarketDelegation(['admin'])(req, res, next);
+    await roleBridge.attachMarketDelegatedRoleFor(['admin'])(req, {}, next);
 
     expect(db.query).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user.role).toBe('client');
   });
 
   test('la projection legacy exige tout le socle viewer et manager ne regarde que DELEGATION LIVE', async () => {
@@ -120,5 +108,22 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(source).toContain('await projectAssignment(client, accepted.membership.assignment_id)');
     const assignmentProjectionCalls = source.match(/await projectAssignment\(client, authz\.assignment_id\)/g) || [];
     expect(assignmentProjectionCalls.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test('les surfaces legacy gardent un requireRole statique après le pré-guard', () => {
+    const files = [
+      'routes/admin-dashboard-market.js',
+      'routes/admin-pricing-workspace.js',
+      'routes/admin-operations-workspace.js',
+      'routes/admin/partners.js',
+      'routes/hub.js',
+      'routes/hub-dashboard.js',
+      'routes/relay-dashboard.js',
+    ];
+    for (const file of files) {
+      const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect(source).toContain('attachMarketDelegatedRoleFor');
+      expect(source).toMatch(/requireRole\(\s*\[[^\]]*['"]market_operator['"]/);
+    }
   });
 });
