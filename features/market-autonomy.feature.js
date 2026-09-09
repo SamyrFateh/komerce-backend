@@ -120,6 +120,7 @@ module.exports = {
       'catalog — products/SKU en lecture ; le prix global reste inchangé',
       'infrastructure — db.js pour transaction et audit',
       'market-delegation — memberships, capabilities team.* et acceptation d’invitation ; l’UI n’invente aucune autorité',
+      'auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite',
     ],
   },
 
