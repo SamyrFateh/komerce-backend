@@ -4,21 +4,20 @@
  * @domain        market-delegation
  * @layer         middleware
  * @criticality   high
- * @inputs        authenticated user, requested allowed roles, active projected memberships
- * @outputs       effective request-local market_operator role or original role decision
- * @depends       db.js, middleware/auth.js
+ * @inputs        authenticated user, coarse roles already accepted by the route, active projected memberships
+ * @outputs       optional request-local market_operator role before canonical requireRole guard
+ * @depends       db.js
  * @used-by       routes that already admit market_operator
  * @db-read       operator_market_scopes, assignment_memberships, market_operating_assignments
  * @db-write      none
  * @db-txn        none
- * @doctrine      users_role_is_not_market_authority, delegated_role_is_request_local_projection
+ * @doctrine      users_role_is_not_market_authority, delegated_role_is_request_local_projection, canonical_role_guard_remains_explicit
  * @impact-areas  market-delegation, authorization, admin-dashboard
  * @version       2026-09
  */
 'use strict';
 
 const db = require('../db');
-const { requireRole } = require('./auth');
 
 async function hasActiveProjectedMarketDelegation(userId) {
   if (!userId) return false;
@@ -43,28 +42,28 @@ async function hasActiveProjectedMarketDelegation(userId) {
 }
 
 /**
- * Compatibility wrapper for routes that already list `market_operator` among
- * their accepted coarse roles. Persisted roles that are already accepted keep
- * their exact behavior. Only a role that would otherwise be rejected may be
- * projected request-locally to market_operator, and only when the active
- * membership projection is proven server-side.
+ * Request-local pre-guard for an existing coarse role boundary.
  *
- * No users.role mutation occurs. Downstream legacy market guards see the
- * request-local market_operator value and therefore continue to apply their
- * existing operator_market_scopes filtering.
+ * The caller passes exactly the roles already admitted by its canonical
+ * `requireRole([...])`. If the persisted role is already one of them, nothing
+ * changes. Otherwise, and only when `market_operator` belongs to that existing
+ * allow-list, an active membership projection can provide the compatibility
+ * role for this request. The canonical requireRole call remains immediately
+ * downstream and remains visible to Security 360.
+ *
+ * No users.role mutation occurs.
  */
-function requireRoleWithMarketDelegation(roles) {
-  const allowed = Array.isArray(roles) ? [...roles] : [];
-  const baseGuard = requireRole(allowed);
+function attachMarketDelegatedRoleFor(roles) {
+  const allowed = Object.freeze(Array.isArray(roles) ? [...roles] : []);
 
   return async (req, res, next) => {
-    if (!req.user) return baseGuard(req, res, next);
-    if (allowed.includes(req.user.role)) return next();
-    if (!allowed.includes('market_operator')) return baseGuard(req, res, next);
+    if (!req.user || allowed.includes(req.user.role) || !allowed.includes('market_operator')) {
+      return next();
+    }
 
     try {
       const delegated = await hasActiveProjectedMarketDelegation(req.user.id);
-      if (!delegated) return baseGuard(req, res, next);
+      if (!delegated) return next();
 
       const persistedRole = req.user.role;
       req.user = {
@@ -87,5 +86,5 @@ function requireRoleWithMarketDelegation(roles) {
 
 module.exports = {
   hasActiveProjectedMarketDelegation,
-  requireRoleWithMarketDelegation,
+  attachMarketDelegatedRoleFor,
 };
