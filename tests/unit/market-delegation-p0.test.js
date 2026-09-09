@@ -10,15 +10,18 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 1A advances autonomy to 19/31', () => {
+  test('registry remains exact and LOT 2C+2A advance autonomy to 23/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 19, total: 31, rate: 19 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 23, total: 31, rate: 23 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '1A-team', p0_live: 15, live: 19, delegation: 31 },
+      checkpoint: { lot: '2C-cash+2A-network', p0_live: 15, live: 23, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
+      expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
+    }
+    for (const capability of ['network.create', 'network.update', 'network.suspend']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
   });
