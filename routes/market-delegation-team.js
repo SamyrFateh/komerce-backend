@@ -6,13 +6,14 @@
  * @criticality   high
  * @inputs        authenticated user, canonical market code, team payloads
  * @outputs       team read model and auditable team mutations
- * @depends       middleware/auth.js, services/market-delegation-team-service.js
- * @used-by       bootstrap/api-routes.js, future market operator dashboard
+ * @depends       middleware/auth.js, services/market-delegation-team-service.js, services/market-scope-projector.js
+ * @used-by       bootstrap/api-routes.js, market operator dashboard
  * @db-read       none
  * @db-write      none
  * @db-write-via:market-delegation-team-service market_team_invitations, assignment_memberships, membership_capabilities, market_delegation_audit
+ * @db-write-via:market-scope-projector operator_market_scopes
  * @db-txn        explicit
- * @doctrine      capabilities_authorize_team_actions, client_market_id_never_authority
+ * @doctrine      capabilities_authorize_team_actions, client_market_id_never_authority, legacy_scope_is_projection
  * @impact-areas  market, delegation, team, dashboard
  * @version       2026-09
  */
@@ -22,6 +23,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { projectAssignment } = require('../services/market-scope-projector');
 const {
   resolveAuthorization,
   listTeam,
@@ -105,7 +107,7 @@ router.post('/markets/:marketCode/team/invitations', authenticate, async (req, r
     const { email, capabilities = [] } = req.body || {};
     const result = await withTransaction(async (client) => {
       const authz = await authorization(client, req, 'team.invite');
-      return inviteTeamMember(client, {
+      const invited = await inviteTeamMember(client, {
         assignmentId: authz.assignment_id,
         actorUserId: req.user.id,
         actorMembershipId: authz.membership_id,
@@ -113,6 +115,10 @@ router.post('/markets/:marketCode/team/invitations', authenticate, async (req, r
         capabilities,
         correlationId: correlationId(req),
       });
+      if (invited.kind === 'membership') {
+        await projectAssignment(client, authz.assignment_id);
+      }
+      return invited;
     });
 
     if (result.kind === 'membership') {
@@ -141,11 +147,15 @@ router.post('/markets/:marketCode/team/invitations', authenticate, async (req, r
 router.post('/team/invitations/:token/accept', authenticate, async (req, res, next) => {
   try {
     rejectMarketId(req.body);
-    const result = await withTransaction((client) => acceptInvitation(client, {
-      token: req.params.token,
-      userId: req.user.id,
-      correlationId: correlationId(req),
-    }));
+    const result = await withTransaction(async (client) => {
+      const accepted = await acceptInvitation(client, {
+        token: req.params.token,
+        userId: req.user.id,
+        correlationId: correlationId(req),
+      });
+      await projectAssignment(client, accepted.membership.assignment_id);
+      return accepted;
+    });
     res.json({ success: true, ...result });
   } catch (error) {
     if (sendDelegationError(res, error)) return;
@@ -169,13 +179,15 @@ router.put('/markets/:marketCode/team/:membershipId/capabilities', authenticate,
         error.status = 403;
         throw error;
       }
-      return replaceTeamMemberCapabilities(client, {
+      const updated = await replaceTeamMemberCapabilities(client, {
         assignmentId: authz.assignment_id,
         membershipId: req.params.membershipId,
         actorUserId: req.user.id,
         capabilities,
         correlationId: correlationId(req),
       });
+      await projectAssignment(client, authz.assignment_id);
+      return updated;
     });
     res.json({ success: true, ...result });
   } catch (error) {
@@ -188,12 +200,14 @@ router.delete('/markets/:marketCode/team/:membershipId', authenticate, async (re
   try {
     const revoked = await withTransaction(async (client) => {
       const authz = await authorization(client, req, 'team.revoke');
-      return revokeTeamMember(client, {
+      const result = await revokeTeamMember(client, {
         assignmentId: authz.assignment_id,
         membershipId: req.params.membershipId,
         actorUserId: req.user.id,
         correlationId: correlationId(req),
       });
+      await projectAssignment(client, authz.assignment_id);
+      return result;
     });
     res.json({ success: true, revoked });
   } catch (error) {
