@@ -162,6 +162,34 @@
     return String(user.role).replaceAll('_', ' ');
   }
 
+  function createLogoutButton(doc) {
+    const button = textNode(doc, 'button', 'kmc-admin-logout', 'Déconnexion');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Se déconnecter');
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        if (typeof global.fetch === 'function') {
+          await global.fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { Accept: 'application/json' },
+          });
+        }
+      } catch (error) {
+        console.error('[canonical-admin] logout request failed', error);
+      } finally {
+        global.KOMERCE_CANONICAL_AUTH_USER = null;
+        global.KOMERCE_AUTH_USER = null;
+        if (global.location) {
+          if (typeof global.location.replace === 'function') global.location.replace('/login.html');
+          else global.location.href = '/login.html';
+        }
+      }
+    });
+    return button;
+  }
+
   function currentRequestedMarket(adminContext) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return null;
@@ -305,6 +333,7 @@
     const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));
     account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);
     utilities.appendChild(account);
+    utilities.appendChild(createLogoutButton(doc));
 
     inner.appendChild(identity);
     inner.appendChild(primary);
