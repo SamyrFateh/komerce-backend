@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1403');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1402');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1404');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1403');
   expect(source).toContain("title.textContent = 'Atelier économique'");
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
@@ -23,9 +23,16 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(source).toContain('Portefeuille produits');
   expect(source).toContain('Sensibilité prix');
   expect(source).toContain('Données marché');
+  expect(source).toContain('Montant / mois');
+  expect(source).toContain('Coût global');
+  expect(source).toContain('Prix retenu');
+  expect(source).not.toContain('Affiner les observations marché');
+  expect(source).not.toContain('Prix final marché retenu');
   expect(css).toContain('.kmc-cockpit-costs');
   expect(css).toContain('.kmc-cockpit-portfolio-table');
   expect(css).toContain('.kmc-cockpit-detail-grid');
+  expect(css).toContain('MOCK PARITY FINAL');
+  expect(css).toContain('background: #0b84f3');
   expect(source).toContain('options.root.replaceChildren(cockpit)');
   expect(source).toContain("options.root.dataset.pricingMockContract = 'exclusive'");
   expect(source).not.toContain('outerAdvancedNodes');
@@ -47,7 +54,7 @@ test('les valeurs calculées sont grisées et le prix final marché est le levie
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
   expect(source).toContain('Coûts variables hors achat');
   expect(source).toContain('economics.variable_cost_outside_purchase_kmf');
-  expect(source).toContain('Prix final marché retenu');
+  expect(source).toContain("'Prix retenu'");
   expect(source).toContain('dataset.finalMarketPrice');
   expect(source).toContain('Les valeurs grisées sont calculées automatiquement par le moteur');
   expect(css).toContain('.kmc-cockpit-cell.is-derived');
@@ -62,7 +69,7 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).toContain("period ? `?period=${encodeURIComponent(period)}` : ''");
   expect(source).toContain('decision?.coverage?.structure');
   expect(source).toContain('charge.market_share_kmf');
-  expect(source).toContain('Valeur effective ${marketCode}');
+  expect(source).toContain('Quote-part marché');
   expect(source).toContain('point?.economics?.contribution_unit_kmf');
   expect(source).toContain('Référence globale (informative)');
   expect(source).toContain('Non utilisée comme vérité locale.');

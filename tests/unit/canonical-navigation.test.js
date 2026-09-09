@@ -73,10 +73,10 @@ function loadNavigation(pathname, surface, options = {}) {
     document,
     KomerceCanonicalAdmin: {
       surfaceForPath: jest.fn(() => surface),
-      marketChoices: jest.fn(context => {
+      marketChoices: jest.fn((context, opts = {}) => {
         const access = context && context.access;
         if (!access) return [];
-        const rows = access.mode === 'global' ? [{ value: '', marketCode: null, label: 'Global · Tous les marchés' }] : [];
+        const rows = access.mode === 'global' && !opts.requireMarket ? [{ value: '', marketCode: null, label: 'Global · Tous les marchés' }] : [];
         access.allowedMarkets.forEach(code => rows.push({ value: code, marketCode: code, label: code }));
         return rows;
       }),
@@ -204,6 +204,27 @@ describe('canonical admin navigation — mock contract', () => {
     expect(select.value).toBe('CM');
     expect(select.children.map(option => option.textContent)).toEqual(['CM']);
     expect(utilities.children[1].textContent).toBe('Responsable pays');
+  });
+
+  test('Atelier économique n’affiche jamais Global quand la surface exige un Market ID', () => {
+    const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/workspaces/pricing',
+      surface: 'pricing-workspace',
+      user: { role: 'admin' },
+      adminContext: {
+        access: {
+          mode: 'global',
+          defaultMarket: 'CM',
+          allowedMarkets: ['CM', 'CG'],
+        },
+      },
+    });
+    const select = header.children[0].children[2].children[0].children[0];
+    expect(select.value).toBe('CM');
+    expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
+    expect(select.children.map(option => option.textContent)).not.toContain('Global · Tous les marchés');
   });
 
   test('Déconnexion appelle le endpoint auth puis revient au login', async () => {

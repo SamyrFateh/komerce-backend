@@ -59,7 +59,10 @@
   };
 
   function metric(doc, label, value, helper, tone, iconKey) {
-    const card = el(doc, 'div', `kmc-flow-equilibrium-metric is-derived${tone ? ` is-${tone}` : ''}`);
+    const classes = ['kmc-flow-equilibrium-metric', 'is-derived'];
+    if (tone) classes.push(`is-${tone}`);
+    if (iconKey) classes.push(`is-${iconKey}`);
+    const card = el(doc, 'div', classes.join(' '));
     if (iconKey && METRIC_ICONS[iconKey]) {
       const iconWrap = el(doc, 'div', `kmc-flow-equilibrium-icon is-${METRIC_ICONS[iconKey].tone}`);
       iconWrap.innerHTML = METRIC_ICONS[iconKey].svg;
@@ -143,6 +146,9 @@
   function buildPanel(doc, workspace, decision) {
     const flow = decision && decision.flow_break_even;
     const coverage = decision && decision.coverage ? decision.coverage : {};
+    const observed = flow?.observed_mix || {};
+    const target = flow?.economic_break_even || {};
+    const ready = Boolean(flow && flow.status === 'READY');
     const panel = el(doc, 'section', 'kmc-flow-equilibrium-panel');
     panel.dataset[PANEL_ATTR] = '';
 
@@ -154,23 +160,31 @@
     head.appendChild(copy);
     panel.appendChild(head);
 
-    if (!flow || flow.status !== 'READY') {
+    // Contrat mock : les cinq indicateurs restent toujours à la même place.
+    // Quand la vérité serveur n'est pas décisionnelle, la valeur reste « — » ;
+    // le navigateur ne fabrique jamais un ratio, un gap ou une moyenne.
+    const state = el(doc, 'div', 'kmc-flow-equilibrium-state');
+    state.appendChild(metric(doc, 'Charges structurelles à couvrir', formatKmf(coverage.denominator_n3_kmf), 'Fixes directes + quote-part fixes mutualisées', null, 'charges'));
+    state.appendChild(metric(doc, 'Contribution générée', formatKmf(coverage.numerator_contribution_kmf ?? observed.reconciled_contribution_kmf), 'Somme des contributions de tous les articles', null, 'contribution'));
+    state.appendChild(metric(doc, 'Couverture', formatRatioPercent(workspace, coverage.coverage_ratio), 'Contribution / charges structurelles', null, 'couverture'));
+    state.appendChild(metric(
+      doc,
+      'Reste à couvrir',
+      formatKmf(target.gap_kmf),
+      ready && target.status === 'TARGET_REACHED' ? 'Objectif atteint' : (ready ? 'Distance restante avant l’équilibre' : 'Projection en attente de vérité suffisante'),
+      ready && target.status === 'TARGET_REACHED' ? 'positive' : (ready ? 'warning' : null),
+      'reste'
+    ));
+    state.appendChild(metric(doc, 'Contribution moyenne / article', formatKmf(observed.contribution_per_article_kmf), 'Par article (mix réel)', null, 'moyenne'));
+    panel.appendChild(state);
+
+    if (!ready) {
       const unavailable = el(doc, 'div', 'kmc-flow-equilibrium-unavailable');
       unavailable.appendChild(el(doc, 'strong', '', 'Projection d’équilibre non décisionnelle'));
       unavailable.appendChild(el(doc, 'span', '', flow?.reason || 'La vérité de couverture ne permet pas encore de projeter le flux.'));
       panel.appendChild(unavailable);
       return panel;
     }
-
-    const observed = flow.observed_mix || {};
-    const target = flow.economic_break_even || {};
-    const state = el(doc, 'div', 'kmc-flow-equilibrium-state');
-    state.appendChild(metric(doc, 'Charges à couvrir', formatKmf(coverage.denominator_n3_kmf), 'Fixes directes + quote-part fixes mutualisées', null, 'charges'));
-    state.appendChild(metric(doc, 'Contribution générée', formatKmf(coverage.numerator_contribution_kmf ?? observed.reconciled_contribution_kmf), 'Somme des contributions de tous les articles', null, 'contribution'));
-    state.appendChild(metric(doc, 'Couverture', formatRatioPercent(workspace, coverage.coverage_ratio), 'Contribution / charges structurelles', null, 'couverture'));
-    state.appendChild(metric(doc, 'Reste à couvrir', formatKmf(target.gap_kmf), target.status === 'TARGET_REACHED' ? 'Objectif atteint' : 'Distance restante avant l’équilibre', target.status === 'TARGET_REACHED' ? 'positive' : 'warning', 'reste'));
-    state.appendChild(metric(doc, 'Contribution moyenne / article', formatKmf(observed.contribution_per_article_kmf), 'Par article (mix réel)', null, 'moyenne'));
-    panel.appendChild(state);
 
     panel.appendChild(buildFlowDetails(doc, flow));
 
