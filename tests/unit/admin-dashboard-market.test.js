@@ -134,7 +134,7 @@ describe('GET /api/admin/dashboard/context', () => {
     expect(JSON.stringify(res.body)).not.toContain('market_id');
   });
 
-  test.each(['agent_hub', 'agent_relais'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
+  test.each(['agent_hub', 'agent_relais', 'finance'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
     mockCurrentUser = { id: `${role}-1`, role };
 
     const contextRes = await request(makeApp()).get('/api/admin/dashboard/context');

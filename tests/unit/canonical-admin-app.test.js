@@ -328,4 +328,33 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     expect(env.api.defaultLandingSurface({ role: 'bogus' })).toBe('/admin/pilotage');
     expect(env.api.defaultLandingSurface(null)).toBe('/admin/pilotage');
   });
+
+  test.each([
+    ['admin', '/admin/pilotage'],
+    ['market_operator', '/admin/pilotage'],
+    ['finance', '/admin/workspaces/accounting'],
+    ['sourcing', '/admin/workspaces/sourcing'],
+    ['agent_hub', '/admin/workspaces/operations'],
+    ['agent_relais', '/admin/workspaces/operations'],
+    ['agent_transitaire', '/admin/workspaces/shipping-customs'],
+  ])('/admin redirige %s vers sa landing avant de charger AdminContext', async (role, landing) => {
+    const env = loadCanonicalApp();
+    const user = { id: `${role}-1`, role };
+    env.window.location.pathname = '/admin';
+    env.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue(user),
+    });
+
+    await expect(env.api.boot()).resolves.toEqual(user);
+
+    expect(env.replace).toHaveBeenCalledWith(landing);
+    expect(env.fetch).toHaveBeenCalledTimes(1);
+    expect(env.fetch).toHaveBeenCalledWith('/api/auth/me', expect.objectContaining({
+      method: 'GET',
+      credentials: 'include',
+    }));
+    expect(env.validateAdminContext).not.toHaveBeenCalled();
+  });
 });

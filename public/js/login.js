@@ -1,10 +1,10 @@
 /**
  * @komerce-arch-lite
- * @role          dashboard-admin-login
+ * @role          internal-portal-login
  * @domain        dashboard
  * @layer         ui-bootstrap
  * @owner         dashboards
- * @purpose       Soumission du formulaire de connexion admin / responsable pays (/login.html) —
+ * @purpose       Soumission du formulaire de connexion du portail interne Komerce (/login.html) —
  *                servi en <script src> same-origin.
  * @impact-areas  dashboard, auth, csp, market
  * @version       2026-09
@@ -25,8 +25,12 @@
  * ── Contraintes de chargement ──
  *   1. Chargé en <script src> SYNCHRONE (jamais defer/async), à l'emplacement
  *      exact du bloc inline d'origine.
- *   2. Cette page est l'entrée commune des surfaces Canonical pour `admin` et
- *      `market_operator`. L'autorité de marché reste exclusivement côté serveur.
+ *   2. Cette page est l'entrée commune du portail interne Canonical. Elle
+ *      authentifie l'identité ; les droits fins, rôles, MarketScope et
+ *      capabilities restent vérifiés après redirection par le runtime et les
+ *      APIs serveur.
+ *   3. `/admin` est l'URL simple à communiquer. Les deep-links `/admin/...`
+ *      restent préservés via `next=` lorsqu'ils sont autorisés.
  *
  * Gate associé : scripts/check-inline-scripts.js (étendu à tout public/, pas
  * seulement public/boutique/).
@@ -40,15 +44,37 @@
       var passEl   = document.getElementById('password');
       var btn      = document.getElementById('btn-submit');
       var banner   = document.getElementById('error-banner');
-      var ALLOWED_DASHBOARD_ROLES = new Set(['admin', 'market_operator']);
 
-      function nextUrl() {
+      // UX de landing uniquement — jamais une frontière d'autorisation.
+      // Le runtime Canonical conserve sa propre liste de rôles internes admis,
+      // puis chaque API revalide rôle, scope et capabilities côté serveur.
+      var ROLE_DEFAULT_LANDING = Object.freeze({
+        admin: '/admin/pilotage',
+        market_operator: '/admin/pilotage',
+        finance: '/admin/workspaces/accounting',
+        sourcing: '/admin/workspaces/sourcing',
+        agent_hub: '/admin/workspaces/operations',
+        agent_relais: '/admin/workspaces/operations',
+        agent_transitaire: '/admin/workspaces/shipping-customs',
+      });
+
+      function landingFor(user) {
+        var role = user && user.role;
+        return ROLE_DEFAULT_LANDING[role] || '/admin';
+      }
+
+      function nextUrl(user) {
         var params = new URLSearchParams(window.location.search);
         var next   = params.get('next');
-        if (!next) return '/admin/pilotage';
-        // Sécurité : accepter uniquement les chemins internes
+
+        // `/admin` est le portail unique : après authentification on ouvre la
+        // première surface métier utile au rôle, sans inventer de permission.
+        if (!next || next === '/admin' || next === '/admin/') return landingFor(user);
+
+        // Sécurité : accepter uniquement les chemins internes. Les droits sur
+        // la destination restent vérifiés par le runtime/API après navigation.
         if (next.startsWith('/') && !next.startsWith('//')) return next;
-        return '/admin/pilotage';
+        return landingFor(user);
       }
 
       function showError(msg) {
@@ -108,17 +134,10 @@
             return;
           }
 
-          // La page de login ouvre les surfaces Canonical aux rôles dashboard
-          // autorisés. Les permissions fines et le MarketScope restent vérifiés
-          // par les API côté serveur après redirection.
+          // Authentification uniquement. Le rôle retourné sert ici à choisir une
+          // landing ergonomique depuis `/admin`; il ne confère aucun droit.
           var user = data.user || data;
-          if (!ALLOWED_DASHBOARD_ROLES.has(user.role)) {
-            setLoading(false);
-            showError('Accès refusé — compte sans droits dashboard.');
-            return;
-          }
-
-          window.location.replace(nextUrl());
+          window.location.replace(nextUrl(user));
 
         } catch (err) {
           setLoading(false);
@@ -134,4 +153,3 @@
         });
       });
     })();
-  

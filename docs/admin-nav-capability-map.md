@@ -1,5 +1,9 @@
 # Capability Map — Navigation admin Canonical
 
+> Doctrine d’entrée et d’authentification commune :
+> `docs/doctrine/ADMIN_INTERNAL_PORTAL_DOCTRINE.md`.
+> Le présent document reste la preuve d’implémentation des routes, rôles et guards.
+
 Ce document trace, pour chacun des 6 onglets du mock approuvé, l'API réellement
 appelée côté client et le middleware qui la garde côté serveur. Chaque ligne a
 été vérifiée dans le code (pas déduite) — voir la colonne "Preuve".
@@ -12,7 +16,7 @@ inventer une nouvelle politique.
 
 | Onglet (mock)       | Route front            | Endpoint(s) appelé(s) côté client                                  | Middleware serveur                                              | Rôles réellement autorisés serveur |
 |----------------------|-------------------------|----------------------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------|
-| Dashboard             | `/admin/pilotage`       | `GET /api/admin/dashboard/context`, puis `GET /api/admin/dashboard/unified` (global) ou `.../unified/market/:code` (marché) | `context` → `requireCanonicalContextRole` (admin, market_operator, agent_hub, agent_relais, agent_transitaire) ; données `unified*` → `requireMarketDashboardReadRole` (**admin, market_operator uniquement**) | **admin, market_operator** (les autres obtiennent le contexte mais pas les données — 403 sur le widget) |
+| Dashboard             | `/admin/pilotage`       | `GET /api/admin/dashboard/context`, puis `GET /api/admin/dashboard/unified` (global) ou `.../unified/market/:code` (marché) | `context` → `requireCanonicalContextRole` (admin, market_operator, agent_hub, agent_relais, agent_transitaire, finance) ; données `unified*` → `requireMarketDashboardReadRole` (**admin, market_operator uniquement**) | **admin, market_operator** pour les données Dashboard ; les autres rôles autorisés au contexte ne gagnent aucun droit Dashboard |
 | Atelier économique    | `/admin/workspaces/pricing` | `GET/POST /api/admin/workspaces/pricing/market/:code/*`         | `router.use('/market/:marketCode', requireRole(['admin','market_operator']), ...)` | **admin, market_operator** |
 | Catalogue              | `/admin/workspaces/catalog` | `GET/POST /api/admin/workspaces/catalog/*`                      | `guard = [authenticate, requireRole(['admin']), requireCatalogGlobalAuthority]` | **admin uniquement** |
 | Commandes              | `/admin/commerce`       | `GET /api/admin/dashboard/commerce` (global) ou `.../commerce/market/:code` | global → `requireAdmin + requireDashboardGlobalAuthority` ; marché → `requireMarketDashboardReadRole` (admin, market_operator) | **admin, market_operator** |
@@ -26,8 +30,8 @@ plusieurs des 6 onglets du mock.** C'est cohérent avec l'objectif immédiat
 (le manager pays arrive sur une seule URL avec ses onglets) mais ça veut dire
 que les 6 autres rôles (`finance`, `sourcing`, `agent_hub`, `agent_relais`,
 `agent_transitaire`, `support`) n'ont aujourd'hui **aucun accès aux données
-réelles d'aucun des 6 onglets primaires**, même si `ALLOWED_ROLES` dans
-`app.js` les laisse démarrer le shell Canonical.
+réelles d'aucun des 6 onglets primaires**, même si certains peuvent résoudre
+le contexte Canonical nécessaire à leurs workspaces métier.
 
 ## 2. Où travaillent réellement les rôles opérationnels aujourd'hui
 
@@ -44,9 +48,9 @@ soit via les workspaces Canonical secondaires, soit via le portail Legacy 1.
 | support              | aucune surface Canonical dédiée trouvée | — | `/admin/clients`, `/admin/shared-carts`, `/admin/problems`, `/admin/alerts` |
 
 Ces workspaces existent comme `SURFACES` dans `app.js` (`OPERATIONS_WORKSPACE`,
-`SOURCING_WORKSPACE`, `SHIPPING_CUSTOMS_WORKSPACE`, `ACCOUNTING_WORKSPACE`)
-mais **ne sont pas dans `PRIMARY_NAV`** — ils ne sont atteignables aujourd'hui
-que par lien direct, pas par un onglet du mock.
+`SOURCING_WORKSPACE`, `SHIPPING_CUSTOMS_WORKSPACE`, `ACCOUNTING_WORKSPACE`).
+La section 9 documente leur promotion ultérieure en onglets primaires ; les
+paragraphes F0/F1 ci-dessous sont conservés comme historique de la transition.
 
 ## 3. Décision de périmètre pour cette PR (F0 → F1)
 
@@ -76,6 +80,9 @@ qui restent inchangées.
 | market_operator       | `/admin/pilotage`            | premier onglet visible, données marché scopées serveur |
 | autres 6 rôles        | `/admin/pilotage`             | seul onglet visible (Dashboard) — le contexte se charge, les données marché peuvent 403 selon le rôle ; comportement inchangé par cette PR |
 
+> Cette table décrit le palier F0/F1 historique. La table de landing courante
+> est celle de la section 9 et de `ADMIN_INTERNAL_PORTAL_DOCTRINE.md`.
+
 ## 5. `capabilitiesFor()` — état actuel
 
 `services/dashboard-admin-context.js::capabilitiesFor(mode)` ne renvoie que
@@ -96,7 +103,7 @@ capabilities plutôt que le rôle brut.
 
 | Route famille                          | Fichier                              | Middleware                                          |
 |-----------------------------------------|---------------------------------------|-------------------------------------------------------|
-| `/api/admin/dashboard/context`          | `routes/admin-dashboard-market.js:114` | `requireCanonicalContextRole` (admin, market_operator, agent_hub, agent_relais, agent_transitaire) |
+| `/api/admin/dashboard/context`          | `routes/admin-dashboard-market.js:114` | `requireCanonicalContextRole` (admin, market_operator, agent_hub, agent_relais, agent_transitaire, finance) |
 | `/api/admin/dashboard/unified*`         | `routes/admin-dashboard-market.js:135` | `requireMarketDashboardReadRole` (admin, market_operator) |
 | `/api/admin/dashboard/commerce/market/*`| `routes/admin-dashboard-market.js:155` | `requireMarketDashboardReadRole` (admin, market_operator) |
 | `/api/admin/dashboard/commerce` (global)| `routes/admin-dashboard-market.js:216+` | `requireAdmin + requireDashboardGlobalAuthority` |
