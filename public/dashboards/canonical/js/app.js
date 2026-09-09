@@ -46,14 +46,17 @@
   // Chaque rôle atterrit sur le premier onglet qu'il peut réellement charger
   // côté serveur ; aujourd'hui seuls admin et market_operator ont des
   // onglets primaires au-delà de Dashboard.
+  // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md §9.
+  // Chaque rôle atterrit directement sur son onglet primaire pertinent,
+  // pas sur un Dashboard générique qui ne reflète pas son métier.
   const ROLE_DEFAULT_LANDING = Object.freeze({
     admin:              '/admin/pilotage',
     market_operator:    '/admin/pilotage',
-    finance:            '/admin/pilotage',
-    sourcing:           '/admin/pilotage',
-    agent_hub:          '/admin/pilotage',
-    agent_relais:       '/admin/pilotage',
-    agent_transitaire:  '/admin/pilotage',
+    finance:            '/admin/workspaces/accounting',
+    sourcing:           '/admin/workspaces/sourcing',
+    agent_hub:          '/admin/workspaces/operations',
+    agent_relais:       '/admin/workspaces/operations',
+    agent_transitaire:  '/admin/workspaces/shipping-customs',
     support:            '/admin/pilotage',
   });
 
@@ -692,6 +695,8 @@
     renderPricingWorkspaceShell,
     renderDemo,
     renderReady,
+    ROLE_DEFAULT_LANDING,
+    defaultLandingSurface,
   };
 
   if (document.readyState === 'loading') {

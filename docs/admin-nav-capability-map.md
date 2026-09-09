@@ -175,3 +175,50 @@ indépendamment de cette branche — voir historique de la PR
 pour les rôles qui n'y ont pas accès, en attendant que quelqu'un tranche si
 `pricing-workspace` doit rester dans le drill Finance.
 
+## 9. Onglets primaires pour les rôles opérationnels — accès unifié
+
+Décision produit (2026-09) : plutôt que d'élargir les guards serveur des 6
+onglets du mock à des rôles qui n'ont pas ce métier (ex. donner Catalogue à
+un agent_transitaire), on expose leurs workspaces Canonical **existants,
+déjà testés, déjà scopés market** comme de nouveaux onglets primaires. Zéro
+nouvelle logique métier — le shell choisit juste où afficher des modules qui
+tournaient déjà, non atteignables jusque-là que par lien direct.
+
+| Onglet ajouté                | Label                    | Route                              | Rôles visibles (= guard serveur réel)              |
+|-------------------------------|---------------------------|-------------------------------------|-------------------------------------------------------|
+| `operations-workspace`        | Opérations                | `/admin/workspaces/operations`      | admin, agent_hub, agent_relais, market_operator       |
+| `shipping-customs-workspace`  | Expéditions & Douane      | `/admin/workspaces/shipping-customs`| admin, agent_hub, agent_transitaire                   |
+| `sourcing-workspace`          | Sourcing                  | `/admin/workspaces/sourcing`        | admin, sourcing                                        |
+| `accounting-workspace`        | Comptabilité               | `/admin/workspaces/accounting`      | admin, finance, agent_relais                          |
+
+### Landing par rôle (mise à jour)
+
+| Rôle               | Landing                              |
+|----------------------|-----------------------------------------|
+| admin                | `/admin/pilotage`                       |
+| market_operator       | `/admin/pilotage`                       |
+| finance               | `/admin/workspaces/accounting`          |
+| sourcing              | `/admin/workspaces/sourcing`            |
+| agent_hub             | `/admin/workspaces/operations`          |
+| agent_relais          | `/admin/workspaces/operations`          |
+| agent_transitaire     | `/admin/workspaces/shipping-customs`    |
+| support               | `/admin/pilotage` (seul onglet visible) |
+
+### Ce qui reste hors périmètre
+
+`support` n'a toujours aucun workspace Canonical dédié — aucune surface
+existante ne correspond à son métier (suivi client/commande). Contrairement
+aux 4 autres, il n'y a rien à exposer sans construire une UI neuve, ce qui
+nécessite un mock. Son accès Legacy (`/admin/clients`, `/admin/shared-carts`,
+`/admin/problems`) reste inchangé, non touché par cette PR.
+
+`sourcing-workspace` a changé de parent dans `SURFACE_PARENT`
+(`navigation.js`) : il pointait vers l'onglet `catalog` par défaut (nesting
+arbitraire, faute de mieux) ; il pointe maintenant vers lui-même, cohérent
+avec son statut de nouvel onglet primaire.
+
+Les 3 workspaces market-scopés (`operations-workspace`,
+`shipping-customs-workspace`, `accounting-workspace`) n'affichent plus de
+bouton « Retour » — ils sont désormais atteignables directement depuis la
+navbar, donc le Retour devenait redondant (même règle déjà appliquée à
+Atelier économique / Catalogue / Commandes).
