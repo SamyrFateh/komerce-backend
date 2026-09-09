@@ -27,6 +27,9 @@ jobs:
           python3 scripts/tmp-pricing-mock-parity.py
           python3 - <<'PY'
           from pathlib import Path
+          js = Path('public/dashboards/canonical/js/pricing-economic-cockpit.js')
+          source = js.read_text().replace('marketIdentity', 'localIdentity')
+          js.write_text(source)
           p = Path('tests/unit/canonical-pricing-economic-cockpit.test.js')
           s = p.read_text()
           old = "  expect(source).toContain('Prix final marché retenu');"
