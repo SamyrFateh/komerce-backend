@@ -5,14 +5,14 @@
  * @layer         ui-workspace
  * @criticality   medium
  * @inputs        invitation token from URL, authenticated identity, server delegation context
- * @outputs       explicit invitation acceptance, delegated portal entrypoint
- * @depends       /api/auth/me, /api/market-delegation/team/invitations/:token/accept, /api/admin/dashboard/context
+ * @outputs       account creation or login handoff, explicit invitation acceptance, delegated portal entrypoint
+ * @depends       /api/auth/me, /api/auth/register, /api/market-delegation/team/invitations/:token/accept, /api/admin/dashboard/context
  * @used-by       /dashboards/canonical/team-invite.html
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      invitation_acceptance_is_explicit, server_context_is_authority, token_removed_after_acceptance
- * @impact-areas  admin-dashboard, market-autonomy, market-delegation, team
+ * @impact-areas  admin-dashboard, market-autonomy, market-delegation, team, auth-identity
  * @version       2026-09
  */
 'use strict';
@@ -95,12 +95,76 @@
     return body;
   }
 
-  function renderLoginRequired() {
-    const title = el('h1', '', 'Connectez-vous pour accepter l’invitation');
-    const copy = el('p', 'kmc-team-help', 'Le lien sera conservé pendant la connexion. Utilisez le compte dont l’adresse e-mail a été invitée.');
+  function input(type, placeholder, autocomplete) {
+    const node = global.document.createElement('input');
+    node.type = type;
+    node.className = 'kmc-team-input';
+    node.placeholder = placeholder;
+    if (autocomplete) node.autocomplete = autocomplete;
+    return node;
+  }
+
+  function renderRegistration(token) {
+    const card = el('article', 'kmc-team-invite');
+    card.appendChild(el('strong', '', 'Nouveau sur Komerce ?'));
+    card.appendChild(el('p', 'kmc-team-help', 'Créez votre compte avec exactement l’adresse e-mail invitée. Le compte restera un compte client global ; vos droits pays seront ajoutés seulement après acceptation.'));
+
+    const form = el('div', 'kmc-team-list');
+    const fullName = input('text', 'Nom et prénom', 'name');
+    const email = input('email', 'Adresse e-mail invitée', 'email');
+    const phone = input('tel', 'Téléphone, ex. +2693210001', 'tel');
+    const password = input('password', 'Mot de passe — 8 caractères minimum', 'new-password');
+    form.append(fullName, email, phone, password);
+
+    const submit = el('button', 'kmc-workspace-action', 'Créer mon compte');
+    submit.type = 'button';
+    const result = el('div', 'kmc-team-invite-result');
+    result.hidden = true;
+
+    submit.addEventListener('click', async () => {
+      const payload = {
+        full_name: fullName.value.trim(),
+        email: email.value.trim(),
+        phone: phone.value.trim(),
+        password: password.value,
+      };
+      if (!payload.full_name) return fullName.focus();
+      if (!payload.email) return email.focus();
+      if (!payload.phone) return phone.focus();
+      if (!payload.password || payload.password.length < 8) return password.focus();
+
+      submit.disabled = true;
+      submit.textContent = 'Création…';
+      result.hidden = true;
+      try {
+        const created = await request('/api/auth/register', {
+          method: 'POST',
+          body: payload,
+        });
+        renderReady(created.user || created, token);
+      } catch (error) {
+        result.replaceChildren(
+          el('strong', '', error.message),
+          el('span', 'kmc-team-help', error.status === 409
+            ? 'Ce compte existe peut-être déjà : utilisez « Se connecter » ci-dessus.'
+            : (error.code || 'Création du compte refusée.'))
+        );
+        result.hidden = false;
+        submit.disabled = false;
+        submit.textContent = 'Créer mon compte';
+      }
+    });
+
+    card.append(form, submit, result);
+    return card;
+  }
+
+  function renderLoginRequired(token) {
+    const title = el('h1', '', 'Accepter l’invitation équipe');
+    const copy = el('p', 'kmc-team-help', 'Si vous avez déjà un compte Komerce, connectez-vous avec l’adresse e-mail invitée. Le lien sera conservé pendant la connexion.');
     const login = el('a', 'kmc-workspace-action', 'Se connecter');
     login.href = loginHref();
-    replaceBody(title, copy, login);
+    replaceBody(title, copy, login, renderRegistration(token));
   }
 
   function renderInvalid(message, code) {
@@ -183,7 +247,7 @@
     try {
       const user = await readSession();
       if (!user) {
-        renderLoginRequired();
+        renderLoginRequired(token);
         return;
       }
       renderReady(user, token);
