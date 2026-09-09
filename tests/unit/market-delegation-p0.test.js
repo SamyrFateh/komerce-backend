@@ -33,18 +33,25 @@ describe('market-delegation P0', () => {
     expect(migration).toMatch(/uniq_active_market_assignment/);
     expect(migration).toMatch(/WHERE status = 'ACTIVE'/);
     expect(migration).toMatch(/enforce_assignment_ceiling_capability/);
-    expect(migration).toMatch(/authority_scope <> 'MARKET'/);
+    expect(migration).toMatch(/v_scope <> 'MARKET'/);
     expect(migration).toMatch(/enforce_membership_capability_within_ceiling/);
+    expect(migration).toMatch(/prevent_ceiling_removal_with_active_member_grants/);
     expect(migration).toMatch(/market-operator-default/);
   });
 
-  test('legacy authorization table becomes an attributable projection without changing middleware', () => {
+  test('legacy authorization table becomes an attributable market-owned projection without changing middleware', () => {
     const migration = read('migrations/195_operator_market_scopes_projection_marker.sql');
     const projector = read('services/market-scope-projector.js');
+    const marketBoundary = read('services/market-scope-admin-service.js');
     const middleware = read('middleware/require-market-scope.js');
     expect(migration).toMatch(/projected_from_membership_id/);
-    expect(projector).toMatch(/projected_from_membership_id/);
+    expect(projector).toMatch(/upsertProjectedMarketScope/);
+    expect(projector).toMatch(/revokeProjectedMarketScopes/);
     expect(projector).toMatch(/CASE WHEN EXISTS/);
+    expect(projector).not.toMatch(/INSERT INTO operator_market_scopes/);
+    expect(projector).not.toMatch(/UPDATE operator_market_scopes/);
+    expect(marketBoundary).toMatch(/INSERT INTO operator_market_scopes/);
+    expect(marketBoundary).toMatch(/projected_from_membership_id/);
     expect(middleware).not.toMatch(/assignment_memberships/);
     expect(middleware).not.toMatch(/market_operating_assignments/);
   });
