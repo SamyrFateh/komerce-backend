@@ -7,11 +7,11 @@
  * @inputs        assignment, ceiling, memberships, member_capabilities, actor
  * @outputs       delegated_market_authority
  * @depends       services/capability-registry.js
- * @used-by       future market-delegation routes, market-scope-projector
+ * @used-by       market-delegation routes, market-scope-projector, team service
  * @db-read       markets, capability_registry, ceiling_templates, ceiling_template_capabilities, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities
  * @db-write      market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-txn        caller-owned
- * @doctrine      one_active_assignment_per_market, delegated_rights_subset
+ * @doctrine      one_active_assignment_per_market, delegated_rights_subset, keep_one_team_grantor
  * @impact-areas  market, authorization, delegation
  * @version       2026-09
  */
@@ -22,6 +22,10 @@ const { validateCeilingCapabilities } = require('./capability-registry');
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') throw new TypeError('market-delegation-service: executor.query requis');
   return executor;
+}
+
+function normalizeCapabilities(capabilities) {
+  return [...new Set((capabilities || []).filter(Boolean).map(String))].sort();
 }
 
 async function audit(db, { actorUserId = null, assignmentId = null, membershipId = null, capability = null, action, before = null, after = null, correlationId = null }) {
@@ -74,7 +78,7 @@ async function setAssignmentStatus(executor, { assignmentId, status, actorUserId
 
 async function replaceCeiling(executor, { assignmentId, capabilities, actorUserId = null, correlationId = null }) {
   const db = requireExecutor(executor);
-  const requested = [...new Set((capabilities || []).map(String))];
+  const requested = normalizeCapabilities(capabilities);
   const validation = await validateCeilingCapabilities(db, requested);
   if (!validation.ok) {
     const error = new Error(`market_delegation_invalid_ceiling:${validation.invalid.join(',')}`);
@@ -141,8 +145,72 @@ async function replaceCeiling(executor, { assignmentId, capabilities, actorUserI
   return requested;
 }
 
+async function activeMembershipForUser(executor, assignmentId, userId) {
+  const db = requireExecutor(executor);
+  const { rows } = await db.query(
+    `SELECT id, assignment_id, user_id, status
+       FROM assignment_memberships
+      WHERE assignment_id=$1::uuid AND user_id=$2::uuid AND status='ACTIVE'
+      LIMIT 1`, [assignmentId, userId]
+  );
+  return rows[0] || null;
+}
+
+async function activeMembershipCapabilities(executor, membershipId) {
+  const db = requireExecutor(executor);
+  const { rows } = await db.query(
+    `SELECT capability
+       FROM membership_capabilities
+      WHERE membership_id=$1::uuid AND revoked_at IS NULL
+      ORDER BY capability`, [membershipId]
+  );
+  return rows.map(row => row.capability);
+}
+
+async function assertGrantAllowed(db, { assignmentId, capabilities, actorUserId = null, actorIsCentral = false }) {
+  const requested = normalizeCapabilities(capabilities);
+  if (!requested.length) return { requested, grantorMembership: null };
+
+  const { rows: ceilingRows } = await db.query(
+    `SELECT capability FROM assignment_capability_ceiling
+      WHERE assignment_id=$1::uuid AND revoked_at IS NULL AND capability = ANY($2::text[])`,
+    [assignmentId, requested]
+  );
+  const ceiling = new Set(ceilingRows.map(row => row.capability));
+  const aboveCeiling = requested.filter(capability => !ceiling.has(capability));
+  if (aboveCeiling.length) {
+    const error = new Error(`market_delegation_capability_above_ceiling:${aboveCeiling.join(',')}`);
+    error.code = 'MARKET_DELEGATION_CAPABILITY_ABOVE_CEILING';
+    throw error;
+  }
+
+  if (actorIsCentral) return { requested, grantorMembership: null };
+
+  const grantorMembership = await activeMembershipForUser(db, assignmentId, actorUserId);
+  if (!grantorMembership) {
+    const error = new Error('market_delegation_grantor_membership_required');
+    error.code = 'MARKET_DELEGATION_GRANTOR_MEMBERSHIP_REQUIRED';
+    throw error;
+  }
+  const grantorCaps = new Set(await activeMembershipCapabilities(db, grantorMembership.id));
+  const forbidden = requested.filter(capability => !grantorCaps.has(capability));
+  if (forbidden.length) {
+    const error = new Error(`market_delegation_grant_exceeds_grantor:${forbidden.join(',')}`);
+    error.code = 'MARKET_DELEGATION_GRANT_EXCEEDS_GRANTOR';
+    throw error;
+  }
+  return { requested, grantorMembership };
+}
+
 async function addMembership(executor, { assignmentId, userId, actorUserId = null, capabilities = [], actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
+  const existing = await activeMembershipForUser(db, assignmentId, userId);
+  if (existing) {
+    await grantMembershipCapabilities(db, { membershipId: existing.id, capabilities, actorUserId, actorIsCentral, correlationId });
+    return existing;
+  }
+
+  await assertGrantAllowed(db, { assignmentId, capabilities, actorUserId, actorIsCentral });
   const { rows } = await db.query(
     `INSERT INTO assignment_memberships (assignment_id,user_id,status,granted_by)
      VALUES ($1::uuid,$2::uuid,'ACTIVE',$3::uuid)
@@ -154,60 +222,186 @@ async function addMembership(executor, { assignmentId, userId, actorUserId = nul
   return membership;
 }
 
-async function activeMembershipForUser(db, assignmentId, userId) {
-  const { rows } = await db.query(`SELECT id FROM assignment_memberships WHERE assignment_id=$1::uuid AND user_id=$2::uuid AND status='ACTIVE' LIMIT 1`, [assignmentId, userId]);
-  return rows[0] || null;
-}
-
 async function grantMembershipCapabilities(executor, { membershipId, capabilities, actorUserId = null, actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
-  const requested = [...new Set((capabilities || []).map(String))];
-  const { rows: targetRows } = await db.query(`SELECT id, assignment_id FROM assignment_memberships WHERE id=$1::uuid AND status='ACTIVE' LIMIT 1`, [membershipId]);
+  const { rows: targetRows } = await db.query(
+    `SELECT id, assignment_id FROM assignment_memberships
+      WHERE id=$1::uuid AND status='ACTIVE' LIMIT 1`, [membershipId]
+  );
   const target = targetRows[0];
-  if (!target) throw new Error('market_delegation_membership_not_active');
-  const { rows: ceilingRows } = await db.query(`SELECT capability FROM assignment_capability_ceiling WHERE assignment_id=$1::uuid AND revoked_at IS NULL AND capability = ANY($2::text[])`, [target.assignment_id, requested]);
-  const ceiling = new Set(ceilingRows.map(row => row.capability));
-  const aboveCeiling = requested.filter(cap => !ceiling.has(cap));
-  if (aboveCeiling.length) throw new Error(`market_delegation_capability_above_ceiling:${aboveCeiling.join(',')}`);
-
-  if (!actorIsCentral && requested.length) {
-    const grantorMembership = await activeMembershipForUser(db, target.assignment_id, actorUserId);
-    if (!grantorMembership) throw new Error('market_delegation_grantor_membership_required');
-    const { rows: grantorRows } = await db.query(`SELECT capability FROM membership_capabilities WHERE membership_id=$1::uuid AND revoked_at IS NULL AND capability = ANY($2::text[])`, [grantorMembership.id, requested]);
-    const grantorCaps = new Set(grantorRows.map(row => row.capability));
-    const forbidden = requested.filter(cap => !grantorCaps.has(cap));
-    if (forbidden.length) throw new Error(`market_delegation_grant_exceeds_grantor:${forbidden.join(',')}`);
+  if (!target) {
+    const error = new Error('market_delegation_membership_not_active');
+    error.code = 'MARKET_DELEGATION_MEMBERSHIP_NOT_ACTIVE';
+    throw error;
   }
+  const { requested } = await assertGrantAllowed(db, {
+    assignmentId: target.assignment_id,
+    capabilities,
+    actorUserId,
+    actorIsCentral,
+  });
 
   for (const capability of requested) {
-    await db.query(
+    const { rowCount } = await db.query(
       `INSERT INTO membership_capabilities (membership_id, capability, granted_by)
        SELECT $1::uuid,$2,$3::uuid
-       WHERE NOT EXISTS (SELECT 1 FROM membership_capabilities WHERE membership_id=$1::uuid AND capability=$2 AND revoked_at IS NULL)`,
+       WHERE NOT EXISTS (
+         SELECT 1 FROM membership_capabilities
+          WHERE membership_id=$1::uuid AND capability=$2 AND revoked_at IS NULL
+       )`,
       [membershipId, capability, actorUserId]
     );
-    await audit(db, { actorUserId, assignmentId: target.assignment_id, membershipId, capability, action: 'CAPABILITY_GRANTED', correlationId });
+    if (rowCount) {
+      await audit(db, { actorUserId, assignmentId: target.assignment_id, membershipId, capability, action: 'CAPABILITY_GRANTED', correlationId });
+    }
   }
   return requested;
 }
 
-async function revokeMembership(executor, { membershipId, actorUserId = null, correlationId = null }) {
+async function assertTeamGrantContinuity(db, { assignmentId, targetMembershipId, removingCapabilities }) {
+  if (!removingCapabilities.includes('team.grant')) return;
+  const { rows } = await db.query(
+    `SELECT EXISTS (
+       SELECT 1
+         FROM assignment_memberships am
+         JOIN membership_capabilities mc ON mc.membership_id = am.id
+        WHERE am.assignment_id=$1::uuid
+          AND am.status='ACTIVE'
+          AND am.id <> $2::uuid
+          AND mc.capability='team.grant'
+          AND mc.revoked_at IS NULL
+     ) AS has_other_grantor`,
+    [assignmentId, targetMembershipId]
+  );
+  if (!rows[0]?.has_other_grantor) {
+    const error = new Error('market_delegation_last_team_grantor');
+    error.code = 'MARKET_DELEGATION_LAST_TEAM_GRANTOR';
+    throw error;
+  }
+}
+
+async function replaceMembershipCapabilities(executor, { membershipId, capabilities, actorUserId = null, actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
+  const { rows: targetRows } = await db.query(
+    `SELECT id, assignment_id, user_id
+       FROM assignment_memberships
+      WHERE id=$1::uuid AND status='ACTIVE'
+      LIMIT 1 FOR UPDATE`, [membershipId]
+  );
+  const target = targetRows[0];
+  if (!target) {
+    const error = new Error('market_delegation_membership_not_active');
+    error.code = 'MARKET_DELEGATION_MEMBERSHIP_NOT_ACTIVE';
+    throw error;
+  }
+
+  const { requested } = await assertGrantAllowed(db, {
+    assignmentId: target.assignment_id,
+    capabilities,
+    actorUserId,
+    actorIsCentral,
+  });
+  const previous = await activeMembershipCapabilities(db, membershipId);
+  const requestedSet = new Set(requested);
+  const previousSet = new Set(previous);
+  const removed = previous.filter(capability => !requestedSet.has(capability));
+  const added = requested.filter(capability => !previousSet.has(capability));
+
+  await assertTeamGrantContinuity(db, {
+    assignmentId: target.assignment_id,
+    targetMembershipId: membershipId,
+    removingCapabilities: removed,
+  });
+
+  if (removed.length) {
+    const { rows: revoked } = await db.query(
+      `UPDATE membership_capabilities
+          SET revoked_at=NOW(), revoked_by=$2::uuid
+        WHERE membership_id=$1::uuid
+          AND revoked_at IS NULL
+          AND capability = ANY($3::text[])
+      RETURNING capability`,
+      [membershipId, actorUserId, removed]
+    );
+    for (const row of revoked) {
+      await audit(db, {
+        actorUserId,
+        assignmentId: target.assignment_id,
+        membershipId,
+        capability: row.capability,
+        action: 'CAPABILITY_REVOKED',
+        correlationId,
+      });
+    }
+  }
+
+  if (added.length) {
+    await grantMembershipCapabilities(db, {
+      membershipId,
+      capabilities: added,
+      actorUserId,
+      actorIsCentral,
+      correlationId,
+    });
+  }
+
+  await audit(db, {
+    actorUserId,
+    assignmentId: target.assignment_id,
+    membershipId,
+    action: 'MEMBERSHIP_CAPABILITIES_REPLACED',
+    before: previous,
+    after: requested,
+    correlationId,
+  });
+  return requested;
+}
+
+async function revokeMembership(executor, { membershipId, actorUserId = null, correlationId = null, allowLastGrantor = false }) {
+  const db = requireExecutor(executor);
+  const { rows: targetRows } = await db.query(
+    `SELECT id, assignment_id, user_id
+       FROM assignment_memberships
+      WHERE id=$1::uuid AND status='ACTIVE'
+      LIMIT 1 FOR UPDATE`, [membershipId]
+  );
+  const target = targetRows[0];
+  if (!target) return null;
+
+  if (!allowLastGrantor) {
+    const previous = await activeMembershipCapabilities(db, membershipId);
+    await assertTeamGrantContinuity(db, {
+      assignmentId: target.assignment_id,
+      targetMembershipId: membershipId,
+      removingCapabilities: previous,
+    });
+  }
+
   const { rows } = await db.query(
     `UPDATE assignment_memberships SET status='REVOKED', revoked_at=NOW(), revoked_by=$2::uuid
       WHERE id=$1::uuid AND status='ACTIVE' RETURNING *`, [membershipId, actorUserId]
   );
   if (!rows[0]) return null;
-  await db.query(`UPDATE membership_capabilities SET revoked_at=NOW(), revoked_by=$2::uuid WHERE membership_id=$1::uuid AND revoked_at IS NULL`, [membershipId, actorUserId]);
+  await db.query(
+    `UPDATE membership_capabilities SET revoked_at=NOW(), revoked_by=$2::uuid
+      WHERE membership_id=$1::uuid AND revoked_at IS NULL`,
+    [membershipId, actorUserId]
+  );
   await audit(db, { actorUserId, assignmentId: rows[0].assignment_id, membershipId, action: 'MEMBERSHIP_REVOKED', correlationId });
   return rows[0];
 }
 
 module.exports = {
+  normalizeCapabilities,
+  audit,
   createAssignment,
   setAssignmentStatus,
   replaceCeiling,
+  activeMembershipForUser,
+  activeMembershipCapabilities,
+  assertGrantAllowed,
   addMembership,
   grantMembershipCapabilities,
+  replaceMembershipCapabilities,
   revokeMembership,
 };

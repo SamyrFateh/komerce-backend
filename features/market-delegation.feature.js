@@ -31,12 +31,13 @@ module.exports = {
       multiConsumer: true,
       ownsMigrations: true,
       externalSideEffect: 'none',
-      surface: 'service+db',
+      surface: 'service+db+api',
     },
     rationale: [
       'Porte le mandat d’exploitation déléguée d’un Market ID, distinct du référentiel market lui-même.',
       'Un Market ID ne peut avoir qu’un seul Market Operating Assignment ACTIVE ; les acteurs locaux secondaires restent providers/relais.',
       'Les capacités MEMBER sont bornées par le ceiling de l’assignment ; les autorités GROUP/CENTRAL_ONLY sont structurellement hors délégation marché.',
+      'LOT 1A rend l’équipe autonome par capabilities sans transformer le rôle global user en autorité métier.',
     ],
   },
 
@@ -52,9 +53,13 @@ module.exports = {
       'audit append-only des mutations de délégation',
       'calcul déterministe de la projection vers operator_market_scopes, persistée exclusivement par la boundary de la feature market',
       'autonomy_rate calculé uniquement sur la classe DELEGATION',
+      'LOT 1A : lecture équipe, invitation, acceptation, modification capabilities et révocation par capabilities team.*',
+      'invitation persistée 72 h par défaut, token brut jamais stocké et capabilities revalidées à l’acceptation',
+      'anti-lockout : la dernière membership possédant team.grant ne peut pas être retirée silencieusement',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
+      'rôle global users.role et user.role.set : frontière auth-identity/GROUP, jamais déléguée au partenaire',
       'règles d’allocation GROUP et vérité économique consolidée : economic-engine',
       'fonctions Hub/transit mutualisées : hors Market Operating Assignment',
       'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents',
@@ -68,14 +73,21 @@ module.exports = {
       'migrations/193_market_delegation_capability_registry.sql',
       'migrations/194_market_delegation_assignments.sql',
       'migrations/195_operator_market_scopes_projection_marker.sql',
+      'migrations/196_market_delegation_team.sql',
     ],
     services: [
       'services/capability-registry.js',
       'services/market-delegation-service.js',
       'services/market-scope-projector.js',
+      'services/market-delegation-team-service.js',
+    ],
+    routes: [
+      'routes/market-delegation-team.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
+      'tests/unit/market-delegation-team-service.test.js',
+      'tests/unit/market-delegation-team-routes.test.js',
     ],
   },
 
@@ -89,6 +101,7 @@ module.exports = {
       'ceiling_templates: RW!',
       'ceiling_template_capabilities: RW!',
       'market_delegation_audit: RW!',
+      'market_team_invitations: RW!',
       'markets: R',
       'users: R',
     ],
@@ -96,26 +109,37 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 0,
-    totalRoutes: 0,
-    note: 'P0 n’expose encore aucune route. Les futures mutations seront authentifiées, market-scopées et capability-aware. operator_market_scopes reste un read model persisté par market ; require-market-scope.js ne change pas.',
+    authedRoutesDetected: 6,
+    totalRoutes: 6,
+    note: 'Toutes les routes LOT 1A exigent authenticate. Les actions sur un marché exigent ensuite team.read/team.invite/team.grant/team.revoke résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Aucun market_id client ne sert de preuve d’autorité.',
   },
 
   contract: {
-    exposes: [],
+    exposes: [
+      'GET /api/market-delegation/markets/:marketCode/team — team.read',
+      'POST /api/market-delegation/markets/:marketCode/team/invitations — team.invite',
+      'POST /api/market-delegation/team/invitations/:token/accept — utilisateur authentifié correspondant à l’email invité',
+      'PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities — team.grant + team.revoke',
+      'DELETE /api/market-delegation/markets/:marketCode/team/:membershipId — team.revoke',
+      'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',
+    ],
     internalApi: [
       { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
       { fn: 'replaceCeiling', file: 'services/market-delegation-service.js' },
       { fn: 'addMembership', file: 'services/market-delegation-service.js' },
       { fn: 'grantMembershipCapabilities', file: 'services/market-delegation-service.js' },
+      { fn: 'replaceMembershipCapabilities', file: 'services/market-delegation-service.js' },
       { fn: 'revokeMembership', file: 'services/market-delegation-service.js' },
       { fn: 'projectAssignment', file: 'services/market-scope-projector.js' },
       { fn: 'projectionDrift', file: 'services/market-scope-projector.js' },
+      { fn: 'resolveAuthorization', file: 'services/market-delegation-team-service.js' },
+      { fn: 'inviteTeamMember', file: 'services/market-delegation-team-service.js' },
+      { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },
     ],
-    consumes: ['market', 'auth-identity', 'infrastructure'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure'],
   },
 
-  authority: 'backend-core — cette feature possède la délégation d’autorité marché ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni les règles GROUP, ni les fonctions terrain mutualisées.',
+  authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées.',
 
   invariants: [
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
@@ -123,5 +147,9 @@ module.exports = {
     { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'operator_market_scopes est une projection de compatibilité persistée par sa lifecycle owner market ; require-market-scope.js ne dépend jamais directement des tables de délégation', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'une membership granulaire ne projette jamais manager sur les routes legacy sauf si elle détient 100 % du ceiling actif ; compatibilité legacy fail-closed', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'un token d’invitation brut n’est jamais persisté ; seul son SHA-256 est stocké', test: 'tests/unit/market-delegation-team-service.test.js' },
+    { statement: 'les capabilities d’une invitation sont revalidées contre le grantor courant et le ceiling au moment de l’acceptation', test: 'tests/unit/market-delegation-team-service.test.js' },
+    { statement: 'retirer la dernière membership possédant team.grant échoue fort afin d’éviter un lockout local', test: 'tests/unit/market-delegation-team-service.test.js' },
+    { statement: 'les routes équipe refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-team-routes.test.js' },
   ],
 };

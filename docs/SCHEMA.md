@@ -295,6 +295,14 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 
 
+<!-- schema-pending
+object: market_team_invitations
+kind: table
+migration: 196
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation.
+-->
+
 ### 4.13 Monitoring et alertes (10 tables)
 
 | Table | Rôle |
