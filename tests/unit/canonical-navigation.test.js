@@ -13,8 +13,11 @@ function fakeNode(tagName = 'div') {
     className: '',
     textContent: '',
     href: '',
+    value: '',
+    selected: false,
     children: [],
     attributes: {},
+    listeners: {},
     appendChild(child) {
       this.children.push(child);
       child.parentNode = this;
@@ -32,13 +35,19 @@ function fakeNode(tagName = 'div') {
       child.parentNode = this;
       return child;
     },
+    addEventListener(name, handler) {
+      this.listeners[name] = handler;
+    },
+    dispatchEvent(event) {
+      if (event && this.listeners[event.type]) this.listeners[event.type](event);
+    },
     setAttribute(name, value) {
       this.attributes[name] = String(value);
     },
   };
 }
 
-function loadNavigation(pathname, surface) {
+function loadNavigation(pathname, surface, options = {}) {
   jest.resetModules();
 
   const body = fakeNode('body');
@@ -49,8 +58,10 @@ function loadNavigation(pathname, surface) {
   const document = {
     readyState: 'loading',
     body,
+    activeElement: null,
     createElement: jest.fn(tagName => fakeNode(tagName)),
     addEventListener: jest.fn(),
+    querySelector: jest.fn(() => null),
     getElementById: jest.fn(id => {
       if (id === 'canonical-admin-root') return root;
       return null;
@@ -58,11 +69,19 @@ function loadNavigation(pathname, surface) {
   };
 
   global.window = {
-    location: { pathname },
+    location: { pathname, search: '', href: `https://komerce.test${pathname}` },
     document,
     KomerceCanonicalAdmin: {
       surfaceForPath: jest.fn(() => surface),
+      marketChoices: jest.fn(context => {
+        const access = context && context.access;
+        if (!access) return [];
+        const rows = access.mode === 'global' ? [{ value: '', marketCode: null, label: 'Global · Tous les marchés' }] : [];
+        access.allowedMarkets.forEach(code => rows.push({ value: code, marketCode: code, label: code }));
+        return rows;
+      }),
     },
+    ...(options.window || {}),
   };
   global.document = document;
 
@@ -81,100 +100,113 @@ afterEach(() => {
   delete global.document;
 });
 
-describe('canonical admin navigation', () => {
-  test('expose exactement les quatre dashboards principaux', () => {
+describe('canonical admin navigation — mock contract', () => {
+  test('expose exactement les six onglets du mock approuvé dans le bon ordre', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
 
-    expect(env.api.PRIMARY_NAV.map(item => item.id)).toEqual([
-      'pilotage',
-      'commerce',
-      'operations',
-      'finance',
+    expect(env.api.PRIMARY_NAV.map(item => item.label)).toEqual([
+      'Dashboard',
+      'Atelier économique',
+      'Catalogue',
+      'Commandes',
+      'Marchés',
+      'Paramètres',
     ]);
   });
 
-  test('un workspace reste rattaché à son dashboard parent et affiche Retour', () => {
-    const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
+  test('Atelier économique est un onglet primaire actif, sans bouton Retour parasite', () => {
+    const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
     const header = env.api.mount({
       document: env.document,
-      pathname: '/admin/workspaces/shipping-customs',
-      surface: 'shipping-customs-workspace',
+      pathname: '/admin/workspaces/pricing',
+      surface: 'pricing-workspace',
+      user: { role: 'admin' },
     });
-
-    expect(env.body.children[0]).toBe(header);
 
     const inner = header.children[0];
     const identity = inner.children[0];
     const primary = inner.children[1];
-    const back = identity.children[1];
-    const operations = primary.children.find(link => link.attributes['data-dashboard'] === 'operations');
-
-    expect(back.textContent).toBe('← Retour');
-    expect(back.href).toBe('/admin/operations');
-    expect(operations.attributes['aria-current']).toBe('page');
-  });
-
-  test('une vue principale ne crée pas de bouton Retour', () => {
-    const env = loadNavigation('/admin/finance', 'finance');
-    const header = env.api.mount({ document: env.document, pathname: '/admin/finance', surface: 'finance' });
-    const identity = header.children[0].children[0];
+    const pricing = primary.children.find(link => link.attributes['data-dashboard'] === 'pricing');
 
     expect(identity.children).toHaveLength(1);
-    expect(header.children[0].children[1].children[3].attributes['aria-current']).toBe('page');
+    expect(identity.children[0].children[0].textContent).toBe('KOMERCE');
+    expect(pricing.href).toBe('/admin/workspaces/pricing');
+    expect(pricing.attributes['aria-current']).toBe('page');
   });
 
-  test('Action Center, Accès pays et Démo restent des utilitaires, pas des dashboards principaux', () => {
-    const env = loadNavigation('/dashboards/canonical/access.html', 'market-access');
+  test('les drill-downs gardent un Retour sans réintroduire les anciens onglets techniques', () => {
+    const env = loadNavigation('/admin/orders/ORD-001', 'order-360');
     const header = env.api.mount({
       document: env.document,
+      pathname: '/admin/orders/ORD-001',
+      surface: 'order-360',
+    });
+
+    const inner = header.children[0];
+    const identity = inner.children[0];
+    const primary = inner.children[1];
+    const orders = primary.children.find(link => link.attributes['data-dashboard'] === 'orders');
+
+    expect(identity.children[1].textContent).toBe('← Retour');
+    expect(identity.children[1].href).toBe('/admin/commerce');
+    expect(orders.attributes['aria-current']).toBe('page');
+    expect(primary.children.map(link => link.textContent)).not.toContain('Opérations');
+    expect(primary.children.map(link => link.textContent)).not.toContain('Finance');
+  });
+
+  test('Marchés pointe vers la gestion des accès pour admin et vers autonomie marché pour market_operator', () => {
+    const adminEnv = loadNavigation('/dashboards/canonical/access.html', 'market-access');
+    const adminHeader = adminEnv.api.mount({
+      document: adminEnv.document,
       pathname: '/dashboards/canonical/access.html',
       surface: 'market-access',
       user: { role: 'admin' },
     });
-    const inner = header.children[0];
-    const primary = inner.children[1];
-    const utilities = inner.children[2];
+    const adminMarkets = adminHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
+    expect(adminMarkets.href).toBe('/dashboards/canonical/access.html');
+    expect(adminMarkets.attributes['aria-current']).toBe('page');
 
-    expect(primary.children).toHaveLength(4);
-    expect(utilities.children.map(link => link.textContent)).toEqual(['Actions', 'Accès pays', 'Démo staging']);
-    expect(utilities.children[1].href).toBe('/dashboards/canonical/access.html');
-    expect(utilities.children[1].attributes['aria-current']).toBe('page');
-    expect(inner.children[0].children[1].href).toBe('/admin/pilotage');
-  });
-
-  test('market_operator voit les 4 dashboards mais pas les utilitaires admin', () => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
-    const header = env.api.mount({
-      document: env.document,
+    const operatorEnv = loadNavigation('/admin/pilotage', 'pilotage');
+    const operatorHeader = operatorEnv.api.mount({
+      document: operatorEnv.document,
       pathname: '/admin/pilotage',
       surface: 'pilotage',
       user: { role: 'market_operator' },
     });
-    const inner = header.children[0];
-    const primary = inner.children[1];
-    const utilities = inner.children[2];
-
-    // Les 4 dashboards primaires restent visibles (données scopées serveur)
-    expect(primary.children).toHaveLength(4);
-    expect(primary.children.map(l => l.textContent)).toEqual([
-      'Pilotage', 'Commerce', 'Opérations', 'Finance',
-    ]);
-
-    // Seul Action Center est visible — Accès pays et Démo staging masqués
-    expect(utilities.children.map(l => l.textContent)).toEqual(['Actions']);
+    const operatorMarkets = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
+    expect(operatorMarkets.href).toBe('/dashboards/canonical/market-autonomy.html');
   });
 
-  test('sans user résolu, les utilitaires admin sont masqués par défaut', () => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
+  test('le sélecteur Market ID est intégré à droite quand le contexte serveur est disponible', () => {
+    const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
     const header = env.api.mount({
       document: env.document,
-      pathname: '/admin/pilotage',
-      surface: 'pilotage',
-      // pas de user → null → isAdmin(null) = false
+      pathname: '/admin/workspaces/pricing',
+      surface: 'pricing-workspace',
+      user: { role: 'market_operator' },
+      adminContext: {
+        access: {
+          mode: 'market',
+          defaultMarket: 'CM',
+          allowedMarkets: ['CM'],
+        },
+      },
     });
-    const inner = header.children[0];
-    const utilities = inner.children[2];
 
-    expect(utilities.children.map(l => l.textContent)).toEqual(['Actions']);
+    const utilities = header.children[0].children[2];
+    const marketControl = utilities.children[0];
+    const select = marketControl.children[0];
+
+    expect(select.className).toBe('kmc-admin-market-select');
+    expect(select.value).toBe('CM');
+    expect(select.children.map(option => option.textContent)).toEqual(['CM']);
+    expect(utilities.children[1].textContent).toBe('Responsable pays');
+  });
+
+  test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {
+    const env = loadNavigation('/admin/finance', 'finance');
+    const header = env.api.mount({ document: env.document, pathname: '/admin/finance', surface: 'finance' });
+    const dashboard = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'dashboard');
+    expect(dashboard.attributes['aria-current']).toBe('page');
   });
 });

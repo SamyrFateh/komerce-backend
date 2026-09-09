@@ -4,14 +4,14 @@
  * @domain        admin-dashboard
  * @layer         ui-navigation
  * @criticality   medium
- * @inputs        canonical_surface, url_path
- * @outputs       primary_dashboard_navigation, logical_back_navigation
+ * @inputs        canonical_surface, url_path, authenticated_user, server_admin_context
+ * @outputs       mock_contract_navigation, logical_back_navigation, market_selector_proxy
  * @depends       canonical admin app surface contract
  * @used-by       canonical admin runtime
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      four_primary_dashboards_no_legacy_navigation
+ * @doctrine      four_primary_dashboards_no_legacy_navigation, mock_is_ui_contract
  * @impact-areas  admin-dashboard, navigation
  * @version       2026-09
  */
@@ -21,42 +21,52 @@
 (function initCanonicalNavigation(global) {
   'use strict';
 
+  // Contrat UI approuvé : ces six onglets sont la navigation visible Komerce.
+  // Les dashboards Canonical Pilotage / Commerce / Opérations / Finance restent
+  // les surfaces techniques sous-jacentes ; la barre expose les intentions
+  // métier, pas l'architecture interne.
   const PRIMARY_NAV = Object.freeze([
-    Object.freeze({ id: 'pilotage', label: 'Pilotage', href: '/admin/pilotage' }),
-    Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce' }),
-    Object.freeze({ id: 'operations', label: 'Opérations', href: '/admin/operations' }),
-    Object.freeze({ id: 'finance', label: 'Finance', href: '/admin/finance' }),
+    Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
+    Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
+    Object.freeze({ id: 'catalog', label: 'Catalogue', href: '/admin/workspaces/catalog' }),
+    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce' }),
+    Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/market-autonomy.html' }),
+    Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings' }),
   ]);
 
   const SURFACE_PARENT = Object.freeze({
-    pilotage: 'pilotage',
-    commerce: 'commerce',
-    operations: 'operations',
-    finance: 'finance',
-    'operations-workspace': 'operations',
-    'shipping-customs-workspace': 'operations',
-    'accounting-workspace': 'finance',
-    'catalog-workspace': 'commerce',
-    'sourcing-workspace': 'commerce',
-    'pricing-workspace': 'commerce',
-    'action-center': 'pilotage',
-    'market-access': 'pilotage',
-    'order-360': 'commerce',
-    'client-index': 'commerce',
-    'client-360': 'commerce',
-    'product-360': 'commerce',
-    demo: 'pilotage',
+    pilotage: 'dashboard',
+    operations: 'dashboard',
+    finance: 'dashboard',
+    'operations-workspace': 'dashboard',
+    'shipping-customs-workspace': 'dashboard',
+    'accounting-workspace': 'dashboard',
+    'action-center': 'dashboard',
+    demo: 'dashboard',
+
+    'pricing-workspace': 'pricing',
+
+    'catalog-workspace': 'catalog',
+    'sourcing-workspace': 'catalog',
+    'product-360': 'catalog',
+
+    commerce: 'orders',
+    'order-360': 'orders',
+    'client-index': 'orders',
+    'client-360': 'orders',
+
+    'market-access': 'markets',
+    'market-autonomy': 'markets',
+    settings: 'settings',
   });
 
+  // Les onglets du mock remplacent le bouton Retour sur les workspaces
+  // principaux. Retour reste réservé aux vrais drill-downs / surfaces 360.
   const BACK_TARGETS = Object.freeze({
-    'operations-workspace': '/admin/operations',
-    'shipping-customs-workspace': '/admin/operations',
-    'accounting-workspace': '/admin/finance',
-    'catalog-workspace': '/admin/commerce',
-    'sourcing-workspace': '/admin/commerce',
-    'pricing-workspace': '/admin/commerce',
+    'operations-workspace': '/admin/pilotage',
+    'shipping-customs-workspace': '/admin/pilotage',
+    'accounting-workspace': '/admin/pilotage',
     'action-center': '/admin/pilotage',
-    'market-access': '/admin/pilotage',
     'order-360': '/admin/commerce',
     'client-index': '/admin/commerce',
     'client-360': '/admin/clients',
@@ -72,19 +82,32 @@
   }
 
   function surfaceForPath(pathname) {
+    const path = String(pathname || '');
+    if (path === '/dashboards/canonical/access.html' || path === '/dashboards/canonical/market-autonomy.html') {
+      return path.includes('access') ? 'market-access' : 'market-autonomy';
+    }
+    if (path === '/admin/settings') return 'settings';
+
     const app = global.KomerceCanonicalAdmin;
     if (!app || typeof app.surfaceForPath !== 'function') return 'pilotage';
     return app.surfaceForPath(pathname);
   }
 
   function activePrimarySurface(surface) {
-    return SURFACE_PARENT[surface] || 'pilotage';
+    return SURFACE_PARENT[surface] || 'dashboard';
   }
 
-  function createLink(doc, item, activeId) {
+  function hrefFor(item, user) {
+    if (item.id === 'markets' && user && user.role === 'admin') {
+      return '/dashboards/canonical/access.html';
+    }
+    return item.href;
+  }
+
+  function createLink(doc, item, activeId, user) {
     const link = doc.createElement('a');
     link.className = 'kmc-admin-primary-link';
-    link.href = item.href;
+    link.href = hrefFor(item, user);
     link.textContent = item.label;
     link.setAttribute('data-dashboard', item.id);
     if (item.id === activeId) {
@@ -94,22 +117,103 @@
     return link;
   }
 
-  // ── Rôle-aware visibility ────────────────────────────────────────────────
-  // Les quatre dashboards primaires sont toujours visibles : les API sous-
-  // jacentes sont scopées côté serveur par le market_id autorisé, donc un
-  // market_operator ne voit que ses données même s'il clique sur Finance.
-  //
-  // Les utilités (Accès pays, Démo staging) sont réservées à l'admin.
-  // Un market_operator n'administre pas les accès pays des autres opérateurs
-  // et n'a pas besoin du flux de démo staging.
-  function isAdmin(user) {
-    return user && user.role === 'admin';
+  function roleLabel(user) {
+    if (!user || !user.role) return 'Admin';
+    if (user.role === 'market_operator') return 'Responsable pays';
+    if (user.role === 'admin') return 'Admin';
+    return String(user.role).replaceAll('_', ' ');
+  }
+
+  function currentRequestedMarket(adminContext) {
+    const access = adminContext && adminContext.access;
+    if (!access || !Array.isArray(access.allowedMarkets)) return null;
+
+    try {
+      const params = new URLSearchParams((global.location && global.location.search) || '');
+      const requested = String(params.get('market') || '').toUpperCase();
+      if (requested && access.allowedMarkets.includes(requested)) return requested;
+    } catch (_) {
+      // Le contexte serveur reste l'autorité si URLSearchParams est absent.
+    }
+
+    if (access.mode === 'global') return null;
+    if (access.defaultMarket && access.allowedMarkets.includes(access.defaultMarket)) return access.defaultMarket;
+    return access.allowedMarkets[0] || null;
+  }
+
+  function marketChoices(adminContext) {
+    const app = global.KomerceCanonicalAdmin;
+    if (app && typeof app.marketChoices === 'function') {
+      try { return app.marketChoices(adminContext); } catch (_) { /* fallback ci-dessous */ }
+    }
+
+    const access = adminContext && adminContext.access;
+    if (!access || !Array.isArray(access.allowedMarkets)) return [];
+    const choices = [];
+    if (access.mode === 'global') choices.push({ value: '', label: 'Tous les marchés' });
+    access.allowedMarkets.forEach(code => choices.push({ value: code, label: code }));
+    return choices;
+  }
+
+  function proxyMarketChange(doc, value) {
+    // Le sélecteur de page possède déjà le contrat serveur et le callback de
+    // rechargement. La barre du mock ne duplique aucune logique économique :
+    // elle pilote ce contrôle canonique lorsqu'il existe.
+    if (doc && typeof doc.querySelector === 'function') {
+      const canonicalSelect = doc.querySelector('.kmc-market-context-select');
+      if (canonicalSelect && canonicalSelect !== doc.activeElement) {
+        canonicalSelect.value = value;
+        if (typeof canonicalSelect.dispatchEvent === 'function' && typeof global.Event === 'function') {
+          canonicalSelect.dispatchEvent(new global.Event('change', { bubbles: true }));
+          return;
+        }
+      }
+    }
+
+    // Les pages autonomes n'ont pas le shell de marché : le code marché reste
+    // une préférence de navigation, jamais une autorité. Les APIs revalident le scope.
+    if (global.location) {
+      const url = new URL(global.location.href);
+      if (value) url.searchParams.set('market', value);
+      else url.searchParams.delete('market');
+      global.location.href = url.toString();
+    }
+  }
+
+  function createMarketControl(doc, adminContext) {
+    const choices = marketChoices(adminContext);
+    if (!choices.length) return null;
+
+    const wrap = doc.createElement('label');
+    wrap.className = 'kmc-admin-market-control';
+    wrap.setAttribute('aria-label', 'Marché actif');
+
+    const select = doc.createElement('select');
+    select.className = 'kmc-admin-market-select';
+    select.setAttribute('aria-label', 'Sélectionner le marché');
+    const current = currentRequestedMarket(adminContext);
+
+    choices.forEach(choice => {
+      const option = doc.createElement('option');
+      option.value = choice.value;
+      option.textContent = choice.label;
+      if ((choice.marketCode || choice.value || null) === current) option.selected = true;
+      select.appendChild(option);
+    });
+    select.value = current || '';
+    if (typeof select.addEventListener === 'function') {
+      select.addEventListener('change', () => proxyMarketChange(doc, select.value || ''));
+    }
+
+    wrap.appendChild(select);
+    return wrap;
   }
 
   function mount(options = {}) {
     const doc = options.document || global.document;
     const pathname = options.pathname || (global.location && global.location.pathname) || '/admin/pilotage';
     const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
+    const adminContext = options.adminContext || global.KOMERCE_CANONICAL_ADMIN_CONTEXT || null;
     if (!doc || !doc.body || typeof doc.createElement !== 'function') {
       throw new Error('canonical_navigation_document_missing');
     }
@@ -124,6 +228,7 @@
     header.id = 'canonical-admin-navigation';
     header.className = 'kmc-admin-navigation';
     header.setAttribute('data-canonical-navigation', 'true');
+    header.setAttribute('data-mock-contract', 'approved');
 
     const inner = doc.createElement('div');
     inner.className = 'kmc-admin-navigation-inner';
@@ -134,8 +239,7 @@
     const home = doc.createElement('a');
     home.className = 'kmc-admin-home';
     home.href = '/admin/pilotage';
-    home.appendChild(textNode(doc, 'span', 'kmc-admin-home-mark', 'K'));
-    home.appendChild(textNode(doc, 'span', 'kmc-admin-home-label', 'Komerce Admin'));
+    home.appendChild(textNode(doc, 'span', 'kmc-admin-home-label', 'KOMERCE'));
     identity.appendChild(home);
 
     const backTarget = BACK_TARGETS[surface];
@@ -150,47 +254,18 @@
 
     const primary = doc.createElement('nav');
     primary.className = 'kmc-admin-primary-nav';
-    primary.setAttribute('aria-label', 'Dashboards principaux');
-    PRIMARY_NAV.forEach(item => primary.appendChild(createLink(doc, item, activeId)));
+    primary.setAttribute('aria-label', 'Navigation Komerce');
+    PRIMARY_NAV.forEach(item => primary.appendChild(createLink(doc, item, activeId, user)));
 
-    const utilities = doc.createElement('nav');
+    const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
-    utilities.setAttribute('aria-label', 'Outils admin');
 
-    const actionCenter = doc.createElement('a');
-    actionCenter.className = 'kmc-admin-utility-link';
-    actionCenter.href = '/admin/action-center';
-    actionCenter.textContent = 'Actions';
-    if (surface === 'action-center') {
-      actionCenter.className += ' is-active';
-      actionCenter.setAttribute('aria-current', 'page');
-    }
-    utilities.appendChild(actionCenter);
+    const marketControl = createMarketControl(doc, adminContext);
+    if (marketControl) utilities.appendChild(marketControl);
 
-    // Accès pays et Démo staging : admin uniquement.
-    // Un market_operator gère son propre marché, il n'administre pas les
-    // grants des autres opérateurs et n'a pas besoin du flux de démo.
-    if (isAdmin(user)) {
-      const marketAccess = doc.createElement('a');
-      marketAccess.className = 'kmc-admin-utility-link';
-      marketAccess.href = '/dashboards/canonical/access.html';
-      marketAccess.textContent = 'Accès pays';
-      if (surface === 'market-access') {
-        marketAccess.className += ' is-active';
-        marketAccess.setAttribute('aria-current', 'page');
-      }
-      utilities.appendChild(marketAccess);
-
-      const demo = doc.createElement('a');
-      demo.className = 'kmc-admin-utility-link kmc-admin-demo-link';
-      demo.href = '/admin/demo';
-      demo.textContent = 'Démo staging';
-      if (surface === 'demo') {
-        demo.className += ' is-active';
-        demo.setAttribute('aria-current', 'page');
-      }
-      utilities.appendChild(demo);
-    }
+    const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));
+    account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);
+    utilities.appendChild(account);
 
     inner.appendChild(identity);
     inner.appendChild(primary);
@@ -214,6 +289,9 @@
     SURFACE_PARENT,
     BACK_TARGETS,
     activePrimarySurface,
+    surfaceForPath,
+    marketChoices,
+    currentRequestedMarket,
     mount,
   });
 
