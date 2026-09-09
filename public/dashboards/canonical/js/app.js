@@ -480,6 +480,19 @@
     const surface = global.document.createElement('div');
     surface.setAttribute('data-canonical-surface', options.surface);
 
+    const renderCurrent = requestedMarket => options.render(surface, user, adminContext, requestedMarket);
+    const renderAtomically = async requestedMarket => {
+      // Pricing garde l'Atelier courant visible pendant que le marché suivant
+      // se construit hors DOM. Le swap n'arrive qu'après un rendu réussi :
+      // aucun flash du workspace historique, aucun écran blanc en cas d'échec.
+      const stage = global.document.createElement('div');
+      stage.className = 'kmc-market-surface-stage';
+      stage.dataset.marketSurfaceStage = '';
+      await options.render(stage, user, adminContext, requestedMarket);
+      surface.replaceChildren(stage);
+      return stage;
+    };
+
     const selector = mountMarketSelector({
       document: global.document,
       container: root,
@@ -487,11 +500,13 @@
       contextContract: global.KomerceAdminContext,
       title: options.title,
       requireMarket: Boolean(options.requireMarket),
-      onChange: requestedMarket => options.render(surface, user, adminContext, requestedMarket),
+      onChange: requestedMarket => options.atomicSwap
+        ? renderAtomically(requestedMarket)
+        : renderCurrent(requestedMarket),
     });
 
     root.appendChild(surface);
-    return options.render(surface, user, adminContext, selector.initialMarket);
+    return renderCurrent(selector.initialMarket);
   }
 
   function renderPilotageShell(root, user, adminContext) {
@@ -566,6 +581,7 @@
       surface: 'pricing-workspace',
       title: 'Workspace Pricing / Atelier des coûts',
       requireMarket: true,
+      atomicSwap: true,
       render: renderPricingWorkspace,
     });
   }

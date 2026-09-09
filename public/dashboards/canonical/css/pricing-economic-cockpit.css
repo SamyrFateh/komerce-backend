@@ -1033,7 +1033,22 @@
 .kmc-cockpit-cost-icon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 8px; }
 .kmc-cockpit-cost-card.is-variable { --cockpit-accent: #0b84f3; --cockpit-soft: #edf7ff; }
 .kmc-cockpit-cost-card.is-fixed-direct { --cockpit-accent: #ef3154; --cockpit-soft: #fff0f3; }
-.kmc-cockpit-cost-card.is-fixed-mutualized { --cockpit-accent: #2478e8; --cockpit-soft: #eef5ff; }
+.kmc-cockpit-cost-card.is-fixed-mutualized {
+  --cockpit-accent: #94a3b8;
+  --cockpit-soft: #f1f5f9;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cost-identity strong,
+.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cost-identity small,
+.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cell {
+  color: #64748b;
+}
+.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cell.is-head,
+.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cost-total-row {
+  background: #f1f5f9;
+}
+.kmc-market-surface-stage { display: contents; }
 .kmc-cockpit-principle {
   padding: 12px;
   background: #fbfdff;
