@@ -1,0 +1,201 @@
+/* Panneau latéral « Ajustement de charge » — formulaire séparé, jamais
+   inline dans l'Atelier économique. Ouvert par les boutons « Ajuster les
+   charges » / « Gérer les mutualisations » des cartes de coûts. */
+
+.kmc-structure-panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 0.32);
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+  animation: kmc-structure-panel-fade 0.15s ease-out;
+}
+
+@keyframes kmc-structure-panel-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.kmc-structure-panel {
+  width: min(480px, 100vw);
+  height: 100vh;
+  background: var(--kmc-card);
+  box-shadow: var(--kmc-shadow-card-hover);
+  display: flex;
+  flex-direction: column;
+  animation: kmc-structure-panel-slide 0.18s ease-out;
+}
+
+@keyframes kmc-structure-panel-slide {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.kmc-structure-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--kmc-line);
+}
+
+.kmc-structure-panel-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--kmc-ink);
+  margin: 0 0 4px;
+}
+
+.kmc-structure-panel-subtitle {
+  font-size: 0.85rem;
+  color: var(--kmc-muted);
+  margin: 0;
+}
+
+.kmc-structure-panel-close {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--kmc-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--kmc-radius-sm);
+}
+
+.kmc-structure-panel-close:hover { background: var(--kmc-paper); color: var(--kmc-ink); }
+
+.kmc-structure-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.kmc-structure-panel-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kmc-muted);
+  margin: 0 0 10px;
+}
+
+.kmc-structure-panel-history {
+  border: 1px solid var(--kmc-line);
+  border-radius: var(--kmc-radius-md);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.kmc-structure-panel-history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--kmc-line);
+}
+
+.kmc-structure-panel-history-row:last-child { border-bottom: none; }
+
+.kmc-structure-panel-history-empty {
+  padding: 16px 14px;
+  font-size: 0.82rem;
+  color: var(--kmc-muted);
+  text-align: center;
+}
+
+.kmc-structure-panel-history-amount { font-weight: 600; color: var(--kmc-ink); white-space: nowrap; }
+.kmc-structure-panel-history-meta { color: var(--kmc-muted); font-size: 0.76rem; }
+
+.kmc-structure-panel-field { margin-bottom: 16px; }
+
+.kmc-structure-panel-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--kmc-ink);
+  margin-bottom: 6px;
+}
+
+.kmc-structure-panel-hint {
+  font-size: 0.74rem;
+  color: var(--kmc-muted);
+  margin-top: 4px;
+}
+
+.kmc-structure-panel-row { display: flex; gap: 12px; }
+.kmc-structure-panel-row > .kmc-structure-panel-field { flex: 1; }
+
+.kmc-structure-panel input,
+.kmc-structure-panel select,
+.kmc-structure-panel textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--kmc-line-strong);
+  border-radius: var(--kmc-radius-sm);
+  font-size: 0.88rem;
+  color: var(--kmc-ink);
+  background: var(--kmc-card);
+}
+
+.kmc-structure-panel input:focus,
+.kmc-structure-panel select:focus,
+.kmc-structure-panel textarea:focus {
+  outline: 2px solid var(--kmc-blue);
+  outline-offset: -1px;
+}
+
+.kmc-structure-panel textarea { resize: vertical; min-height: 64px; }
+
+.kmc-structure-panel-error {
+  background: var(--kmc-critical-soft);
+  color: var(--kmc-critical);
+  border-radius: var(--kmc-radius-sm);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+}
+
+.kmc-structure-panel-footer {
+  border-top: 1px solid var(--kmc-line);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.kmc-structure-panel-btn {
+  border-radius: var(--kmc-radius-sm);
+  padding: 9px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.kmc-structure-panel-btn-secondary {
+  background: var(--kmc-card);
+  border-color: var(--kmc-line-strong);
+  color: var(--kmc-ink);
+}
+
+.kmc-structure-panel-btn-secondary:hover { background: var(--kmc-paper); }
+
+.kmc-structure-panel-btn-primary {
+  background: var(--kmc-navy);
+  color: #fff;
+}
+
+.kmc-structure-panel-btn-primary:hover { opacity: 0.92; }
+.kmc-structure-panel-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.kmc-structure-panel-loading,
+.kmc-structure-panel-empty {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--kmc-muted);
+  font-size: 0.85rem;
+}

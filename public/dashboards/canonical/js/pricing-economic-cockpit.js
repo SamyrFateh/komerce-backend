@@ -123,7 +123,7 @@
     return el(doc, 'div', `kmc-cockpit-cell${className ? ` ${className}` : ''}`, value);
   }
 
-  function costCardHeader(doc, icon, title, subtitle, actionText, actionKey) {
+  function costCardHeader(doc, icon, title, subtitle, actionText, actionKey, disabledHint) {
     const head = el(doc, 'div', 'kmc-cockpit-cost-head');
     const identity = el(doc, 'div', 'kmc-cockpit-cost-identity');
     identity.appendChild(el(doc, 'span', 'kmc-cockpit-cost-icon', icon));
@@ -134,7 +134,12 @@
     head.appendChild(identity);
     const action = el(doc, 'button', 'kmc-cockpit-outline-action', actionText);
     action.type = 'button';
-    action.dataset.openCostDetail = actionKey;
+    if (disabledHint) {
+      action.disabled = true;
+      action.title = disabledHint;
+    } else {
+      action.dataset.openCostDetail = actionKey;
+    }
     head.appendChild(action);
     return head;
   }
@@ -194,10 +199,11 @@
     return card;
   }
 
-  function fixedMutualizedCard(doc, structure, marketCode) {
+  function fixedMutualizedCard(doc, structure, marketCode, isAdmin) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized');
     card.dataset.costSummary = 'fixed-mutualized';
-    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Pools structurels partagés, alloués par Market ID.', 'Gérer les mutualisations', 'fixed-mutualized'));
+    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Pools structurels partagés, alloués par Market ID.', 'Gérer les mutualisations', 'fixed-mutualized',
+      isAdmin ? null : 'Réservé à l’administration — un ajustement mutualisé affecte tous les marchés à la fois.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
     ['Élément', 'Coût global (FCFA)', 'Clé d\u2019allocation', '%', `Quote-part ${marketCode}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
@@ -255,13 +261,14 @@
     return card;
   }
 
-  function createCostPilotage(doc, payload, marketCode, decision) {
+  function createCostPilotage(doc, payload, marketCode, decision, user) {
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
+    const isAdmin = (user && user.role) === 'admin';
     const section = el(doc, 'section', 'kmc-cockpit-costs');
     section.appendChild(variableCostCard(doc, groups.variable, marketCode));
     section.appendChild(fixedDirectCard(doc, structure));
-    section.appendChild(fixedMutualizedCard(doc, structure, marketCode));
+    section.appendChild(fixedMutualizedCard(doc, structure, marketCode, isAdmin));
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -726,12 +733,12 @@
     return `il y a ${hours}h`;
   }
 
-  function buildCockpit(doc, rootNode, payload, marketCode, decision) {
+  function buildCockpit(doc, rootNode, payload, marketCode, decision, user) {
     const cockpit = el(doc, 'div', 'kmc-economic-cockpit');
     cockpit.dataset[COCKPIT_ATTR] = '';
     cockpit.appendChild(buildCockpitHeader(doc, payload, decision));
     moveEquilibriumIntoCockpit(rootNode, cockpit);
-    cockpit.appendChild(createCostPilotage(doc, payload, marketCode, decision));
+    cockpit.appendChild(createCostPilotage(doc, payload, marketCode, decision, user));
     cockpit.appendChild(createPortfolioShell(doc, payload));
     cockpit.appendChild(buildCockpitFooter(doc));
     return cockpit;
@@ -752,6 +759,40 @@
     return footer;
   }
 
+  // Ouvre le formulaire séparé pour un ajustement de charge structurelle
+  // (N3) — jamais un champ inline dans l'Atelier économique. 'fixed-direct'
+  // reste scopé au marché courant (manager du marché ou admin) ; le pool
+  // 'fixed-mutualized' (GROUP) est admin only, il affecte tous les marchés.
+  async function openStructureEventForm(rootObject, doc, workspace, options, detailKey) {
+    const panelApi = rootObject && rootObject.KomerceCanonicalStructureEventPanel;
+    if (!panelApi || typeof panelApi.open !== 'function') return;
+
+    const isMutualized = detailKey === 'fixed-mutualized';
+    const isAdmin = (options.user && options.user.role) === 'admin';
+    if (isMutualized && !isAdmin) return; // bouton désactivé côté serveur de vérité — défense en profondeur
+
+    const marketEndpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+    const globalEndpoint = workspace.endpointFor({});
+    const basePath = isMutualized ? globalEndpoint : marketEndpoint;
+
+    await panelApi.open({
+      document: doc,
+      fetch: options.fetch,
+      title: isMutualized ? 'Gérer les mutualisations' : 'Ajuster les charges fixes directes',
+      subtitle: isMutualized
+        ? 'Pool partagé entre marchés — l’ajustement s’applique à la quote-part de tous les marchés.'
+        : `Charges propres au marché ${options.requestedMarket || ''}.`.trim(),
+      chargesEndpoint: `${marketEndpoint}/charges`,
+      eventsEndpoint: `${basePath}/structure-events`,
+      submitEndpoint: `${basePath}/structure-events`,
+      onSaved: async () => {
+        if (typeof rootObject.KomerceCanonicalPricingWorkspace?.mount === 'function') {
+          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+        }
+      },
+    });
+  }
+
   function bindCockpit(rootObject, workspace, options, payload, cockpit, advanced) {
     const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
     if (!portfolio) return;
@@ -761,6 +802,11 @@
     cockpit.addEventListener('click', async event => {
       const openCosts = event.target.closest('[data-open-cost-detail]');
       if (openCosts) {
+        const detailKey = openCosts.dataset.openCostDetail;
+        if (detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized') {
+          await openStructureEventForm(rootObject, doc, workspace, options, detailKey);
+          return;
+        }
         advanced.open = true;
         advanced.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         return;
@@ -963,7 +1009,7 @@
       }
 
       const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision));
+      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision, options.user));
 
       const oldEquilibrium = cockpit.querySelector('.kmc-flow-equilibrium-panel--cockpit');
       if (oldEquilibrium && rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
@@ -994,7 +1040,7 @@
     const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));
     let decision = null;
     try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
-    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision);
+    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
     const advanced = createAdvancedDetails(options.document, advancedNodes);
     slot.replaceChildren(cockpit, advanced);
     bindCockpit(rootObject, workspace, options, payload, cockpit, advanced);

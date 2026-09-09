@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-08T15:58:30.597Z",
+  "generatedAt": "2026-09-09T13:05:15.034Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 588,
-    "protected": 535,
+    "total": 593,
+    "protected": 540,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1864,6 +1864,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/charges",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/commercial-prices",
       "level": "PROTECTED",
       "roles": [
@@ -1984,6 +1992,22 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
@@ -2025,6 +2049,22 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
       ]
     },
     {

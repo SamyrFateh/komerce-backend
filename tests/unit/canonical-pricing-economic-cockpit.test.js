@@ -64,3 +64,27 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).not.toContain('market_id');
   expect(source).not.toContain('marketId');
 });
+
+test('Ajuster les charges et Gérer les mutualisations ouvrent un formulaire séparé, jamais inline', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+
+  // Le vieux comportement (scroller vers les détails avancés de la même page)
+  // ne doit plus s'appliquer à fixed-direct / fixed-mutualized.
+  expect(source).toContain("detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized'");
+  expect(source).toContain('await openStructureEventForm(rootObject, doc, workspace, options, detailKey)');
+
+  // Gérer les mutualisations (GROUP) est admin only côté serveur — le
+  // bouton doit refléter cette vérité, pas juste être masqué par CSS.
+  expect(source).toContain("(options.user && options.user.role) === 'admin'");
+  expect(source).toContain('Réservé à l’administration — un ajustement mutualisé affecte tous les marchés à la fois.');
+
+  // fixed-direct reste scopé au marché courant, fixed-mutualized utilise
+  // toujours l'endpoint global, jamais /market/:code pour les écritures GROUP.
+  expect(source).toContain("const globalEndpoint = workspace.endpointFor({});");
+  expect(source).toContain('const basePath = isMutualized ? globalEndpoint : marketEndpoint;');
+
+  // Le panneau est un module Canonical natif séparé, chargé dans index.html.
+  expect(index).toContain('/dashboards/canonical/js/pricing-structure-event-panel.js');
+  expect(index).toContain('/dashboards/canonical/css/pricing-structure-event-panel.css');
+});
