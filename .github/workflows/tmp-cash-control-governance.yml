@@ -1,0 +1,164 @@
+name: tmp-cash-control-governance
+
+on:
+  push:
+    branches:
+      - feat/market-cash-control
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-cash-control
+      - name: Patch composition root, feature cards and schema intent
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function replace(file, from, to) {
+            let s = fs.readFileSync(file, 'utf8');
+            if (!s.includes(from)) throw new Error(`${file}: anchor missing: ${from.slice(0, 100)}`);
+            s = s.replace(from, to);
+            fs.writeFileSync(file, s);
+          }
+
+          // Composition root
+          replace(
+            'bootstrap/api-routes.js',
+            `  const marketDelegationTeamRouter = require('../routes/market-delegation-team');\n`,
+            `  const marketDelegationTeamRouter = require('../routes/market-delegation-team');\n  const marketDelegationCashControlRouter = require('../routes/market-delegation-cash-control');\n`
+          );
+          replace(
+            'bootstrap/api-routes.js',
+            `  app.use('/api/market-delegation', marketDelegationTeamRouter);\n`,
+            `  app.use('/api/market-delegation', marketDelegationTeamRouter);\n  app.use('/api/market-delegation', marketDelegationCashControlRouter);\n`
+          );
+          replace(
+            'bootstrap/api-routes.js',
+            `routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/admin-order-360.js`,
+            `routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/admin-order-360.js`
+          );
+
+          // market-delegation feature
+          replace(
+            'features/market-delegation.feature.js',
+            `      'Migration 197 adopte les scopes legacy actifs sans élargir les memberships déjà existantes ni pré-accorder de capabilities futures.',`,
+            `      'Migration 197 adopte les scopes legacy actifs sans élargir les memberships déjà existantes ni pré-accorder de capabilities futures.',\n      'La politique de contrôle cash appartient au partenaire pays ; le central conserve seulement un plancher d’intégrité non désactivable.',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'reprojection transactionnelle après création, acceptation, modification de capabilities ou révocation de membership',`,
+            `      'reprojection transactionnelle après création, acceptation, modification de capabilities ou révocation de membership',\n      'politique cash partenaire par assignment : activation/désactivation et SINGLE ou DUAL_ALWAYS',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',`,
+            `      'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',\n      'vérité d’encaissement et état de double confirmation : feature payments',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'migrations/197_market_delegation_legacy_scope_backfill.sql',`,
+            `      'migrations/197_market_delegation_legacy_scope_backfill.sql',\n      'migrations/198_market_cash_control_policy.sql',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'services/market-delegation-team-service.js',`,
+            `      'services/market-delegation-team-service.js',\n      'services/market-cash-control-policy-service.js',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'routes/market-delegation-team.js',`,
+            `      'routes/market-delegation-team.js',\n      'routes/market-delegation-cash-control.js',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'tests/unit/market-delegation-runtime-bridge.test.js',`,
+            `      'tests/unit/market-delegation-runtime-bridge.test.js',\n      'tests/unit/market-cash-control-policy-service.test.js',\n      'tests/unit/market-delegation-cash-control-routes.test.js',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'market_team_invitations: RW!',`,
+            `      'market_team_invitations: RW!',\n      'market_cash_control_policies: RW!',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `    authedRoutesDetected: 6,\n    totalRoutes: 6,`,
+            `    authedRoutesDetected: 8,\n    totalRoutes: 8,`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',`,
+            `      'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',\n      'GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read',\n      'PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage',`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `      { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },`,
+            `      { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },\n      { fn: 'readMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },\n      { fn: 'updateMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },`
+          );
+          replace(
+            'features/market-delegation.feature.js',
+            `    { statement: 'le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée', test: 'tests/unit/market-delegation-legacy-backfill.test.js' },`,
+            `    { statement: 'le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée', test: 'tests/unit/market-delegation-legacy-backfill.test.js' },\n    { statement: 'le partenaire peut durcir sa politique cash sans fournir de market_id client et toute mutation est auditée', test: 'tests/unit/market-cash-control-policy-service.test.js' },`
+          );
+
+          // payments feature
+          replace(
+            'features/payments.feature.js',
+            `      'paiement cash au retrait et relances cash',`,
+            `      'paiement cash au retrait et relances cash',\n      'contrôle partagé de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `      'services/cash-operations.js',`,
+            `      'services/cash-operations.js',\n      'services/cash-confirmation-control-service.js',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `      'migrations/169_mobile_money_foundation.sql',`,
+            `      'migrations/169_mobile_money_foundation.sql',\n      'migrations/199_cash_confirmation_control.sql',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `      'tests/unit/cash-operations-service.test.js',`,
+            `      'tests/unit/cash-operations-service.test.js',\n      'tests/unit/cash-confirmation-control-service.test.js',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `      'cash_deposits: RW',`,
+            `      'cash_deposits: RW',\n      'cash_confirmation_controls: RW',\n      'market_cash_control_policies: R',\n      'market_operating_assignments: R',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `      'purchasing (verification/reapprovisionnement apres encaissement)',`,
+            `      'purchasing (verification/reapprovisionnement apres encaissement)',\n      'market-delegation (politique de contrôle cash du partenaire ; payments reste propriétaire de la vérité d’encaissement)',`
+          );
+          replace(
+            'features/payments.feature.js',
+            `    'un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)',`,
+            `    'un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)',\n    { statement: 'tous les chemins cash passent par un contrôle partagé avant de créer la vérité paiement/stock', test: 'tests/unit/cash-confirmation-control-service.test.js' },\n    { statement: 'en DUAL_ALWAYS le premier acteur ne peut jamais être son propre second approbateur', test: 'tests/unit/cash-confirmation-control-service.test.js' },\n    { statement: 'le montant cash confirmé reste dérivé de la commande et n’est jamais saisi librement dans le contrôle', test: 'tests/unit/cash-confirmation-control-service.test.js' },`
+          );
+
+          // schema intent — new objects remain invisible until Railway confirms them.
+          replace(
+            'docs/SCHEMA.md',
+            `\n\n### 4.5 Paniers et catalogue`,
+            `\n\n<!-- schema-pending\nobject: cash_confirmation_controls\nkind: table\nmigration: 199\nsection: ### 4.4 Paiements et finance (9 tables live + 2 visées)\nrole: État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement.\n-->\n\n### 4.5 Paniers et catalogue`
+          );
+          replace(
+            'docs/SCHEMA.md',
+            `\n\n\n\n### 4.13 Monitoring et alertes`,
+            `\n\n<!-- schema-pending\nobject: market_cash_control_policies\nkind: table\nmigration: 198\nsection: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys\nrole: Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS.\n-->\n\n### 4.13 Monitoring et alertes`
+          );
+          NODE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bootstrap/api-routes.js features/market-delegation.feature.js features/payments.feature.js docs/SCHEMA.md
+          git commit -m "feat(cash-control): déclarer les boundaries et le schéma visé"
+          git push origin HEAD:feat/market-cash-control
