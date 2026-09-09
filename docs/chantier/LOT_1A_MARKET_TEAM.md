@@ -26,4 +26,4 @@ Objectif : rendre la gestion d'équipe réellement capability-aware sans réutil
 
 ## Dépendance
 
-Ce lot dépend du P0 (migrations 193–195). Le PR 1A reste distinct ; sa validation CI peut être effectuée temporairement contre `main` afin d'exécuter les gates qui ne se déclenchent que sur cette base, sans merger ni déployer.
+P0 (migrations 193–195) est mergé sur `main` et déployé avec succès sur Railway. LOT 1A est donc maintenant un lot incrémental direct au-dessus de la base live P0 ; sa migration propre est 196.
