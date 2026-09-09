@@ -58,6 +58,12 @@ function loadCanonicalApp() {
   const validateAdminContext = jest.fn(raw => raw);
   const resolveMarketViewMock = jest.fn(resolveMarketView);
   const pilotageMount = jest.fn().mockResolvedValue({ ok: true });
+  const pricingMount = jest.fn(({ root, requestedMarket }) => {
+    const marker = fakeNode('div');
+    marker.textContent = requestedMarket || 'global';
+    root.appendChild(marker);
+    return Promise.resolve({ ok: true });
+  });
   const demoMount = jest.fn().mockResolvedValue({ ok: true });
   const root = fakeNode('main');
   root.id = 'canonical-admin-root';
@@ -87,6 +93,7 @@ function loadCanonicalApp() {
       resolveMarketView: resolveMarketViewMock,
     },
     KomerceCanonicalPilotage: { mount: pilotageMount },
+    KomerceCanonicalPricingWorkspace: { mount: pricingMount },
     KomerceDemoOrderFlow: { mount: demoMount },
     KomerceDashboardRenderer: { createRenderer: jest.fn() },
     KomerceCanonicalUI: {},
@@ -104,6 +111,7 @@ function loadCanonicalApp() {
     validateAdminContext,
     resolveMarketViewMock,
     pilotageMount,
+    pricingMount,
     demoMount,
   };
 }
@@ -274,6 +282,48 @@ describe('canonical admin app — market selector', () => {
       root: surface,
       requestedMarket: 'CM',
     }));
+    expect(select.disabled).toBe(false);
+  });
+
+  test('Pricing change de Market par swap atomique sans exposer le rendu intermédiaire', async () => {
+    const env = loadCanonicalApp();
+    const user = { id: 'hq-admin', role: 'admin' };
+    const adminContext = {
+      actor: user,
+      access: {
+        mode: 'global',
+        allowedMarkets: ['CM', 'CG'],
+        defaultMarket: 'CM',
+        capabilities: ['dashboard.market.read'],
+      },
+    };
+
+    await env.api.renderPricingWorkspaceShell(env.root, user, adminContext);
+    const bar = env.root.children[0];
+    const surface = env.root.children[1];
+    const select = bar.children[1].children[1];
+    expect(surface.children[0].textContent).toBe('CM');
+
+    let finishSecondRender;
+    env.pricingMount.mockImplementationOnce(({ root, requestedMarket }) => new Promise(resolve => {
+      finishSecondRender = () => {
+        const marker = fakeNode('div');
+        marker.textContent = requestedMarket;
+        root.appendChild(marker);
+        resolve({ ok: true });
+      };
+    }));
+
+    select.value = 'CG';
+    const changePromise = select._listeners.change();
+    expect(surface.children[0].textContent).toBe('CM');
+    finishSecondRender();
+    await changePromise;
+
+    expect(surface.children).toHaveLength(1);
+    const stage = surface.children[0];
+    expect(stage.className).toBe('kmc-market-surface-stage');
+    expect(stage.children[0].textContent).toBe('CG');
     expect(select.disabled).toBe(false);
   });
 

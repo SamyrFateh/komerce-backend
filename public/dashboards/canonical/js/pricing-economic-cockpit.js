@@ -225,11 +225,12 @@
     return card;
   }
 
-  function fixedMutualizedCard(doc, structure, marketLabel, isAdmin) {
-    const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized');
+  function fixedMutualizedCard(doc, structure, marketLabel) {
+    const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized is-readonly');
     card.dataset.costSummary = 'fixed-mutualized';
-    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.', 'Gérer les mutualisations', 'fixed-mutualized',
-      isAdmin ? null : 'Réservé à l’administration — un ajustement mutualisé affecte tous les marchés à la fois.'));
+    card.dataset.readOnly = 'true';
+    card.setAttribute('aria-label', 'Charges fixes mutualisées · lecture seule');
+    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
     ['Élément', 'Coût global', 'Clé d’allocation', '%', `Quote-part ${marketLabel}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
@@ -284,12 +285,11 @@
   function createCostPilotage(doc, payload, marketCode, decision, user) {
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
-    const isAdmin = (user && user.role) === 'admin';
     const marketLabel = payload.scope?.market_name || marketCode;
     const section = el(doc, 'section', 'kmc-cockpit-costs');
     section.appendChild(variableCostCard(doc, groups.variable));
     section.appendChild(fixedDirectCard(doc, structure));
-    section.appendChild(fixedMutualizedCard(doc, structure, marketLabel, isAdmin));
+    section.appendChild(fixedMutualizedCard(doc, structure, marketLabel));
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -875,7 +875,7 @@
           await openVariableCostPanel(rootObject, doc, workspace, options, payload);
           return;
         }
-        if (detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized') {
+        if (detailKey === 'fixed-direct') {
           await openStructureEventForm(rootObject, doc, workspace, options, detailKey);
           return;
         }
