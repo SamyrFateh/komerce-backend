@@ -38,6 +38,7 @@ module.exports = {
       'Un Market ID ne peut avoir qu’un seul Market Operating Assignment ACTIVE ; les acteurs locaux secondaires restent providers/relais.',
       'Les capacités MEMBER sont bornées par le ceiling de l’assignment ; les autorités GROUP/CENTRAL_ONLY sont structurellement hors délégation marché.',
       'LOT 1A rend l’équipe autonome par capabilities sans transformer le rôle global user en autorité métier.',
+      'Migration 197 adopte les scopes legacy actifs sans élargir les memberships déjà existantes ni pré-accorder de capabilities futures.',
     ],
   },
 
@@ -56,6 +57,7 @@ module.exports = {
       'LOT 1A : lecture équipe, invitation, acceptation, modification capabilities et révocation par capabilities team.*',
       'invitation persistée 72 h par défaut, token brut jamais stocké et capabilities revalidées à l’acceptation',
       'anti-lockout : la dernière membership possédant team.grant ne peut pas être retirée silencieusement',
+      'adoption legacy : scopes actifs convertis en assignments/memberships, manager vers DELEGATION LIVE et viewer vers whitelist read-only',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
@@ -74,6 +76,7 @@ module.exports = {
       'migrations/194_market_delegation_assignments.sql',
       'migrations/195_operator_market_scopes_projection_marker.sql',
       'migrations/196_market_delegation_team.sql',
+      'migrations/197_market_delegation_legacy_scope_backfill.sql',
     ],
     services: [
       'services/capability-registry.js',
@@ -88,6 +91,7 @@ module.exports = {
       'tests/unit/market-delegation-p0.test.js',
       'tests/unit/market-delegation-team-service.test.js',
       'tests/unit/market-delegation-team-routes.test.js',
+      'tests/unit/market-delegation-legacy-backfill.test.js',
     ],
   },
 
@@ -151,5 +155,6 @@ module.exports = {
     { statement: 'les capabilities d’une invitation sont revalidées contre le grantor courant et le ceiling au moment de l’acceptation', test: 'tests/unit/market-delegation-team-service.test.js' },
     { statement: 'retirer la dernière membership possédant team.grant échoue fort afin d’éviter un lockout local', test: 'tests/unit/market-delegation-team-service.test.js' },
     { statement: 'les routes équipe refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-team-routes.test.js' },
+    { statement: 'le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée', test: 'tests/unit/market-delegation-legacy-backfill.test.js' },
   ],
 };
