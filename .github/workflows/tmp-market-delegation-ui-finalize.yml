@@ -1,0 +1,79 @@
+name: tmp-market-delegation-ui-finalize
+
+on:
+  push:
+    branches:
+      - feat/market-delegation-team-ui-v2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-delegation-team-ui-v2
+          fetch-depth: 0
+      - name: Patch canonical portal and governance
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function mustReplace(file, from, to) {
+            let source = fs.readFileSync(file, 'utf8');
+            if (!source.includes(from)) throw new Error(`${file}: anchor missing`);
+            source = source.replace(from, to);
+            fs.writeFileSync(file, source);
+          }
+
+          const appFile = 'public/dashboards/canonical/js/app.js';
+          mustReplace(
+            appFile,
+            `  async function requireSession() {\n    const response = await global.fetch('/api/auth/me', {\n      method: 'GET',\n      credentials: 'include',\n      headers: { Accept: 'application/json' },\n    });\n\n    if (!response.ok) {\n      global.location.replace(loginUrl());\n      throw new Error('unauthorized');\n    }\n\n    const user = await response.json();\n    if (!ALLOWED_ROLES.has(user.role)) {\n      global.location.replace('/');\n      throw new Error('forbidden');\n    }\n\n    return user;\n  }`,
+            `  async function resolveDelegatedPortalUser(user) {\n    if (!user || ALLOWED_ROLES.has(user.role)) return user || null;\n\n    try {\n      const response = await global.fetch('/api/admin/dashboard/context', {\n        method: 'GET',\n        credentials: 'include',\n        headers: { Accept: 'application/json' },\n      });\n      if (!response.ok) return null;\n\n      const context = await response.json();\n      const access = context && context.access;\n      if (!context || !context.actor || context.actor.role !== 'market_operator') return null;\n      if (!access || access.mode !== 'market' || !Array.isArray(access.allowedMarkets) || !access.allowedMarkets.length) return null;\n\n      return {\n        ...user,\n        persisted_role: user.role,\n        role: 'market_operator',\n        role_source: 'market_delegation_context',\n      };\n    } catch (_) {\n      return null;\n    }\n  }\n\n  async function requireSession() {\n    const response = await global.fetch('/api/auth/me', {\n      method: 'GET',\n      credentials: 'include',\n      headers: { Accept: 'application/json' },\n    });\n\n    if (!response.ok) {\n      global.location.replace(loginUrl());\n      throw new Error('unauthorized');\n    }\n\n    const user = await response.json();\n    const effectiveUser = await resolveDelegatedPortalUser(user);\n    if (!effectiveUser) {\n      global.location.replace('/');\n      throw new Error('forbidden');\n    }\n\n    return effectiveUser;\n  }`
+          );
+
+          mustReplace(
+            appFile,
+            `    requireSession,\n    requireAdminContext,`,
+            `    requireSession,\n    resolveDelegatedPortalUser,\n    requireAdminContext,`
+          );
+
+          const testFile = 'tests/unit/canonical-admin-app.test.js';
+          mustReplace(
+            testFile,
+            `  test('requireSession refuse un client sur le runtime Canonical admin', async () => {\n    const env = loadCanonicalApp();\n    env.fetch.mockResolvedValueOnce({\n      ok: true,\n      status: 200,\n      json: jest.fn().mockResolvedValue({ id: 'client-1', role: 'client' }),\n    });\n\n    await expect(env.api.requireSession()).rejects.toThrow('forbidden');\n    expect(env.replace).toHaveBeenCalledWith('/');\n  });`,
+            `  test('requireSession accepte une identité client seulement si le contexte serveur la projette market_operator', async () => {\n    const env = loadCanonicalApp();\n    env.fetch\n      .mockResolvedValueOnce({\n        ok: true,\n        status: 200,\n        json: jest.fn().mockResolvedValue({ id: 'client-1', role: 'client', email: 'member@example.com' }),\n      })\n      .mockResolvedValueOnce({\n        ok: true,\n        status: 200,\n        json: jest.fn().mockResolvedValue({\n          actor: { id: 'client-1', role: 'market_operator' },\n          access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM' },\n        }),\n      });\n\n    await expect(env.api.requireSession()).resolves.toMatchObject({\n      id: 'client-1',\n      role: 'market_operator',\n      persisted_role: 'client',\n      role_source: 'market_delegation_context',\n    });\n    expect(env.replace).not.toHaveBeenCalled();\n    expect(env.fetch).toHaveBeenNthCalledWith(2, '/api/admin/dashboard/context', expect.objectContaining({\n      method: 'GET',\n      credentials: 'include',\n    }));\n  });\n\n  test('requireSession refuse toujours une identité sans contexte market_operator prouvé', async () => {\n    const env = loadCanonicalApp();\n    env.fetch\n      .mockResolvedValueOnce({\n        ok: true,\n        status: 200,\n        json: jest.fn().mockResolvedValue({ id: 'client-2', role: 'client' }),\n      })\n      .mockResolvedValueOnce({\n        ok: false,\n        status: 403,\n        json: jest.fn().mockResolvedValue({ code: 'dashboard_access_denied' }),\n      });\n\n    await expect(env.api.requireSession()).rejects.toThrow('forbidden');\n    expect(env.replace).toHaveBeenCalledWith('/');\n  });`
+          );
+
+          const featureFile = 'features/market-autonomy.feature.js';
+          mustReplace(
+            featureFile,
+            `      'surface Canonical de test de l’autonomie pays',`,
+            `      'surface Canonical de test de l’autonomie pays',\n      'surface équipe pays intégrée : lecture, invitation, délégation et révocation de capabilities',\n      'parcours explicite d’acceptation d’invitation avec retour vers le Market ID résolu côté serveur',`
+          );
+          mustReplace(
+            featureFile,
+            `      'dashboards/canonical/js/market-autonomy.js',\n    ],`,
+            `      'dashboards/canonical/js/market-autonomy.js',\n      'dashboards/canonical/css/market-team.css',\n      'dashboards/canonical/js/market-team.js',\n      'dashboards/canonical/team-invite.html',\n      'dashboards/canonical/js/team-invite.js',\n    ],`
+          );
+          mustReplace(
+            featureFile,
+            `      'infrastructure — db.js pour transaction et audit',`,
+            `      'infrastructure — db.js pour transaction et audit',\n      'market-delegation — memberships, capabilities team.* et acceptation d’invitation ; l’UI n’invente aucune autorité',`
+          );
+          mustReplace(
+            featureFile,
+            `    { statement: 'seul un market_operator manager peut persister ou activer une stratégie de prix locale', test: 'tests/unit/market-commercial-price-service.test.js' },`,
+            `    { statement: 'seul un market_operator manager peut persister ou activer une stratégie de prix locale', test: 'tests/unit/market-commercial-price-service.test.js' },\n    { statement: 'une identité au rôle global non-admin ne peut entrer dans le portail comme market_operator qu’après projection serveur explicite', test: 'tests/unit/canonical-admin-app.test.js' },`
+          );
+          NODE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/dashboards/canonical/js/app.js tests/unit/canonical-admin-app.test.js features/market-autonomy.feature.js
+          git commit -m "feat(market-delegation): ouvrir le portail aux memberships projetées"
+          git push origin HEAD:feat/market-delegation-team-ui-v2
