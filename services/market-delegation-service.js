@@ -81,17 +81,63 @@ async function replaceCeiling(executor, { assignmentId, capabilities, actorUserI
     error.code = 'MARKET_DELEGATION_INVALID_CEILING';
     throw error;
   }
-  const { rows: previous } = await db.query(`SELECT capability FROM assignment_capability_ceiling WHERE assignment_id=$1::uuid AND revoked_at IS NULL`, [assignmentId]);
-  await db.query(`UPDATE assignment_capability_ceiling SET revoked_at=NOW(), revoked_by=$2::uuid WHERE assignment_id=$1::uuid AND revoked_at IS NULL AND NOT (capability = ANY($3::text[]))`, [assignmentId, actorUserId, requested]);
+
+  const { rows: previousRows } = await db.query(
+    `SELECT capability FROM assignment_capability_ceiling
+      WHERE assignment_id=$1::uuid AND revoked_at IS NULL
+      FOR UPDATE`, [assignmentId]
+  );
+  const previous = previousRows.map(row => row.capability);
+  const requestedSet = new Set(requested);
+  const removed = previous.filter(capability => !requestedSet.has(capability));
+
+  if (removed.length) {
+    const { rows: revokedGrants } = await db.query(
+      `UPDATE membership_capabilities mc
+          SET revoked_at=NOW(), revoked_by=$2::uuid
+         FROM assignment_memberships am
+        WHERE mc.membership_id=am.id
+          AND am.assignment_id=$1::uuid
+          AND am.status='ACTIVE'
+          AND mc.revoked_at IS NULL
+          AND mc.capability = ANY($3::text[])
+      RETURNING mc.membership_id, mc.capability`,
+      [assignmentId, actorUserId, removed]
+    );
+    for (const grant of revokedGrants) {
+      await audit(db, {
+        actorUserId,
+        assignmentId,
+        membershipId: grant.membership_id,
+        capability: grant.capability,
+        action: 'CAPABILITY_REVOKED_BY_CEILING',
+        correlationId,
+      });
+    }
+  }
+
+  await db.query(
+    `UPDATE assignment_capability_ceiling
+        SET revoked_at=NOW(), revoked_by=$2::uuid
+      WHERE assignment_id=$1::uuid
+        AND revoked_at IS NULL
+        AND NOT (capability = ANY($3::text[]))`,
+    [assignmentId, actorUserId, requested]
+  );
+
   for (const capability of requested) {
     await db.query(
       `INSERT INTO assignment_capability_ceiling (assignment_id, capability, granted_by)
        SELECT $1::uuid,$2,$3::uuid
-       WHERE NOT EXISTS (SELECT 1 FROM assignment_capability_ceiling WHERE assignment_id=$1::uuid AND capability=$2 AND revoked_at IS NULL)`,
+       WHERE NOT EXISTS (
+         SELECT 1 FROM assignment_capability_ceiling
+          WHERE assignment_id=$1::uuid AND capability=$2 AND revoked_at IS NULL
+       )`,
       [assignmentId, capability, actorUserId]
     );
   }
-  await audit(db, { actorUserId, assignmentId, action: 'CEILING_REPLACED', before: previous.map(r => r.capability), after: requested, correlationId });
+
+  await audit(db, { actorUserId, assignmentId, action: 'CEILING_REPLACED', before: previous, after: requested, correlationId });
   return requested;
 }
 
