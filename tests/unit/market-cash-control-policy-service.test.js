@@ -38,12 +38,26 @@ beforeEach(() => {
   mockAudit.mockResolvedValue(undefined);
 });
 
+function captureError(work) {
+  try {
+    work();
+    throw new Error('expected error');
+  } catch (error) {
+    if (error.message === 'expected error') throw error;
+    return error;
+  }
+}
+
 describe('market cash control policy', () => {
   test('normalise uniquement le contrat local supporté', () => {
     expect(normalizePolicyInput({ cash_enabled: true, confirmation_mode: 'dual_always' }))
       .toEqual({ cash_enabled: true, confirmation_mode: 'DUAL_ALWAYS' });
-    expect(() => normalizePolicyInput({ cash_enabled: true, confirmation_mode: 'SINGLE', market_id: 'x' }))
-      .toThrow(expect.objectContaining({ code: 'CASH_POLICY_FIELD_FORBIDDEN' }));
+    const error = captureError(() => normalizePolicyInput({
+      cash_enabled: true,
+      confirmation_mode: 'SINGLE',
+      market_id: 'x',
+    }));
+    expect(error.code).toBe('CASH_POLICY_FIELD_FORBIDDEN');
   });
 
   test('la lecture exige finance.read et retourne SINGLE par défaut si aucune politique n’existe', async () => {
@@ -112,10 +126,11 @@ describe('market cash control policy', () => {
   });
 
   test('aucun market_id ne fait partie des champs de mutation acceptés', () => {
-    expect(() => normalizePolicyInput({
+    const error = captureError(() => normalizePolicyInput({
       cash_enabled: true,
       confirmation_mode: 'SINGLE',
       marketId: AUTHZ.market_id,
-    })).toThrow(expect.objectContaining({ code: 'CASH_POLICY_FIELD_FORBIDDEN' }));
+    }));
+    expect(error.code).toBe('CASH_POLICY_FIELD_FORBIDDEN');
   });
 });
