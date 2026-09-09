@@ -20,8 +20,8 @@
 
 const express = require('express');
 const db = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
-const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const {
   hasDashboardGlobalAuthority,
@@ -39,8 +39,10 @@ const log = require('../utils/logger').child({ module: 'admin-dashboard-market' 
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireCanonicalContextRole = requireRoleWithMarketDelegation(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);
-const requireMarketDashboardReadRole = requireRoleWithMarketDelegation(['admin', 'market_operator']);
+const attachCanonicalContextDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);
+const requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);
+const attachMarketDashboardDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator']);
+const requireMarketDashboardReadRole = requireRole(['admin', 'market_operator']);
 
 function rejectClientMarketId(req, res, next) {
   if (Object.prototype.hasOwnProperty.call(req.query || {}, 'market_id')) {
@@ -115,6 +117,7 @@ function requireDashboardMarketRead(req, res, next) {
 router.get(
   '/context',
   authenticate,
+  attachCanonicalContextDelegation,
   requireCanonicalContextRole,
   async (req, res, next) => {
     try {
@@ -136,6 +139,7 @@ router.get(
 router.get(
   '/unified/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -157,6 +161,7 @@ router.get(
 router.get(
   '/commerce/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -177,6 +182,7 @@ router.get(
 router.get(
   '/operations/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -197,6 +203,7 @@ router.get(
 router.get(
   '/finance/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,

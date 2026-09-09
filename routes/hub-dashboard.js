@@ -45,7 +45,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
@@ -76,8 +76,8 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 // hubAuth reste EXCLUSIVEMENT admin/agent_hub pour toute opération physique
 // sur le colis (scan, pack, seal, create-parcel, ready, ship, backorder) —
 // un market_operator ne scanne, n'emballe ni n'expédie jamais.
-const hubRead      = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
-const hubSupervise = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 
 async function ensureMarketOperatorCanSupervise(req, marketId) {
   if (req.user.role !== 'market_operator') return null;

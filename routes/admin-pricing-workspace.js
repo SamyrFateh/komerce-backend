@@ -21,8 +21,8 @@
 const express = require('express');
 const db = require('../db');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
-const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');
+const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const {
   attachAuthorizedMarkets,
   requireMarketScope,
@@ -184,7 +184,8 @@ function handleDecisionPolicyError(error, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
-  requireRoleWithMarketDelegation(['admin', 'market_operator']),
+  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
+  requireRole(['admin', 'market_operator']),
   rejectBrowserAuthority,
   resolveRequestedMarket,
   attachAuthorizedMarkets,

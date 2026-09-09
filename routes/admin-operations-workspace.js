@@ -21,7 +21,7 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
@@ -31,7 +31,8 @@ const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
 // market_operator ajouté en lecture — les mutations restent exclusivement
 // agent_hub (requireHubWorkspaceAction) et agent_relais (requireRelayWorkspaceAction).
-const requireWorkspaceReadRole = requireRoleWithMarketDelegation(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
+const attachWorkspaceReadDelegation = attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
+const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireHubWorkspaceAction = requireRole(['admin', 'agent_hub']);
 const requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais']);
 
@@ -121,6 +122,7 @@ function sendWorkspaceError(err, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
+  attachWorkspaceReadDelegation,
   requireWorkspaceReadRole,
   rejectClientMarketAuthority,
   resolveRequestedMarket,
