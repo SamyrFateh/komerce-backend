@@ -851,3 +851,53 @@
   .kmc-cockpit-footer-save { width: 100%; }
   .kmc-cockpit-product-identity { flex-wrap: wrap; }
 }
+
+
+/* Panneau dédié au bouton « Ajuster les coûts » du mock. Il ne réintroduit
+   aucune rubrique du Pricing Workspace historique dans la page principale. */
+.kmc-variable-cost-panel-form {
+  display: grid;
+  gap: 10px;
+}
+
+.kmc-variable-cost-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+  align-items: center;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e6edf7;
+}
+
+.kmc-variable-cost-panel-identity,
+.kmc-variable-cost-panel-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kmc-variable-cost-panel-identity {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.kmc-variable-cost-panel-identity small,
+.kmc-variable-cost-panel-control span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.kmc-variable-cost-panel-control input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+}
+
+@media (max-width: 720px) {
+  .kmc-variable-cost-panel-row { grid-template-columns: 1fr; gap: 8px; }
+}

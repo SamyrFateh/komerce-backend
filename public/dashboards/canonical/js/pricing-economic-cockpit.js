@@ -659,16 +659,6 @@
     }
   }
 
-  function createAdvancedDetails(doc, nodes) {
-    const details = doc.createElement('details');
-    details.className = 'kmc-cockpit-advanced';
-    details.dataset.cockpitAdvanced = '';
-    details.appendChild(el(doc, 'summary', '', 'Affiner les catégories de charges, hypothèses et preuves'));
-    const body = el(doc, 'div', 'kmc-cockpit-advanced-body');
-    nodes.forEach(node => body.appendChild(node));
-    details.appendChild(body);
-    return details;
-  }
 
   function moveEquilibriumIntoCockpit(rootNode, cockpit) {
     const equilibrium = rootNode.querySelector('[data-pricing-flow-equilibrium]');
@@ -795,7 +785,107 @@
     });
   }
 
-  function bindCockpit(rootObject, workspace, options, payload, cockpit, advanced) {
+
+  async function openVariableCostPanel(rootObject, doc, workspace, options, payload) {
+    const components = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []).variable
+      .filter(component => component && component.key);
+    const overlay = el(doc, 'div', 'kmc-structure-panel-overlay');
+    overlay.dataset.variableCostPanel = '';
+    const panel = el(doc, 'div', 'kmc-structure-panel kmc-variable-cost-panel');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    overlay.appendChild(panel);
+
+    const header = el(doc, 'div', 'kmc-structure-panel-header');
+    const titles = el(doc, 'div', '');
+    titles.appendChild(el(doc, 'h2', 'kmc-structure-panel-title', 'Ajuster les coûts variables'));
+    titles.appendChild(el(doc, 'p', 'kmc-structure-panel-subtitle', `Valeurs effectives du marché ${options.requestedMarket || ''}. Le moteur recalcule ensuite automatiquement la contribution.`.trim()));
+    header.appendChild(titles);
+    const close = el(doc, 'button', 'kmc-structure-panel-close', '✕');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Fermer');
+    header.appendChild(close);
+    panel.appendChild(header);
+
+    const body = el(doc, 'div', 'kmc-structure-panel-body');
+    const form = doc.createElement('form');
+    form.className = 'kmc-variable-cost-panel-form';
+    const error = el(doc, 'div', 'kmc-structure-panel-error');
+    error.hidden = true;
+    form.appendChild(error);
+
+    if (!components.length) form.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucun coût variable actif à ajuster.'));
+
+    components.forEach(component => {
+      const row = el(doc, 'label', 'kmc-variable-cost-panel-row');
+      const identity = el(doc, 'div', 'kmc-variable-cost-panel-identity');
+      identity.appendChild(el(doc, 'strong', '', component.label || component.key));
+      identity.appendChild(el(doc, 'small', '', `${allocationPerimeter(component) === 'mutualized' ? 'Mutualisé' : 'Direct'} · ${allocationLabel(component.allocation_method)}`));
+      row.appendChild(identity);
+      const control = el(doc, 'div', 'kmc-variable-cost-panel-control');
+      const input = doc.createElement('input');
+      input.type = 'number';
+      input.step = 'any';
+      input.value = Number.isFinite(Number(component.default_value)) ? String(component.default_value) : '';
+      input.dataset.originalValue = input.value;
+      input.dataset.variableCostInput = component.key;
+      input.setAttribute('aria-label', `Valeur de ${component.label || component.key}`);
+      control.appendChild(input);
+      control.appendChild(el(doc, 'span', '', unitLabel(component.unit) || component.unit || 'KMF'));
+      row.appendChild(control);
+      form.appendChild(row);
+    });
+    body.appendChild(form);
+    panel.appendChild(body);
+
+    const footer = el(doc, 'div', 'kmc-structure-panel-footer');
+    const cancel = el(doc, 'button', 'kmc-cockpit-outline-action', 'Annuler');
+    cancel.type = 'button';
+    const save = el(doc, 'button', 'kmc-cockpit-footer-save', 'Enregistrer les coûts');
+    save.type = 'button';
+    footer.appendChild(cancel);
+    footer.appendChild(save);
+    panel.appendChild(footer);
+
+    function closePanel() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+    close.addEventListener('click', closePanel);
+    cancel.addEventListener('click', closePanel);
+    overlay.addEventListener('click', event => { if (event.target === overlay) closePanel(); });
+
+    save.addEventListener('click', async () => {
+      const inputs = Array.from(form.querySelectorAll('[data-variable-cost-input]'));
+      const changed = inputs.filter(input => input.value !== input.dataset.originalValue);
+      if (!changed.length) { closePanel(); return; }
+      save.disabled = true;
+      save.textContent = 'Enregistrement…';
+      error.hidden = true;
+      const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+      try {
+        for (const input of changed) {
+          const value = Number(input.value);
+          if (!Number.isFinite(value) || value < 0) throw new Error('Chaque coût doit être un nombre positif ou nul.');
+          await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(input.dataset.variableCostInput)}/update`, {
+            method: 'POST',
+            body: { default_value: value, source: 'economic_cockpit_variable_cost_panel' },
+          });
+        }
+        closePanel();
+        await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+        save.disabled = false;
+        save.textContent = 'Enregistrer les coûts';
+      }
+    });
+
+    doc.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function bindCockpit(rootObject, workspace, options, payload, cockpit) {
     const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
     if (!portfolio) return;
     const doc = options.document;
@@ -805,12 +895,14 @@
       const openCosts = event.target.closest('[data-open-cost-detail]');
       if (openCosts) {
         const detailKey = openCosts.dataset.openCostDetail;
+        if (detailKey === 'variable') {
+          await openVariableCostPanel(rootObject, doc, workspace, options, payload);
+          return;
+        }
         if (detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized') {
           await openStructureEventForm(rootObject, doc, workspace, options, detailKey);
           return;
         }
-        advanced.open = true;
-        advanced.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         return;
       }
 
@@ -1037,35 +1129,16 @@
     // dans findWorkshop (qui lit ce titre au premier passage).
     const outerHeader = workshop.querySelector('.kmc-section-header');
     if (outerHeader) outerHeader.classList.add('kmc-cockpit-outer-header-hidden');
-    const slot = workshop.querySelector('[data-section-slot]') || workshop.querySelector('.kmc-section-body') || workshop;
-    const existing = Array.from(slot.children).filter(node => !node.matches?.('[data-pricing-flow-equilibrium]'));
-    const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));
     let decision = null;
     try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
-    // Le cockpit approuvé est la surface primaire de l'Atelier. Les sections
-    // techniques produites par le workspace brut (ex. Décision marché / politique)
-    // restent disponibles sous Détails avancés, mais ne doivent jamais précéder le
-    // cockpit ni donner l'impression que l'ancienne vue est encore la page active.
-    const outerAdvancedNodes = Array.from(options.root.children || []).filter(node =>
-      node !== workshop && node.classList?.contains('kmc-section')
-    );
     const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
-    const advanced = createAdvancedDetails(options.document, [...advancedNodes, ...outerAdvancedNodes]);
-    const workspaceFeedback = options.root.querySelector('[data-workspace-feedback]');
-    const advancedBody = advanced.querySelector('.kmc-cockpit-advanced-body');
-    if (workspaceFeedback && advancedBody?.prepend) advancedBody.prepend(workspaceFeedback);
-    slot.replaceChildren(cockpit, advanced);
 
-    // Les seuls enfants racine encore présents hors du workshop sont le chrome
-    // brut du workspace (header + KPI). On le conserve dans le DOM pour les
-    // contrats internes mais on le rend explicitement non visuel.
-    Array.from(options.root.children || []).forEach(node => {
-      if (node === workshop) return;
-      node.hidden = true;
-      if (node.dataset) node.dataset.pricingCockpitLegacyHidden = '';
-    });
-    workshop.dataset.pricingCockpitPrimary = '';
-    bindCockpit(rootObject, workspace, options, payload, cockpit, advanced);
+    // Contrat exclusif : le mock approuvé EST l'Atelier économique.
+    // pricing-workspace.js reste un fournisseur de données/actions serveur,
+    // jamais une seconde surface visible ni un tiroir avancé.
+    options.root.replaceChildren(cockpit);
+    options.root.dataset.pricingMockContract = 'exclusive';
+    bindCockpit(rootObject, workspace, options, payload, cockpit);
     const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
     if (portfolio?.__activeCategory) await loadCategory(options.document, workspace, options, payload, portfolio, portfolio.__activeCategory);
     return true;
