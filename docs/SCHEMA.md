@@ -272,12 +272,12 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
 
-### 4.12 bis — Marchés, autorisations globales et Passkeys (9 tables)
+### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
 
 | Table | Rôle |
 |---|---|
 | `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |
-| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. |
+| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. **Migration 195 (2026-09-09, `intended_migration_schema`)** : + `projected_from_membership_id` UUID nullable, FK vers `assignment_memberships(id)`, marque l’origine d’une projection de délégation ; `NULL` signifie scope legacy/historique non attribué à une membership. |
 | `currency_parities` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |
 | `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
 | `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |
@@ -286,7 +286,62 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `pricing_global_access_grants` | Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur. **Migration 152 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `decision_signal_global_access_grants` | Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses. **Migration 153 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
-
+<!-- schema-pending
+object: capability_registry
+kind: table
+migration: 193
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Registre exécutable des capabilities DELEGATION / EXECUTION / BOUNDARY, de leur portée et de leur statut ; le KPI d’autonomie ne prend que DELEGATION au dénominateur.
+-->
+<!-- schema-pending
+object: market_operating_assignments
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Mandat d’exploitation économique d’un Market ID ; au plus une ligne ACTIVE par marché.
+-->
+<!-- schema-pending
+object: assignment_capability_ceiling
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Plafond effectif des capabilities MARKET/DELEGABLE concédées par le central à un assignment.
+-->
+<!-- schema-pending
+object: assignment_memberships
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Membres agissant sous un Market Operating Assignment, avec historique explicite de révocation.
+-->
+<!-- schema-pending
+object: membership_capabilities
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Capabilities actives de chaque membership, structurellement bornées par le ceiling de l’assignment.
+-->
+<!-- schema-pending
+object: ceiling_templates
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Templates versionnés de plafond central ; un seul template peut être courant.
+-->
+<!-- schema-pending
+object: ceiling_template_capabilities
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Association entre un template de ceiling et ses capabilities autorisées.
+-->
+<!-- schema-pending
+object: market_delegation_audit
+kind: table
+migration: 194
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Journal append-only des mutations de délégation, distinct des faits économiques.
+-->
 
 ### 4.13 Monitoring et alertes (10 tables)
 
