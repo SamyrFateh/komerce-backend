@@ -178,9 +178,9 @@ La cible finale est : **un shell interne, une authentification, une politique de
 10. **Un fallback Legacy silencieux ne remplace jamais une surface Canonical attendue.**
 11. **Un futur OTP renforce l’identité ; il ne modifie jamais les droits métier.**
 
-## 12. Delta vérifié contre `main` au 2026-09-09
+## 12. État du delta — chantier 2026-09-09
 
-### Déjà acquis
+### Déjà acquis avant ce chantier
 
 - `/admin` sert déjà `public/dashboards/canonical/index.html`.
 - `canonical/js/app.js` accepte déjà `admin`, `market_operator`, `finance`, `sourcing`, `agent_hub`, `agent_relais`, `agent_transitaire`, `support`.
@@ -190,16 +190,17 @@ La cible finale est : **un shell interne, une authentification, une politique de
 - les workspaces d’action sont déjà market-scopés et réautorisés côté serveur.
 - les deep-links non authentifiés conservent déjà leur destination via `?next=`.
 
-### Delta runtime minimal
+### Delta livré par ce chantier
 
-1. **Login** — ne plus limiter la page de connexion à `admin` + `market_operator`; elle authentifie l’identité et laisse le runtime Canonical appliquer la politique d’accès.
-2. **Entrée `/admin`** — après un login réussi depuis l’URL simple, envoyer l’utilisateur vers sa landing métier déjà déclarée.
-3. **Session déjà ouverte sur `/admin`** — faire appliquer la même landing par le boot Canonical afin que le comportement soit identique avec ou sans écran de login.
-4. **Tests** — couvrir `/admin → landing rôle`, deep-link conservé et refus des comptes non internes par le runtime Canonical.
+1. **Login commun** — la page de connexion ne maintient plus une allowlist locale limitée à `admin` + `market_operator`; elle authentifie puis laisse le runtime/API appliquer les droits.
+2. **Entrée simple `/admin`** — après login, l’utilisateur est envoyé vers la landing métier déjà déclarée ; un deep-link explicite reste conservé.
+3. **Session déjà ouverte** — le boot Canonical applique la même landing depuis `/admin` avant de charger un contexte inutile ou interdit au rôle.
+4. **Finance** — le rôle `finance` peut résoudre le contexte Canonical nécessaire au Workspace Comptabilité ; les endpoints de données Dashboard restent protégés séparément par `requireMarketDashboardReadRole(['admin','market_operator'])`.
+5. **Tests** — la landing `/admin` et la séparation « contexte disponible ≠ dashboard autorisé » sont couvertes.
 
-### Delta fonctionnel séparé
+### Delta fonctionnel restant, volontairement séparé
 
-- `support` n’a pas encore de surface Canonical dédiée ni d’accès prouvé à AdminContext : ne pas afficher un faux onglet ni élargir artificiellement un guard.
+- `support` n’a pas encore de surface Canonical dédiée ni d’accès prouvé à un contexte métier utile : ne pas afficher un faux onglet ni élargir artificiellement un guard.
 - la projection serveur de capabilities reste trop grossière pour remplacer partout `ROLE_VISIBLE_TABS`; la migration capability-driven est une amélioration ultérieure.
 - l’OTP est prévu par cette doctrine mais constitue un chantier sécurité ultérieur.
 
