@@ -21,6 +21,10 @@
 const crypto = require('crypto');
 const {
   normalizeCapabilities,
+  delegationError,
+  normalizeMarketCode,
+  resolveActiveAssignmentByMarketCode,
+  resolveAuthorization,
   audit,
   activeMembershipForUser,
   activeMembershipCapabilities,
@@ -39,11 +43,6 @@ function requireExecutor(executor) {
   return executor;
 }
 
-function normalizeMarketCode(value) {
-  const code = String(value || '').trim().toUpperCase();
-  return /^[A-Z]{2}$/.test(code) ? code : null;
-}
-
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
@@ -51,82 +50,6 @@ function normalizeEmail(value) {
 
 function invitationTokenHash(token) {
   return crypto.createHash('sha256').update(String(token || ''), 'utf8').digest('hex');
-}
-
-function delegationError(code, message, status = 403) {
-  const error = new Error(message || code);
-  error.code = code;
-  error.status = status;
-  return error;
-}
-
-async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
-  const db = requireExecutor(executor);
-  const code = normalizeMarketCode(marketCode);
-  if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
-
-  const { rows } = await db.query(
-    `SELECT m.id AS market_id,
-            m.code AS market_code,
-            m.name AS market_name,
-            m.currency,
-            a.id AS assignment_id,
-            a.status AS assignment_status
-       FROM markets m
-       LEFT JOIN market_operating_assignments a
-         ON a.market_id = m.id AND a.status = 'ACTIVE'
-      WHERE m.code = $1
-        AND m.is_active = TRUE
-      LIMIT 1`,
-    [code]
-  );
-  const row = rows[0];
-  if (!row) throw delegationError('MARKET_NOT_FOUND', `Marché ${code} introuvable ou inactif.`, 404);
-  if (!row.assignment_id) {
-    throw delegationError('MARKET_ASSIGNMENT_NOT_ACTIVE', `Aucun Market Operating Assignment actif pour ${code}.`, 409);
-  }
-  return row;
-}
-
-async function resolveAuthorization(executor, { userId, marketCode, requiredCapability }) {
-  const db = requireExecutor(executor);
-  if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
-  const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode);
-  const membership = await activeMembershipForUser(db, assignment.assignment_id, userId);
-  if (!membership) {
-    throw delegationError('MARKET_MEMBERSHIP_REQUIRED', 'Aucune membership active sur ce Market ID.', 403);
-  }
-
-  const capabilities = await activeMembershipCapabilities(db, membership.id);
-  if (requiredCapability && !capabilities.includes(requiredCapability)) {
-    throw delegationError(
-      'MARKET_CAPABILITY_REQUIRED',
-      `Capability ${requiredCapability} requise.`,
-      403
-    );
-  }
-
-  if (requiredCapability) {
-    const { rows } = await db.query(
-      `SELECT 1
-         FROM assignment_capability_ceiling
-        WHERE assignment_id=$1::uuid
-          AND capability=$2
-          AND revoked_at IS NULL
-        LIMIT 1`,
-      [assignment.assignment_id, requiredCapability]
-    );
-    if (!rows[0]) {
-      throw delegationError('MARKET_CAPABILITY_OUTSIDE_CEILING', 'Capability absente du ceiling actif.', 403);
-    }
-  }
-
-  return {
-    ...assignment,
-    membership_id: membership.id,
-    membership_user_id: membership.user_id,
-    capabilities,
-  };
 }
 
 async function listTeam(executor, { assignmentId }) {
