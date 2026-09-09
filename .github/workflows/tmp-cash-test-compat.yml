@@ -1,0 +1,113 @@
+name: tmp-cash-test-compat
+
+on:
+  push:
+    branches:
+      - feat/market-cash-control
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-cash-control
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Align historical facade tests
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function replace(file, from, to) {
+            let source = fs.readFileSync(file, 'utf8');
+            if (!source.includes(from)) throw new Error(`${file}: anchor missing: ${from.slice(0, 100)}`);
+            source = source.replace(from, to);
+            fs.writeFileSync(file, source);
+          }
+
+          function addBoundaryMock(file, afterBlock) {
+            const mockBlock = `${afterBlock}\n\nconst mockPrepareCashConfirmation = jest.fn();\nconst mockFinalizeCashConfirmation = jest.fn();\njest.mock('../../services/cash-confirmation-control-service', () => ({\n  prepareCashConfirmation: (...args) => mockPrepareCashConfirmation(...args),\n  finalizeCashConfirmation: (...args) => mockFinalizeCashConfirmation(...args),\n}));`;
+            replace(file, afterBlock, mockBlock);
+          }
+
+          const cycleBlock = `const mockConfirmPaymentCycle = jest.fn();\njest.mock('../../services/order-payment-confirmation', () => ({\n  confirmPaymentCycle: (...args) => mockConfirmPaymentCycle(...args),\n}));`;
+
+          // payment-cash-confirm facade
+          const payment = 'tests/unit/payment-cash-confirm.test.js';
+          addBoundaryMock(payment, cycleBlock);
+          replace(payment,
+            `const { makeClient } = require('../integration/test-harness/mock-db');`,
+            `const { makeClient: makeBaseClient } = require('../integration/test-harness/mock-db');\n\n// Les tests de façade ne consomment pas une entrée de script DB pour le nouveau\n// journal cash_collections ajouté au chemin référence ; la boundary elle-même a\n// sa suite dédiée. On conserve néanmoins l'appel dans client.calls.\nfunction makeClient(script = []) {\n  const client = makeBaseClient(script);\n  const baseQuery = client.query;\n  client.query = jest.fn(async (sql, params = []) => {\n    if (/INSERT\\s+INTO\\s+cash_collections/i.test(String(sql))) {\n      client.calls.push({ sql, params });\n      return { rows: [], rowCount: 1 };\n    }\n    return baseQuery(sql, params);\n  });\n  return client;\n}`
+          );
+          replace(payment,
+            `  cash_ref_code: 'CASH-001',\n};`,
+            `  cash_ref_code: 'CASH-001',\n  market_id: 'market-1',\n  total_kmf: '12000',\n};`
+          );
+          replace(payment,
+            `beforeEach(() => {\n  mockConfirmPaymentCycle.mockReset();`,
+            `beforeEach(() => {\n  mockPrepareCashConfirmation.mockReset();\n  mockPrepareCashConfirmation.mockResolvedValue({\n    allowed: true, approved: true, second_approval: false,\n    control: { required_approvals: 1 },\n  });\n  mockFinalizeCashConfirmation.mockReset();\n  mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });\n  mockConfirmPaymentCycle.mockReset();`
+          );
+          replace(payment,
+            `  test('409 + rollback si stock insuffisant', async () => {`,
+            `  test('202 au premier visa DUAL sans exécuter le cycle paiement', async () => {\n    const client = makeClient([{ rows: [ORDER] }]);\n    const db = makeDb(client);\n    mockPrepareCashConfirmation.mockResolvedValueOnce({\n      allowed: false, pending_second: true, status: 202,\n      code: 'CASH_SECOND_ACTOR_REQUIRED',\n      message: 'Une seconde personne habilitée doit confirmer cet encaissement.',\n      control: { required_approvals: 2 },\n    });\n\n    const result = await confirmCashByReference({\n      cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,\n    });\n\n    expect(result.status).toBe(202);\n    expect(result.body.pending_second_approval).toBe(true);\n    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();\n    const { expectTransactionCommitted } = require('../integration/test-harness/mock-db');\n    expectTransactionCommitted(client);\n  });\n\n  test('409 + rollback si stock insuffisant', async () => {`
+          );
+
+          // pickup cash facade
+          const pickup = 'tests/unit/confirm-pickup-cash-payment.test.js';
+          const pickupCycleBlock = `jest.mock('../../services/order-payment-confirmation', () => ({\n  confirmPaymentCycle: jest.fn(),\n}));`;
+          addBoundaryMock(pickup, pickupCycleBlock);
+          replace(pickup,
+            `    relais_id: 'relais-001',\n    ...overrides,`,
+            `    relais_id: 'relais-001',\n    market_id: 'market-001',\n    ...overrides,`
+          );
+          replace(pickup,
+            `  beforeEach(() => {\n    jest.clearAllMocks();\n    confirmPaymentCycle.mockReset();`,
+            `  beforeEach(() => {\n    jest.clearAllMocks();\n    mockPrepareCashConfirmation.mockReset();\n    mockPrepareCashConfirmation.mockResolvedValue({\n      allowed: true, approved: true, second_approval: false,\n      control: { required_approvals: 1 },\n    });\n    mockFinalizeCashConfirmation.mockReset();\n    mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });\n    confirmPaymentCycle.mockReset();`
+          );
+          replace(pickup,
+            `    it('confirme le cash nominalement, genere le secret et commit la transaction', async () => {`,
+            `    it('retourne 202 au premier visa DUAL sans générer de secret ni créer de paiement', async () => {\n      const client = makeClient([\n        { rows: [makeOrder()] },\n        { rows: [{ relais_id: 'relais-001' }] },\n      ]);\n      db.connect.mockResolvedValue(client);\n      mockPrepareCashConfirmation.mockResolvedValueOnce({\n        allowed: false, pending_second: true, status: 202,\n        code: 'CASH_SECOND_ACTOR_REQUIRED',\n        message: 'Seconde validation requise',\n        control: { required_approvals: 2 },\n      });\n      const generateAndStoreSecret = jest.fn();\n\n      const result = await confirmPickupCashPayment({\n        orderId: 'order-001', user: makeUser(), payload: makePayload(), generateAndStoreSecret,\n      });\n\n      expect(result.status).toBe(202);\n      expect(result.body.pending_second_approval).toBe(true);\n      expect(confirmPaymentCycle).not.toHaveBeenCalled();\n      expect(generateAndStoreSecret).not.toHaveBeenCalled();\n      expectTransactionCommitted(client);\n    });\n\n    it('confirme le cash nominalement, genere le secret et commit la transaction', async () => {`
+          );
+
+          // cash-operations facade
+          const cashOps = 'tests/unit/cash-operations.test.js';
+          addBoundaryMock(cashOps, cycleBlock);
+          replace(cashOps,
+            `beforeEach(() => {\n  jest.clearAllMocks();\n});`,
+            `beforeEach(() => {\n  jest.clearAllMocks();\n  mockPrepareCashConfirmation.mockResolvedValue({\n    allowed: true, approved: true, second_approval: false,\n    control: { required_approvals: 1 },\n  });\n  mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });\n});`
+          );
+          replace(cashOps,
+            `      relais_id: 'relais-1',\n    };`,
+            `      relais_id: 'relais-1',\n      market_id: 'market-1',\n    };`
+          );
+          // There are several identical literal fixtures: ensure nominal one has market_id too.
+          let source = fs.readFileSync(cashOps, 'utf8');
+          source = source.replace(
+            `      status: 'pending',\n      relais_id: 'relais-1',\n    };`,
+            `      status: 'pending',\n      relais_id: 'relais-1',\n      market_id: 'market-1',\n    };`
+          );
+          fs.writeFileSync(cashOps, source);
+          replace(cashOps,
+            `  test('retourne success si commande pending cash_relais', async () => {`,
+            `  test('retourne pending_second_approval sans cycle paiement au premier visa DUAL', async () => {\n    const order = {\n      id: 'order-dual', total_kmf: '4000', payment_mode: 'cash_relais',\n      payment_status: 'pending', status: 'pending', relais_id: 'relais-1', market_id: 'market-1',\n    };\n    const client = makeClient([\n      { rows: [order] },\n      { rows: [{ relais_id: 'relais-1' }] },\n    ]);\n    mockPrepareCashConfirmation.mockResolvedValueOnce({\n      allowed: false, pending_second: true, status: 202,\n      code: 'CASH_SECOND_ACTOR_REQUIRED', message: 'Seconde validation requise',\n      control: { required_approvals: 2 },\n    });\n\n    const result = await collectCash({\n      orderId: 'order-dual',\n      agentUser: { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-1' },\n      dbClient: client,\n    });\n\n    expect(result.pending_second_approval).toBe(true);\n    expect(result.required_approvals).toBe(2);\n    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();\n  });\n\n  test('retourne success si commande pending cash_relais', async () => {`
+          );
+          NODE
+
+      - name: Run cash related tests
+        run: npx jest --runInBand tests/unit/cash-confirmation-control-service.test.js tests/unit/market-cash-control-policy-service.test.js tests/unit/market-delegation-cash-control-routes.test.js tests/unit/payment-cash-confirm.test.js tests/unit/confirm-pickup-cash-payment.test.js tests/unit/cash-operations.test.js
+      - name: Commit test alignment
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/unit/payment-cash-confirm.test.js tests/unit/confirm-pickup-cash-payment.test.js tests/unit/cash-operations.test.js
+          git commit -m "test(cash-control): aligner les façades sur la boundary partagée"
+          git push origin HEAD:feat/market-cash-control
