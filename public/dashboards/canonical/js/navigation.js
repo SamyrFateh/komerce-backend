@@ -34,6 +34,33 @@
     Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings' }),
   ]);
 
+  // Onglets visibles par rôle, vérifiés contre les guards serveur réels
+  // (voir docs/admin-nav-capability-map.md). Seuls admin et market_operator
+  // ont un accès serveur prouvé aux 6 onglets du mock ; les autres rôles
+  // opérationnels travaillent aujourd'hui via des workspaces Canonical
+  // secondaires ou le portail Legacy, hors de cette barre de navigation.
+  // Ne pas élargir un rôle ici sans élargir d'abord le guard serveur
+  // correspondant — l'UI ne doit jamais promettre un onglet qui 403.
+  const ROLE_VISIBLE_TABS = Object.freeze({
+    admin:              Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings']),
+    market_operator:    Object.freeze(['dashboard', 'pricing', 'orders', 'markets']),
+    finance:            Object.freeze(['dashboard']),
+    sourcing:           Object.freeze(['dashboard']),
+    agent_hub:          Object.freeze(['dashboard']),
+    agent_relais:       Object.freeze(['dashboard']),
+    agent_transitaire:  Object.freeze(['dashboard']),
+    support:            Object.freeze(['dashboard']),
+  });
+
+  // Retourne le sous-ensemble de PRIMARY_NAV que ce rôle peut réellement
+  // utiliser. Un rôle absent de ROLE_VISIBLE_TABS ne voit que Dashboard —
+  // défense en profondeur, jamais un onglet non couvert par un guard connu.
+  function visibleNavigationFor(user, adminContext) {
+    const role = (user && user.role) || '';
+    const allowedIds = ROLE_VISIBLE_TABS[role] || ['dashboard'];
+    return Object.freeze(PRIMARY_NAV.filter(item => allowedIds.includes(item.id)));
+  }
+
   const SURFACE_PARENT = Object.freeze({
     pilotage: 'dashboard',
     operations: 'dashboard',
@@ -255,7 +282,8 @@
     const primary = doc.createElement('nav');
     primary.className = 'kmc-admin-primary-nav';
     primary.setAttribute('aria-label', 'Navigation Komerce');
-    PRIMARY_NAV.forEach(item => primary.appendChild(createLink(doc, item, activeId, user)));
+    const visibleTabs = visibleNavigationFor(user, adminContext);
+    visibleTabs.forEach(item => primary.appendChild(createLink(doc, item, activeId, user)));
 
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
@@ -288,6 +316,8 @@
     PRIMARY_NAV,
     SURFACE_PARENT,
     BACK_TARGETS,
+    ROLE_VISIBLE_TABS,
+    visibleNavigationFor,
     activePrimarySurface,
     surfaceForPath,
     marketChoices,
