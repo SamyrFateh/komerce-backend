@@ -6,7 +6,7 @@ const { CAPABILITIES, autonomyStats } = require('../config/market-delegation-cap
 const { validateRegistry } = require('../services/capability-registry');
 
 function checkMigrationCoverage(root = path.join(__dirname, '..')) {
-  const sql = fs.readFileSync(path.join(root, 'migrations', '171_market_delegation_capability_registry.sql'), 'utf8');
+  const sql = fs.readFileSync(path.join(root, 'migrations', '193_market_delegation_capability_registry.sql'), 'utf8');
   return CAPABILITIES.filter(row => !sql.includes(`'${row.capability}'`)).map(row => row.capability);
 }
 
