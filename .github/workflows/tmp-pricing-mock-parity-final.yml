@@ -1,0 +1,57 @@
+name: Temporary final Atelier mock parity
+
+on:
+  push:
+    branches:
+      - fix/pricing-mock-parity-final
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pricing-mock-parity-final
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Apply final mock parity patch
+        run: |
+          python3 scripts/tmp-pricing-mock-parity.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tests/unit/canonical-pricing-economic-cockpit.test.js')
+          s = p.read_text()
+          old = "  expect(source).toContain('Prix final marché retenu');"
+          new = "  expect(source).toContain(\"'Prix retenu'\");"
+          if old not in s:
+              raise SystemExit('old price label assertion not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Targeted Atelier tests
+        run: npx jest tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-pricing-equilibrium-panel.test.js tests/unit/canonical-navigation.test.js --runInBand
+      - name: Broad canonical/admin regression
+        run: npx jest 'tests/unit/(canonical|admin).*\.test\.js$' --runInBand
+      - name: Commit final patch and remove temporary tooling
+        shell: bash
+        run: |
+          git rm scripts/tmp-pricing-mock-parity.py .github/workflows/tmp-pricing-mock-parity-final.yml
+          git add public/dashboards/canonical/js/pricing-equilibrium-panel.js \
+                  public/dashboards/canonical/js/pricing-economic-cockpit.js \
+                  public/dashboards/canonical/js/navigation.js \
+                  public/dashboards/canonical/css/pricing-economic-cockpit.css \
+                  public/dashboards/canonical/index.html \
+                  tests/unit/canonical-pricing-economic-cockpit.test.js \
+                  tests/unit/canonical-pricing-equilibrium-panel.test.js \
+                  tests/unit/canonical-navigation.test.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(admin): align Atelier rubrics with approved mock'
+          git push origin HEAD:fix/pricing-mock-parity-final
