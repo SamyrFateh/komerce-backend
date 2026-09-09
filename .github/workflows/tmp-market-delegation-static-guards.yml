@@ -1,0 +1,104 @@
+name: tmp-market-delegation-static-guards
+
+on:
+  push:
+    branches:
+      - fix/market-delegation-runtime-bridge
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/market-delegation-runtime-bridge
+      - name: Keep requireRole visible after delegation pre-guard
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function patch(file, fn) {
+            let s = fs.readFileSync(file, 'utf8');
+            const before = s;
+            s = fn(s);
+            if (s === before) throw new Error(`${file}: no change`);
+            fs.writeFileSync(file, s);
+          }
+          function must(s, from, to, file) {
+            if (!s.includes(from)) throw new Error(`${file}: missing anchor ${from}`);
+            return s.replace(from, to);
+          }
+
+          patch('routes/admin-dashboard-market.js', s => {
+            const f='routes/admin-dashboard-market.js';
+            s=must(s,"const { authenticate, requireAdmin } = require('../middleware/auth');","const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');",f);
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"const requireCanonicalContextRole = requireRoleWithMarketDelegation(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);\nconst requireMarketDashboardReadRole = requireRoleWithMarketDelegation(['admin', 'market_operator']);",
+              "const attachCanonicalContextDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);\nconst requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);\nconst attachMarketDashboardDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator']);\nconst requireMarketDashboardReadRole = requireRole(['admin', 'market_operator']);",f);
+            s=must(s,"  authenticate,\n  requireCanonicalContextRole,","  authenticate,\n  attachCanonicalContextDelegation,\n  requireCanonicalContextRole,",f);
+            s=s.replaceAll("  authenticate,\n  requireMarketDashboardReadRole,","  authenticate,\n  attachMarketDashboardDelegation,\n  requireMarketDashboardReadRole,");
+            return s;
+          });
+
+          patch('routes/admin-pricing-workspace.js', s => {
+            const f='routes/admin-pricing-workspace.js';
+            s=must(s,"const { authenticate } = require('../middleware/auth');","const { authenticate, requireRole } = require('../middleware/auth');",f);
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"  authenticate,\n  requireRoleWithMarketDelegation(['admin', 'market_operator']),","  authenticate,\n  attachMarketDelegatedRoleFor(['admin', 'market_operator']),\n  requireRole(['admin', 'market_operator']),",f);
+            return s;
+          });
+
+          patch('routes/admin-operations-workspace.js', s => {
+            const f='routes/admin-operations-workspace.js';
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"const requireWorkspaceReadRole = requireRoleWithMarketDelegation(['admin', 'agent_hub', 'agent_relais', 'market_operator']);",
+              "const attachWorkspaceReadDelegation = attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'agent_relais', 'market_operator']);\nconst requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);",f);
+            // All workspace market reads are declared through the common router.use chain.
+            s=must(s,"  authenticate,\n  requireWorkspaceReadRole,","  authenticate,\n  attachWorkspaceReadDelegation,\n  requireWorkspaceReadRole,",f);
+            return s;
+          });
+
+          patch('routes/admin/partners.js', s => {
+            const f='routes/admin/partners.js';
+            s=must(s,"const { authenticate } = require('../../middleware/auth');","const { authenticate, requireRole } = require('../../middleware/auth');",f);
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../../middleware/require-market-delegated-role');",f);
+            s=must(s,"const guard = [authenticate, requireRoleWithMarketDelegation(['admin', 'market_operator']), attachAuthorizedMarketsForOperator];",
+              "const guard = [authenticate, attachMarketDelegatedRoleFor(['admin', 'market_operator']), requireRole(['admin', 'market_operator']), attachAuthorizedMarketsForOperator];",f);
+            return s;
+          });
+
+          patch('routes/hub.js', s => {
+            const f='routes/hub.js';
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"const hubRead = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",
+              "const hubRead = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",f);
+            return s;
+          });
+
+          patch('routes/hub-dashboard.js', s => {
+            const f='routes/hub-dashboard.js';
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"const hubRead      = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",
+              "const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",f);
+            s=must(s,"const hubSupervise = [authenticate, requireRoleWithMarketDelegation(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",
+              "const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];",f);
+            return s;
+          });
+
+          patch('routes/relay-dashboard.js', s => {
+            const f='routes/relay-dashboard.js';
+            s=must(s,"const { authenticate } = require('../middleware/auth');","const { authenticate, requireRole } = require('../middleware/auth');",f);
+            s=must(s,"const { requireRoleWithMarketDelegation } = require('../middleware/require-market-delegated-role');","const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');",f);
+            s=must(s,"router.use(authenticate, requireRoleWithMarketDelegation(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);",
+              "router.use(authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_relais', 'market_operator']), requireRole(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);",f);
+            return s;
+          });
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add routes/
+          git commit -m "refactor(market-delegation): préserver les guards requireRole statiques"
+          git push origin HEAD:fix/market-delegation-runtime-bridge
