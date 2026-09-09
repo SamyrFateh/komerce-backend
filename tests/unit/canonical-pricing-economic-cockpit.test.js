@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1402');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1401');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1403');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1402');
   expect(source).toContain("title.textContent = 'Atelier économique'");
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
@@ -26,9 +26,12 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(css).toContain('.kmc-cockpit-costs');
   expect(css).toContain('.kmc-cockpit-portfolio-table');
   expect(css).toContain('.kmc-cockpit-detail-grid');
-  expect(source).toContain('outerAdvancedNodes');
-  expect(source).toContain("node.dataset.pricingCockpitLegacyHidden = ''");
-  expect(source).toContain("workshop.dataset.pricingCockpitPrimary = ''");
+  expect(source).toContain('options.root.replaceChildren(cockpit)');
+  expect(source).toContain("options.root.dataset.pricingMockContract = 'exclusive'");
+  expect(source).not.toContain('outerAdvancedNodes');
+  expect(source).not.toContain('pricingCockpitLegacyHidden');
+  expect(source).not.toContain('createAdvancedDetails');
+  expect(source).not.toContain('advanced.open');
 });
 
 test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
@@ -67,12 +70,16 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).not.toContain('marketId');
 });
 
-test('Ajuster les charges et Gérer les mutualisations ouvrent un formulaire séparé, jamais inline', () => {
+test('les trois actions de coûts du mock ouvrent des panneaux séparés, jamais une ancienne rubrique inline', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
-  // Le vieux comportement (scroller vers les détails avancés de la même page)
-  // ne doit plus s'appliquer à fixed-direct / fixed-mutualized.
+  // Le mock est exclusif : même les coûts variables passent par un panneau dédié.
+  expect(source).toContain("detailKey === 'variable'");
+  expect(source).toContain('await openVariableCostPanel(rootObject, doc, workspace, options, payload)');
+  expect(source).toContain('data-variable-cost-input');
+
+  // Les charges structurelles utilisent leur panneau événementiel séparé.
   expect(source).toContain("detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized'");
   expect(source).toContain('await openStructureEventForm(rootObject, doc, workspace, options, detailKey)');
 
