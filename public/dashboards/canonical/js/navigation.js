@@ -190,7 +190,7 @@
     return button;
   }
 
-  function currentRequestedMarket(adminContext) {
+  function currentRequestedMarket(adminContext, requireMarket = false) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return null;
 
@@ -202,21 +202,21 @@
       // Le contexte serveur reste l'autorité si URLSearchParams est absent.
     }
 
-    if (access.mode === 'global') return null;
+    if (access.mode === 'global' && !requireMarket) return null;
     if (access.defaultMarket && access.allowedMarkets.includes(access.defaultMarket)) return access.defaultMarket;
     return access.allowedMarkets[0] || null;
   }
 
-  function marketChoices(adminContext) {
+  function marketChoices(adminContext, requireMarket = false) {
     const app = global.KomerceCanonicalAdmin;
     if (app && typeof app.marketChoices === 'function') {
-      try { return app.marketChoices(adminContext); } catch (_) { /* fallback ci-dessous */ }
+      try { return app.marketChoices(adminContext, { requireMarket }); } catch (_) { /* fallback ci-dessous */ }
     }
 
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return [];
     const choices = [];
-    if (access.mode === 'global') choices.push({ value: '', label: 'Tous les marchés' });
+    if (access.mode === 'global' && !requireMarket) choices.push({ value: '', label: 'Tous les marchés' });
     access.allowedMarkets.forEach(code => choices.push({ value: code, label: code }));
     return choices;
   }
@@ -246,8 +246,8 @@
     }
   }
 
-  function createMarketControl(doc, adminContext) {
-    const choices = marketChoices(adminContext);
+  function createMarketControl(doc, adminContext, requireMarket = false) {
+    const choices = marketChoices(adminContext, requireMarket);
     if (!choices.length) return null;
 
     const wrap = doc.createElement('label');
@@ -257,7 +257,7 @@
     const select = doc.createElement('select');
     select.className = 'kmc-admin-market-select';
     select.setAttribute('aria-label', 'Sélectionner le marché');
-    const current = currentRequestedMarket(adminContext);
+    const current = currentRequestedMarket(adminContext, requireMarket);
 
     choices.forEach(choice => {
       const option = doc.createElement('option');
@@ -327,7 +327,8 @@
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
 
-    const marketControl = createMarketControl(doc, adminContext);
+    const requireMarket = ['pricing-workspace', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
+    const marketControl = createMarketControl(doc, adminContext, requireMarket);
     if (marketControl) utilities.appendChild(marketControl);
 
     const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));

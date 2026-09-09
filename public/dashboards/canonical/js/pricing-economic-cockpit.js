@@ -98,6 +98,13 @@
     return String(category || 'Autres').replaceAll('_', ' ').replace(/^./, char => char.toUpperCase());
   }
 
+  function marketFlagEmoji(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(normalized)) return '';
+    const base = 0x1f1e6;
+    return String.fromCodePoint(...[...normalized].map(letter => base + letter.charCodeAt(0) - 65));
+  }
+
   function findWorkshop(rootNode) {
     return rootNode.querySelector('[data-pricing-workshop-enhanced]') || Array.from(rootNode.querySelectorAll('.kmc-section')).find(section => {
       const title = section.querySelector('.kmc-section-title');
@@ -141,31 +148,53 @@
     return head;
   }
 
-  function variableCostCard(doc, components, marketCode) {
+  function variableMarketShare(component) {
+    if (allocationPerimeter(component) !== 'mutualized') return '—';
+    const explicit = finite(component.market_share_kmf ?? component.market_quote_kmf ?? component.effective_market_share_kmf);
+    return explicit == null ? componentValue(component) : formatKmf(explicit);
+  }
+
+  function variableCostCard(doc, components) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-variable');
     card.dataset.costSummary = 'variable';
     card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Ces coûts affectent directement la contribution.', 'Ajuster les coûts', 'variable'));
 
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-variable');
-    ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', `Valeur effective ${marketCode}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
-    components.slice(0, 6).forEach(component => {
+    ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', 'Quote-part marché'].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
+
+    // Le mock rappelle explicitement que l'achat fournisseur est un coût
+    // variable direct. Sa valeur reste produit-spécifique : aucune moyenne
+    // portefeuille n'est inventée ici.
+    table.appendChild(tableCell(doc, 'Achat fournisseur'));
+    const purchaseNature = tableCell(doc, '', 'is-badge-cell');
+    purchaseNature.appendChild(badge(doc, 'Variable', 'variable'));
+    table.appendChild(purchaseNature);
+    const purchasePerimeter = tableCell(doc, '', 'is-badge-cell');
+    purchasePerimeter.appendChild(badge(doc, 'Direct', 'direct'));
+    table.appendChild(purchasePerimeter);
+    table.appendChild(tableCell(doc, '—', 'is-derived'));
+    table.appendChild(tableCell(doc, '—', 'is-derived'));
+
+    components.slice(0, 5).forEach(component => {
       const perimeter = allocationPerimeter(component);
       table.appendChild(tableCell(doc, component.label || component.key));
-      table.appendChild(tableCell(doc, 'Variable', 'is-badge-cell'));
-      table.lastChild.appendChild(badge(doc, perimeter === 'mutualized' ? 'Mutualisé' : 'Direct', perimeter === 'mutualized' ? 'mutualized' : 'direct'));
+      const natureCell = tableCell(doc, '', 'is-badge-cell');
+      natureCell.appendChild(badge(doc, 'Variable', 'variable'));
+      table.appendChild(natureCell);
+      const perimeterCell = tableCell(doc, '', 'is-badge-cell');
+      perimeterCell.appendChild(badge(doc, perimeter === 'mutualized' ? 'Mutualisé' : 'Direct', perimeter === 'mutualized' ? 'mutualized' : 'direct'));
+      table.appendChild(perimeterCell);
       table.appendChild(tableCell(doc, allocationLabel(component.allocation_method), 'is-derived'));
-      const value = tableCell(doc, componentValue(component), 'is-derived');
-      if (perimeter === 'mutualized') value.title = `Configuration effective du coût variable mutualisé pour ${marketCode}; la contribution SKU reste calculée par le moteur.`;
-      table.appendChild(value);
+      table.appendChild(tableCell(doc, variableMarketShare(component), 'is-derived'));
     });
-    if (!components.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucune charge variable active.'));
-    else {
-      const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row');
-      totalRow.appendChild(tableCell(doc, 'Coût variable complet (ex. moyen)', 'is-total-label'));
-      const totalValue = components.reduce((sum, c) => sum + (Number(c.default_value) || 0), 0);
-      totalRow.appendChild(tableCell(doc, formatKmf(totalValue), 'is-total-value'));
-      table.appendChild(totalRow);
-    }
+
+    const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row');
+    totalRow.appendChild(tableCell(doc, 'Coût variable complet (ex. moyen)', 'is-total-label'));
+    // Une somme de composantes hétérogènes (% / commande / poids / valeur)
+    // serait économiquement fausse. Le total exact reste calculé par SKU dans
+    // le portefeuille, comme dans le mock.
+    totalRow.appendChild(tableCell(doc, 'Calculé par produit', 'is-total-value is-textual'));
+    table.appendChild(totalRow);
     card.appendChild(table);
     return card;
   }
@@ -176,7 +205,7 @@
     card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Charges structurelles propres au marché.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-direct');
     table.appendChild(tableCell(doc, 'Élément', 'is-head'));
-    table.appendChild(tableCell(doc, 'Montant reconnu', 'is-head'));
+    table.appendChild(tableCell(doc, 'Montant / mois', 'is-head'));
     const rows = Array.isArray(structure?.evidence)
       ? structure.evidence.filter(item => item.scope_kind === 'MARKET_DIRECT')
       : [];
@@ -184,7 +213,7 @@
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
     });
-    if (!rows.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', structure ? 'Aucune charge fixe directe reconnue sur la période.' : 'Vérité de période indisponible.'));
+    if (!rows.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Donnée de période indisponible.'));
     else {
       const totalDirect = rows.reduce((sum, item) => sum + (Number(item.recognized_amount_kmf) || 0), 0);
       const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row');
@@ -196,30 +225,25 @@
     return card;
   }
 
-  function fixedMutualizedCard(doc, structure, marketCode, isAdmin) {
+  function fixedMutualizedCard(doc, structure, marketLabel, isAdmin) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized');
     card.dataset.costSummary = 'fixed-mutualized';
-    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Pools structurels partagés, alloués par Market ID.', 'Gérer les mutualisations', 'fixed-mutualized',
+    card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.', 'Gérer les mutualisations', 'fixed-mutualized',
       isAdmin ? null : 'Réservé à l’administration — un ajustement mutualisé affecte tous les marchés à la fois.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
-    ['Élément', 'Coût global (FCFA)', 'Clé d\u2019allocation', '%', `Quote-part ${marketCode}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
+    ['Élément', 'Coût global', 'Clé d’allocation', '%', `Quote-part ${marketLabel}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
     charges.slice(0, 6).forEach(charge => {
       table.appendChild(tableCell(doc, charge.charge_name || charge.charge_family || 'Charge mutualisée'));
       table.appendChild(tableCell(doc, formatKmf(charge.group_pool_kmf), 'is-derived'));
       const policy = charge.policy;
-      table.appendChild(tableCell(doc, policy ? (policy.basis_kind || '\u2014') : 'Politique manquante', 'is-derived'));
-      const ratioText = charge.market_allocation_ratio != null ? `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %` : '\u2014';
+      table.appendChild(tableCell(doc, policy ? (policy.basis_kind || '—') : 'Politique manquante', 'is-derived'));
+      const ratioText = charge.market_allocation_ratio != null ? `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %` : '—';
       table.appendChild(tableCell(doc, ratioText, 'is-derived'));
-      const shareText = charge.market_share_kmf == null ? '\u00c0 gouverner' : formatKmf(charge.market_share_kmf);
+      const shareText = charge.market_share_kmf == null ? '—' : formatKmf(charge.market_share_kmf);
       table.appendChild(tableCell(doc, shareText, `is-derived ${charge.market_share_kmf == null ? '' : 'is-market-share'}`.trim()));
     });
-    const groupPool = finite(structure?.group_pool_kmf);
-    if (!charges.length && groupPool != null && groupPool !== 0) {
-      table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Pool mutualisé réel présent, mais politique d\u2019allocation non décisionnelle : aucune quote-part n\u2019est inventée.'));
-    } else if (!charges.length) {
-      table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', structure ? 'Aucune charge fixe mutualisée reconnue sur la période.' : 'Vérité de période indisponible.'));
-    }
+    if (!charges.length) table.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Donnée de période indisponible.'));
     if (charges.length) {
       const totalMut = charges.reduce((sum, c) => sum + (Number(c.market_share_kmf) || 0), 0);
       const totalRow = el(doc, 'div', 'kmc-cockpit-cost-total-row is-mutualized');
@@ -261,10 +285,11 @@
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
     const isAdmin = (user && user.role) === 'admin';
+    const marketLabel = payload.scope?.market_name || marketCode;
     const section = el(doc, 'section', 'kmc-cockpit-costs');
-    section.appendChild(variableCostCard(doc, groups.variable, marketCode));
+    section.appendChild(variableCostCard(doc, groups.variable));
     section.appendChild(fixedDirectCard(doc, structure));
-    section.appendChild(fixedMutualizedCard(doc, structure, marketCode, isAdmin));
+    section.appendChild(fixedMutualizedCard(doc, structure, marketLabel, isAdmin));
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -442,7 +467,10 @@
     const global = corridor?.corridor?.global_reference || {};
     const currency = corridor?.market?.currency || 'KMF';
     const localHead = el(doc, 'div', 'kmc-cockpit-market-head');
-    localHead.appendChild(el(doc, 'strong', '', `${corridor?.market?.name || corridor?.market?.code || 'Marché'} (observé)`));
+    const localIdentity = el(doc, 'strong', 'kmc-cockpit-market-identity');
+    const flag = marketFlagEmoji(corridor?.market?.code);
+    localIdentity.textContent = `${flag ? `${flag} ` : ''}${corridor?.market?.name || corridor?.market?.code || 'Marché'} (observé)`;
+    localHead.appendChild(localIdentity);
     localHead.appendChild(badge(doc, local.sample_count ? 'Observé' : 'À alimenter', local.sample_count ? 'observed' : 'warning'));
     card.appendChild(localHead);
     card.appendChild(detailMetric(doc, 'Prix moyen observé', corridorAmount(local.target, currency)));
@@ -459,44 +487,14 @@
     return card;
   }
 
-  function observationsEditor(doc, corridor, canManage) {
-    const details = doc.createElement('details');
-    details.className = 'kmc-cockpit-observations';
-    details.appendChild(el(doc, 'summary', '', `Affiner les observations marché · ${formatNumber(corridor?.corridor?.local?.sample_count)}`));
-    const observations = corridor?.corridor?.local?.observations || [];
-    const list = el(doc, 'div', 'kmc-cockpit-observation-list');
-    observations.forEach(item => {
-      const row = el(doc, 'div', 'kmc-cockpit-observation-row');
-      const copy = el(doc, 'div', '');
-      copy.appendChild(el(doc, 'strong', '', `${item.competitor_name || 'Concurrent'} · ${formatMoney(item.observed_amount, item.currency)}`));
-      copy.appendChild(el(doc, 'small', '', `${formatDate(item.observed_at)} · ${item.source || 'source non renseignée'}`));
-      row.appendChild(copy);
-      if (canManage && item.observation_ref) {
-        const remove = el(doc, 'button', 'kmc-cockpit-outline-action', 'Retirer');
-        remove.type = 'button';
-        remove.dataset.cockpitDeactivateObservation = item.observation_ref;
-        row.appendChild(remove);
-      }
-      list.appendChild(row);
-    });
-    if (!observations.length) list.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucune observation locale enregistrée.'));
-    details.appendChild(list);
-    if (canManage) {
-      const form = doc.createElement('form');
-      form.className = 'kmc-cockpit-observation-form';
-      form.dataset.cockpitObservationForm = corridor?.product?.product_ref || '';
-      form.innerHTML = '<input name="competitor_name" required placeholder="Concurrent / enseigne"><input name="amount" type="number" min="0.01" step="0.01" required placeholder="Prix observé"><input name="notes" placeholder="Source / contexte"><button type="submit" class="kmc-cockpit-outline-action">Ajouter</button>';
-      details.appendChild(form);
-    }
-    return details;
-  }
-
   function productDecisionCard(doc, corridor, canManage) {
     const economics = corridor?.selected?.economics || {};
     const local = corridor?.corridor?.local || {};
     const currency = corridor?.market?.currency || 'KMF';
     const card = el(doc, 'section', 'kmc-cockpit-detail-card is-product-decision');
-    card.appendChild(el(doc, 'h4', '', 'Détail d\'un produit'));
+    card.appendChild(el(doc, 'h4', '', 'Détail d’un produit'));
+
+    const body = el(doc, 'div', 'kmc-cockpit-product-detail-body');
     const identity = el(doc, 'div', 'kmc-cockpit-product-identity');
     const imageUrl = corridor?.product?.image_url || corridor?.product?.thumbnail_url;
     if (imageUrl) {
@@ -507,8 +505,7 @@
       img.loading = 'lazy';
       identity.appendChild(img);
     } else {
-      const placeholder = el(doc, 'div', 'kmc-cockpit-product-image-placeholder', '📦');
-      identity.appendChild(placeholder);
+      identity.appendChild(el(doc, 'div', 'kmc-cockpit-product-image-placeholder', '📦'));
     }
     const identityCopy = el(doc, 'div', 'kmc-cockpit-product-identity-copy');
     identityCopy.appendChild(el(doc, 'strong', '', corridor?.product?.name || corridor?.product?.product_ref || 'Produit'));
@@ -519,7 +516,7 @@
     viewLink.target = '_blank';
     identityCopy.appendChild(viewLink);
     identity.appendChild(identityCopy);
-    card.appendChild(identity);
+    body.appendChild(identity);
 
     const metrics = el(doc, 'div', 'kmc-cockpit-detail-metrics');
     metrics.appendChild(detailMetric(doc, 'Coût d’achat', formatKmf(corridor?.product?.purchase_cost_kmf)));
@@ -528,14 +525,13 @@
     metrics.appendChild(detailMetric(doc, 'Borne marché basse', corridorAmount(local.low, currency)));
     metrics.appendChild(detailMetric(doc, 'Borne marché cible', corridorAmount(local.target, currency)));
     metrics.appendChild(detailMetric(doc, 'Borne marché haute', corridorAmount(local.high, currency)));
-    card.appendChild(metrics);
 
-    const decision = el(doc, 'div', 'kmc-cockpit-final-price');
-    decision.appendChild(el(doc, 'span', 'kmc-cockpit-final-price-label', 'Prix final marché retenu'));
+    const priceRow = el(doc, 'div', 'kmc-cockpit-detail-metric is-editable is-price-row');
+    priceRow.appendChild(el(doc, 'span', '', 'Prix retenu'));
     if (canManage) {
       const form = doc.createElement('form');
       form.dataset.cockpitPriceForm = corridor?.product?.product_ref || '';
-      form.className = 'kmc-cockpit-final-price-form';
+      form.className = 'kmc-cockpit-final-price-form is-inline';
       const input = doc.createElement('input');
       input.type = 'number';
       input.name = 'amount';
@@ -543,37 +539,18 @@
       input.step = '0.01';
       input.required = true;
       input.value = corridor?.selected?.local_amount != null ? corridor.selected.local_amount : '';
-      input.placeholder = `Prix final ${currency}`;
+      input.placeholder = `Prix ${currency}`;
       input.dataset.finalMarketPrice = '';
       input.dataset.originalValue = input.value;
-      const save = el(doc, 'button', 'kmc-cockpit-primary-action', 'Enregistrer');
-      save.type = 'submit';
       form.appendChild(input);
-      form.appendChild(save);
-      const justification = doc.createElement('details');
-      justification.className = 'kmc-cockpit-price-reason';
-      justification.appendChild(el(doc, 'summary', '', 'Justification / trace'));
-      const reason = doc.createElement('input');
-      reason.name = 'reason';
-      reason.minLength = 3;
-      reason.value = 'Ajustement du prix final marché depuis Atelier économique';
-      justification.appendChild(reason);
-      form.appendChild(justification);
-      decision.appendChild(form);
+      priceRow.appendChild(form);
     } else {
-      decision.appendChild(el(doc, 'strong', 'kmc-cockpit-readonly-price', selectedAmount(corridor)));
+      priceRow.appendChild(el(doc, 'strong', 'kmc-cockpit-readonly-price', selectedAmount(corridor)));
     }
-    decision.appendChild(el(doc, 'small', '', 'C’est le levier de décision produit sur cette page. Les autres valeurs sont des vérités calculées ou des paramètres gérés dans leurs panneaux dédiés.'));
-    card.appendChild(decision);
-    card.appendChild(detailMetric(doc, 'Contribution unitaire', formatKmf(economics.contribution_unit_kmf)));
-
-    const candidate = corridor?.candidate;
-    if (canManage && candidate && !candidate.buyer_effective) {
-      const gate = el(doc, 'button', 'kmc-cockpit-outline-action is-gate', 'Vérifier le gate et activer le prix retenu');
-      gate.type = 'button';
-      gate.dataset.cockpitActivatePrice = corridor?.product?.product_ref || '';
-      card.appendChild(gate);
-    }
+    metrics.appendChild(priceRow);
+    metrics.appendChild(detailMetric(doc, 'Contribution unitaire', formatKmf(economics.contribution_unit_kmf)));
+    body.appendChild(metrics);
+    card.appendChild(body);
     return card;
   }
 
@@ -586,7 +563,6 @@
     grid.appendChild(sensitivityCard(doc, corridor));
     grid.appendChild(marketDataCard(doc, corridor));
     detail.appendChild(grid);
-    detail.appendChild(observationsEditor(doc, corridor, canManage));
     portfolio.__selectedProductRef = corridor?.product?.product_ref || null;
   }
 
@@ -940,21 +916,6 @@
         return;
       }
 
-      const remove = event.target.closest('[data-cockpit-deactivate-observation]');
-      if (remove && portfolio.__selectedProductRef) {
-        const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
-        try {
-          await workspace.jsonRequest(options.fetch, `${endpoint}/price-observations/${encodeURIComponent(remove.dataset.cockpitDeactivateObservation)}/deactivate`, {
-            method: 'POST', body: { reason: `Observation retirée du corridor ${marketCode} depuis Atelier économique.` },
-          });
-          portfolio.__corridors.delete(portfolio.__selectedProductRef);
-          await loadCategory(doc, workspace, options, payload, portfolio, portfolio.__activeCategory);
-        } catch (error) {
-          portfolio.querySelector('[data-cockpit-product-detail]')?.prepend(el(doc, 'div', 'kmc-cockpit-error', `Retrait refusé : ${error.message}`));
-        }
-        return;
-      }
-
       const addProduct = event.target.closest('[data-cockpit-add-product]');
       if (addProduct) {
         rootObject.location.href = '/admin/workspaces/catalog?intent=create-product';
@@ -1053,29 +1014,6 @@
         return;
       }
 
-      const observationForm = event.target.closest('[data-cockpit-observation-form]');
-      if (observationForm) {
-        event.preventDefault();
-        const data = new FormData(observationForm);
-        const productRef = observationForm.dataset.cockpitObservationForm;
-        const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
-        try {
-          await workspace.jsonRequest(options.fetch, `${endpoint}/price-observations`, {
-            method: 'POST',
-            body: {
-              product_ref: productRef,
-              competitor_name: data.get('competitor_name'),
-              amount: Number(data.get('amount')),
-              notes: data.get('notes') || null,
-              source: 'economic_cockpit_market_observation',
-            },
-          });
-          portfolio.__corridors.delete(productRef);
-          await loadCategory(doc, workspace, options, payload, portfolio, portfolio.__activeCategory);
-        } catch (error) {
-          observationForm.closest('.kmc-cockpit-observations')?.prepend(el(doc, 'div', 'kmc-cockpit-error', `Observation refusée : ${error.message}`));
-        }
-      }
     });
 
     const search = cockpit.querySelector('[data-cockpit-search]');
