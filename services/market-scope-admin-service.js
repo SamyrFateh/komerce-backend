@@ -4,15 +4,15 @@
  * @domain        market
  * @layer         service
  * @criticality   high
- * @inputs        caller_owned_executor, user_id, market_code, scope_role, actor_id
+ * @inputs        caller_owned_executor, user_id, market_code_or_id, scope_role, actor_id, membership_id
  * @outputs       active_markets, scope_projection, scope_history, revoke_result
  * @depends       none
- * @used-by       dashboard
+ * @used-by       dashboard, market-delegation
  * @db-read       markets, operator_market_scopes
  * @db-write      operator_market_scopes
  * @db-txn        caller-owned
  * @doctrine      lifecycle_owner_persistence_boundary
- * @impact-areas  market, dashboard, admin-dashboard
+ * @impact-areas  market, dashboard, admin-dashboard, market-delegation
  * @version       2026-09
  */
 
@@ -35,6 +35,10 @@ function normalizeMarketCode(marketCode) {
 function normalizeScopeRole(scopeRole) {
   const role = String(scopeRole || '').trim().toLowerCase();
   return VALID_SCOPE_ROLES.has(role) ? role : null;
+}
+
+function normalizeUuidList(values) {
+  return [...new Set((values || []).filter(Boolean).map(String))];
 }
 
 async function listActiveMarkets(executor) {
@@ -193,6 +197,122 @@ async function grantOrReplaceMarketScope(executor, {
   };
 }
 
+/**
+ * Persistence boundary for the market-delegation compatibility projection.
+ * The caller computes the desired authority; Market remains the sole writer of
+ * operator_market_scopes. A matching legacy row is adopted in-place only when
+ * its role is already correct, preserving its historical grant metadata.
+ */
+async function upsertProjectedMarketScope(executor, {
+  userId,
+  marketId,
+  scopeRole,
+  membershipId,
+}) {
+  const db = requireExecutor(executor);
+  const role = normalizeScopeRole(scopeRole);
+  if (!role) return { status: 'invalid_scope_role', scope: null };
+  if (!membershipId) throw new TypeError('market-scope-admin-service: membershipId requis pour une projection');
+
+  const { rows: activeRows } = await db.query(
+    `SELECT id, role, granted_at, granted_by, projected_from_membership_id
+       FROM operator_market_scopes
+      WHERE user_id = $1::uuid
+        AND market_id = $2::uuid
+        AND revoked_at IS NULL
+      LIMIT 1
+      FOR UPDATE`,
+    [userId, marketId]
+  );
+  const active = activeRows[0] || null;
+
+  if (active && active.role === role && !active.projected_from_membership_id) {
+    const { rows } = await db.query(
+      `UPDATE operator_market_scopes
+          SET projected_from_membership_id = $2::uuid
+        WHERE id = $1::uuid
+        RETURNING id, user_id, market_id, role AS scope_role, granted_at, granted_by, projected_from_membership_id`,
+      [active.id, membershipId]
+    );
+    return { status: 'adopted_legacy', scope: rows[0] };
+  }
+
+  if (active && active.role === role && String(active.projected_from_membership_id) === String(membershipId)) {
+    return {
+      status: 'unchanged',
+      scope: {
+        id: active.id,
+        user_id: userId,
+        market_id: marketId,
+        scope_role: active.role,
+        granted_at: active.granted_at,
+        granted_by: active.granted_by,
+        projected_from_membership_id: active.projected_from_membership_id,
+      },
+    };
+  }
+
+  if (active) {
+    await db.query(
+      `UPDATE operator_market_scopes
+          SET revoked_at = NOW(), revoked_by = NULL
+        WHERE id = $1::uuid
+          AND revoked_at IS NULL`,
+      [active.id]
+    );
+  }
+
+  const { rows } = await db.query(
+    `INSERT INTO operator_market_scopes
+       (user_id, market_id, role, granted_by, projected_from_membership_id)
+     VALUES ($1::uuid, $2::uuid, $3, NULL, $4::uuid)
+     RETURNING id, user_id, market_id, role AS scope_role, granted_at, granted_by, projected_from_membership_id`,
+    [userId, marketId, role, membershipId]
+  );
+  return { status: active ? 'replaced_projection' : 'projected', scope: rows[0] };
+}
+
+async function revokeProjectedMarketScopes(executor, {
+  membershipIds,
+  exceptMembershipIds = [],
+}) {
+  const db = requireExecutor(executor);
+  const ids = normalizeUuidList(membershipIds);
+  if (!ids.length) return [];
+  const keep = normalizeUuidList(exceptMembershipIds);
+  const { rows } = await db.query(
+    `UPDATE operator_market_scopes
+        SET revoked_at = NOW(), revoked_by = NULL
+      WHERE revoked_at IS NULL
+        AND projected_from_membership_id = ANY($1::uuid[])
+        AND (
+          cardinality($2::uuid[]) = 0
+          OR NOT (projected_from_membership_id = ANY($2::uuid[]))
+        )
+      RETURNING id, user_id, market_id, role AS scope_role, projected_from_membership_id, revoked_at`,
+    [ids, keep]
+  );
+  return rows;
+}
+
+async function listProjectedMarketScopes(executor, { membershipIds }) {
+  const db = requireExecutor(executor);
+  const ids = normalizeUuidList(membershipIds);
+  if (!ids.length) return [];
+  const { rows } = await db.query(
+    `SELECT user_id,
+            market_id,
+            role AS scope_role,
+            projected_from_membership_id AS membership_id
+       FROM operator_market_scopes
+      WHERE revoked_at IS NULL
+        AND projected_from_membership_id = ANY($1::uuid[])
+      ORDER BY user_id`,
+    [ids]
+  );
+  return rows;
+}
+
 async function revokeMarketScope(executor, {
   userId,
   marketCode,
@@ -250,6 +370,9 @@ module.exports = {
   listUserMarketScopeHistory,
   hasUserMarketScopeHistory,
   grantOrReplaceMarketScope,
+  upsertProjectedMarketScope,
+  revokeProjectedMarketScopes,
+  listProjectedMarketScopes,
   revokeMarketScope,
   revokeAllUserMarketScopes,
 };
