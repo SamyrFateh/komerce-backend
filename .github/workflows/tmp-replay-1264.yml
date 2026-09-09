@@ -1,0 +1,54 @@
+name: Temporary replay PR 1264
+
+on:
+  push:
+    branches:
+      - feat/pricing-structure-events-form-v2
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pricing-structure-events-form-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Replay PR 1264 over current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin feat/pricing-structure-events-form
+          git merge --no-ff origin/feat/pricing-structure-events-form -X theirs -m "feat(pricing): replay structure events on current main"
+          git cherry-pick --no-commit 9f7161a6cf3c7799a910c686eb8779822e1c9f17 -X theirs || {
+            echo "Failed to reapply PR #1266 mock-parity commit"
+            git status --short
+            exit 1
+          }
+      - name: Regenerate Security 360
+        run: npm run security:360
+      - name: Targeted structure-event tests
+        run: npx jest --config jest.unit.config.js --runInBand --forceExit tests/unit/admin-pricing-workspace-structure-events-route.test.js tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/pricing-period-structure.test.js tests/unit/pricing-structure-event-panel.test.js
+      - name: Broad canonical/admin regression
+        shell: bash
+        run: npx jest --config jest.unit.config.js --runInBand --forceExit tests/unit/canonical-*.test.js tests/unit/admin-*.test.js
+      - name: Remove temporary workflow and push final replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/tmp-replay-1264.yml
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(pricing): reconcile structure events with canonical cockpit"
+          fi
+          git push origin HEAD:feat/pricing-structure-events-form-v2
