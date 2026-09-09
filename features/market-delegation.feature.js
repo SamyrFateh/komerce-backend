@@ -65,9 +65,9 @@ module.exports = {
 
   files: {
     migrations: [
-      'migrations/171_market_delegation_capability_registry.sql',
-      'migrations/172_market_delegation_assignments.sql',
-      'migrations/173_operator_market_scopes_projection_marker.sql',
+      'migrations/193_market_delegation_capability_registry.sql',
+      'migrations/194_market_delegation_assignments.sql',
+      'migrations/195_operator_market_scopes_projection_marker.sql',
     ],
     services: [
       'services/capability-registry.js',
@@ -113,34 +113,16 @@ module.exports = {
       { fn: 'projectAssignment', file: 'services/market-scope-projector.js' },
       { fn: 'projectionDrift', file: 'services/market-scope-projector.js' },
     ],
-    consumes: [
-      'market',
-      'infrastructure',
-    ],
+    consumes: ['market', 'infrastructure'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché ; elle ne possède ni le référentiel market, ni les règles GROUP, ni les fonctions terrain mutualisées.',
 
   invariants: [
-    {
-      statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE',
-      test: 'tests/unit/market-delegation-p0.test.js',
-    },
-    {
-      statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché',
-      test: 'tests/unit/market-delegation-p0.test.js',
-    },
-    {
-      statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment',
-      test: 'tests/unit/market-delegation-p0.test.js',
-    },
-    {
-      statement: 'operator_market_scopes est une projection de compatibilité ; require-market-scope.js ne dépend jamais directement des tables de délégation',
-      test: 'tests/unit/market-delegation-p0.test.js',
-    },
-    {
-      statement: 'une membership granulaire ne projette jamais manager sur les routes legacy sauf si elle détient 100 % du ceiling actif ; compatibilité legacy fail-closed',
-      test: 'tests/unit/market-delegation-p0.test.js',
-    },
+    { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'operator_market_scopes est une projection de compatibilité ; require-market-scope.js ne dépend jamais directement des tables de délégation', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'une membership granulaire ne projette jamais manager sur les routes legacy sauf si elle détient 100 % du ceiling actif ; compatibilité legacy fail-closed', test: 'tests/unit/market-delegation-p0.test.js' },
   ],
 };
