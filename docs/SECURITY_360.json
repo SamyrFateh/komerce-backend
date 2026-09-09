@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T15:58:30.597Z",
+  "generatedAt": "2026-09-09T15:24:46.076Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 588,
@@ -718,7 +718,8 @@
         "market_operator",
         "agent_hub",
         "agent_relais",
-        "agent_transitaire"
+        "agent_transitaire",
+        "finance"
       ]
     },
     {
