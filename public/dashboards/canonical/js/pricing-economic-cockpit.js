@@ -132,15 +132,12 @@
     copy.appendChild(el(doc, 'small', '', subtitle));
     identity.appendChild(copy);
     head.appendChild(identity);
-    const action = el(doc, 'button', 'kmc-cockpit-outline-action', actionText);
-    action.type = 'button';
-    if (disabledHint) {
-      action.disabled = true;
-      action.title = disabledHint;
-    } else {
+    if (actionText) {
+      const action = el(doc, 'button', 'kmc-cockpit-outline-action', actionText);
+      action.type = 'button';
       action.dataset.openCostDetail = actionKey;
+      head.appendChild(action);
     }
-    head.appendChild(action);
     return head;
   }
 
