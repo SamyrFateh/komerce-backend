@@ -2823,6 +2823,41 @@ COMMENT ON TABLE public.market_price_observations IS 'Observed local market pric
 
 
 --
+-- Name: market_team_invitations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_team_invitations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    assignment_id uuid NOT NULL,
+    email_normalized text NOT NULL,
+    token_hash text NOT NULL,
+    requested_capabilities jsonb DEFAULT '[]'::jsonb NOT NULL,
+    invited_by_membership_id uuid NOT NULL,
+    status text DEFAULT 'PENDING'::text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    accepted_at timestamp with time zone,
+    accepted_by_user_id uuid,
+    revoked_at timestamp with time zone,
+    revoked_by_membership_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_team_invitation_expiry_check CHECK ((expires_at > created_at)),
+    CONSTRAINT market_team_invitation_state_check CHECK ((((status = 'PENDING'::text) AND (accepted_at IS NULL) AND (revoked_at IS NULL)) OR ((status = 'ACCEPTED'::text) AND (accepted_at IS NOT NULL) AND (accepted_by_user_id IS NOT NULL) AND (revoked_at IS NULL)) OR ((status = 'REVOKED'::text) AND (revoked_at IS NOT NULL) AND (accepted_at IS NULL)) OR ((status = 'EXPIRED'::text) AND (accepted_at IS NULL) AND (revoked_at IS NULL)))),
+    CONSTRAINT market_team_invitations_email_normalized_check CHECK (((email_normalized = lower(btrim(email_normalized))) AND (POSITION(('@'::text) IN (email_normalized)) > 1))),
+    CONSTRAINT market_team_invitations_requested_capabilities_check CHECK ((jsonb_typeof(requested_capabilities) = 'array'::text)),
+    CONSTRAINT market_team_invitations_status_check CHECK ((status = ANY (ARRAY['PENDING'::text, 'ACCEPTED'::text, 'REVOKED'::text, 'EXPIRED'::text]))),
+    CONSTRAINT market_team_invitations_token_hash_check CHECK ((char_length(token_hash) = 64))
+);
+
+
+--
+-- Name: TABLE market_team_invitations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_team_invitations IS 'Expiring invitation intent for Market Operating Assignment membership. Raw tokens are never persisted; requested capabilities are revalidated at acceptance.';
+
+
+--
 -- Name: markets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7260,6 +7295,22 @@ ALTER TABLE ONLY public.market_price_observations
 
 
 --
+-- Name: market_team_invitations market_team_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_team_invitations market_team_invitations_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_token_hash_key UNIQUE (token_hash);
+
+
+--
 -- Name: markets markets_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8812,6 +8863,20 @@ CREATE INDEX idx_market_price_observations_market_category ON public.market_pric
 --
 
 CREATE INDEX idx_market_price_observations_market_product ON public.market_price_observations USING btree (market_id, product_id, observed_at DESC) WHERE (is_active = true);
+
+
+--
+-- Name: idx_market_team_invitations_assignment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_team_invitations_assignment ON public.market_team_invitations USING btree (assignment_id, status, created_at DESC);
+
+
+--
+-- Name: idx_market_team_invitations_expiry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_team_invitations_expiry ON public.market_team_invitations USING btree (expires_at) WHERE (status = 'PENDING'::text);
 
 
 --
@@ -10621,6 +10686,13 @@ CREATE UNIQUE INDEX uniq_current_ceiling_template ON public.ceiling_templates US
 
 
 --
+-- Name: uniq_pending_market_team_invitation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_pending_market_team_invitation ON public.market_team_invitations USING btree (assignment_id, email_normalized) WHERE (status = 'PENDING'::text);
+
+
+--
 -- Name: uniq_sc_supplier_ref; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11818,6 +11890,38 @@ ALTER TABLE ONLY public.market_price_observations
 
 ALTER TABLE ONLY public.market_price_observations
     ADD CONSTRAINT market_price_observations_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_team_invitations market_team_invitations_accepted_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_accepted_by_user_id_fkey FOREIGN KEY (accepted_by_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: market_team_invitations market_team_invitations_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_team_invitations market_team_invitations_invited_by_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_invited_by_membership_id_fkey FOREIGN KEY (invited_by_membership_id) REFERENCES public.assignment_memberships(id);
+
+
+--
+-- Name: market_team_invitations market_team_invitations_revoked_by_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_revoked_by_membership_id_fkey FOREIGN KEY (revoked_by_membership_id) REFERENCES public.assignment_memberships(id);
 
 
 --

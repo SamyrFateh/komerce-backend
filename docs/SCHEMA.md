@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 143 | Vérifié sur le dump live Railway. |
+| Tables | 144 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 367 | Performance + contraintes uniques |
-| Foreign keys | 255 | Cohérence relationnelle |
+| Index | 370 | Performance + contraintes uniques |
+| Foreign keys | 259 | Cohérence relationnelle |
 | Fonctions | 22 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 40 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -293,15 +293,9 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `ceiling_templates` | Templates versionnés de plafond central ; un seul template peut être courant. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 
 
-<!-- schema-pending
-object: market_team_invitations
-kind: table
-migration: 196
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation.
--->
 
 ### 4.13 Monitoring et alertes (10 tables)
 

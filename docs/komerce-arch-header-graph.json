@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 524,
-    "filesWithFullHeaders": 479,
+    "scannedCodeFiles": 526,
+    "filesWithFullHeaders": 481,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 524,
+    "filesWithAnyHeaders": 526,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1221,
-    "edges": 6135,
-    "dbTables": 147,
-    "doctrines": 372,
-    "impactAreas": 178,
-    "unresolvedCodeEdges": 593,
+    "graphNodes": 1230,
+    "edges": 6173,
+    "dbTables": 148,
+    "doctrines": 377,
+    "impactAreas": 179,
+    "unresolvedCodeEdges": 596,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 65
   },
@@ -62,9 +62,9 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 3,
+    "market-delegation": 5,
     "purchasing": 8,
     "unsold-resolution": 1,
-    "market-delegation": 3,
     "incident-management": 2,
     "market-autonomy": 4,
     "refunds": 2,
@@ -102,9 +102,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 115,
+    "route": 116,
     "entrypoint": 1,
-    "service": 236,
+    "service": 237,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -115,7 +115,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 123,
-    "high": 270,
+    "high": 272,
     "low": 53
   },
   "nodes": [
@@ -146,6 +146,7 @@
         "routes/boutique-suggestions.js",
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
+        "routes/market-delegation-team.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -177,7 +178,8 @@
         "dashboard",
         "economic-engine",
         "boutique",
-        "product-detail"
+        "product-detail",
+        "market-delegation"
       ],
       "version": "2026-09"
     },
@@ -8839,6 +8841,61 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/market-delegation-team.js",
+      "file": "routes/market-delegation-team.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-team-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "team payloads"
+      ],
+      "outputs": [
+        "team read model and auditable team mutations"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "future market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-team-service",
+          "tables": [
+            "market_team_invitations",
+            "assignment_memberships",
+            "membership_capabilities",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "capabilities_authorize_team_actions",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "team",
+        "dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/meta-whatsapp.js",
       "file": "routes/meta-whatsapp.js",
       "type": "file",
@@ -15337,8 +15394,9 @@
         "services/capability-registry.js"
       ],
       "usedBy": [
-        "future market-delegation routes",
-        "market-scope-projector"
+        "market-delegation routes",
+        "market-scope-projector",
+        "team service"
       ],
       "dbRead": [
         "markets",
@@ -15363,12 +15421,81 @@
       ],
       "doctrine": [
         "one_active_assignment_per_market",
-        "delegated_rights_subset"
+        "delegated_rights_subset",
+        "keep_one_team_grantor"
       ],
       "impactAreas": [
         "market",
         "authorization",
         "delegation"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-delegation-team-service.js",
+      "file": "services/market-delegation-team-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-team-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "market code",
+        "email",
+        "membership",
+        "capabilities",
+        "invitation token"
+      ],
+      "outputs": [
+        "team read model",
+        "invitations",
+        "membership mutations"
+      ],
+      "depends": [
+        "services/market-delegation-service.js",
+        "crypto"
+      ],
+      "usedBy": [
+        "routes/market-delegation-team.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling",
+        "users",
+        "market_team_invitations"
+      ],
+      "dbWrite": [
+        "market_team_invitations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "assignment_memberships",
+            "membership_capabilities",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "team_authority_is_capability_based",
+        "invitation_revalidated_on_acceptance"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "team",
+        "authorization"
       ],
       "version": "2026-09"
     },
@@ -25100,6 +25227,26 @@
       "table": "v_loyalty_summary"
     },
     {
+      "id": "db:market_team_invitations",
+      "type": "db-table",
+      "table": "market_team_invitations"
+    },
+    {
+      "id": "db:assignment_memberships",
+      "type": "db-table",
+      "table": "assignment_memberships"
+    },
+    {
+      "id": "db:membership_capabilities",
+      "type": "db-table",
+      "table": "membership_capabilities"
+    },
+    {
+      "id": "db:market_delegation_audit",
+      "type": "db-table",
+      "table": "market_delegation_audit"
+    },
+    {
       "id": "db:fabrics",
       "type": "db-table",
       "table": "fabrics"
@@ -25368,21 +25515,6 @@
       "id": "db:assignment_capability_ceiling",
       "type": "db-table",
       "table": "assignment_capability_ceiling"
-    },
-    {
-      "id": "db:assignment_memberships",
-      "type": "db-table",
-      "table": "assignment_memberships"
-    },
-    {
-      "id": "db:membership_capabilities",
-      "type": "db-table",
-      "table": "membership_capabilities"
-    },
-    {
-      "id": "db:market_delegation_audit",
-      "type": "db-table",
-      "table": "market_delegation_audit"
     },
     {
       "id": "db:suppliers_stats",
@@ -26355,6 +26487,16 @@
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
+      "id": "doctrine:capabilities_authorize_team_actions",
+      "type": "doctrine",
+      "doctrine": "capabilities_authorize_team_actions"
+    },
+    {
+      "id": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "doctrine": "client_market_id_never_authority"
+    },
+    {
       "id": "doctrine:order_creation_idempotent",
       "type": "doctrine",
       "doctrine": "order_creation_idempotent"
@@ -26743,6 +26885,21 @@
       "id": "doctrine:delegated_rights_subset",
       "type": "doctrine",
       "doctrine": "delegated_rights_subset"
+    },
+    {
+      "id": "doctrine:keep_one_team_grantor",
+      "type": "doctrine",
+      "doctrine": "keep_one_team_grantor"
+    },
+    {
+      "id": "doctrine:team_authority_is_capability_based",
+      "type": "doctrine",
+      "doctrine": "team_authority_is_capability_based"
+    },
+    {
+      "id": "doctrine:invitation_revalidated_on_acceptance",
+      "type": "doctrine",
+      "doctrine": "invitation_revalidated_on_acceptance"
     },
     {
       "id": "doctrine:local_human_decides_system_checks_no_central_approval",
@@ -27395,6 +27552,11 @@
       "area": "product-detail"
     },
     {
+      "id": "impact:market-delegation",
+      "type": "impact-area",
+      "area": "market-delegation"
+    },
+    {
       "id": "impact:bootstrap",
       "type": "impact-area",
       "area": "bootstrap"
@@ -28040,6 +28202,16 @@
       "area": "local-stock"
     },
     {
+      "id": "impact:delegation",
+      "type": "impact-area",
+      "area": "delegation"
+    },
+    {
+      "id": "impact:team",
+      "type": "impact-area",
+      "area": "team"
+    },
+    {
       "id": "impact:stock",
       "type": "impact-area",
       "area": "stock"
@@ -28088,11 +28260,6 @@
       "id": "impact:cancellation",
       "type": "impact-area",
       "area": "cancellation"
-    },
-    {
-      "id": "impact:delegation",
-      "type": "impact-area",
-      "area": "delegation"
     },
     {
       "id": "impact:orders-create",
@@ -28163,11 +28330,6 @@
       "id": "impact:platform-ops",
       "type": "impact-area",
       "area": "platform-ops"
-    },
-    {
-      "id": "impact:market-delegation",
-      "type": "impact-area",
-      "area": "market-delegation"
     },
     {
       "id": "impact:pickup",
@@ -28302,6 +28464,12 @@
     },
     {
       "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-team.js",
+      "type": "depends",
+      "label": "routes/market-delegation-team.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
       "to": "routes/admin-order-360.js",
       "type": "depends",
       "label": "routes/admin-order-360.js"
@@ -28431,6 +28599,12 @@
       "to": "impact:product-detail",
       "type": "impact",
       "label": "product-detail"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
     },
     {
       "from": "bootstrap/server-lifecycle.js",
@@ -40648,6 +40822,94 @@
       "label": "loyalty"
     },
     {
+      "from": "routes/market-delegation-team.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-team.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "future market operator dashboard",
+      "to": "routes/market-delegation-team.js",
+      "type": "uses",
+      "label": "future market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "db:market_team_invitations",
+      "type": "db-write-via",
+      "label": "market_team_invitations",
+      "via": "market-delegation-team-service"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "db:assignment_memberships",
+      "type": "db-write-via",
+      "label": "assignment_memberships",
+      "via": "market-delegation-team-service"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "db:membership_capabilities",
+      "type": "db-write-via",
+      "label": "membership_capabilities",
+      "via": "market-delegation-team-service"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-team-service"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "doctrine:capabilities_authorize_team_actions",
+      "type": "doctrine",
+      "label": "capabilities_authorize_team_actions"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "impact:team",
+      "type": "impact",
+      "label": "team"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
       "from": "routes/meta-whatsapp.js",
       "to": "db.js",
       "type": "depends",
@@ -50506,16 +50768,22 @@
       "label": "services/capability-registry.js"
     },
     {
-      "from": "future market-delegation routes",
+      "from": "market-delegation routes",
       "to": "services/market-delegation-service.js",
       "type": "uses",
-      "label": "future market-delegation routes"
+      "label": "market-delegation routes"
     },
     {
       "from": "market-scope-projector",
       "to": "services/market-delegation-service.js",
       "type": "uses",
       "label": "market-scope-projector"
+    },
+    {
+      "from": "team service",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "team service"
     },
     {
       "from": "services/market-delegation-service.js",
@@ -50609,6 +50877,12 @@
     },
     {
       "from": "services/market-delegation-service.js",
+      "to": "doctrine:keep_one_team_grantor",
+      "type": "doctrine",
+      "label": "keep_one_team_grantor"
+    },
+    {
+      "from": "services/market-delegation-service.js",
       "to": "impact:market",
       "type": "impact",
       "label": "market"
@@ -50624,6 +50898,129 @@
       "to": "impact:delegation",
       "type": "impact",
       "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-team.js"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:market_team_invitations",
+      "type": "db-read",
+      "label": "market_team_invitations"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:market_team_invitations",
+      "type": "db-write",
+      "label": "market_team_invitations"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-write-via",
+      "label": "assignment_memberships",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-write-via",
+      "label": "membership_capabilities",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "doctrine:team_authority_is_capability_based",
+      "type": "doctrine",
+      "label": "team_authority_is_capability_based"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "doctrine:invitation_revalidated_on_acceptance",
+      "type": "doctrine",
+      "label": "invitation_revalidated_on_acceptance"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "impact:team",
+      "type": "impact",
+      "label": "team"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
     },
     {
       "from": "services/market-local-price-activation-service.js",
@@ -65251,6 +65648,7 @@
         "routes/boutique-suggestions.js",
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
+        "routes/market-delegation-team.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -65282,7 +65680,8 @@
         "dashboard",
         "economic-engine",
         "boutique",
-        "product-detail"
+        "product-detail",
+        "market-delegation"
       ],
       "mustCheck": [
         "doctrine:alias_historiques_limites",
@@ -65293,6 +65692,7 @@
         "impact:checkout",
         "impact:dashboard",
         "impact:economic-engine",
+        "impact:market-delegation",
         "impact:payment",
         "impact:product-detail",
         "impact:shared-cart",
@@ -65362,6 +65762,7 @@
         "routes/local-stock.js",
         "routes/logistics.js",
         "routes/loyalty.js",
+        "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -65959,6 +66360,7 @@
         "routes/invoices.js",
         "routes/logistics.js",
         "routes/loyalty.js",
+        "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -74067,6 +74469,61 @@
         "utils/logger.js"
       ]
     },
+    "routes/market-delegation-team.js": {
+      "role": "market-delegation-team-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "future market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-team-service",
+          "tables": [
+            "market_team_invitations",
+            "assignment_memberships",
+            "membership_capabilities",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "capabilities_authorize_team_actions",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "team",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:assignment_memberships",
+        "db:market_delegation_audit",
+        "db:market_team_invitations",
+        "db:membership_capabilities",
+        "doctrine:capabilities_authorize_team_actions",
+        "doctrine:client_market_id_never_authority",
+        "impact:dashboard",
+        "impact:delegation",
+        "impact:market",
+        "impact:team",
+        "middleware/auth.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "routes/meta-whatsapp.js": {
       "role": "notification-meta-whatsapp",
       "domain": "notification",
@@ -80421,8 +80878,9 @@
         "services/capability-registry.js"
       ],
       "directUsedBy": [
-        "future market-delegation routes",
-        "market-scope-projector"
+        "market-delegation routes",
+        "market-scope-projector",
+        "team service"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -80445,7 +80903,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "one_active_assignment_per_market",
-        "delegated_rights_subset"
+        "delegated_rights_subset",
+        "keep_one_team_grantor"
       ],
       "impactAreas": [
         "market",
@@ -80463,11 +80922,79 @@
         "db:markets",
         "db:membership_capabilities",
         "doctrine:delegated_rights_subset",
+        "doctrine:keep_one_team_grantor",
         "doctrine:one_active_assignment_per_market",
         "impact:authorization",
         "impact:delegation",
         "impact:market",
-        "services/capability-registry.js"
+        "services/capability-registry.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
+    "services/market-delegation-team-service.js": {
+      "role": "market-delegation-team-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-service.js",
+        "crypto"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-team.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling",
+        "users",
+        "market_team_invitations"
+      ],
+      "dbWrite": [
+        "market_team_invitations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "assignment_memberships",
+            "membership_capabilities",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "team_authority_is_capability_based",
+        "invitation_revalidated_on_acceptance"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "team",
+        "authorization"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:market_team_invitations",
+        "db:markets",
+        "db:membership_capabilities",
+        "db:users",
+        "doctrine:invitation_revalidated_on_acceptance",
+        "doctrine:team_authority_is_capability_based",
+        "impact:authorization",
+        "impact:delegation",
+        "impact:market",
+        "impact:team",
+        "routes/market-delegation-team.js",
+        "services/market-delegation-service.js"
       ]
     },
     "services/market-local-price-activation-service.js": {
@@ -91672,6 +92199,12 @@
       "label": "services/*"
     },
     {
+      "from": "future market operator dashboard",
+      "to": "routes/market-delegation-team.js",
+      "type": "uses",
+      "label": "future market operator dashboard"
+    },
+    {
       "from": "routes/meta-whatsapp.js",
       "to": "db.js",
       "type": "depends",
@@ -92878,16 +93411,28 @@
       "label": "db.js"
     },
     {
-      "from": "future market-delegation routes",
+      "from": "market-delegation routes",
       "to": "services/market-delegation-service.js",
       "type": "uses",
-      "label": "future market-delegation routes"
+      "label": "market-delegation routes"
     },
     {
       "from": "market-scope-projector",
       "to": "services/market-delegation-service.js",
       "type": "uses",
       "label": "market-scope-projector"
+    },
+    {
+      "from": "team service",
+      "to": "services/market-delegation-service.js",
+      "type": "uses",
+      "label": "team service"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "services/market-local-price-resolution-service.js",
