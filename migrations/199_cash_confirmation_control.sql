@@ -29,17 +29,33 @@ CREATE TABLE IF NOT EXISTS cash_confirmation_controls (
     (second_actor_user_id IS NOT NULL AND second_source IS NOT NULL AND second_at IS NOT NULL)
   ),
   CONSTRAINT cash_confirmation_state_consistent CHECK (
-    (state = 'PENDING_SECOND' AND required_approvals = 2 AND second_actor_user_id IS NULL AND confirmed_at IS NULL)
+    (state = 'PENDING_SECOND'
+      AND required_approvals = 2
+      AND second_actor_user_id IS NULL
+      AND confirmed_at IS NULL
+      AND cancelled_at IS NULL)
     OR
-    (state = 'APPROVED' AND confirmed_at IS NULL AND (
-       (required_approvals = 1 AND second_actor_user_id IS NULL)
-       OR
-       (required_approvals = 2 AND second_actor_user_id IS NOT NULL)
-    ))
+    (state = 'APPROVED'
+      AND confirmed_at IS NULL
+      AND cancelled_at IS NULL
+      AND (
+        (required_approvals = 1 AND second_actor_user_id IS NULL)
+        OR
+        (required_approvals = 2 AND second_actor_user_id IS NOT NULL)
+      ))
     OR
-    (state = 'CONFIRMED' AND confirmed_at IS NOT NULL)
+    (state = 'CONFIRMED'
+      AND confirmed_at IS NOT NULL
+      AND cancelled_at IS NULL
+      AND (
+        (required_approvals = 1 AND second_actor_user_id IS NULL)
+        OR
+        (required_approvals = 2 AND second_actor_user_id IS NOT NULL)
+      ))
     OR
-    (state = 'CANCELLED' AND cancelled_at IS NOT NULL)
+    (state = 'CANCELLED'
+      AND cancelled_at IS NOT NULL
+      AND confirmed_at IS NULL)
   )
 );
 
