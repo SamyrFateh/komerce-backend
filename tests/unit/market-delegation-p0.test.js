@@ -29,7 +29,7 @@ describe('market-delegation P0', () => {
   });
 
   test('assignment schema enforces one ACTIVE mandate per Market ID and subset guards', () => {
-    const migration = read('migrations/172_market_delegation_assignments.sql');
+    const migration = read('migrations/194_market_delegation_assignments.sql');
     expect(migration).toMatch(/uniq_active_market_assignment/);
     expect(migration).toMatch(/WHERE status = 'ACTIVE'/);
     expect(migration).toMatch(/enforce_assignment_ceiling_capability/);
@@ -39,7 +39,7 @@ describe('market-delegation P0', () => {
   });
 
   test('legacy authorization table becomes an attributable projection without changing middleware', () => {
-    const migration = read('migrations/173_operator_market_scopes_projection_marker.sql');
+    const migration = read('migrations/195_operator_market_scopes_projection_marker.sql');
     const projector = read('services/market-scope-projector.js');
     const middleware = read('middleware/require-market-scope.js');
     expect(migration).toMatch(/projected_from_membership_id/);
