@@ -325,6 +325,7 @@ module.exports = {
       'purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)',
       'loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)',
       'market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; jamais de market_id client)',
+      'market-delegation (bridge request-local des memberships projetées vers les lectures Hub déjà ouvertes à market_operator)',
     ],
   },
 

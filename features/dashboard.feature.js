@@ -213,6 +213,7 @@ module.exports = {
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
       'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
+      'market-delegation (bridge request-local des memberships projetées vers les surfaces dashboard qui admettent déjà market_operator)',
     ],
   },
 

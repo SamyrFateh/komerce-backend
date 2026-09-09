@@ -144,7 +144,7 @@ module.exports = {
       { fn: 'revokeMembership', file: 'services/market-delegation-service.js' },
       { fn: 'projectAssignment', file: 'services/market-scope-projector.js' },
       { fn: 'projectionDrift', file: 'services/market-scope-projector.js' },
-      { fn: 'requireRoleWithMarketDelegation', file: 'middleware/require-market-delegated-role.js' },
+      { fn: 'attachMarketDelegatedRoleFor', file: 'middleware/require-market-delegated-role.js' },
       { fn: 'resolveAuthorization', file: 'services/market-delegation-team-service.js' },
       { fn: 'inviteTeamMember', file: 'services/market-delegation-team-service.js' },
       { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },
