@@ -80,6 +80,8 @@ module.exports = {
       'tests/unit/market-commercial-price-service.test.js',
       'tests/unit/market-local-price-resolution-service.test.js',
       'tests/unit/market-local-price-activation-service.test.js',
+      'tests/unit/market-delegation-team-ui.test.js',
+      'tests/unit/canonical-admin-app.test.js',
     ],
   },
 
@@ -100,7 +102,8 @@ module.exports = {
     authedRoutesDetected: 0,
     totalRoutes: 0,
     note: 'La feature compose ses actions dans Pricing Canonical après résolution market scope serveur. ' +
-      'Preview est lisible dans le scope ; décision, reset et activation exigent market_operator + scope manager.',
+      'Preview est lisible dans le scope ; décision, reset et activation exigent market_operator + scope manager. ' +
+      'La surface équipe consomme uniquement les routes market-delegation protégées et ne traite jamais un market_id navigateur comme autorité.',
   },
 
   contract: {
@@ -134,5 +137,6 @@ module.exports = {
     { statement: 'SET RESET AUTHORIZE ACTIVATE sont auditables et scoped par market_id + product_id', test: 'tests/unit/market-commercial-price-service.test.js' },
     { statement: 'seul un market_operator manager peut persister ou activer une stratégie de prix locale', test: 'tests/unit/market-commercial-price-service.test.js' },
     { statement: 'une identité au rôle global non-admin ne peut entrer dans le portail comme market_operator qu’après projection serveur explicite', test: 'tests/unit/canonical-admin-app.test.js' },
+    { statement: 'le lien d’invitation conserve next pendant le login, l’acceptation est explicite, puis le token est retiré et le marché vient du contexte serveur', test: 'tests/unit/market-delegation-team-ui.test.js' },
   ],
 };
