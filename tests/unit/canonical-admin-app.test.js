@@ -309,3 +309,23 @@ describe('canonical admin app — market selector', () => {
     errorSpy.mockRestore();
   });
 });
+
+describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capability-map.md §9)', () => {
+  test('chaque rôle opérationnel atterrit directement sur son workspace réel, pas sur Dashboard', () => {
+    const env = loadCanonicalApp();
+    expect(env.api.defaultLandingSurface({ role: 'admin' })).toBe('/admin/pilotage');
+    expect(env.api.defaultLandingSurface({ role: 'market_operator' })).toBe('/admin/pilotage');
+    expect(env.api.defaultLandingSurface({ role: 'finance' })).toBe('/admin/workspaces/accounting');
+    expect(env.api.defaultLandingSurface({ role: 'sourcing' })).toBe('/admin/workspaces/sourcing');
+    expect(env.api.defaultLandingSurface({ role: 'agent_hub' })).toBe('/admin/workspaces/operations');
+    expect(env.api.defaultLandingSurface({ role: 'agent_relais' })).toBe('/admin/workspaces/operations');
+    expect(env.api.defaultLandingSurface({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
+    expect(env.api.defaultLandingSurface({ role: 'support' })).toBe('/admin/pilotage');
+  });
+
+  test('rôle inconnu ou utilisateur absent retombe sur /admin/pilotage', () => {
+    const env = loadCanonicalApp();
+    expect(env.api.defaultLandingSurface({ role: 'bogus' })).toBe('/admin/pilotage');
+    expect(env.api.defaultLandingSurface(null)).toBe('/admin/pilotage');
+  });
+});
