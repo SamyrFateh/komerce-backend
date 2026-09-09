@@ -105,13 +105,6 @@
     return String.fromCodePoint(...[...normalized].map(letter => base + letter.charCodeAt(0) - 65));
   }
 
-  function findWorkshop(rootNode) {
-    return rootNode.querySelector('[data-pricing-workshop-enhanced]') || Array.from(rootNode.querySelectorAll('.kmc-section')).find(section => {
-      const title = section.querySelector('.kmc-section-title');
-      return title && ['Atelier des coûts', 'Atelier économique'].includes(title.textContent.trim());
-    }) || null;
-  }
-
   function classifyComponents(components = []) {
     const active = components.filter(component => component.is_active !== false && !component.is_exceptional && component.family !== 'exceptional');
     return {
@@ -1054,19 +1047,9 @@
   async function enhance(rootObject, workspace, options, payload) {
     if (!options?.requestedMarket || !options.root || !options.document || !payload) return false;
     if (options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
-    const workshop = findWorkshop(options.root);
-    if (!workshop) return false;
-    const title = workshop.querySelector('.kmc-section-title');
-    if (title) title.textContent = 'Atelier économique';
-    const description = workshop.querySelector('.kmc-section-description');
-    if (description) description.textContent = 'Pilotez votre rentabilité en temps réel. Toute modification est automatiquement recalculée par le moteur.';
-    // Le cockpit affiche son propre header (titre + sous-titre + période + badge),
-    // fidèle au mock. Le header générique de la section ('.kmc-section-header')
-    // ferait doublon à l'écran : on le masque plutôt que le supprimer, pour
-    // préserver le texte pour tout consommateur non visuel et ne rien casser
-    // dans findWorkshop (qui lit ce titre au premier passage).
-    const outerHeader = workshop.querySelector('.kmc-section-header');
-    if (outerHeader) outerHeader.classList.add('kmc-cockpit-outer-header-hidden');
+    // Contrat exclusif : le cockpit ne dépend plus d'un DOM Legacy préalable.
+    // Le payload serveur suffit à construire la surface approuvée ; cela
+    // permet un premier rendu atomique sans jamais exposer l'ancien workspace.
     let decision = null;
     try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
     const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
@@ -1087,7 +1070,12 @@
     if (!workspace || workspace.__economicCockpitInstalled || typeof workspace.mount !== 'function') return false;
     const originalMount = workspace.mount.bind(workspace);
     workspace.mount = async function economicCockpitAwareMount(options) {
-      const payload = await originalMount(options);
+      // pricing-workspace et ses anciens wrappers restent utiles comme
+      // fournisseurs de payload/actions, mais leur DOM ne doit jamais être
+      // peint dans la surface visible. On les exécute dans un root détaché,
+      // puis on construit le mock sur le vrai root en un swap atomique.
+      const stagingRoot = options.document.createElement('div');
+      const payload = await originalMount({ ...options, root: stagingRoot });
       await enhance(rootObject, workspace, options, payload);
       return payload;
     };
