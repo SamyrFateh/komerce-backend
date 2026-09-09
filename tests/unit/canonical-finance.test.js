@@ -145,6 +145,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       adminContext: marketContext(),
       contextContract: adminContextContract,
       period: '7',
+      user: { role: 'admin' },
     });
 
     expect(fetch).toHaveBeenCalledWith(
