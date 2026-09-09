@@ -221,6 +221,20 @@
     return choices;
   }
 
+  const MARKET_FLAG_ASSETS = Object.freeze({
+    CM: '/dashboards/canonical/assets/flags/CM.svg',
+    CG: '/dashboards/canonical/assets/flags/CG.svg',
+    KM: '/dashboards/canonical/assets/flags/KM.svg',
+  });
+
+  function marketFlagAsset(code) {
+    return MARKET_FLAG_ASSETS[String(code || '').trim().toUpperCase()] || '';
+  }
+
+  function stripRegionalFlagPrefix(label) {
+    return String(label || '').replace(/^[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, '');
+  }
+
   function proxyMarketChange(doc, value) {
     // Le sélecteur de page possède déjà le contrat serveur et le callback de
     // rechargement. La barre du mock ne duplique aucune logique économique :
@@ -254,23 +268,41 @@
     wrap.className = 'kmc-admin-market-control';
     wrap.setAttribute('aria-label', 'Marché actif');
 
+    const flag = doc.createElement('img');
+    flag.className = 'kmc-admin-market-flag';
+    flag.alt = '';
+    flag.setAttribute('aria-hidden', 'true');
+
     const select = doc.createElement('select');
     select.className = 'kmc-admin-market-select';
     select.setAttribute('aria-label', 'Sélectionner le marché');
     const current = currentRequestedMarket(adminContext, requireMarket);
 
+    const syncFlag = marketCode => {
+      const asset = marketFlagAsset(marketCode);
+      flag.src = asset;
+      flag.hidden = !asset;
+      flag.setAttribute('data-market-flag', asset ? String(marketCode || '').toUpperCase() : '');
+      select.className = `kmc-admin-market-select${asset ? ' has-flag' : ''}`;
+    };
+
     choices.forEach(choice => {
       const option = doc.createElement('option');
       option.value = choice.value;
-      option.textContent = choice.label;
+      option.textContent = stripRegionalFlagPrefix(choice.label);
       if ((choice.marketCode || choice.value || null) === current) option.selected = true;
       select.appendChild(option);
     });
     select.value = current || '';
+    syncFlag(current);
     if (typeof select.addEventListener === 'function') {
-      select.addEventListener('change', () => proxyMarketChange(doc, select.value || ''));
+      select.addEventListener('change', () => {
+        syncFlag(select.value || '');
+        proxyMarketChange(doc, select.value || '');
+      });
     }
 
+    wrap.appendChild(flag);
     wrap.appendChild(select);
     return wrap;
   }

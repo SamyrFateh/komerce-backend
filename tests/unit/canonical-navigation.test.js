@@ -198,9 +198,13 @@ describe('canonical admin navigation — mock contract', () => {
 
     const utilities = header.children[0].children[2];
     const marketControl = utilities.children[0];
-    const select = marketControl.children[0];
+    const flag = marketControl.children[0];
+    const select = marketControl.children[1];
 
-    expect(select.className).toBe('kmc-admin-market-select');
+    expect(flag.className).toBe('kmc-admin-market-flag');
+    expect(flag.src).toBe('/dashboards/canonical/assets/flags/CM.svg');
+    expect(flag.hidden).toBe(false);
+    expect(select.className).toBe('kmc-admin-market-select has-flag');
     expect(select.value).toBe('CM');
     expect(select.children.map(option => option.textContent)).toEqual(['CM']);
     expect(utilities.children[1].textContent).toBe('Responsable pays');
@@ -221,10 +225,42 @@ describe('canonical admin navigation — mock contract', () => {
         },
       },
     });
-    const select = header.children[0].children[2].children[0].children[0];
+    const marketControl = header.children[0].children[2].children[0];
+    const flag = marketControl.children[0];
+    const select = marketControl.children[1];
+    expect(flag.src).toBe('/dashboards/canonical/assets/flags/CM.svg');
     expect(select.value).toBe('CM');
     expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
     expect(select.children.map(option => option.textContent)).not.toContain('Global · Tous les marchés');
+  });
+
+  test('le drapeau visible suit le Market ID sélectionné sans dépendre des emoji Windows', () => {
+    const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/workspaces/pricing',
+      surface: 'pricing-workspace',
+      user: { role: 'admin' },
+      adminContext: {
+        access: {
+          mode: 'global',
+          defaultMarket: 'CM',
+          allowedMarkets: ['CM', 'CG', 'KM'],
+        },
+      },
+    });
+    const marketControl = header.children[0].children[2].children[0];
+    const flag = marketControl.children[0];
+    const select = marketControl.children[1];
+
+    expect(flag.src).toBe('/dashboards/canonical/assets/flags/CM.svg');
+    select.value = 'CG';
+    select.listeners.change();
+    expect(flag.src).toBe('/dashboards/canonical/assets/flags/CG.svg');
+    expect(flag.attributes['data-market-flag']).toBe('CG');
+    select.value = 'KM';
+    select.listeners.change();
+    expect(flag.src).toBe('/dashboards/canonical/assets/flags/KM.svg');
   });
 
   test('Déconnexion appelle le endpoint auth puis revient au login', async () => {

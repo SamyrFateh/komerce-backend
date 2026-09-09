@@ -127,9 +127,26 @@
 }
 
 .kmc-admin-market-control {
+  position: relative;
   display: inline-flex;
   align-items: center;
 }
+
+.kmc-admin-market-flag {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  z-index: 1;
+  width: 20px;
+  height: 14px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.20);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.kmc-admin-market-flag[hidden] { display: none; }
 
 .kmc-admin-market-select {
   min-width: 148px;
@@ -143,6 +160,10 @@
   font-size: 12px;
   font-weight: 700;
   outline: none;
+}
+
+.kmc-admin-market-select.has-flag {
+  padding-left: 40px;
 }
 
 .kmc-admin-market-select:hover,
