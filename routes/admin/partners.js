@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, middleware/validate.js, validators, services/partner-admin-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, middleware/validate.js, validators, services/partner-admin-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes
  * @db-write      none
@@ -22,6 +22,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../../middleware/require-market-scope');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
@@ -34,7 +35,7 @@ const partnerAdmin = require('../../services/partner-admin-service');
 // partners.country_code (résolu contre markets.code), pas par un market_id
 // direct absent de cette table. attachAuthorizedMarketsForOperator ne fait
 // rien pour admin — aucun changement de comportement pour ce rôle.
-const guard = [authenticate, requireRole(['admin', 'market_operator']), attachAuthorizedMarketsForOperator];
+const guard = [authenticate, attachMarketDelegatedRoleFor(['admin', 'market_operator']), requireRole(['admin', 'market_operator']), attachAuthorizedMarketsForOperator];
 
 function handlePartnerError(err, res, next) {
   if (err instanceof partnerAdmin.PartnerAdminError || err?.status) {

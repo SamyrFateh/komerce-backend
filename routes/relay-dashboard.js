@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       operator_market_scopes, orders
  * @db-write      order_comments, order_incidents
@@ -38,6 +38,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
@@ -47,7 +48,7 @@ const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/rel
 // operator_market_scopes. attachAuthorizedMarketsForOperator ne fait rien
 // pour admin/agent_relais — aucune requête DB, aucun changement de
 // comportement pour ces deux rôles (invariant : droits actuels inchangés).
-router.use(authenticate, requireRole(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);
+router.use(authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_relais', 'market_operator']), requireRole(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);
 
 // ── Security helper — vérifie que la commande appartient au relais ──────────
 // 3 cas : admin (aucun check), agent_relais (relais_id fixe, IDOR fix

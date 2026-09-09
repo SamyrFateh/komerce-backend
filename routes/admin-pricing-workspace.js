@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event
  * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
  * @db-write      none
@@ -22,6 +22,7 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const {
   attachAuthorizedMarkets,
   requireMarketScope,
@@ -183,6 +184,7 @@ function handleDecisionPolicyError(error, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
   requireRole(['admin', 'market_operator']),
   rejectBrowserAuthority,
   resolveRequestedMarket,
