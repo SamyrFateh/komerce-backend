@@ -70,6 +70,33 @@
     return '/login.html?next=' + encodeURIComponent(next);
   }
 
+  async function resolveDelegatedPortalUser(user) {
+    if (!user || ALLOWED_ROLES.has(user.role)) return user || null;
+
+    try {
+      const response = await global.fetch('/api/admin/dashboard/context', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return null;
+
+      const context = await response.json();
+      const access = context && context.access;
+      if (!context || !context.actor || context.actor.role !== 'market_operator') return null;
+      if (!access || access.mode !== 'market' || !Array.isArray(access.allowedMarkets) || !access.allowedMarkets.length) return null;
+
+      return {
+        ...user,
+        persisted_role: user.role,
+        role: 'market_operator',
+        role_source: 'market_delegation_context',
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function requireSession() {
     const response = await global.fetch('/api/auth/me', {
       method: 'GET',
@@ -83,12 +110,13 @@
     }
 
     const user = await response.json();
-    if (!ALLOWED_ROLES.has(user.role)) {
+    const effectiveUser = await resolveDelegatedPortalUser(user);
+    if (!effectiveUser) {
       global.location.replace('/');
       throw new Error('forbidden');
     }
 
-    return user;
+    return effectiveUser;
   }
 
   async function requireAdminContext() {
@@ -690,6 +718,7 @@
     SURFACES,
     boot,
     requireSession,
+    resolveDelegatedPortalUser,
     requireAdminContext,
     surfaceForPath,
     marketDisplayName,

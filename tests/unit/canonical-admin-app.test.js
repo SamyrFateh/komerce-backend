@@ -135,13 +135,49 @@ describe('canonical admin app — server AdminContext bootstrap', () => {
     expect(env.replace).not.toHaveBeenCalled();
   });
 
-  test('requireSession refuse un client sur le runtime Canonical admin', async () => {
+  test('requireSession accepte une identité client seulement si le contexte serveur la projette market_operator', async () => {
     const env = loadCanonicalApp();
-    env.fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn().mockResolvedValue({ id: 'client-1', role: 'client' }),
+    env.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({ id: 'client-1', role: 'client', email: 'member@example.com' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          actor: { id: 'client-1', role: 'market_operator' },
+          access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM' },
+        }),
+      });
+
+    await expect(env.api.requireSession()).resolves.toMatchObject({
+      id: 'client-1',
+      role: 'market_operator',
+      persisted_role: 'client',
+      role_source: 'market_delegation_context',
     });
+    expect(env.replace).not.toHaveBeenCalled();
+    expect(env.fetch).toHaveBeenNthCalledWith(2, '/api/admin/dashboard/context', expect.objectContaining({
+      method: 'GET',
+      credentials: 'include',
+    }));
+  });
+
+  test('requireSession refuse toujours une identité sans contexte market_operator prouvé', async () => {
+    const env = loadCanonicalApp();
+    env.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({ id: 'client-2', role: 'client' }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: jest.fn().mockResolvedValue({ code: 'dashboard_access_denied' }),
+      });
 
     await expect(env.api.requireSession()).rejects.toThrow('forbidden');
     expect(env.replace).toHaveBeenCalledWith('/');

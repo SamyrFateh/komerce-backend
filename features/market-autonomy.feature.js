@@ -45,6 +45,8 @@ module.exports = {
       'refus fail-closed si une granularité SKU/variante explicite entrerait en conflit',
       'projection manager/viewer de la capacité réellement disponible',
       'surface Canonical de test de l’autonomie pays',
+      'surface équipe pays intégrée : lecture, invitation, délégation et révocation de capabilities',
+      'parcours explicite d’acceptation d’invitation avec retour vers le Market ID résolu côté serveur',
     ],
     out: [
       'mutation de products.price_kmf global',
@@ -69,6 +71,10 @@ module.exports = {
     dash: [
       'dashboards/canonical/market-autonomy.html',
       'dashboards/canonical/js/market-autonomy.js',
+      'dashboards/canonical/css/market-team.css',
+      'dashboards/canonical/js/market-team.js',
+      'dashboards/canonical/team-invite.html',
+      'dashboards/canonical/js/team-invite.js',
     ],
     tests: [
       'tests/unit/market-commercial-price-service.test.js',
@@ -110,6 +116,7 @@ module.exports = {
       'economic-engine — CDR, politique marché et gate de couverture',
       'catalog — products/SKU en lecture ; le prix global reste inchangé',
       'infrastructure — db.js pour transaction et audit',
+      'market-delegation — memberships, capabilities team.* et acceptation d’invitation ; l’UI n’invente aucune autorité',
     ],
   },
 
@@ -126,5 +133,6 @@ module.exports = {
     { statement: 'un prix pays produit n’écrase jamais silencieusement un prix SKU/variante explicite', test: 'tests/unit/market-local-price-resolution-service.test.js' },
     { statement: 'SET RESET AUTHORIZE ACTIVATE sont auditables et scoped par market_id + product_id', test: 'tests/unit/market-commercial-price-service.test.js' },
     { statement: 'seul un market_operator manager peut persister ou activer une stratégie de prix locale', test: 'tests/unit/market-commercial-price-service.test.js' },
+    { statement: 'une identité au rôle global non-admin ne peut entrer dans le portail comme market_operator qu’après projection serveur explicite', test: 'tests/unit/canonical-admin-app.test.js' },
   ],
 };
