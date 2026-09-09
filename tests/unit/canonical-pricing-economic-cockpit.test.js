@@ -13,7 +13,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1401');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1402');
   expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1401');
   expect(source).toContain("title.textContent = 'Atelier économique'");
   expect(source).toContain('Charges structurelles à couvrir');
@@ -26,6 +26,9 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(css).toContain('.kmc-cockpit-costs');
   expect(css).toContain('.kmc-cockpit-portfolio-table');
   expect(css).toContain('.kmc-cockpit-detail-grid');
+  expect(source).toContain('outerAdvancedNodes');
+  expect(source).toContain("node.dataset.pricingCockpitLegacyHidden = ''");
+  expect(source).toContain("workshop.dataset.pricingCockpitPrimary = ''");
 });
 
 test('mutualisé reste un périmètre et peut être variable ou fixe', () => {

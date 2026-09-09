@@ -206,6 +206,34 @@ describe('canonical admin navigation — mock contract', () => {
     expect(utilities.children[1].textContent).toBe('Responsable pays');
   });
 
+  test('Déconnexion appelle le endpoint auth puis revient au login', async () => {
+    const replace = jest.fn();
+    const fetch = jest.fn().mockResolvedValue({ ok: true });
+    const env = loadNavigation('/admin/pilotage', 'pilotage', {
+      window: {
+        fetch,
+        location: { pathname: '/admin/pilotage', search: '', href: 'https://komerce.test/admin/pilotage', replace },
+      },
+    });
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'admin' },
+    });
+    const utilities = header.children[0].children[2];
+    const logout = utilities.children.find(node => node.className === 'kmc-admin-logout');
+
+    expect(logout).toBeDefined();
+    expect(logout.textContent).toBe('Déconnexion');
+    await logout.listeners.click();
+    expect(fetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+    }));
+    expect(replace).toHaveBeenCalledWith('/login.html');
+  });
+
   test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {
     const env = loadNavigation('/admin/finance', 'finance');
     const header = env.api.mount({ document: env.document, pathname: '/admin/finance', surface: 'finance' });

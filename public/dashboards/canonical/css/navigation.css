@@ -156,6 +156,36 @@
   background: #fff;
 }
 
+.kmc-admin-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.045);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kmc-admin-logout:hover,
+.kmc-admin-logout:focus-visible {
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.34);
+  background: rgb(255 255 255 / 0.10);
+  outline: none;
+}
+
+.kmc-admin-logout:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .kmc-admin-account {
   display: inline-flex;
   align-items: center;

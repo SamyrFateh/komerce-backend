@@ -1042,9 +1042,29 @@
     const advancedNodes = existing.filter(node => !node.classList?.contains('kmc-cost-formula') && !node.matches?.('[data-pricing-decision-chain]'));
     let decision = null;
     try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
+    // Le cockpit approuvé est la surface primaire de l'Atelier. Les sections
+    // techniques produites par le workspace brut (ex. Décision marché / politique)
+    // restent disponibles sous Détails avancés, mais ne doivent jamais précéder le
+    // cockpit ni donner l'impression que l'ancienne vue est encore la page active.
+    const outerAdvancedNodes = Array.from(options.root.children || []).filter(node =>
+      node !== workshop && node.classList?.contains('kmc-section')
+    );
     const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
-    const advanced = createAdvancedDetails(options.document, advancedNodes);
+    const advanced = createAdvancedDetails(options.document, [...advancedNodes, ...outerAdvancedNodes]);
+    const workspaceFeedback = options.root.querySelector('[data-workspace-feedback]');
+    const advancedBody = advanced.querySelector('.kmc-cockpit-advanced-body');
+    if (workspaceFeedback && advancedBody?.prepend) advancedBody.prepend(workspaceFeedback);
     slot.replaceChildren(cockpit, advanced);
+
+    // Les seuls enfants racine encore présents hors du workshop sont le chrome
+    // brut du workspace (header + KPI). On le conserve dans le DOM pour les
+    // contrats internes mais on le rend explicitement non visuel.
+    Array.from(options.root.children || []).forEach(node => {
+      if (node === workshop) return;
+      node.hidden = true;
+      if (node.dataset) node.dataset.pricingCockpitLegacyHidden = '';
+    });
+    workshop.dataset.pricingCockpitPrimary = '';
     bindCockpit(rootObject, workspace, options, payload, cockpit, advanced);
     const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
     if (portfolio?.__activeCategory) await loadCategory(options.document, workspace, options, payload, portfolio, portfolio.__activeCategory);
