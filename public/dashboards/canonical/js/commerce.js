@@ -27,6 +27,24 @@
   const MARKET_ENDPOINT_PREFIX = '/api/admin/dashboard/commerce/market/';
   const PERIODS = Object.freeze(['7', '30', '90']);
 
+  // Approfondir (drill) filtré par rôle — aligné sur les guards serveur réels
+  // vérifiés dans docs/admin-nav-capability-map.md, même logique que
+  // ROLE_VISIBLE_TABS dans navigation.js. Sans ce filtrage, un rôle qui
+  // charge ce dashboard voit un lien "Approfondir" vers une surface qui
+  // 403 côté serveur.
+  const DRILL_ROLE_MAP = Object.freeze({
+    'catalog-workspace': Object.freeze(['admin']),
+    'sourcing-workspace': Object.freeze(['admin', 'sourcing']),
+    'pricing-workspace': Object.freeze(['admin', 'market_operator']),
+    clients: Object.freeze(['admin']),
+  });
+
+  function visibleDrillSchema(schema, user) {
+    const role = (user && user.role) || '';
+    const drill = schema.drill.filter(item => (DRILL_ROLE_MAP[item.id] || []).includes(role));
+    return Object.freeze({ ...schema, drill: Object.freeze(drill) });
+  }
+
   const COMMERCE_SCHEMA = Object.freeze({
     id: 'commerce',
     title: 'Commerce',
@@ -269,14 +287,15 @@
     }
 
     const renderer = rendererContract.createRenderer({ document: doc, ui });
+    const schema = visibleDrillSchema(COMMERCE_SCHEMA, options.user);
 
     async function load(nextPeriod) {
       period = normalizePeriod(nextPeriod == null ? period : nextPeriod);
-      renderer.render(rootNode, COMMERCE_SCHEMA, { state: 'loading', stateMessage: 'Chargement de Commerce…' });
+      renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement de Commerce…' });
 
       try {
         const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}`);
-        const result = renderer.render(rootNode, COMMERCE_SCHEMA, {
+        const result = renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
           onFilterChange: (key, value) => {
@@ -286,7 +305,7 @@
         });
         return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
-        renderer.render(rootNode, COMMERCE_SCHEMA, { state: 'error', stateMessage: error.message });
+        renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
         throw error;
       }
     }
@@ -299,6 +318,8 @@
     MARKET_ENDPOINT_PREFIX,
     PERIODS,
     COMMERCE_SCHEMA,
+    DRILL_ROLE_MAP,
+    visibleDrillSchema,
     KPI_KEYS,
     normalizePeriod,
     formatNumber,

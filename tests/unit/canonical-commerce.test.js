@@ -137,6 +137,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
       renderer,
       adminContext: marketContext(),
       contextContract: adminContextContract,
+      user: { role: 'admin' },
     });
 
     expect(fetch).toHaveBeenCalledWith(

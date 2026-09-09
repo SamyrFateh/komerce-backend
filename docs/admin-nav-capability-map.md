@@ -111,14 +111,67 @@ capabilities plutôt que le rôle brut.
 
 ## 7. Frontière assets pour la migration Paramètres (F1 point 4)
 
-`SettingsView.js` (`public/dashboards/admin/js/views/SettingsView.js`) ne
-dépend que de `global.KmcApi` (défini dans
-`public/dashboards/admin/js/api-client.js`, zéro couplage DOM, `BASE_API =
-'/api'`, appelle exactement les routes ci-dessus). Son CSS utilise des
-variables (`--text-primary`, `--bg-card`, `--border`, `--fs-sm`, …) définies
-dans `public/dashboards/admin/css/tokens.css`, absentes de
-`public/dashboards/canonical/css/base.css`. Pour monter `SettingsView` dans
-Canonical sans le casser visuellement, il faut charger `tokens.css` (tokens
-purs, pas de dépendance DOM) et `api-client.js` dans
-`public/dashboards/canonical/index.html`, en plus de `SettingsView.js`
-lui-même.
+`SettingsView.js` original (`public/dashboards/admin/js/views/SettingsView.js`,
+Legacy) ne dépendait que de `global.KmcApi` (zéro couplage DOM, `BASE_API =
+'/api'`, appelle exactement les routes ci-dessus) et d'un jeu de variables CSS
+(`--text-primary`, `--bg-card`, `--border`, `--fs-sm`, …) définies dans
+`public/dashboards/admin/css/tokens.css`.
+
+**Correction appliquée** : charger ces fichiers Legacy directement depuis
+`canonical/index.html` viole la doctrine testée « canonical ne référence
+jamais admin/** » (`canonical-dashboard-boundary.test.js`). La vue a donc été
+**portée**, pas référencée : `public/dashboards/canonical/js/settings-workspace.js`
+(module natif Canonical, fetch direct vers les mêmes routes serveur, export
+`KomerceCanonicalSettingsWorkspace.render(root)`) et
+`public/dashboards/canonical/css/settings-workspace.css` (alias des tokens
+Canonical existants sous les noms attendus par les composants portés). Le
+couplage fragile à `#main-content` présent dans l'original a aussi été
+supprimé au passage — remplacé par une référence stable au `root` passé à
+`render()`.
+
+## 8. Sous-navigation contextuelle — filtrage par rôle du pattern « Approfondir »
+
+Le mock textuel (prompt d'origine) décrit une sous-navigation en onglets sous
+la barre principale (« Synthèse | Performance par pays | Alertes & actions |
+… »), mais **aucun mock visuel approuvé** n'existe pour cette sous-navigation
+— contrairement à la barre principale à 6 onglets, qui a un screenshot
+contractuel. Construire une nouvelle UI en barre d'onglets sans mock serait
+deviner des pixels, ce que la doctrine « le mock est le contrat UI » interdit
+par extension.
+
+Le code contient déjà un mécanisme de sous-navigation fonctionnellement
+équivalent : la section « Approfondir » (`dashboard-renderer.js::renderDrill`),
+rendue sous chaque dashboard Canonical (Pilotage/Commerce/Opérations/Finance)
+à partir de `schema.drill`. Ce mécanisme n'était filtré par **aucun rôle** —
+un market_operator chargeant le dashboard Opérations voyait un lien
+« Expéditions & Douane » qui 403 côté serveur (accès réservé à
+admin/agent_hub/agent_transitaire).
+
+Plutôt que dupliquer cette fonctionnalité, chaque fichier de dashboard
+(`commerce.js`, `operations.js`, `finance.js`) expose désormais un
+`DRILL_ROLE_MAP` (id du lien → rôles réellement autorisés côté serveur, même
+source de vérité que ce document) et une fonction `visibleDrillSchema(schema,
+user)` qui filtre `schema.drill` avant de le passer au renderer. Le schema
+exporté (`COMMERCE_SCHEMA`, `OPERATIONS_SCHEMA`, `FINANCE_SCHEMA`) reste
+inchangé et gelé — le filtrage produit une copie, jamais une mutation.
+
+| Dashboard   | Lien (drill id)              | Rôles visibles (= guard serveur réel) |
+|-------------|-------------------------------|------------------------------------------|
+| Commerce    | catalog-workspace              | admin |
+| Commerce    | sourcing-workspace              | admin, sourcing |
+| Commerce    | pricing-workspace                | admin, market_operator |
+| Commerce    | clients                          | admin |
+| Opérations  | operations-workspace             | admin, agent_hub, agent_relais, market_operator |
+| Opérations  | shipping-customs-workspace       | admin, agent_hub, agent_transitaire |
+| Finance     | accounting-workspace             | admin, finance, agent_relais |
+| Finance     | pricing-workspace                | admin, market_operator |
+
+Note : `FINANCE_SCHEMA.drill` contient déjà `pricing-workspace` sur `main`,
+ce qui fait échouer `canonical-dashboard-drills.test.js` (« Finance
+approfondit uniquement vers Comptabilité », pré-existant, confirmé
+indépendamment de cette branche — voir historique de la PR
+`feat/admin-canonical-nav-role-aware`). Ce filtrage ne corrige pas ce test
+(il compare le schema brut, non filtré) ; il rend seulement le lien inoffensif
+pour les rôles qui n'y ont pas accès, en attendant que quelqu'un tranche si
+`pricing-workspace` doit rester dans le drill Finance.
+

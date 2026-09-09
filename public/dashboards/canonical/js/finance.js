@@ -27,6 +27,21 @@
   const MARKET_ENDPOINT_PREFIX = '/api/admin/dashboard/finance/market/';
   const PERIODS = Object.freeze(['7', '30', '90']);
 
+  // Approfondir (drill) filtré par rôle — voir docs/admin-nav-capability-map.md.
+  // Note : pricing-workspace n'apparaît ici que pour les rôles qui y ont
+  // réellement accès (admin, market_operator) — voir la note sur la dérive
+  // constatée dans FINANCE_SCHEMA.drill (canonical-dashboard-drills.test.js).
+  const DRILL_ROLE_MAP = Object.freeze({
+    'accounting-workspace': Object.freeze(['admin', 'finance', 'agent_relais']),
+    'pricing-workspace': Object.freeze(['admin', 'market_operator']),
+  });
+
+  function visibleDrillSchema(schema, user) {
+    const role = (user && user.role) || '';
+    const drill = schema.drill.filter(item => (DRILL_ROLE_MAP[item.id] || []).includes(role));
+    return Object.freeze({ ...schema, drill: Object.freeze(drill) });
+  }
+
   const FINANCE_SCHEMA = Object.freeze({
     id: 'finance',
     title: 'Finance',
@@ -382,14 +397,15 @@
     }
 
     const renderer = rendererContract.createRenderer({ document: doc, ui });
+    const schema = visibleDrillSchema(FINANCE_SCHEMA, options.user);
 
     async function load(nextPeriod) {
       period = normalizePeriod(nextPeriod == null ? period : nextPeriod);
-      renderer.render(rootNode, FINANCE_SCHEMA, { state: 'loading', stateMessage: 'Chargement de Finance…' });
+      renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement de Finance…' });
 
       try {
         const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}`);
-        const result = renderer.render(rootNode, FINANCE_SCHEMA, {
+        const result = renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
           onFilterChange: (key, value) => {
@@ -399,7 +415,7 @@
         });
         return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
-        renderer.render(rootNode, FINANCE_SCHEMA, { state: 'error', stateMessage: error.message });
+        renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
         throw error;
       }
     }
@@ -412,6 +428,8 @@
     MARKET_ENDPOINT_PREFIX,
     PERIODS,
     FINANCE_SCHEMA,
+    DRILL_ROLE_MAP,
+    visibleDrillSchema,
     KPI_KEYS,
     COST_STATUS_LABELS,
     normalizePeriod,
