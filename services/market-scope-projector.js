@@ -8,10 +8,10 @@
  * @outputs       operator_market_scopes read model
  * @depends       none
  * @used-by       market-delegation mutations
- * @db-read       market_operating_assignments, assignment_memberships, membership_capabilities, capability_registry, operator_market_scopes
+ * @db-read       market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, operator_market_scopes
  * @db-write      operator_market_scopes
  * @db-txn        caller-owned
- * @doctrine      operator_market_scopes_is_projection
+ * @doctrine      operator_market_scopes_is_projection, granular_members_fail_closed_on_legacy_roles
  * @impact-areas  market, authorization, delegation
  * @version       2026-09
  */
@@ -31,12 +31,21 @@ async function desiredScopesForAssignment(db, assignmentId) {
             am.user_id,
             CASE WHEN EXISTS (
               SELECT 1
-                FROM membership_capabilities mc
-                JOIN capability_registry cr ON cr.capability = mc.capability
-               WHERE mc.membership_id = am.id
-                 AND mc.revoked_at IS NULL
-                 AND cr.authority_scope = 'MARKET'
-                 AND cr.requires_audit = TRUE
+                FROM assignment_capability_ceiling acc_any
+               WHERE acc_any.assignment_id = a.id
+                 AND acc_any.revoked_at IS NULL
+            ) AND NOT EXISTS (
+              SELECT 1
+                FROM assignment_capability_ceiling acc
+               WHERE acc.assignment_id = a.id
+                 AND acc.revoked_at IS NULL
+                 AND NOT EXISTS (
+                   SELECT 1
+                     FROM membership_capabilities mc
+                    WHERE mc.membership_id = am.id
+                      AND mc.capability = acc.capability
+                      AND mc.revoked_at IS NULL
+                 )
             ) THEN 'manager' ELSE 'viewer' END AS scope_role
        FROM market_operating_assignments a
        JOIN assignment_memberships am ON am.assignment_id = a.id
