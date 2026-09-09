@@ -151,6 +151,14 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 
 
+<!-- schema-pending
+object: cash_confirmation_controls
+kind: table
+migration: 199
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement.
+-->
+
 ### 4.5 Paniers et catalogue
 
 | Table | Rôle |
@@ -295,7 +303,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 
-
+<!-- schema-pending
+object: market_cash_control_policies
+kind: table
+migration: 198
+section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
+role: Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS.
+-->
 
 ### 4.13 Monitoring et alertes (10 tables)
 
