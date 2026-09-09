@@ -1,0 +1,44 @@
+name: tmp-cash-control-route-patch
+
+on:
+  push:
+    branches:
+      - feat/market-cash-control
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/market-cash-control
+      - name: Patch cash collect route
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'routes/cash.js';
+          let source = fs.readFileSync(file, 'utf8');
+
+          const anchor = `    if (result.cross_relais_blocked) {\n      await client.query('ROLLBACK');\n      return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\\'encaisser' });\n    }\n    if (result.already_collected) {`;
+          const replacement = `    if (result.cross_relais_blocked) {\n      await client.query('ROLLBACK');\n      return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\\'encaisser' });\n    }\n    if (result.pending_second_approval) {\n      await client.query('COMMIT');\n      return res.status(result.control_status || 202).json({\n        success: false,\n        pending_second_approval: true,\n        code: result.control_code,\n        message: result.control_message,\n        required_approvals: result.required_approvals || 2,\n      });\n    }\n    if (result.cash_control_blocked) {\n      await client.query('ROLLBACK');\n      return res.status(result.control_status || 409).json({\n        error: result.control_message || 'Encaissement bloqué par la politique cash.',\n        code: result.control_code || 'CASH_CONTROL_BLOCKED',\n      });\n    }\n    if (result.already_collected) {`;
+          if (!source.includes(anchor)) throw new Error('cash collect control anchor missing');
+          source = source.replace(anchor, replacement);
+
+          const responseAnchor = `      collection: result.collection,\n      payment_cycle: { noop: result.noop },\n    });`;
+          const responseReplacement = `      collection: result.collection,\n      payment_cycle: { noop: result.noop },\n      cash_control: result.cash_control || { required_approvals: 1, second_approval: false },\n    });`;
+          if (!source.includes(responseAnchor)) throw new Error('cash collect response anchor missing');
+          source = source.replace(responseAnchor, responseReplacement);
+
+          fs.writeFileSync(file, source);
+          NODE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add routes/cash.js
+          git commit -m "feat(payments): traiter le double contrôle dans cash collect"
+          git push origin HEAD:feat/market-cash-control
