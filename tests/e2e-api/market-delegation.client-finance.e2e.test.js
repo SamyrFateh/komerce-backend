@@ -65,7 +65,7 @@ describeE2E('E2E-MA-03 — market-delegation · SAV, cash, settlement', ({ db })
     await db.query(
       `INSERT INTO disputes
          (id, order_id, type, level, status, description, refund_kmf, refund_eur, created_by)
-       VALUES ($1,$2,'delivery','minor','open',$3,$4,1.00,$5)`,
+       VALUES ($1,$2,'delivery',1,'open',$3,$4,1.00,$5)`,
       [id, orderId, `E2E dispute ${label}`, refundKmf, creatorId]
     );
     return id;
