@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        product_id, optional_market_code
  * @outputs       public_product_detail_v1
- * @depends       db.js, services/catalog-product-detail.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js
+ * @depends       db.js, services/catalog-product-detail.js, services/catalog-public-view.js, services/catalog-market-exposure-service.js, services/market-local-price-resolution-service.js
  * @used-by       routes/products.js, public/boutique/js/b-modal-product-detail-bootstrap.js
- * @db-read       product_skus, product_variants, products
+ * @db-read       product_skus, product_variants, products, product_market_exposure, markets
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, only_LOCAL_ACTIVE_is_buyer_effective
@@ -26,6 +26,7 @@ const {
   isExcludedPublicProductRef,
   isSyntheticPublicMediaUrl,
 } = require('../services/catalog-public-view');
+const { isProductExposedForMarketCode } = require('../services/catalog-market-exposure-service');
 
 const router = express.Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,6 +49,19 @@ router.get('/:id/detail', async (req, res, next) => {
     const detail = await getProductDetail(db, req.params.id);
     if (!isPublicDetail(detail)) {
       return res.status(404).json({ error: 'Produit introuvable' });
+    }
+
+    // Fail-closed par marché (cutover product_market_exposure) : un code
+    // marché fourni doit correspondre à une exposition ENABLED explicite.
+    // Sans code marché (comportement historique préservé), aucune
+    // vérification supplémentaire — c'était déjà le cas avant le cutover.
+    const rawMarket = req.query.market || null;
+    const marketCode = rawMarket && /^[A-Z]{2}$/i.test(rawMarket) ? String(rawMarket).toUpperCase() : null;
+    if (marketCode) {
+      const exposed = await isProductExposedForMarketCode(req.params.id, marketCode, db);
+      if (!exposed) {
+        return res.status(404).json({ error: 'Produit introuvable' });
+      }
     }
 
     if (req.query.market) {

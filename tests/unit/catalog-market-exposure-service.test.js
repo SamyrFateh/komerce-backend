@@ -70,3 +70,24 @@ describe('catalog-market-exposure-service (catalog write boundary)', () => {
     expect(source).not.toMatch(/DELETE FROM products/i);
   });
 });
+
+describe('isProductExposedForMarketCode', () => {
+  test('renvoie true quand une ligne ENABLED existe pour ce code marché', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
+    const exposed = await exposureService.isProductExposedForMarketCode('p1', 'CM', db);
+    expect(exposed).toBe(true);
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toMatch(/JOIN markets m ON m\.id = pme\.market_id/);
+    expect(sql).toMatch(/m\.code = \$2/);
+    expect(sql).toMatch(/commercial_exposure = 'ENABLED'/);
+    expect(params).toEqual(['p1', 'CM']);
+  });
+
+  test('renvoie false — fail-closed — en l’absence de ligne (nouveau produit ou nouveau marché)', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const exposed = await exposureService.isProductExposedForMarketCode('p1', 'CG', db);
+    expect(exposed).toBe(false);
+  });
+});

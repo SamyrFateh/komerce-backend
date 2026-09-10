@@ -113,10 +113,36 @@ async function setExposure(productId, marketId, exposure, decidedBy, executor = 
   return rows[0];
 }
 
+/**
+ * Vérifie qu'un produit est exposé (ENABLED) sur un marché donné, résolu par
+ * code (ex. 'CM') plutôt que par market_id UUID — évite un aller-retour de
+ * résolution séparé pour les appelants qui n'ont que le code, comme
+ * routes/catalog-product-detail.js.
+ *
+ * @param {string} productId
+ * @param {string} marketCode
+ * @param {object} [executor]
+ * @returns {Promise<boolean>}
+ */
+async function isProductExposedForMarketCode(productId, marketCode, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT 1
+       FROM product_market_exposure pme
+       JOIN markets m ON m.id = pme.market_id
+      WHERE pme.product_id = $1
+        AND m.code = $2
+        AND pme.commercial_exposure = 'ENABLED'
+      LIMIT 1`,
+    [productId, marketCode]
+  );
+  return rows.length > 0;
+}
+
 module.exports = {
   EXPOSURE,
   getExposure,
   listExposureForMarket,
   productExists,
   setExposure,
+  isProductExposedForMarketCode,
 };

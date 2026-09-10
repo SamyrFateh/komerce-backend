@@ -107,19 +107,46 @@ function isExcludedPublicProductRef(value) {
  * données de staging et produits publics au point de lecture. Ceci protège
  * aussi les catégories/comptages, qui doivent refléter le catalogue réellement
  * visible plutôt que les 500 fixtures SHOWCASE-V2.
+ *
+ * @param {string} [alias='p'] alias SQL de la table products
+ * @param {object} [options]
+ * @param {number} [options.marketCodeParamIndex] index positionnel (1-based)
+ *   du paramètre déjà réservé par l'appelant pour le code marché (ex. 'CM'),
+ *   déjà résolu serveur — jamais une confiance aveugle en une valeur brute.
+ *   Quand fourni, ajoute EXISTS (product_market_exposure ENABLED pour ce
+ *   marché, joint par code) au prédicat — cutover LOT 4 : fail-closed par
+ *   marché, absence de ligne = DISABLED. Quand omis (comportement
+ *   historique, préservé à l'identique), aucune notion de marché n'entre
+ *   dans la visibilité — c'était déjà le cas avant le cutover
+ *   product_market_exposure.
  */
-function publicCatalogVisibilitySql(alias = 'p') {
+function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   const a = assertSqlAlias(alias);
   const excludedRefs = PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES
     .map((prefix) => `${a}.product_ref NOT LIKE '${prefix.replace(/'/g, "''")}%'`)
     .join(' AND ');
 
-  return [
+  const conditions = [
     `${a}.is_active = TRUE`,
     excludedRefs,
     `NULLIF(BTRIM(${a}.image_url), '') IS NOT NULL`,
     `${a}.image_url NOT ILIKE 'data:image/%'`,
-  ].filter(Boolean).join(' AND ');
+  ].filter(Boolean);
+
+  if (options.marketCodeParamIndex != null) {
+    const idx = Number(options.marketCodeParamIndex);
+    if (!Number.isInteger(idx) || idx < 1) {
+      throw new Error(`marketCodeParamIndex invalide: ${options.marketCodeParamIndex}`);
+    }
+    conditions.push(
+      `EXISTS (SELECT 1 FROM product_market_exposure pme ` +
+      `JOIN markets pme_mkt ON pme_mkt.id = pme.market_id ` +
+      `WHERE ${a}.id = pme.product_id AND pme_mkt.code = $${idx} ` +
+      `AND pme.commercial_exposure = 'ENABLED')`
+    );
+  }
+
+  return conditions.join(' AND ');
 }
 
 /**

@@ -68,9 +68,21 @@ router.get('/', async (req, res, next) => {
 
     const MAX_LIMIT = 1000;
     const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 100), MAX_LIMIT);
-    const conditions = [publicCatalogVisibilitySql('p')];
-    const params     = [];
+    const params = [];
     let pi = 1;
+
+    // Le marché n'est jamais une autorité venant du client sans validation :
+    // seul un code à 2 lettres majuscules est accepté comme placeholder de
+    // filtre ; une valeur malformée est silencieusement ignorée (comportement
+    // historique préservé, pas d'erreur 400 sur un paramètre de confort).
+    const marketCode = market && /^[A-Z]{2}$/i.test(market) ? String(market).toUpperCase() : null;
+    let marketCodeParamIndex = null;
+    if (marketCode) {
+      marketCodeParamIndex = pi++;
+      params.push(marketCode);
+    }
+
+    const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})];
 
     if (category) {
       conditions.push(`p.category = $${pi++}`);
@@ -169,14 +181,18 @@ router.use(require('./catalog-product-detail'));
 
 router.get('/:id', requireUUID, async (req, res, next) => {
   try {
+    const rawMarket = req.query.market || null;
+    const marketCode = rawMarket && /^[A-Z]{2}$/i.test(rawMarket) ? String(rawMarket).toUpperCase() : null;
+    const detailConditions = [publicCatalogVisibilitySql('p', marketCode ? { marketCodeParamIndex: 2 } : {})];
+    const detailParams = marketCode ? [req.params.id, marketCode] : [req.params.id];
     const { rows } = await db.query(
-      `SELECT * FROM products p WHERE p.id = $1 AND ${publicCatalogVisibilitySql('p')}`,
-      [req.params.id]
+      `SELECT * FROM products p WHERE p.id = $1 AND ${detailConditions[0]}`,
+      detailParams
     );
     if (!rows.length) return res.status(404).json({ error: 'Produit introuvable' });
 
     const [product] = await applyActiveMarketPricesToCatalogRows(db, {
-      marketCode: req.query.market || null,
+      marketCode: rawMarket,
       products: [rows[0]],
     });
 
