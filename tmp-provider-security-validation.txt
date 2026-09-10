@@ -1,6 +1,0 @@
-security_status=0
-◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
-{"level":40,"time":"2026-09-10T10:28:21.663Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
-Security 360 · 613 routes · 🟢 560 · ⚪ 53 · 🟠 0 · 🔴 0 · ❔ 0
-{"level":30,"time":"2026-09-10T10:28:21.778Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
-{"level":30,"time":"2026-09-10T10:28:21.856Z","service":"komerce-backend","env":"test","module":"scan-engine","msg":"[SCAN-ENGINE] version 5ed2bac loaded"}
