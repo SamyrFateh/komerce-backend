@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-10T07:30:33.929Z",
+  "generatedAt": "2026-09-10T10:28:21.911Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 608,
-    "protected": 555,
+    "total": 613,
+    "protected": 560,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3072,6 +3072,31 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/activate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/suspend",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/network/providers/{providerId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/network/providers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers",
       "level": "PROTECTED",
       "roles": []
     },
