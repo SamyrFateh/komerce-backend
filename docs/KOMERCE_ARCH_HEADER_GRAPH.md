@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 536
-- Files with full headers: 491
+- Scanned code files: 541
+- Files with full headers: 496
 - Files with lite headers: 45
-- Files with any headers: 536
+- Files with any headers: 541
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1266
-- Edges: 6340
+- Graph nodes: 1277
+- Edges: 6397
 - DB tables: 151
-- Doctrines: 399
+- Doctrines: 405
 - Impact areas: 180
-- Unresolved code edges: 609
-- Tables multi-écrivains directs (>=2): 66
+- Unresolved code edges: 610
+- Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -47,12 +47,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
-- market-delegation: 12
+- market-delegation: 16
 - notification: 21
 - operations: 11
 - orders: 29
 - payment: 25
-- providers-services: 6
+- providers-services: 7
 - purchasing: 8
 - recommendations: 6
 - refunds: 2
@@ -81,10 +81,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 21
 - presenter: 1
-- route: 119
+- route: 121
 - route-manifest: 1
 - schema: 1
-- service: 243
+- service: 246
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -293,7 +293,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/finance.js — economic-engine-finance (economic-engine, high, full)
 - routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
 - routes/market-delegation-catalog.js — market-delegation-catalog-api (market-delegation, high, full)
+- routes/market-delegation-local-offer.js — market-delegation-local-offer-api (market-delegation, high, full)
 - routes/market-delegation-network.js — market-delegation-network-api (market-delegation, high, full)
+- routes/market-delegation-provider.js — market-delegation-provider-api (market-delegation, high, full)
 - routes/market-delegation-team.js — market-delegation-team-api (market-delegation, high, full)
 - routes/otp.js — client-otp-session (auth-identity, high, full)
 - routes/parcel-api-v2.js — logistics-parcel-api-v2 (logistics, high, full)
@@ -373,7 +375,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
 - services/market-delegation-catalog-service.js — market-delegation-catalog-service (market-delegation, high, full)
+- services/market-delegation-local-offer-service.js — market-delegation-local-offer-service (market-delegation, high, full)
 - services/market-delegation-network-service.js — market-delegation-network-service (market-delegation, high, full)
+- services/market-delegation-provider-service.js — market-delegation-provider-service (market-delegation, high, full)
 - services/market-delegation-service.js — market-delegation-write-service (market-delegation, high, full)
 - services/market-delegation-team-service.js — market-delegation-team-service (market-delegation, high, full)
 - services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
@@ -430,6 +434,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-sku-service.js — catalog-product-sku-service (catalog, high, full)
 - services/product-variant-service.js — catalog-product-variant-service (catalog, high, full)
 - services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
+- services/provider-status-mutation-service.js — providers-services-status-mutation-service (providers-services, high, full)
 - services/providers-service.js — providers-services-providers-service (providers-services, high, full)
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/radar-alerts/cash-reconciliation-signals.js — radar-cash-reconciliation-signals (decision-signals, high, full)
@@ -668,11 +673,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
 - WRITE routes/market-delegation-cash-control.js -> market_delegation_audit (via market-cash-control-policy-service)
 - WRITE routes/market-delegation-catalog.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-local-offer.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-network.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-provider.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-team.js -> market_delegation_audit (via market-delegation-team-service)
 - WRITE services/market-cash-control-policy-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-catalog-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-local-offer-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-network-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-provider-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-team-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-team.js -> market_team_invitations (via market-delegation-team-service)
 - WRITE routes/market-delegation-team.js -> membership_capabilities (via market-delegation-team-service)
@@ -743,6 +752,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> parcels (via customs-shipment-service)
 - WRITE services/simulator/state-advancer.js -> parcels (via parcel-operations)
 - WRITE services/sourcing-workspace.js -> partners (via partner-admin-service)
+- WRITE routes/market-delegation-local-offer.js -> physical_offers (via providers-service)
+- WRITE services/market-delegation-local-offer-service.js -> physical_offers (via providers-service)
 - WRITE services/pickup-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
 - WRITE services/pickup-exceptional-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
 - WRITE services/pickup-secret-service.js -> pickup_print_tokens (via pickup-secret-access-service)
@@ -757,12 +768,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-catalog.js -> product_market_exposure (via catalog-market-exposure-service)
 - WRITE services/market-delegation-catalog-service.js -> product_market_exposure (via catalog-market-exposure-service)
 - WRITE services/sourcing-candidate-actions.js -> product_sku_media (via catalog-promotion)
-- WRITE services/sourcing-workspace.js -> product_sku_media (via sourcing-candidate-actions)
-- WRITE services/order-payment-confirmation.js -> product_skus (via product-admin-service)
-- WRITE services/product-admin-service.js -> product_skus (via product-stock-service)
-- WRITE services/sourcing-candidate-actions.js -> product_skus (via catalog-promotion)
-- WRITE services/sourcing-workspace.js -> product_skus (via sourcing-candidate-actions)
-- WRITE services/operations-workspace.js -> product_variants (via order-status-machine)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
@@ -823,9 +828,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_market_price_draft_events: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
+- providers: 2 écrivains directs — services/provider-status-mutation-service.js, services/providers-service.js
 - recipients: 2 écrivains directs — routes/admin/users.js, services/order-checkout-service.js
 - refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
-- revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
 
 ## DB Write / Write-Via Overlap Warnings
 
@@ -839,14 +844,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Unresolved Code Edges
 
-- uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
-- uses: appel direct scripts/tests dans cette PR) -> services/providers-service.js (appel direct scripts/tests dans cette PR))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
@@ -888,7 +891,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
 - uses: market autonomy UI -> routes/market-delegation-cash-control.js (market autonomy UI)
 - uses: market operator dashboard -> routes/market-delegation-catalog.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-local-offer.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-team.js (market operator dashboard)
 - uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
 - uses: market-delegation routes -> services/market-delegation-service.js (market-delegation routes)
