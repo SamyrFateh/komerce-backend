@@ -24,6 +24,14 @@
  * fichier — chaque test attaque la base comme le ferait un script de
  * maintenance, une migration mal écrite ou un futur service distrait.
  *
+ * Complémentarité avec market-delegation.client-finance.e2e.test.js (E2E-MA-03,
+ * mergé depuis) : cette suite-là exerce le cycle NOMINAL à travers les vraies
+ * routes HTTP (READY central -> REQUESTED pays -> PAID central -> RECEIVED
+ * pays) et prouve que le chemin applicatif fonctionne. Celle-ci fait l'inverse :
+ * elle tente les VIOLATIONS en SQL direct, sans jamais passer par un service,
+ * et prouve que la base les refuse d'elle-même. Les deux sont nécessaires — un
+ * chemin applicatif correct ne dit rien de ce qui arrive quand on l'ignore.
+ *
  * Features traversées (ownership : market-delegation, cf. convention du runner
  * tests/e2e-api/<feature>.<scenario>.e2e.test.js) : settlement (table et
  * trigger), market (référentiel), auth-identity (users).
