@@ -5,9 +5,10 @@
  * @test-runner jest
  * @test-requires none
  *
- * Contrat HOME : « Disponible ici » appartient uniquement à l'accueil Tout.
+ * Contrat HOME : « Disponible ici » appartient nativement à l'accueil Tout.
  * Les onglets catégorie restent des surfaces catalogue pures, sur mobile comme
- * sur desktop. Un seul fetch backend alimente la surface quand elle est montée.
+ * sur desktop. Un bump vertical peut monter une projection transitoire dédiée.
+ * Un seul fetch backend alimente les surfaces quand elles sont montées.
  */
 
 jest.mock('../../js/b-modal.js', () => ({
@@ -63,6 +64,7 @@ jest.mock('../../js/discovery-api.js', () => ({
 }));
 
 const { bus } = require('../../js/b-bus.js');
+const { setActiveCatState } = require('../../js/b-store.js');
 const { setupDiscoveryRail } = require('../../js/discovery-rail.js');
 
 function mobileCatalogMarkup(label = 'initial') {
@@ -101,7 +103,7 @@ function shellFor(cat) {
   );
 }
 
-test('mobile + desktop: Disponible ici reste sur Tout uniquement et garde un seul fetch', async () => {
+test('mobile + desktop: les onglets restent purs et Tout remonte son rail sans refetch', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
     <div class="k-chip active" data-cat="all"></div>
@@ -119,6 +121,7 @@ test('mobile + desktop: Disponible ici reste sur Tout uniquement et garde un seu
       </div>
     </div>`;
 
+  setActiveCatState('all');
   setupDiscoveryRail();
   await flushDomWork();
 
@@ -136,11 +139,25 @@ test('mobile + desktop: Disponible ici reste sur Tout uniquement et garde un seu
   expect(allShell.textContent).toContain('Ciment local');
   expect(allShell.textContent).toContain('Installation clim');
 
-  // Aucun onglet catégorie ne possède de rail local.
   expect(shellFor('Soldes')).toBeNull();
   expect(shellFor('Tech')).toBeNull();
   expect(shellFor('Maison')).toBeNull();
   expect(shellFor('Mode')).toBeNull();
+
+  // Vraie sélection mobile d'un onglet : catalog:cat-changed est émis par
+  // setActiveCatState(). Le rail Tout est réellement retiré du pager et aucun
+  // rail n'est monté dans l'onglet cible.
+  setActiveCatState('Tech');
+  await flushDomWork();
+  expect(shellFor('all')).toBeNull();
+  expect(shellFor('Tech')).toBeNull();
+  expect(document.querySelector('.k-discovery-shell[data-discovery-category]')).toBeNull();
+
+  // Retour explicite sur Tout : reconstruction depuis le cache Discovery.
+  setActiveCatState('all');
+  await flushDomWork();
+  expect(shellFor('all')).not.toBeNull();
+  expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 
   // Un rerender du pager remonte uniquement la surface Tout, sans refetch.
   const grid = document.getElementById('k-grid');
