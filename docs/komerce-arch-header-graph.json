@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 548,
-    "filesWithFullHeaders": 503,
+    "scannedCodeFiles": 550,
+    "filesWithFullHeaders": 505,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 548,
+    "filesWithAnyHeaders": 550,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1300,
-    "edges": 6495,
+    "graphNodes": 1305,
+    "edges": 6521,
     "dbTables": 153,
-    "doctrines": 418,
+    "doctrines": 421,
     "impactAreas": 181,
-    "unresolvedCodeEdges": 615,
+    "unresolvedCodeEdges": 616,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 68
   },
@@ -37,7 +37,7 @@
     "catalog": 96,
     "admin-dashboard": 21,
     "decision-signals": 12,
-    "market-delegation": 20,
+    "market-delegation": 22,
     "market": 3,
     "economic-engine": 56,
     "sourcing": 6,
@@ -103,9 +103,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 124,
+    "route": 125,
     "entrypoint": 1,
-    "service": 250,
+    "service": 251,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,7 +114,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 82,
+    "critical": 84,
     "medium": 123,
     "high": 290,
     "low": 53
@@ -155,6 +155,7 @@
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/admin-market-settlement.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
@@ -9366,6 +9367,65 @@
       "version": "2026-09"
     },
     {
+      "id": "routes/market-delegation-structure-event.js",
+      "file": "routes/market-delegation-structure-event.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-structure-event-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "structure cost event payload"
+      ],
+      "outputs": [
+        "economic_structure_cost_events read model",
+        "auditable MARKET_DIRECT event recording"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "capabilities_authorize_structure_event_recording",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/market-delegation-team.js",
       "file": "routes/market-delegation-team.js",
       "type": "file",
@@ -16557,6 +16617,66 @@
         "delegation",
         "settlement",
         "finance"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/market-delegation-structure-event-service.js",
+      "file": "services/market-delegation-structure-event-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-structure-event-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated market operator",
+        "market code",
+        "structure cost event payload"
+      ],
+      "outputs": [
+        "economic_structure_cost_events read model",
+        "auditable MARKET_DIRECT event recording"
+      ],
+      "depends": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-structure-event.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "structure_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
       ],
       "version": "2026-09"
     },
@@ -27884,6 +28004,16 @@
       "doctrine": "operator_never_marks_paid"
     },
     {
+      "id": "doctrine:capabilities_authorize_structure_event_recording",
+      "type": "doctrine",
+      "doctrine": "capabilities_authorize_structure_event_recording"
+    },
+    {
+      "id": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "doctrine": "group_scope_never_delegated"
+    },
+    {
       "id": "doctrine:capabilities_authorize_team_actions",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_team_actions"
@@ -28382,6 +28512,11 @@
       "id": "doctrine:monetary_snapshot_never_client_writable",
       "type": "doctrine",
       "doctrine": "monetary_snapshot_never_client_writable"
+    },
+    {
+      "id": "doctrine:structure_authority_is_capability_based",
+      "type": "doctrine",
+      "doctrine": "structure_authority_is_capability_based"
     },
     {
       "id": "doctrine:team_authority_is_capability_based",
@@ -30026,6 +30161,12 @@
       "to": "routes/market-delegation-settlement.js",
       "type": "depends",
       "label": "routes/market-delegation-settlement.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "depends",
+      "label": "routes/market-delegation-structure-event.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -43131,6 +43272,80 @@
       "label": "finance"
     },
     {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "services/market-delegation-structure-event-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-structure-event-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:capabilities_authorize_structure_event_recording",
+      "type": "doctrine",
+      "label": "capabilities_authorize_structure_event_recording"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "label": "group_scope_never_delegated"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
       "from": "routes/market-delegation-team.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -54165,6 +54380,86 @@
       "to": "impact:finance",
       "type": "impact",
       "label": "finance"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "services/market-delegation-structure-event-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-structure-event.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:structure_authority_is_capability_based",
+      "type": "doctrine",
+      "label": "structure_authority_is_capability_based"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "label": "group_scope_never_delegated"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:writer_not_owner_boundary",
+      "type": "doctrine",
+      "label": "writer_not_owner_boundary"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
     },
     {
       "from": "services/market-delegation-team-service.js",
@@ -69139,6 +69434,7 @@
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/admin-market-settlement.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
@@ -69261,6 +69557,7 @@
         "routes/market-delegation-network.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -69867,6 +70164,7 @@
         "routes/market-delegation-network.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -78487,6 +78785,62 @@
         "services/market-delegation-settlement-service.js"
       ]
     },
+    "routes/market-delegation-structure-event.js": {
+      "role": "market-delegation-structure-event-api",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "capabilities_authorize_structure_event_recording",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:economic_structure_cost_events",
+        "db:market_delegation_audit",
+        "doctrine:capabilities_authorize_structure_event_recording",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:group_scope_never_delegated",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:market",
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ]
+    },
     "routes/market-delegation-team.js": {
       "role": "market-delegation-team-api",
       "domain": "market-delegation",
@@ -85505,6 +85859,7 @@
         "services/market-delegation-network-service.js",
         "services/market-delegation-provider-service.js",
         "services/market-delegation-settlement-service.js",
+        "services/market-delegation-structure-event-service.js",
         "services/market-delegation-team-service.js"
       ]
     },
@@ -85567,6 +85922,65 @@
         "services/market-delegation-service.js",
         "services/market-delegation-team-service.js",
         "services/market-settlement-service.js"
+      ]
+    },
+    "services/market-delegation-structure-event-service.js": {
+      "role": "market-delegation-structure-event-service",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-structure-event.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "structure_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:economic_structure_cost_events",
+        "db:market_delegation_audit",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:group_scope_never_delegated",
+        "doctrine:structure_authority_is_capability_based",
+        "doctrine:writer_not_owner_boundary",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:market",
+        "routes/market-delegation-structure-event.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js",
+        "services/pricing-period-structure.js"
       ]
     },
     "services/market-delegation-team-service.js": {
@@ -85637,7 +86051,8 @@
         "services/market-delegation-client-case-service.js",
         "services/market-delegation-local-offer-service.js",
         "services/market-delegation-service.js",
-        "services/market-delegation-settlement-service.js"
+        "services/market-delegation-settlement-service.js",
+        "services/market-delegation-structure-event-service.js"
       ]
     },
     "services/market-local-price-activation-service.js": {
@@ -89500,6 +89915,7 @@
         "impact:governance",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/market-delegation-structure-event-service.js",
         "services/pricing-market-coverage.js"
       ]
     },
@@ -97085,6 +97501,12 @@
     {
       "from": "market operator dashboard",
       "to": "routes/market-delegation-settlement.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-structure-event.js",
       "type": "uses",
       "label": "market operator dashboard"
     },
