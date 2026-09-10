@@ -42,7 +42,8 @@ module.exports = {
       'La politique de contrôle cash appartient au partenaire pays ; le central conserve seulement un plancher d’intégrité non désactivable.',
       'Le bridge runtime permet à une membership projetée d’emprunter les surfaces qui admettent déjà market_operator sans jamais écrire users.role.',
       'LOT 2A rend le réseau local (relais) autonome par capabilities network.* ; suspension jamais suppression, pour préserver les FK entrantes (orders, parcels, scans, partners, recipients, shared_carts, users).',
-      'Migration 198 retire le défaut géographique Anjouan hérité d’un système mono-marché ; island/island_code deviennent nullables pour que network.create fonctionne sur tout Market ID sans hériter silencieusement d’une géographie KM.',
+      'LOT 2B rend les providers locaux autonomes par provider.manage ; création, modification, suspension/réactivation restent bornées au Market ID et auditables.',
+      'Migration 200 retire le défaut géographique Anjouan hérité d’un système mono-marché ; island/island_code deviennent nullables pour que network.create fonctionne sur tout Market ID sans hériter silencieusement d’une géographie KM.',
     ],
   },
 
@@ -67,14 +68,18 @@ module.exports = {
       'politique cash partenaire par assignment : activation/désactivation et SINGLE ou DUAL_ALWAYS',
       'LOT 2A : réseau local (relais) — création, modification, suspension et réactivation par capabilities network.*, jamais de hard-delete',
       'un relais reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché',
+      'un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner',
       'LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct',
+      'LOT 4 (local-offer) : exposition commerciale des services/offres physiques déjà créés — capability local_offer.manage, toggle ENABLED/DISABLED sur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression',
+      'un service ou une offre physique reste rattaché à son marché d’origine ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource',
+      'migration 204 : promotion LIVE de local_offer.manage backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
       'rôle global users.role et user.role.set : frontière auth-identity/GROUP, jamais déléguée au partenaire',
       'règles d’allocation GROUP et vérité économique consolidée : economic-engine',
       'fonctions Hub/transit mutualisées : hors Market Operating Assignment',
-      'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents',
+      'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents ; leur gestion locale reste déléguable sans transformer leur identité en user_role',
       'lecture publique du réseau relais (GET /api/relais) et son cycle de vie technique hors délégation : feature logistics, propriétaire de la table relais',
       'routage inter-îles KM (island/island_code consommés par services/routing.js) : hors périmètre, couplage géographique pré-existant non résolu par cette feature',
       'catalogue global (products) : feature catalog, jamais modifié par cette feature — product_market_exposure n’est qu’une projection',
@@ -82,6 +87,7 @@ module.exports = {
       'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',
       'vérité d’encaissement et état de double confirmation : feature payments',
       'contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard',
+      'cycle de vie status (draft/active/suspended) des services et offres physiques : hors périmètre de local_offer.manage, qui ne bascule que commercial_exposure ; isServiceExposable/isPhysicalOfferExposable continuent d’exiger les deux (status ET exposure) — providers-services reste propriétaire du cycle complet',
     ],
   },
 
@@ -94,6 +100,9 @@ module.exports = {
       'migrations/197_market_delegation_legacy_scope_backfill.sql',
       'migrations/198_market_cash_control_policy.sql',
       'migrations/200_market_delegation_relais_island_nullable.sql',
+      'migrations/201_market_network_promotion_agent_optional.sql',
+      'migrations/203_market_delegation_provider_manage_live.sql',
+      'migrations/204_market_delegation_local_offer_manage_live.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -105,13 +114,17 @@ module.exports = {
       'services/market-delegation-team-service.js',
       'services/market-cash-control-policy-service.js',
       'services/market-delegation-network-service.js',
+      'services/market-delegation-provider-service.js',
       'services/market-delegation-catalog-service.js',
+      'services/market-delegation-local-offer-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
       'routes/market-delegation-cash-control.js',
       'routes/market-delegation-network.js',
+      'routes/market-delegation-provider.js',
       'routes/market-delegation-catalog.js',
+      'routes/market-delegation-local-offer.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -123,8 +136,12 @@ module.exports = {
       'tests/unit/market-delegation-cash-control-routes.test.js',
       'tests/unit/market-delegation-network-service.test.js',
       'tests/unit/market-delegation-network-routes.test.js',
+      'tests/unit/market-delegation-provider-service.test.js',
+      'tests/unit/market-delegation-provider-routes.test.js',
       'tests/unit/market-delegation-catalog-service.test.js',
       'tests/unit/market-delegation-catalog-routes.test.js',
+      'tests/unit/market-delegation-local-offer-service.test.js',
+      'tests/unit/market-delegation-local-offer-routes.test.js',
     ],
   },
 
@@ -141,6 +158,9 @@ module.exports = {
       'market_team_invitations: RW!',
       'market_cash_control_policies: RW!',
       'relais: R',  // mutations via logistics/relais-mutation-service
+      'providers: R',  // mutations via providers-services boundaries
+      'services: R',  // exposure via providers-services/providers-service
+      'physical_offers: R',  // exposure via providers-services/providers-service
       'product_market_exposure: R',  // mutations via catalog/catalog-market-exposure-service
       'operator_market_scopes: R',
       'markets: R',
@@ -150,9 +170,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 15,
-    totalRoutes: 15,
-    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2C + LOT 4 exigent authenticate. Les actions sur un marché exigent ensuite team.*/network.*/cash_control.*/catalog.expose/finance.read résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur network comme sur cash-control comme sur catalog.',
+    authedRoutesDetected: 24,
+    totalRoutes: 24,
+    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 exigent authenticate. Les actions sur un marché exigent ensuite team.*/network.*/provider.manage/cash_control.*/catalog.expose/local_offer.manage/finance.read résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur network comme sur cash-control comme sur catalog comme sur local-offer.',
   },
 
   contract: {
@@ -170,8 +190,17 @@ module.exports = {
       'PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId — network.update',
       'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend — network.suspend',
       'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate — network.update',
+      'GET /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
+      'PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate — provider.manage',
       'GET /api/market-delegation/markets/:marketCode/catalog/exposure — catalog.expose',
       'PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId — catalog.expose',
+      'GET /api/market-delegation/markets/:marketCode/local-offer/services — local_offer.manage',
+      'PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId — local_offer.manage',
+      'GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers — local_offer.manage',
+      'PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage',
     ],
     internalApi: [
       { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
@@ -192,10 +221,17 @@ module.exports = {
       { fn: 'createRelais', file: 'services/market-delegation-network-service.js' },
       { fn: 'updateRelais', file: 'services/market-delegation-network-service.js' },
       { fn: 'setRelaisActive', file: 'services/market-delegation-network-service.js' },
+      { fn: 'createProvider', file: 'services/market-delegation-provider-service.js' },
+      { fn: 'updateProvider', file: 'services/market-delegation-provider-service.js' },
+      { fn: 'setProviderStatus', file: 'services/market-delegation-provider-service.js' },
       { fn: 'listExposure', file: 'services/market-delegation-catalog-service.js' },
       { fn: 'setExposure', file: 'services/market-delegation-catalog-service.js' },
+      { fn: 'listServices', file: 'services/market-delegation-local-offer-service.js' },
+      { fn: 'listPhysicalOffers', file: 'services/market-delegation-local-offer-service.js' },
+      { fn: 'setServiceExposure', file: 'services/market-delegation-local-offer-service.js' },
+      { fn: 'setPhysicalOfferExposure', file: 'services/market-delegation-local-offer-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées.',
@@ -218,8 +254,14 @@ module.exports = {
     { statement: 'suspendre un relais ne le supprime jamais (is_active=false uniquement) ; aucun DELETE FROM relais n’existe dans le service réseau', test: 'tests/unit/market-delegation-network-service.test.js' },
     { statement: 'network.create/update/suspend n’injectent aucune géographie par défaut ; island/island_code sont optionnels et jamais renseignés silencieusement', test: 'tests/unit/market-delegation-network-service.test.js' },
     { statement: 'les routes réseau refusent market_id/marketId venant du client comme preuve d’autorité, comme les routes équipe', test: 'tests/unit/market-delegation-network-routes.test.js' },
+    { statement: 'un provider ne peut jamais être modifié par une membership d’un autre marché ; la réponse est 404 pour ne pas confirmer son existence', test: 'tests/unit/market-delegation-provider-service.test.js' },
+    { statement: 'suspendre un provider ne le supprime jamais ; il reste réactivable et son Market ID est immuable par cette boundary', test: 'tests/unit/market-delegation-provider-service.test.js' },
     { statement: 'setExposure fait un upsert sur (product_id, market_id) — jamais de doublon, jamais de SQL direct sur products', test: 'tests/unit/market-delegation-catalog-service.test.js' },
     { statement: 'exposer/masquer un produit est capability-based (catalog.expose) et audité, mais catalog.expose reste MISSING au registre tant que le chemin de lecture storefront n’est pas câblé — voir perimeter.out', test: 'tests/unit/market-delegation-catalog-service.test.js' },
     { statement: 'les routes catalog refusent market_id/marketId venant du client comme preuve d’autorité, comme les routes équipe et réseau', test: 'tests/unit/market-delegation-catalog-routes.test.js' },
+    { statement: 'local_offer.manage ne bascule que commercial_exposure — jamais le status (draft/active/suspended) du service ou de l’offre physique, qui reste propriété de providers-services', test: 'tests/unit/market-delegation-local-offer-service.test.js' },
+    { statement: 'un service ou une offre physique ne peut jamais être exposé/masqué par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence', test: 'tests/unit/market-delegation-local-offer-service.test.js' },
+    { statement: 'migration 204 backfille le ceiling des assignments actifs et auto-accorde local_offer.manage aux managers déjà reconnus (team.grant + team.revoke + network.read), jamais aux viewers', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'les routes local-offer refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-local-offer-routes.test.js' },
   ],
 };

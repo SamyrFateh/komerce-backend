@@ -26,6 +26,13 @@ module.exports = {
       'Le cycle demande -> réponse reste distinct du catalogue, des commandes Komerce, du paiement et de la liste partagée.',
       'Frontière métier autonome d’exposition et de demande : un service ou une offre physique n’est exposable ' +
       'que sous l’autorité d’un provider actif ; une inquiry reste sent -> answered -> accepted|declined.',
+      'listProviders/getOwnedProvider/updateProvider acceptent un executor transactionnel optionnel (défaut : pool module) ' +
+      'pour que market-delegation (capability provider.manage) compose création/modification/statut et audit dans une même transaction, ' +
+      'sans jamais faire de SQL direct sur providers — writer_not_owner_boundary, même patron que logistics/relais.',
+      'listServicesForMarket/getOwnedService/setServiceExposure et leurs pendants physical_offers acceptent le même executor ' +
+      'transactionnel optionnel, pour que market-delegation (capability local_offer.manage) bascule commercial_exposure et ' +
+      'audite dans une même transaction, sans jamais toucher au status (draft/active/suspended) — cycle de vie qui reste ' +
+      'entièrement propriété de providers-services.',
     ],
   },
 
@@ -51,6 +58,12 @@ module.exports = {
       'consumer Boutique des actions request/callback — identité Komerce puis création de l’Inquiry propriétaire',
       'seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production',
       'seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception',
+      'listProviders(marketId) — lecture scopée marché, suspendus en dernier',
+      'getOwnedProvider(providerId, marketId) — null (jamais une erreur) si le provider existe sur un autre marché',
+      'updateProvider(providerId, marketId, patch) — coordonnées uniquement ; le marché n’est jamais réassignable par cette voie',
+      'listServicesForMarket(marketId) / listPhysicalOffersForMarket(marketId) — lecture scopée marché, masqués en dernier',
+      'getOwnedService(serviceId, marketId) / getOwnedPhysicalOffer(physicalOfferId, marketId) — null (jamais une erreur) si la ressource existe sur un autre marché',
+      'setServiceExposure(serviceId, marketId, exposure) / setPhysicalOfferExposure(physicalOfferId, marketId, exposure) — bascule commercial_exposure uniquement, jamais le status ; idempotent (changed:false sans écriture si déjà dans l’état demandé)',
     ],
     out: [
       'authentification provider (pas de users / user_role pour le provider)',
@@ -73,6 +86,7 @@ module.exports = {
   files: {
     services: [
       'services/providers-service.js',
+      'services/provider-status-mutation-service.js',
       'services/providers-inquiry-service.js',
       'services/providers-interaction-policy.js',
     ],
@@ -97,6 +111,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/providers-service.test.js',
+      'tests/unit/provider-status-mutation-service.test.js',
       'tests/unit/providers-inquiry-service.test.js',
       'tests/unit/providers-services-routes.test.js',
       'tests/unit/providers-interaction-policy.test.js',
