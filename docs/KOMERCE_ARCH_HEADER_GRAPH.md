@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 550
-- Files with full headers: 505
+- Scanned code files: 551
+- Files with full headers: 506
 - Files with lite headers: 45
-- Files with any headers: 550
+- Files with any headers: 551
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1305
-- Edges: 6521
+- Graph nodes: 1306
+- Edges: 6530
 - DB tables: 153
 - Doctrines: 421
 - Impact areas: 181
-- Unresolved code edges: 616
+- Unresolved code edges: 617
 - Tables multi-écrivains directs (>=2): 68
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -51,7 +51,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification: 21
 - operations: 11
 - orders: 30
-- payment: 25
+- payment: 26
 - providers-services: 7
 - purchasing: 8
 - recommendations: 6
@@ -85,7 +85,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 125
 - route-manifest: 1
 - schema: 1
-- service: 251
+- service: 252
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -158,6 +158,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/market-local-price-activation-service.js — market-local-price-activation-orchestrator (market-autonomy, critical, full)
 - services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
 - services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
+- services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)

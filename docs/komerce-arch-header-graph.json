@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 550,
-    "filesWithFullHeaders": 505,
+    "scannedCodeFiles": 551,
+    "filesWithFullHeaders": 506,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 550,
+    "filesWithAnyHeaders": 551,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1305,
-    "edges": 6521,
+    "graphNodes": 1306,
+    "edges": 6530,
     "dbTables": 153,
     "doctrines": 421,
     "impactAreas": 181,
-    "unresolvedCodeEdges": 616,
+    "unresolvedCodeEdges": 617,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 68
   },
@@ -46,7 +46,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 25,
+    "payment": 26,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 125,
     "entrypoint": 1,
-    "service": 251,
+    "service": 252,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,7 +114,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 84,
+    "critical": 85,
     "medium": 123,
     "high": 290,
     "low": 53
@@ -10568,7 +10568,8 @@
         "market_code",
         "order_reference",
         "msisdn",
-        "provider_callback"
+        "provider_callback",
+        "provider_webhook"
       ],
       "outputs": [
         "availability",
@@ -17109,6 +17110,51 @@
       "version": "2026-09"
     },
     {
+      "id": "services/mobile-money/kartapay-km.js",
+      "file": "services/mobile-money/kartapay-km.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authoritative_amount",
+        "order_reference",
+        "return_urls",
+        "provider_webhook"
+      ],
+      "outputs": [
+        "provider_transaction",
+        "payment_redirect",
+        "normalized_status",
+        "webhook_verification"
+      ],
+      "depends": [
+        "KartaPay REST API"
+      ],
+      "usedBy": [
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/mobile-money/mtn-momo-cg.js",
       "file": "services/mobile-money/mtn-momo-cg.js",
       "type": "file",
@@ -17214,7 +17260,8 @@
         "services/mobile-money/mtn-momo-cg.js"
       ],
       "usedBy": [
-        "services/payment-mobile-money.js"
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -55173,6 +55220,54 @@
       "label": "operations"
     },
     {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "KartaPay REST API",
+      "type": "depends",
+      "label": "KartaPay REST API"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/mobile-money/kartapay-km.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/mobile-money/kartapay-km.js",
+      "type": "uses",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:provider_adapter_no_business_mutation",
+      "type": "doctrine",
+      "label": "provider_adapter_no_business_mutation"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:secrets_env_only",
+      "type": "doctrine",
+      "label": "secrets_env_only"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "services/mobile-money/mtn-momo-cg.js",
       "to": "MTN MoMo Collections API",
       "type": "depends",
@@ -55273,6 +55368,12 @@
       "to": "services/mobile-money/registry.js",
       "type": "uses",
       "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/mobile-money/registry.js",
+      "type": "uses",
+      "label": "routes/payments-mobile-money.js"
     },
     {
       "from": "services/mobile-money/registry.js",
@@ -79997,6 +80098,8 @@
         "middleware/auth-guest.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-mobile-money.js",
+        "services/mobile-money/kartapay-km.js",
+        "services/mobile-money/registry.js",
         "services/payment-mobile-money.js"
       ]
     },
@@ -86407,6 +86510,43 @@
         "services/payment-mobile-money.js"
       ]
     },
+    "services/mobile-money/kartapay-km.js": {
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "KartaPay REST API"
+      ],
+      "directUsedBy": [
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:fail_closed",
+        "doctrine:provider_adapter_no_business_mutation",
+        "doctrine:secrets_env_only",
+        "impact:checkout",
+        "impact:payment",
+        "routes/payments-mobile-money.js",
+        "services/payment-mobile-money.js"
+      ]
+    },
     "services/mobile-money/mtn-momo-cg.js": {
       "role": "mobile-money-provider-adapter",
       "domain": "payment",
@@ -86491,7 +86631,8 @@
         "services/mobile-money/mtn-momo-cg.js"
       ],
       "directUsedBy": [
-        "services/payment-mobile-money.js"
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -86512,6 +86653,7 @@
         "doctrine:runtime_registry_only",
         "impact:checkout",
         "impact:payment",
+        "routes/payments-mobile-money.js",
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/payment-mobile-money.js"
@@ -88428,6 +88570,7 @@
         "impact:stock",
         "routes/payments-mobile-money.js",
         "services/mobile-money-reconciliation.js",
+        "services/mobile-money/kartapay-km.js",
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/mobile-money/registry.js",
@@ -98817,6 +98960,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "KartaPay REST API",
+      "type": "depends",
+      "label": "KartaPay REST API"
     },
     {
       "from": "services/mobile-money/mtn-momo-cg.js",
