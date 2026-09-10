@@ -155,6 +155,14 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 ### 4.5 Paniers et catalogue
 
+<!-- schema-pending
+object: product_market_exposure
+kind: table
+migration: 202
+section: ### 4.5 Paniers et catalogue
+role: Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct.
+-->
+
 | Table | Rôle |
 |---|---|
 | `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema`)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw | ai_enriched | manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema`)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
