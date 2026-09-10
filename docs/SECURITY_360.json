@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-10T16:08:37.144Z",
+  "generatedAt": "2026-09-10T17:00:40.383Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 627,
+    "total": 628,
     "protected": 574,
-    "public": 53,
+    "public": 54,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -148,6 +148,12 @@
       "kind": "APPLICATION_GUARD",
       "evidence": "routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js",
       "rationale": "Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique."
+    },
+    {
+      "key": "POST /api/payments/mobile-money/webhook/{provider}",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/payments-mobile-money.js; services/mobile-money/kartapay-km.js; tests/unit/kartapay-webhook.test.js; features/payments.feature.js",
+      "rationale": "Webhook gateway public au niveau transport mais authentifié par HMAC-SHA256 KartaPay, rapproché à la tentative locale puis relu par API provider authentifiée avant toute confirmation canonique."
     },
     {
       "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
@@ -3532,6 +3538,11 @@
     {
       "key": "GET /api/payments/mobile-money/transactions/{transactionId}",
       "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/mobile-money/webhook/{provider}",
+      "level": "PUBLIC",
       "roles": []
     },
     {

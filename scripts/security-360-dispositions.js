@@ -210,6 +210,11 @@ const DISPOSITIONS = Object.freeze({
     evidence: 'routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js',
     rationale: 'Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique.',
   },
+  'POST /api/payments/mobile-money/webhook/{provider}': {
+    kind: 'APPLICATION_GUARD',
+    evidence: 'routes/payments-mobile-money.js; services/mobile-money/kartapay-km.js; tests/unit/kartapay-webhook.test.js; features/payments.feature.js',
+    rationale: 'Webhook gateway public au niveau transport mais authentifié par HMAC-SHA256 KartaPay, rapproché à la tentative locale puis relu par API provider authentifiée avant toute confirmation canonique.',
+  },
 
   // ── Santé publique ────────────────────────────────────────────────────────
   'GET /health': {

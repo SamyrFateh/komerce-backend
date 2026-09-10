@@ -4,14 +4,16 @@
  * @domain        payment
  * @layer         route
  * @criticality   critical
- * @inputs        market_code, order_reference, msisdn, provider_callback
+ * @inputs        market_code, order_reference, msisdn, provider_callback, provider_webhook
  * @outputs       availability, mobile_money_transaction
- * @depends       db.js, middleware/auth-guest.js, services/payment-mobile-money.js
+ * @depends       db.js, middleware/auth-guest.js, services/payment-mobile-money.js,
+ *                services/mobile-money/registry.js
  * @used-by       bootstrap/api-routes.js, boutique checkout, providers
  * @db-read       orders, markets, mobile_money_transactions, relais
  * @db-write      none
  * @db-txn        delegated_to_payment_mobile_money
- * @doctrine      route_auth_ownership_facade, callback_reconciles_server_to_server
+ * @doctrine      route_auth_ownership_facade, callback_reconciles_server_to_server,
+ *                signed_webhook_then_provider_recheck
  * @impact-areas  payment, checkout
  * @version       2026-09
  */
@@ -22,6 +24,7 @@ const router = express.Router();
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'payments-mobile-money' });
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
+const { getAdapter } = require('../services/mobile-money/registry');
 const {
   MobileMoneyError,
   getAvailability,
@@ -33,7 +36,7 @@ const {
 
 const MARKET_CODE_RE = /^[A-Z]{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PROVIDERS = new Set(['orange_money', 'mtn_momo']);
+const PROVIDERS = new Set(['orange_money', 'mtn_momo', 'kartapay']);
 const PRIVILEGED_ROLES = new Set(['admin', 'agent_hub', 'agent_relais']);
 
 function handleError(res, next, err) {
@@ -78,7 +81,7 @@ LIMIT 1`,
       marketCode = rows[0].market_code;
     }
 
-    if (!/^[A-Z]{2}$/.test(marketCode)) {
+    if (!MARKET_CODE_RE.test(marketCode)) {
       return res.status(400).json({ error: 'market_code ou relais_id requis' });
     }
     res.json(await getAvailability(marketCode));
@@ -132,6 +135,65 @@ router.get('/transactions/:transactionId', authenticateOrCreateGuest, async (req
     }
     return res.json({ transaction: current.public });
   } catch (err) { return handleError(res, next, err); }
+});
+
+// Webhooks gateway globaux (KartaPay) :
+// 1) retrouver la tentative par l'identifiant externe ;
+// 2) vérifier la signature provider et le clientId local ;
+// 3) relire ensuite le statut par API authentifiée avant toute mutation métier.
+router.post('/webhook/:provider', async (req, res) => {
+  const provider = String(req.params.provider || '').trim();
+  if (!PROVIDERS.has(provider)) return res.status(400).json({ received: false });
+
+  let adapter;
+  try { adapter = getAdapter(provider); }
+  catch (_) { return res.status(400).json({ received: false }); }
+
+  if (typeof adapter.getWebhookReference !== 'function' || typeof adapter.verifyWebhook !== 'function') {
+    return res.status(400).json({ received: false, code: 'provider_webhook_not_supported' });
+  }
+
+  const ref = adapter.getWebhookReference(req.body);
+  if (!ref?.externalTransactionId) {
+    return res.status(400).json({ received: false, code: 'provider_webhook_reference_missing' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `SELECT id, external_transaction_id, provider_payload
+         FROM mobile_money_transactions
+        WHERE provider = $1
+          AND external_transaction_id = $2
+        LIMIT 1`,
+      [provider, ref.externalTransactionId]
+    );
+    const tx = rows[0];
+    if (!tx) {
+      return res.status(404).json({ received: false, code: 'mobile_money_transaction_not_found' });
+    }
+
+    const expectedClientId = String(
+      tx.provider_payload?.provider?.client_id || tx.provider_payload?.provider?.clientId || ''
+    ).trim() || null;
+    const signature = req.get('KartaPay-Signature') || '';
+    const verified = adapter.verifyWebhook({
+      payload: req.body,
+      signature,
+      expectedClientId,
+      expectedExternalTransactionId: tx.external_transaction_id,
+    });
+    if (!verified) {
+      log.warn({ provider, external_transaction_id: ref.externalTransactionId }, '[MOBILE-MONEY] webhook signature rejected');
+      return res.status(401).json({ received: false, code: 'provider_webhook_signature_invalid' });
+    }
+
+    const result = await reconcileMobileMoneyTransaction(tx.id, { expectedProvider: provider });
+    return res.json({ received: true, status: result.transaction?.status || 'unknown' });
+  } catch (err) {
+    log.error({ err, provider, external_transaction_id: ref.externalTransactionId }, '[MOBILE-MONEY] webhook reconciliation failed');
+    const status = err instanceof MobileMoneyError ? (err.statusCode || 500) : 500;
+    return res.status(status >= 500 ? 500 : status).json({ received: false, code: err.code || 'reconciliation_failed' });
+  }
 });
 
 // Callback opérateur volontairement sans auth utilisateur : le body n'est
