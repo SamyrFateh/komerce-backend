@@ -258,7 +258,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `suppliers` | Fournisseurs. |
 | `partners` | Partenaires (élargi vs suppliers, voir ADR-005). |
 | `purchase_orders` | Bons de commande fournisseur. |
-| `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema`)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
+| `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |
 | `supplier_catalog_imports` | Imports catalogues et audit de batch JSON : profil, hash source, version connecteur, statut, compteurs et findings. Migration 110, vérifiée lors du pilote production ING-6 du 2026-07-16. |
 | `supplier_catalog_import_rejections` | Rejets de lignes ou contrats non représentables, séparés des candidats promouvables. Conserve le payload brut, les findings et la cause automatisable ; unicité `(import_id, source_index)`. Migration 110. |
