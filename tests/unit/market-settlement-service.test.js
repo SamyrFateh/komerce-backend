@@ -25,7 +25,13 @@ describe('market-settlement lifecycle owner', () => {
     expect(service.normalizeAmount('125000')).toBe('125000');
     expect(service.normalizeAmount('125000.50')).toBe('125000.50');
     for (const value of [null, '', '0', '-1', '1e6', 'abc']) {
-      expect(() => service.normalizeAmount(value)).toThrow(expect.objectContaining({ code: 'SETTLEMENT_AMOUNT_INVALID' }));
+      let caught = null;
+      try {
+        service.normalizeAmount(value);
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toMatchObject({ code: 'SETTLEMENT_AMOUNT_INVALID', status: 400 });
     }
   });
 
