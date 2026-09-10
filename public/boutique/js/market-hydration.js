@@ -4,7 +4,8 @@
  * @domain        catalog
  * @layer         ui-adapter
  * @owner         public/boutique/js/market-context.js
- * @purpose       Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.
+ * @purpose       Hydrate les littéraux de marché dans le DOM et propager
+ *                explicitement le MarketContext de preview aux lectures relais.
  * @impact-areas  boutique, market, hero, seo, checkout
  * @version       2026-09
  */
@@ -21,6 +22,62 @@
   if (!market) return;
 
   if (document.body) document.body.dataset.marketCode = market.code;
+
+  /*
+   * Preview market -> relay API boundary.
+   *
+   * Le checkout historique appelle encore `/api/relais` sans query string.
+   * La route sait filtrer par `?market=`, mais compter sur Referer pour porter
+   * le contexte de navigation est trop fragile et a déjà produit une fuite
+   * visuelle KM dans `?market=CM`.
+   *
+   * Ce bridge est strictement limité aux deux lectures publiques relais,
+   * same-origin, et uniquement lorsqu'un `?market=` de preview valide existe.
+   * Il ne fabrique aucun market_id, n'autorise rien et ne touche jamais aux
+   * mutations : l'autorité transactionnelle reste le `relais_id` résolu serveur.
+   */
+  function installRelayPreviewScope() {
+    if (!overrideCode || typeof window.fetch !== 'function') return;
+    if (window.fetch.__komerceRelayPreviewScoped === true) return;
+
+    const nativeFetch = window.fetch.bind(window);
+
+    function scopedFetch(input, init) {
+      const raw = typeof input === 'string'
+        ? input
+        : (typeof URL !== 'undefined' && input instanceof URL ? input.href : null);
+
+      if (!raw) return nativeFetch(input, init);
+
+      try {
+        const url = new URL(raw, window.location.origin);
+        const relayRead = url.pathname === '/api/relais'
+          || url.pathname === '/api/relais/public';
+
+        if (!relayRead || url.origin !== window.location.origin) {
+          return nativeFetch(input, init);
+        }
+
+        url.searchParams.set('market', market.code);
+        const next = /^https?:\/\//i.test(raw)
+          ? url.href
+          : url.pathname + url.search + url.hash;
+        return nativeFetch(next, init);
+      } catch (_) {
+        return nativeFetch(input, init);
+      }
+    }
+
+    Object.defineProperty(scopedFetch, '__komerceRelayPreviewScoped', {
+      value: true,
+      configurable: false,
+      enumerable: false,
+      writable: false,
+    });
+    window.fetch = scopedFetch;
+  }
+
+  installRelayPreviewScope();
 
   const map = {
     'k-meta-desc':          ['content', market.seo_description],
@@ -41,12 +98,7 @@
     else element.setAttribute(kind, value);
   }
 
-  // Le checkout historique reste structuré autour du vocabulaire insulaire KM.
-  // Tant que la résolution native multi-marché du picker n'est pas devenue
-  // autoritative, ce boundary de présentation remplace uniquement les
-  // littéraux visibles pour les previews non-KM. Aucune sélection de relais,
-  // aucun market_id ni aucune autorisation ne sont fabriqués ici : ces valeurs
-  // proviennent toujours de /api/relais, désormais filtré par marché.
+  // KM garde le picker insulaire historique tel quel.
   if (market.code === 'KM') return;
 
   const relayZone = String(market.relay_default_zone || '').trim();
@@ -56,10 +108,43 @@
     if (element && element.textContent !== value) element.textContent = value;
   }
 
+  function inferSummaryZone(summary) {
+    if (!summary) return null;
+    const label = String(
+      summary.querySelector('.ck-step-header-label')?.textContent || ''
+    ).toLocaleLowerCase('fr');
+
+    const candidates = market.code === 'CM'
+      ? ['Yaoundé', 'Douala']
+      : market.code === 'CG'
+        ? ['Brazzaville', 'Pointe-Noire']
+        : [];
+
+    return candidates.find(city => label.includes(city.toLocaleLowerCase('fr')))
+      || relayZone
+      || null;
+  }
+
   function hydrateRelayCheckout() {
-    const summarySub = document.querySelector('#ck-relais-summary .ck-step-header-sub:not(.ck-relais-map-link)');
-    if (summarySub && relayZone) {
-      replaceText(summarySub, relayZone + ' · ' + market.name);
+    const summary = document.querySelector('#ck-relais-summary');
+    const summarySub = summary?.querySelector(
+      '.ck-step-header-sub:not(.ck-relais-map-link)'
+    );
+
+    if (summarySub) {
+      const currentGroup = String(summarySub.textContent || '')
+        .split('·')[0]
+        .trim();
+      const staleKmGroup = ['Ndzouani', 'Ngazidja', 'Mwali'].includes(currentGroup);
+
+      // Ne jamais maquiller un vrai relais KM en relais CM/CG : si un vieux
+      // résultat est encore présent, on demande simplement son actualisation.
+      if (staleKmGroup) {
+        replaceText(summarySub, 'Point de retrait à actualiser · ' + market.name);
+      } else {
+        const selectedZone = inferSummaryZone(summary);
+        if (selectedZone) replaceText(summarySub, selectedZone + ' · ' + market.name);
+      }
     }
 
     const overlay = document.querySelector('.ck-relais-overlay');
