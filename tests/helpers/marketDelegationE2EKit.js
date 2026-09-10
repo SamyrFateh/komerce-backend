@@ -5,10 +5,12 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { signAuthToken } = require('../../utils/auth-session');
 const { CAPABILITIES } = require('../../config/market-delegation-capabilities');
+const { projectAssignment } = require('../../services/market-scope-projector');
 const { createCleanup, tag, uuid } = require('./e2eDbKit');
 
 const READ_ONLY_CAPABILITIES = Object.freeze([
   'pricing.read',
+  'pricing.simulate',
   'dashboard.market.read',
   'operations.read',
   'hub.supervise',
@@ -159,13 +161,15 @@ async function createMarketDelegationFixture(db) {
     grantedBy: central.id,
   });
 
-  // Les routes d'équipe peuvent projeter des scopes legacy et toutes les
-  // mutations auditables écrivent dans ces tables. On les nettoie avant les
-  // FK de fixture, quelle que soit l'étape ayant créé les lignes.
+  // Les routes legacy canonisées (dashboards, Pricing, workspaces) consomment
+  // operator_market_scopes. On projette donc réellement les memberships :
+  // manager complet -> manager, baseline lecture complète -> viewer.
   cleanup.trackSql('DELETE FROM operator_market_scopes WHERE market_id IN ($1,$2)', [marketA.id, marketB.id]);
   cleanup.trackSql('DELETE FROM market_team_invitations WHERE assignment_id IN ($1,$2)', [assignmentA.id, assignmentB.id]);
   cleanup.trackSql('DELETE FROM market_delegation_audit WHERE assignment_id IN ($1,$2)', [assignmentA.id, assignmentB.id]);
   cleanup.trackSql('DELETE FROM market_cash_control_policies WHERE assignment_id IN ($1,$2)', [assignmentA.id, assignmentB.id]);
+  await projectAssignment(db, assignmentA.id);
+  await projectAssignment(db, assignmentB.id);
 
   return {
     cleanup,
