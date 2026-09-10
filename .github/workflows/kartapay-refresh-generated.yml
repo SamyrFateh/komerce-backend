@@ -12,6 +12,24 @@ jobs:
   refresh:
     if: github.repository == 'SamyrFateh/komerce-backend'
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      STRIPE_PUBLISHABLE_KEY: pk_test_dummy
+      QR_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      PAYPAL_ENV: sandbox
+      META_WA_APP_SECRET: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
