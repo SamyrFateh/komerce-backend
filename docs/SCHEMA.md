@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 146 | Vérifié sur le dump live Railway. |
+| Tables | 147 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 373 | Performance + contraintes uniques |
-| Foreign keys | 268 | Cohérence relationnelle |
+| Index | 374 | Performance + contraintes uniques |
+| Foreign keys | 271 | Cohérence relationnelle |
 | Fonctions | 23 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 41 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -155,13 +155,6 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 ### 4.5 Paniers et catalogue
 
-<!-- schema-pending
-object: product_market_exposure
-kind: table
-migration: 202
-section: ### 4.5 Paniers et catalogue
-role: Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct.
--->
 
 | Table | Rôle |
 |---|---|
@@ -183,6 +176,7 @@ role: Exposition commerciale d'un produit du catalogue global sur un Market ID d
 | `product_content_profile` | Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_content_sections` | Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
+| `product_market_exposure` | Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct. **Migration 202 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
 

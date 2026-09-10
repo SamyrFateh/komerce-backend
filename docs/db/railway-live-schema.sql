@@ -4576,6 +4576,30 @@ COMMENT ON COLUMN public.product_content_sections.content_json IS 'Forme dépend
 
 
 --
+-- Name: product_market_exposure; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_market_exposure (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    commercial_exposure text DEFAULT 'DISABLED'::text NOT NULL,
+    decided_by uuid,
+    decided_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT product_market_exposure_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text])))
+);
+
+
+--
+-- Name: TABLE product_market_exposure; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_market_exposure IS 'Exposition commerciale d''un produit du catalogue global sur un Market ID donné. Le catalogue (products) reste unique et propriété de catalog. Absence de ligne = DISABLED. Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation (capability catalog.expose) délègue, jamais de SQL direct — writer_not_owner_boundary.';
+
+
+--
 -- Name: product_market_price_draft_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5204,7 +5228,7 @@ CREATE TABLE public.refunds (
 CREATE TABLE public.relais (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
-    agent_name text NOT NULL,
+    agent_name text,
     phone text NOT NULL,
     address text NOT NULL,
     zone text,
@@ -5221,6 +5245,13 @@ CREATE TABLE public.relais (
     CONSTRAINT relais_latitude_range_check CHECK (((latitude IS NULL) OR ((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)))),
     CONSTRAINT relais_longitude_range_check CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))
 );
+
+
+--
+-- Name: COLUMN relais.agent_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.agent_name IS 'Nom de l''agent actuellement affecté au relais. Nullable : le point relais peut être créé avant l''affectation d''une personne.';
 
 
 --
@@ -7804,6 +7835,22 @@ ALTER TABLE ONLY public.product_content_sections
 
 
 --
+-- Name: product_market_exposure product_market_exposure_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_exposure
+    ADD CONSTRAINT product_market_exposure_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_market_exposure product_market_exposure_product_id_market_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_exposure
+    ADD CONSTRAINT product_market_exposure_product_id_market_id_key UNIQUE (product_id, market_id);
+
+
+--
 -- Name: product_market_price_draft_events product_market_price_draft_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9913,6 +9960,13 @@ CREATE INDEX idx_product_attributes_product ON public.product_attributes USING b
 --
 
 CREATE INDEX idx_product_content_sections_product ON public.product_content_sections USING btree (product_id, display_order) WHERE (is_active = true);
+
+
+--
+-- Name: idx_product_market_exposure_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_market_exposure_market ON public.product_market_exposure USING btree (market_id) WHERE (commercial_exposure = 'ENABLED'::text);
 
 
 --
@@ -12795,6 +12849,30 @@ ALTER TABLE ONLY public.product_content_profile
 
 ALTER TABLE ONLY public.product_content_sections
     ADD CONSTRAINT product_content_sections_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_market_exposure product_market_exposure_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_exposure
+    ADD CONSTRAINT product_market_exposure_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: product_market_exposure product_market_exposure_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_exposure
+    ADD CONSTRAINT product_market_exposure_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: product_market_exposure product_market_exposure_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_market_exposure
+    ADD CONSTRAINT product_market_exposure_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --
