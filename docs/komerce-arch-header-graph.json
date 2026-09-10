@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 526,
-    "filesWithFullHeaders": 481,
+    "scannedCodeFiles": 530,
+    "filesWithFullHeaders": 485,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 526,
+    "filesWithAnyHeaders": 530,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1230,
-    "edges": 6173,
-    "dbTables": 148,
-    "doctrines": 377,
+    "graphNodes": 1252,
+    "edges": 6270,
+    "dbTables": 150,
+    "doctrines": 393,
     "impactAreas": 179,
-    "unresolvedCodeEdges": 596,
+    "unresolvedCodeEdges": 604,
     "dbWriteViaOverlapWarnings": 7,
-    "multiWriterTables": 65
+    "multiWriterTables": 66
   },
   "byDomain": {
     "infrastructure": 20,
@@ -37,6 +37,7 @@
     "catalog": 95,
     "admin-dashboard": 21,
     "decision-signals": 12,
+    "market-delegation": 8,
     "market": 3,
     "economic-engine": 56,
     "sourcing": 6,
@@ -45,7 +46,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 24,
+    "payment": 25,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -62,7 +63,6 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 3,
-    "market-delegation": 5,
     "purchasing": 8,
     "unsold-resolution": 1,
     "incident-management": 2,
@@ -76,7 +76,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 20,
+    "middleware": 21,
     "ui-bootstrap": 4,
     "ui-component": 40,
     "ui-enhancer": 3,
@@ -102,9 +102,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 116,
+    "route": 117,
     "entrypoint": 1,
-    "service": 237,
+    "service": 239,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -113,9 +113,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 78,
+    "critical": 81,
     "medium": 123,
-    "high": 272,
+    "high": 273,
     "low": 53
   },
   "nodes": [
@@ -147,6 +147,7 @@
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
         "routes/market-delegation-team.js",
+        "routes/market-delegation-cash-control.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -989,6 +990,51 @@
         "authorization"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-market-delegated-role.js",
+      "file": "middleware/require-market-delegated-role.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-runtime-role-bridge",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "coarse roles already accepted by the route",
+        "active projected memberships"
+      ],
+      "outputs": [
+        "optional request-local market_operator role before canonical requireRole guard"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes that already admit market_operator"
+      ],
+      "dbRead": [
+        "operator_market_scopes",
+        "assignment_memberships",
+        "market_operating_assignments"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "users_role_is_not_market_authority",
+        "delegated_role_is_request_local_projection",
+        "canonical_role_guard_remains_explicit"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "authorization",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "middleware/require-market-scope.js",
@@ -5918,6 +5964,7 @@
       "depends": [
         "db",
         "middleware/auth",
+        "middleware/require-market-delegated-role",
         "middleware/require-market-scope",
         "middleware/require-dashboard-global-authority",
         "services/dashboard-pilotage-market",
@@ -6169,6 +6216,7 @@
       "depends": [
         "db",
         "middleware/auth",
+        "middleware/require-market-delegated-role",
         "middleware/require-market-scope",
         "middleware/require-dashboard-global-authority",
         "services/operations-workspace"
@@ -6368,6 +6416,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
         "services/pricing-workspace.js",
@@ -7127,6 +7176,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/validate.js",
         "validators",
@@ -8452,6 +8502,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -8572,6 +8623,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -8841,6 +8893,61 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/market-delegation-cash-control.js",
+      "file": "routes/market-delegation-cash-control.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-cash-control-policy-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "cash policy payload"
+      ],
+      "outputs": [
+        "market cash policy read/update"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/market-cash-control-policy-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market autonomy UI"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-cash-control-policy-service",
+          "tables": [
+            "market_cash_control_policies",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "market_code_route_is_context_not_authority",
+        "capability_authorizes_policy",
+        "no_client_market_id"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "cash",
+        "payments",
+        "dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/market-delegation-team.js",
       "file": "routes/market-delegation-team.js",
       "type": "file",
@@ -8861,11 +8968,12 @@
       ],
       "depends": [
         "middleware/auth.js",
-        "services/market-delegation-team-service.js"
+        "services/market-delegation-team-service.js",
+        "services/market-scope-projector.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
-        "future market operator dashboard"
+        "market operator dashboard"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -8878,6 +8986,12 @@
             "membership_capabilities",
             "market_delegation_audit"
           ]
+        },
+        {
+          "via": "market-scope-projector",
+          "tables": [
+            "operator_market_scopes"
+          ]
         }
       ],
       "dbTxn": [
@@ -8885,7 +8999,8 @@
       ],
       "doctrine": [
         "capabilities_authorize_team_actions",
-        "client_market_id_never_authority"
+        "client_market_id_never_authority",
+        "legacy_scope_is_projection"
       ],
       "impactAreas": [
         "market",
@@ -10538,6 +10653,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -11805,6 +11921,60 @@
       "version": "2026-09"
     },
     {
+      "id": "services/cash-confirmation-control-service.js",
+      "file": "services/cash-confirmation-control-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "cash-confirmation-control-service",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "locked order",
+        "authenticated cash actor",
+        "confirmation source"
+      ],
+      "outputs": [
+        "approved cash execution or pending second approval"
+      ],
+      "depends": [
+        "db.js",
+        "market_cash_control_policies"
+      ],
+      "usedBy": [
+        "services/payment-cash-confirm.js",
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js"
+      ],
+      "dbRead": [
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
+      ],
+      "dbWrite": [
+        "cash_confirmation_controls"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned",
+        "order_row_must_be_locked"
+      ],
+      "doctrine": [
+        "cash_truth_requires_shared_guard",
+        "dual_approval_is_distinct_actor",
+        "in_flight_policy_never_silently_weakened"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash",
+        "relay",
+        "market-delegation"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/cash-deposit-service.js",
       "file": "services/cash-deposit-service.js",
       "type": "file",
@@ -11871,6 +12041,7 @@
       ],
       "depends": [
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -11879,23 +12050,33 @@
       "dbRead": [
         "cash_collections",
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "cash_collections"
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "caller_owned",
+        "locked_order",
+        "shared_cash_control"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "payment_to_stock_single_entry",
+        "partner_cash_policy_enforced",
+        "no_free_amount_entry"
       ],
       "impactAreas": [
-        "payment"
+        "payment",
+        "cash",
+        "relay"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/cash-reminder-service.js",
@@ -12766,6 +12947,7 @@
       "depends": [
         "db",
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -12774,24 +12956,34 @@
       ],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "cash_collections"
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "own_transaction",
+        "locked_order",
+        "shared_cash_control"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "payment_to_stock_single_entry",
+        "partner_cash_policy_enforced",
+        "dual_approval_before_financial_truth"
       ],
       "impactAreas": [
         "payment",
-        "checkout"
+        "checkout",
+        "cash",
+        "relay"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/cost-allocation/_helpers.js",
@@ -15315,6 +15507,69 @@
       "version": "2026-06"
     },
     {
+      "id": "services/market-cash-control-policy-service.js",
+      "file": "services/market-cash-control-policy-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-cash-control-policy-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "market code",
+        "partner cash policy"
+      ],
+      "outputs": [
+        "effective market cash policy",
+        "auditable policy mutation"
+      ],
+      "depends": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-cash-control.js",
+        "services/cash-confirmation-control-service.js"
+      ],
+      "dbRead": [
+        "market_cash_control_policies",
+        "market_operating_assignments",
+        "markets",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_cash_control_policies"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "partner_controls_local_cash_policy",
+        "central_safety_floor_non_bypassable",
+        "no_client_market_id_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "payment",
+        "cash",
+        "relay"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/market-commercial-price-service.js",
       "file": "services/market-commercial-price-service.js",
       "type": "file",
@@ -15746,7 +16001,8 @@
         "market_operating_assignments",
         "assignment_capability_ceiling",
         "assignment_memberships",
-        "membership_capabilities"
+        "membership_capabilities",
+        "capability_registry"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17701,6 +17957,7 @@
       ],
       "depends": [
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "db.js"
       ],
       "usedBy": [
@@ -17709,21 +17966,28 @@
       ],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "orders"
+        "orders",
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "dbTxn": [
         "cash_confirmation_idempotency",
+        "shared_cash_control",
         "rollback_or_alert_on_stock_failure"
       ],
       "doctrine": [
         "payment_to_stock_single_entry",
         "cash_validation_tracee",
-        "cash_rollback_vs_stripe_alert"
+        "cash_rollback_vs_stripe_alert",
+        "partner_cash_policy_enforced"
       ],
       "impactAreas": [
         "cash",
@@ -17733,7 +17997,7 @@
         "notifications",
         "sourcing"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/payment-mobile-money.js",
@@ -24962,6 +25226,16 @@
       "table": "operator_market_scopes"
     },
     {
+      "id": "db:assignment_memberships",
+      "type": "db-table",
+      "table": "assignment_memberships"
+    },
+    {
+      "id": "db:market_operating_assignments",
+      "type": "db-table",
+      "table": "market_operating_assignments"
+    },
+    {
       "id": "db:pricing_global_access_grants",
       "type": "db-table",
       "table": "pricing_global_access_grants"
@@ -25227,24 +25501,24 @@
       "table": "v_loyalty_summary"
     },
     {
-      "id": "db:market_team_invitations",
+      "id": "db:market_cash_control_policies",
       "type": "db-table",
-      "table": "market_team_invitations"
-    },
-    {
-      "id": "db:assignment_memberships",
-      "type": "db-table",
-      "table": "assignment_memberships"
-    },
-    {
-      "id": "db:membership_capabilities",
-      "type": "db-table",
-      "table": "membership_capabilities"
+      "table": "market_cash_control_policies"
     },
     {
       "id": "db:market_delegation_audit",
       "type": "db-table",
       "table": "market_delegation_audit"
+    },
+    {
+      "id": "db:market_team_invitations",
+      "type": "db-table",
+      "table": "market_team_invitations"
+    },
+    {
+      "id": "db:membership_capabilities",
+      "type": "db-table",
+      "table": "membership_capabilities"
     },
     {
       "id": "db:fabrics",
@@ -25387,6 +25661,11 @@
       "table": "shared_cart_items"
     },
     {
+      "id": "db:cash_confirmation_controls",
+      "type": "db-table",
+      "table": "cash_confirmation_controls"
+    },
+    {
       "id": "db:catalog_exclusions",
       "type": "db-table",
       "table": "catalog_exclusions"
@@ -25487,6 +25766,11 @@
       "table": "local_stock_allocations"
     },
     {
+      "id": "db:assignment_capability_ceiling",
+      "type": "db-table",
+      "table": "assignment_capability_ceiling"
+    },
+    {
       "id": "db:product_market_price_drafts",
       "type": "db-table",
       "table": "product_market_price_drafts"
@@ -25505,16 +25789,6 @@
       "id": "db:ceiling_template_capabilities",
       "type": "db-table",
       "table": "ceiling_template_capabilities"
-    },
-    {
-      "id": "db:market_operating_assignments",
-      "type": "db-table",
-      "table": "market_operating_assignments"
-    },
-    {
-      "id": "db:assignment_capability_ceiling",
-      "type": "db-table",
-      "table": "assignment_capability_ceiling"
     },
     {
       "id": "db:suppliers_stats",
@@ -25730,6 +26004,21 @@
       "id": "doctrine:admin_role_never_implies_action_center_authority",
       "type": "doctrine",
       "doctrine": "admin_role_never_implies_action_center_authority"
+    },
+    {
+      "id": "doctrine:users_role_is_not_market_authority",
+      "type": "doctrine",
+      "doctrine": "users_role_is_not_market_authority"
+    },
+    {
+      "id": "doctrine:delegated_role_is_request_local_projection",
+      "type": "doctrine",
+      "doctrine": "delegated_role_is_request_local_projection"
+    },
+    {
+      "id": "doctrine:canonical_role_guard_remains_explicit",
+      "type": "doctrine",
+      "doctrine": "canonical_role_guard_remains_explicit"
     },
     {
       "id": "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
@@ -26487,6 +26776,21 @@
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md ;"
     },
     {
+      "id": "doctrine:market_code_route_is_context_not_authority",
+      "type": "doctrine",
+      "doctrine": "market_code_route_is_context_not_authority"
+    },
+    {
+      "id": "doctrine:capability_authorizes_policy",
+      "type": "doctrine",
+      "doctrine": "capability_authorizes_policy"
+    },
+    {
+      "id": "doctrine:no_client_market_id",
+      "type": "doctrine",
+      "doctrine": "no_client_market_id"
+    },
+    {
       "id": "doctrine:capabilities_authorize_team_actions",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_team_actions"
@@ -26495,6 +26799,11 @@
       "id": "doctrine:client_market_id_never_authority",
       "type": "doctrine",
       "doctrine": "client_market_id_never_authority"
+    },
+    {
+      "id": "doctrine:legacy_scope_is_projection",
+      "type": "doctrine",
+      "doctrine": "legacy_scope_is_projection"
     },
     {
       "id": "doctrine:order_creation_idempotent",
@@ -26657,6 +26966,21 @@
       "doctrine": "auto_close_when_fully_claimed"
     },
     {
+      "id": "doctrine:cash_truth_requires_shared_guard",
+      "type": "doctrine",
+      "doctrine": "cash_truth_requires_shared_guard"
+    },
+    {
+      "id": "doctrine:dual_approval_is_distinct_actor",
+      "type": "doctrine",
+      "doctrine": "dual_approval_is_distinct_actor"
+    },
+    {
+      "id": "doctrine:in_flight_policy_never_silently_weakened",
+      "type": "doctrine",
+      "doctrine": "in_flight_policy_never_silently_weakened"
+    },
+    {
       "id": "doctrine:single_cash_deposit_mutation_authority",
       "type": "doctrine",
       "doctrine": "single_cash_deposit_mutation_authority"
@@ -26665,6 +26989,16 @@
       "id": "doctrine:stable_business_reference_at_browser_boundary",
       "type": "doctrine",
       "doctrine": "stable_business_reference_at_browser_boundary"
+    },
+    {
+      "id": "doctrine:partner_cash_policy_enforced",
+      "type": "doctrine",
+      "doctrine": "partner_cash_policy_enforced"
+    },
+    {
+      "id": "doctrine:no_free_amount_entry",
+      "type": "doctrine",
+      "doctrine": "no_free_amount_entry"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
@@ -26755,6 +27089,11 @@
       "id": "doctrine:dashboard_no_business_recompute",
       "type": "doctrine",
       "doctrine": "dashboard_no_business_recompute"
+    },
+    {
+      "id": "doctrine:dual_approval_before_financial_truth",
+      "type": "doctrine",
+      "doctrine": "dual_approval_before_financial_truth"
     },
     {
       "id": "doctrine:pricing_market_viability_cost_scope",
@@ -26855,6 +27194,21 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "id": "doctrine:partner_controls_local_cash_policy",
+      "type": "doctrine",
+      "doctrine": "partner_controls_local_cash_policy"
+    },
+    {
+      "id": "doctrine:central_safety_floor_non_bypassable",
+      "type": "doctrine",
+      "doctrine": "central_safety_floor_non_bypassable"
+    },
+    {
+      "id": "doctrine:no_client_market_id_authority",
+      "type": "doctrine",
+      "doctrine": "no_client_market_id_authority"
     },
     {
       "id": "doctrine:country_strategy_is_local",
@@ -28202,6 +28556,11 @@
       "area": "local-stock"
     },
     {
+      "id": "impact:cash",
+      "type": "impact-area",
+      "area": "cash"
+    },
+    {
       "id": "impact:delegation",
       "type": "impact-area",
       "area": "delegation"
@@ -28220,11 +28579,6 @@
       "id": "impact:finance",
       "type": "impact-area",
       "area": "finance"
-    },
-    {
-      "id": "impact:cash",
-      "type": "impact-area",
-      "area": "cash"
     },
     {
       "id": "impact:admin-products",
@@ -28275,6 +28629,11 @@
       "id": "impact:shared-cart-lifecycle",
       "type": "impact-area",
       "area": "shared-cart-lifecycle"
+    },
+    {
+      "id": "impact:relay",
+      "type": "impact-area",
+      "area": "relay"
     },
     {
       "id": "impact:cash-reconciliation",
@@ -28387,11 +28746,6 @@
       "area": "infrastructure"
     },
     {
-      "id": "impact:relay",
-      "type": "impact-area",
-      "area": "relay"
-    },
-    {
       "id": "impact:costing",
       "type": "impact-area",
       "area": "costing"
@@ -28467,6 +28821,12 @@
       "to": "routes/market-delegation-team.js",
       "type": "depends",
       "label": "routes/market-delegation-team.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-cash-control.js",
+      "type": "depends",
+      "label": "routes/market-delegation-cash-control.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -29859,6 +30219,72 @@
       "to": "impact:authorization",
       "type": "impact",
       "label": "authorization"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes that already admit market_operator",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "uses",
+      "label": "routes that already admit market_operator"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "doctrine:users_role_is_not_market_authority",
+      "type": "doctrine",
+      "label": "users_role_is_not_market_authority"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "doctrine:delegated_role_is_request_local_projection",
+      "type": "doctrine",
+      "label": "delegated_role_is_request_local_projection"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "doctrine:canonical_role_guard_remains_explicit",
+      "type": "doctrine",
+      "label": "canonical_role_guard_remains_explicit"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "middleware/require-market-scope.js",
@@ -36505,6 +36931,12 @@
     },
     {
       "from": "routes/admin-dashboard-market.js",
+      "to": "middleware/require-market-delegated-role",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role"
+    },
+    {
+      "from": "routes/admin-dashboard-market.js",
       "to": "middleware/require-market-scope",
       "type": "depends",
       "label": "middleware/require-market-scope"
@@ -36931,6 +37363,12 @@
     },
     {
       "from": "routes/admin-operations-workspace.js",
+      "to": "middleware/require-market-delegated-role",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
       "to": "middleware/require-market-scope",
       "type": "depends",
       "label": "middleware/require-market-scope"
@@ -37234,6 +37672,12 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role.js"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -38386,6 +38830,12 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role.js"
     },
     {
       "from": "routes/admin/partners.js",
@@ -40267,6 +40717,12 @@
     },
     {
       "from": "routes/hub-dashboard.js",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role.js"
+    },
+    {
+      "from": "routes/hub-dashboard.js",
       "to": "middleware/require-market-scope.js",
       "type": "depends",
       "label": "middleware/require-market-scope.js"
@@ -40447,6 +40903,12 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role.js"
     },
     {
       "from": "routes/hub.js",
@@ -40822,6 +41284,92 @@
       "label": "loyalty"
     },
     {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "services/market-cash-control-policy-service.js",
+      "type": "depends",
+      "label": "services/market-cash-control-policy-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-cash-control.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market autonomy UI",
+      "to": "routes/market-delegation-cash-control.js",
+      "type": "uses",
+      "label": "market autonomy UI"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-write-via",
+      "label": "market_cash_control_policies",
+      "via": "market-cash-control-policy-service"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-cash-control-policy-service"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "doctrine:market_code_route_is_context_not_authority",
+      "type": "doctrine",
+      "label": "market_code_route_is_context_not_authority"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "doctrine:capability_authorizes_policy",
+      "type": "doctrine",
+      "label": "capability_authorizes_policy"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "doctrine:no_client_market_id",
+      "type": "doctrine",
+      "label": "no_client_market_id"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "impact:cash",
+      "type": "impact",
+      "label": "cash"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
       "from": "routes/market-delegation-team.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -40834,16 +41382,22 @@
       "label": "services/market-delegation-team-service.js"
     },
     {
+      "from": "routes/market-delegation-team.js",
+      "to": "services/market-scope-projector.js",
+      "type": "depends",
+      "label": "services/market-scope-projector.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/market-delegation-team.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
     },
     {
-      "from": "future market operator dashboard",
+      "from": "market operator dashboard",
       "to": "routes/market-delegation-team.js",
       "type": "uses",
-      "label": "future market operator dashboard"
+      "label": "market operator dashboard"
     },
     {
       "from": "routes/market-delegation-team.js",
@@ -40875,6 +41429,13 @@
     },
     {
       "from": "routes/market-delegation-team.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-write-via",
+      "label": "operator_market_scopes",
+      "via": "market-scope-projector"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
       "to": "doctrine:capabilities_authorize_team_actions",
       "type": "doctrine",
       "label": "capabilities_authorize_team_actions"
@@ -40884,6 +41445,12 @@
       "to": "doctrine:client_market_id_never_authority",
       "type": "doctrine",
       "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-team.js",
+      "to": "doctrine:legacy_scope_is_projection",
+      "type": "doctrine",
+      "label": "legacy_scope_is_projection"
     },
     {
       "from": "routes/market-delegation-team.js",
@@ -43352,6 +43919,12 @@
     },
     {
       "from": "routes/relay-dashboard.js",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
       "to": "middleware/require-market-scope.js",
       "type": "depends",
       "label": "middleware/require-market-scope.js"
@@ -45218,6 +45791,102 @@
       "label": "shared-cart-lifecycle"
     },
     {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "market_cash_control_policies",
+      "type": "depends",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "uses",
+      "label": "services/payment-cash-confirm.js"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "uses",
+      "label": "services/cash-operations.js"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "uses",
+      "label": "services/confirm-pickup-cash-payment.js"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-read",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-write",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "doctrine:cash_truth_requires_shared_guard",
+      "type": "doctrine",
+      "label": "cash_truth_requires_shared_guard"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "doctrine:dual_approval_is_distinct_actor",
+      "type": "doctrine",
+      "label": "dual_approval_is_distinct_actor"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "doctrine:in_flight_policy_never_silently_weakened",
+      "type": "doctrine",
+      "label": "in_flight_policy_never_silently_weakened"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "impact:cash",
+      "type": "impact",
+      "label": "cash"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
       "from": "services/cash-deposit-service.js",
       "to": "db.js",
       "type": "depends",
@@ -45285,6 +45954,12 @@
     },
     {
       "from": "services/cash-operations.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "depends",
+      "label": "services/cash-confirmation-control-service.js"
+    },
+    {
+      "from": "services/cash-operations.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -45315,6 +45990,24 @@
     },
     {
       "from": "services/cash-operations.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-read",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/cash-operations.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
@@ -45327,15 +46020,45 @@
     },
     {
       "from": "services/cash-operations.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-write",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "doctrine:payment_to_stock_single_entry",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "payment_to_stock_single_entry"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "doctrine:partner_cash_policy_enforced",
+      "type": "doctrine",
+      "label": "partner_cash_policy_enforced"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "doctrine:no_free_amount_entry",
+      "type": "doctrine",
+      "label": "no_free_amount_entry"
     },
     {
       "from": "services/cash-operations.js",
       "to": "impact:payment",
       "type": "impact",
       "label": "payment"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "impact:cash",
+      "type": "impact",
+      "label": "cash"
+    },
+    {
+      "from": "services/cash-operations.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
     },
     {
       "from": "services/cash-reminder-service.js",
@@ -46571,6 +47294,12 @@
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "depends",
+      "label": "services/cash-confirmation-control-service.js"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -46601,6 +47330,24 @@
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-read",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
@@ -46613,9 +47360,27 @@
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-write",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "doctrine:payment_to_stock_single_entry",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "payment_to_stock_single_entry"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "doctrine:partner_cash_policy_enforced",
+      "type": "doctrine",
+      "label": "partner_cash_policy_enforced"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "doctrine:dual_approval_before_financial_truth",
+      "type": "doctrine",
+      "label": "dual_approval_before_financial_truth"
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",
@@ -46628,6 +47393,18 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "impact:cash",
+      "type": "impact",
+      "label": "cash"
+    },
+    {
+      "from": "services/confirm-pickup-cash-payment.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
     },
     {
       "from": "services/cost-allocation/_helpers.js",
@@ -50678,6 +51455,121 @@
       "label": "loyalty"
     },
     {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "services/market-cash-control-policy-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-cash-control.js"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "services/market-cash-control-policy-service.js",
+      "type": "uses",
+      "label": "services/cash-confirmation-control-service.js"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-write",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "doctrine:partner_controls_local_cash_policy",
+      "type": "doctrine",
+      "label": "partner_controls_local_cash_policy"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "doctrine:central_safety_floor_non_bypassable",
+      "type": "doctrine",
+      "label": "central_safety_floor_non_bypassable"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "doctrine:no_client_market_id_authority",
+      "type": "doctrine",
+      "label": "no_client_market_id_authority"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "impact:cash",
+      "type": "impact",
+      "label": "cash"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
       "from": "services/market-commercial-price-service.js",
       "to": "db.js",
       "type": "depends",
@@ -51435,6 +52327,12 @@
       "to": "db:membership_capabilities",
       "type": "db-read",
       "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:capability_registry",
+      "type": "db-read",
+      "label": "capability_registry"
     },
     {
       "from": "services/market-scope-projector.js",
@@ -54552,6 +55450,12 @@
     },
     {
       "from": "services/payment-cash-confirm.js",
+      "to": "services/cash-confirmation-control-service.js",
+      "type": "depends",
+      "label": "services/cash-confirmation-control-service.js"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -54582,6 +55486,24 @@
     },
     {
       "from": "services/payment-cash-confirm.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-read",
+      "label": "cash_confirmation_controls"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
@@ -54591,6 +55513,18 @@
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "db:cash_collections",
+      "type": "db-write",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "db:cash_confirmation_controls",
+      "type": "db-write",
+      "label": "cash_confirmation_controls"
     },
     {
       "from": "services/payment-cash-confirm.js",
@@ -54609,6 +55543,12 @@
       "to": "doctrine:cash_rollback_vs_stripe_alert",
       "type": "doctrine",
       "label": "cash_rollback_vs_stripe_alert"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "doctrine:partner_cash_policy_enforced",
+      "type": "doctrine",
+      "label": "partner_cash_policy_enforced"
     },
     {
       "from": "services/payment-cash-confirm.js",
@@ -65649,6 +66589,7 @@
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
         "routes/market-delegation-team.js",
+        "routes/market-delegation-cash-control.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -65762,6 +66703,7 @@
         "routes/local-stock.js",
         "routes/logistics.js",
         "routes/loyalty.js",
+        "routes/market-delegation-cash-control.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -66360,6 +67302,7 @@
         "routes/invoices.js",
         "routes/logistics.js",
         "routes/loyalty.js",
+        "routes/market-delegation-cash-control.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -66644,6 +67587,54 @@
         "impact:authorization",
         "impact:decision-signals",
         "routes/admin-action-center.js"
+      ]
+    },
+    "middleware/require-market-delegated-role.js": {
+      "role": "market-delegation-runtime-role-bridge",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes that already admit market_operator"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "operator_market_scopes",
+        "assignment_memberships",
+        "market_operating_assignments"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "users_role_is_not_market_authority",
+        "delegated_role_is_request_local_projection",
+        "canonical_role_guard_remains_explicit"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "authorization",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:assignment_memberships",
+        "db:market_operating_assignments",
+        "db:operator_market_scopes",
+        "doctrine:canonical_role_guard_remains_explicit",
+        "doctrine:delegated_role_is_request_local_projection",
+        "doctrine:users_role_is_not_market_authority",
+        "impact:admin-dashboard",
+        "impact:authorization",
+        "impact:market-delegation",
+        "routes/admin-pricing-workspace.js",
+        "routes/admin/partners.js",
+        "routes/hub-dashboard.js",
+        "routes/hub.js",
+        "routes/relay-dashboard.js"
       ]
     },
     "middleware/require-market-scope.js": {
@@ -71659,6 +72650,7 @@
       "directDependsOn": [
         "db",
         "middleware/auth",
+        "middleware/require-market-delegated-role",
         "middleware/require-market-scope",
         "middleware/require-dashboard-global-authority",
         "services/dashboard-pilotage-market",
@@ -71910,6 +72902,7 @@
       "directDependsOn": [
         "db",
         "middleware/auth",
+        "middleware/require-market-delegated-role",
         "middleware/require-market-scope",
         "middleware/require-dashboard-global-authority",
         "services/operations-workspace"
@@ -72096,6 +73089,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-scope.js",
         "services/pricing-workspace.js",
@@ -72159,6 +73153,7 @@
         "impact:market-authorization",
         "impact:pricing",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
@@ -72821,6 +73816,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/validate.js",
         "validators",
@@ -72859,6 +73855,7 @@
         "impact:market",
         "impact:partners",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/validate.js",
         "services/partner-admin-service.js",
@@ -74079,6 +75076,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -74144,6 +75142,7 @@
         "impact:dashboard",
         "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/hub-dashboard-queries.js",
         "services/parcel-item-mutation-service.js",
@@ -74205,6 +75204,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -74239,6 +75239,7 @@
         "impact:logistics",
         "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/validate.js",
         "services/hub-operations.js"
@@ -74469,6 +75470,60 @@
         "utils/logger.js"
       ]
     },
+    "routes/market-delegation-cash-control.js": {
+      "role": "market-cash-control-policy-api",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/market-cash-control-policy-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market autonomy UI"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-cash-control-policy-service",
+          "tables": [
+            "market_cash_control_policies",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "market_code_route_is_context_not_authority",
+        "capability_authorizes_policy",
+        "no_client_market_id"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "cash",
+        "payments",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:market_cash_control_policies",
+        "db:market_delegation_audit",
+        "doctrine:capability_authorizes_policy",
+        "doctrine:market_code_route_is_context_not_authority",
+        "doctrine:no_client_market_id",
+        "impact:cash",
+        "impact:dashboard",
+        "impact:market-delegation",
+        "impact:payments",
+        "middleware/auth.js",
+        "services/market-cash-control-policy-service.js"
+      ]
+    },
     "routes/market-delegation-team.js": {
       "role": "market-delegation-team-api",
       "domain": "market-delegation",
@@ -74478,11 +75533,12 @@
       "purpose": null,
       "directDependsOn": [
         "middleware/auth.js",
-        "services/market-delegation-team-service.js"
+        "services/market-delegation-team-service.js",
+        "services/market-scope-projector.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
-        "future market operator dashboard"
+        "market operator dashboard"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -74496,11 +75552,18 @@
             "membership_capabilities",
             "market_delegation_audit"
           ]
+        },
+        {
+          "via": "market-scope-projector",
+          "tables": [
+            "operator_market_scopes"
+          ]
         }
       ],
       "doctrines": [
         "capabilities_authorize_team_actions",
-        "client_market_id_never_authority"
+        "client_market_id_never_authority",
+        "legacy_scope_is_projection"
       ],
       "impactAreas": [
         "market",
@@ -74514,14 +75577,17 @@
         "db:market_delegation_audit",
         "db:market_team_invitations",
         "db:membership_capabilities",
+        "db:operator_market_scopes",
         "doctrine:capabilities_authorize_team_actions",
         "doctrine:client_market_id_never_authority",
+        "doctrine:legacy_scope_is_projection",
         "impact:dashboard",
         "impact:delegation",
         "impact:market",
         "impact:team",
         "middleware/auth.js",
-        "services/market-delegation-team-service.js"
+        "services/market-delegation-team-service.js",
+        "services/market-scope-projector.js"
       ]
     },
     "routes/meta-whatsapp.js": {
@@ -76124,6 +77190,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/*"
       ],
@@ -76161,6 +77228,7 @@
         "impact:dashboard",
         "impact:market",
         "middleware/auth.js",
+        "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "services/relay-dashboard-queries.js",
         "utils/logger.js"
@@ -77378,6 +78446,60 @@
         "services/order-post-commit-hooks.js"
       ]
     },
+    "services/cash-confirmation-control-service.js": {
+      "role": "cash-confirmation-control-service",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "market_cash_control_policies"
+      ],
+      "directUsedBy": [
+        "services/payment-cash-confirm.js",
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
+      ],
+      "dbWrite": [
+        "cash_confirmation_controls"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "cash_truth_requires_shared_guard",
+        "dual_approval_is_distinct_actor",
+        "in_flight_policy_never_silently_weakened"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash",
+        "relay",
+        "market-delegation"
+      ],
+      "mustCheck": [
+        "db:cash_confirmation_controls",
+        "db:market_cash_control_policies",
+        "db:market_operating_assignments",
+        "doctrine:cash_truth_requires_shared_guard",
+        "doctrine:dual_approval_is_distinct_actor",
+        "doctrine:in_flight_policy_never_silently_weakened",
+        "impact:cash",
+        "impact:market-delegation",
+        "impact:payment",
+        "impact:relay",
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js",
+        "services/market-cash-control-policy-service.js",
+        "services/payment-cash-confirm.js"
+      ]
+    },
     "services/cash-deposit-service.js": {
       "role": "payment-cash-deposit-service",
       "domain": "payment",
@@ -77429,6 +78551,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -77438,27 +78561,43 @@
       "dbRead": [
         "cash_collections",
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "cash_collections"
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "payment_to_stock_single_entry",
+        "partner_cash_policy_enforced",
+        "no_free_amount_entry"
       ],
       "impactAreas": [
-        "payment"
+        "payment",
+        "cash",
+        "relay"
       ],
       "mustCheck": [
         "db:alerts",
         "db:cash_collections",
+        "db:cash_confirmation_controls",
+        "db:market_cash_control_policies",
+        "db:market_operating_assignments",
         "db:orders",
         "db:users",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:no_free_amount_entry",
+        "doctrine:partner_cash_policy_enforced",
+        "doctrine:payment_to_stock_single_entry",
+        "impact:cash",
         "impact:payment",
+        "impact:relay",
         "routes/cash.js",
+        "services/cash-confirmation-control-service.js",
         "services/order-payment-confirmation.js",
         "utils/logger.js"
       ]
@@ -78288,6 +79427,7 @@
       "directDependsOn": [
         "db",
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -78297,30 +79437,46 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "cash_collections"
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "payment_to_stock_single_entry",
+        "partner_cash_policy_enforced",
+        "dual_approval_before_financial_truth"
       ],
       "impactAreas": [
         "payment",
-        "checkout"
+        "checkout",
+        "cash",
+        "relay"
       ],
       "mustCheck": [
         "db:alerts",
         "db:cash_collections",
+        "db:cash_confirmation_controls",
+        "db:market_cash_control_policies",
+        "db:market_operating_assignments",
         "db:orders",
         "db:users",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:dual_approval_before_financial_truth",
+        "doctrine:partner_cash_policy_enforced",
+        "doctrine:payment_to_stock_single_entry",
+        "impact:cash",
         "impact:checkout",
         "impact:payment",
+        "impact:relay",
         "routes/pickup-pay-cash.js",
         "routes/pickup-secret.js",
+        "services/cash-confirmation-control-service.js",
         "services/order-payment-confirmation.js",
         "utils/logger.js"
       ]
@@ -80816,6 +81972,73 @@
         "utils/logger.js"
       ]
     },
+    "services/market-cash-control-policy-service.js": {
+      "role": "market-cash-control-policy-service",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-cash-control.js",
+        "services/cash-confirmation-control-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_cash_control_policies",
+        "market_operating_assignments",
+        "markets",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_cash_control_policies"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "partner_controls_local_cash_policy",
+        "central_safety_floor_non_bypassable",
+        "no_client_market_id_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "payment",
+        "cash",
+        "relay"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:market_cash_control_policies",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "doctrine:central_safety_floor_non_bypassable",
+        "doctrine:no_client_market_id_authority",
+        "doctrine:partner_controls_local_cash_policy",
+        "impact:cash",
+        "impact:market-delegation",
+        "impact:payment",
+        "impact:relay",
+        "routes/market-delegation-cash-control.js",
+        "services/cash-confirmation-control-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "services/market-commercial-price-service.js": {
       "role": "market-commercial-price-decision-owner",
       "domain": "market-autonomy",
@@ -80928,6 +82151,7 @@
         "impact:delegation",
         "impact:market",
         "services/capability-registry.js",
+        "services/market-cash-control-policy-service.js",
         "services/market-delegation-team-service.js"
       ]
     },
@@ -80994,6 +82218,7 @@
         "impact:market",
         "impact:team",
         "routes/market-delegation-team.js",
+        "services/market-cash-control-policy-service.js",
         "services/market-delegation-service.js"
       ]
     },
@@ -81230,7 +82455,8 @@
         "market_operating_assignments",
         "assignment_capability_ceiling",
         "assignment_memberships",
-        "membership_capabilities"
+        "membership_capabilities",
+        "capability_registry"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -81246,6 +82472,7 @@
       "mustCheck": [
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
+        "db:capability_registry",
         "db:market_operating_assignments",
         "db:membership_capabilities",
         "doctrine:granular_members_fail_closed_on_legacy_roles",
@@ -81253,6 +82480,7 @@
         "impact:authorization",
         "impact:delegation",
         "impact:market",
+        "routes/market-delegation-team.js",
         "services/market-scope-admin-service.js"
       ]
     },
@@ -83191,6 +84419,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/order-payment-confirmation.js",
+        "services/cash-confirmation-control-service.js",
         "db.js"
       ],
       "directUsedBy": [
@@ -83200,17 +84429,23 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "market_operating_assignments",
+        "market_cash_control_policies",
+        "cash_confirmation_controls"
       ],
       "dbWrite": [
         "alerts",
-        "orders"
+        "orders",
+        "cash_collections",
+        "cash_confirmation_controls"
       ],
       "dbWriteVia": [],
       "doctrines": [
         "payment_to_stock_single_entry",
         "cash_validation_tracee",
-        "cash_rollback_vs_stripe_alert"
+        "cash_rollback_vs_stripe_alert",
+        "partner_cash_policy_enforced"
       ],
       "impactAreas": [
         "cash",
@@ -83222,10 +84457,15 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:cash_collections",
+        "db:cash_confirmation_controls",
+        "db:market_cash_control_policies",
+        "db:market_operating_assignments",
         "db:orders",
         "db:users",
         "doctrine:cash_rollback_vs_stripe_alert",
         "doctrine:cash_validation_tracee",
+        "doctrine:partner_cash_policy_enforced",
         "doctrine:payment_to_stock_single_entry",
         "impact:cash",
         "impact:notifications",
@@ -83234,6 +84474,7 @@
         "impact:sourcing",
         "impact:stock",
         "routes/payments.js",
+        "services/cash-confirmation-control-service.js",
         "services/loyalty-service.js",
         "services/order-payment-confirmation.js",
         "utils/alerts.js",
@@ -90575,6 +91816,16 @@
       ]
     },
     {
+      "table": "cash_confirmation_controls",
+      "writerCount": 4,
+      "writers": [
+        "services/cash-confirmation-control-service.js",
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js",
+        "services/payment-cash-confirm.js"
+      ]
+    },
+    {
       "table": "order_comments",
       "writerCount": 4,
       "writers": [
@@ -90622,6 +91873,15 @@
         "routes/admin/users.js",
         "routes/wallet.js",
         "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "cash_collections",
+      "writerCount": 3,
+      "writers": [
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js",
+        "services/payment-cash-confirm.js"
       ]
     },
     {
@@ -90700,14 +91960,6 @@
       "writers": [
         "routes/shares.js",
         "services/cart-share-service.js"
-      ]
-    },
-    {
-      "table": "cash_collections",
-      "writerCount": 2,
-      "writers": [
-        "services/cash-operations.js",
-        "services/confirm-pickup-cash-payment.js"
       ]
     },
     {
@@ -91039,6 +92291,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "middleware/require-market-delegated-role.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes that already admit market_operator",
+      "to": "middleware/require-market-delegated-role.js",
+      "type": "uses",
+      "label": "routes that already admit market_operator"
     },
     {
       "from": "middleware/require-market-scope.js",
@@ -91456,6 +92720,12 @@
     },
     {
       "from": "routes/admin-dashboard-market.js",
+      "to": "middleware/require-market-delegated-role",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role"
+    },
+    {
+      "from": "routes/admin-dashboard-market.js",
       "to": "middleware/require-market-scope",
       "type": "depends",
       "label": "middleware/require-market-scope"
@@ -91573,6 +92843,12 @@
       "to": "middleware/auth",
       "type": "depends",
       "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "middleware/require-market-delegated-role",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-role"
     },
     {
       "from": "routes/admin-operations-workspace.js",
@@ -92199,10 +93475,22 @@
       "label": "services/*"
     },
     {
-      "from": "future market operator dashboard",
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "market autonomy UI",
+      "to": "routes/market-delegation-cash-control.js",
+      "type": "uses",
+      "label": "market autonomy UI"
+    },
+    {
+      "from": "market operator dashboard",
       "to": "routes/market-delegation-team.js",
       "type": "uses",
-      "label": "future market operator dashboard"
+      "label": "market operator dashboard"
     },
     {
       "from": "routes/meta-whatsapp.js",
@@ -92755,6 +94043,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cash-confirmation-control-service.js",
+      "to": "market_cash_control_policies",
+      "type": "depends",
+      "label": "market_cash_control_policies"
     },
     {
       "from": "services/cash-deposit-service.js",
