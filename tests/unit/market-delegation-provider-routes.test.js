@@ -16,12 +16,21 @@ describe('market-delegation provider routes', () => {
     expect(routeDeclarations.every(line => line.includes('authenticate'))).toBe(true);
   });
 
-  test('market_id/marketId supplied by client is rejected on mutating routes; marketCode is the only public locator', () => {
+  test('market_id/marketId supplied by client is rejected on every mutating route; marketCode is the only public locator', () => {
     expect(routeSource).toMatch(/MARKET_ID_FORBIDDEN/);
     expect(routeSource).toMatch(/body\.market_id/);
     expect(routeSource).toMatch(/body\.marketId/);
     expect(routeSource).toMatch(/markets\/:marketCode\/network\/providers/);
     expect(routeSource).not.toMatch(/markets\/:marketId\/network/);
+    const rejectCalls = routeSource.match(/rejectMarketId\(req\.body\)/g) || [];
+    expect(rejectCalls).toHaveLength(4);
+  });
+
+  test('name et phone invalides sont refusés comme erreur client 400, pas transformés en 500 générique', () => {
+    expect(routeSource).toContain('NETWORK_PROVIDER_FIELD_REQUIRED');
+    expect(routeSource).toMatch(/error\.status = 400/);
+    expect(routeSource).toMatch(/requiredProviderText\(body\.name, 'name'\)/);
+    expect(routeSource).toMatch(/requiredProviderText\(body\.phone, 'phone'\)/);
   });
 
   test('provider actions are capability based, never user role based', () => {
