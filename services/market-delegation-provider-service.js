@@ -21,12 +21,9 @@
 
 const {
   audit,
-} = require('./market-delegation-service');
-
-const {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
-} = require('./market-delegation-team-service');
+} = require('./market-delegation-service');
 
 const providersService = require('./providers-service');
 
@@ -52,9 +49,6 @@ async function createProvider(executor, { marketCode, actorUserId, correlationId
   const db = requireExecutor(executor);
   const authz = await resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: 'provider.manage' });
 
-  // Validation et écriture SQL appartiennent à providers-services, lifecycle
-  // owner de la table providers — market-delegation ne fait jamais de SQL
-  // direct sur une table qu'il ne possède pas (doctrine writer_not_owner_boundary).
   const provider = await providersService.createProvider({ name, phone, marketId: authz.market_id }, db);
 
   await audit(db, {
@@ -88,9 +82,11 @@ async function setProviderStatus(executor, { marketCode, providerId, actorUserId
 
   const before = await providersService.getOwnedProvider(providerId, authz.market_id, db);
   if (!before) throw delegationError('NETWORK_PROVIDER_NOT_FOUND', 'Provider introuvable.', 404);
-  if (before.status === status) return before; // idempotent, pas de bruit d'audit
+  if (before.status === status) return before;
 
-  const after = await providersService.setProviderStatus(providerId, status, db);
+  // Le WHERE du write reste lui-même market-scopé. Le GET précédent évite la
+  // fuite d'existence ; ce filtre protège aussi la mutation contre tout drift.
+  const after = await providersService.setProviderStatus(providerId, status, db, authz.market_id);
 
   await audit(db, {
     actorUserId, assignmentId: authz.assignment_id, membershipId: authz.membership_id,
