@@ -6,10 +6,10 @@ const { CAPABILITIES, autonomyStats } = require('../config/market-delegation-cap
 const { validateRegistry } = require('../services/capability-registry');
 
 const CHECKPOINT = Object.freeze({
-  lot: '4-catalog-expose-cutover',
+  lot: '6-settlement',
   total: 42,
   delegation: 31,
-  live: 27,
+  live: 29,
   p0_live: 15,
 });
 
