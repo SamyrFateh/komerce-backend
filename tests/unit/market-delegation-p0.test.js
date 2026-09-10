@@ -88,6 +88,7 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/INSERT INTO membership_capabilities/);
     expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
     expect(migration).toMatch(/migration-203/);
+    expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
     expect(migration).not.toMatch(/UPDATE users/i);
   });
 });

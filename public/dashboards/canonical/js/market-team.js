@@ -39,6 +39,7 @@
     'team.revoke': 'Retirer des droits',
     'team.invite': 'Inviter des collaborateurs',
     'network.read': 'Lire le réseau local',
+    'provider.manage': 'Gérer les prestataires locaux',
     'market_config.read': 'Lire la configuration pays',
     'finance.read': 'Lire la finance du marché',
     'cash_control.policy.manage': 'Gérer le contrôle des encaissements',

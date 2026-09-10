@@ -79,6 +79,7 @@ module.exports = {
   files: {
     services: [
       'services/providers-service.js',
+      'services/provider-status-mutation-service.js',
       'services/providers-inquiry-service.js',
       'services/providers-interaction-policy.js',
     ],
@@ -103,6 +104,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/providers-service.test.js',
+      'tests/unit/provider-status-mutation-service.test.js',
       'tests/unit/providers-inquiry-service.test.js',
       'tests/unit/providers-services-routes.test.js',
       'tests/unit/providers-interaction-policy.test.js',
