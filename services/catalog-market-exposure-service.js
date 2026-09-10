@@ -8,7 +8,7 @@
  * @outputs       product_market_exposure read model
  * @depends       none (executor fourni par l'appelant, défaut : pool module)
  * @used-by       services/market-delegation-catalog-service.js, services/catalog-public-view.js
- * @db-read       product_market_exposure, products
+ * @db-read       product_market_exposure, products, markets
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection

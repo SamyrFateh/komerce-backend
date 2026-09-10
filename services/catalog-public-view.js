@@ -8,7 +8,7 @@
  * @outputs       public_product_view
  * @depends       (none)
  * @used-by       routes/products.js
- * @db-read       (none)
+ * @db-read       markets, product_market_exposure
  * @db-write      (none)
  * @db-txn        (none)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
