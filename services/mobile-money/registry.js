@@ -6,8 +6,9 @@
  * @criticality   high
  * @inputs        provider_key
  * @outputs       provider_adapter, public_provider_config
- * @depends       services/mobile-money/orange-money-cm.js, services/mobile-money/mtn-momo-cg.js
- * @used-by       services/payment-mobile-money.js
+ * @depends       services/mobile-money/orange-money-cm.js, services/mobile-money/mtn-momo-cg.js,
+ *                services/mobile-money/kartapay-km.js
+ * @used-by       services/payment-mobile-money.js, routes/payments-mobile-money.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -26,10 +27,12 @@
 
 const orangeMoneyCm = require('./orange-money-cm');
 const mtnMomoCg     = require('./mtn-momo-cg');
+const kartapayKm    = require('./kartapay-km');
 
 const ADAPTERS = new Map([
   [orangeMoneyCm.name, orangeMoneyCm],
   [mtnMomoCg.name, mtnMomoCg],
+  [kartapayKm.name, kartapayKm],
 ]);
 
 function getAdapter(provider) {
