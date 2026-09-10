@@ -22,12 +22,18 @@ describe('market-delegation settlement routes — authority contract', () => {
     expect(routeSource).toMatch(/confirmSettlementReceived/);
   });
 
-  test('amount/currency/market_id et preuve de paiement sont refusés côté opérateur', () => {
+  test('REQUEST n’accepte aucun champ et RECEIVE seulement receipt_note', () => {
+    expect(routeSource).toMatch(/assertDelegatedBody\(req\.body, \[\]\)/);
+    expect(routeSource).toMatch(/assertDelegatedBody\(req\.body, \['receipt_note'\]\)/);
+  });
+
+  test('amount/currency/market_id et preuve de paiement sont explicitement hors autorité opérateur', () => {
     for (const field of ['market_id', 'marketId', 'amount', 'currency', 'payment_reference', 'paid_at', 'paid_by']) {
       expect(routeSource).toContain(`'${field}'`);
     }
     expect(routeSource).toMatch(/SETTLEMENT_FINANCIAL_AUTHORITY_NOT_DELEGATED/);
     expect(routeSource).toMatch(/MARKET_ID_FORBIDDEN/);
+    expect(routeSource).toMatch(/SETTLEMENT_FIELD_FORBIDDEN/);
   });
 
   test('aucune route pays ne peut créer READY ou marquer PAID', () => {
