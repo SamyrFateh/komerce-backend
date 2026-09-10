@@ -23,7 +23,7 @@ const CAPABILITIES = Object.freeze([
   ['network.create','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['network.update','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['network.suspend','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
-  ['provider.manage','DELEGATION','network','MARKET','DELEGABLE',true,'MISSING'],
+  ['provider.manage','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['market_config.read','DELEGATION','market-config','MARKET','DELEGABLE',false,'LIVE'],
   ['market_config.update','DELEGATION','market-config','MARKET','DELEGABLE',true,'MISSING'],
   ['finance.read','DELEGATION','finance','MARKET','DELEGABLE',false,'LIVE'],
