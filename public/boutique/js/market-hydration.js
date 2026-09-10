@@ -26,17 +26,74 @@
   /*
    * Preview market -> relay API boundary.
    *
-   * Le checkout historique appelle encore `/api/relais` sans query string.
-   * La route sait filtrer par `?market=`, mais compter sur Referer pour porter
-   * le contexte de navigation est trop fragile et a déjà produit une fuite
-   * visuelle KM dans `?market=CM`.
+   * Le checkout historique appelle encore `/api/relais` sans query string et
+   * regroupe les relais via le champ legacy `island`. Hors KM, la vérité
+   * géographique est désormais `zone` (migration 200 a rendu `island`
+   * nullable/non applicable). Ce bridge fait donc deux choses strictement
+   * présentationnelles :
+   *   1) porte explicitement ?market=<code> sur les lectures relais ;
+   *   2) adapte `zone -> island` uniquement dans la réponse JS consommée par
+   *      l'ancien picker, sans jamais réécrire la donnée serveur.
    *
-   * Ce bridge est strictement limité aux deux lectures publiques relais,
-   * same-origin, et uniquement lorsqu'un `?market=` de preview valide existe.
-   * Il ne fabrique aucun market_id, n'autorise rien et ne touche jamais aux
-   * mutations : l'autorité transactionnelle reste le `relais_id` résolu serveur.
+   * Le filtrage `market_code` est un garde-fou supplémentaire : même en cas de
+   * cache/réponse incohérente, un relais KM ne peut plus être rendu dans CM/CG.
+   * L'autorité transactionnelle reste le relais_id vérifié côté serveur.
    */
-  function installRelayPreviewScope() {
+  function relayReadUrl(raw) {
+    if (typeof raw !== 'string') return null;
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin !== window.location.origin) return null;
+      if (url.pathname !== '/api/relais' && url.pathname !== '/api/relais/public') return null;
+      return url;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function scopeRelayPath(raw) {
+    const url = relayReadUrl(raw);
+    if (!url || !overrideCode) return raw;
+    url.searchParams.set('market', market.code);
+    return /^https?:\/\//i.test(raw)
+      ? url.href
+      : url.pathname + url.search + url.hash;
+  }
+
+  function adaptRelayRow(row) {
+    if (!row || typeof row !== 'object') return row;
+    const rowMarket = String(row.market_code || '').trim().toUpperCase();
+    if (rowMarket && rowMarket !== market.code) return null;
+
+    // KM reste intégralement inchangé. Pour les marchés non insulaires, le
+    // picker legacy lit `island` alors que la donnée canonique est `zone`.
+    if (market.code === 'KM') return row;
+    const group = String(row.zone || row.island || market.relay_default_zone || '').trim();
+    return group ? { ...row, island: group } : row;
+  }
+
+  function adaptRelayPayload(payload) {
+    if (Array.isArray(payload)) {
+      return payload.map(adaptRelayRow).filter(Boolean);
+    }
+    if (!payload || typeof payload !== 'object') return payload;
+
+    if (Array.isArray(payload.relais)) {
+      return {
+        ...payload,
+        relais: payload.relais.map(adaptRelayRow).filter(Boolean),
+      };
+    }
+    if (Array.isArray(payload.data)) {
+      return {
+        ...payload,
+        data: payload.data.map(adaptRelayRow).filter(Boolean),
+      };
+    }
+    return payload;
+  }
+
+  function installRelayPreviewFetchScope() {
     if (!overrideCode || typeof window.fetch !== 'function') return;
     if (window.fetch.__komerceRelayPreviewScoped === true) return;
 
@@ -48,24 +105,8 @@
         : (typeof URL !== 'undefined' && input instanceof URL ? input.href : null);
 
       if (!raw) return nativeFetch(input, init);
-
-      try {
-        const url = new URL(raw, window.location.origin);
-        const relayRead = url.pathname === '/api/relais'
-          || url.pathname === '/api/relais/public';
-
-        if (!relayRead || url.origin !== window.location.origin) {
-          return nativeFetch(input, init);
-        }
-
-        url.searchParams.set('market', market.code);
-        const next = /^https?:\/\//i.test(raw)
-          ? url.href
-          : url.pathname + url.search + url.hash;
-        return nativeFetch(next, init);
-      } catch (_) {
-        return nativeFetch(input, init);
-      }
+      const next = scopeRelayPath(raw);
+      return nativeFetch(next, init);
     }
 
     Object.defineProperty(scopedFetch, '__komerceRelayPreviewScoped', {
@@ -77,7 +118,37 @@
     window.fetch = scopedFetch;
   }
 
-  installRelayPreviewScope();
+  function installRelayPreviewRequestScope() {
+    if (!overrideCode || !window.K || typeof window.K.request !== 'function') return false;
+    if (window.K.request.__komerceRelayPreviewScoped === true) return true;
+
+    const nativeRequest = window.K.request.bind(window.K);
+    async function scopedRequest(path, method, body, retries, options) {
+      const relayRead = Boolean(relayReadUrl(path));
+      const nextPath = relayRead ? scopeRelayPath(path) : path;
+      const payload = await nativeRequest(nextPath, method, body, retries, options);
+      return relayRead ? adaptRelayPayload(payload) : payload;
+    }
+
+    Object.defineProperty(scopedRequest, '__komerceRelayPreviewScoped', {
+      value: true,
+      configurable: false,
+      enumerable: false,
+      writable: false,
+    });
+    window.K.request = scopedRequest;
+    return true;
+  }
+
+  installRelayPreviewFetchScope();
+
+  // market-hydration est volontairement chargé avant komerce-api.js. Le fetch
+  // scope agit immédiatement ; le scope K.request est installé dès que K existe
+  // afin d'adapter aussi la projection `zone -> island` du picker legacy.
+  if (!installRelayPreviewRequestScope()) {
+    setTimeout(installRelayPreviewRequestScope, 0);
+    window.addEventListener('DOMContentLoaded', installRelayPreviewRequestScope, { once: true });
+  }
 
   const map = {
     'k-meta-desc':          ['content', market.seo_description],
@@ -121,9 +192,8 @@
       const staleKmGroup = ['Ndzouani', 'Ngazidja', 'Mwali'].includes(currentGroup);
       const alreadyStale = currentGroup === 'Point de retrait à actualiser';
 
-      // Ne jamais maquiller un vrai relais KM en relais CM/CG. Si les données
-      // portent encore une île comorienne, on l'affiche comme incohérence au
-      // lieu de transformer silencieusement Ngazidja en Yaoundé/Brazzaville.
+      // Une réponse cross-market est filtrée avant le rendu. Cette branche reste
+      // un fail-visible de défense si un vieux DOM KM était déjà présent.
       if (staleKmGroup || alreadyStale) {
         replaceText(summarySub, 'Point de retrait à actualiser · ' + market.name);
       } else {
@@ -138,7 +208,7 @@
     if (!overlay) return;
 
     overlay.querySelectorAll('.ck-relais-step').forEach(step => {
-      if (!/Île|Ile/.test(step.textContent || '')) return;
+      if (!/île|ile/i.test(step.textContent || '')) return;
       const number = step.querySelector('.ck-relais-step-n')?.textContent || '1';
       step.innerHTML = '';
       const badge = document.createElement('span');
@@ -149,11 +219,12 @@
 
     if (relayZone) {
       overlay.querySelectorAll('.ck-relais-iles button').forEach(button => {
-        if ((button.textContent || '').trim() === 'Comores') replaceText(button, relayZone);
+        const text = (button.textContent || '').trim();
+        if (text === 'Comores' || text === market.name) replaceText(button, relayZone);
       });
 
       const cta = overlay.querySelector('.ck-relais-sheet-cta');
-      if (cta && /Valider\s+Comores/.test(cta.textContent || '')) {
+      if (cta && /Valider\s+Comores/i.test(cta.textContent || '')) {
         replaceText(cta, 'Valider ' + relayZone);
       }
     }
@@ -166,10 +237,6 @@
 
   if (typeof MutationObserver !== 'function') return;
 
-  // Le résumé vit dans #k-order-modal, mais le picker relais est appendChild()
-  // directement sous document.body. Observer seulement le checkout laisse donc
-  // le popup hors du périmètre : c'est exactement ce qui conservait « ÎLE »
-  // alors que le reste de la boutique était déjà en contexte Cameroun/Congo.
   const checkoutRoot = document.getElementById('k-order-modal') || document.body;
   if (checkoutRoot) {
     const checkoutObserver = new MutationObserver(hydrateRelayCheckout);
