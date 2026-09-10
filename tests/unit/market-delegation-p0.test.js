@@ -64,4 +64,17 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(middleware).not.toMatch(/assignment_memberships/);
     expect(middleware).not.toMatch(/market_operating_assignments/);
   });
+
+  test('promotion network LIVE aligne ceiling et responsables pays sans élargir les viewers', () => {
+    const migration = read('migrations/200_market_delegation_relais_island_nullable.sql');
+    expect(migration).toMatch(/capability IN \('network\.create','network\.update','network\.suspend'\)/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'network\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/correlation_id[\s\S]*migration-200/);
+    expect(migration).not.toMatch(/legacy_role\s*=\s*'viewer'/);
+  });
 });
