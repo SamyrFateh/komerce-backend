@@ -5,17 +5,14 @@
  * @domain        admin-dashboard
  * @layer         script
  * @owner         backend-core
- * @purpose       Générer un lot de commandes réalistes en staging (relais,
- *                produits, order_items en distribution variée) pour que les
- *                requêtes de viabilité pricing (panier moyen, mono-article,
- *                cf. docs/doctrine/DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md)
- *                aient un volume statistiquement lisible.
- * @impact-areas  staging-only — ne touche jamais un environnement où
- *                NODE_ENV=production
+ * @purpose       Générer un lot de commandes réalistes non-production,
+ *                strictement scopées par Market ID, pour éprouver les vues
+ *                et requêtes de viabilité pricing sans fuite inter-marchés.
+ * @impact-areas  staging-only, market, pricing-tests
  *
- * Toutes les lignes créées sont taguées ('SEEDTEST-' en préfixe de reference/
- * name) pour rester identifiables et supprimables sans toucher aux données
- * réelles ou aux fixtures ITEST- des tests d'intégration.
+ * Toutes les lignes créées utilisent un namespace par marché
+ * (`SEEDTEST-<MARKET>-...`) afin qu'un seed/cleanup CM ne puisse jamais
+ * toucher les fixtures CG/KM ni les fixtures ITEST- d'intégration.
  *
  * Usage :
  *   node scripts/seed-market-test-data.js --market CM --orders 60
@@ -23,14 +20,12 @@
  *   node scripts/seed-market-test-data.js --market CM --cleanup
  *
  * Garde-fous :
- *   - Refuse de tourner si NODE_ENV=production (vérification explicite,
- *     même si ce script ne devrait jamais être pointé sur la prod).
- *   - Le marché doit déjà exister (markets.code) — ce script ne crée pas
- *     de marché, il seed des commandes dessus.
- *   - Idempotent au sens : relançable sans dédoublonner le relais/produits
- *     taguée SEEDTEST (réutilisés s'ils existent déjà), mais chaque run
- *     ajoute de nouvelles commandes (pas de dédup sur les commandes —
- *     utilise --cleanup avant de relancer si tu veux repartir propre).
+ *   - refuse explicitement production ;
+ *   - --market est obligatoire, y compris pour --cleanup ;
+ *   - le marché doit déjà exister dans markets ;
+ *   - orders.market_id est écrit explicitement comme snapshot du relais ;
+ *   - relais et produits de seed sont namespacés par code marché ;
+ *   - cleanup exige à la fois le tag du marché ET le market_id canonique.
  */
 
 'use strict';
@@ -38,14 +33,13 @@
 const db = require('../db');
 
 const TAG = 'SEEDTEST';
-const REF_PREFIX = `${TAG}-`;
-const RELAIS_NAME = `${TAG} relais`;
-const PRODUCT_NAME_PREFIX = `${TAG} produit`;
 
-// Distribution volontairement réaliste et non uniforme : beaucoup de
-// commandes à 1-2 articles, une traîne plus courte vers 3-6, quelques
-// commandes "grosses" à 8-12 — pour éviter qu'une seule commande atypique
-// ne pilote la moyenne comme observé sur les 5 commandes actuelles.
+const MARKET_TEST_PROFILES = Object.freeze({
+  KM: Object.freeze({ phonePrefix: '+269', area: 'Ngazidja' }),
+  CM: Object.freeze({ phonePrefix: '+237', area: 'Cameroun' }),
+  CG: Object.freeze({ phonePrefix: '+242', area: 'Congo' }),
+});
+
 const ITEM_COUNT_WEIGHTS = [
   { n: 1, weight: 35 },
   { n: 2, weight: 25 },
@@ -67,6 +61,30 @@ const STATUS_WEIGHTS = [
   { status: 'cancelled', weight: 3 },
   { status: 'refunded', weight: 2 },
 ];
+
+function normalizeMarketCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) throw new Error('market code must be ISO alpha-2');
+  return code;
+}
+
+function marketTags(marketCode) {
+  const code = normalizeMarketCode(marketCode);
+  return {
+    code,
+    refPrefix: `${TAG}-${code}-`,
+    relaisName: `${TAG} ${code} relais`,
+    productNamePrefix: `${TAG} ${code} produit`,
+  };
+}
+
+function marketProfile(market) {
+  const code = normalizeMarketCode(market.code);
+  return MARKET_TEST_PROFILES[code] || {
+    phonePrefix: '+999',
+    area: market.name || code,
+  };
+}
 
 function parseArgs(argv) {
   const args = { orders: 60, market: null, dryRun: false, cleanup: false };
@@ -95,8 +113,17 @@ function randomInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-async function ensureMarket(code) {
-  const { rows } = await db.query('SELECT id, code, name, currency FROM markets WHERE code = $1', [code]);
+function isProductionRuntime() {
+  return [process.env.NODE_ENV, process.env.KOMERCE_ENV]
+    .some(value => String(value || '').trim().toLowerCase() === 'production');
+}
+
+async function ensureMarket(rawCode) {
+  const code = normalizeMarketCode(rawCode);
+  const { rows } = await db.query(
+    'SELECT id, code, name, currency FROM markets WHERE code = $1',
+    [code]
+  );
   if (rows.length === 0) {
     const { rows: all } = await db.query('SELECT code FROM markets ORDER BY code');
     throw new Error(
@@ -107,10 +134,12 @@ async function ensureMarket(code) {
   return rows[0];
 }
 
-async function ensureRelais(marketId) {
+async function ensureRelais(market) {
+  const tags = marketTags(market.code);
+  const profile = marketProfile(market);
   const { rows } = await db.query(
-    `SELECT * FROM relais WHERE name = $1 AND market_id = $2 LIMIT 1`,
-    [RELAIS_NAME, marketId]
+    'SELECT * FROM relais WHERE name = $1 AND market_id = $2 LIMIT 1',
+    [tags.relaisName, market.id]
   );
   if (rows.length > 0) return rows[0];
 
@@ -119,21 +148,22 @@ async function ensureRelais(marketId) {
      VALUES ($1, $2, $3, $4, $5, $6, true)
      RETURNING *`,
     [
-      RELAIS_NAME,
-      `${TAG} agent`,
-      `+269${randomInt(3000000, 3999999)}`,
-      `${TAG} adresse de test`,
-      'Ngazidja',
-      marketId,
+      tags.relaisName,
+      `${TAG} ${tags.code} agent`,
+      `${profile.phonePrefix}${randomInt(3000000, 9999999)}`,
+      `${TAG} ${tags.code} adresse de test`,
+      profile.area,
+      market.id,
     ]
   );
   return created[0];
 }
 
-async function ensureProducts(count) {
+async function ensureProducts(count, marketCode) {
+  const tags = marketTags(marketCode);
   const { rows: existing } = await db.query(
-    `SELECT * FROM products WHERE name LIKE $1 ORDER BY name`,
-    [`${PRODUCT_NAME_PREFIX}%`]
+    'SELECT * FROM products WHERE name LIKE $1 ORDER BY name',
+    [`${tags.productNamePrefix}%`]
   );
   if (existing.length >= count) return existing.slice(0, count);
 
@@ -146,9 +176,9 @@ async function ensureProducts(count) {
        VALUES ($1, $2, $3, $4, $5, true)
        RETURNING *`,
       [
-        `${PRODUCT_NAME_PREFIX} ${i + 1}`,
+        `${tags.productNamePrefix} ${i + 1}`,
         priceKmf,
-        Math.round((priceKmf / 750) * 100) / 100, // conversion approx KMF->EUR pour cohérence d'affichage
+        Math.round((priceKmf / 750) * 100) / 100,
         randomInt(20, 200),
         'seed-test',
       ]
@@ -158,12 +188,13 @@ async function ensureProducts(count) {
   return [...existing, ...created];
 }
 
-async function createOrder({ relaisId, products }) {
+async function createOrder({ marketId, marketCode, relaisId, products }) {
+  if (!marketId) throw new Error('createOrder: marketId is required');
+  const tags = marketTags(marketCode);
   const statusChoice = pickWeighted(STATUS_WEIGHTS).status;
   const itemCount = pickWeighted(ITEM_COUNT_WEIGHTS).n;
-  const ref = `${REF_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const ref = `${tags.refPrefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  // Sélection de N produits distincts (ou avec remise si le pool est petit)
   const chosen = [];
   for (let i = 0; i < itemCount; i++) {
     chosen.push(products[randomInt(0, products.length - 1)]);
@@ -178,13 +209,16 @@ async function createOrder({ relaisId, products }) {
 
   const { rows: [order] } = await db.query(
     `INSERT INTO orders
-       (reference, relais_id, total_kmf, total_eur, payment_mode, payment_status, status, created_at)
-     VALUES ($1, $2, $3, $4, $5::public.payment_mode, $6::public.payment_status, $7::public.order_status,
+       (reference, relais_id, market_id, total_kmf, total_eur,
+        payment_mode, payment_status, status, created_at)
+     VALUES ($1, $2, $3, $4, $5,
+             $6::public.payment_mode, $7::public.payment_status, $8::public.order_status,
              now() - (random() * interval '90 days'))
      RETURNING *`,
     [
       ref,
       relaisId,
+      marketId,
       totalKmf,
       Math.round((totalKmf / 750) * 100) / 100,
       'cash_relais',
@@ -204,89 +238,140 @@ async function createOrder({ relaisId, products }) {
   return { order, itemCount };
 }
 
-async function cleanup() {
-  const { rows: orders } = await db.query(`SELECT id FROM orders WHERE reference LIKE $1`, [`${REF_PREFIX}%`]);
+async function cleanup(market) {
+  if (!market?.id) throw new Error('cleanup: canonical market is required');
+  const tags = marketTags(market.code);
+  const { rows: orders } = await db.query(
+    'SELECT id FROM orders WHERE reference LIKE $1 AND market_id = $2',
+    [`${tags.refPrefix}%`, market.id]
+  );
   const orderIds = orders.map(o => o.id);
-  console.log(`[cleanup] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
+  console.log(`[cleanup:${tags.code}] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
+
   if (orderIds.length > 0) {
-    await db.query(`DELETE FROM order_items WHERE order_id = ANY($1::uuid[])`, [orderIds]);
-    await db.query(`DELETE FROM orders WHERE id = ANY($1::uuid[])`, [orderIds]);
+    await db.query('DELETE FROM order_items WHERE order_id = ANY($1::uuid[])', [orderIds]);
+    await db.query(
+      'DELETE FROM orders WHERE id = ANY($1::uuid[]) AND market_id = $2',
+      [orderIds, market.id]
+    );
   }
-  await db.query(`DELETE FROM products WHERE name LIKE $1`, [`${PRODUCT_NAME_PREFIX}%`]);
-  await db.query(`DELETE FROM relais WHERE name = $1`, [RELAIS_NAME]);
-  console.log('[cleanup] Terminé — relais, produits et commandes SEEDTEST supprimés.');
+
+  // Les products restent globaux dans le modèle Komerce. Le namespace du nom
+  // garantit qu'on ne retire que les produits techniques créés pour CE marché.
+  await db.query('DELETE FROM products WHERE name LIKE $1', [`${tags.productNamePrefix}%`]);
+  await db.query(
+    'DELETE FROM relais WHERE name = $1 AND market_id = $2',
+    [tags.relaisName, market.id]
+  );
+  console.log(`[cleanup:${tags.code}] Terminé — aucune donnée d'un autre marché n'a été ciblée.`);
 }
 
-async function main() {
-  const args = parseArgs(process.argv);
+async function main(argv = process.argv) {
+  const args = parseArgs(argv);
 
   if (args.help) {
     console.log(__doc_usage());
     return;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ Refusé : NODE_ENV=production. Ce script est réservé au staging.');
+  if (isProductionRuntime()) {
+    console.error('❌ Refusé : runtime production. Ce script est réservé aux environnements de test/staging.');
     process.exitCode = 1;
-    return;
-  }
-
-  if (args.cleanup) {
-    await cleanup();
     return;
   }
 
   if (!args.market) {
-    console.error('❌ --market est requis (ex: --market CM). Utilise --help pour la liste des options.');
+    console.error('❌ --market est requis, y compris avec --cleanup (ex: --market CM).');
     process.exitCode = 1;
     return;
   }
+
+  let market;
+  try {
+    market = await ensureMarket(args.market);
+  } catch (error) {
+    console.error(`❌ ${error.message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`[seed] Marché : ${market.code} — ${market.name}`);
+
+  if (args.cleanup) {
+    await cleanup(market);
+    return;
+  }
+
   if (!Number.isInteger(args.orders) || args.orders <= 0) {
     console.error('❌ --orders doit être un entier positif.');
     process.exitCode = 1;
     return;
   }
 
-  const market = await ensureMarket(args.market);
-  console.log(`[seed] Marché : ${market.code} — ${market.name}`);
-
+  const tags = marketTags(market.code);
   if (args.dryRun) {
-    console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${RELAIS_NAME}" (marché ${market.code}).`);
+    console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${tags.relaisName}" (marché ${market.code}).`);
     console.log('[dry-run] Aucune écriture effectuée.');
     return;
   }
 
-  const relais = await ensureRelais(market.id);
+  const relais = await ensureRelais(market);
   console.log(`[seed] Relais : ${relais.name} (${relais.id})`);
 
-  const products = await ensureProducts(15);
-  console.log(`[seed] ${products.length} produit(s) SEEDTEST disponible(s).`);
+  const products = await ensureProducts(15, market.code);
+  console.log(`[seed] ${products.length} produit(s) ${TAG}-${market.code} disponible(s).`);
 
   let monoArticle = 0;
   let totalLignes = 0;
   for (let i = 0; i < args.orders; i++) {
-    const { itemCount } = await createOrder({ relaisId: relais.id, products });
+    const { itemCount } = await createOrder({
+      marketId: market.id,
+      marketCode: market.code,
+      relaisId: relais.id,
+      products,
+    });
     totalLignes += itemCount;
     if (itemCount === 1) monoArticle++;
   }
 
-  console.log(`[seed] ✅ ${args.orders} commande(s) créée(s).`);
+  console.log(`[seed] ✅ ${args.orders} commande(s) créée(s) pour ${market.code}.`);
   console.log(`[seed]    Panier moyen (lignes) : ${(totalLignes / args.orders).toFixed(2)}`);
   console.log(`[seed]    Mono-article : ${monoArticle}/${args.orders} (${((100 * monoArticle) / args.orders).toFixed(1)}%)`);
   console.log('[seed] Relance la requête panier-moyen-mono-article.sql pour la vue exacte incluant status/exclusions.');
-  console.log(`[seed] Pour nettoyer : node scripts/seed-market-test-data.js --cleanup`);
+  console.log(`[seed] Pour nettoyer ${market.code} : node scripts/seed-market-test-data.js --market ${market.code} --cleanup`);
 }
 
 function __doc_usage() {
   return `Usage :
   node scripts/seed-market-test-data.js --market CM --orders 60
   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
-  node scripts/seed-market-test-data.js --cleanup`;
+  node scripts/seed-market-test-data.js --market CM --cleanup`;
 }
 
-main()
-  .then(() => process.exit(process.exitCode || 0))
-  .catch(err => {
-    console.error('❌ Erreur :', err.message);
-    process.exit(1);
-  });
+if (require.main === module) {
+  main()
+    .then(() => {
+      if (process.exitCode) return;
+      process.exit(0);
+    })
+    .catch(err => {
+      console.error('❌ Erreur :', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = {
+  TAG,
+  MARKET_TEST_PROFILES,
+  normalizeMarketCode,
+  marketTags,
+  marketProfile,
+  parseArgs,
+  isProductionRuntime,
+  ensureMarket,
+  ensureRelais,
+  ensureProducts,
+  createOrder,
+  cleanup,
+  main,
+};
