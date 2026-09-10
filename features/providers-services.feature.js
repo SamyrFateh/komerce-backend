@@ -26,6 +26,9 @@ module.exports = {
       'Le cycle demande -> réponse reste distinct du catalogue, des commandes Komerce, du paiement et de la liste partagée.',
       'Frontière métier autonome d’exposition et de demande : un service ou une offre physique n’est exposable ' +
       'que sous l’autorité d’un provider actif ; une inquiry reste sent -> answered -> accepted|declined.',
+      'listProviders/getOwnedProvider/updateProvider acceptent un executor transactionnel optionnel (défaut : pool module) ' +
+      'pour que market-delegation (capability provider.manage) compose création/modification/statut et audit dans une même transaction, ' +
+      'sans jamais faire de SQL direct sur providers — writer_not_owner_boundary, même patron que logistics/relais.',
     ],
   },
 
@@ -51,6 +54,9 @@ module.exports = {
       'consumer Boutique des actions request/callback — identité Komerce puis création de l’Inquiry propriétaire',
       'seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production',
       'seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception',
+      'listProviders(marketId) — lecture scopée marché, suspendus en dernier',
+      'getOwnedProvider(providerId, marketId) — null (jamais une erreur) si le provider existe sur un autre marché',
+      'updateProvider(providerId, marketId, patch) — coordonnées uniquement ; le marché n’est jamais réassignable par cette voie',
     ],
     out: [
       'authentification provider (pas de users / user_role pour le provider)',
