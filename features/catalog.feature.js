@@ -47,6 +47,7 @@ module.exports = {
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
+      'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
     ],
     out: [
       'calcul du prix final et valorisation transport (feature economic-engine)',
@@ -54,6 +55,8 @@ module.exports = {
       'mise en avant / classement (feature recommendations)',
       'fiche snapshot lecture seule du panier partage (feature shared-cart)',
       'checkout final et paiement (features orders/payments)',
+      'décision d’exposition produit x marché (qui écrit product_market_exposure) : feature market-delegation, capability catalog.expose',
+      'câblage du fail-closed dans le chemin de lecture storefront : hors périmètre tant qu’une stratégie de backfill n’est pas tranchée — voir feature market-delegation, section perimeter',
     ],
   },
 
@@ -97,6 +100,7 @@ module.exports = {
       'services/suppliers/media-normalizer.js',
       'services/suppliers/promotion-classifier.js',
       'services/suppliers/source-product-normalizer.js',
+      'services/catalog-market-exposure-service.js',
       'services/suppliers/connectors/api-connector.base.js',
       'services/suppliers/connectors/manual-connector.js',
       'services/suppliers/connectors/csv-connector.js',
@@ -141,6 +145,7 @@ module.exports = {
       'migrations/150_catalog_import_business_ref.sql',
       'migrations/147_catalog_global_access_grants.sql',
       'migrations/163_supplier_catalog_sync_checkpoints.sql',
+      'migrations/201_catalog_product_market_exposure.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -276,6 +281,7 @@ module.exports = {
       'tests/unit/canonical-catalog-workspace-boundary.test.js',
       'tests/unit/canonical-catalog-authority-boundary.test.js',
       'tests/unit/require-catalog-global-authority.test.js',
+      'tests/unit/catalog-market-exposure-service.test.js',
     ],
   },
 
@@ -300,6 +306,7 @@ module.exports = {
       'product_variants: RW!',
       'product_content_profile: RW',
       'product_content_sections: RW',
+      'product_market_exposure: RW!',
       'product_attributes: RW',
       'products: RW!',
       'sourcing_candidates: R',
