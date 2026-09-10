@@ -25,6 +25,14 @@ describe('market settlement migrations', () => {
     expect(foundation).toMatch(/market_settlement_currency_mismatch/);
   });
 
+  test('historique settlement non destructif et événements strictement append-only', () => {
+    expect(foundation).toMatch(/trg_prevent_market_settlement_delete/);
+    expect(foundation).toMatch(/BEFORE DELETE ON market_settlements/);
+    expect(foundation).toMatch(/trg_prevent_market_settlement_event_mutation/);
+    expect(foundation).toMatch(/BEFORE UPDATE OR DELETE ON market_settlement_events/);
+    expect(foundation).toMatch(/market_settlement_events is append-only/);
+  });
+
   test('cutover rend uniquement les deux capabilities settlement LIVE et les backfill', () => {
     expect(cutover).toMatch(/capability IN \('finance\.act', 'settlement\.receive'\)/);
     expect(cutover).toContain("('finance.act'), ('settlement.receive')");
