@@ -77,7 +77,9 @@ async function resolveProductRef(productRef, q = db) {
   const ref = String(productRef || '').trim();
   if (!ref) throw new PricingWorkspaceError(400, 'product_ref requis', 'pricing_product_ref_required');
   const { rows } = await q.query(
-    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
+    `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg,
+            (COALESCE(volume_cm3, 0) / 1000000.0) AS volume_m3,
+            is_active
        FROM products
       WHERE product_ref = $1
       LIMIT 1`,
@@ -548,7 +550,9 @@ async function buildWorkspace() {
     observedRows,
   ] = await Promise.all([
     db.query(
-      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg, volume_m3, is_active
+      `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg,
+              (COALESCE(volume_cm3, 0) / 1000000.0) AS volume_m3,
+              is_active
          FROM products
         ORDER BY is_active DESC, updated_at DESC NULLS LAST, name
         LIMIT 250`
