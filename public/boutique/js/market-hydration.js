@@ -108,23 +108,6 @@
     if (element && element.textContent !== value) element.textContent = value;
   }
 
-  function inferSummaryZone(summary) {
-    if (!summary) return null;
-    const label = String(
-      summary.querySelector('.ck-step-header-label')?.textContent || ''
-    ).toLocaleLowerCase('fr');
-
-    const candidates = market.code === 'CM'
-      ? ['Yaoundé', 'Douala']
-      : market.code === 'CG'
-        ? ['Brazzaville', 'Pointe-Noire']
-        : [];
-
-    return candidates.find(city => label.includes(city.toLocaleLowerCase('fr')))
-      || relayZone
-      || null;
-  }
-
   function hydrateRelayCheckout() {
     const summary = document.querySelector('#ck-relais-summary');
     const summarySub = summary?.querySelector(
@@ -136,14 +119,18 @@
         .split('·')[0]
         .trim();
       const staleKmGroup = ['Ndzouani', 'Ngazidja', 'Mwali'].includes(currentGroup);
+      const alreadyStale = currentGroup === 'Point de retrait à actualiser';
 
-      // Ne jamais maquiller un vrai relais KM en relais CM/CG : si un vieux
-      // résultat est encore présent, on demande simplement son actualisation.
-      if (staleKmGroup) {
+      // Ne jamais maquiller un vrai relais KM en relais CM/CG. Si les données
+      // portent encore une île comorienne, on l'affiche comme incohérence au
+      // lieu de transformer silencieusement Ngazidja en Yaoundé/Brazzaville.
+      if (staleKmGroup || alreadyStale) {
         replaceText(summarySub, 'Point de retrait à actualiser · ' + market.name);
       } else {
-        const selectedZone = inferSummaryZone(summary);
-        if (selectedZone) replaceText(summarySub, selectedZone + ' · ' + market.name);
+        const selectedGroup = currentGroup && currentGroup !== 'Comores'
+          ? currentGroup
+          : relayZone;
+        if (selectedGroup) replaceText(summarySub, selectedGroup + ' · ' + market.name);
       }
     }
 
@@ -177,8 +164,28 @@
 
   hydrateRelayCheckout();
 
+  if (typeof MutationObserver !== 'function') return;
+
+  // Le résumé vit dans #k-order-modal, mais le picker relais est appendChild()
+  // directement sous document.body. Observer seulement le checkout laisse donc
+  // le popup hors du périmètre : c'est exactement ce qui conservait « ÎLE »
+  // alors que le reste de la boutique était déjà en contexte Cameroun/Congo.
   const checkoutRoot = document.getElementById('k-order-modal') || document.body;
-  if (!checkoutRoot || typeof MutationObserver !== 'function') return;
-  const observer = new MutationObserver(hydrateRelayCheckout);
-  observer.observe(checkoutRoot, { childList: true, subtree: true });
+  if (checkoutRoot) {
+    const checkoutObserver = new MutationObserver(hydrateRelayCheckout);
+    checkoutObserver.observe(checkoutRoot, { childList: true, subtree: true });
+  }
+
+  if (document.body && checkoutRoot !== document.body) {
+    const overlayObserver = new MutationObserver(mutations => {
+      const relayOverlayAdded = mutations.some(mutation =>
+        Array.from(mutation.addedNodes || []).some(node =>
+          node?.nodeType === 1
+          && (node.matches?.('.ck-relais-overlay') || node.querySelector?.('.ck-relais-overlay'))
+        )
+      );
+      if (relayOverlayAdded) hydrateRelayCheckout();
+    });
+    overlayObserver.observe(document.body, { childList: true });
+  }
 })();
