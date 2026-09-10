@@ -139,8 +139,36 @@ CREATE TRIGGER trg_market_settlement_invariants
 BEFORE INSERT OR UPDATE ON market_settlements
 FOR EACH ROW EXECUTE FUNCTION enforce_market_settlement_invariants();
 
+-- La ligne settlement évolue uniquement par la machine ci-dessus ; elle n'est
+-- jamais supprimée. Une correction monétaire doit créer une nouvelle attestation,
+-- pas effacer la preuve historique.
+CREATE OR REPLACE FUNCTION prevent_market_settlement_delete()
+RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'market_settlements are non-destructive; create a new attestation instead';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_prevent_market_settlement_delete ON market_settlements;
+CREATE TRIGGER trg_prevent_market_settlement_delete
+BEFORE DELETE ON market_settlements
+FOR EACH ROW EXECUTE FUNCTION prevent_market_settlement_delete();
+
+-- Les événements financiers sont une preuve append-only : ni UPDATE ni DELETE.
+CREATE OR REPLACE FUNCTION prevent_market_settlement_event_mutation()
+RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'market_settlement_events is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_prevent_market_settlement_event_mutation ON market_settlement_events;
+CREATE TRIGGER trg_prevent_market_settlement_event_mutation
+BEFORE UPDATE OR DELETE ON market_settlement_events
+FOR EACH ROW EXECUTE FUNCTION prevent_market_settlement_event_mutation();
+
 COMMENT ON TABLE market_settlements IS
-  'Vérité de settlement du Market Operating Assignment. READY = attestation centrale, REQUESTED = demande pays, PAID = attestation centrale de paiement, RECEIVED = accusé de réception pays. amount/currency sont immuables après création.';
+  'Vérité de settlement du Market Operating Assignment. READY = attestation centrale, REQUESTED = demande pays, PAID = attestation centrale de paiement, RECEIVED = accusé de réception pays. amount/currency sont immuables après création ; DELETE interdit.';
 
 COMMENT ON TABLE market_settlement_events IS
-  'Journal append-only du lifecycle settlement. Complète market_delegation_audit : ici la vérité financière ; là-bas la preuve d usage des capabilities déléguées.';
+  'Journal append-only du lifecycle settlement. Complète market_delegation_audit : ici la vérité financière ; là-bas la preuve d usage des capabilities déléguées. UPDATE/DELETE interdits.';
