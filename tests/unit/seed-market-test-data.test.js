@@ -10,11 +10,34 @@ jest.mock('../../db', () => ({
   query: jest.fn(),
 }));
 
+jest.mock('../../services/catalog-market-exposure-service', () => ({
+  EXPOSURE: { ENABLED: 'ENABLED', DISABLED: 'DISABLED' },
+  setExposure: jest.fn().mockResolvedValue({ commercial_exposure: 'ENABLED' }),
+}));
+
+jest.mock('../../services/market-commercial-price-service', () => ({
+  setMarketPriceDraft: jest.fn().mockResolvedValue({ decision_status: 'DRAFT_PENDING_GATE' }),
+}));
+
+jest.mock('../../utils/currency', () => ({
+  projectAmount: jest.fn(async amount => Number(amount)),
+  roundToMinorUnit: jest.fn((amount, minorUnit) => {
+    const factor = 10 ** Number(minorUnit || 0);
+    return Math.round(Number(amount) * factor) / factor;
+  }),
+}));
+
 const db = require('../../db');
+const catalogExposure = require('../../services/catalog-market-exposure-service');
+const marketCommercialPrice = require('../../services/market-commercial-price-service');
+const { projectAmount, roundToMinorUnit } = require('../../utils/currency');
 const {
+  PRICE_SOURCE,
   marketTags,
   marketProfile,
   isProductionRuntime,
+  localDraftAmountForProduct,
+  prepareProductsForMarket,
   createOrder,
   cleanup,
   main,
@@ -25,6 +48,13 @@ const ORIGINAL_EXIT_CODE = process.exitCode;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  projectAmount.mockImplementation(async amount => Number(amount));
+  roundToMinorUnit.mockImplementation((amount, minorUnit) => {
+    const factor = 10 ** Number(minorUnit || 0);
+    return Math.round(Number(amount) * factor) / factor;
+  });
+  catalogExposure.setExposure.mockResolvedValue({ commercial_exposure: 'ENABLED' });
+  marketCommercialPrice.setMarketPriceDraft.mockResolvedValue({ decision_status: 'DRAFT_PENDING_GATE' });
   process.env = { ...ORIGINAL_ENV };
   delete process.env.NODE_ENV;
   delete process.env.KOMERCE_ENV;
@@ -65,8 +95,78 @@ test('refuse production depuis NODE_ENV ou KOMERCE_ENV', () => {
   expect(isProductionRuntime()).toBe(false);
 });
 
+test('projette le prix KMF vers la devise canonique du marché et respecte minor_unit', async () => {
+  projectAmount.mockResolvedValueOnce(19999.6);
+
+  const amount = await localDraftAmountForProduct(
+    { id: 'product-cm-1', product_ref: 'KPR-900001', price_kmf: 15000 },
+    { id: 'market-cm-id', code: 'CM', currency: 'XAF', minor_unit: 0 }
+  );
+
+  expect(projectAmount).toHaveBeenCalledWith(15000, 'KMF', 'XAF');
+  expect(roundToMinorUnit).toHaveBeenCalledWith(19999.6, 0);
+  expect(amount).toBe(20000);
+});
+
+test('un produit sans product_ref canonique bloque la préparation avant toute décision locale', async () => {
+  await expect(localDraftAmountForProduct(
+    { id: 'product-cm-1', price_kmf: 12000 },
+    { id: 'market-cm-id', code: 'CM', currency: 'XAF', minor_unit: 0 }
+  )).rejects.toThrow(/sans product_ref canonique/);
+
+  expect(projectAmount).not.toHaveBeenCalled();
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
+});
+
+test('prépare chaque produit sur le même Market ID: exposition ENABLED + prix local DRAFT', async () => {
+  const market = {
+    id: 'market-cm-id',
+    code: 'CM',
+    name: 'Cameroun',
+    currency: 'XAF',
+    minor_unit: 0,
+  };
+  const products = [
+    { id: 'product-cm-1', product_ref: 'KPR-900001', price_kmf: 12000 },
+    { id: 'product-cm-2', product_ref: 'KPR-900002', price_kmf: 18000 },
+  ];
+  projectAmount
+    .mockResolvedValueOnce(16000)
+    .mockResolvedValueOnce(24000);
+
+  const result = await prepareProductsForMarket(products, market);
+
+  expect(result).toEqual({ exposed: 2, drafts: 2 });
+  expect(catalogExposure.setExposure).toHaveBeenCalledTimes(2);
+  expect(catalogExposure.setExposure).toHaveBeenNthCalledWith(
+    1, 'product-cm-1', 'market-cm-id', 'ENABLED', null
+  );
+  expect(catalogExposure.setExposure).toHaveBeenNthCalledWith(
+    2, 'product-cm-2', 'market-cm-id', 'ENABLED', null
+  );
+
+  expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenCalledTimes(2);
+  expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenNthCalledWith(1, {
+    market,
+    productRef: 'KPR-900001',
+    amount: 16000,
+    reason: 'SEEDTEST CM prix local de test',
+    source: PRICE_SOURCE,
+    actorId: null,
+  });
+  expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenNthCalledWith(2, {
+    market,
+    productRef: 'KPR-900002',
+    amount: 24000,
+    reason: 'SEEDTEST CM prix local de test',
+    source: PRICE_SOURCE,
+    actorId: null,
+  });
+});
+
 test('createOrder écrit explicitement le market_id canonique dans orders', async () => {
-  jest.spyOn(Math, 'random').mockReturnValue(0);
+  const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
   db.query
     .mockResolvedValueOnce({ rows: [{ id: 'order-1' }] })
     .mockResolvedValueOnce({ rows: [] });
@@ -78,7 +178,7 @@ test('createOrder écrit explicitement le market_id canonique dans orders', asyn
     products: [{ id: 'product-cm-1', price_kmf: 12000 }],
   });
 
-  Math.random.mockRestore();
+  randomSpy.mockRestore();
 
   const [orderSql, orderParams] = db.query.mock.calls[0];
   expect(orderSql).toMatch(/INSERT INTO orders/);
