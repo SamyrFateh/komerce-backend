@@ -57,6 +57,24 @@ function sendDelegationError(res, error) {
   return true;
 }
 
+function providerInputError(code, message) {
+  const error = new Error(message || code);
+  error.code = code;
+  error.status = 400;
+  return error;
+}
+
+function requiredProviderText(value, field) {
+  const text = String(value == null ? '' : value).trim();
+  if (!text) throw providerInputError('NETWORK_PROVIDER_FIELD_REQUIRED', `${field} est requis.`);
+  return text;
+}
+
+function optionalRequiredProviderText(body, field) {
+  if (!body || !Object.prototype.hasOwnProperty.call(body, field)) return undefined;
+  return requiredProviderText(body[field], field);
+}
+
 // market_id/marketId ne sont jamais une preuve d'autorité côté client — le
 // marché vient exclusivement du :marketCode de la route, résolu serveur.
 function rejectMarketId(body) {
@@ -99,8 +117,8 @@ router.post('/markets/:marketCode/network/providers', authenticate, async (req, 
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
       correlationId: correlationId(req),
-      name: body.name,
-      phone: body.phone,
+      name: requiredProviderText(body.name, 'name'),
+      phone: requiredProviderText(body.phone, 'phone'),
     }));
     res.status(201).json({ success: true, provider });
   } catch (error) {
@@ -119,8 +137,8 @@ router.put('/markets/:marketCode/network/providers/:providerId', authenticate, a
       actorUserId: req.user.id,
       correlationId: correlationId(req),
       patch: {
-        name: body.name,
-        phone: body.phone,
+        name: optionalRequiredProviderText(body, 'name'),
+        phone: optionalRequiredProviderText(body, 'phone'),
         publicPhone: body.public_phone,
         publicWhatsapp: body.public_whatsapp,
       },
@@ -134,6 +152,7 @@ router.put('/markets/:marketCode/network/providers/:providerId', authenticate, a
 
 router.post('/markets/:marketCode/network/providers/:providerId/suspend', authenticate, async (req, res, next) => {
   try {
+    rejectMarketId(req.body);
     const provider = await withTransaction(client => setProviderStatus(client, {
       marketCode: req.params.marketCode,
       providerId: req.params.providerId,
@@ -150,6 +169,7 @@ router.post('/markets/:marketCode/network/providers/:providerId/suspend', authen
 
 router.post('/markets/:marketCode/network/providers/:providerId/activate', authenticate, async (req, res, next) => {
   try {
+    rejectMarketId(req.body);
     const provider = await withTransaction(client => setProviderStatus(client, {
       marketCode: req.params.marketCode,
       providerId: req.params.providerId,
