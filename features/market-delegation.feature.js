@@ -90,7 +90,6 @@ module.exports = {
       'migrations/196_market_delegation_team.sql',
       'migrations/197_market_delegation_legacy_scope_backfill.sql',
       'migrations/198_market_cash_control_policy.sql',
-      'migrations/199_cash_confirmation_control.sql',
       'migrations/200_market_delegation_relais_island_nullable.sql',
     ],
     middleware: [
