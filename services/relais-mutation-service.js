@@ -95,7 +95,9 @@ async function createRelais(executor, { marketId, name, agentName, phone, addres
   const gps = normalizeGps(latitude, longitude);
   const payload = {
     name: requiredText(name, 'name', { max: 200 }),
-    agent_name: requiredText(agentName, 'agent_name', { max: 200 }),
+    // L'identité structurelle du relais ne dépend pas d'une personne déjà
+    // affectée. L'opérateur peut créer le point puis renseigner l'agent ensuite.
+    agent_name: optionalText(agentName, 200),
     phone: requiredText(phone, 'phone', { max: 40 }),
     address: requiredText(address, 'address', { max: 500 }),
     zone: optionalText(zone, 200),
@@ -122,7 +124,7 @@ async function updateRelais(executor, { marketId, relaisId, patch = {} }) {
 
   const next = {
     name: patch.name !== undefined ? requiredText(patch.name, 'name', { max: 200 }) : before.name,
-    agent_name: patch.agentName !== undefined ? requiredText(patch.agentName, 'agent_name', { max: 200 }) : before.agent_name,
+    agent_name: patch.agentName !== undefined ? optionalText(patch.agentName, 200) : before.agent_name,
     phone: patch.phone !== undefined ? requiredText(patch.phone, 'phone', { max: 40 }) : before.phone,
     address: patch.address !== undefined ? requiredText(patch.address, 'address', { max: 500 }) : before.address,
     zone: patch.zone !== undefined ? optionalText(patch.zone, 200) : before.zone,
