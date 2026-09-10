@@ -47,7 +47,7 @@ module.exports = {
   perimeter: {
     in: [
       'integration Stripe et PayPal (intent, capture, webhook, evenements)',
-      'Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG)',
+      'Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG, KartaPay KM vers MVola/Holo)',
       'réconciliation périodique des paiements Mobile Money pending si callback perdu',
       'paiement cash au retrait et relances cash',
       'contrôle partagé de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts',
@@ -82,6 +82,7 @@ module.exports = {
       'services/mobile-money/registry.js',
       'services/mobile-money/orange-money-cm.js',
       'services/mobile-money/mtn-momo-cg.js',
+      'services/mobile-money/kartapay-km.js',
     ],
     routes: [
       'routes/cash.js',
@@ -94,6 +95,7 @@ module.exports = {
       'migrations/079_paypal_payment_mode.sql',
       'migrations/148_cash_deposit_business_reference.sql',
       'migrations/169_mobile_money_foundation.sql',
+      'migrations/171_kartapay_km_mobile_money.sql',
       'migrations/199_cash_confirmation_control.sql',
     ],
     boutique: [
@@ -128,6 +130,7 @@ module.exports = {
       'tests/unit/mobile-money-providers.test.js',
       'tests/unit/payment-mobile-money.test.js',
       'tests/unit/mobile-money-reconciliation.test.js',
+      'tests/unit/kartapay-webhook.test.js',
       'public/boutique/tests/unit/b-mobile-money.test.js',
     ],
   },
@@ -174,8 +177,8 @@ module.exports = {
   security: {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 13,
-    totalRoutes: 18,
-    note: "Stripe/PayPal conservent leurs gardes existantes. Mobile Money ajoute des routes utilisateur protégées et un callback public qui n'accorde aucune confiance au body : toute confirmation relit le statut serveur-à-serveur chez le provider. Les secrets providers restent exclusivement en environnement.",
+    totalRoutes: 19,
+    note: "Stripe/PayPal conservent leurs gardes existantes. Mobile Money ajoute des routes utilisateur protégées, des callbacks publics qui relisent le statut serveur-à-serveur, et pour KartaPay un webhook HMAC vérifié avant cette relecture. Les secrets providers restent exclusivement en environnement.",
   },
   contract: {
     exposes: [
@@ -187,6 +190,7 @@ module.exports = {
       'GET /api/payments/mobile-money/transactions/:transactionId',
       'POST /api/payments/mobile-money/transactions/:transactionId/refresh',
       'POST /api/payments/mobile-money/callback/:provider/:transactionId',
+      'POST /api/payments/mobile-money/webhook/:provider',
       'GET /api/payments/mobile-money/admin/pending',
       'POST /api/cash/collect/:orderId',
       'GET /api/cash/collections',
@@ -235,6 +239,8 @@ module.exports = {
       test: 'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js' },
     { statement: 'Mobile Money ne confirme jamais sur le body callback : le statut est relu chez le provider et montant/devise sont comparés au snapshot transactionnel',
       test: 'tests/unit/payment-mobile-money.test.js' },
+    { statement: 'un webhook KartaPay doit être signé, rapproché à la tentative locale, puis relu par API authentifiée avant confirmation',
+      test: 'tests/unit/kartapay-webhook.test.js' },
     { statement: 'un callback Mobile Money perdu est repris par une réconciliation périodique bornée et idempotente',
       test: 'tests/unit/mobile-money-reconciliation.test.js' },
     'aucun secret de paiement en dur dans le code',
