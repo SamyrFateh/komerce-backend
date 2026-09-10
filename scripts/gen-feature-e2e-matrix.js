@@ -48,6 +48,7 @@ const LOTS = {
   3: ['business-rules', 'economic-engine', 'notifications', 'documents',
       'recommendations', 'incident-management', 'decision-signals', 'dashboard',
       'platform-ops', 'infrastructure', 'sourcing'],
+  4: ['market-delegation'],
 };
 
 const CATEGORIES = [
@@ -193,7 +194,7 @@ function build() {
         runner: 'scripts/run-e2e-feature-tests.js',
         commands: {
           feature: 'npm run test:e2e:feature -- --feature=<nom>',
-          lot: 'npm run test:e2e:lot -- --lot=<1|2|3>',
+          lot: 'npm run test:e2e:lot -- --lot=<1|2|3|4>',
           all: 'npm run test:e2e:features',
         },
         requires: 'DATABASE_URL vers une base de test (garde fail-closed : tests/helpers/e2eDbKit.js)',
@@ -236,7 +237,7 @@ function renderMarkdown(data) {
   L.push(`E2E navigateur : ${data.harnesses['e2e-browser'].specs.total} specs Playwright, dont ${data.harnesses['e2e-browser'].specs.authenticated} sous \`authenticated/\`.`);
   L.push('');
 
-  for (const lot of [1, 2, 3, null]) {
+  for (const lot of [1, 2, 3, 4, null]) {
     const rows = data.features.filter((r) => r.lot === lot);
     if (!rows.length) continue;
     L.push(`## ${lot ? `Lot ${lot}` : 'Hors lot'}`);
