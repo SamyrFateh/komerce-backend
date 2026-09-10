@@ -43,8 +43,28 @@ describeE2E('E2E-MA-01 — market-delegation · autorité, équipe, réseau', ({
   });
 
   afterAll(async () => {
+    if (!fx) return;
+
+    // Le test 3 crée volontairement une membership via la vraie route Team.
+    // Elle ne fait pas partie de la fixture initiale : la retirer explicitement
+    // avant le ceiling, sinon le trigger de gouvernance interdit à juste titre
+    // de retirer une capability encore accordée à un membre actif.
+    await db.query(
+      `DELETE FROM membership_capabilities
+        WHERE membership_id IN (
+          SELECT id FROM assignment_memberships
+           WHERE assignment_id=$1 AND user_id=$2
+        )`,
+      [fx.assignmentA.id, fx.outsider.id]
+    );
+    await db.query(
+      `DELETE FROM assignment_memberships
+        WHERE assignment_id=$1 AND user_id=$2`,
+      [fx.assignmentA.id, fx.outsider.id]
+    );
+
     for (const id of createdRelais) fx.cleanup.track('relais', 'id', id);
-    if (fx) await fx.cleanup.run();
+    await fx.cleanup.run();
   });
 
   it('1 — manager et viewer voient uniquement leur équipe A', async () => {
