@@ -62,6 +62,7 @@ module.exports = {
     out: [
       'affichage produit cote catalogue (feature catalog, qui consomme economic-engine)',
       'facturation finale (feature orders)',
+      'autorisation et audit de l’enregistrement délégué d’un fait MARKET_DIRECT par un opérateur pays (feature market-delegation, capability structure.event.record) — appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni écrire directement dans economic_structure_cost_events',
     ],
   },
 
