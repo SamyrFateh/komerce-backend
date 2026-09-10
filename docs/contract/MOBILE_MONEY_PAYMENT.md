@@ -33,7 +33,7 @@ Le checkout ne déduit jamais le provider depuis `?market=` ni depuis un context
 3. `GET /api/payments/mobile-money/availability?relais_id=...` expose uniquement le provider réellement activé et configuré pour ce marché.
 4. La puce Mobile Money reste masquée ou désactivée si le provider n'est pas disponible.
 5. Au Cameroun, le flow Orange Money utilise la redirection provider.
-6. Au Congo-Brazzaville, le flow MTN MoMo collecte le MSISDN puis attend l'approbation sur téléphone.
+6. Au Congo-Brazzaville, le flow MTN MoMo collecte le MSISDN puis attend l'approbation sur téléphone en production ; en staging Sandbox, MTN simule le résultat et aucune validation réelle sur un wallet n'est attendue.
 7. L'écran **Commande confirmée** n'est affiché qu'après `succeeded` confirmé par la réconciliation serveur. Un état `pending` laisse la commande ouverte et ne devient jamais un faux succès.
 
 Toute modification du relais invalide une tentative Mobile Money en cours côté checkout afin qu'une tentative créée pour un marché ne puisse pas être réutilisée après changement de périmètre.
@@ -90,6 +90,20 @@ Le statut provider brut peut être conservé séparément pour l'observabilité,
 - idempotence forte par `(provider, external_transaction_id)` ;
 - journalisation sans token, API key, secret ou PIN/OTP ;
 - aucune mutation directe de stock depuis un adapter provider.
+
+### Exception de transport MTN Sandbox — staging uniquement
+
+Le Sandbox développeur MTN impose `EUR`, alors que le marché Congo Komerce reste canoniquement `XAF`. Il est interdit de modifier le marché, le prix local, la transaction Komerce ou la facture pour satisfaire cette contrainte de test.
+
+Quand `MTN_MOMO_CG_TARGET_ENVIRONMENT=sandbox` **et** que le runtime métier n'est pas `production` :
+
+- la transaction Komerce reste figée dans sa devise métier `XAF` ;
+- l'adapter MTN envoie au Sandbox un montant synthétique fixe `1000 EUR` uniquement comme contrat de transport de test ;
+- lors de la réconciliation, l'adapter relit le statut chez MTN et exige que le Sandbox reflète bien `1000 EUR` avant d'accepter le statut ;
+- le `1000 EUR` n'est jamais promu en montant économique Komerce : il reste uniquement dans le payload provider d'audit ;
+- un runtime métier `production` avec une cible MTN `sandbox` est considéré non configuré, donc le moyen de paiement reste fail-closed.
+
+Cette exception n'existe pas sur le rail MTN réel : en production opérateur, montant et devise envoyés et relus sont ceux de la transaction Komerce dans la devise configurée du marché.
 
 ## Providers initiaux
 

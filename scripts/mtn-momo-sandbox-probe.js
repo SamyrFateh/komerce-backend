@@ -3,17 +3,17 @@
 /**
  * Safe MTN MoMo Sandbox probe for Komerce staging.
  *
- * Verifies, without logging credentials or bearer tokens:
+ * Verifies, through the real MTN provider adapter and without logging secrets:
  *   1. runtime is non-production and MTN target is sandbox;
  *   2. Collections OAuth credentials are accepted;
- *   3. RequestToPay is accepted (HTTP 202);
- *   4. the transaction status endpoint is readable (HTTP 200).
+ *   3. a Congo/XAF business payment is translated only at the provider boundary;
+ *   4. RequestToPay is accepted and its status can be reconciled;
+ *   5. the sandbox transport never leaks EUR as Komerce business truth.
  *
- * This probe deliberately uses EUR because MTN's developer sandbox uses EUR.
  * It does not mutate Komerce orders or the database.
  */
 
-const crypto = require('crypto');
+const mtn = require('../services/mobile-money/mtn-momo-cg');
 
 const SANDBOX_BASE_URL = 'https://sandbox.momodeveloper.mtn.com';
 const REQUIRED = [
@@ -27,16 +27,8 @@ function fail(message) {
   process.exitCode = 1;
 }
 
-function safeReason(body) {
-  if (!body || typeof body !== 'object') return '';
-  return String(body.code || body.reason || body.message || '').slice(0, 160);
-}
-
-async function readJson(res) {
-  const text = await res.text();
-  if (!text) return {};
-  try { return JSON.parse(text); }
-  catch (_) { return {}; }
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function main() {
@@ -64,73 +56,51 @@ async function main() {
       throw new Error(`${key} absent`);
     }
   }
-
-  const subscriptionKey = process.env.MTN_MOMO_CG_SUBSCRIPTION_KEY;
-  const apiUser = process.env.MTN_MOMO_CG_API_USER;
-  const apiKey = process.env.MTN_MOMO_CG_API_KEY;
-  const basic = Buffer.from(`${apiUser}:${apiKey}`).toString('base64');
-
-  let res = await fetch(`${baseUrl}/collection/token/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${basic}`,
-      'Ocp-Apim-Subscription-Key': subscriptionKey,
-      Accept: 'application/json',
-    },
-  });
-  let body = await readJson(res);
-  if (!res.ok || !body.access_token) {
-    throw new Error(`OAuth Sandbox refusé: HTTP ${res.status} ${safeReason(body)}`.trim());
+  if (!mtn.isConfigured()) {
+    throw new Error('adapter MTN considéré non configuré');
   }
-  const accessToken = body.access_token;
-  console.log('[MTN-PROBE] OAuth Sandbox OK');
 
-  const referenceId = crypto.randomUUID();
-  res = await fetch(`${baseUrl}/collection/v1_0/requesttopay`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Ocp-Apim-Subscription-Key': subscriptionKey,
-      'X-Target-Environment': 'sandbox',
-      'X-Reference-Id': referenceId,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      amount: '1',
-      currency: 'EUR',
-      externalId: `KOMERCE-STAGING-PROBE-${Date.now()}`,
-      payer: {
-        partyIdType: 'MSISDN',
-        // MTN Sandbox test number documented as an ongoing RequestToPay.
-        partyId: '46733123453',
-      },
-      payerMessage: 'Komerce staging probe',
-      payeeNote: 'Komerce staging probe',
-    }),
+  const orderReference = `KOMERCE-STAGING-PROBE-${Date.now()}`;
+  const initiated = await mtn.initiate({
+    orderReference,
+    // Vérité métier volontairement XAF : l'adapter doit isoler la contrainte
+    // EUR du Sandbox sans modifier le marché Congo.
+    amount: 26560,
+    currency: 'XAF',
+    // MTN documente que tout numéro hors scénarios prédéfinis aboutit au cas
+    // nominal de succès dans le Sandbox.
+    msisdn: '242061234567',
+    callbackUrl: 'https://komerce.co/api/payments/mobile-money/callback/mtn_momo/00000000-0000-4000-8000-000000000000',
   });
-  body = await readJson(res);
-  if (res.status !== 202) {
-    throw new Error(`RequestToPay refusé: HTTP ${res.status} ${safeReason(body)}`.trim());
-  }
-  console.log('[MTN-PROBE] RequestToPay 202 Accepted');
 
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  res = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${encodeURIComponent(referenceId)}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Ocp-Apim-Subscription-Key': subscriptionKey,
-      'X-Target-Environment': 'sandbox',
-      Accept: 'application/json',
-    },
-  });
-  body = await readJson(res);
-  if (!res.ok) {
-    throw new Error(`Lecture statut refusée: HTTP ${res.status} ${safeReason(body)}`.trim());
+  if (initiated.status !== 'pending' || !initiated.externalTransactionId) {
+    throw new Error('RequestToPay Sandbox non accepté par l’adapter');
   }
-  console.log(`[MTN-PROBE] Status read OK: ${String(body.status || 'UNKNOWN')}`);
-  console.log('[MTN-PROBE] PASS OAuth + RequestToPay + status');
+  if (initiated.safePayload?.sandbox_transport !== true
+      || Number(initiated.safePayload?.amount) !== 1000
+      || initiated.safePayload?.currency !== 'EUR') {
+    throw new Error('isolation XAF → transport Sandbox EUR non appliquée');
+  }
+  console.log('[MTN-PROBE] OAuth + RequestToPay via adapter OK');
+  console.log('[MTN-PROBE] Congo XAF preserved; provider transport isolated to Sandbox EUR');
+
+  let status = null;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await sleep(attempt === 0 ? 1500 : 1000);
+    status = await mtn.getStatus({ externalTransactionId: initiated.externalTransactionId });
+    if (status.status !== 'pending') break;
+  }
+
+  if (!status) throw new Error('aucun statut MTN reçu');
+  if (status.amount !== null || status.currency !== null) {
+    throw new Error('la devise/montant Sandbox a fui dans le contrat économique Komerce');
+  }
+  if (status.status !== 'succeeded') {
+    throw new Error(`statut Sandbox nominal attendu succeeded, reçu ${status.status}`);
+  }
+
+  console.log(`[MTN-PROBE] Status read OK: ${status.providerStatus}`);
+  console.log('[MTN-PROBE] PASS adapter XAF → Sandbox → succeeded');
 }
 
 main().catch(err => fail(err.message));
