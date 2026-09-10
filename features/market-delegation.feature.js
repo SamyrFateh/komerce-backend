@@ -169,6 +169,7 @@ module.exports = {
       'tests/unit/market-delegation-settlement-routes.test.js',
       'tests/unit/market-delegation-structure-event-service.test.js',
       'tests/unit/market-delegation-structure-event-routes.test.js',
+      'tests/e2e-api/market-delegation.settlement-state-machine.e2e.test.js',
     ],
   },
 
