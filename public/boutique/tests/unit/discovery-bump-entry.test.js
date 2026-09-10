@@ -46,6 +46,7 @@ jest.mock('../../js/discovery-api.js', () => ({
 }));
 
 const { bus } = require('../../js/b-bus.js');
+const { setActiveCatState } = require('../../js/b-store.js');
 const { PAGER_BUMP_EVENT } = require('../../js/b-pager-end-bounce.js');
 const { setupDiscoveryRail } = require('../../js/discovery-rail.js');
 
@@ -61,7 +62,7 @@ function shellFor(cat) {
   );
 }
 
-test('mobile: bump montre le sous-pool local, puis tap/swipe rend la catégorie pure', async () => {
+test('mobile: bump survit à la synchro réelle du pager, puis tap/swipe rend la catégorie pure', async () => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   document.body.innerHTML = `
     <div id="k-cats">
@@ -81,6 +82,7 @@ test('mobile: bump montre le sous-pool local, puis tap/swipe rend la catégorie 
       </div>
     </div>`;
 
+  setActiveCatState('all');
   setupDiscoveryRail();
   await flush();
 
@@ -89,10 +91,12 @@ test('mobile: bump montre le sous-pool local, puis tap/swipe rend la catégorie 
   expect(shellFor('Tech')).toBeNull();
   expect(shellFor('Maison')).toBeNull();
 
-  // Descente + bump : Tech devient une vraie entrée locale de tête de page.
+  // Séquence réelle du pager : le bump part AVANT setActiveCatState(), lequel
+  // émet catalog:cat-changed, puis le pager émet chip:center.
   window.dispatchEvent(new CustomEvent(PAGER_BUMP_EVENT, {
     detail: { from: 'all', to: 'Tech' },
   }));
+  setActiveCatState('Tech');
   const techChip = document.querySelector('.k-chip[data-cat="Tech"]');
   bus.emit('chip:center', techChip);
 
@@ -104,20 +108,24 @@ test('mobile: bump montre le sous-pool local, puis tap/swipe rend la catégorie 
   expect(techShell.textContent).toContain('Casque Tech local');
   expect(techShell.textContent).toContain('Installation clim');
   expect(techShell.textContent).not.toContain('Produit Maison local');
+  expect(shellFor('all')).toBeNull();
 
-  // Un second centrage sans intention de bump représente tap/swipe/restauration :
-  // le rail transitoire disparaît et l'onglet redevient catalogue pur.
-  bus.emit('chip:center', techChip);
-  expect(shellFor('Tech')).toBeNull();
-  expect(shellFor('all')).not.toBeNull();
-
-  // Un autre bump reconstruit le bon sous-pool sans aucun refetch backend.
-  window.dispatchEvent(new CustomEvent(PAGER_BUMP_EVENT, {
-    detail: { from: 'Tech', to: 'Maison' },
-  }));
+  // Entrée horizontale/tap vers Maison : aucun rail local ne doit survivre,
+  // même si Tout en possédait un et Tech venait d'être atteint par bump.
+  setActiveCatState('Maison');
   const maisonChip = document.querySelector('.k-chip[data-cat="Maison"]');
   bus.emit('chip:center', maisonChip);
-  expect(shellFor('Maison').textContent).toContain('Produit Maison local');
-  expect(shellFor('Maison').textContent).not.toContain('Casque Tech local');
+  expect(shellFor('Tech')).toBeNull();
+  expect(shellFor('Maison')).toBeNull();
+  expect(shellFor('all')).toBeNull();
+
+  // Retour explicite sur Tout : le rail natif revient depuis le cache déjà
+  // chargé, sans nouveau fetch Discovery.
+  setActiveCatState('all');
+  const allChip = document.querySelector('.k-chip[data-cat="all"]');
+  bus.emit('chip:center', allChip);
+  expect(shellFor('all')).not.toBeNull();
+  expect(shellFor('Tech')).toBeNull();
+  expect(shellFor('Maison')).toBeNull();
   expect(mockFetchDiscoveryRail).toHaveBeenCalledTimes(1);
 });
