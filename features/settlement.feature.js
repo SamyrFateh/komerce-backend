@@ -51,9 +51,9 @@ module.exports = {
       'confirmation RECEIVED exclusivement via capability settlement.receive sur le même assignment',
       'lecture déléguée des settlements via finance.read',
       'machine stricte READY -> REQUESTED -> PAID -> RECEIVED, également protégée par trigger DB',
-      'migration 209 : promotion LIVE de finance.act + settlement.receive dans les ceilings actifs et pour les managers existants possédant team.grant + team.revoke + finance.read',
     ],
     out: [
+      'promotion des capabilities finance.act + settlement.receive : migration 209 possédée par market-delegation, pas par ce slice lifecycle',
       'calcul automatique du montant dû : aucune règle commission/margin_share/revenue_share fiable n’existe encore dans le code',
       'payout bancaire ou Mobile Money : aucun transfert externe n’est initié par cette feature dans ce lot',
       'choix de devise par le navigateur : currency vient toujours de markets.currency',
@@ -68,7 +68,6 @@ module.exports = {
   files: {
     migrations: [
       'migrations/208_market_settlement_foundation.sql',
-      'migrations/209_market_delegation_settlement_live.sql',
     ],
     services: [
       'services/market-settlement-service.js',
