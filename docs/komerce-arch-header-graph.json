@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1306,
-    "edges": 6530,
+    "graphNodes": 1307,
+    "edges": 6536,
     "dbTables": 153,
-    "doctrines": 421,
+    "doctrines": 422,
     "impactAreas": 181,
     "unresolvedCodeEdges": 617,
     "dbWriteViaOverlapWarnings": 7,
@@ -4875,9 +4875,10 @@
         "boutique",
         "hero",
         "home",
-        "footer"
+        "footer",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/market-hydration.js",
@@ -4889,7 +4890,7 @@
       "layer": "ui-adapter",
       "criticality": "low",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.",
+      "purpose": "Hydrate les littéraux de marché dans le DOM et propager",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4903,9 +4904,10 @@
         "boutique",
         "market",
         "hero",
-        "seo"
+        "seo",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/product-image-loading-ux.js",
@@ -11095,7 +11097,8 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "relais"
+        "relais",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -11103,12 +11106,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scoped_public_projection"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "boutique",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/relay-dashboard.js",
@@ -18530,7 +18536,7 @@
         "notifications",
         "dashboards"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/otp-test-mode.js",
@@ -28141,6 +28147,11 @@
       "doctrine": "produit_desactive_non_supprime"
     },
     {
+      "id": "doctrine:market_scoped_public_projection",
+      "type": "doctrine",
+      "doctrine": "market_scoped_public_projection"
+    },
+    {
       "id": "doctrine:market_operator_scoping (GAP-2)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-2)"
@@ -36942,6 +36953,12 @@
       "label": "footer"
     },
     {
+      "from": "public/boutique/js/market-context.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "public/boutique/js/market-hydration.js",
       "to": "public/boutique/js/market-context.js",
       "type": "owned-by",
@@ -36970,6 +36987,12 @@
       "to": "impact:seo",
       "type": "impact",
       "label": "seo"
+    },
+    {
+      "from": "public/boutique/js/market-hydration.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "public/boutique/js/product-image-loading-ux.js",
@@ -45918,15 +45941,39 @@
     },
     {
       "from": "routes/relais.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/relais.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
       "from": "routes/relais.js",
+      "to": "doctrine:market_scoped_public_projection",
+      "type": "doctrine",
+      "label": "market_scoped_public_projection"
+    },
+    {
+      "from": "routes/relais.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "routes/relais.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "routes/relais.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "routes/relay-dashboard.js",
@@ -74554,10 +74601,12 @@
         "boutique",
         "hero",
         "home",
-        "footer"
+        "footer",
+        "checkout"
       ],
       "mustCheck": [
         "impact:boutique",
+        "impact:checkout",
         "impact:footer",
         "impact:hero",
         "impact:home",
@@ -74573,7 +74622,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.",
+      "purpose": "Hydrate les littéraux de marché dans le DOM et propager",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -74585,10 +74634,12 @@
         "boutique",
         "market",
         "hero",
-        "seo"
+        "seo",
+        "checkout"
       ],
       "mustCheck": [
         "impact:boutique",
+        "impact:checkout",
         "impact:hero",
         "impact:market",
         "impact:seo",
@@ -80582,20 +80633,28 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "relais"
+        "relais",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scoped_public_projection"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "boutique",
+        "checkout"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
         "db:relais",
+        "doctrine:market_scoped_public_projection",
         "doctrine:resolve_before_behavior_change",
+        "impact:boutique",
+        "impact:checkout",
         "impact:logistics",
         "middleware/auth.js"
       ]
