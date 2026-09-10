@@ -20,11 +20,11 @@ jest.mock('../../services/client-notification-service', () => ({
   resolveOrderMilestones: jest.fn(),
 }));
 
-const consumeAllocationsForOrder = jest.fn().mockResolvedValue({ consumed: 0 });
-const releaseAllocationsForOrder = jest.fn().mockResolvedValue({ released: 0 });
+const mockConsumeAllocationsForOrder = jest.fn().mockResolvedValue({ consumed: 0 });
+const mockReleaseAllocationsForOrder = jest.fn().mockResolvedValue({ released: 0 });
 jest.mock('../../services/local-stock-service', () => ({
-  consumeAllocationsForOrder: (...args) => consumeAllocationsForOrder(...args),
-  releaseAllocationsForOrder: (...args) => releaseAllocationsForOrder(...args),
+  consumeAllocationsForOrder: (...args) => mockConsumeAllocationsForOrder(...args),
+  releaseAllocationsForOrder: (...args) => mockReleaseAllocationsForOrder(...args),
 }));
 
 const {
@@ -53,8 +53,8 @@ function makeDbClient() {
 }
 
 beforeEach(() => {
-  consumeAllocationsForOrder.mockClear();
-  releaseAllocationsForOrder.mockClear();
+  mockConsumeAllocationsForOrder.mockClear();
+  mockReleaseAllocationsForOrder.mockClear();
 });
 
 describe('order-status-machine — Mobile Money payment confirmation', () => {
@@ -81,7 +81,7 @@ describe('order-status-machine — Mobile Money payment confirmation', () => {
       "UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND payment_status = 'pending'",
       [ORDER_ID]
     );
-    expect(consumeAllocationsForOrder).toHaveBeenCalledWith(dbClient, ORDER_ID);
+    expect(mockConsumeAllocationsForOrder).toHaveBeenCalledWith(dbClient, ORDER_ID);
   });
 
   test('les trois sources Mobile Money sont explicitement allowlistées', () => {
@@ -104,6 +104,6 @@ describe('order-status-machine — Mobile Money payment confirmation', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('Source Mobile Money non reconnue');
     expect(dbClient.query).toHaveBeenCalledTimes(1);
-    expect(consumeAllocationsForOrder).not.toHaveBeenCalled();
+    expect(mockConsumeAllocationsForOrder).not.toHaveBeenCalled();
   });
 });
