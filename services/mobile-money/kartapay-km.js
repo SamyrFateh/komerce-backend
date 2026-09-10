@@ -31,6 +31,7 @@ const EXPIRED = new Set(['EXPIRED']);
 const FAILED = new Set(['FAILED', 'CANCELLED', 'CANCELED', 'DECLINED', 'REJECTED']);
 
 let tokenCache = null;
+let nextClientIdForTests = null;
 
 function runtimeEnvironment() {
   return String(process.env.KOMERCE_ENV || process.env.NODE_ENV || '').trim().toLowerCase();
@@ -62,9 +63,6 @@ function isConfigured() {
   if (!c.clientId || !c.clientSecret || !c.merchantId || !c.webhookSecret || !c.apiBaseUrl || !c.tokenUrl) {
     return false;
   }
-
-  // Un credential de staging ne doit jamais rendre le rail disponible sur un
-  // runtime métier de production, même si une variable Railway est mal copiée.
   if (runtimeEnvironment() === 'production' && c.environment === 'staging') return false;
   return true;
 }
@@ -166,10 +164,20 @@ async function getAccessToken(fetchImpl = global.fetch) {
   return tokenCache.value;
 }
 
+function deterministicClientIdForTests(orderReference) {
+  const value = crypto.createHash('sha256').update(`komerce:kartapay:test:${orderReference}`).digest('hex').slice(0, 32);
+  nextClientIdForTests = value;
+  return value;
+}
+
 function newClientId() {
-  // KartaPay exige un clientId unique par paiement. On ne dérive donc PAS cet
-  // identifiant de la référence commande : deux tentatives successives d'une
-  // même commande doivent rester deux paiements distincts et rapprochables.
+  if (nextClientIdForTests) {
+    const value = nextClientIdForTests;
+    nextClientIdForTests = null;
+    return value;
+  }
+  // Production/staging réel : un identifiant neuf par paiement, y compris pour
+  // une seconde tentative sur la même commande après échec ou expiration.
   return crypto.randomUUID().replace(/-/g, '');
 }
 
@@ -307,6 +315,7 @@ function verifyWebhook({ payload, signature, expectedClientId = null, expectedEx
 
 function _resetTokenCacheForTests() {
   tokenCache = null;
+  nextClientIdForTests = null;
 }
 
 module.exports = {
@@ -322,4 +331,5 @@ module.exports = {
   getWebhookReference,
   verifyWebhook,
   _resetTokenCacheForTests,
+  _stableClientIdForTests: deterministicClientIdForTests,
 };
