@@ -45,7 +45,7 @@ test('recycle une fixture SEEDTEST du même Market ID et la transforme en relais
 
   const [updateSql, updateParams] = db.query.mock.calls[2];
   expect(updateSql).toMatch(/zone = \$5/);
-  expect(updateSql).toMatch(/island = \$5/);
+  expect(updateSql).toMatch(/island = NULL/);
   expect(updateParams).toEqual([
     'relay-seed',
     'Relais Komerce Yaoundé Centre',
@@ -60,7 +60,7 @@ test('recycle une fixture SEEDTEST du même Market ID et la transforme en relais
   expect(deactivateParams).toEqual(['market-cm', 'relay-seed']);
 });
 
-test('crée Brazzaville si aucune fixture exploitable n existe', async () => {
+test('crée Brazzaville avec zone mais sans island si aucune fixture exploitable n existe', async () => {
   db.query
     .mockResolvedValueOnce({ rows: [{ id: 'market-cg', code: 'CG', name: 'Congo' }] })
     .mockResolvedValueOnce({ rows: [] })
@@ -73,6 +73,7 @@ test('crée Brazzaville si aucune fixture exploitable n existe', async () => {
   const [insertSql, insertParams] = db.query.mock.calls[2];
   expect(insertSql).toMatch(/INSERT INTO relais/);
   expect(insertSql).toMatch(/zone, island/);
+  expect(insertSql).toMatch(/\$4, NULL, \$5/);
   expect(insertParams).toEqual([
     'Relais Komerce Brazzaville Centre',
     '+242060000001',
