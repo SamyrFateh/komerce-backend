@@ -4,7 +4,9 @@
 --            portait DEFAULT 'Anjouan' NOT NULL — un artefact mono-marché (KM) :
 --            créer un relais hors KM via l'API aurait silencieusement hérité
 --            d'une île comorienne. Rend island nullable ; aucune valeur par
---            défaut géographique n'est plus injectée.
+--            défaut géographique n'est plus injectée. agent_name devient aussi
+--            nullable : créer le point et affecter une personne sont deux
+--            décisions locales distinctes.
 --
 --            Hors périmètre de cette migration : services/routing.js exige
 --            island_code pour le routage inter-îles KM (ANJOUAN vs
@@ -23,11 +25,14 @@
 
 ALTER TABLE relais ALTER COLUMN island DROP DEFAULT;
 ALTER TABLE relais ALTER COLUMN island DROP NOT NULL;
+ALTER TABLE relais ALTER COLUMN agent_name DROP NOT NULL;
 
 COMMENT ON COLUMN relais.island IS
   'Île (nom lisible), pertinent uniquement pour les marchés à géographie insulaire (ex. KM). Nullable — aucune valeur par défaut géographique. Le routage inter-îles (services/routing.js) reste spécifique à KM et exige island_code pour les relais qui en dépendent.';
 COMMENT ON COLUMN relais.island_code IS
   'Code île normalisé, consommé par services/routing.js pour le routage inter-îles KM. Nullable — non applicable hors marchés insulaires. Un relais créé sans île sur un marché qui en a besoin restera incomplet pour le routage tant que ce n''est pas renseigné explicitement.';
+COMMENT ON COLUMN relais.agent_name IS
+  'Nom de la personne actuellement affectée au relais. Nullable : le partenaire peut créer le point relais avant l''affectation d''un agent.';
 
 UPDATE capability_registry
    SET status = 'LIVE', updated_at = NOW()
