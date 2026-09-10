@@ -2944,7 +2944,7 @@ CREATE TABLE public.market_payment_providers (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT market_payment_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
-    CONSTRAINT market_payment_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT market_payment_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text, 'kartapay'::text]))),
     CONSTRAINT market_payment_providers_priority_check CHECK ((priority > 0))
 );
 
@@ -2953,7 +2953,7 @@ CREATE TABLE public.market_payment_providers (
 -- Name: TABLE market_payment_providers; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.market_payment_providers IS 'Providers Mobile Money autorisés par marché. Aucune credential ici : activation métier distincte de la configuration secrète runtime.';
+COMMENT ON TABLE public.market_payment_providers IS 'Providers Mobile Money autorisés par marché. KM utilise KartaPay comme gateway vers MVola/Holo ; credentials exclusivement runtime.';
 
 
 --
@@ -3191,7 +3191,7 @@ CREATE TABLE public.mobile_money_transactions (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT mobile_money_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
-    CONSTRAINT mobile_money_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text]))),
+    CONSTRAINT mobile_money_provider_chk CHECK ((provider = ANY (ARRAY['orange_money'::text, 'mtn_momo'::text, 'kartapay'::text]))),
     CONSTRAINT mobile_money_status_chk CHECK ((status = ANY (ARRAY['initiated'::text, 'pending'::text, 'succeeded'::text, 'failed'::text, 'expired'::text]))),
     CONSTRAINT mobile_money_transactions_amount_minor_check CHECK ((amount_minor > 0)),
     CONSTRAINT mobile_money_transactions_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4)))
