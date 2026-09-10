@@ -41,6 +41,7 @@
     'network.read': 'Lire le réseau local',
     'market_config.read': 'Lire la configuration pays',
     'finance.read': 'Lire la finance du marché',
+    'cash_control.policy.manage': 'Gérer le contrôle des encaissements',
   });
 
   const READ_PRESET = Object.freeze([
