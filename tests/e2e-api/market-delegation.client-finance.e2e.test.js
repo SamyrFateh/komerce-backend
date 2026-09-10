@@ -223,7 +223,7 @@ describeE2E('E2E-MA-03 — market-delegation · SAV, cash, settlement', ({ db })
     expect(ready.status).toBe(201);
     const settlementId = ready.body.settlement.id;
     expect(ready.body.settlement.status).toBe('READY');
-    expect(ready.body.settlement.amount).toBe('125000');
+    expect(Number(ready.body.settlement.amount)).toBe(125000);
     expect(ready.body.settlement.currency).toBe(fx.marketA.currency);
 
     const visible = await request(app)
@@ -267,7 +267,7 @@ describeE2E('E2E-MA-03 — market-delegation · SAV, cash, settlement', ({ db })
       .send({ receipt_note: 'Reçu confirmé' });
     expect(received.status).toBe(200);
     expect(received.body.settlement.status).toBe('RECEIVED');
-    expect(received.body.settlement.amount).toBe('125000');
+    expect(Number(received.body.settlement.amount)).toBe(125000);
     expect(received.body.settlement.currency).toBe(fx.marketA.currency);
 
     const persisted = await db.query(
@@ -276,10 +276,10 @@ describeE2E('E2E-MA-03 — market-delegation · SAV, cash, settlement', ({ db })
     );
     expect(persisted.rows[0]).toMatchObject({
       status: 'RECEIVED',
-      amount: '125000',
       currency: fx.marketA.currency,
       payment_reference: 'BANK-E2E-A-001',
     });
+    expect(Number(persisted.rows[0].amount)).toBe(125000);
 
     const events = await db.query(
       'SELECT event_type FROM market_settlement_events WHERE settlement_id=$1 ORDER BY occurred_at',
