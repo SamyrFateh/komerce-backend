@@ -4,20 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const { CAPABILITIES, autonomyStats } = require('../../config/market-delegation-capabilities');
 const { validateRegistry } = require('../../services/capability-registry');
-const { runCheck } = require('../../scripts/capability-registry-check');
+const { runCheck, CHECKPOINT } = require('../../scripts/capability-registry-check');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 7 (structure-event) advances autonomy to 30/31', () => {
-    expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 30, total: 31, rate: 30 / 31 });
-    expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
-    expect(runCheck({ root: ROOT, print: false })).toMatchObject({
-      ok: true,
-      checkpoint: { lot: '7-structure-event', p0_live: 15, live: 30, delegation: 31 },
+  // Le cliquet d'autonomie vit à UN seul endroit : CHECKPOINT dans
+  // scripts/capability-registry-check.js. Le recopier ici en dur créait une
+  // seconde source de vérité — sur sept lots consécutifs, il a fallu corriger
+  // le même chiffre dans trois fichiers à chaque fois, ce qui transforme un
+  // garde-fou utile en corvée mécanique (et en occasion d'oubli).
+  //
+  // On garde l'intention du cliquet — faire échouer la CI dès que le compte
+  // bouge, pour qu'une bascule LIVE soit toujours un acte délibéré — mais une
+  // seule valeur à bumper.
+  test('registry remains exact and matches the declared autonomy checkpoint', () => {
+    expect(CAPABILITIES).toHaveLength(CHECKPOINT.total);
+    expect(autonomyStats(CAPABILITIES)).toEqual({
+      live: CHECKPOINT.live,
+      total: CHECKPOINT.delegation,
+      rate: CHECKPOINT.live / CHECKPOINT.delegation,
     });
+    expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
+    expect(runCheck({ root: ROOT, print: false })).toMatchObject({ ok: true, checkpoint: CHECKPOINT });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }

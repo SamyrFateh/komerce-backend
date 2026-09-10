@@ -38,7 +38,10 @@ describe('market-delegation cash control API contract', () => {
       requires_audit: true,
       status: 'LIVE',
     });
-    expect(registry.autonomyStats()).toMatchObject({ live: 30, total: 31 });
+    // Le compte global d'autonomie n'est pas le sujet de ce test : il est
+    // détenu par le cliquet unique (CHECKPOINT) et vérifié une seule fois,
+    // dans market-delegation-p0.test.js. L'assertion qui vivait ici obligeait
+    // à corriger le même chiffre dans un troisième fichier à chaque lot.
   });
 
   test('la migration garantit l’alignement policy.assignment → market et ne crée aucun scope GROUP', () => {
