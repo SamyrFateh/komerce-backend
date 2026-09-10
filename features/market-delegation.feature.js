@@ -44,6 +44,7 @@ module.exports = {
       'LOT 2A rend le réseau local (relais) autonome par capabilities network.* ; suspension jamais suppression, pour préserver les FK entrantes (orders, parcels, scans, partners, recipients, shared_carts, users).',
       'LOT 2B rend les providers locaux autonomes par provider.manage ; création, modification, suspension/réactivation restent bornées au Market ID et auditables.',
       'Migration 200 retire le défaut géographique Anjouan hérité d’un système mono-marché ; island/island_code deviennent nullables pour que network.create fonctionne sur tout Market ID sans hériter silencieusement d’une géographie KM.',
+      'LOT 6 délègue la demande et l’accusé de réception d’un settlement sans déléguer sa vérité monétaire ni le passage PAID, qui restent propriété de la feature settlement et du central.',
     ],
   },
 
@@ -77,6 +78,8 @@ module.exports = {
       'LOT 5 (client-case) : workflow de litige (disputes) — capability client.case.handle, transitions open/processing/resolved/closed et note de résolution via dispute-mutation-service.js (orders, lifecycle owner), jamais refund_kmf/refund_eur',
       'un litige reste rattaché à son marché d’origine (via order_id → orders.market_id) ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource',
       'migration 205 : promotion LIVE de client.case.handle backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; la migration elle-même n’écrit jamais refund_kmf/refund_eur',
+      'LOT 6 (settlement) : lecture via finance.read, READY -> REQUESTED via finance.act et PAID -> RECEIVED via settlement.receive ; market-delegation autorise et audite mais la feature settlement possède market_settlements et les écritures',
+      'migration 209 : finance.act + settlement.receive deviennent LIVE et sont backfillées dans les ceilings actifs ; auto-grant seulement aux managers déjà dotés de team.grant + team.revoke + finance.read',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
@@ -88,11 +91,12 @@ module.exports = {
       'routage inter-îles KM (island/island_code consommés par services/routing.js) : hors périmètre, couplage géographique pré-existant non résolu par cette feature',
       'catalogue global (products) : feature catalog, jamais modifié par cette feature — product_market_exposure n’est qu’une projection',
       'câblage du chemin de lecture storefront (catalog-public-view.js / catalog-product-detail.js) : feature catalog, propriétaire de publicCatalogVisibilitySql() et de la logique de résolution marché ; market-delegation ne fait qu’autoriser/auditer la décision d’exposition qui alimente cette lecture',
-      'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',
+      'calcul automatique commission/revenue_share et payout bancaire/Mobile Money : hors LOT 6 ; la feature settlement ne fait qu’attester/tracer le cycle sans inventer de formule ni déclencher de transfert',
       'vérité d’encaissement et état de double confirmation : feature payments',
       'contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard',
-      'montant et décision de remboursement (disputes.refund_kmf/refund_eur) : feature refunds, jamais délégable — vérité financière irréversible. client.case.handle ne pilote que le workflow (statut, résolution textuelle), jamais le chiffre',
+      'montant et décision de remboursement (disputes.refund_kmf/disputes.refund_eur) : feature refunds, jamais délégable — vérité financière irréversible. client.case.handle ne pilote que le workflow (statut, résolution textuelle), jamais le chiffre',
       'cycle de vie status (draft/active/suspended) des services et offres physiques : hors périmètre de local_offer.manage, qui ne bascule que commercial_exposure ; isServiceExposable/isPhysicalOfferExposable continuent d’exiger les deux (status ET exposure) — providers-services reste propriétaire du cycle complet',
+      'création READY, choix amount/currency et passage REQUESTED -> PAID : jamais une autorité de l’opérateur pays ; READY et PAID restent centraux dans la feature settlement',
     ],
   },
 
@@ -110,6 +114,7 @@ module.exports = {
       'migrations/204_market_delegation_local_offer_manage_live.sql',
       'migrations/205_market_delegation_client_case_handle_live.sql',
       'migrations/207_market_delegation_catalog_expose_live.sql',
+      'migrations/209_market_delegation_settlement_live.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -125,6 +130,7 @@ module.exports = {
       'services/market-delegation-catalog-service.js',
       'services/market-delegation-local-offer-service.js',
       'services/market-delegation-client-case-service.js',
+      'services/market-delegation-settlement-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
@@ -134,6 +140,7 @@ module.exports = {
       'routes/market-delegation-catalog.js',
       'routes/market-delegation-local-offer.js',
       'routes/market-delegation-client-case.js',
+      'routes/market-delegation-settlement.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -153,6 +160,8 @@ module.exports = {
       'tests/unit/market-delegation-local-offer-routes.test.js',
       'tests/unit/market-delegation-client-case-service.test.js',
       'tests/unit/market-delegation-client-case-routes.test.js',
+      'tests/unit/market-delegation-settlement-service.test.js',
+      'tests/unit/market-delegation-settlement-routes.test.js',
     ],
   },
 
@@ -168,12 +177,13 @@ module.exports = {
       'market_delegation_audit: RW!',
       'market_team_invitations: RW!',
       'market_cash_control_policies: RW!',
-      'relais: R',  // mutations via logistics/relais-mutation-service
-      'providers: R',  // mutations via providers-services boundaries
-      'services: R',  // exposure via providers-services/providers-service
-      'physical_offers: R',  // exposure via providers-services/providers-service
-      'product_market_exposure: R',  // mutations via catalog/catalog-market-exposure-service
-      'disputes: R',  // mutations via orders/dispute-mutation-service — jamais refund_kmf/refund_eur
+      'relais: R',
+      'providers: R',
+      'services: R',
+      'physical_offers: R',
+      'product_market_exposure: R',
+      'disputes: R',
+      'market_settlements: R',
       'operator_market_scopes: R',
       'markets: R',
       'users: R',
@@ -182,9 +192,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 26,
-    totalRoutes: 26,
-    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 exigent authenticate. Les actions sur un marché exigent ensuite team.*/network.*/provider.manage/cash_control.*/catalog.expose/local_offer.manage/client.case.handle/finance.read résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur network comme sur cash-control comme sur catalog comme sur local-offer comme sur client-case.',
+    authedRoutesDetected: 29,
+    totalRoutes: 29,
+    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 + LOT 6 exigent authenticate. Les actions sur un marché exigent ensuite les capabilities résolues depuis assignment_memberships + membership_capabilities et bornées par le ceiling. Settlement ajoute finance.read/finance.act/settlement.receive sans requireRole global côté pays ; READY et PAID restent sur la surface centrale de la feature settlement. Aucun market_id client ne sert de preuve d’autorité.',
   },
 
   contract: {
@@ -215,9 +225,11 @@ module.exports = {
       'PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage',
       'GET /api/market-delegation/markets/:marketCode/client-cases/disputes — client.case.handle',
       'PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId — client.case.handle',
+      'GET /api/market-delegation/markets/:marketCode/settlements — finance.read',
+      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request — finance.act',
+      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive',
     ],
     internalApi: [
-      { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
       { fn: 'replaceCeiling', file: 'services/market-delegation-service.js' },
       { fn: 'addMembership', file: 'services/market-delegation-service.js' },
       { fn: 'grantMembershipCapabilities', file: 'services/market-delegation-service.js' },
@@ -246,11 +258,14 @@ module.exports = {
       { fn: 'setPhysicalOfferExposure', file: 'services/market-delegation-local-offer-service.js' },
       { fn: 'listDisputes', file: 'services/market-delegation-client-case-service.js' },
       { fn: 'updateDisputeWorkflow', file: 'services/market-delegation-client-case-service.js' },
+      { fn: 'listSettlements', file: 'services/market-delegation-settlement-service.js' },
+      { fn: 'requestSettlement', file: 'services/market-delegation-settlement-service.js' },
+      { fn: 'confirmSettlementReceived', file: 'services/market-delegation-settlement-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement'],
   },
 
-  authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées.',
+  authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
 
   invariants: [
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
@@ -284,5 +299,9 @@ module.exports = {
     { statement: 'les routes client-case refusent explicitement refund_kmf/refund_eur dans le corps de la requête, même si le client les envoie', test: 'tests/unit/market-delegation-client-case-routes.test.js' },
     { statement: 'un litige ne peut jamais être lu ou modifié par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence', test: 'tests/unit/market-delegation-client-case-service.test.js' },
     { statement: 'migration 205 backfille le ceiling des assignments actifs et auto-accorde client.case.handle aux managers déjà reconnus, jamais aux viewers, sans jamais toucher refund_kmf/refund_eur', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'finance.act ne fait que READY -> REQUESTED sur un settlement du même assignment et n’accepte aucun champ monétaire', test: 'tests/unit/market-delegation-settlement-service.test.js' },
+    { statement: 'settlement.receive ne fait que PAID -> RECEIVED et reste une capability distincte de finance.act', test: 'tests/unit/market-delegation-settlement-service.test.js' },
+    { statement: 'les routes settlement pays refusent market_id/marketId, amount, currency, statut et preuve de paiement comme autorité ; REQUEST n’accepte aucun body et RECEIVE seulement receipt_note', test: 'tests/unit/market-delegation-settlement-routes.test.js' },
+    { statement: 'migration 209 active les deux capabilities settlement sans jamais créer ni modifier une ligne market_settlements', test: 'tests/unit/market-delegation-p0.test.js' },
   ],
 };

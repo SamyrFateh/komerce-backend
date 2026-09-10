@@ -52,9 +52,20 @@ describe('market-delegation team UI', () => {
     expect(js).toContain('const available = [...team.actor_capabilities].sort()');
     expect(js).toContain("'cash_control.policy.manage': 'Gérer le contrôle des encaissements'");
     expect(js).toContain("'provider.manage': 'Gérer les prestataires locaux'");
+    expect(js).toContain("'finance.act': 'Demander un règlement'");
+    expect(js).toContain("'settlement.receive': 'Confirmer la réception d’un règlement'");
     expect(js).toContain('/team/invitations');
     expect(js).toContain('/capabilities');
     expect(js).not.toContain('market_id');
     expect(js).not.toContain('marketId');
+  });
+
+  test('les droits d’action settlement ne sont jamais ajoutés au preset lecture', () => {
+    const js = read('public/dashboards/canonical/js/market-team.js');
+    const preset = js.match(/const READ_PRESET = Object\.freeze\(\[([\s\S]*?)\]\);/);
+    expect(preset).not.toBeNull();
+    expect(preset[1]).toContain("'finance.read'");
+    expect(preset[1]).not.toContain("'finance.act'");
+    expect(preset[1]).not.toContain("'settlement.receive'");
   });
 });

@@ -10,13 +10,13 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 4 catalog.expose cutover advances autonomy to 27/31', () => {
+  test('registry remains exact and LOT settlement advances autonomy to 29/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 27, total: 31, rate: 27 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 29, total: 31, rate: 29 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '4-catalog-expose-cutover', p0_live: 15, live: 27, delegation: 31 },
+      checkpoint: { lot: '6-settlement', p0_live: 15, live: 29, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
@@ -24,9 +24,9 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     for (const capability of ['network.create', 'network.update', 'network.suspend', 'provider.manage']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
-    expect(CAPABILITIES.find(row => row.capability === 'local_offer.manage')?.status).toBe('LIVE');
-    expect(CAPABILITIES.find(row => row.capability === 'client.case.handle')?.status).toBe('LIVE');
-    expect(CAPABILITIES.find(row => row.capability === 'catalog.expose')?.status).toBe('LIVE');
+    for (const capability of ['local_offer.manage', 'client.case.handle', 'catalog.expose', 'finance.act', 'settlement.receive']) {
+      expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
+    }
   });
 
   test('GROUP is structurally outside market delegation', () => {
@@ -138,6 +138,22 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/migration-207/);
     expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
     expect(migration).not.toMatch(/UPDATE users/i);
+  });
+
+  test('promotion settlement LIVE aligne ceiling et managers finance sans créer de vérité financière', () => {
+    const migration = read('migrations/209_market_delegation_settlement_live.sql');
+    expect(migration).toMatch(/finance\.act/);
+    expect(migration).toMatch(/settlement\.receive/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'finance\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/migration-209/);
+    expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
+    expect(migration).not.toMatch(/INSERT INTO market_settlements/i);
+    expect(migration).not.toMatch(/UPDATE market_settlements/i);
   });
 
   test('la migration 207 (activation catalog.expose) ne touche jamais product_market_exposure — séparation stricte d\'avec le snapshot 206', () => {

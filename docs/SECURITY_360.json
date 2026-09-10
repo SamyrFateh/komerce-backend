@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-10T12:09:11.012Z",
+  "generatedAt": "2026-09-10T15:23:08.049Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 619,
-    "protected": 566,
+    "total": 625,
+    "protected": 572,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1024,6 +1024,30 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-settlements/markets/{marketCode}/settlements",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/settlements/{settlementId}/paid",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
       ]
     },
     {
@@ -3152,6 +3176,21 @@
     },
     {
       "key": "POST /api/market-delegation/markets/{marketCode}/network/relais",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/receive",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/request",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/settlements",
       "level": "PROTECTED",
       "roles": []
     },

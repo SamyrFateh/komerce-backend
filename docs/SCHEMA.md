@@ -151,7 +151,20 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `cash_confirmation_controls` | État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement. **Migration 199 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
-
+<!-- schema-pending
+object: market_settlements
+kind: table
+migration: 208
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Vérité de règlement du Market Operating Assignment ; snapshot amount + currency immuable et cycle READY -> REQUESTED -> PAID -> RECEIVED, sans payout implicite.
+-->
+<!-- schema-pending
+object: market_settlement_events
+kind: table
+migration: 208
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Journal financier append-only du lifecycle settlement ; UPDATE et DELETE interdits, distinct de market_delegation_audit.
+-->
 
 ### 4.5 Paniers et catalogue
 
