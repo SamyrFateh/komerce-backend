@@ -10,13 +10,13 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 5 (client-case) advances autonomy to 26/31', () => {
+  test('registry remains exact and LOT 4 catalog.expose cutover advances autonomy to 27/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 26, total: 31, rate: 26 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 27, total: 31, rate: 27 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '5-client-case', p0_live: 15, live: 26, delegation: 31 },
+      checkpoint: { lot: '4-catalog-expose-cutover', p0_live: 15, live: 27, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
@@ -26,7 +26,7 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     }
     expect(CAPABILITIES.find(row => row.capability === 'local_offer.manage')?.status).toBe('LIVE');
     expect(CAPABILITIES.find(row => row.capability === 'client.case.handle')?.status).toBe('LIVE');
-    expect(CAPABILITIES.find(row => row.capability === 'catalog.expose')?.status).toBe('MISSING');
+    expect(CAPABILITIES.find(row => row.capability === 'catalog.expose')?.status).toBe('LIVE');
   });
 
   test('GROUP is structurally outside market delegation', () => {
@@ -124,5 +124,32 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).not.toMatch(/UPDATE disputes/i);
     expect(migration).not.toMatch(/refund_kmf\s*=/);
     expect(migration).not.toMatch(/refund_eur\s*=/);
+  });
+
+  test('promotion catalog.expose LIVE aligne ceiling et responsables pays sans élargir les viewers', () => {
+    const migration = read('migrations/207_market_delegation_catalog_expose_live.sql');
+    expect(migration).toMatch(/catalog\.expose/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'network\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/migration-207/);
+    expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
+    expect(migration).not.toMatch(/UPDATE users/i);
+  });
+
+  test('la migration 207 (activation catalog.expose) ne touche jamais product_market_exposure — séparation stricte d\'avec le snapshot 206', () => {
+    const migration = read('migrations/207_market_delegation_catalog_expose_live.sql');
+    expect(migration).not.toMatch(/INSERT INTO product_market_exposure/i);
+    expect(migration).not.toMatch(/UPDATE product_market_exposure/i);
+  });
+
+  test('la migration 206 (snapshot de compatibilité) ne touche jamais capability_registry — séparation stricte d\'avec l\'activation 207', () => {
+    const migration = read('migrations/206_catalog_product_market_exposure_snapshot.sql');
+    expect(migration).not.toMatch(/UPDATE capability_registry/i);
+    expect(migration).not.toMatch(/assignment_capability_ceiling/i);
+    expect(migration).not.toMatch(/membership_capabilities/i);
   });
 });

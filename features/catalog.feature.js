@@ -48,6 +48,8 @@ module.exports = {
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
+      'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
+      'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
     ],
     out: [
       'calcul du prix final et valorisation transport (feature economic-engine)',
@@ -56,7 +58,6 @@ module.exports = {
       'fiche snapshot lecture seule du panier partage (feature shared-cart)',
       'checkout final et paiement (features orders/payments)',
       'décision d’exposition produit x marché (qui écrit product_market_exposure) : feature market-delegation, capability catalog.expose',
-      'câblage du fail-closed dans le chemin de lecture storefront : hors périmètre tant qu’une stratégie de backfill n’est pas tranchée — voir feature market-delegation, section perimeter',
     ],
   },
 
@@ -146,6 +147,7 @@ module.exports = {
       'migrations/147_catalog_global_access_grants.sql',
       'migrations/163_supplier_catalog_sync_checkpoints.sql',
       'migrations/202_catalog_product_market_exposure.sql',
+      'migrations/206_catalog_product_market_exposure_snapshot.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -282,6 +284,8 @@ module.exports = {
       'tests/unit/canonical-catalog-authority-boundary.test.js',
       'tests/unit/require-catalog-global-authority.test.js',
       'tests/unit/catalog-market-exposure-service.test.js',
+      'tests/unit/catalog-market-exposure-snapshot.test.js',
+      'tests/unit/catalog-public-exposure-gate.test.js',
     ],
   },
 
