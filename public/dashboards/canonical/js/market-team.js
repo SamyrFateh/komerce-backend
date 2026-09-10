@@ -42,6 +42,8 @@
     'provider.manage': 'Gérer les prestataires locaux',
     'market_config.read': 'Lire la configuration pays',
     'finance.read': 'Lire la finance du marché',
+    'finance.act': 'Demander un règlement',
+    'settlement.receive': 'Confirmer la réception d’un règlement',
     'cash_control.policy.manage': 'Gérer le contrôle des encaissements',
   });
 
