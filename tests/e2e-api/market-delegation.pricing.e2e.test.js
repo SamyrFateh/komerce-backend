@@ -53,15 +53,25 @@ describeE2E('E2E-MA-06 — market-delegation · pricing pays', ({ db }) => {
     );
     product = { id: productId, ref: productRef, global_price_kmf: 100000 };
 
-    const { rows } = await db.query(
-      `SELECT id, key, default_value
-         FROM cost_components
-        WHERE is_active = TRUE
-        ORDER BY display_order NULLS LAST, key
-        LIMIT 1`
+    // Le dump Railway de structure est volontairement sans données métier.
+    // L'E2E ne dépend donc d'aucun seed externe : il crée son composant canonique
+    // isolé puis le supprime au cleanup.
+    const componentId = uuid();
+    const componentKey = `e2e_market_cost_${tag('component').replace(/[^A-Za-z0-9]/g, '').slice(-10).toLowerCase()}`;
+    await db.query(
+      `INSERT INTO cost_components (
+         id, key, label, description, family, category, economic_nature,
+         allocation_perimeter, default_value, unit, currency, scope,
+         allocation_method, source, confidence, is_active, is_editable,
+         is_deletable, display_order
+       ) VALUES (
+         $1,$2,'Coût local E2E','Fixture autonome Market ID',
+         'business','fixed_overhead','fixed','direct',100,'kmf','KMF','global',
+         'none','manual','high',TRUE,TRUE,TRUE,999
+       )`,
+      [componentId, componentKey]
     );
-    if (!rows[0]) throw new Error('E2E pricing requires at least one active cost component');
-    component = rows[0];
+    component = { id: componentId, key: componentKey, default_value: 100 };
   });
 
   afterAll(async () => {
@@ -74,6 +84,7 @@ describeE2E('E2E-MA-06 — market-delegation · pricing pays', ({ db }) => {
       fx.cleanup.trackSql('DELETE FROM product_market_price_drafts WHERE product_id=$1', [product.id]);
     }
     if (component) {
+      fx.cleanup.track('cost_components', 'id', component.id);
       fx.cleanup.trackSql(
         'DELETE FROM cost_component_market_override_events WHERE market_id IN ($1,$2) AND component_id=$3',
         [fx.marketA.id, fx.marketB.id, component.id]
