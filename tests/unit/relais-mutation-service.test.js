@@ -23,10 +23,25 @@ describe('relais-mutation-service (logistics write boundary)', () => {
     expect(relais.id).toBe('r1');
   });
 
-  test('champ requis manquant échoue avant toute requête SQL', async () => {
+  test('un relais peut être créé avant affectation d’un agent', async () => {
+    const db = executor();
+    db.query.mockImplementationOnce(async (sql, params) => {
+      expect(sql).toMatch(/INSERT INTO relais/);
+      expect(params[2]).toBeNull();
+      return { rows: [{ id: 'r2', market_id: 'mkt-cm', agent_name: null, is_active: true }] };
+    });
+
+    const relais = await relaisMutation.createRelais(db, {
+      marketId: 'mkt-cm', name: 'Relais sans agent', phone: '1', address: 'Adresse',
+    });
+
+    expect(relais).toMatchObject({ id: 'r2', agent_name: null });
+  });
+
+  test('champ structurel requis manquant échoue avant toute requête SQL', async () => {
     const db = executor();
     await expect(relaisMutation.createRelais(db, {
-      marketId: 'mkt-cm', name: '', agentName: 'A', phone: '1', address: 'Adresse',
+      marketId: 'mkt-cm', name: '', phone: '1', address: 'Adresse',
     })).rejects.toMatchObject({ code: 'NETWORK_FIELD_REQUIRED' });
     expect(db.query).not.toHaveBeenCalled();
   });
