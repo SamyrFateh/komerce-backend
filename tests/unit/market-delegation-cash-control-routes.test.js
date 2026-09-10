@@ -38,7 +38,7 @@ describe('market-delegation cash control API contract', () => {
       requires_audit: true,
       status: 'LIVE',
     });
-    expect(registry.autonomyStats()).toMatchObject({ live: 23, total: 31 });
+    expect(registry.autonomyStats()).toMatchObject({ live: 24, total: 31 });
   });
 
   test('la migration garantit l’alignement policy.assignment → market et ne crée aucun scope GROUP', () => {
