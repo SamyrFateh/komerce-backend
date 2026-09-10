@@ -135,6 +135,7 @@ module.exports = {
       'services/market-delegation-client-case-service.js',
       'services/market-delegation-settlement-service.js',
       'services/market-delegation-structure-event-service.js',
+      'services/market-delegation-performance-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
@@ -146,6 +147,7 @@ module.exports = {
       'routes/market-delegation-client-case.js',
       'routes/market-delegation-settlement.js',
       'routes/market-delegation-structure-event.js',
+      'routes/market-delegation-performance.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -169,6 +171,8 @@ module.exports = {
       'tests/unit/market-delegation-settlement-routes.test.js',
       'tests/unit/market-delegation-structure-event-service.test.js',
       'tests/unit/market-delegation-structure-event-routes.test.js',
+      'tests/unit/market-delegation-performance-service.test.js',
+      'tests/unit/market-delegation-performance-routes.test.js',
     ],
   },
 
@@ -200,8 +204,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 31,
-    totalRoutes: 31,
+    authedRoutesDetected: 32,
+    totalRoutes: 32,
     note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 + LOT 6 + LOT 7 exigent authenticate. Les actions sur un marché exigent ensuite les capabilities résolues depuis assignment_memberships + membership_capabilities et bornées par le ceiling. Settlement ajoute finance.read/finance.act/settlement.receive sans requireRole global côté pays ; READY et PAID restent sur la surface centrale de la feature settlement. Structure-event ajoute structure.event.record (écriture, MARKET_DIRECT forcé) et réutilise pricing.read (lecture, déjà LIVE) sans créer de nouvelle capability de lecture. Aucun market_id client ne sert de preuve d’autorité.',
   },
 
@@ -238,6 +242,7 @@ module.exports = {
       'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive',
       'GET /api/market-delegation/markets/:marketCode/structure-events — pricing.read',
       'POST /api/market-delegation/markets/:marketCode/structure-events — structure.event.record',
+      'GET /api/market-delegation/markets/:marketCode/performance — finance.read (lecture seule, projection du moteur économique)',
     ],
     internalApi: [
       { fn: 'replaceCeiling', file: 'services/market-delegation-service.js' },

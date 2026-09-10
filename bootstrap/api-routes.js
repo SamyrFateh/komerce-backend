@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-network.js, routes/market-delegation-provider.js, routes/market-delegation-catalog.js, routes/market-delegation-local-offer.js, routes/market-delegation-client-case.js, routes/market-delegation-settlement.js, routes/market-delegation-structure-event.js, routes/admin-market-settlement.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-network.js, routes/market-delegation-provider.js, routes/market-delegation-catalog.js, routes/market-delegation-local-offer.js, routes/market-delegation-client-case.js, routes/market-delegation-settlement.js, routes/market-delegation-structure-event.js, routes/market-delegation-performance.js, routes/admin-market-settlement.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -125,6 +125,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const marketDelegationClientCaseRouter = require('../routes/market-delegation-client-case');
   const marketDelegationSettlementRouter = require('../routes/market-delegation-settlement');
   const marketDelegationStructureEventRouter = require('../routes/market-delegation-structure-event');
+  const marketDelegationPerformanceRouter = require('../routes/market-delegation-performance');
   const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic');
@@ -244,6 +245,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/market-delegation', marketDelegationClientCaseRouter);
   app.use('/api/market-delegation', marketDelegationSettlementRouter);
   app.use('/api/market-delegation', marketDelegationStructureEventRouter);
+  app.use('/api/market-delegation', marketDelegationPerformanceRouter);
   // Vague 2 D6 — GET read-only, aucune mutation, jamais de champ interne
   // (téléphone, provider_id, pourquoi d'une indisponibilité). commercial_
   // exposure reste DISABLED partout : monté = joignable, pas = visible.
