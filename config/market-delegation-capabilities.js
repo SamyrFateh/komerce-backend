@@ -14,7 +14,7 @@ const CAPABILITIES = Object.freeze([
   ['operations.read','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['hub.supervise','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['client.read','DELEGATION','client','MARKET','DELEGABLE',false,'LIVE'],
-  ['client.case.handle','DELEGATION','client','MARKET','DELEGABLE',true,'MISSING'],
+  ['client.case.handle','DELEGATION','client','MARKET','DELEGABLE',true,'LIVE'],
   ['team.read','DELEGATION','team','MARKET','DELEGABLE',false,'LIVE'],
   ['team.grant','DELEGATION','team','MARKET','DELEGABLE',true,'LIVE'],
   ['team.revoke','DELEGATION','team','MARKET','DELEGABLE',true,'LIVE'],

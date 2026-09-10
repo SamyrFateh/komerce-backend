@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-10T11:08:44.339Z",
+  "generatedAt": "2026-09-10T11:37:09.529Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 617,
-    "protected": 564,
+    "total": 619,
+    "protected": 566,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3072,6 +3072,16 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/client-cases/disputes",
       "level": "PROTECTED",
       "roles": []
     },

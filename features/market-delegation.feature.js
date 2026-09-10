@@ -73,6 +73,9 @@ module.exports = {
       'LOT 4 (local-offer) : exposition commerciale des services/offres physiques déjà créés — capability local_offer.manage, toggle ENABLED/DISABLED sur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression',
       'un service ou une offre physique reste rattaché à son marché d’origine ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource',
       'migration 204 : promotion LIVE de local_offer.manage backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers',
+      'LOT 5 (client-case) : workflow de litige (disputes) — capability client.case.handle, transitions open/processing/resolved/closed et note de résolution via dispute-mutation-service.js (orders, lifecycle owner), jamais refund_kmf/refund_eur',
+      'un litige reste rattaché à son marché d’origine (via order_id → orders.market_id) ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource',
+      'migration 205 : promotion LIVE de client.case.handle backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; la migration elle-même n’écrit jamais refund_kmf/refund_eur',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
@@ -87,6 +90,7 @@ module.exports = {
       'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',
       'vérité d’encaissement et état de double confirmation : feature payments',
       'contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard',
+      'montant et décision de remboursement (disputes.refund_kmf/refund_eur) : feature refunds, jamais délégable — vérité financière irréversible. client.case.handle ne pilote que le workflow (statut, résolution textuelle), jamais le chiffre',
       'cycle de vie status (draft/active/suspended) des services et offres physiques : hors périmètre de local_offer.manage, qui ne bascule que commercial_exposure ; isServiceExposable/isPhysicalOfferExposable continuent d’exiger les deux (status ET exposure) — providers-services reste propriétaire du cycle complet',
     ],
   },
@@ -103,6 +107,7 @@ module.exports = {
       'migrations/201_market_network_promotion_agent_optional.sql',
       'migrations/203_market_delegation_provider_manage_live.sql',
       'migrations/204_market_delegation_local_offer_manage_live.sql',
+      'migrations/205_market_delegation_client_case_handle_live.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -117,6 +122,7 @@ module.exports = {
       'services/market-delegation-provider-service.js',
       'services/market-delegation-catalog-service.js',
       'services/market-delegation-local-offer-service.js',
+      'services/market-delegation-client-case-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
@@ -125,6 +131,7 @@ module.exports = {
       'routes/market-delegation-provider.js',
       'routes/market-delegation-catalog.js',
       'routes/market-delegation-local-offer.js',
+      'routes/market-delegation-client-case.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -142,6 +149,8 @@ module.exports = {
       'tests/unit/market-delegation-catalog-routes.test.js',
       'tests/unit/market-delegation-local-offer-service.test.js',
       'tests/unit/market-delegation-local-offer-routes.test.js',
+      'tests/unit/market-delegation-client-case-service.test.js',
+      'tests/unit/market-delegation-client-case-routes.test.js',
     ],
   },
 
@@ -162,6 +171,7 @@ module.exports = {
       'services: R',  // exposure via providers-services/providers-service
       'physical_offers: R',  // exposure via providers-services/providers-service
       'product_market_exposure: R',  // mutations via catalog/catalog-market-exposure-service
+      'disputes: R',  // mutations via orders/dispute-mutation-service — jamais refund_kmf/refund_eur
       'operator_market_scopes: R',
       'markets: R',
       'users: R',
@@ -170,9 +180,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 24,
-    totalRoutes: 24,
-    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 exigent authenticate. Les actions sur un marché exigent ensuite team.*/network.*/provider.manage/cash_control.*/catalog.expose/local_offer.manage/finance.read résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur network comme sur cash-control comme sur catalog comme sur local-offer.',
+    authedRoutesDetected: 26,
+    totalRoutes: 26,
+    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 exigent authenticate. Les actions sur un marché exigent ensuite team.*/network.*/provider.manage/cash_control.*/catalog.expose/local_offer.manage/client.case.handle/finance.read résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur network comme sur cash-control comme sur catalog comme sur local-offer comme sur client-case.',
   },
 
   contract: {
@@ -201,6 +211,8 @@ module.exports = {
       'PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId — local_offer.manage',
       'GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers — local_offer.manage',
       'PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage',
+      'GET /api/market-delegation/markets/:marketCode/client-cases/disputes — client.case.handle',
+      'PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId — client.case.handle',
     ],
     internalApi: [
       { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
@@ -230,8 +242,10 @@ module.exports = {
       { fn: 'listPhysicalOffers', file: 'services/market-delegation-local-offer-service.js' },
       { fn: 'setServiceExposure', file: 'services/market-delegation-local-offer-service.js' },
       { fn: 'setPhysicalOfferExposure', file: 'services/market-delegation-local-offer-service.js' },
+      { fn: 'listDisputes', file: 'services/market-delegation-client-case-service.js' },
+      { fn: 'updateDisputeWorkflow', file: 'services/market-delegation-client-case-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées.',
@@ -263,5 +277,10 @@ module.exports = {
     { statement: 'un service ou une offre physique ne peut jamais être exposé/masqué par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence', test: 'tests/unit/market-delegation-local-offer-service.test.js' },
     { statement: 'migration 204 backfille le ceiling des assignments actifs et auto-accorde local_offer.manage aux managers déjà reconnus (team.grant + team.revoke + network.read), jamais aux viewers', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'les routes local-offer refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-local-offer-routes.test.js' },
+    { statement: 'client.case.handle ne permet aucune transition directe (ex. open -> resolved) ; le workflow suit open -> processing -> resolved|closed', test: 'tests/unit/dispute-mutation-service.test.js' },
+    { statement: 'client.case.handle n’écrit jamais refund_kmf ni refund_eur — ni le service d’orchestration, ni la frontière orders, ni la migration de promotion ; le remboursement reste feature refunds', test: 'tests/unit/market-delegation-client-case-service.test.js' },
+    { statement: 'les routes client-case refusent explicitement refund_kmf/refund_eur dans le corps de la requête, même si le client les envoie', test: 'tests/unit/market-delegation-client-case-routes.test.js' },
+    { statement: 'un litige ne peut jamais être lu ou modifié par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence', test: 'tests/unit/market-delegation-client-case-service.test.js' },
+    { statement: 'migration 205 backfille le ceiling des assignments actifs et auto-accorde client.case.handle aux managers déjà reconnus, jamais aux viewers, sans jamais toucher refund_kmf/refund_eur', test: 'tests/unit/market-delegation-p0.test.js' },
   ],
 };
