@@ -58,8 +58,8 @@ CREATE INDEX IF NOT EXISTS idx_market_settlement_events_settlement
   ON market_settlement_events (settlement_id, occurred_at ASC);
 
 -- Cohérence structurelle + immutabilité de la vérité monétaire et de l'identité
--- économique. Même un appel SQL central ne peut pas réécrire amount/currency,
--- changer de marché/assignment ou faire un saut de statut silencieux.
+-- économique. Même un appel SQL direct ne peut pas préremplir des étapes futures,
+-- réécrire amount/currency, changer de marché/assignment ou sauter un statut.
 CREATE OR REPLACE FUNCTION enforce_market_settlement_invariants()
 RETURNS trigger AS $$
 DECLARE
@@ -82,6 +82,11 @@ BEGIN
     IF NEW.status <> 'READY' THEN
       RAISE EXCEPTION 'market_settlement_must_start_ready';
     END IF;
+    IF NEW.requested_by IS NOT NULL OR NEW.requested_at IS NOT NULL
+       OR NEW.paid_by IS NOT NULL OR NEW.paid_at IS NOT NULL OR NEW.payment_reference IS NOT NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_future_stage_fields_forbidden';
+    END IF;
     RETURN NEW;
   END IF;
 
@@ -98,11 +103,29 @@ BEGIN
     RAISE EXCEPTION 'market_settlement_attestation_immutable';
   END IF;
 
-  IF NOT (
-    (OLD.status = 'READY' AND NEW.status = 'REQUESTED') OR
-    (OLD.status = 'REQUESTED' AND NEW.status = 'PAID') OR
-    (OLD.status = 'PAID' AND NEW.status = 'RECEIVED')
-  ) THEN
+  IF OLD.status = 'READY' AND NEW.status = 'REQUESTED' THEN
+    IF NEW.requested_by IS NULL OR NEW.requested_at IS NULL
+       OR NEW.paid_by IS NOT NULL OR NEW.paid_at IS NOT NULL OR NEW.payment_reference IS NOT NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_requested_stage_invalid';
+    END IF;
+  ELSIF OLD.status = 'REQUESTED' AND NEW.status = 'PAID' THEN
+    IF NEW.requested_by IS DISTINCT FROM OLD.requested_by
+       OR NEW.requested_at IS DISTINCT FROM OLD.requested_at
+       OR NEW.paid_by IS NULL OR NEW.paid_at IS NULL OR NULLIF(BTRIM(NEW.payment_reference), '') IS NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_paid_stage_invalid';
+    END IF;
+  ELSIF OLD.status = 'PAID' AND NEW.status = 'RECEIVED' THEN
+    IF NEW.requested_by IS DISTINCT FROM OLD.requested_by
+       OR NEW.requested_at IS DISTINCT FROM OLD.requested_at
+       OR NEW.paid_by IS DISTINCT FROM OLD.paid_by
+       OR NEW.paid_at IS DISTINCT FROM OLD.paid_at
+       OR NEW.payment_reference IS DISTINCT FROM OLD.payment_reference
+       OR NEW.received_by IS NULL OR NEW.received_at IS NULL THEN
+      RAISE EXCEPTION 'market_settlement_received_stage_invalid';
+    END IF;
+  ELSE
     RAISE EXCEPTION 'market_settlement_transition_invalid:%->%', OLD.status, NEW.status;
   END IF;
 
