@@ -7,7 +7,7 @@
  * @inputs        provider_id, service_id, physical_offer_id, inquiry_id, market_id, texte libre
  * @outputs       provider_row, service_row, physical_offer_row, inquiry_row
  * @depends       db
- * @used-by       (aucun — shadow, appel direct scripts/tests dans cette PR)
+ * @used-by       services/market-delegation-provider-service.js
  * @db-read       providers, services, physical_offers, inquiries, markets
  * @db-write      providers, services, physical_offers, inquiries
  * @db-txn        single_statement_sufficient
@@ -93,14 +93,14 @@ const INQUIRY_STATUS = Object.freeze({
  * @param {string} params.marketId
  * @returns {Promise<object>}
  */
-async function createProvider({ name, phone, marketId }) {
+async function createProvider({ name, phone, marketId }, executor = db) {
   if (!name || !phone) {
     throw new Error('createProvider: name et phone sont requis');
   }
   if (!marketId) {
     throw new Error('createProvider: market_id est requis');
   }
-  const { rows: marketRows } = await db.query(
+  const { rows: marketRows } = await executor.query(
     'SELECT id FROM markets WHERE id = $1 AND is_active = true',
     [marketId]
   );
@@ -108,7 +108,7 @@ async function createProvider({ name, phone, marketId }) {
     throw new Error(`createProvider: marché introuvable ou inactif (${marketId})`);
   }
 
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `INSERT INTO providers (name, phone, market_id, status)
      VALUES ($1, $2, $3, $4)
      RETURNING id, name, phone, market_id, status, created_at, updated_at`,
@@ -125,13 +125,14 @@ async function createProvider({ name, phone, marketId }) {
  *
  * @param {string} providerId
  * @param {'pending'|'active'|'suspended'} status
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
  * @returns {Promise<object>}
  */
-async function setProviderStatus(providerId, status) {
+async function setProviderStatus(providerId, status, executor = db) {
   if (!Object.values(PROVIDER_STATUS).includes(status)) {
     throw new Error(`setProviderStatus: statut invalide (${status})`);
   }
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `UPDATE providers SET status = $2, updated_at = now()
      WHERE id = $1
      RETURNING id, name, phone, market_id, status, created_at, updated_at`,
@@ -141,9 +142,77 @@ async function setProviderStatus(providerId, status) {
   return rows[0];
 }
 
-async function getProvider(providerId) {
-  const { rows } = await db.query('SELECT * FROM providers WHERE id = $1', [providerId]);
+async function getProvider(providerId, executor = db) {
+  const { rows } = await executor.query('SELECT * FROM providers WHERE id = $1', [providerId]);
   return rows[0] || null;
+}
+
+/**
+ * Liste les providers d'un marché, les actifs/en attente d'abord.
+ *
+ * @param {string} marketId
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
+ * @returns {Promise<object[]>}
+ */
+async function listProviders(marketId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT id, name, phone, market_id, status, public_phone, public_whatsapp, created_at, updated_at
+       FROM providers
+      WHERE market_id = $1
+      ORDER BY (status = 'suspended'), name`,
+    [marketId]
+  );
+  return rows;
+}
+
+/**
+ * Récupère un provider en garantissant qu'il appartient au marché indiqué.
+ * Renvoie null (jamais une erreur distincte) si le provider existe mais sur
+ * un autre marché — l'appelant traite ce cas comme "introuvable" (404), pour
+ * ne jamais confirmer l'existence d'une ressource hors périmètre.
+ *
+ * @param {string} providerId
+ * @param {string} marketId
+ * @returns {Promise<object|null>}
+ */
+async function getOwnedProvider(providerId, marketId, executor = db) {
+  const provider = await getProvider(providerId, executor);
+  if (!provider || provider.market_id !== marketId) return null;
+  return provider;
+}
+
+/**
+ * Modifie les coordonnées d'un provider. Le marché n'est jamais réassignable
+ * ici — un provider ne change pas de Market ID par une simple mise à jour.
+ *
+ * @param {string} providerId
+ * @param {string} marketId
+ * @param {object} patch
+ * @param {string} [patch.name]
+ * @param {string} [patch.phone]
+ * @param {string|null} [patch.publicPhone]
+ * @param {string|null} [patch.publicWhatsapp]
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
+ * @returns {Promise<object|null>} null si le provider n'existe pas sur ce marché
+ */
+async function updateProvider(providerId, marketId, patch = {}, executor = db) {
+  const before = await getOwnedProvider(providerId, marketId, executor);
+  if (!before) return null;
+
+  const name = patch.name !== undefined ? String(patch.name || '').trim() : before.name;
+  const phone = patch.phone !== undefined ? String(patch.phone || '').trim() : before.phone;
+  if (!name || !phone) throw new Error('updateProvider: name et phone sont requis');
+  const publicPhone = patch.publicPhone !== undefined ? (patch.publicPhone || null) : before.public_phone;
+  const publicWhatsapp = patch.publicWhatsapp !== undefined ? (patch.publicWhatsapp || null) : before.public_whatsapp;
+
+  const { rows } = await executor.query(
+    `UPDATE providers
+        SET name = $2, phone = $3, public_phone = $4, public_whatsapp = $5, updated_at = now()
+      WHERE id = $1 AND market_id = $6
+      RETURNING id, name, phone, market_id, status, public_phone, public_whatsapp, created_at, updated_at`,
+    [providerId, name, phone, publicPhone, publicWhatsapp, marketId]
+  );
+  return { before, after: rows[0] };
 }
 
 // ── Service ──────────────────────────────────────────────────────────────
@@ -475,6 +544,9 @@ module.exports = {
   createProvider,
   setProviderStatus,
   getProvider,
+  listProviders,
+  getOwnedProvider,
+  updateProvider,
   createService,
   getService,
   isServiceExposable,
