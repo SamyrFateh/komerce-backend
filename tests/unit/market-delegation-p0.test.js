@@ -10,18 +10,18 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 2C+2A advance autonomy to 23/31', () => {
+  test('registry remains exact and LOT 2B provider advances autonomy to 24/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 23, total: 31, rate: 23 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 24, total: 31, rate: 24 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '2C-cash+2A-network', p0_live: 15, live: 23, delegation: 31 },
+      checkpoint: { lot: '2B-provider', p0_live: 15, live: 24, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
-    for (const capability of ['network.create', 'network.update', 'network.suspend']) {
+    for (const capability of ['network.create', 'network.update', 'network.suspend', 'provider.manage']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
   });
@@ -76,5 +76,18 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
     expect(migration).toMatch(/correlation_id[\s\S]*migration-201/);
     expect(migration).not.toMatch(/legacy_role\s*=\s*'viewer'/);
+  });
+
+  test('promotion provider.manage LIVE aligne ceiling et responsables pays sans élargir les viewers', () => {
+    const migration = read('migrations/203_market_delegation_provider_manage_live.sql');
+    expect(migration).toMatch(/provider\.manage/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'network\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/migration-203/);
+    expect(migration).not.toMatch(/UPDATE users/i);
   });
 });
