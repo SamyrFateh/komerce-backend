@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-10T15:23:08.049Z",
+  "generatedAt": "2026-09-10T16:08:37.144Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 625,
-    "protected": 572,
+    "total": 627,
+    "protected": 574,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3191,6 +3191,16 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/settlements",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/structure-events",
       "level": "PROTECTED",
       "roles": []
     },

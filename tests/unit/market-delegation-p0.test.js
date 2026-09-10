@@ -10,13 +10,13 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT settlement advances autonomy to 29/31', () => {
+  test('registry remains exact and LOT 7 (structure-event) advances autonomy to 30/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 29, total: 31, rate: 29 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 30, total: 31, rate: 30 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '6-settlement', p0_live: 15, live: 29, delegation: 31 },
+      checkpoint: { lot: '7-structure-event', p0_live: 15, live: 30, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
@@ -24,9 +24,10 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     for (const capability of ['network.create', 'network.update', 'network.suspend', 'provider.manage']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
-    for (const capability of ['local_offer.manage', 'client.case.handle', 'catalog.expose', 'finance.act', 'settlement.receive']) {
+    for (const capability of ['local_offer.manage', 'client.case.handle', 'catalog.expose', 'finance.act', 'settlement.receive', 'structure.event.record']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
+    expect(CAPABILITIES.find(row => row.capability === 'market_config.update')?.status).toBe('MISSING');
   });
 
   test('GROUP is structurally outside market delegation', () => {
@@ -167,5 +168,21 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).not.toMatch(/UPDATE capability_registry/i);
     expect(migration).not.toMatch(/assignment_capability_ceiling/i);
     expect(migration).not.toMatch(/membership_capabilities/i);
+  });
+
+  test('promotion structure.event.record LIVE aligne ceiling et responsables pays sans élargir les viewers, et ne crée jamais d\'événement économique', () => {
+    const migration = read('migrations/210_market_delegation_structure_event_record_live.sql');
+    expect(migration).toMatch(/structure\.event\.record/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'network\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/migration-210/);
+    expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
+    expect(migration).not.toMatch(/UPDATE users/i);
+    expect(migration).not.toMatch(/INSERT INTO economic_structure_cost_events/i);
+    expect(migration).not.toMatch(/UPDATE economic_structure_cost_events/i);
   });
 });

@@ -72,6 +72,8 @@ module.exports = {
       'un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner',
       'LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct',
       'LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test',
+      'LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events',
+      'migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique',
       'LOT 4 (local-offer) : exposition commerciale des services/offres physiques déjà créés — capability local_offer.manage, toggle ENABLED/DISABLED sur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression',
       'un service ou une offre physique reste rattaché à son marché d’origine ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource',
       'migration 204 : promotion LIVE de local_offer.manage backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers',
@@ -115,6 +117,7 @@ module.exports = {
       'migrations/205_market_delegation_client_case_handle_live.sql',
       'migrations/207_market_delegation_catalog_expose_live.sql',
       'migrations/209_market_delegation_settlement_live.sql',
+      'migrations/210_market_delegation_structure_event_record_live.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -131,6 +134,7 @@ module.exports = {
       'services/market-delegation-local-offer-service.js',
       'services/market-delegation-client-case-service.js',
       'services/market-delegation-settlement-service.js',
+      'services/market-delegation-structure-event-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
@@ -141,6 +145,7 @@ module.exports = {
       'routes/market-delegation-local-offer.js',
       'routes/market-delegation-client-case.js',
       'routes/market-delegation-settlement.js',
+      'routes/market-delegation-structure-event.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -162,6 +167,8 @@ module.exports = {
       'tests/unit/market-delegation-client-case-routes.test.js',
       'tests/unit/market-delegation-settlement-service.test.js',
       'tests/unit/market-delegation-settlement-routes.test.js',
+      'tests/unit/market-delegation-structure-event-service.test.js',
+      'tests/unit/market-delegation-structure-event-routes.test.js',
     ],
   },
 
@@ -183,7 +190,8 @@ module.exports = {
       'physical_offers: R',
       'product_market_exposure: R',
       'disputes: R',
-      'market_settlements: R',
+      'market_settlements: R',  // mutations via market-settlement/market-settlement-service
+      'economic_structure_cost_events: R',  // mutations via economic-engine/pricing-period-structure
       'operator_market_scopes: R',
       'markets: R',
       'users: R',
@@ -192,9 +200,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 29,
-    totalRoutes: 29,
-    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 + LOT 6 exigent authenticate. Les actions sur un marché exigent ensuite les capabilities résolues depuis assignment_memberships + membership_capabilities et bornées par le ceiling. Settlement ajoute finance.read/finance.act/settlement.receive sans requireRole global côté pays ; READY et PAID restent sur la surface centrale de la feature settlement. Aucun market_id client ne sert de preuve d’autorité.',
+    authedRoutesDetected: 31,
+    totalRoutes: 31,
+    note: 'Toutes les routes LOT 1A + LOT 2A + LOT 2B + LOT 2C + LOT 4 + LOT 5 + LOT 6 + LOT 7 exigent authenticate. Les actions sur un marché exigent ensuite les capabilities résolues depuis assignment_memberships + membership_capabilities et bornées par le ceiling. Settlement ajoute finance.read/finance.act/settlement.receive sans requireRole global côté pays ; READY et PAID restent sur la surface centrale de la feature settlement. Structure-event ajoute structure.event.record (écriture, MARKET_DIRECT forcé) et réutilise pricing.read (lecture, déjà LIVE) sans créer de nouvelle capability de lecture. Aucun market_id client ne sert de preuve d’autorité.',
   },
 
   contract: {
@@ -228,6 +236,8 @@ module.exports = {
       'GET /api/market-delegation/markets/:marketCode/settlements — finance.read',
       'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request — finance.act',
       'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive',
+      'GET /api/market-delegation/markets/:marketCode/structure-events — pricing.read',
+      'POST /api/market-delegation/markets/:marketCode/structure-events — structure.event.record',
     ],
     internalApi: [
       { fn: 'replaceCeiling', file: 'services/market-delegation-service.js' },
@@ -261,8 +271,10 @@ module.exports = {
       { fn: 'listSettlements', file: 'services/market-delegation-settlement-service.js' },
       { fn: 'requestSettlement', file: 'services/market-delegation-settlement-service.js' },
       { fn: 'confirmSettlementReceived', file: 'services/market-delegation-settlement-service.js' },
+      { fn: 'listStructureEvents', file: 'services/market-delegation-structure-event-service.js' },
+      { fn: 'recordStructureEvent', file: 'services/market-delegation-structure-event-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement', 'economic-engine'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
@@ -303,5 +315,9 @@ module.exports = {
     { statement: 'settlement.receive ne fait que PAID -> RECEIVED et reste une capability distincte de finance.act', test: 'tests/unit/market-delegation-settlement-service.test.js' },
     { statement: 'les routes settlement pays refusent market_id/marketId, amount, currency, statut et preuve de paiement comme autorité ; REQUEST n’accepte aucun body et RECEIVE seulement receipt_note', test: 'tests/unit/market-delegation-settlement-routes.test.js' },
     { statement: 'migration 209 active les deux capabilities settlement sans jamais créer ni modifier une ligne market_settlements', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'structure.event.record force toujours scope_kind=MARKET_DIRECT et le market_id résolu serveur ; un scope_kind=GROUP dans le payload est un refus explicite (403), jamais une correction silencieuse', test: 'tests/unit/market-delegation-structure-event-service.test.js' },
+    { statement: 'aucun SQL direct sur economic_structure_cost_events depuis market-delegation — recordStructureCostEvent() (economic-engine) reste le seul writer, jamais dupliqué', test: 'tests/unit/market-delegation-structure-event-service.test.js' },
+    { statement: 'la lecture des faits structure réutilise pricing.read (déjà LIVE) — aucune nouvelle capability de lecture créée pour ce lot', test: 'tests/unit/market-delegation-structure-event-service.test.js' },
+    { statement: 'migration 210 active structure.event.record sans jamais créer ni modifier un événement economic_structure_cost_events', test: 'tests/unit/market-delegation-p0.test.js' },
   ],
 };
