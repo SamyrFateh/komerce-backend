@@ -8,8 +8,6 @@ function executor() {
   return { query: jest.fn() };
 }
 
-// Séquence exacte de resolveAuthorization : marché+assignment, membership,
-// capabilities du membre, vérification ceiling.
 function mockAuthz(db, { marketId = 'mkt-cm', marketCode = 'CM', assignmentId = 'a-cm', membershipId = 'm1', capabilities = ['provider.manage'] } = {}) {
   db.query
     .mockResolvedValueOnce({ rows: [{ market_id: marketId, market_code: marketCode, market_name: 'Cameroun', currency: 'XAF', assignment_id: assignmentId, assignment_status: 'ACTIVE' }] })
@@ -22,13 +20,13 @@ describe('market-delegation provider service — capabilities et audit', () => {
   test('création réussie appelle providers-service avec le marché résolu serveur et audite NETWORK_PROVIDER_CREATED', async () => {
     const db = executor();
     mockAuthz(db);
-    db.query.mockImplementationOnce(async (sql, params) => {
+    db.query.mockImplementationOnce(async (sql) => {
       expect(sql).toMatch(/SELECT id FROM markets/);
       return { rows: [{ id: 'mkt-cm' }] };
     });
     db.query.mockImplementationOnce(async (sql, params) => {
       expect(sql).toMatch(/INSERT INTO providers/);
-      expect(params[2]).toBe('mkt-cm'); // market_id résolu serveur, jamais fourni par le client
+      expect(params[2]).toBe('mkt-cm');
       return { rows: [{ id: 'p1', market_id: 'mkt-cm', status: 'pending' }] };
     });
     db.query.mockImplementationOnce(async (sql, params) => {
@@ -47,34 +45,33 @@ describe('market-delegation provider service — capabilities et audit', () => {
   test('capability absente → 403, aucune écriture tentée', async () => {
     const db = executor();
     mockAuthz(db, { capabilities: [] });
-
     await expect(network.createProvider(db, {
       marketCode: 'CM', actorUserId: 'u1', name: 'X', phone: '1',
     })).rejects.toMatchObject({ code: 'MARKET_CAPABILITY_REQUIRED', status: 403 });
-
-    expect(db.query).toHaveBeenCalledTimes(3); // jamais atteint le check ceiling ni l'INSERT
+    expect(db.query).toHaveBeenCalledTimes(3);
   });
 
   test('CM ne peut jamais modifier un provider appartenant à CG (404, pas de fuite d’existence)', async () => {
     const db = executor();
     mockAuthz(db, { marketId: 'mkt-cm' });
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p-cg', market_id: 'mkt-cg', name: 'CG Provider' }] });
-
     await expect(network.updateProvider(db, {
       marketCode: 'CM', providerId: 'p-cg', actorUserId: 'u1', patch: { name: 'Hijack' },
     })).rejects.toMatchObject({ code: 'NETWORK_PROVIDER_NOT_FOUND', status: 404 });
   });
 
-  test('suspension bascule status=suspended et audite NETWORK_PROVIDER_SUSPENDED', async () => {
+  test('suspension borne le write au market_id et audite NETWORK_PROVIDER_SUSPENDED', async () => {
     const db = executor();
     mockAuthz(db);
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', market_id: 'mkt-cm', status: 'active' }] });
     db.query.mockImplementationOnce(async (sql, params) => {
-      expect(sql).toMatch(/UPDATE providers SET status/);
-      expect(params[1]).toBe('suspended');
+      expect(sql).toMatch(/UPDATE providers/);
+      expect(sql).toMatch(/market_id = \$2/);
+      expect(params).toEqual(['p1', 'mkt-cm', 'suspended']);
       return { rows: [{ id: 'p1', market_id: 'mkt-cm', status: 'suspended' }] };
     });
     db.query.mockImplementationOnce(async (sql, params) => {
+      expect(sql).toMatch(/INSERT INTO market_delegation_audit/);
       expect(params[4]).toBe('NETWORK_PROVIDER_SUSPENDED');
       return { rows: [] };
     });
@@ -83,7 +80,7 @@ describe('market-delegation provider service — capabilities et audit', () => {
     expect(provider.status).toBe('suspended');
   });
 
-  test('réactivation (status=active) après suspension audite NETWORK_PROVIDER_ACTIVATED', async () => {
+  test('réactivation après suspension est market-scopée et auditée', async () => {
     const db = executor();
     mockAuthz(db);
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', market_id: 'mkt-cm', status: 'suspended' }] });
@@ -92,7 +89,6 @@ describe('market-delegation provider service — capabilities et audit', () => {
       expect(params[4]).toBe('NETWORK_PROVIDER_ACTIVATED');
       return { rows: [] };
     });
-
     const provider = await network.setProviderStatus(db, { marketCode: 'CM', providerId: 'p1', actorUserId: 'u1', status: 'active' });
     expect(provider.status).toBe('active');
   });
@@ -101,17 +97,15 @@ describe('market-delegation provider service — capabilities et audit', () => {
     const db = executor();
     mockAuthz(db);
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', market_id: 'mkt-cm', status: 'suspended' }] });
-
     const provider = await network.setProviderStatus(db, { marketCode: 'CM', providerId: 'p1', actorUserId: 'u1', status: 'suspended' });
     expect(provider.status).toBe('suspended');
-    expect(db.query).toHaveBeenCalledTimes(5); // authz(4) + lecture, pas d'UPDATE ni d'audit
+    expect(db.query).toHaveBeenCalledTimes(5);
   });
 
   test('provider introuvable lors d’un changement de statut renvoie 404', async () => {
     const db = executor();
     mockAuthz(db);
     db.query.mockResolvedValueOnce({ rows: [] });
-
     await expect(network.setProviderStatus(db, {
       marketCode: 'CM', providerId: 'ghost', actorUserId: 'u1', status: 'active',
     })).rejects.toMatchObject({ code: 'NETWORK_PROVIDER_NOT_FOUND', status: 404 });
