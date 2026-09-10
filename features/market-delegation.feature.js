@@ -39,6 +39,7 @@ module.exports = {
       'Les capacités MEMBER sont bornées par le ceiling de l’assignment ; les autorités GROUP/CENTRAL_ONLY sont structurellement hors délégation marché.',
       'LOT 1A rend l’équipe autonome par capabilities sans transformer le rôle global user en autorité métier.',
       'Migration 197 adopte les scopes legacy actifs sans élargir les memberships déjà existantes ni pré-accorder de capabilities futures.',
+      'La politique de contrôle cash appartient au partenaire pays ; le central conserve seulement un plancher d’intégrité non désactivable.',
       'Le bridge runtime permet à une membership projetée d’emprunter les surfaces qui admettent déjà market_operator sans jamais écrire users.role.',
     ],
   },
@@ -61,6 +62,7 @@ module.exports = {
       'adoption legacy : scopes actifs convertis en assignments/memberships, manager vers DELEGATION LIVE et viewer vers whitelist read-only',
       'bridge runtime request-local : une membership active déjà projetée peut satisfaire market_operator uniquement sur les routes qui admettent explicitement ce rôle',
       'reprojection transactionnelle après création, acceptation, modification de capabilities ou révocation de membership',
+      'politique cash partenaire par assignment : activation/désactivation et SINGLE ou DUAL_ALWAYS',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
@@ -69,6 +71,7 @@ module.exports = {
       'fonctions Hub/transit mutualisées : hors Market Operating Assignment',
       'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents',
       'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',
+      'vérité d’encaissement et état de double confirmation : feature payments',
       'contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard',
     ],
   },
@@ -80,6 +83,7 @@ module.exports = {
       'migrations/195_operator_market_scopes_projection_marker.sql',
       'migrations/196_market_delegation_team.sql',
       'migrations/197_market_delegation_legacy_scope_backfill.sql',
+      'migrations/198_market_cash_control_policy.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -89,9 +93,11 @@ module.exports = {
       'services/market-delegation-service.js',
       'services/market-scope-projector.js',
       'services/market-delegation-team-service.js',
+      'services/market-cash-control-policy-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
+      'routes/market-delegation-cash-control.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -99,6 +105,8 @@ module.exports = {
       'tests/unit/market-delegation-team-routes.test.js',
       'tests/unit/market-delegation-legacy-backfill.test.js',
       'tests/unit/market-delegation-runtime-bridge.test.js',
+      'tests/unit/market-cash-control-policy-service.test.js',
+      'tests/unit/market-delegation-cash-control-routes.test.js',
     ],
   },
 
@@ -113,6 +121,7 @@ module.exports = {
       'ceiling_template_capabilities: RW!',
       'market_delegation_audit: RW!',
       'market_team_invitations: RW!',
+      'market_cash_control_policies: RW!',
       'operator_market_scopes: R',
       'markets: R',
       'users: R',
@@ -121,8 +130,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 6,
-    totalRoutes: 6,
+    authedRoutesDetected: 8,
+    totalRoutes: 8,
     note: 'Toutes les routes LOT 1A exigent authenticate. Les actions sur un marché exigent ensuite team.read/team.invite/team.grant/team.revoke résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité.',
   },
 
@@ -134,6 +143,8 @@ module.exports = {
       'PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities — team.grant + team.revoke',
       'DELETE /api/market-delegation/markets/:marketCode/team/:membershipId — team.revoke',
       'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',
+      'GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read',
+      'PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage',
     ],
     internalApi: [
       { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
@@ -148,6 +159,8 @@ module.exports = {
       { fn: 'resolveAuthorization', file: 'services/market-delegation-team-service.js' },
       { fn: 'inviteTeamMember', file: 'services/market-delegation-team-service.js' },
       { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },
+      { fn: 'readMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },
+      { fn: 'updateMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },
     ],
     consumes: ['market', 'auth', 'auth-identity', 'infrastructure'],
   },
@@ -167,5 +180,6 @@ module.exports = {
     { statement: 'retirer la dernière membership possédant team.grant échoue fort afin d’éviter un lockout local', test: 'tests/unit/market-delegation-team-service.test.js' },
     { statement: 'les routes équipe refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-team-routes.test.js' },
     { statement: 'le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée', test: 'tests/unit/market-delegation-legacy-backfill.test.js' },
+    { statement: 'le partenaire peut durcir sa politique cash sans fournir de market_id client et toute mutation est auditée', test: 'tests/unit/market-cash-control-policy-service.test.js' },
   ],
 };

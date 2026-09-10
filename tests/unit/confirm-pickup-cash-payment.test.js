@@ -14,6 +14,13 @@ jest.mock('../../services/order-payment-confirmation', () => ({
   confirmPaymentCycle: jest.fn(),
 }));
 
+const mockPrepareCashConfirmation = jest.fn();
+const mockFinalizeCashConfirmation = jest.fn();
+jest.mock('../../services/cash-confirmation-control-service', () => ({
+  prepareCashConfirmation: (...args) => mockPrepareCashConfirmation(...args),
+  finalizeCashConfirmation: (...args) => mockFinalizeCashConfirmation(...args),
+}));
+
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
@@ -34,6 +41,7 @@ function makeOrder(overrides = {}) {
     tracking_phone: null,
     tracking_phone_secondary: null,
     relais_id: 'relais-001',
+    market_id: 'market-001',
     ...overrides,
   };
 }
@@ -57,6 +65,13 @@ function makeUser(overrides = {}) {
 describe('confirm-pickup-cash-payment', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrepareCashConfirmation.mockReset();
+    mockPrepareCashConfirmation.mockResolvedValue({
+      allowed: true, approved: true, second_approval: false,
+      control: { required_approvals: 1 },
+    });
+    mockFinalizeCashConfirmation.mockReset();
+    mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });
     confirmPaymentCycle.mockReset();
     db.query.mockResolvedValue({ rows: [], rowCount: 1 });
   });
@@ -72,6 +87,31 @@ describe('confirm-pickup-cash-payment', () => {
 
       expect(result).toEqual({ status: 400, body: { error: 'Le nom du payeur est obligatoire' } });
       expect(db.connect).not.toHaveBeenCalled();
+    });
+
+    it('retourne 202 au premier visa DUAL sans générer de secret ni créer de paiement', async () => {
+      const client = makeClient([
+        { rows: [makeOrder()] },
+        { rows: [{ relais_id: 'relais-001' }] },
+      ]);
+      db.connect.mockResolvedValue(client);
+      mockPrepareCashConfirmation.mockResolvedValueOnce({
+        allowed: false, pending_second: true, status: 202,
+        code: 'CASH_SECOND_ACTOR_REQUIRED',
+        message: 'Seconde validation requise',
+        control: { required_approvals: 2 },
+      });
+      const generateAndStoreSecret = jest.fn();
+
+      const result = await confirmPickupCashPayment({
+        orderId: 'order-001', user: makeUser(), payload: makePayload(), generateAndStoreSecret,
+      });
+
+      expect(result.status).toBe(202);
+      expect(result.body.pending_second_approval).toBe(true);
+      expect(confirmPaymentCycle).not.toHaveBeenCalled();
+      expect(generateAndStoreSecret).not.toHaveBeenCalled();
+      expectTransactionCommitted(client);
     });
 
     it('confirme le cash nominalement, genere le secret et commit la transaction', async () => {

@@ -50,6 +50,7 @@ module.exports = {
       'Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG)',
       'réconciliation périodique des paiements Mobile Money pending si callback perdu',
       'paiement cash au retrait et relances cash',
+      'contrôle partagé de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts',
       'confirmation de paiement et idempotence webhook/callback',
     ],
     out: [
@@ -73,6 +74,7 @@ module.exports = {
       'services/confirm-pickup-cash-payment.js',
       'services/payment-paypal-events.js',
       'services/cash-operations.js',
+      'services/cash-confirmation-control-service.js',
       'services/cash-deposit-service.js',
       'services/reconciliation-service.js',
       'services/payment-mobile-money.js',
@@ -92,6 +94,7 @@ module.exports = {
       'migrations/079_paypal_payment_mode.sql',
       'migrations/148_cash_deposit_business_reference.sql',
       'migrations/169_mobile_money_foundation.sql',
+      'migrations/199_cash_confirmation_control.sql',
     ],
     boutique: [
       // Payment-specific uniquement. Le tunnel général b-checkout* appartient
@@ -111,6 +114,7 @@ module.exports = {
       'tests/unit/payments-webhook.test.js',
       'tests/unit/paypal-client.test.js',
       'tests/unit/cash-operations-service.test.js',
+      'tests/unit/cash-confirmation-control-service.test.js',
       'tests/unit/cash-deposit-service.test.js',
       'tests/unit/cash-reminder-service.test.js',
       'tests/unit/cash-route.test.js',
@@ -150,6 +154,9 @@ module.exports = {
     tables: [
       'cash_collections: RW',
       'cash_deposits: RW',
+      'cash_confirmation_controls: RW',
+      'market_cash_control_policies: R',
+      'market_operating_assignments: R',
       'incidents: R',
       'market_payment_providers: R',
       'mobile_money_transactions: RW',
@@ -213,6 +220,7 @@ module.exports = {
       'logistics (generation du code retrait pickup au moment du paiement)',
       'loyalty (recalcul de palier apres paiement confirme)',
       'purchasing (verification/reapprovisionnement apres encaissement)',
+      'market-delegation (politique de contrôle cash du partenaire ; payments reste propriétaire de la vérité d’encaissement)',
     ],
   },
 
@@ -233,6 +241,9 @@ module.exports = {
     { statement: 'un paiement confirme ne peut etre confirme deux fois',
       test: 'tests/invariants/payments.no-double-confirm.test.js' },
     'un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)',
+    { statement: 'tous les chemins cash passent par un contrôle partagé avant de créer la vérité paiement/stock', test: 'tests/unit/cash-confirmation-control-service.test.js' },
+    { statement: 'en DUAL_ALWAYS le premier acteur ne peut jamais être son propre second approbateur', test: 'tests/unit/cash-confirmation-control-service.test.js' },
+    { statement: 'le montant cash confirmé reste dérivé de la commande et n’est jamais saisi librement dans le contrôle', test: 'tests/unit/cash-confirmation-control-service.test.js' },
   ],
 
 };

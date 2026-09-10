@@ -28,10 +28,22 @@ jest.mock('../../services/order-payment-confirmation', () => ({
   confirmPaymentCycle: (...args) => mockConfirmPaymentCycle(...args),
 }));
 
+const mockPrepareCashConfirmation = jest.fn();
+const mockFinalizeCashConfirmation = jest.fn();
+jest.mock('../../services/cash-confirmation-control-service', () => ({
+  prepareCashConfirmation: (...args) => mockPrepareCashConfirmation(...args),
+  finalizeCashConfirmation: (...args) => mockFinalizeCashConfirmation(...args),
+}));
+
 const { collectCash } = require('../../services/cash-operations');
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPrepareCashConfirmation.mockResolvedValue({
+    allowed: true, approved: true, second_approval: false,
+    control: { required_approvals: 1 },
+  });
+  mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });
 });
 
 // ─── CASH-02 : collectCash retourne invalid_payment_status si déjà paid ──────
@@ -44,6 +56,7 @@ describe('collectCash — CASH-02 invalid_payment_status', () => {
       payment_status: 'paid',    // déjà payée
       status: 'confirmed',
       relais_id: 'relais-1',
+      market_id: 'market-1',
     };
 
     const client = makeClient([
@@ -89,6 +102,32 @@ describe('collectCash — CASH-02 invalid_payment_status', () => {
 
 // ─── CASH-02 : chemin nominal (payment_status = 'pending') ───────────────────
 describe('collectCash — nominal', () => {
+  test('retourne pending_second_approval sans cycle paiement au premier visa DUAL', async () => {
+    const order = {
+      id: 'order-dual', total_kmf: '4000', payment_mode: 'cash_relais',
+      payment_status: 'pending', status: 'pending', relais_id: 'relais-1', market_id: 'market-1',
+    };
+    const client = makeClient([
+      { rows: [order] },
+      { rows: [{ relais_id: 'relais-1' }] },
+    ]);
+    mockPrepareCashConfirmation.mockResolvedValueOnce({
+      allowed: false, pending_second: true, status: 202,
+      code: 'CASH_SECOND_ACTOR_REQUIRED', message: 'Seconde validation requise',
+      control: { required_approvals: 2 },
+    });
+
+    const result = await collectCash({
+      orderId: 'order-dual',
+      agentUser: { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-1' },
+      dbClient: client,
+    });
+
+    expect(result.pending_second_approval).toBe(true);
+    expect(result.required_approvals).toBe(2);
+    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
+  });
+
   test('retourne success si commande pending cash_relais', async () => {
     const order = {
       id: 'order-ok',
@@ -97,6 +136,7 @@ describe('collectCash — nominal', () => {
       payment_status: 'pending',
       status: 'pending',
       relais_id: 'relais-1',
+      market_id: 'market-1',
     };
 
     const collection = {
