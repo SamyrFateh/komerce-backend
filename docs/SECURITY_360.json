@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-10T10:28:21.911Z",
+  "generatedAt": "2026-09-10T11:08:44.339Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 613,
-    "protected": 560,
+    "total": 617,
+    "protected": 564,
     "public": 53,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3072,6 +3072,26 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/local-offer/physical-offers/{physicalOfferId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/local-offer/physical-offers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/local-offer/services/{serviceId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/local-offer/services",
       "level": "PROTECTED",
       "roles": []
     },
