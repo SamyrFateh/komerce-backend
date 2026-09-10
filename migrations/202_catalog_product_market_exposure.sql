@@ -1,4 +1,4 @@
--- @migration 201_catalog_product_market_exposure.sql
+-- @migration 202_catalog_product_market_exposure.sql
 -- @domain    catalog
 -- @purpose   Primitive produit x marché — un partenaire pays décide quels
 --            produits du catalogue global sont commercialisés sur son

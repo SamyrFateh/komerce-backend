@@ -145,7 +145,7 @@ module.exports = {
       'migrations/150_catalog_import_business_ref.sql',
       'migrations/147_catalog_global_access_grants.sql',
       'migrations/163_supplier_catalog_sync_checkpoints.sql',
-      'migrations/201_catalog_product_market_exposure.sql',
+      'migrations/202_catalog_product_market_exposure.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
