@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1283,
-    "edges": 6432,
+    "edges": 6438,
     "dbTables": 151,
     "doctrines": 408,
     "impactAreas": 180,
@@ -7772,6 +7772,7 @@
         "db.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
+        "services/catalog-market-exposure-service.js",
         "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
@@ -7781,7 +7782,9 @@
       "dbRead": [
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "product_market_exposure",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -12644,7 +12647,8 @@
       ],
       "dbRead": [
         "product_market_exposure",
-        "products"
+        "products",
+        "markets"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -13048,7 +13052,10 @@
       "usedBy": [
         "routes/products.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "product_market_exposure"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -26246,6 +26253,11 @@
       "table": "product_variants"
     },
     {
+      "id": "db:product_market_exposure",
+      "type": "db-table",
+      "table": "product_market_exposure"
+    },
+    {
       "id": "db:boutique_categories",
       "type": "db-table",
       "table": "boutique_categories"
@@ -26284,11 +26296,6 @@
       "id": "db:market_delegation_audit",
       "type": "db-table",
       "table": "market_delegation_audit"
-    },
-    {
-      "id": "db:product_market_exposure",
-      "type": "db-table",
-      "table": "product_market_exposure"
     },
     {
       "id": "db:services",
@@ -40629,6 +40636,12 @@
     },
     {
       "from": "routes/catalog-product-detail.js",
+      "to": "services/catalog-market-exposure-service.js",
+      "type": "depends",
+      "label": "services/catalog-market-exposure-service.js"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
       "to": "services/market-local-price-resolution-service.js",
       "type": "depends",
       "label": "services/market-local-price-resolution-service.js"
@@ -40662,6 +40675,18 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db:product_market_exposure",
+      "type": "db-read",
+      "label": "product_market_exposure"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "routes/catalog-product-detail.js",
@@ -47667,6 +47692,12 @@
     },
     {
       "from": "services/catalog-market-exposure-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/catalog-market-exposure-service.js",
       "to": "db:product_market_exposure",
       "type": "db-write",
       "label": "product_market_exposure"
@@ -48210,6 +48241,18 @@
       "to": "services/catalog-public-view.js",
       "type": "uses",
       "label": "routes/products.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:product_market_exposure",
+      "type": "db-read",
+      "label": "product_market_exposure"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -76258,6 +76301,7 @@
         "db.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
+        "services/catalog-market-exposure-service.js",
         "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
@@ -76268,7 +76312,9 @@
       "dbRead": [
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "product_market_exposure",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -76284,6 +76330,8 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
+        "db:product_market_exposure",
         "db:product_skus",
         "db:product_variants",
         "db:products",
@@ -76295,6 +76343,7 @@
         "impact:product-detail",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "routes/products.js",
+        "services/catalog-market-exposure-service.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js"
@@ -80997,7 +81046,8 @@
       "ownedFiles": [],
       "dbRead": [
         "product_market_exposure",
-        "products"
+        "products",
+        "markets"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -81012,12 +81062,14 @@
         "market-delegation"
       ],
       "mustCheck": [
+        "db:markets",
         "db:product_market_exposure",
         "db:products",
         "doctrine:catalog_stays_unique_exposure_is_projection",
         "doctrine:writer_not_owner_boundary",
         "impact:catalog",
         "impact:market-delegation",
+        "routes/catalog-product-detail.js",
         "services/catalog-public-view.js",
         "services/market-delegation-catalog-service.js"
       ]
@@ -81375,7 +81427,10 @@
         "routes/products.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "product_market_exposure"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
@@ -81387,6 +81442,8 @@
         "modal"
       ],
       "mustCheck": [
+        "db:markets",
+        "db:product_market_exposure",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "impact:catalog",
         "impact:modal",
