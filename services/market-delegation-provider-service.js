@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated market operator, market code, provider payload
  * @outputs       provider read model, auditable provider mutations
- * @depends       services/market-delegation-service.js, services/providers-service.js
+ * @depends       services/market-delegation-service.js, services/providers-service.js, services/provider-status-mutation-service.js
  * @used-by       routes/market-delegation-provider.js
  * @db-read       none
  * @db-write      none
@@ -26,6 +26,7 @@ const {
 } = require('./market-delegation-service');
 
 const providersService = require('./providers-service');
+const { setOwnedProviderStatus } = require('./provider-status-mutation-service');
 
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') {
@@ -84,9 +85,12 @@ async function setProviderStatus(executor, { marketCode, providerId, actorUserId
   if (!before) throw delegationError('NETWORK_PROVIDER_NOT_FOUND', 'Provider introuvable.', 404);
   if (before.status === status) return before;
 
-  // Le WHERE du write reste lui-même market-scopé. Le GET précédent évite la
-  // fuite d'existence ; ce filtre protège aussi la mutation contre tout drift.
-  const after = await providersService.setProviderStatus(providerId, status, db, authz.market_id);
+  const after = await setOwnedProviderStatus(db, {
+    providerId,
+    marketId: authz.market_id,
+    status,
+  });
+  if (!after) throw delegationError('NETWORK_PROVIDER_NOT_FOUND', 'Provider introuvable.', 404);
 
   await audit(db, {
     actorUserId, assignmentId: authz.assignment_id, membershipId: authz.membership_id,
