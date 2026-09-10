@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-provider.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -118,6 +118,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const providersServicesRouter = require('../routes/providers-services');
   const marketDelegationTeamRouter = require('../routes/market-delegation-team');
   const marketDelegationCashControlRouter = require('../routes/market-delegation-cash-control');
+  const marketDelegationProviderRouter = require('../routes/market-delegation-provider');
   const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic');
@@ -228,6 +229,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   // Le code marché est résolu serveur ; aucun market_id client n'est une preuve d'autorité.
   app.use('/api/market-delegation', marketDelegationTeamRouter);
   app.use('/api/market-delegation', marketDelegationCashControlRouter);
+  app.use('/api/market-delegation', marketDelegationProviderRouter);
   // Vague 2 D6 — GET read-only, aucune mutation, jamais de champ interne
   // (téléphone, provider_id, pourquoi d'une indisponibilité). commercial_
   // exposure reste DISABLED partout : monté = joignable, pas = visible.

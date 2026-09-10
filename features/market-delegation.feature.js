@@ -63,14 +63,17 @@ module.exports = {
       'bridge runtime request-local : une membership active déjà projetée peut satisfaire market_operator uniquement sur les routes qui admettent explicitement ce rôle',
       'reprojection transactionnelle après création, acceptation, modification de capabilities ou révocation de membership',
       'politique cash partenaire par assignment : activation/désactivation et SINGLE ou DUAL_ALWAYS',
+      'LOT 2B : providers locaux — création, modification de coordonnées, suspension et réactivation par capability provider.manage, jamais de hard-delete',
+      'un provider reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
       'rôle global users.role et user.role.set : frontière auth-identity/GROUP, jamais déléguée au partenaire',
       'règles d’allocation GROUP et vérité économique consolidée : economic-engine',
       'fonctions Hub/transit mutualisées : hors Market Operating Assignment',
-      'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents',
-      'settlement/payout/commission/revenue_share : chantier greenfield ultérieur',
+      'providers et relais restent des principaux locaux secondaires : jamais des assignments concurrents, même quand leurs mutations sont déléguées par capability',
+      'identité provider (pas de users / user_role), profil public riche et exposition de contact privé : feature providers-services, propriétaire de la table providers',
+      'settlement/payout/commission/revenue_share d’un provider : chantier greenfield ultérieur',
       'vérité d’encaissement et état de double confirmation : feature payments',
       'contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard',
     ],
@@ -84,6 +87,7 @@ module.exports = {
       'migrations/196_market_delegation_team.sql',
       'migrations/197_market_delegation_legacy_scope_backfill.sql',
       'migrations/198_market_cash_control_policy.sql',
+      'migrations/200_market_delegation_provider_manage_live.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -94,10 +98,12 @@ module.exports = {
       'services/market-scope-projector.js',
       'services/market-delegation-team-service.js',
       'services/market-cash-control-policy-service.js',
+      'services/market-delegation-provider-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
       'routes/market-delegation-cash-control.js',
+      'routes/market-delegation-provider.js',
     ],
     tests: [
       'tests/unit/market-delegation-p0.test.js',
@@ -107,6 +113,8 @@ module.exports = {
       'tests/unit/market-delegation-runtime-bridge.test.js',
       'tests/unit/market-cash-control-policy-service.test.js',
       'tests/unit/market-delegation-cash-control-routes.test.js',
+      'tests/unit/market-delegation-provider-service.test.js',
+      'tests/unit/market-delegation-provider-routes.test.js',
     ],
   },
 
@@ -122,6 +130,7 @@ module.exports = {
       'market_delegation_audit: RW!',
       'market_team_invitations: RW!',
       'market_cash_control_policies: RW!',
+      'providers: R',  // mutations via providers-services/providers-service (executor injecté)
       'operator_market_scopes: R',
       'markets: R',
       'users: R',
@@ -130,9 +139,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 8,
-    totalRoutes: 8,
-    note: 'Toutes les routes LOT 1A exigent authenticate. Les actions sur un marché exigent ensuite team.read/team.invite/team.grant/team.revoke résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité.',
+    authedRoutesDetected: 13,
+    totalRoutes: 13,
+    note: 'Toutes les routes LOT 1A + LOT 2B (cash-control) + LOT 2B (provider) exigent authenticate. Les actions sur un marché exigent ensuite team.*/cash_control.*/provider.manage résolus depuis assignment_memberships + membership_capabilities ; l’acceptation d’une invitation est authentifiée et vérifie l’email. Le bridge runtime n’accorde market_operator qu’à partir d’une projection attribuée à une membership et seulement sur une route qui admet déjà market_operator. Aucun market_id client ne sert de preuve d’autorité, sur team comme sur cash-control comme sur provider.',
   },
 
   contract: {
@@ -145,6 +154,11 @@ module.exports = {
       'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',
       'GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read',
       'PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage',
+      'GET /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
+      'PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend — provider.manage',
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate — provider.manage',
     ],
     internalApi: [
       { fn: 'createAssignment', file: 'services/market-delegation-service.js' },
@@ -161,8 +175,11 @@ module.exports = {
       { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },
       { fn: 'readMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },
       { fn: 'updateMarketCashPolicy', file: 'services/market-cash-control-policy-service.js' },
+      { fn: 'createProvider', file: 'services/market-delegation-provider-service.js' },
+      { fn: 'updateProvider', file: 'services/market-delegation-provider-service.js' },
+      { fn: 'setProviderStatus', file: 'services/market-delegation-provider-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'providers-services'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées.',
@@ -181,5 +198,9 @@ module.exports = {
     { statement: 'les routes équipe refusent market_id/marketId venant du client comme preuve d’autorité', test: 'tests/unit/market-delegation-team-routes.test.js' },
     { statement: 'le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée', test: 'tests/unit/market-delegation-legacy-backfill.test.js' },
     { statement: 'le partenaire peut durcir sa politique cash sans fournir de market_id client et toute mutation est auditée', test: 'tests/unit/market-cash-control-policy-service.test.js' },
+    { statement: 'un provider ne peut jamais être lu ou modifié par une membership d’un autre marché ; la réponse est 404, jamais 403, pour ne pas confirmer l’existence de la ressource', test: 'tests/unit/market-delegation-provider-service.test.js' },
+    { statement: 'suspendre un provider ne le supprime jamais (status=suspended, jamais un DELETE) ; réactivable par status=active', test: 'tests/unit/market-delegation-provider-service.test.js' },
+    { statement: 'updateProvider ne réassigne jamais le marché d’un provider, même si le patch en contenait un', test: 'tests/unit/providers-service.test.js' },
+    { statement: 'les routes provider refusent market_id/marketId venant du client comme preuve d’autorité, comme les routes équipe et cash-control', test: 'tests/unit/market-delegation-provider-routes.test.js' },
   ],
 };
