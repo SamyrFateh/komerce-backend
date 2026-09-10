@@ -14,7 +14,7 @@
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
  * @doctrine      status_transition_source_unique, payment_to_stock_single_entry, annulation_tracee
  * @impact-areas  orders, payments, stock, wallet, sourcing, notifications, dashboards
- * @version       2026-06
+ * @version       2026-09
  */
 
 /**
@@ -22,6 +22,7 @@
  *
  * ╔══════════════════════════════════════════════════════════════════════╗
  * ║  SINGLE SOURCE OF TRUTH for all order status transitions.          ║
+ * ║                                                                      ║
  * ║  Architectural decisions D1/D2: every status change MUST go here.  ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  *
@@ -32,12 +33,15 @@
  *
  * Sources:
  *   'patch'  — Admin/agent manually changes status via PATCH
- *   'scan'   — Scan-triggered via parcelSync (forward-only, no role check)
+ *   'scan'   — Scan-triggered via parcelSync (forward-only via isForwardTransition)
  *   'system' — Auto-transition (wallet 100%, auto-ordered after payment)
  *   'stripe_webhook' — Webhook Stripe (pending → confirmed)
  *   'cash_confirm'   — Agent relais confirme cash (pending → confirmed)
  *   'wallet_full_payment' — Wallet couvre 100% de la commande (pending → confirmed)
  *   'paypal_capture' — Capture PayPal confirmée (pending → confirmed) — migration 079
+ *   'mobile_money_orange_money' — Orange Money confirmé par relecture provider
+ *   'mobile_money_mtn_momo' — MTN MoMo confirmé par relecture provider
+ *   'mobile_money_kartapay' — KartaPay confirmé par relecture provider
  *
  * Guarantees (D6):
  *   - Every transition inserts into order_status_history
@@ -119,6 +123,18 @@ const STATUS_TIMESTAMP = Object.freeze({
   cancelled:   'cancelled_at',
 });
 
+// Sources qui prouvent un paiement et ne peuvent faire que pending → confirmed.
+// Mobile Money arrive ici uniquement APRÈS relecture autoritative du provider
+// (payment-mobile-money.js) : le callback/webhook seul n'est jamais une preuve.
+const PAYMENT_CONFIRMATION_SOURCES = new Set([
+  'stripe_webhook',
+  'cash_confirm',
+  'wallet_full_payment',
+  'paypal_capture',
+  'mobile_money_orange_money',
+  'mobile_money_mtn_momo',
+  'mobile_money_kartapay',
+]);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -146,7 +162,7 @@ function isForwardTransition(from, to) {
  * orders.status in the entire codebase.
  *
  * @param {object} opts
- * @param {string}      opts.orderId       — UUID of the order
+ * @param {string}      opts.orderId       — UUID of the commande
  * @param {string}      opts.newStatus     — Target order_status
  * @param {object}      opts.actor         — { id, role } of who initiated (default: system)
  * @param {string}      opts.source        — Source de la transition :
@@ -155,6 +171,7 @@ function isForwardTransition(from, to) {
  *   - 'system'         : déclenchement interne (cron, webhook, machine) — même branche que 'scan'
  *   - 'stripe_webhook' : confirmation Stripe automatique
  *   - 'cash_confirm'   : confirmation cash agent
+ *   - 'mobile_money_*' : confirmation Mobile Money après relecture provider
  *   - 'cancel'         : annulation via routes/orders/cancel.js — utilise la branche isForwardTransition
  *                        (cancelled est un mouvement forward depuis la plupart des statuts).
  *                        Le contrôle d'accès est géré dans cancel.js (requireAdmin ou cutoff_status).
@@ -223,12 +240,21 @@ async function transitionOrderStatus({
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
-  } else if (['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'paypal_capture'].includes(source)) {
+  } else if (PAYMENT_CONFIRMATION_SOURCES.has(source)) {
     // Payment confirmation sources: STRICTLY pending → confirmed only
     if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
       // Already paid, or wrong transition → graceful no-op
       return { success: true, previousStatus, newStatus: previousStatus, noop: true };
     }
+  } else if (String(source).startsWith('mobile_money_')) {
+    // Fail closed : un nouvel adapter Mobile Money doit être explicitement
+    // autorisé ici avant de pouvoir muter l'état financier d'une commande.
+    return {
+      success: false,
+      previousStatus,
+      newStatus: previousStatus,
+      error: `Source Mobile Money non reconnue: ${source}`,
+    };
   } else if (source === 'refund_external') {
     // Remboursement externe (PayPal/Stripe) : * → refunded autorisé
     // L'argent a DÉJÀ été rendu — bloquer la transition = incohérence DB.
@@ -298,12 +324,18 @@ async function transitionOrderStatus({
   }
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
-  // Ceci remplace la logique qui était dans payments.js
+  // Ceci remplace la logique qui était dans payments.js.
+  // Les sources Mobile Money n'arrivent ici qu'après relecture du provider :
+  // on ne fait donc jamais confiance au webhook/callback seul.
   // Garde alignée sur payment-status-validator.js (P5-N2/N3, 2026-07) : ce
   // bloc ne s'exécute déjà que si previousStatus === 'pending' (variable en
   // mémoire) — la clause WHERE ajoute la même garantie côté DB, en défense
   // en profondeur contre une course avec une autre transition concurrente.
-  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'paypal_capture', 'system'].includes(source)) {
+  if (
+    newStatus === 'confirmed' &&
+    previousStatus === 'pending' &&
+    (PAYMENT_CONFIRMATION_SOURCES.has(source) || source === 'system')
+  ) {
     const paidGuard = sqlGuard(sourceStatusesFor('paid'));
     await q.query(
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND ${paidGuard}`,
@@ -526,5 +558,6 @@ module.exports = {
   TRANSITION_ROLES,
   STATUS_RANK,
   STATUS_TIMESTAMP,
+  PAYMENT_CONFIRMATION_SOURCES,
   isForwardTransition,
 };

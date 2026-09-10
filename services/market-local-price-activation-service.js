@@ -48,20 +48,58 @@ function activationVerdict(pricing, marketEvaluation) {
   if (pricing.strategy_risk === 'destructive') {
     return { allowed: false, reason: 'PRICE_BELOW_VARIABLE_COST' };
   }
-  if (pricing.strategy_risk === 'undercovered') {
+
+  // pricing-engine a canonisé la frontière en 2026-09 :
+  // - contributive_low_buffer = au-dessus du coût variable, sous le plancher sûr ;
+  // - contributive = au-dessus du plancher sûr.
+  // Les anciens libellés restent compris pendant la transition afin de ne pas
+  // casser un snapshot historique, mais ils ne sont plus produits par le moteur.
+  const requiresMarketCoverage = pricing.strategy_risk === 'contributive_low_buffer'
+    || pricing.strategy_risk === 'undercovered';
+  if (requiresMarketCoverage) {
     if (marketEvaluation?.authorization !== 'ALLOW_NEW_UNDER_CDR_POSITION') {
       return {
         allowed: false,
         reason: marketEvaluation?.reason || 'MARKET_COVERAGE_REQUIRED_FOR_UNDER_CDR_POSITION',
       };
     }
+    return { allowed: true, reason: 'MARKET_GATE_AUTHORIZES_UNDER_CDR_POSITION' };
   }
-  return {
-    allowed: true,
-    reason: pricing.strategy_risk === 'covered'
-      ? 'PRICE_COVERS_CDR'
-      : 'MARKET_GATE_AUTHORIZES_UNDER_CDR_POSITION',
-  };
+
+  if (pricing.strategy_risk === 'contributive') {
+    return { allowed: true, reason: 'PRICE_MEETS_MINIMUM_SAFE_CONTRIBUTION_BOUNDARY' };
+  }
+  if (pricing.strategy_risk === 'covered') {
+    return { allowed: true, reason: 'PRICE_COVERS_CDR' };
+  }
+
+  // Un état économique inconnu ne doit jamais devenir une autorisation par
+  // défaut. Cela protège le gate contre un futur renommage non propagé.
+  return { allowed: false, reason: 'CDR_POSITION_UNKNOWN' };
+}
+
+async function evaluateMarketDecisionFailClosed(marketId, at) {
+  try {
+    return await pricingMarketDecisionPolicy.evaluateMarketDecision(marketId, { at });
+  } catch (error) {
+    if (String(error && error.message || '') !== 'coverage policy does not cover canonical period') throw error;
+
+    // Une politique nouvellement décidée ne peut pas gouverner rétroactivement
+    // une fenêtre qui commence avant effective_from. C'est un état métier
+    // NOT_DECISIONAL, pas une panne serveur. Il reste DENY pour toute position
+    // qui exige explicitement la couverture marché.
+    return {
+      market_id: marketId,
+      decision_status: 'NOT_DECISIONAL',
+      authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+      reason: 'POLICY_DOES_NOT_COVER_CANONICAL_PERIOD',
+      policy: null,
+      canonical_period: null,
+      coverage: null,
+      flow_break_even: null,
+      evaluated_at: new Date(at).toISOString(),
+    };
+  }
 }
 
 async function previewLocalPriceActivation({ market, productRef, at = new Date() }) {
@@ -78,7 +116,7 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
     final_price_kmf: projectedPriceKmf,
     pricing_strategy: 'market_local',
   }, { config });
-  const marketEvaluation = await pricingMarketDecisionPolicy.evaluateMarketDecision(market.id, { at });
+  const marketEvaluation = await evaluateMarketDecisionFailClosed(market.id, at);
   const verdict = activationVerdict(pricing, marketEvaluation);
 
   const snapshot = {
@@ -165,6 +203,7 @@ async function activateLocalPrice({ market, productRef, actorId, reason, source 
 
 module.exports = {
   activationVerdict,
+  evaluateMarketDecisionFailClosed,
   previewLocalPriceActivation,
   activateLocalPrice,
 };

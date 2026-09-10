@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 548
-- Files with full headers: 503
+- Scanned code files: 551
+- Files with full headers: 506
 - Files with lite headers: 45
-- Files with any headers: 548
+- Files with any headers: 551
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1300
-- Edges: 6495
+- Graph nodes: 1307
+- Edges: 6536
 - DB tables: 153
-- Doctrines: 418
+- Doctrines: 422
 - Impact areas: 181
-- Unresolved code edges: 615
+- Unresolved code edges: 617
 - Tables multi-écrivains directs (>=2): 68
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -47,11 +47,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
-- market-delegation: 20
+- market-delegation: 22
 - notification: 21
 - operations: 11
 - orders: 30
-- payment: 25
+- payment: 26
 - providers-services: 7
 - purchasing: 8
 - recommendations: 6
@@ -82,10 +82,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 21
 - presenter: 1
-- route: 124
+- route: 125
 - route-manifest: 1
 - schema: 1
-- service: 250
+- service: 252
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -127,6 +127,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/hub-mark-ordered.js — orders-hub-mark-ordered (orders, critical, full)
 - routes/inventory-api.js — inventory-inventory-api (inventory, critical, full)
 - routes/market-delegation-cash-control.js — market-cash-control-policy-api (market-delegation, critical, full)
+- routes/market-delegation-structure-event.js — market-delegation-structure-event-api (market-delegation, critical, full)
 - routes/order-api-v2.js — orders-order-api-v2 (orders, critical, full)
 - routes/orders.js — orders-http-facade (orders, critical, full)
 - routes/orders/cancel.js — orders-cancel (orders, critical, full)
@@ -153,9 +154,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
 - services/market-cash-control-policy-service.js — market-cash-control-policy-service (market-delegation, critical, full)
+- services/market-delegation-structure-event-service.js — market-delegation-structure-event-service (market-delegation, critical, full)
 - services/market-local-price-activation-service.js — market-local-price-activation-orchestrator (market-autonomy, critical, full)
 - services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
 - services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
+- services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)
@@ -669,6 +672,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
 - WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
 - WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
+- WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE routes/admin/system.js -> incidents (via incident-write-service)
 - WRITE routes/admin/users.js -> incidents (via incident-write-service)
 - WRITE routes/ops-api.js -> incidents (via incident-write-service)
@@ -688,6 +693,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-network.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-provider.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-settlement.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-structure-event.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-team.js -> market_delegation_audit (via market-delegation-team-service)
 - WRITE services/market-cash-control-policy-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-catalog-service.js -> market_delegation_audit (via market-delegation-service)
@@ -696,6 +702,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-delegation-network-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-provider-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-settlement-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-structure-event-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-team-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/admin-market-settlement.js -> market_settlement_events (via market-settlement-service)
 - WRITE routes/market-delegation-settlement.js -> market_settlement_events (via market-settlement-service)
@@ -772,10 +779,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> parcels (via customs-shipment-service)
 - WRITE services/simulator/state-advancer.js -> parcels (via parcel-operations)
 - WRITE services/sourcing-workspace.js -> partners (via partner-admin-service)
-- WRITE routes/market-delegation-local-offer.js -> physical_offers (via providers-service)
-- WRITE services/market-delegation-local-offer-service.js -> physical_offers (via providers-service)
-- WRITE services/pickup-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
@@ -905,6 +908,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-settlement.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-structure-event.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-team.js (market operator dashboard)
 - uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
 - uses: market-delegation routes -> services/market-delegation-service.js (market-delegation routes)
@@ -971,7 +975,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - uses: routes that already admit market_operator -> middleware/require-market-delegated-role.js (routes that already admit market_operator)
 - uses: routes/* -> validators/index.js (routes/*)
-- depends: routes/admin-client-360.js -> middleware/auth (middleware/auth)
 
 ## Files Still Without Headers Or Aggregation
 

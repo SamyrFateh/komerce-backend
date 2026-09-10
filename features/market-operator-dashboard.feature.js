@@ -39,6 +39,7 @@ module.exports = {
       'Navigation Canonical : filtrage des utility links par rôle (Accès pays et Démo = admin only)',
       'Remontage navigation après résolution async de la session pour appliquer le filtrage rôle',
       'Script CLI provision-market-operator.js : création utilisateur + scope atomique, idempotent',
+      'Script CLI seed-market-test-data.js : banc staging strictement Market ID pour catalogue, pricing et commandes de recette pays',
       'Parcours complet : login → context → 4 dashboards scopés → workspaces scopés → partners CRUD',
     ],
     out: [
@@ -60,6 +61,9 @@ module.exports = {
     'routes/relay-dashboard.js — 3 cas (admin/agent_relais/market_operator)',
     'routes/admin/partners.js — CRUD scopé country_code, manager requis pour mutations',
     'routes/admin-pricing-workspace.js — lecture scopée pour market_operator',
+    'services/catalog-market-exposure-service.js — exposition produit x marché fail-closed',
+    'services/market-commercial-price-service.js — décision locale DRAFT_PENDING_GATE sans activation forcée',
+    'utils/currency.js — projection via Currency Boundary vers la devise canonique du marché',
     'public/dashboards/canonical/js/admin-context.js — projection UI d\'autorité serveur',
     'public/js/login.js — ALLOWED_DASHBOARD_ROLES inclut market_operator',
   ],
@@ -74,10 +78,12 @@ module.exports = {
   files: {
     scripts: [
       'scripts/provision-market-operator.js',
+      'scripts/seed-market-test-data.js',
     ],
     tests: [
       'tests/unit/canonical-operations-workspace-boundary.test.js',
       'tests/unit/canonical-navigation.test.js',
+      'tests/unit/seed-market-test-data.test.js',
     ],
   },
 
@@ -93,16 +99,22 @@ module.exports = {
     'agent_relais reste limité à son relais_id physique',
     'Le dashboard Legacy (admin/) ne reçoit jamais market_operator dans ROLE_SHELLS — il est gelé',
     'Le provisioning est idempotent — ne recrée ni user ni scope existants',
+    'Le seed staging ne crée, n\'expose ni ne nettoie jamais une donnée d\'un autre Market ID',
+    'Le seed staging ne fabrique jamais un prix LOCAL_ACTIVE sans passage par le gate économique canonique',
   ],
 
   // ── Contrat ──────────────────────────────────────────────────────────────
   contract: {
     exposes: [],
     consumes: [
-      'market (operator_market_scopes, markets)',
+      'market (operator_market_scopes, markets, Currency Boundary)',
       'auth (authenticate, requireRole)',
       'dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace)',
-      'infrastructure (db.js — pool utilisé par scripts/provision-market-operator.js)',
+      'catalog (catalogue global et projection product_market_exposure via son service owner)',
+      'market-autonomy (décision locale DRAFT_PENDING_GATE via market-commercial-price-service ; aucun LOCAL_ACTIVE forcé)',
+      'orders (tooling staging : commandes et order_items market-scoped pour validation dashboard/pricing)',
+      'logistics (tooling staging : relais canonique ancrant le market_id des commandes)',
+      'infrastructure (db.js — pool utilisé par les scripts de provisioning et de seed staging)',
     ],
   },
 

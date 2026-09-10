@@ -42,6 +42,10 @@ function activeCategoryFromDom() {
   return chip?.dataset.cat || 'all';
 }
 
+function activeMobileCategory() {
+  return state.activeCat || activeCategoryFromDom();
+}
+
 function bindShell(shell) {
   if (!shell || shell.dataset.discoveryBound === '1') return shell;
   shell.dataset.discoveryBound = '1';
@@ -179,20 +183,33 @@ function syncMountAndRender() {
   const marketLabel = getMarketLabel();
 
   if (isMobileViewport()) {
+    const category = activeMobileCategory();
+
+    // Une entrée horizontale dans un onglet catégorie est une surface catalogue
+    // pure. On retire réellement TOUS les shells Discovery hors de Tout ; on ne
+    // remonte un rail catégorie que si l'entrée active provient explicitement
+    // du bump vertical.
+    if (category !== 'all') {
+      removeDesktopShell();
+      removeMobileShells();
+
+      const rendered = _activeMobileBumpCategory === category
+        ? mountMobileBumpRail(category)
+        : 0;
+
+      markAllCartButtons();
+      return rendered;
+    }
+
+    _activeMobileBumpCategory = null;
     const mount = ensureMobileHomeMount();
     if (!mount) return 0;
 
-    let rendered = renderDiscoveryRail(
+    const rendered = renderDiscoveryRail(
       mount.shell,
       _lastCards,
       { marketLabel, titleId: mount.titleId, title: 'Disponible ici' }
     );
-
-    // Si un rerender survient pendant une entrée par bump, reconstruire aussi
-    // la surface transitoire de la catégorie depuis le cache déjà chargé.
-    if (_activeMobileBumpCategory && _activeMobileBumpCategory !== 'all') {
-      rendered += mountMobileBumpRail(_activeMobileBumpCategory);
-    }
 
     markAllCartButtons();
     refreshGhostSnapshot();
@@ -247,11 +264,25 @@ function installGridObserver() {
 }
 
 function handleCatalogCategoryChanged(category) {
-  _activeDesktopCategory = category || 'all';
+  const nextCategory = category || 'all';
+  _activeDesktopCategory = nextCategory;
+
   if (isMobileViewport()) {
+    // L'auto-advance vertical publie PAGER_BUMP_EVENT AVANT que b-pager ne
+    // synchronise state.activeCat. Cette première notification de catégorie
+    // fait donc partie du même geste et doit conserver le rail transitoire.
+    if (_pendingBumpCategory === nextCategory) {
+      _activeMobileBumpCategory = nextCategory === 'all' ? null : nextCategory;
+      syncMountAndRender();
+      return;
+    }
+
+    // Toute autre notification provient d'une navigation horizontale/tap,
+    // d'une restauration ou d'un changement explicite : aucun rail local dans
+    // l'onglet catégorie.
     _pendingBumpCategory = null;
     _activeMobileBumpCategory = null;
-    removeMobileBumpShells();
+    syncMountAndRender();
     return;
   }
   syncMountAndRender();
@@ -283,10 +314,15 @@ function handlePagerCategoryCentered(chip) {
   }
 
   // Toute autre entrée (tap d'onglet, swipe horizontal, restauration pager)
-  // redevient une surface catégorie pure.
+  // redevient une surface catégorie pure. Retirer tous les shells mobile évite
+  // qu'un ancien rail de Tout ou de bump reste visuellement dans le pager.
   _pendingBumpCategory = null;
   _activeMobileBumpCategory = null;
-  removeMobileBumpShells();
+  if (category === 'all') {
+    syncMountAndRender();
+    return;
+  }
+  removeMobileShells();
 }
 
 async function refreshDiscoveryRail() {

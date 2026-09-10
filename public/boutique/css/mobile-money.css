@@ -18,6 +18,39 @@
   font-weight: 700;
 }
 
+/* MVola Comores — vraie marque visuelle, servie localement (pas de hotlink). */
+.ck-pay-chip input[value="mobile_money"] + .ck-chip-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: url('/boutique/img/payment/mvola-comores.png') center / contain no-repeat;
+  font-size: 0;
+}
+
+.k-mobile-money-title > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0;
+}
+
+.k-mobile-money-title > span:first-child::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 6px;
+  background: url('/boutique/img/payment/mvola-comores.png') center / contain no-repeat;
+}
+
+#mobile-money-provider-title {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
 .k-mobile-money-currency {
   font-size: 12px;
   font-weight: 600;

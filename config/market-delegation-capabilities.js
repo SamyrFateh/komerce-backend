@@ -9,7 +9,7 @@ const CAPABILITIES = Object.freeze([
   ['pricing.activate','DELEGATION','pricing','MARKET','DELEGABLE',true,'LIVE'],
   ['pricing.policy.set','DELEGATION','pricing','MARKET','DELEGABLE',true,'LIVE'],
   ['market.observation.record','DELEGATION','pricing','MARKET','DELEGABLE',true,'LIVE'],
-  ['structure.event.record','DELEGATION','structure','MARKET','DELEGABLE',true,'IMPLEMENTED_PENDING_MERGE'],
+  ['structure.event.record','DELEGATION','structure','MARKET','DELEGABLE',true,'LIVE'],
   ['dashboard.market.read','DELEGATION','pilotage','MARKET','DELEGABLE',false,'LIVE'],
   ['operations.read','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['hub.supervise','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],

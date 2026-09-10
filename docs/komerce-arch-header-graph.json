@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 548,
-    "filesWithFullHeaders": 503,
+    "scannedCodeFiles": 551,
+    "filesWithFullHeaders": 506,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 548,
+    "filesWithAnyHeaders": 551,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1300,
-    "edges": 6495,
+    "graphNodes": 1307,
+    "edges": 6536,
     "dbTables": 153,
-    "doctrines": 418,
+    "doctrines": 422,
     "impactAreas": 181,
-    "unresolvedCodeEdges": 615,
+    "unresolvedCodeEdges": 617,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 68
   },
@@ -37,7 +37,7 @@
     "catalog": 96,
     "admin-dashboard": 21,
     "decision-signals": 12,
-    "market-delegation": 20,
+    "market-delegation": 22,
     "market": 3,
     "economic-engine": 56,
     "sourcing": 6,
@@ -46,7 +46,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 25,
+    "payment": 26,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -103,9 +103,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 124,
+    "route": 125,
     "entrypoint": 1,
-    "service": 250,
+    "service": 252,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,7 +114,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 82,
+    "critical": 85,
     "medium": 123,
     "high": 290,
     "low": 53
@@ -155,6 +155,7 @@
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/admin-market-settlement.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
@@ -4874,9 +4875,10 @@
         "boutique",
         "hero",
         "home",
-        "footer"
+        "footer",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/market-hydration.js",
@@ -4888,7 +4890,7 @@
       "layer": "ui-adapter",
       "criticality": "low",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.",
+      "purpose": "Hydrate les littéraux de marché dans le DOM et propager",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4902,9 +4904,10 @@
         "boutique",
         "market",
         "hero",
-        "seo"
+        "seo",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/product-image-loading-ux.js",
@@ -9366,6 +9369,65 @@
       "version": "2026-09"
     },
     {
+      "id": "routes/market-delegation-structure-event.js",
+      "file": "routes/market-delegation-structure-event.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-structure-event-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "structure cost event payload"
+      ],
+      "outputs": [
+        "economic_structure_cost_events read model",
+        "auditable MARKET_DIRECT event recording"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "capabilities_authorize_structure_event_recording",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/market-delegation-team.js",
       "file": "routes/market-delegation-team.js",
       "type": "file",
@@ -10508,7 +10570,8 @@
         "market_code",
         "order_reference",
         "msisdn",
-        "provider_callback"
+        "provider_callback",
+        "provider_webhook"
       ],
       "outputs": [
         "availability",
@@ -11034,7 +11097,8 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "relais"
+        "relais",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -11042,12 +11106,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scoped_public_projection"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "boutique",
+        "checkout"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/relay-dashboard.js",
@@ -16561,6 +16628,66 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-delegation-structure-event-service.js",
+      "file": "services/market-delegation-structure-event-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-structure-event-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated market operator",
+        "market code",
+        "structure cost event payload"
+      ],
+      "outputs": [
+        "economic_structure_cost_events read model",
+        "auditable MARKET_DIRECT event recording"
+      ],
+      "depends": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-structure-event.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "structure_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/market-delegation-team-service.js",
       "file": "services/market-delegation-team-service.js",
       "type": "file",
@@ -16989,6 +17116,51 @@
       "version": "2026-09"
     },
     {
+      "id": "services/mobile-money/kartapay-km.js",
+      "file": "services/mobile-money/kartapay-km.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authoritative_amount",
+        "order_reference",
+        "return_urls",
+        "provider_webhook"
+      ],
+      "outputs": [
+        "provider_transaction",
+        "payment_redirect",
+        "normalized_status",
+        "webhook_verification"
+      ],
+      "depends": [
+        "KartaPay REST API"
+      ],
+      "usedBy": [
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/mobile-money/mtn-momo-cg.js",
       "file": "services/mobile-money/mtn-momo-cg.js",
       "type": "file",
@@ -17094,7 +17266,8 @@
         "services/mobile-money/mtn-momo-cg.js"
       ],
       "usedBy": [
-        "services/payment-mobile-money.js"
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -18363,7 +18536,7 @@
         "notifications",
         "dashboards"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/otp-test-mode.js",
@@ -27884,6 +28057,16 @@
       "doctrine": "operator_never_marks_paid"
     },
     {
+      "id": "doctrine:capabilities_authorize_structure_event_recording",
+      "type": "doctrine",
+      "doctrine": "capabilities_authorize_structure_event_recording"
+    },
+    {
+      "id": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "doctrine": "group_scope_never_delegated"
+    },
+    {
       "id": "doctrine:capabilities_authorize_team_actions",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_team_actions"
@@ -27962,6 +28145,11 @@
       "id": "doctrine:produit_desactive_non_supprime",
       "type": "doctrine",
       "doctrine": "produit_desactive_non_supprime"
+    },
+    {
+      "id": "doctrine:market_scoped_public_projection",
+      "type": "doctrine",
+      "doctrine": "market_scoped_public_projection"
     },
     {
       "id": "doctrine:market_operator_scoping (GAP-2)",
@@ -28382,6 +28570,11 @@
       "id": "doctrine:monetary_snapshot_never_client_writable",
       "type": "doctrine",
       "doctrine": "monetary_snapshot_never_client_writable"
+    },
+    {
+      "id": "doctrine:structure_authority_is_capability_based",
+      "type": "doctrine",
+      "doctrine": "structure_authority_is_capability_based"
     },
     {
       "id": "doctrine:team_authority_is_capability_based",
@@ -30026,6 +30219,12 @@
       "to": "routes/market-delegation-settlement.js",
       "type": "depends",
       "label": "routes/market-delegation-settlement.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "depends",
+      "label": "routes/market-delegation-structure-event.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -36754,6 +36953,12 @@
       "label": "footer"
     },
     {
+      "from": "public/boutique/js/market-context.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "public/boutique/js/market-hydration.js",
       "to": "public/boutique/js/market-context.js",
       "type": "owned-by",
@@ -36782,6 +36987,12 @@
       "to": "impact:seo",
       "type": "impact",
       "label": "seo"
+    },
+    {
+      "from": "public/boutique/js/market-hydration.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "public/boutique/js/product-image-loading-ux.js",
@@ -43131,6 +43342,80 @@
       "label": "finance"
     },
     {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "services/market-delegation-structure-event-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-structure-event-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:capabilities_authorize_structure_event_recording",
+      "type": "doctrine",
+      "label": "capabilities_authorize_structure_event_recording"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "label": "group_scope_never_delegated"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
       "from": "routes/market-delegation-team.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -45656,15 +45941,39 @@
     },
     {
       "from": "routes/relais.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/relais.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
       "from": "routes/relais.js",
+      "to": "doctrine:market_scoped_public_projection",
+      "type": "doctrine",
+      "label": "market_scoped_public_projection"
+    },
+    {
+      "from": "routes/relais.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "routes/relais.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "routes/relais.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "routes/relay-dashboard.js",
@@ -54167,6 +54476,86 @@
       "label": "finance"
     },
     {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "routes/market-delegation-structure-event.js",
+      "to": "services/market-delegation-structure-event-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-structure-event.js"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:structure_authority_is_capability_based",
+      "type": "doctrine",
+      "label": "structure_authority_is_capability_based"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:group_scope_never_delegated",
+      "type": "doctrine",
+      "label": "group_scope_never_delegated"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "doctrine:writer_not_owner_boundary",
+      "type": "doctrine",
+      "label": "writer_not_owner_boundary"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-structure-event-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
       "from": "services/market-delegation-team-service.js",
       "to": "services/market-delegation-service.js",
       "type": "depends",
@@ -54878,6 +55267,54 @@
       "label": "operations"
     },
     {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "KartaPay REST API",
+      "type": "depends",
+      "label": "KartaPay REST API"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/mobile-money/kartapay-km.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/mobile-money/kartapay-km.js",
+      "type": "uses",
+      "label": "routes/payments-mobile-money.js"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:provider_adapter_no_business_mutation",
+      "type": "doctrine",
+      "label": "provider_adapter_no_business_mutation"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:secrets_env_only",
+      "type": "doctrine",
+      "label": "secrets_env_only"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "services/mobile-money/mtn-momo-cg.js",
       "to": "MTN MoMo Collections API",
       "type": "depends",
@@ -54978,6 +55415,12 @@
       "to": "services/mobile-money/registry.js",
       "type": "uses",
       "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "routes/payments-mobile-money.js",
+      "to": "services/mobile-money/registry.js",
+      "type": "uses",
+      "label": "routes/payments-mobile-money.js"
     },
     {
       "from": "services/mobile-money/registry.js",
@@ -69139,6 +69582,7 @@
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/admin-market-settlement.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
@@ -69261,6 +69705,7 @@
         "routes/market-delegation-network.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -69867,6 +70312,7 @@
         "routes/market-delegation-network.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
+        "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -74155,10 +74601,12 @@
         "boutique",
         "hero",
         "home",
-        "footer"
+        "footer",
+        "checkout"
       ],
       "mustCheck": [
         "impact:boutique",
+        "impact:checkout",
         "impact:footer",
         "impact:hero",
         "impact:home",
@@ -74174,7 +74622,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Hydrate les littéraux de marché dans le DOM sans script inline, compatible CSP stricte.",
+      "purpose": "Hydrate les littéraux de marché dans le DOM et propager",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -74186,10 +74634,12 @@
         "boutique",
         "market",
         "hero",
-        "seo"
+        "seo",
+        "checkout"
       ],
       "mustCheck": [
         "impact:boutique",
+        "impact:checkout",
         "impact:hero",
         "impact:market",
         "impact:seo",
@@ -78487,6 +78937,62 @@
         "services/market-delegation-settlement-service.js"
       ]
     },
+    "routes/market-delegation-structure-event.js": {
+      "role": "market-delegation-structure-event-api",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "capabilities_authorize_structure_event_recording",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:economic_structure_cost_events",
+        "db:market_delegation_audit",
+        "doctrine:capabilities_authorize_structure_event_recording",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:group_scope_never_delegated",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:market",
+        "middleware/auth.js",
+        "services/market-delegation-structure-event-service.js"
+      ]
+    },
     "routes/market-delegation-team.js": {
       "role": "market-delegation-team-api",
       "domain": "market-delegation",
@@ -79643,6 +80149,8 @@
         "middleware/auth-guest.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-mobile-money.js",
+        "services/mobile-money/kartapay-km.js",
+        "services/mobile-money/registry.js",
         "services/payment-mobile-money.js"
       ]
     },
@@ -80125,20 +80633,28 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "relais"
+        "relais",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scoped_public_projection"
       ],
       "impactAreas": [
-        "logistics"
+        "logistics",
+        "boutique",
+        "checkout"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:markets",
         "db:relais",
+        "doctrine:market_scoped_public_projection",
         "doctrine:resolve_before_behavior_change",
+        "impact:boutique",
+        "impact:checkout",
         "impact:logistics",
         "middleware/auth.js"
       ]
@@ -85505,6 +86021,7 @@
         "services/market-delegation-network-service.js",
         "services/market-delegation-provider-service.js",
         "services/market-delegation-settlement-service.js",
+        "services/market-delegation-structure-event-service.js",
         "services/market-delegation-team-service.js"
       ]
     },
@@ -85567,6 +86084,65 @@
         "services/market-delegation-service.js",
         "services/market-delegation-team-service.js",
         "services/market-settlement-service.js"
+      ]
+    },
+    "services/market-delegation-structure-event-service.js": {
+      "role": "market-delegation-structure-event-service",
+      "domain": "market-delegation",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-team-service.js",
+        "services/market-delegation-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-structure-event.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "structure_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "group_scope_never_delegated",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:economic_structure_cost_events",
+        "db:market_delegation_audit",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:group_scope_never_delegated",
+        "doctrine:structure_authority_is_capability_based",
+        "doctrine:writer_not_owner_boundary",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:market",
+        "routes/market-delegation-structure-event.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js",
+        "services/pricing-period-structure.js"
       ]
     },
     "services/market-delegation-team-service.js": {
@@ -85637,7 +86213,8 @@
         "services/market-delegation-client-case-service.js",
         "services/market-delegation-local-offer-service.js",
         "services/market-delegation-service.js",
-        "services/market-delegation-settlement-service.js"
+        "services/market-delegation-settlement-service.js",
+        "services/market-delegation-structure-event-service.js"
       ]
     },
     "services/market-local-price-activation-service.js": {
@@ -85992,6 +86569,43 @@
         "services/payment-mobile-money.js"
       ]
     },
+    "services/mobile-money/kartapay-km.js": {
+      "role": "mobile-money-provider-adapter",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "KartaPay REST API"
+      ],
+      "directUsedBy": [
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_adapter_no_business_mutation",
+        "secrets_env_only",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "payment",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:fail_closed",
+        "doctrine:provider_adapter_no_business_mutation",
+        "doctrine:secrets_env_only",
+        "impact:checkout",
+        "impact:payment",
+        "routes/payments-mobile-money.js",
+        "services/payment-mobile-money.js"
+      ]
+    },
     "services/mobile-money/mtn-momo-cg.js": {
       "role": "mobile-money-provider-adapter",
       "domain": "payment",
@@ -86076,7 +86690,8 @@
         "services/mobile-money/mtn-momo-cg.js"
       ],
       "directUsedBy": [
-        "services/payment-mobile-money.js"
+        "services/payment-mobile-money.js",
+        "routes/payments-mobile-money.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -86097,6 +86712,7 @@
         "doctrine:runtime_registry_only",
         "impact:checkout",
         "impact:payment",
+        "routes/payments-mobile-money.js",
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/payment-mobile-money.js"
@@ -88013,6 +88629,7 @@
         "impact:stock",
         "routes/payments-mobile-money.js",
         "services/mobile-money-reconciliation.js",
+        "services/mobile-money/kartapay-km.js",
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/mobile-money/registry.js",
@@ -89500,6 +90117,7 @@
         "impact:governance",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/market-delegation-structure-event-service.js",
         "services/pricing-market-coverage.js"
       ]
     },
@@ -97090,6 +97708,12 @@
     },
     {
       "from": "market operator dashboard",
+      "to": "routes/market-delegation-structure-event.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "market operator dashboard",
       "to": "routes/market-delegation-team.js",
       "type": "uses",
       "label": "market operator dashboard"
@@ -98395,6 +99019,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/mobile-money/kartapay-km.js",
+      "to": "KartaPay REST API",
+      "type": "depends",
+      "label": "KartaPay REST API"
     },
     {
       "from": "services/mobile-money/mtn-momo-cg.js",
