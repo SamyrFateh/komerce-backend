@@ -53,14 +53,15 @@ function sendKnownError(res, error) {
   return true;
 }
 
-function rejectServerAuthorityFields(body, { allowAmount = false } = {}) {
+function assertAllowedBody(body, allowedFields) {
   if (!body) return;
-  const forbidden = ['market_id', 'marketId', 'assignment_id', 'currency', 'status', 'source', 'attested_by'];
-  if (!allowAmount) forbidden.push('amount');
-  const found = forbidden.find(field => body[field] != null);
+  const allowed = new Set(allowedFields);
+  const found = Object.keys(body).find(field => !allowed.has(field));
   if (!found) return;
-  const error = new Error(`Champ ${found} interdit : cette valeur est résolue ou figée côté serveur.`);
-  error.code = found === 'market_id' || found === 'marketId' ? 'MARKET_ID_FORBIDDEN' : 'SETTLEMENT_SERVER_AUTHORITY_FIELD_FORBIDDEN';
+  const error = new Error(`Champ ${found} interdit sur cette action settlement.`);
+  error.code = found === 'market_id' || found === 'marketId'
+    ? 'MARKET_ID_FORBIDDEN'
+    : 'SETTLEMENT_FIELD_FORBIDDEN';
   error.status = 400;
   throw error;
 }
@@ -88,7 +89,7 @@ router.get('/markets/:marketCode/settlements', ...centralFinance, async (req, re
 
 router.post('/markets/:marketCode/settlements/ready', ...centralFinance, async (req, res, next) => {
   try {
-    rejectServerAuthorityFields(req.body, { allowAmount: true });
+    assertAllowedBody(req.body, ['amount', 'source_reference', 'period_start', 'period_end', 'attestation_note']);
     const body = req.body || {};
     const row = await withTransaction(async client => {
       const authz = await resolveActiveAssignmentByMarketCode(client, req.params.marketCode);
@@ -113,7 +114,7 @@ router.post('/markets/:marketCode/settlements/ready', ...centralFinance, async (
 
 router.post('/settlements/:settlementId/paid', ...centralFinance, async (req, res, next) => {
   try {
-    rejectServerAuthorityFields(req.body);
+    assertAllowedBody(req.body, ['payment_reference']);
     const row = await withTransaction(client => settlement.markPaid(client, {
       settlementId: req.params.settlementId,
       actorUserId: req.user.id,
