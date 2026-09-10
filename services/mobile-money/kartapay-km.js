@@ -166,11 +166,11 @@ async function getAccessToken(fetchImpl = global.fetch) {
   return tokenCache.value;
 }
 
-function stableClientId(orderReference) {
-  // KartaPay demande un clientId unique par paiement. Une commande Komerce ne
-  // porte qu'un paiement KartaPay logique : l'ID déterministe reste donc stable
-  // en cas de retry réseau et permet le rapprochement sans exposer la référence.
-  return crypto.createHash('sha256').update(`komerce:kartapay:${orderReference}`).digest('hex').slice(0, 32);
+function newClientId() {
+  // KartaPay exige un clientId unique par paiement. On ne dérive donc PAS cet
+  // identifiant de la référence commande : deux tentatives successives d'une
+  // même commande doivent rester deux paiements distincts et rapprochables.
+  return crypto.randomUUID().replace(/-/g, '');
 }
 
 function assertKmfAmount(amount, currency) {
@@ -192,7 +192,7 @@ async function initiate({ orderReference, amount, currency, returnUrl, cancelUrl
   const c = config();
   const token = await getAccessToken(fetchImpl);
   const numericAmount = assertKmfAmount(amount, currency);
-  const clientId = stableClientId(orderReference);
+  const clientId = newClientId();
 
   const payload = {
     purchase: { total: { value: String(numericAmount), currency: 'KMF' } },
@@ -322,5 +322,4 @@ module.exports = {
   getWebhookReference,
   verifyWebhook,
   _resetTokenCacheForTests,
-  _stableClientIdForTests: stableClientId,
 };
