@@ -82,13 +82,14 @@ async function main() {
   if (!res.ok || !body.access_token) {
     throw new Error(`OAuth Sandbox refusé: HTTP ${res.status} ${safeReason(body)}`.trim());
   }
+  const accessToken = body.access_token;
   console.log('[MTN-PROBE] OAuth Sandbox OK');
 
   const referenceId = crypto.randomUUID();
   res = await fetch(`${baseUrl}/collection/v1_0/requesttopay`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${body.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
       'Ocp-Apim-Subscription-Key': subscriptionKey,
       'X-Target-Environment': 'sandbox',
       'X-Reference-Id': referenceId,
@@ -118,39 +119,12 @@ async function main() {
   res = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${encodeURIComponent(referenceId)}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${process.env.__MTN_UNUSED || ''}`,
+      Authorization: `Bearer ${accessToken}`,
       'Ocp-Apim-Subscription-Key': subscriptionKey,
       'X-Target-Environment': 'sandbox',
       Accept: 'application/json',
     },
   });
-
-  // Re-acquire a token only for the status call without ever storing it in logs.
-  // The first token was intentionally kept only in the OAuth response object.
-  if (res.status === 401) {
-    const tokenRes = await fetch(`${baseUrl}/collection/token/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${basic}`,
-        'Ocp-Apim-Subscription-Key': subscriptionKey,
-        Accept: 'application/json',
-      },
-    });
-    const tokenBody = await readJson(tokenRes);
-    if (!tokenRes.ok || !tokenBody.access_token) {
-      throw new Error(`OAuth refresh refusé: HTTP ${tokenRes.status} ${safeReason(tokenBody)}`.trim());
-    }
-    res = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${encodeURIComponent(referenceId)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${tokenBody.access_token}`,
-        'Ocp-Apim-Subscription-Key': subscriptionKey,
-        'X-Target-Environment': 'sandbox',
-        Accept: 'application/json',
-      },
-    });
-  }
-
   body = await readJson(res);
   if (!res.ok) {
     throw new Error(`Lecture statut refusée: HTTP ${res.status} ${safeReason(body)}`.trim());
