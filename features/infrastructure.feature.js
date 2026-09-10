@@ -247,7 +247,6 @@ module.exports = {
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
       // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.
-      '.github/workflows-disabled/README.md',
       '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
       '.github/workflows/staging-discovery-ops.yml',
@@ -259,6 +258,7 @@ module.exports = {
       // fast local → scoped merge enforcement → heavy certification).
       // Déclarés à leur emplacement RÉEL pour rester possédés — ni faux
       // « absent du disque », ni orphelins.
+      '.github/workflows-disabled/README.md',
       '.github/workflows-disabled/apply-komerce-arch-headers.yml',
       '.github/workflows-disabled/carte-first.yml',
       '.github/workflows-disabled/ci-full-gated.yml',
