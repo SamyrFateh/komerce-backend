@@ -76,6 +76,29 @@ describeE2E('E2E-MA-06 — market-delegation · pricing pays', ({ db }) => {
 
   afterAll(async () => {
     if (!fx) return;
+
+    // pricing_market_decision_policy_events est append-only en runtime. Le
+    // harnais E2E tourne exclusivement sur une DB de test ; on ne désactive
+    // son trigger que sous verrou exclusif, dans UNE transaction de cleanup,
+    // puis on le réactive avant COMMIT.
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query('LOCK TABLE pricing_market_decision_policy_events IN ACCESS EXCLUSIVE MODE');
+      await client.query('ALTER TABLE pricing_market_decision_policy_events DISABLE TRIGGER trg_prevent_pricing_market_decision_policy_mutation');
+      await client.query(
+        'DELETE FROM pricing_market_decision_policy_events WHERE market_id IN ($1,$2)',
+        [fx.marketA.id, fx.marketB.id]
+      );
+      await client.query('ALTER TABLE pricing_market_decision_policy_events ENABLE TRIGGER trg_prevent_pricing_market_decision_policy_mutation');
+      await client.query('COMMIT');
+    } catch (error) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* preserve original */ }
+      throw error;
+    } finally {
+      client.release();
+    }
+
     if (product) {
       fx.cleanup.track('products', 'id', product.id);
       fx.cleanup.trackSql('DELETE FROM market_price_observation_events WHERE product_id=$1', [product.id]);
@@ -94,10 +117,6 @@ describeE2E('E2E-MA-06 — market-delegation · pricing pays', ({ db }) => {
         [fx.marketA.id, fx.marketB.id, component.id]
       );
     }
-    fx.cleanup.trackSql(
-      'DELETE FROM pricing_market_decision_policy_events WHERE market_id IN ($1,$2)',
-      [fx.marketA.id, fx.marketB.id]
-    );
     await fx.cleanup.run();
   });
 
