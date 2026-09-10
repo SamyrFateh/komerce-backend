@@ -74,7 +74,7 @@ async function ensureCanonicalRelay(profile) {
               phone = COALESCE(NULLIF(phone, ''), $3),
               address = $4,
               zone = $5,
-              island = $5,
+              island = NULL,
               is_active = TRUE
         WHERE id = $1
           AND market_id = $6`,
@@ -84,7 +84,7 @@ async function ensureCanonicalRelay(profile) {
     const { rows: created } = await db.query(
       `INSERT INTO relais
          (name, agent_name, phone, address, zone, island, market_id, is_active)
-       VALUES ($1, 'Komerce Staging', $2, $3, $4, $4, $5, TRUE)
+       VALUES ($1, 'Komerce Staging', $2, $3, $4, NULL, $5, TRUE)
        RETURNING id`,
       [profile.name, profile.phone, profile.address, profile.city, market.id]
     );
