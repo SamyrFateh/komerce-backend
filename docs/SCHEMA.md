@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 144 | Vérifié sur le dump live Railway. |
+| Tables | 146 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 370 | Performance + contraintes uniques |
-| Foreign keys | 259 | Cohérence relationnelle |
-| Fonctions | 22 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 40 | Triggers présents dans le dump live Railway. |
+| Index | 373 | Performance + contraintes uniques |
+| Foreign keys | 268 | Cohérence relationnelle |
+| Fonctions | 23 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 41 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -149,15 +149,9 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
 | `market_payment_providers` | Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `cash_confirmation_controls` | État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement. **Migration 199 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
-<!-- schema-pending
-object: cash_confirmation_controls
-kind: table
-migration: 199
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement.
--->
 
 ### 4.5 Paniers et catalogue
 
@@ -302,14 +296,8 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: market_cash_control_policies
-kind: table
-migration: 198
-section: ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
-role: Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS.
--->
 
 ### 4.13 Monitoring et alertes (10 tables)
 

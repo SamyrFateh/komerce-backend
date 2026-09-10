@@ -416,6 +416,31 @@ $$;
 
 
 --
+-- Name: enforce_cash_policy_assignment_market(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_cash_policy_assignment_market() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_market_id UUID;
+BEGIN
+  SELECT market_id INTO v_market_id
+    FROM market_operating_assignments
+   WHERE id = NEW.assignment_id;
+
+  IF v_market_id IS NULL THEN
+    RAISE EXCEPTION 'cash policy assignment % not found', NEW.assignment_id;
+  END IF;
+  IF v_market_id IS DISTINCT FROM NEW.market_id THEN
+    RAISE EXCEPTION 'cash policy market % does not match assignment market %', NEW.market_id, v_market_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_membership_capability_within_ceiling(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1006,6 +1031,44 @@ CREATE TABLE public.cash_collections (
     confirmed_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: cash_confirmation_controls; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cash_confirmation_controls (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    relais_id uuid NOT NULL,
+    policy_assignment_id uuid,
+    required_approvals smallint NOT NULL,
+    state text NOT NULL,
+    first_actor_user_id uuid NOT NULL,
+    first_source text NOT NULL,
+    first_at timestamp with time zone DEFAULT now() NOT NULL,
+    second_actor_user_id uuid,
+    second_source text,
+    second_at timestamp with time zone,
+    confirmed_at timestamp with time zone,
+    cancelled_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_confirmation_controls_first_source_check CHECK ((char_length(btrim(first_source)) > 0)),
+    CONSTRAINT cash_confirmation_controls_required_approvals_check CHECK ((required_approvals = ANY (ARRAY[1, 2]))),
+    CONSTRAINT cash_confirmation_controls_state_check CHECK ((state = ANY (ARRAY['PENDING_SECOND'::text, 'APPROVED'::text, 'CONFIRMED'::text, 'CANCELLED'::text]))),
+    CONSTRAINT cash_confirmation_second_actor_distinct CHECK (((second_actor_user_id IS NULL) OR (second_actor_user_id <> first_actor_user_id))),
+    CONSTRAINT cash_confirmation_second_fields_consistent CHECK ((((second_actor_user_id IS NULL) AND (second_source IS NULL) AND (second_at IS NULL)) OR ((second_actor_user_id IS NOT NULL) AND (second_source IS NOT NULL) AND (second_at IS NOT NULL)))),
+    CONSTRAINT cash_confirmation_state_consistent CHECK ((((state = 'PENDING_SECOND'::text) AND (required_approvals = 2) AND (second_actor_user_id IS NULL) AND (confirmed_at IS NULL) AND (cancelled_at IS NULL)) OR ((state = 'APPROVED'::text) AND (confirmed_at IS NULL) AND (cancelled_at IS NULL) AND (((required_approvals = 1) AND (second_actor_user_id IS NULL)) OR ((required_approvals = 2) AND (second_actor_user_id IS NOT NULL)))) OR ((state = 'CONFIRMED'::text) AND (confirmed_at IS NOT NULL) AND (cancelled_at IS NULL) AND (((required_approvals = 1) AND (second_actor_user_id IS NULL)) OR ((required_approvals = 2) AND (second_actor_user_id IS NOT NULL)))) OR ((state = 'CANCELLED'::text) AND (cancelled_at IS NOT NULL) AND (confirmed_at IS NULL))))
+);
+
+
+--
+-- Name: TABLE cash_confirmation_controls; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cash_confirmation_controls IS 'Payment-owned control record for cash confirmation. First approval snapshots required approvals; a stricter in-flight requirement is never weakened by a later policy change.';
 
 
 --
@@ -2684,6 +2747,30 @@ CREATE SEQUENCE public.loyalty_tiers_id_seq
 --
 
 ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
+
+
+--
+-- Name: market_cash_control_policies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_cash_control_policies (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    assignment_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    cash_enabled boolean DEFAULT true NOT NULL,
+    confirmation_mode text DEFAULT 'SINGLE'::text NOT NULL,
+    updated_by_membership_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_cash_control_policies_confirmation_mode_check CHECK ((confirmation_mode = ANY (ARRAY['SINGLE'::text, 'DUAL_ALWAYS'::text])))
+);
+
+
+--
+-- Name: TABLE market_cash_control_policies; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_cash_control_policies IS 'Partner-owned Market cash policy. Komerce enforces the non-bypassable safety floor; partner may require dual confirmation.';
 
 
 --
@@ -6799,6 +6886,22 @@ ALTER TABLE ONLY public.cash_collections
 
 
 --
+-- Name: cash_confirmation_controls cash_confirmation_controls_order_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_order_id_key UNIQUE (order_id);
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cash_deposits cash_deposits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7244,6 +7347,22 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 ALTER TABLE ONLY public.loyalty_tiers
     ADD CONSTRAINT loyalty_tiers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_cash_control_policies market_cash_control_policies_assignment_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_control_policies
+    ADD CONSTRAINT market_cash_control_policies_assignment_id_key UNIQUE (assignment_id);
+
+
+--
+-- Name: market_cash_control_policies market_cash_control_policies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_control_policies
+    ADD CONSTRAINT market_cash_control_policies_pkey PRIMARY KEY (id);
 
 
 --
@@ -8313,6 +8432,20 @@ CREATE UNIQUE INDEX idx_cash_coll_order ON public.cash_collections USING btree (
 
 
 --
+-- Name: idx_cash_confirmation_controls_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_confirmation_controls_market ON public.cash_confirmation_controls USING btree (market_id, state, updated_at DESC);
+
+
+--
+-- Name: idx_cash_confirmation_controls_relais; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_confirmation_controls_relais ON public.cash_confirmation_controls USING btree (relais_id, state, updated_at DESC);
+
+
+--
 -- Name: idx_cash_dep_agent; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8828,6 +8961,13 @@ CREATE INDEX idx_loyalty_rewards_status ON public.loyalty_rewards USING btree (s
 --
 
 CREATE INDEX idx_loyalty_rewards_user ON public.loyalty_rewards USING btree (user_id);
+
+
+--
+-- Name: idx_market_cash_control_policies_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_cash_control_policies_market ON public.market_cash_control_policies USING btree (market_id, updated_at DESC);
 
 
 --
@@ -10812,6 +10952,13 @@ CREATE TRIGGER trg_assignment_ceiling_capability_guard BEFORE INSERT OR UPDATE O
 
 
 --
+-- Name: market_cash_control_policies trg_cash_policy_assignment_market; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_policy_assignment_market BEFORE INSERT OR UPDATE OF assignment_id, market_id ON public.market_cash_control_policies FOR EACH ROW EXECUTE FUNCTION public.enforce_cash_policy_assignment_market();
+
+
+--
 -- Name: catalog_media trg_catalog_media_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11226,6 +11373,54 @@ ALTER TABLE ONLY public.cart_shares
 
 ALTER TABLE ONLY public.cash_collections
     ADD CONSTRAINT cash_collections_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_first_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_first_actor_user_id_fkey FOREIGN KEY (first_actor_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_policy_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_policy_assignment_id_fkey FOREIGN KEY (policy_assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_relais_id_fkey FOREIGN KEY (relais_id) REFERENCES public.relais(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: cash_confirmation_controls cash_confirmation_controls_second_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_confirmation_controls
+    ADD CONSTRAINT cash_confirmation_controls_second_actor_user_id_fkey FOREIGN KEY (second_actor_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -11778,6 +11973,30 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 ALTER TABLE ONLY public.loyalty_rewards
     ADD CONSTRAINT loyalty_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_cash_control_policies market_cash_control_policies_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_control_policies
+    ADD CONSTRAINT market_cash_control_policies_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cash_control_policies market_cash_control_policies_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_control_policies
+    ADD CONSTRAINT market_cash_control_policies_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cash_control_policies market_cash_control_policies_updated_by_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_control_policies
+    ADD CONSTRAINT market_cash_control_policies_updated_by_membership_id_fkey FOREIGN KEY (updated_by_membership_id) REFERENCES public.assignment_memberships(id) ON DELETE SET NULL;
 
 
 --
