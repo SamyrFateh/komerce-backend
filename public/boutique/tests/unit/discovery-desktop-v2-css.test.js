@@ -20,6 +20,11 @@ describe('Discovery desktop One Card CSS contract', () => {
     expect(css).not.toContain('@media (max-width: 899px)');
   });
 
+  it('reste strictement dans la vue Boutique et ne fuit pas dans les onglets principaux', () => {
+    expect(css).toMatch(/body:not\(\.k-view-shop\)\s+#k-discovery-local\s*\{[\s\S]*?display:\s*none/);
+    expect(css).not.toMatch(/body\.k-view-(fav|track|komerce)\s+#k-discovery-local/);
+  });
+
   it('ne redéfinit jamais le shell canonique k-card', () => {
     expect(css).not.toMatch(/(^|\n)\s*\.k-card\s*\{/);
     expect(css).not.toMatch(/(^|\n)\s*\.k-card-img-wrap\s*\{/);
