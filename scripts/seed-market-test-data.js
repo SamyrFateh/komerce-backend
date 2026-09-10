@@ -6,9 +6,10 @@
  * @layer         script
  * @owner         backend-core
  * @purpose       Générer un lot de commandes réalistes non-production,
- *                strictement scopées par Market ID, pour éprouver les vues
- *                et requêtes de viabilité pricing sans fuite inter-marchés.
- * @impact-areas  staging-only, market, pricing-tests
+ *                strictement scopées par Market ID, pour éprouver les vues,
+ *                le catalogue local et les décisions pricing sans fuite
+ *                inter-marchés.
+ * @impact-areas  staging-only, market, catalog, market-autonomy, pricing-tests
  *
  * Toutes les lignes créées utilisent un namespace par marché
  * (`SEEDTEST-<MARKET>-...`) afin qu'un seed/cleanup CM ne puisse jamais
@@ -25,14 +26,23 @@
  *   - le marché doit déjà exister dans markets ;
  *   - orders.market_id est écrit explicitement comme snapshot du relais ;
  *   - relais et produits de seed sont namespacés par code marché ;
+ *   - chaque produit de seed est explicitement ENABLED dans
+ *     product_market_exposure pour CE market_id ;
+ *   - chaque produit reçoit une décision locale DRAFT_PENDING_GATE dans la
+ *     devise serveur du marché ; le seed ne contourne jamais le gate pour
+ *     fabriquer artificiellement un LOCAL_ACTIVE ;
  *   - cleanup exige à la fois le tag du marché ET le market_id canonique.
  */
 
 'use strict';
 
 const db = require('../db');
+const catalogExposure = require('../services/catalog-market-exposure-service');
+const marketCommercialPrice = require('../services/market-commercial-price-service');
+const { projectAmount, roundToMinorUnit } = require('../utils/currency');
 
 const TAG = 'SEEDTEST';
+const PRICE_SOURCE = 'staging_market_seed';
 
 const MARKET_TEST_PROFILES = Object.freeze({
   KM: Object.freeze({ phonePrefix: '+269', area: 'Ngazidja' }),
@@ -121,7 +131,7 @@ function isProductionRuntime() {
 async function ensureMarket(rawCode) {
   const code = normalizeMarketCode(rawCode);
   const { rows } = await db.query(
-    'SELECT id, code, name, currency FROM markets WHERE code = $1',
+    'SELECT id, code, name, currency, minor_unit FROM markets WHERE code = $1',
     [code]
   );
   if (rows.length === 0) {
@@ -186,6 +196,53 @@ async function ensureProducts(count, marketCode) {
     created.push(rows[0]);
   }
   return [...existing, ...created];
+}
+
+async function localDraftAmountForProduct(product, market) {
+  if (!product?.product_ref) {
+    throw new Error(`Produit de seed sans product_ref canonique (${product?.id || 'unknown'})`);
+  }
+  const projected = await projectAmount(Number(product.price_kmf), 'KMF', market.currency);
+  const amount = roundToMinorUnit(projected, Number(market.minor_unit) || 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`Projection de prix locale invalide pour ${product.product_ref} (${market.code})`);
+  }
+  return amount;
+}
+
+async function prepareProductsForMarket(products, market) {
+  if (!market?.id || !market?.code || !market?.currency) {
+    throw new Error('prepareProductsForMarket: canonical market is required');
+  }
+
+  let exposed = 0;
+  let drafts = 0;
+  for (const product of products) {
+    const localAmount = await localDraftAmountForProduct(product, market);
+
+    // catalog reste propriétaire de la projection product x market.
+    await catalogExposure.setExposure(
+      product.id,
+      market.id,
+      catalogExposure.EXPOSURE.ENABLED,
+      null
+    );
+    exposed++;
+
+    // Le seed crée uniquement la décision locale. L'autorisation économique et
+    // l'activation acheteur restent la responsabilité du gate canonique.
+    await marketCommercialPrice.setMarketPriceDraft({
+      market,
+      productRef: product.product_ref,
+      amount: localAmount,
+      reason: `${TAG} ${market.code} prix local de test`,
+      source: PRICE_SOURCE,
+      actorId: null,
+    });
+    drafts++;
+  }
+
+  return { exposed, drafts };
 }
 
 async function createOrder({ marketId, marketCode, relaisId, products }) {
@@ -256,8 +313,9 @@ async function cleanup(market) {
     );
   }
 
-  // Les products restent globaux dans le modèle Komerce. Le namespace du nom
-  // garantit qu'on ne retire que les produits techniques créés pour CE marché.
+  // product_market_exposure et product_market_price_* référencent product_id
+  // en ON DELETE CASCADE. Le namespace garantit que seuls les produits
+  // techniques de CE marché — et leurs projections locales — disparaissent.
   await db.query('DELETE FROM products WHERE name LIKE $1', [`${tags.productNamePrefix}%`]);
   await db.query(
     'DELETE FROM relais WHERE name = $1 AND market_id = $2',
@@ -295,7 +353,7 @@ async function main(argv = process.argv) {
     return;
   }
 
-  console.log(`[seed] Marché : ${market.code} — ${market.name}`);
+  console.log(`[seed] Marché : ${market.code} — ${market.name} (${market.currency})`);
 
   if (args.cleanup) {
     await cleanup(market);
@@ -311,6 +369,7 @@ async function main(argv = process.argv) {
   const tags = marketTags(market.code);
   if (args.dryRun) {
     console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${tags.relaisName}" (marché ${market.code}).`);
+    console.log(`[dry-run] Préparerait 15 produits exposés avec prix local DRAFT_PENDING_GATE en ${market.currency}.`);
     console.log('[dry-run] Aucune écriture effectuée.');
     return;
   }
@@ -320,6 +379,9 @@ async function main(argv = process.argv) {
 
   const products = await ensureProducts(15, market.code);
   console.log(`[seed] ${products.length} produit(s) ${TAG}-${market.code} disponible(s).`);
+
+  const prepared = await prepareProductsForMarket(products, market);
+  console.log(`[seed] Catalogue ${market.code} : ${prepared.exposed} exposé(s), ${prepared.drafts} prix local(aux) en attente de gate.`);
 
   let monoArticle = 0;
   let totalLignes = 0;
@@ -362,6 +424,7 @@ if (require.main === module) {
 
 module.exports = {
   TAG,
+  PRICE_SOURCE,
   MARKET_TEST_PROFILES,
   normalizeMarketCode,
   marketTags,
@@ -371,6 +434,8 @@ module.exports = {
   ensureMarket,
   ensureRelais,
   ensureProducts,
+  localDraftAmountForProduct,
+  prepareProductsForMarket,
   createOrder,
   cleanup,
   main,
