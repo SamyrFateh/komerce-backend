@@ -55,11 +55,13 @@ describeE2E('E2E-MA-02 — market-delegation · commerce et providers', ({ db })
   });
 
   afterAll(async () => {
-    for (const id of physicalOffers) fx.cleanup.track('physical_offers', 'id', id);
-    for (const id of services) fx.cleanup.track('services', 'id', id);
-    for (const id of providers) fx.cleanup.track('providers', 'id', id);
-    fx.cleanup.trackSql('DELETE FROM product_market_exposure WHERE product_id = ANY($1::uuid[])', [products]);
+    // createCleanup est LIFO : parents d'abord, enfants ensuite, afin que
+    // l'exécution supprime les enfants avant leurs FK parentes.
     for (const id of products) fx.cleanup.track('products', 'id', id);
+    fx.cleanup.trackSql('DELETE FROM product_market_exposure WHERE product_id = ANY($1::uuid[])', [products]);
+    for (const id of providers) fx.cleanup.track('providers', 'id', id);
+    for (const id of services) fx.cleanup.track('services', 'id', id);
+    for (const id of physicalOffers) fx.cleanup.track('physical_offers', 'id', id);
     if (fx) await fx.cleanup.run();
   });
 
