@@ -144,7 +144,7 @@ describe('market-delegation network service — capabilities et audit', () => {
   test('aucune valeur géographique Comores codée en dur (pas de défaut Anjouan silencieux)', () => {
     const source = fs.readFileSync(path.join(ROOT, 'services', 'market-delegation-network-service.js'), 'utf8');
     expect(source).not.toMatch(/Anjouan/);
-    const migration = fs.readFileSync(path.join(ROOT, 'migrations', '198_market_delegation_relais_island_nullable.sql'), 'utf8');
+    const migration = fs.readFileSync(path.join(ROOT, 'migrations', '200_market_delegation_relais_island_nullable.sql'), 'utf8');
     expect(migration).toMatch(/DROP DEFAULT/);
     expect(migration).toMatch(/DROP NOT NULL/);
   });
