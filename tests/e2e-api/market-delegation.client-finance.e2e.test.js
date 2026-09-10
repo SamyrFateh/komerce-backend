@@ -84,18 +84,44 @@ describeE2E('E2E-MA-03 — market-delegation · SAV, cash, settlement', ({ db })
     orderB = await createOrderFixture({ market: fx.marketB, user: fx.managerB, label: 'B' });
     disputeA = await createDisputeFixture({ orderId: orderA, creatorId: fx.managerA.id, label: 'A', refundKmf: 777 });
     disputeB = await createDisputeFixture({ orderId: orderB, creatorId: fx.managerB.id, label: 'B', refundKmf: 888 });
-
-    fx.cleanup.trackSql('DELETE FROM market_settlement_events WHERE settlement_id IN (SELECT id FROM market_settlements WHERE assignment_id IN ($1,$2))', [fx.assignmentA.id, fx.assignmentB.id]);
-    fx.cleanup.trackSql('DELETE FROM market_settlements WHERE assignment_id IN ($1,$2)', [fx.assignmentA.id, fx.assignmentB.id]);
-    fx.cleanup.track('disputes', 'id', disputeA);
-    fx.cleanup.track('disputes', 'id', disputeB);
-    fx.cleanup.track('orders', 'id', orderA);
-    fx.cleanup.track('orders', 'id', orderB);
-    for (const relayId of relayIds) fx.cleanup.track('relais', 'id', relayId);
   });
 
   afterAll(async () => {
-    if (fx) await fx.cleanup.run();
+    if (!fx) return;
+
+    // Settlement est non-destructif en runtime. La DB est explicitement
+    // reconnue comme test par e2eDbKit ; pour nettoyer uniquement cette
+    // fixture, on verrouille les tables, désactive les deux triggers de
+    // non-destruction dans UNE transaction, efface nos lignes, puis réactive
+    // les triggers avant COMMIT. Un ROLLBACK restaure aussi leur état.
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query('LOCK TABLE market_settlement_events, market_settlements IN ACCESS EXCLUSIVE MODE');
+      await client.query('ALTER TABLE market_settlement_events DISABLE TRIGGER trg_prevent_market_settlement_event_mutation');
+      await client.query('ALTER TABLE market_settlements DISABLE TRIGGER trg_prevent_market_settlement_delete');
+      await client.query(
+        'DELETE FROM market_settlement_events WHERE settlement_id IN (SELECT id FROM market_settlements WHERE assignment_id IN ($1,$2))',
+        [fx.assignmentA.id, fx.assignmentB.id]
+      );
+      await client.query(
+        'DELETE FROM market_settlements WHERE assignment_id IN ($1,$2)',
+        [fx.assignmentA.id, fx.assignmentB.id]
+      );
+      await client.query('ALTER TABLE market_settlements ENABLE TRIGGER trg_prevent_market_settlement_delete');
+      await client.query('ALTER TABLE market_settlement_events ENABLE TRIGGER trg_prevent_market_settlement_event_mutation');
+      await client.query('COMMIT');
+    } catch (error) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* preserve original */ }
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    await db.query('DELETE FROM disputes WHERE id = ANY($1::uuid[])', [[disputeA, disputeB]]);
+    await db.query('DELETE FROM orders WHERE id = ANY($1::uuid[])', [[orderA, orderB]]);
+    await db.query('DELETE FROM relais WHERE id = ANY($1::uuid[])', [relayIds]);
+    await fx.cleanup.run();
   });
 
   it('1 — la liste SAV de A ne contient jamais le litige B', async () => {
