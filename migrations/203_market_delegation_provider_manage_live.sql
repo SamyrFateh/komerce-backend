@@ -68,7 +68,7 @@ INSERT INTO market_delegation_audit (
   occurred_at,
   correlation_id
 )
-SELECT am.user_id,
+SELECT NULL,
        am.assignment_id,
        am.id,
        'provider.manage',
