@@ -54,5 +54,7 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-migrate.js
+      - name: Run local-price activation unit guard
+        run: npx jest tests/unit/market-local-price-activation-service.test.js --runInBand
       - name: Run Market Autonomy E2E Lot 4
         run: npm run test:e2e:lot -- --lot=4
