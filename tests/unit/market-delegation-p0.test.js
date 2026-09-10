@@ -10,13 +10,13 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 describe('market-delegation P0 invariants + current autonomy checkpoint', () => {
-  test('registry remains exact and LOT 2B (provider) + LOT 4 (local-offer) advance autonomy to 25/31', () => {
+  test('registry remains exact and LOT 5 (client-case) advances autonomy to 26/31', () => {
     expect(CAPABILITIES).toHaveLength(42);
-    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 25, total: 31, rate: 25 / 31 });
+    expect(autonomyStats(CAPABILITIES)).toEqual({ live: 26, total: 31, rate: 26 / 31 });
     expect(validateRegistry(CAPABILITIES)).toMatchObject({ ok: true, errors: [] });
     expect(runCheck({ root: ROOT, print: false })).toMatchObject({
       ok: true,
-      checkpoint: { lot: '2B-provider+4-local-offer', p0_live: 15, live: 25, delegation: 31 },
+      checkpoint: { lot: '5-client-case', p0_live: 15, live: 26, delegation: 31 },
     });
     for (const capability of ['team.read', 'team.grant', 'team.revoke', 'team.invite']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
@@ -25,6 +25,7 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
     expect(CAPABILITIES.find(row => row.capability === 'local_offer.manage')?.status).toBe('LIVE');
+    expect(CAPABILITIES.find(row => row.capability === 'client.case.handle')?.status).toBe('LIVE');
     expect(CAPABILITIES.find(row => row.capability === 'catalog.expose')?.status).toBe('MISSING');
   });
 
@@ -106,5 +107,22 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/migration-204/);
     expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
     expect(migration).not.toMatch(/UPDATE users/i);
+  });
+
+  test('promotion client.case.handle LIVE aligne ceiling et responsables pays sans élargir les viewers, et n’écrit jamais refund_kmf/refund_eur', () => {
+    const migration = read('migrations/205_market_delegation_client_case_handle_live.sql');
+    expect(migration).toMatch(/client\.case\.handle/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).toMatch(/mc\.capability = 'team\.grant'/);
+    expect(migration).toMatch(/mc\.capability = 'team\.revoke'/);
+    expect(migration).toMatch(/mc\.capability = 'network\.read'/);
+    expect(migration).toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).toMatch(/CAPABILITY_GRANTED_BY_PROMOTION/);
+    expect(migration).toMatch(/migration-205/);
+    expect(migration).toMatch(/SELECT NULL,[\s\S]*am\.assignment_id/);
+    expect(migration).not.toMatch(/UPDATE users/i);
+    expect(migration).not.toMatch(/UPDATE disputes/i);
+    expect(migration).not.toMatch(/refund_kmf\s*=/);
+    expect(migration).not.toMatch(/refund_eur\s*=/);
   });
 });
