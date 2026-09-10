@@ -43,8 +43,8 @@ module.exports = {
 
   perimeter: {
     in: [
-      'market_settlements : snapshot monétaire amount + currency immuable, rattaché au Market Operating Assignment',
-      'market_settlement_events : journal append-only READY_ATTESTED / REQUESTED / PAID / RECEIVED',
+      'market_settlements : snapshot monétaire amount + currency immuable, rattaché au Market Operating Assignment et jamais supprimé',
+      'market_settlement_events : journal strictement append-only READY_ATTESTED / REQUESTED / PAID / RECEIVED',
       'création READY exclusivement par acteur central admin/finance, montant explicitement attesté et devise dérivée du marché côté serveur',
       'demande REQUESTED exclusivement via capability finance.act sur le Market ID résolu serveur',
       'passage PAID exclusivement par acteur central admin/finance avec référence de paiement obligatoire',
@@ -57,7 +57,8 @@ module.exports = {
       'calcul automatique du montant dû : aucune règle commission/margin_share/revenue_share fiable n’existe encore dans le code',
       'payout bancaire ou Mobile Money : aucun transfert externe n’est initié par cette feature dans ce lot',
       'choix de devise par le navigateur : currency vient toujours de markets.currency',
-      'modification d’un READY existant : amount/currency/assignment/source sont immuables ; une correction future devra être un nouvel événement explicite, jamais un UPDATE silencieux',
+      'modification d’un READY existant : amount/currency/assignment/source sont immuables ; une correction future crée une nouvelle attestation, jamais un UPDATE silencieux',
+      'suppression destructive d’un settlement ou réécriture d’un événement financier : interdites au niveau DB',
       'refund client : feature refunds, totalement distincte du settlement opérateur',
       'réconciliation cash terrain -> Komerce : feature payments/dashboard, flux économique inverse et distinct',
       'configuration générale du marché : market_config.update reste hors périmètre',
@@ -141,6 +142,8 @@ module.exports = {
     'settlement.receive ne fait que PAID -> RECEIVED et n’accepte aucun champ monétaire',
     'aucune route opérateur ne peut créer READY ni marquer PAID',
     'un settlement d’un autre Market ID retourne 404 sur la surface déléguée sans fuite d’existence',
+    'market_settlements ne peut jamais être supprimé ; une correction crée une nouvelle attestation',
+    'market_settlement_events est append-only : UPDATE et DELETE bloqués par trigger DB',
     'la migration d’activation des capabilities ne crée ni ne modifie aucune vérité market_settlements',
   ],
 };
