@@ -1,0 +1,43 @@
+name: KartaPay generated artifacts refresh
+
+on:
+  push:
+    branches:
+      - feat/kartapay-km-sandbox
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.repository == 'SamyrFateh/komerce-backend'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/kartapay-km-sandbox
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - name: Regenerate API contract
+        run: npm run contract:generate
+      - name: Regenerate Security 360
+        run: npm run security:360
+
+      - name: Commit deterministic generated artifacts
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/contract/openapi.json docs/contract/DEBT.md docs/SECURITY_360.json docs/SECURITY_360.md
+          if git diff --cached --quiet; then
+            echo "No generated artifact changes."
+            exit 0
+          fi
+          git commit -m "docs(governance): refresh payment contract and security projections"
+          git push origin HEAD:feat/kartapay-km-sandbox
