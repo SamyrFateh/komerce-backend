@@ -16,17 +16,22 @@ describe('admin settlement routes — central-only boundary', () => {
     expect(source).toMatch(/settlements\/:settlementId\/paid', \.\.\.centralFinance/);
   });
 
-  test('READY accepte le montant attesté mais dérive market/assignment/currency côté serveur', () => {
-    expect(source).toMatch(/allowAmount: true/);
+  test('READY accepte seulement les champs d’attestation et dérive market/assignment/currency côté serveur', () => {
+    expect(source).toContain("assertAllowedBody(req.body, ['amount', 'source_reference', 'period_start', 'period_end', 'attestation_note'])");
     expect(source).toMatch(/resolveActiveAssignmentByMarketCode/);
     expect(source).toMatch(/marketId: authz\.market_id/);
     expect(source).toMatch(/assignmentId: authz\.assignment_id/);
     expect(source).not.toMatch(/currency:\s*body\.currency/);
   });
 
-  test('PAID exige une référence de paiement et n’accepte pas un nouveau montant', () => {
+  test('PAID accepte seulement payment_reference et n’accepte pas un nouveau montant', () => {
+    expect(source).toContain("assertAllowedBody(req.body, ['payment_reference'])");
     expect(source).toMatch(/paymentReference: req\.body && req\.body\.payment_reference/);
-    expect(source).toMatch(/forbidden\.push\('amount'\)/);
+  });
+
+  test('market_id client reste explicitement refusé', () => {
+    expect(source).toMatch(/found === 'market_id' \|\| found === 'marketId'/);
+    expect(source).toMatch(/MARKET_ID_FORBIDDEN/);
   });
 
   test('routes centrales montées exactement une fois', () => {
