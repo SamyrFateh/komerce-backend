@@ -441,6 +441,86 @@ $$;
 
 
 --
+-- Name: enforce_market_settlement_invariants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_market_settlement_invariants() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  expected_currency TEXT;
+  assignment_market UUID;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    SELECT m.currency INTO expected_currency FROM markets m WHERE m.id = NEW.market_id;
+    SELECT a.market_id INTO assignment_market FROM market_operating_assignments a WHERE a.id = NEW.assignment_id;
+
+    IF expected_currency IS NULL OR assignment_market IS NULL THEN
+      RAISE EXCEPTION 'market_settlement_reference_invalid';
+    END IF;
+    IF assignment_market <> NEW.market_id THEN
+      RAISE EXCEPTION 'market_settlement_assignment_market_mismatch';
+    END IF;
+    IF NEW.currency <> expected_currency THEN
+      RAISE EXCEPTION 'market_settlement_currency_mismatch';
+    END IF;
+    IF NEW.status <> 'READY' THEN
+      RAISE EXCEPTION 'market_settlement_must_start_ready';
+    END IF;
+    IF NEW.requested_by IS NOT NULL OR NEW.requested_at IS NOT NULL
+       OR NEW.paid_by IS NOT NULL OR NEW.paid_at IS NOT NULL OR NEW.payment_reference IS NOT NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_future_stage_fields_forbidden';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id
+     OR NEW.assignment_id IS DISTINCT FROM OLD.assignment_id
+     OR NEW.amount IS DISTINCT FROM OLD.amount
+     OR NEW.currency IS DISTINCT FROM OLD.currency
+     OR NEW.source IS DISTINCT FROM OLD.source
+     OR NEW.source_reference IS DISTINCT FROM OLD.source_reference
+     OR NEW.period_start IS DISTINCT FROM OLD.period_start
+     OR NEW.period_end IS DISTINCT FROM OLD.period_end
+     OR NEW.attested_by IS DISTINCT FROM OLD.attested_by
+     OR NEW.attestation_note IS DISTINCT FROM OLD.attestation_note THEN
+    RAISE EXCEPTION 'market_settlement_attestation_immutable';
+  END IF;
+
+  IF OLD.status = 'READY' AND NEW.status = 'REQUESTED' THEN
+    IF NEW.requested_by IS NULL OR NEW.requested_at IS NULL
+       OR NEW.paid_by IS NOT NULL OR NEW.paid_at IS NOT NULL OR NEW.payment_reference IS NOT NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_requested_stage_invalid';
+    END IF;
+  ELSIF OLD.status = 'REQUESTED' AND NEW.status = 'PAID' THEN
+    IF NEW.requested_by IS DISTINCT FROM OLD.requested_by
+       OR NEW.requested_at IS DISTINCT FROM OLD.requested_at
+       OR NEW.paid_by IS NULL OR NEW.paid_at IS NULL OR NULLIF(BTRIM(NEW.payment_reference), '') IS NULL
+       OR NEW.received_by IS NOT NULL OR NEW.received_at IS NOT NULL OR NEW.receipt_note IS NOT NULL THEN
+      RAISE EXCEPTION 'market_settlement_paid_stage_invalid';
+    END IF;
+  ELSIF OLD.status = 'PAID' AND NEW.status = 'RECEIVED' THEN
+    IF NEW.requested_by IS DISTINCT FROM OLD.requested_by
+       OR NEW.requested_at IS DISTINCT FROM OLD.requested_at
+       OR NEW.paid_by IS DISTINCT FROM OLD.paid_by
+       OR NEW.paid_at IS DISTINCT FROM OLD.paid_at
+       OR NEW.payment_reference IS DISTINCT FROM OLD.payment_reference
+       OR NEW.received_by IS NULL OR NEW.received_at IS NULL THEN
+      RAISE EXCEPTION 'market_settlement_received_stage_invalid';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'market_settlement_transition_invalid:%->%', OLD.status, NEW.status;
+  END IF;
+
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_membership_capability_within_ceiling(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -595,6 +675,32 @@ CREATE FUNCTION public.prevent_incident_delete() RETURNS trigger
 BEGIN
   RAISE EXCEPTION 'La suppression d''incidents est interdite. Utilisez status=dismissed pour fermer.';
   RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: prevent_market_settlement_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_market_settlement_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'market_settlements are non-destructive; create a new attestation instead';
+END;
+$$;
+
+
+--
+-- Name: prevent_market_settlement_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_market_settlement_event_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'market_settlement_events is append-only';
 END;
 $$;
 
@@ -2907,6 +3013,74 @@ CREATE TABLE public.market_price_observations (
 --
 
 COMMENT ON TABLE public.market_price_observations IS 'Observed local market prices. Market scope is resolved server-side; corridor projection is informative evidence, not an automatic pricing gate.';
+
+
+--
+-- Name: market_settlement_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_settlement_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    settlement_id uuid NOT NULL,
+    actor_user_id uuid,
+    event_type text NOT NULL,
+    payload jsonb,
+    correlation_id text,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_settlement_events_event_type_check CHECK ((event_type = ANY (ARRAY['READY_ATTESTED'::text, 'REQUESTED'::text, 'PAID'::text, 'RECEIVED'::text])))
+);
+
+
+--
+-- Name: TABLE market_settlement_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_settlement_events IS 'Journal append-only du lifecycle settlement. Complète market_delegation_audit : ici la vérité financière ; là-bas la preuve d usage des capabilities déléguées. UPDATE/DELETE interdits.';
+
+
+--
+-- Name: market_settlements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_settlements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    assignment_id uuid NOT NULL,
+    amount numeric(24,6) NOT NULL,
+    currency text NOT NULL,
+    source text DEFAULT 'CENTRAL_ATTESTATION'::text NOT NULL,
+    source_reference text,
+    period_start date,
+    period_end date,
+    attestation_note text,
+    status text DEFAULT 'READY'::text NOT NULL,
+    attested_by uuid NOT NULL,
+    requested_by uuid,
+    requested_at timestamp with time zone,
+    paid_by uuid,
+    paid_at timestamp with time zone,
+    payment_reference text,
+    received_by uuid,
+    received_at timestamp with time zone,
+    receipt_note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_settlements_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT market_settlements_check CHECK (((period_start IS NULL) OR (period_end IS NULL) OR (period_end >= period_start))),
+    CONSTRAINT market_settlements_check1 CHECK (((status = 'READY'::text) OR ((requested_by IS NOT NULL) AND (requested_at IS NOT NULL)))),
+    CONSTRAINT market_settlements_check2 CHECK (((status <> ALL (ARRAY['PAID'::text, 'RECEIVED'::text])) OR ((paid_by IS NOT NULL) AND (paid_at IS NOT NULL) AND (NULLIF(btrim(payment_reference), ''::text) IS NOT NULL)))),
+    CONSTRAINT market_settlements_check3 CHECK (((status <> 'RECEIVED'::text) OR ((received_by IS NOT NULL) AND (received_at IS NOT NULL)))),
+    CONSTRAINT market_settlements_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_settlements_source_check CHECK ((source = 'CENTRAL_ATTESTATION'::text)),
+    CONSTRAINT market_settlements_status_check CHECK ((status = ANY (ARRAY['READY'::text, 'REQUESTED'::text, 'PAID'::text, 'RECEIVED'::text])))
+);
+
+
+--
+-- Name: TABLE market_settlements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_settlements IS 'Vérité de settlement du Market Operating Assignment. READY = attestation centrale, REQUESTED = demande pays, PAID = attestation centrale de paiement, RECEIVED = accusé de réception pays. amount/currency sont immuables après création ; DELETE interdit.';
 
 
 --
@@ -7459,6 +7633,22 @@ ALTER TABLE ONLY public.market_price_observations
 
 
 --
+-- Name: market_settlement_events market_settlement_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlement_events
+    ADD CONSTRAINT market_settlement_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_settlements market_settlements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: market_team_invitations market_team_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9064,6 +9254,27 @@ CREATE INDEX idx_market_price_observations_market_category ON public.market_pric
 --
 
 CREATE INDEX idx_market_price_observations_market_product ON public.market_price_observations USING btree (market_id, product_id, observed_at DESC) WHERE (is_active = true);
+
+
+--
+-- Name: idx_market_settlement_events_settlement; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_settlement_events_settlement ON public.market_settlement_events USING btree (settlement_id, occurred_at);
+
+
+--
+-- Name: idx_market_settlements_assignment_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_settlements_assignment_status ON public.market_settlements USING btree (assignment_id, status, created_at DESC);
+
+
+--
+-- Name: idx_market_settlements_market_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_settlements_market_status ON public.market_settlements USING btree (market_id, status, created_at DESC);
 
 
 --
@@ -11118,6 +11329,13 @@ CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH 
 
 
 --
+-- Name: market_settlements trg_market_settlement_invariants; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_market_settlement_invariants BEFORE INSERT OR UPDATE ON public.market_settlements FOR EACH ROW EXECUTE FUNCTION public.enforce_market_settlement_invariants();
+
+
+--
 -- Name: membership_capabilities trg_membership_capability_ceiling_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11192,6 +11410,20 @@ CREATE TRIGGER trg_prevent_economic_structure_cost_event_mutation BEFORE DELETE 
 --
 
 CREATE TRIGGER trg_prevent_incident_delete BEFORE DELETE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.prevent_incident_delete();
+
+
+--
+-- Name: market_settlements trg_prevent_market_settlement_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_market_settlement_delete BEFORE DELETE ON public.market_settlements FOR EACH ROW EXECUTE FUNCTION public.prevent_market_settlement_delete();
+
+
+--
+-- Name: market_settlement_events trg_prevent_market_settlement_event_mutation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_market_settlement_event_mutation BEFORE DELETE OR UPDATE ON public.market_settlement_events FOR EACH ROW EXECUTE FUNCTION public.prevent_market_settlement_event_mutation();
 
 
 --
@@ -12177,6 +12409,70 @@ ALTER TABLE ONLY public.market_price_observations
 
 ALTER TABLE ONLY public.market_price_observations
     ADD CONSTRAINT market_price_observations_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: market_settlement_events market_settlement_events_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlement_events
+    ADD CONSTRAINT market_settlement_events_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_settlement_events market_settlement_events_settlement_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlement_events
+    ADD CONSTRAINT market_settlement_events_settlement_id_fkey FOREIGN KEY (settlement_id) REFERENCES public.market_settlements(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_assignment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.market_operating_assignments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_attested_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_attested_by_fkey FOREIGN KEY (attested_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_received_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_settlements market_settlements_requested_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_settlements
+    ADD CONSTRAINT market_settlements_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
