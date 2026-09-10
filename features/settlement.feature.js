@@ -77,6 +77,7 @@ module.exports = {
       'tests/unit/market-settlement-service.test.js',
       'tests/unit/admin-market-settlement-routes.test.js',
       'tests/unit/market-settlement-migration.test.js',
+      'tests/e2e-api/settlement.state-machine.e2e.test.js',
     ],
   },
 
