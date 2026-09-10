@@ -50,6 +50,7 @@ describe('market-delegation team UI', () => {
   test('la gestion équipe ne peut sélectionner que des capabilities renvoyées au grantor', () => {
     const js = read('public/dashboards/canonical/js/market-team.js');
     expect(js).toContain('const available = [...team.actor_capabilities].sort()');
+    expect(js).toContain("'cash_control.policy.manage': 'Gérer le contrôle des encaissements'");
     expect(js).toContain('/team/invitations');
     expect(js).toContain('/capabilities');
     expect(js).not.toContain('market_id');
