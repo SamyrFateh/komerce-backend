@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const { signAuthToken } = require('../../utils/auth-session');
 const { CAPABILITIES } = require('../../config/market-delegation-capabilities');
 const { projectAssignment } = require('../../services/market-scope-projector');
+const { invalidateCurrencyParityCache } = require('../../utils/currency');
 const { createCleanup, tag, uuid } = require('./e2eDbKit');
 
 const READ_ONLY_CAPABILITIES = Object.freeze([
@@ -19,6 +20,12 @@ const READ_ONLY_CAPABILITIES = Object.freeze([
   'network.read',
   'market_config.read',
   'finance.read',
+]);
+
+const FIXED_CURRENCY_PARITIES = Object.freeze([
+  ['EUR', 1, 'Référence — identité, pas un ancrage'],
+  ['KMF', 491.96775, 'Ancrage comorien, garanti Trésor français, en vigueur depuis 1999'],
+  ['XAF', 655.957, 'Franc CFA d’Afrique centrale (CEMAC), garanti Trésor français'],
 ]);
 
 function randomMarketCode(excluded = new Set()) {
@@ -49,6 +56,22 @@ async function ensureCapabilityRegistry(db, cleanup) {
   }
   for (const capability of inserted) cleanup.track('capability_registry', 'capability', capability);
   return CAPABILITIES.filter((entry) => entry.class === 'DELEGATION' && entry.status === 'LIVE').map((entry) => entry.capability);
+}
+
+async function ensureFixedCurrencyParities(db, cleanup) {
+  const inserted = [];
+  for (const [currency, eurRate, sourceNote] of FIXED_CURRENCY_PARITIES) {
+    const { rows } = await db.query(
+      `INSERT INTO currency_parities (currency, eur_rate, source_note)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (currency) DO NOTHING
+       RETURNING currency`,
+      [currency, eurRate, sourceNote]
+    );
+    if (rows[0]) inserted.push(rows[0].currency);
+  }
+  invalidateCurrencyParityCache();
+  for (const currency of inserted) cleanup.track('currency_parities', 'currency', currency);
 }
 
 async function insertUser(db, cleanup, { role = 'client', label }) {
@@ -122,6 +145,7 @@ async function insertMembership(db, cleanup, { assignmentId, userId, capabilitie
 async function createMarketDelegationFixture(db) {
   const cleanup = createCleanup(db);
   const liveCapabilities = await ensureCapabilityRegistry(db, cleanup);
+  await ensureFixedCurrencyParities(db, cleanup);
 
   const used = new Set(['KM', 'YT', 'CM', 'CG']);
   const codeA = randomMarketCode(used); used.add(codeA);
@@ -205,6 +229,7 @@ function makeApp(routerPaths) {
 
 module.exports = {
   READ_ONLY_CAPABILITIES,
+  FIXED_CURRENCY_PARITIES,
   bearer,
   createMarketDelegationFixture,
   makeApp,
