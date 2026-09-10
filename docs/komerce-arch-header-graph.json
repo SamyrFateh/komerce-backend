@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 530,
-    "filesWithFullHeaders": 485,
+    "scannedCodeFiles": 533,
+    "filesWithFullHeaders": 488,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 530,
+    "filesWithAnyHeaders": 533,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1252,
-    "edges": 6270,
+    "graphNodes": 1259,
+    "edges": 6304,
     "dbTables": 150,
-    "doctrines": 393,
-    "impactAreas": 179,
-    "unresolvedCodeEdges": 604,
+    "doctrines": 396,
+    "impactAreas": 180,
+    "unresolvedCodeEdges": 606,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 66
   },
@@ -37,11 +37,11 @@
     "catalog": 95,
     "admin-dashboard": 21,
     "decision-signals": 12,
-    "market-delegation": 8,
+    "market-delegation": 10,
     "market": 3,
     "economic-engine": 56,
     "sourcing": 6,
-    "logistics": 45,
+    "logistics": 46,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -102,9 +102,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 117,
+    "route": 118,
     "entrypoint": 1,
-    "service": 239,
+    "service": 241,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -115,7 +115,7 @@
   "byCriticality": {
     "critical": 81,
     "medium": 123,
-    "high": 273,
+    "high": 276,
     "low": 53
   },
   "nodes": [
@@ -148,6 +148,7 @@
         "routes/shared-cart-saved.js",
         "routes/market-delegation-team.js",
         "routes/market-delegation-cash-control.js",
+        "routes/market-delegation-network.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -8948,6 +8949,65 @@
       "version": "2026-09"
     },
     {
+      "id": "routes/market-delegation-network.js",
+      "file": "routes/market-delegation-network.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-network-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "relais payloads"
+      ],
+      "outputs": [
+        "relais read model and auditable network mutations"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-network-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-network-service",
+          "tables": [
+            "relais"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "capabilities_authorize_network_actions",
+        "client_market_id_never_authority",
+        "suspend_not_delete"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "logistics",
+        "network"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/market-delegation-team.js",
       "file": "routes/market-delegation-team.js",
       "type": "file",
@@ -15625,6 +15685,65 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-delegation-network-service.js",
+      "file": "services/market-delegation-network-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-network-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated market operator",
+        "market code",
+        "relais payload"
+      ],
+      "outputs": [
+        "relais read model",
+        "auditable network mutations"
+      ],
+      "depends": [
+        "services/market-delegation-service.js",
+        "services/relais-mutation-service.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-network.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "relais-mutation-service",
+          "tables": [
+            "relais"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "network_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "logistics",
+        "network"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/market-delegation-service.js",
       "file": "services/market-delegation-service.js",
       "type": "file",
@@ -21074,6 +21193,51 @@
         "wallet"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/relais-mutation-service.js",
+      "file": "services/relais-mutation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "logistics-relais-mutation-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "db_or_transaction_executor",
+        "relais payload"
+      ],
+      "outputs": [
+        "relais read model",
+        "mutated relais row"
+      ],
+      "depends": [
+        "none (executor fourni par l'appelant)"
+      ],
+      "usedBy": [
+        "services/market-delegation-network-service.js"
+      ],
+      "dbRead": [
+        "relais"
+      ],
+      "dbWrite": [
+        "relais"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_preserved"
+      ],
+      "doctrine": [
+        "writer_not_owner_boundary",
+        "suspend_not_delete"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market-delegation"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/relay-dashboard-queries.js",
@@ -26791,14 +26955,24 @@
       "doctrine": "no_client_market_id"
     },
     {
-      "id": "doctrine:capabilities_authorize_team_actions",
+      "id": "doctrine:capabilities_authorize_network_actions",
       "type": "doctrine",
-      "doctrine": "capabilities_authorize_team_actions"
+      "doctrine": "capabilities_authorize_network_actions"
     },
     {
       "id": "doctrine:client_market_id_never_authority",
       "type": "doctrine",
       "doctrine": "client_market_id_never_authority"
+    },
+    {
+      "id": "doctrine:suspend_not_delete",
+      "type": "doctrine",
+      "doctrine": "suspend_not_delete"
+    },
+    {
+      "id": "doctrine:capabilities_authorize_team_actions",
+      "type": "doctrine",
+      "doctrine": "capabilities_authorize_team_actions"
     },
     {
       "id": "doctrine:legacy_scope_is_projection",
@@ -27231,6 +27405,16 @@
       "doctrine": "authorization_distinct_from_buyer_cutover"
     },
     {
+      "id": "doctrine:network_authority_is_capability_based",
+      "type": "doctrine",
+      "doctrine": "network_authority_is_capability_based"
+    },
+    {
+      "id": "doctrine:writer_not_owner_boundary",
+      "type": "doctrine",
+      "doctrine": "writer_not_owner_boundary"
+    },
+    {
       "id": "doctrine:one_active_assignment_per_market",
       "type": "doctrine",
       "doctrine": "one_active_assignment_per_market"
@@ -27444,11 +27628,6 @@
       "id": "doctrine:annulation_tracee",
       "type": "doctrine",
       "doctrine": "annulation_tracee"
-    },
-    {
-      "id": "doctrine:writer_not_owner_boundary",
-      "type": "doctrine",
-      "doctrine": "writer_not_owner_boundary"
     },
     {
       "id": "doctrine:shared_partner_mutation_authority",
@@ -28566,6 +28745,11 @@
       "area": "delegation"
     },
     {
+      "id": "impact:network",
+      "type": "impact-area",
+      "area": "network"
+    },
+    {
       "id": "impact:team",
       "type": "impact-area",
       "area": "team"
@@ -28827,6 +29011,12 @@
       "to": "routes/market-delegation-cash-control.js",
       "type": "depends",
       "label": "routes/market-delegation-cash-control.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-network.js",
+      "type": "depends",
+      "label": "routes/market-delegation-network.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -41370,6 +41560,86 @@
       "label": "dashboard"
     },
     {
+      "from": "routes/market-delegation-network.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "services/market-delegation-network-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-network-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-network.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-network.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "db:relais",
+      "type": "db-write-via",
+      "label": "relais",
+      "via": "market-delegation-network-service"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "doctrine:capabilities_authorize_network_actions",
+      "type": "doctrine",
+      "label": "capabilities_authorize_network_actions"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "doctrine:suspend_not_delete",
+      "type": "doctrine",
+      "label": "suspend_not_delete"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "impact:network",
+      "type": "impact",
+      "label": "network"
+    },
+    {
       "from": "routes/market-delegation-team.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -51654,6 +51924,80 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/market-delegation-network-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "services/relais-mutation-service.js",
+      "type": "depends",
+      "label": "services/relais-mutation-service.js"
+    },
+    {
+      "from": "routes/market-delegation-network.js",
+      "to": "services/market-delegation-network-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-network.js"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:relais",
+      "type": "db-write-via",
+      "label": "relais",
+      "via": "relais-mutation-service"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "doctrine:network_authority_is_capability_based",
+      "type": "doctrine",
+      "label": "network_authority_is_capability_based"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "doctrine:writer_not_owner_boundary",
+      "type": "doctrine",
+      "label": "writer_not_owner_boundary"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "impact:network",
+      "type": "impact",
+      "label": "network"
+    },
+    {
       "from": "services/market-delegation-service.js",
       "to": "services/capability-registry.js",
       "type": "depends",
@@ -60274,6 +60618,54 @@
       "label": "wallet"
     },
     {
+      "from": "services/relais-mutation-service.js",
+      "to": "none (executor fourni par l'appelant)",
+      "type": "depends",
+      "label": "none (executor fourni par l'appelant)"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "services/relais-mutation-service.js",
+      "type": "uses",
+      "label": "services/market-delegation-network-service.js"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "db:relais",
+      "type": "db-write",
+      "label": "relais"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "doctrine:writer_not_owner_boundary",
+      "type": "doctrine",
+      "label": "writer_not_owner_boundary"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "doctrine:suspend_not_delete",
+      "type": "doctrine",
+      "label": "suspend_not_delete"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
       "from": "services/relay-dashboard-queries.js",
       "to": "db",
       "type": "depends",
@@ -66590,6 +66982,7 @@
         "routes/shared-cart-saved.js",
         "routes/market-delegation-team.js",
         "routes/market-delegation-cash-control.js",
+        "routes/market-delegation-network.js",
         "routes/admin-order-360.js",
         "routes/admin-client-360.js",
         "routes/admin-product-360.js",
@@ -66704,6 +67097,7 @@
         "routes/logistics.js",
         "routes/loyalty.js",
         "routes/market-delegation-cash-control.js",
+        "routes/market-delegation-network.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -67303,6 +67697,7 @@
         "routes/logistics.js",
         "routes/loyalty.js",
         "routes/market-delegation-cash-control.js",
+        "routes/market-delegation-network.js",
         "routes/market-delegation-team.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
@@ -75524,6 +75919,64 @@
         "services/market-cash-control-policy-service.js"
       ]
     },
+    "routes/market-delegation-network.js": {
+      "role": "market-delegation-network-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-network-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-network-service",
+          "tables": [
+            "relais"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "capabilities_authorize_network_actions",
+        "client_market_id_never_authority",
+        "suspend_not_delete"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "logistics",
+        "network"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:market_delegation_audit",
+        "db:relais",
+        "doctrine:capabilities_authorize_network_actions",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:suspend_not_delete",
+        "impact:delegation",
+        "impact:logistics",
+        "impact:market",
+        "impact:network",
+        "middleware/auth.js",
+        "services/market-delegation-network-service.js"
+      ]
+    },
     "routes/market-delegation-team.js": {
       "role": "market-delegation-team-api",
       "domain": "market-delegation",
@@ -82090,6 +82543,63 @@
         "services/market-local-price-state-transition.js"
       ]
     },
+    "services/market-delegation-network-service.js": {
+      "role": "market-delegation-network-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-service.js",
+        "services/relais-mutation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-network.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "relais-mutation-service",
+          "tables": [
+            "relais"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "network_authority_is_capability_based",
+        "client_market_id_never_authority",
+        "writer_not_owner_boundary"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "logistics",
+        "network"
+      ],
+      "mustCheck": [
+        "db:market_delegation_audit",
+        "db:relais",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:network_authority_is_capability_based",
+        "doctrine:writer_not_owner_boundary",
+        "impact:delegation",
+        "impact:logistics",
+        "impact:market",
+        "impact:network",
+        "routes/market-delegation-network.js",
+        "services/market-delegation-service.js",
+        "services/relais-mutation-service.js"
+      ]
+    },
     "services/market-delegation-service.js": {
       "role": "market-delegation-write-service",
       "domain": "market-delegation",
@@ -82152,6 +82662,7 @@
         "impact:market",
         "services/capability-registry.js",
         "services/market-cash-control-policy-service.js",
+        "services/market-delegation-network-service.js",
         "services/market-delegation-team-service.js"
       ]
     },
@@ -87464,6 +87975,44 @@
         "utils/logger.js"
       ]
     },
+    "services/relais-mutation-service.js": {
+      "role": "logistics-relais-mutation-service",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "none (executor fourni par l'appelant)"
+      ],
+      "directUsedBy": [
+        "services/market-delegation-network-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "relais"
+      ],
+      "dbWrite": [
+        "relais"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "writer_not_owner_boundary",
+        "suspend_not_delete"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market-delegation"
+      ],
+      "mustCheck": [
+        "db:relais",
+        "doctrine:suspend_not_delete",
+        "doctrine:writer_not_owner_boundary",
+        "impact:logistics",
+        "impact:market-delegation",
+        "services/market-delegation-network-service.js"
+      ]
+    },
     "services/relay-dashboard-queries.js": {
       "role": "dashboard-relay-dashboard-queries",
       "domain": "dashboard",
@@ -91912,6 +92461,15 @@
       ]
     },
     {
+      "table": "relais",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin/system.js",
+        "services/relais-mutation-service.js",
+        "services/routing.js"
+      ]
+    },
+    {
       "table": "sms_log",
       "writerCount": 3,
       "writers": [
@@ -92128,14 +92686,6 @@
       "writers": [
         "services/refund-service.js",
         "utils/refunds.js"
-      ]
-    },
-    {
-      "table": "relais",
-      "writerCount": 2,
-      "writers": [
-        "routes/admin/system.js",
-        "services/routing.js"
       ]
     },
     {
@@ -93485,6 +94035,12 @@
       "to": "routes/market-delegation-cash-control.js",
       "type": "uses",
       "label": "market autonomy UI"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-network.js",
+      "type": "uses",
+      "label": "market operator dashboard"
     },
     {
       "from": "market operator dashboard",
@@ -95321,6 +95877,12 @@
       "to": "services/refund-service.js",
       "type": "uses",
       "label": "services/cancel-shared-cart-with-refunds.js"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "none (executor fourni par l'appelant)",
+      "type": "depends",
+      "label": "none (executor fourni par l'appelant)"
     },
     {
       "from": "services/relay-dashboard-queries.js",
