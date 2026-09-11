@@ -5,13 +5,13 @@
  * @layer         ui-navigation
  * @criticality   medium
  * @inputs        canonical_surface, url_path, authenticated_user, server_admin_context
- * @outputs       mock_contract_navigation, logical_back_navigation, market_selector_proxy
+ * @outputs       capability_aligned_navigation, logical_back_navigation, market_selector_proxy
  * @depends       canonical admin app surface contract
  * @used-by       canonical admin runtime
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      four_primary_dashboards_no_legacy_navigation, mock_is_ui_contract
+ * @doctrine      country_manager_owns_market_scope, visible_destination_must_have_server_guard, client_market_id_never_authority
  * @impact-areas  admin-dashboard, navigation
  * @version       2026-09
  */
@@ -21,71 +21,85 @@
 (function initCanonicalNavigation(global) {
   'use strict';
 
-  // Contrat UI approuvé : ces six onglets sont la navigation visible Komerce.
-  // Les dashboards Canonical Pilotage / Commerce / Opérations / Finance restent
-  // les surfaces techniques sous-jacentes ; la barre expose les intentions
-  // métier, pas l'architecture interne.
-  // Les 6 onglets du mock approuvé restent la référence visuelle contractuelle.
-  // Les 4 suivants n'ont pas de mock dédié : ils exposent tels quels des
-  // workspaces Canonical déjà existants et déjà testés (operations/
-  // shipping-customs/sourcing/accounting), pour que les rôles opérationnels
-  // aient enfin un onglet primaire pertinent au lieu d'être cantonnés à
-  // Dashboard. Aucune logique métier nouvelle : le shell choisit juste où
-  // les afficher — voir docs/admin-nav-capability-map.md §9.
-  const PRIMARY_NAV = Object.freeze([
-    Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
-    Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
-    Object.freeze({ id: 'catalog', label: 'Catalogue', href: '/admin/workspaces/catalog' }),
-    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce' }),
-    Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/market-autonomy.html' }),
-    Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings' }),
-    Object.freeze({ id: 'operations-workspace', label: 'Opérations', href: '/admin/workspaces/operations' }),
-    Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
-    Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing' }),
-    Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
+  // NAV-V2.1 — contrat de données : docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md §2/§4/§6.
+  // N1 = domaines métier stables. N2 = espaces contextuels du domaine actif.
+  // Chaque space.roles / domain.roles reflète un guard serveur réellement
+  // vérifié (docs/admin-nav-capability-map.md) — jamais une extension
+  // silencieuse côté client.
+  const DOMAINS = Object.freeze([
+    Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage', roles: Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) }),
+    Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: Object.freeze(['admin', 'market_operator']) }),
+    Object.freeze({ id: 'catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: Object.freeze(['admin', 'market_operator']) }),
+    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
+    Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/access.html', roles: Object.freeze(['admin', 'market_operator']) }),
+    Object.freeze({
+      id: 'operations',
+      label: 'Opérations',
+      // Ordre canonique doctrine §4 : Vue d'ensemble, Hub / Relais,
+      // Expéditions & Douane, Sourcing.
+      spaces: Object.freeze([
+        Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
+        Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
+        Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: Object.freeze(['admin', 'sourcing']) }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'finance',
+      label: 'Finance',
+      // Ordre canonique doctrine §4 : Vue d'ensemble, Comptabilité.
+      spaces: Object.freeze([
+        Object.freeze({ id: 'finance-overview', label: 'Vue d’ensemble', href: '/admin/finance', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: Object.freeze(['admin', 'finance', 'agent_relais', 'market_operator']) }),
+      ]),
+    }),
   ]);
 
-  // Onglets visibles par rôle, vérifiés contre les guards serveur réels
-  // (voir docs/admin-nav-capability-map.md). Seuls admin et market_operator
-  // ont un accès serveur prouvé aux 6 onglets du mock ; les autres rôles
-  // opérationnels travaillent aujourd'hui via des workspaces Canonical
-  // secondaires ou le portail Legacy, hors de cette barre de navigation.
-  // Ne pas élargir un rôle ici sans élargir d'abord le guard serveur
-  // correspondant — l'UI ne doit jamais promettre un onglet qui 403.
-  const ROLE_VISIBLE_TABS = Object.freeze({
-    admin:              Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings', 'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace', 'accounting-workspace']),
-    market_operator:    Object.freeze(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']),
-    finance:            Object.freeze(['dashboard', 'accounting-workspace']),
-    sourcing:           Object.freeze(['dashboard', 'sourcing-workspace']),
-    agent_hub:          Object.freeze(['dashboard', 'operations-workspace', 'shipping-customs-workspace']),
-    agent_relais:       Object.freeze(['dashboard', 'operations-workspace', 'accounting-workspace']),
-    agent_transitaire:  Object.freeze(['dashboard', 'shipping-customs-workspace']),
-    support:            Object.freeze(['dashboard']),
-  });
+  // Paramètres n'est plus un domaine métier N1 (doctrine §2/§5) — il vit dans
+  // la zone utilitaire, réservé à l'autorité globale.
+  const SETTINGS_UTILITY = Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: Object.freeze(['admin']) });
 
-  // Retourne le sous-ensemble de PRIMARY_NAV que ce rôle peut réellement
-  // utiliser. Un rôle absent de ROLE_VISIBLE_TABS ne voit que Dashboard —
-  // défense en profondeur, jamais un onglet non couvert par un guard connu.
-  function visibleNavigationFor(user, adminContext) {
-    const role = (user && user.role) || '';
-    const allowedIds = ROLE_VISIBLE_TABS[role] || ['dashboard'];
-    return Object.freeze(PRIMARY_NAV.filter(item => allowedIds.includes(item.id)));
+  function visibleSpacesFor(domain, role) {
+    if (!domain || !Array.isArray(domain.spaces)) return Object.freeze([]);
+    return Object.freeze(domain.spaces.filter(space => (space.roles || []).includes(role)));
   }
 
-  const SURFACE_PARENT = Object.freeze({
+  function domainIsVisible(domain, role) {
+    // Dashboard reste la destination de défense en profondeur : tout rôle
+    // connu OU inconnu y a droit, comme l'ancien fallback ROLE_VISIBLE_TABS[role] || ['dashboard'].
+    if (domain.id === 'dashboard') return true;
+    if (Array.isArray(domain.spaces)) return visibleSpacesFor(domain, role).length > 0;
+    return (domain.roles || []).includes(role);
+  }
+
+  function visibleDomainsFor(user) {
+    const role = (user && user.role) || '';
+    return Object.freeze(DOMAINS.filter(domain => domainIsVisible(domain, role)));
+  }
+
+  // Rétro-compatibilité : certains appelants (app.js) attendaient encore une
+  // liste plate d'ids visibles. On la dérive désormais de visibleDomainsFor().
+  function visibleNavigationFor(user, adminContext) {
+    return visibleDomainsFor(user);
+  }
+
+  function landingForDomain(domain, user) {
+    if (!Array.isArray(domain.spaces)) return hrefFor(domain, user);
+    const role = (user && user.role) || '';
+    const spaces = visibleSpacesFor(domain, role);
+    return spaces.length ? spaces[0].href : null;
+  }
+
+  // Parentage des surfaces techniques vers leur domaine N1 — doctrine §9.
+  const SURFACE_TO_DOMAIN = Object.freeze({
     pilotage: 'dashboard',
-    operations: 'dashboard',
-    finance: 'dashboard',
-    'operations-workspace': 'operations-workspace',
-    'shipping-customs-workspace': 'shipping-customs-workspace',
-    'accounting-workspace': 'accounting-workspace',
     'action-center': 'dashboard',
     demo: 'dashboard',
 
     'pricing-workspace': 'pricing',
 
     'catalog-workspace': 'catalog',
-    'sourcing-workspace': 'sourcing-workspace',
+    'market-catalog': 'catalog',
     'product-360': 'catalog',
 
     commerce: 'orders',
@@ -95,14 +109,30 @@
 
     'market-access': 'markets',
     'market-autonomy': 'markets',
+
+    operations: 'operations',
+    'operations-workspace': 'operations',
+    'shipping-customs-workspace': 'operations',
+    'sourcing-workspace': 'operations',
+
+    finance: 'finance',
+    'accounting-workspace': 'finance',
+
     settings: 'settings',
   });
 
-  // Les onglets du mock remplacent le bouton Retour sur les workspaces
-  // principaux. Retour reste réservé aux vrais drill-downs / surfaces 360.
-  // operations-workspace / shipping-customs-workspace / accounting-workspace
-  // sont désormais des onglets primaires directs (voir PRIMARY_NAV) — plus
-  // de Retour redondant pour elles.
+  // Parentage des surfaces techniques vers leur espace N2 (uniquement pour
+  // les domaines groupés Opérations / Finance).
+  const SURFACE_TO_SPACE = Object.freeze({
+    operations: 'operations-overview',
+    'operations-workspace': 'operations-workspace',
+    'shipping-customs-workspace': 'shipping-customs-workspace',
+    'sourcing-workspace': 'sourcing-workspace',
+
+    finance: 'finance-overview',
+    'accounting-workspace': 'accounting-workspace',
+  });
+
   const BACK_TARGETS = Object.freeze({
     'action-center': '/admin/pilotage',
     'order-360': '/admin/commerce',
@@ -121,8 +151,14 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
-    if (path === '/dashboards/canonical/access.html' || path === '/dashboards/canonical/market-autonomy.html') {
-      return path.includes('access') ? 'market-access' : 'market-autonomy';
+    if (
+      path === '/dashboards/canonical/access.html'
+      || path === '/dashboards/canonical/market-autonomy.html'
+      || path === '/dashboards/canonical/market-catalog.html'
+    ) {
+      if (path.includes('access')) return 'market-access';
+      if (path.includes('market-catalog')) return 'market-catalog';
+      return 'market-autonomy';
     }
     if (path === '/admin/settings') return 'settings';
 
@@ -132,27 +168,43 @@
   }
 
   function activePrimarySurface(surface) {
-    return SURFACE_PARENT[surface] || 'dashboard';
+    return SURFACE_TO_DOMAIN[surface] || 'dashboard';
+  }
+
+  function activeSpaceFor(surface) {
+    return SURFACE_TO_SPACE[surface] || null;
   }
 
   function hrefFor(item, user) {
-    if (item.id === 'markets' && user && user.role === 'admin') {
-      return '/dashboards/canonical/access.html';
+    if (item.id === 'markets' && user && user.role === 'market_operator') {
+      return '/dashboards/canonical/market-autonomy.html';
+    }
+    if (item.id === 'catalog' && user && user.role === 'market_operator') {
+      return '/dashboards/canonical/market-catalog.html';
     }
     return item.href;
   }
 
-  function createLink(doc, item, activeId, user) {
+  function createLink(doc, item, href, isActive, className) {
     const link = doc.createElement('a');
-    link.className = 'kmc-admin-primary-link';
-    link.href = hrefFor(item, user);
+    link.className = className;
+    link.href = href;
     link.textContent = item.label;
     link.setAttribute('data-dashboard', item.id);
-    if (item.id === activeId) {
+    if (isActive) {
       link.className += ' is-active';
       link.setAttribute('aria-current', 'page');
     }
     return link;
+  }
+
+  function createDomainLink(doc, domain, activeDomainId, user) {
+    const href = Array.isArray(domain.spaces) ? landingForDomain(domain, user) : hrefFor(domain, user);
+    return createLink(doc, domain, href, domain.id === activeDomainId, 'kmc-admin-primary-link');
+  }
+
+  function createSpaceLink(doc, space, activeSpaceId) {
+    return createLink(doc, space, space.href, space.id === activeSpaceId, 'kmc-admin-secondary-link');
   }
 
   function roleLabel(user) {
@@ -236,9 +288,6 @@
   }
 
   function proxyMarketChange(doc, value) {
-    // Le sélecteur de page possède déjà le contrat serveur et le callback de
-    // rechargement. La barre du mock ne duplique aucune logique économique :
-    // elle pilote ce contrôle canonique lorsqu'il existe.
     if (doc && typeof doc.querySelector === 'function') {
       const canonicalSelect = doc.querySelector('.kmc-market-context-select');
       if (canonicalSelect && canonicalSelect !== doc.activeElement) {
@@ -250,8 +299,6 @@
       }
     }
 
-    // Les pages autonomes n'ont pas le shell de marché : le code marché reste
-    // une préférence de navigation, jamais une autorité. Les APIs revalident le scope.
     if (global.location) {
       const url = new URL(global.location.href);
       if (value) url.searchParams.set('market', value);
@@ -320,7 +367,9 @@
     if (existing) return existing;
 
     const surface = options.surface || surfaceForPath(pathname);
-    const activeId = activePrimarySurface(surface);
+    const role = (user && user.role) || '';
+    const activeDomainId = activePrimarySurface(surface);
+    const activeSpaceId = activeSpaceFor(surface);
 
     const header = doc.createElement('header');
     header.id = 'canonical-admin-navigation';
@@ -353,25 +402,51 @@
     const primary = doc.createElement('nav');
     primary.className = 'kmc-admin-primary-nav';
     primary.setAttribute('aria-label', 'Navigation Komerce');
-    const visibleTabs = visibleNavigationFor(user, adminContext);
-    visibleTabs.forEach(item => primary.appendChild(createLink(doc, item, activeId, user)));
+    const visibleDomains = visibleDomainsFor(user);
+    visibleDomains.forEach(domain => primary.appendChild(createDomainLink(doc, domain, activeDomainId, user)));
 
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
 
-    const requireMarket = ['pricing-workspace', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
+    const requireMarket = ['pricing-workspace', 'market-catalog', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
     const marketControl = createMarketControl(doc, adminContext, requireMarket);
     if (marketControl) utilities.appendChild(marketControl);
 
     const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));
     account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);
     utilities.appendChild(account);
+
+    if (SETTINGS_UTILITY.roles.includes(role)) {
+      const settingsLink = doc.createElement('a');
+      settingsLink.className = 'kmc-admin-settings-link';
+      settingsLink.href = SETTINGS_UTILITY.href;
+      settingsLink.textContent = SETTINGS_UTILITY.label;
+      settingsLink.setAttribute('data-dashboard', SETTINGS_UTILITY.id);
+      if (surface === 'settings') {
+        settingsLink.className += ' is-active';
+        settingsLink.setAttribute('aria-current', 'page');
+      }
+      utilities.appendChild(settingsLink);
+    }
+
     utilities.appendChild(createLogoutButton(doc));
 
     inner.appendChild(identity);
     inner.appendChild(primary);
     inner.appendChild(utilities);
     header.appendChild(inner);
+
+    const activeDomain = visibleDomains.find(domain => domain.id === activeDomainId);
+    if (activeDomain && Array.isArray(activeDomain.spaces)) {
+      const spaces = visibleSpacesFor(activeDomain, role);
+      if (spaces.length > 1) {
+        const secondary = doc.createElement('nav');
+        secondary.className = 'kmc-admin-secondary-nav';
+        secondary.setAttribute('aria-label', `Sous-navigation ${activeDomain.label}`);
+        spaces.forEach(space => secondary.appendChild(createSpaceLink(doc, space, activeSpaceId)));
+        header.appendChild(secondary);
+      }
+    }
 
     const root = doc.getElementById && doc.getElementById('canonical-admin-root');
     if (root && root.parentNode && typeof root.parentNode.insertBefore === 'function') {
@@ -386,12 +461,17 @@
   }
 
   const api = Object.freeze({
-    PRIMARY_NAV,
-    SURFACE_PARENT,
+    DOMAINS,
+    SETTINGS_UTILITY,
+    SURFACE_TO_DOMAIN,
+    SURFACE_TO_SPACE,
     BACK_TARGETS,
-    ROLE_VISIBLE_TABS,
+    visibleDomainsFor,
+    visibleSpacesFor,
+    landingForDomain,
     visibleNavigationFor,
     activePrimarySurface,
+    activeSpaceFor,
     surfaceForPath,
     marketChoices,
     currentRequestedMarket,

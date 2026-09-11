@@ -6159,7 +6159,7 @@
         "accounting",
         "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin-finance-config.js",
@@ -6816,7 +6816,7 @@
         "customs",
         "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin-sourcing-workspace.js",

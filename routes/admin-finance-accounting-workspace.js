@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, payment, accounting, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -28,7 +28,9 @@ const log = require('../utils/logger').child({ module: 'admin-finance-accounting
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais']);
+// Responsable pays : lecture Finance de son seul Market ID.
+// Dépôt terrain et validation comptable restent des gestes séparés et spécialisés.
+const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais', 'market_operator']);
 const requireDepositAction = requireRole(['admin', 'agent_relais']);
 const requireVerificationAction = requireRole(['admin']);
 

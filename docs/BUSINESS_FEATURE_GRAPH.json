@@ -19,6 +19,7 @@
       "features/loyalty.feature.js",
       "features/market.feature.js",
       "features/market-autonomy.feature.js",
+      "features/market-delegation.feature.js",
       "features/market-operator-dashboard.feature.js",
       "features/notifications.feature.js",
       "features/orders.feature.js",
@@ -28,6 +29,7 @@
       "features/purchasing.feature.js",
       "features/recommendations.feature.js",
       "features/refunds.feature.js",
+      "features/settlement.feature.js",
       "features/shared-cart.feature.js",
       "features/sourcing.feature.js",
       "features/unsold-resolution.feature.js",
@@ -44,7 +46,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 35,
+    "businessManifestsResolved": 37,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -179,7 +181,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.",
+        "service": "Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -211,7 +213,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.",
+        "service": "Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -348,6 +350,22 @@
         "resolvable": true
       },
       {
+        "id": "feature:market-delegation",
+        "name": "market-delegation",
+        "file": "features/market-delegation.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Déléguer de façon explicite, auditable et révocable l’autorité d’exploitation d’un Market ID à un opérateur principal et à son équipe, tout en préservant les frontières GROUP de Komerce.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
         "id": "feature:market-operator-dashboard",
         "name": "market-operator-dashboard",
         "file": "features/market-operator-dashboard.feature.js",
@@ -355,7 +373,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-09",
-        "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de piloter son marché (KPIs, commandes, clients, ventes, relais, Hub, pricing en lecture), de gérer ses relais partenaires, et de superviser les opérations Hub de son marché — sans jamais voir les données d'un autre marché ni effectuer d'opérations physiques Hub.",
+        "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de décider et exploiter son marché : KPIs, commandes, catalogue pays, pricing local, réseau Hub/Relais, douane, expéditions et Finance pays — sans jamais voir les données d'un autre marché ni recevoir automatiquement les gestes physiques ou autorités globales des rôles spécialisés.",
         "businessKind": "unclassified",
         "kindSource": "none",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -485,6 +503,22 @@
         "since": "2025-11",
         "service": "Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.",
         "businessKind": "business-transversal",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:settlement",
+        "name": "settlement",
+        "file": "features/settlement.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Tracer de bout en bout le règlement dû à un opérateur pays : READY attesté centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.",
+        "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
@@ -1432,6 +1466,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-market-exposure-service.js",
+        "resolvedPath": "services/catalog-market-exposure-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/connectors/api-connector.base.js",
         "resolvedPath": "services/suppliers/connectors/api-connector.base.js",
         "status": "resolved-in-technical-graph"
@@ -1707,6 +1748,20 @@
         "category": "migrations",
         "declared": "migrations/163_supplier_catalog_sync_checkpoints.sql",
         "resolvedPath": "migrations/163_supplier_catalog_sync_checkpoints.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/202_catalog_product_market_exposure.sql",
+        "resolvedPath": "migrations/202_catalog_product_market_exposure.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/206_catalog_product_market_exposure_snapshot.sql",
+        "resolvedPath": "migrations/206_catalog_product_market_exposure_snapshot.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2568,6 +2623,27 @@
         "category": "tests",
         "declared": "tests/unit/require-catalog-global-authority.test.js",
         "resolvedPath": "tests/unit/require-catalog-global-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-market-exposure-service.test.js",
+        "resolvedPath": "tests/unit/catalog-market-exposure-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-market-exposure-snapshot.test.js",
+        "resolvedPath": "tests/unit/catalog-market-exposure-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-public-exposure-gate.test.js",
+        "resolvedPath": "tests/unit/catalog-public-exposure-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3819,6 +3895,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/canonical-admin-app.test.js",
+        "resolvedPath": "tests/unit/canonical-admin-app.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/canonical-dashboard-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-dashboard-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4743,6 +4826,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/pricing-market-corridor.js",
+        "resolvedPath": "services/pricing-market-corridor.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/sourcing-analysis.js",
         "resolvedPath": "services/sourcing-analysis.js",
         "status": "resolved-in-technical-graph"
@@ -5029,6 +5119,20 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/191_cost_component_economic_classification.sql",
+        "resolvedPath": "migrations/191_cost_component_economic_classification.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/192_market_price_observations.sql",
+        "resolvedPath": "migrations/192_market_price_observations.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -5270,6 +5374,13 @@
         "category": "tests",
         "declared": "tests/unit/pricing-market-decision-projection.test.js",
         "resolvedPath": "tests/unit/pricing-market-decision-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-market-corridor.test.js",
+        "resolvedPath": "tests/unit/pricing-market-corridor.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6362,13 +6473,6 @@
         "category": "scripts",
         "declared": "scripts/seed.js",
         "resolvedPath": "scripts/seed.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
-        "declared": "scripts/seed-market-test-data.js",
-        "resolvedPath": "scripts/seed-market-test-data.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7788,6 +7892,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/relais-mutation-service.js",
+        "resolvedPath": "services/relais-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/pickup-secret-service.js",
         "resolvedPath": "services/pickup-secret-service.js",
         "status": "resolved-in-technical-graph"
@@ -8243,6 +8354,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/relais-mutation-service.test.js",
+        "resolvedPath": "tests/unit/relais-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/scan-engine.test.js",
         "resolvedPath": "tests/unit/scan-engine.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8606,6 +8724,48 @@
       },
       {
         "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-team.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-team.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-team.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-team.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-cash-control.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-cash-control.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-cash-control.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/team-invite.html",
+        "resolvedPath": "public/dashboards/canonical/team-invite.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/team-invite.js",
+        "resolvedPath": "public/dashboards/canonical/js/team-invite.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
         "category": "tests",
         "declared": "tests/unit/market-commercial-price-service.test.js",
         "resolvedPath": "tests/unit/market-commercial-price-service.test.js",
@@ -8626,10 +8786,486 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-team-ui.test.js",
+        "resolvedPath": "tests/unit/market-delegation-team-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-cash-control-ui.test.js",
+        "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/193_market_delegation_capability_registry.sql",
+        "resolvedPath": "migrations/193_market_delegation_capability_registry.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/194_market_delegation_assignments.sql",
+        "resolvedPath": "migrations/194_market_delegation_assignments.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/195_operator_market_scopes_projection_marker.sql",
+        "resolvedPath": "migrations/195_operator_market_scopes_projection_marker.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/196_market_delegation_team.sql",
+        "resolvedPath": "migrations/196_market_delegation_team.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/197_market_delegation_legacy_scope_backfill.sql",
+        "resolvedPath": "migrations/197_market_delegation_legacy_scope_backfill.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/198_market_cash_control_policy.sql",
+        "resolvedPath": "migrations/198_market_cash_control_policy.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/200_market_delegation_relais_island_nullable.sql",
+        "resolvedPath": "migrations/200_market_delegation_relais_island_nullable.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/201_market_network_promotion_agent_optional.sql",
+        "resolvedPath": "migrations/201_market_network_promotion_agent_optional.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/203_market_delegation_provider_manage_live.sql",
+        "resolvedPath": "migrations/203_market_delegation_provider_manage_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/204_market_delegation_local_offer_manage_live.sql",
+        "resolvedPath": "migrations/204_market_delegation_local_offer_manage_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/205_market_delegation_client_case_handle_live.sql",
+        "resolvedPath": "migrations/205_market_delegation_client_case_handle_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/207_market_delegation_catalog_expose_live.sql",
+        "resolvedPath": "migrations/207_market_delegation_catalog_expose_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/209_market_delegation_settlement_live.sql",
+        "resolvedPath": "migrations/209_market_delegation_settlement_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/210_market_delegation_structure_event_record_live.sql",
+        "resolvedPath": "migrations/210_market_delegation_structure_event_record_live.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/212_market_delegation_execution_ceiling.sql",
+        "resolvedPath": "migrations/212_market_delegation_execution_ceiling.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "middleware",
+        "declared": "middleware/require-market-delegated-role.js",
+        "resolvedPath": "middleware/require-market-delegated-role.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "middleware",
+        "declared": "middleware/require-market-execution-capability.js",
+        "resolvedPath": "middleware/require-market-execution-capability.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/capability-registry.js",
+        "resolvedPath": "services/capability-registry.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-service.js",
+        "resolvedPath": "services/market-delegation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-scope-projector.js",
+        "resolvedPath": "services/market-scope-projector.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-team-service.js",
+        "resolvedPath": "services/market-delegation-team-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-cash-control-policy-service.js",
+        "resolvedPath": "services/market-cash-control-policy-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-network-service.js",
+        "resolvedPath": "services/market-delegation-network-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-provider-service.js",
+        "resolvedPath": "services/market-delegation-provider-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-catalog-service.js",
+        "resolvedPath": "services/market-delegation-catalog-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-local-offer-service.js",
+        "resolvedPath": "services/market-delegation-local-offer-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-client-case-service.js",
+        "resolvedPath": "services/market-delegation-client-case-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-settlement-service.js",
+        "resolvedPath": "services/market-delegation-settlement-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-structure-event-service.js",
+        "resolvedPath": "services/market-delegation-structure-event-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-performance-service.js",
+        "resolvedPath": "services/market-delegation-performance-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-team.js",
+        "resolvedPath": "routes/market-delegation-team.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-cash-control.js",
+        "resolvedPath": "routes/market-delegation-cash-control.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-network.js",
+        "resolvedPath": "routes/market-delegation-network.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-provider.js",
+        "resolvedPath": "routes/market-delegation-provider.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-catalog.js",
+        "resolvedPath": "routes/market-delegation-catalog.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-local-offer.js",
+        "resolvedPath": "routes/market-delegation-local-offer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-client-case.js",
+        "resolvedPath": "routes/market-delegation-client-case.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-settlement.js",
+        "resolvedPath": "routes/market-delegation-settlement.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-structure-event.js",
+        "resolvedPath": "routes/market-delegation-structure-event.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-performance.js",
+        "resolvedPath": "routes/market-delegation-performance.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-p0.test.js",
+        "resolvedPath": "tests/unit/market-delegation-p0.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-team-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-team-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-team-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-team-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-legacy-backfill.test.js",
+        "resolvedPath": "tests/unit/market-delegation-legacy-backfill.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-runtime-bridge.test.js",
+        "resolvedPath": "tests/unit/market-delegation-runtime-bridge.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-cash-control-policy-service.test.js",
+        "resolvedPath": "tests/unit/market-cash-control-policy-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-cash-control-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-cash-control-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-network-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-network-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-network-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-network-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-provider-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-provider-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-provider-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-provider-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-catalog-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-catalog-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-catalog-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-catalog-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-local-offer-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-local-offer-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-local-offer-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-local-offer-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-client-case-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-client-case-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-client-case-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-client-case-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-settlement-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-settlement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-settlement-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-settlement-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-structure-event-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-structure-event-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-structure-event-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-structure-event-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-performance-service.test.js",
+        "resolvedPath": "tests/unit/market-delegation-performance-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-performance-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-performance-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-execution-capability.test.js",
+        "resolvedPath": "tests/unit/market-delegation-execution-capability.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.execution-bridge.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.execution-bridge.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "market-operator-dashboard",
         "category": "scripts",
         "declared": "scripts/provision-market-operator.js",
         "resolvedPath": "scripts/provision-market-operator.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-operator-dashboard",
+        "category": "scripts",
+        "declared": "scripts/seed-market-test-data.js",
+        "resolvedPath": "scripts/seed-market-test-data.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8644,6 +9280,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-navigation.test.js",
         "resolvedPath": "tests/unit/canonical-navigation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-operator-dashboard",
+        "category": "tests",
+        "declared": "tests/unit/seed-market-test-data.test.js",
+        "resolvedPath": "tests/unit/seed-market-test-data.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9041,6 +9684,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/dispute-mutation-service.js",
+        "resolvedPath": "services/dispute-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/cancel-order-purchase-orders.js",
         "resolvedPath": "services/cancel-order-purchase-orders.js",
         "status": "resolved-in-technical-graph"
@@ -9307,6 +9957,13 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/unit/dispute-mutation-service.test.js",
+        "resolvedPath": "tests/unit/dispute-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/unit/payment-service.test.js",
         "resolvedPath": "tests/unit/payment-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9510,6 +10167,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/cash-confirmation-control-service.js",
+        "resolvedPath": "services/cash-confirmation-control-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/cash-deposit-service.js",
         "resolvedPath": "services/cash-deposit-service.js",
         "status": "resolved-in-technical-graph"
@@ -9554,6 +10218,13 @@
         "category": "services",
         "declared": "services/mobile-money/mtn-momo-cg.js",
         "resolvedPath": "services/mobile-money/mtn-momo-cg.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
+        "declared": "services/mobile-money/kartapay-km.js",
+        "resolvedPath": "services/mobile-money/kartapay-km.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -9610,6 +10281,20 @@
         "category": "migrations",
         "declared": "migrations/169_mobile_money_foundation.sql",
         "resolvedPath": "migrations/169_mobile_money_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/171_kartapay_km_mobile_money.sql",
+        "resolvedPath": "migrations/171_kartapay_km_mobile_money.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/199_cash_confirmation_control.sql",
+        "resolvedPath": "migrations/199_cash_confirmation_control.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9706,6 +10391,13 @@
       {
         "feature": "payments",
         "category": "tests",
+        "declared": "tests/unit/cash-confirmation-control-service.test.js",
+        "resolvedPath": "tests/unit/cash-confirmation-control-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
         "declared": "tests/unit/cash-deposit-service.test.js",
         "resolvedPath": "tests/unit/cash-deposit-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9792,6 +10484,13 @@
         "category": "tests",
         "declared": "tests/unit/mobile-money-reconciliation.test.js",
         "resolvedPath": "tests/unit/mobile-money-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/kartapay-webhook.test.js",
+        "resolvedPath": "tests/unit/kartapay-webhook.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10091,6 +10790,13 @@
       {
         "feature": "providers-services",
         "category": "services",
+        "declared": "services/provider-status-mutation-service.js",
+        "resolvedPath": "services/provider-status-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "providers-services",
+        "category": "services",
         "declared": "services/providers-inquiry-service.js",
         "resolvedPath": "services/providers-inquiry-service.js",
         "status": "resolved-in-technical-graph"
@@ -10170,6 +10876,13 @@
         "category": "tests",
         "declared": "tests/unit/providers-service.test.js",
         "resolvedPath": "tests/unit/providers-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/provider-status-mutation-service.test.js",
+        "resolvedPath": "tests/unit/provider-status-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10443,6 +11156,55 @@
         "category": "tests",
         "declared": "tests/unit/refund-receipt-html.test.js",
         "resolvedPath": "tests/unit/refund-receipt-html.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "migrations",
+        "declared": "migrations/208_market_settlement_foundation.sql",
+        "resolvedPath": "migrations/208_market_settlement_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "services",
+        "declared": "services/market-settlement-service.js",
+        "resolvedPath": "services/market-settlement-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "settlement",
+        "category": "routes",
+        "declared": "routes/admin-market-settlement.js",
+        "resolvedPath": "routes/admin-market-settlement.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "settlement",
+        "category": "tests",
+        "declared": "tests/unit/market-settlement-service.test.js",
+        "resolvedPath": "tests/unit/market-settlement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "tests",
+        "declared": "tests/unit/admin-market-settlement-routes.test.js",
+        "resolvedPath": "tests/unit/admin-market-settlement-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "tests",
+        "declared": "tests/unit/market-settlement-migration.test.js",
+        "resolvedPath": "tests/unit/market-settlement-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "tests",
+        "declared": "tests/e2e-api/settlement.state-machine.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/settlement.state-machine.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13237,6 +13999,30 @@
       },
       {
         "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/corridor",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/corridor",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/price-observations",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/price-observations",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/price-observations/{id}/deactivate",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
         "entry": "GET /api/admin/cost-components",
         "method": "GET",
         "path": "/api/admin/cost-components",
@@ -14893,6 +15679,14 @@
       },
       {
         "feature": "payments",
+        "entry": "POST /api/payments/mobile-money/webhook/:provider",
+        "method": "POST",
+        "path": "/api/payments/mobile-money/webhook/{id}",
+        "routeFile": "routes/payments-mobile-money.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "payments",
         "entry": "GET /api/payments/mobile-money/admin/pending",
         "method": "GET",
         "path": "/api/payments/mobile-money/admin/pending",
@@ -16213,6 +17007,36 @@
       },
       {
         "feature": "logistics",
+        "fn": "createRelais",
+        "file": "services/relais-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "updateRelais",
+        "file": "services/relais-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "setRelaisActive",
+        "file": "services/relais-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "listRelais",
+        "file": "services/relais-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "getOwnedRelais",
+        "file": "services/relais-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
         "fn": "detachUserFromScans",
         "file": "services/scan-write-service.js",
         "status": "resolved"
@@ -16281,6 +17105,204 @@
         "feature": "logistics",
         "fn": "markBackorderReminderSent",
         "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "replaceCeiling",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "addMembership",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "grantMembershipCapabilities",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "replaceMembershipCapabilities",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "revokeMembership",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "resolveAuthorization",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "resolveActiveAssignmentByMarketCode",
+        "file": "services/market-delegation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "projectAssignment",
+        "file": "services/market-scope-projector.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "projectionDrift",
+        "file": "services/market-scope-projector.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "attachMarketDelegatedRoleFor",
+        "file": "middleware/require-market-delegated-role.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "inviteTeamMember",
+        "file": "services/market-delegation-team-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "acceptInvitation",
+        "file": "services/market-delegation-team-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "readMarketCashPolicy",
+        "file": "services/market-cash-control-policy-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "updateMarketCashPolicy",
+        "file": "services/market-cash-control-policy-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "createRelais",
+        "file": "services/market-delegation-network-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "updateRelais",
+        "file": "services/market-delegation-network-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "setRelaisActive",
+        "file": "services/market-delegation-network-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "createProvider",
+        "file": "services/market-delegation-provider-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "updateProvider",
+        "file": "services/market-delegation-provider-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "setProviderStatus",
+        "file": "services/market-delegation-provider-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listExposure",
+        "file": "services/market-delegation-catalog-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "setExposure",
+        "file": "services/market-delegation-catalog-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listServices",
+        "file": "services/market-delegation-local-offer-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listPhysicalOffers",
+        "file": "services/market-delegation-local-offer-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "setServiceExposure",
+        "file": "services/market-delegation-local-offer-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "setPhysicalOfferExposure",
+        "file": "services/market-delegation-local-offer-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listDisputes",
+        "file": "services/market-delegation-client-case-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "updateDisputeWorkflow",
+        "file": "services/market-delegation-client-case-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listSettlements",
+        "file": "services/market-delegation-settlement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "requestSettlement",
+        "file": "services/market-delegation-settlement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "confirmSettlementReceived",
+        "file": "services/market-delegation-settlement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "listStructureEvents",
+        "file": "services/market-delegation-structure-event-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "recordStructureEvent",
+        "file": "services/market-delegation-structure-event-service.js",
         "status": "resolved"
       },
       {
@@ -16538,6 +17560,36 @@
       {
         "feature": "refunds",
         "fn": "processRefund(orderOrCartId, reason)",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "settlement",
+        "fn": "createReadySettlement()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "settlement",
+        "fn": "listForAssignment()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "settlement",
+        "fn": "requestSettlement()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "settlement",
+        "fn": "markPaid()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "settlement",
+        "fn": "confirmReceived()",
         "file": null,
         "status": "documented-signature-no-file"
       },
@@ -16922,6 +17974,12 @@
         "resolved": true
       },
       {
+        "from": "dashboard",
+        "to": "market-delegation",
+        "raw": "market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)",
+        "resolved": true
+      },
+      {
         "from": "documents",
         "to": "logistics",
         "raw": "logistics (dépendance data cross-feature observée et gouvernée par O5)",
@@ -17015,6 +18073,12 @@
         "from": "economic-engine",
         "to": "market-autonomy",
         "raw": "market-autonomy (décision de prix local et activation LOCAL_ACTIVE consommées par la projection économique sans transfert d ownership)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "market-delegation",
+        "raw": "market-delegation (bridge request-local des memberships projetées vers Pricing marché, sans mutation du rôle global)",
         "resolved": true
       },
       {
@@ -17300,6 +18364,12 @@
         "resolved": true
       },
       {
+        "from": "logistics",
+        "to": "market-delegation",
+        "raw": "market-delegation (bridge request-local des memberships projetées vers les lectures Hub déjà ouvertes à market_operator)",
+        "resolved": true
+      },
+      {
         "from": "loyalty",
         "to": "orders",
         "raw": "orders (dépendance data cross-feature observée et gouvernée par O5)",
@@ -17366,27 +18436,123 @@
         "resolved": true
       },
       {
+        "from": "market-autonomy",
+        "to": "market-delegation",
+        "raw": "market-delegation — memberships, capabilities team.*, provider.manage, cash_control.policy.manage et acceptation d’invitation ; l’UI n’invente aucune autorité",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "auth-identity",
+        "raw": "auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "market",
+        "raw": "market",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "auth",
+        "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "auth-identity",
+        "raw": "auth-identity",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "infrastructure",
+        "raw": "infrastructure",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "logistics",
+        "raw": "logistics",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "catalog",
+        "raw": "catalog",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "providers-services",
+        "raw": "providers-services",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "orders",
+        "raw": "orders",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "settlement",
+        "raw": "settlement",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
+        "to": "economic-engine",
+        "raw": "economic-engine",
+        "resolved": true
+      },
+      {
         "from": "market-operator-dashboard",
         "to": "market",
-        "raw": "market (operator_market_scopes, markets)",
+        "raw": "market (operator_market_scopes, markets, Currency Boundary)",
         "resolved": true
       },
       {
         "from": "market-operator-dashboard",
         "to": "auth",
-        "raw": "auth (authenticate, requireRole)",
+        "raw": "auth (authenticate, requireRole + capabilities market-scoped)",
         "resolved": true
       },
       {
         "from": "market-operator-dashboard",
         "to": "dashboard",
-        "raw": "dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace)",
+        "raw": "dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace — projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "catalog",
+        "raw": "catalog (vérité globale en lecture si nécessaire + projection/configuration product_market_exposure via son service owner)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (décision locale DRAFT_PENDING_GATE via market-commercial-price-service ; aucun LOCAL_ACTIVE forcé)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "orders",
+        "raw": "orders (commandes et order_items market-scoped)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "logistics",
+        "raw": "logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)",
         "resolved": true
       },
       {
         "from": "market-operator-dashboard",
         "to": "infrastructure",
-        "raw": "infrastructure (db.js — pool utilisé par scripts/provision-market-operator.js)",
+        "raw": "infrastructure (db.js — pool utilisé par les scripts de provisioning et de seed staging)",
         "resolved": true
       },
       {
@@ -17636,6 +18802,12 @@
         "resolved": true
       },
       {
+        "from": "payments",
+        "to": "market-delegation",
+        "raw": "market-delegation (politique de contrôle cash du partenaire ; payments reste propriétaire de la vérité d’encaissement)",
+        "resolved": true
+      },
+      {
         "from": "platform-ops",
         "to": "documents",
         "raw": "documents (dépendance data cross-feature observée et gouvernée par O5)",
@@ -17855,6 +19027,36 @@
         "from": "refunds",
         "to": "documents",
         "raw": "documents (reçu)",
+        "resolved": true
+      },
+      {
+        "from": "settlement",
+        "to": "market",
+        "raw": "market (markets.currency comme devise native du snapshot)",
+        "resolved": true
+      },
+      {
+        "from": "settlement",
+        "to": "market-delegation",
+        "raw": "market-delegation (Market Operating Assignment comme principal payable et boundary consommatrice du lifecycle)",
+        "resolved": true
+      },
+      {
+        "from": "settlement",
+        "to": "auth",
+        "raw": "auth (garde des routes centrales)",
+        "resolved": true
+      },
+      {
+        "from": "settlement",
+        "to": "auth-identity",
+        "raw": "auth-identity (users comme identité des acteurs attestant/demandant/payant/recevant)",
+        "resolved": true
+      },
+      {
+        "from": "settlement",
+        "to": "infrastructure",
+        "raw": "infrastructure (DB et bootstrap)",
         "resolved": true
       },
       {
@@ -21648,6 +22850,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/catalog-market-exposure-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/supplier-catalog-scanner.js",
                 "targetFile": "utils/rates.js"
               },
@@ -22159,6 +23365,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/discovery-bump-entry.test.js",
                 "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/discovery-bump-entry.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/home-controller-discovery-anchor.test.js",
@@ -23386,6 +24596,42 @@
       },
       {
         "from": "dashboard",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/partners.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "middleware/require-market-execution-capability.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "notifications",
         "channels": [
           {
@@ -24037,6 +25283,10 @@
               {
                 "sourceFileId": "services/sourcing-mutations.js",
                 "targetFile": "services/catalog-product-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-strategy-service-full.test.js",
+                "targetFile": "services/catalog-product-mutation-service.js"
               }
             ]
           },
@@ -24293,6 +25543,10 @@
               },
               {
                 "sourceFileId": "services/pricing-market-decision-policy.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-market-corridor.js",
                 "targetFile": "db.js"
               },
               {
@@ -24569,6 +25823,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/pricing-market-corridor.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "middleware/require-market-scope.js"
               }
@@ -24585,12 +25843,32 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/pricing-market-corridor.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
+              {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "services/market-commercial-price-service.js"
               },
               {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "services/market-local-price-activation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
               }
             ]
           }
@@ -25200,6 +26478,58 @@
       },
       {
         "from": "infrastructure",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-team.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-cash-control.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-network.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-provider.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-catalog.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-local-offer.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-client-case.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-settlement.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-structure-event.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-performance.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
         "to": "notifications",
         "channels": [
           {
@@ -25373,6 +26703,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "settlement",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-market-settlement.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "infrastructure",
@@ -26270,6 +27616,22 @@
       },
       {
         "from": "logistics",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/hub.js",
+                "targetFile": "middleware/require-market-delegated-role.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "notifications",
         "channels": [
           {
@@ -26838,6 +28200,365 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "market-delegation",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/market-delegation-team.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-cash-control.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-network.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-provider.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-catalog.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-local-offer.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-client-case.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-settlement.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-structure-event.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-performance.js",
+                "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-catalog-service.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "product_market_exposure",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-structure-event-service.js",
+                "targetFile": "services/pricing-period-structure.js"
+              },
+              {
+                "sourceFileId": "services/market-delegation-performance-service.js",
+                "targetFile": "services/pricing-market-decision-policy.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-structure-event-service.test.js",
+                "targetFile": "services/pricing-period-structure.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-performance-service.test.js",
+                "targetFile": "services/pricing-market-decision-policy.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "economic_structure_cost_events",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "middleware/require-market-delegated-role.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "middleware/require-market-execution-capability.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-team.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-cash-control.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-network.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-provider.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-catalog.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-local-offer.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-client-case.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-settlement.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-structure-event.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-performance.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-runtime-bridge.test.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-network-service.js",
+                "targetFile": "services/relais-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "relais",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-scope-projector.js",
+                "targetFile": "services/market-scope-admin-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
+              },
+              {
+                "table": "operator_market_scopes",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-client-case-service.js",
+                "targetFile": "services/dispute-mutation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "disputes",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "providers-services",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-provider-service.js",
+                "targetFile": "services/providers-service.js"
+              },
+              {
+                "sourceFileId": "services/market-delegation-provider-service.js",
+                "targetFile": "services/provider-status-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/market-delegation-local-offer-service.js",
+                "targetFile": "services/providers-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "providers",
+                "mode": "R"
+              },
+              {
+                "table": "services",
+                "mode": "R"
+              },
+              {
+                "table": "physical_offers",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "settlement",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-settlement-service.js",
+                "targetFile": "services/market-settlement-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "market_settlements",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/seed-market-test-data.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-market-test-data.test.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "market-operator-dashboard",
         "to": "infrastructure",
         "channels": [
@@ -26849,8 +28570,60 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/seed-market-test-data.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/seed-market-test-data.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
                 "sourceFileId": "tests/unit/canonical-operations-workspace-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-market-test-data.test.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/seed-market-test-data.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-market-test-data.test.js",
+                "targetFile": "utils/currency.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/seed-market-test-data.js",
+                "targetFile": "services/market-commercial-price-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/seed-market-test-data.test.js",
+                "targetFile": "services/market-commercial-price-service.js"
               }
             ]
           }
@@ -28530,6 +30303,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/mobile-money/kartapay-km.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "db.js"
               },
@@ -28771,6 +30548,26 @@
               {
                 "sourceFileId": "tests/unit/payment-mobile-money.test.js",
                 "targetFile": "utils/currency.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "payments",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "market_operating_assignments",
+                "mode": "R"
+              },
+              {
+                "table": "market_cash_control_policies",
+                "mode": "R"
               }
             ]
           }
@@ -30577,6 +32374,95 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "settlement",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-market-settlement.js",
+                "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "settlement",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "users",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "settlement",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-market-settlement.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "settlement",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "settlement",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-market-settlement.js",
+                "targetFile": "services/market-delegation-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "market_operating_assignments",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "shared-cart",
         "to": "auth",
         "channels": [
@@ -31620,7 +33506,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1097
+        "filesObserved": 1176
       },
       "boutique": {
         "filesObserved": 217,
@@ -31655,7 +33541,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 16,
+      "COMPOSITION_ROOT_WIRING": 18,
       "NON_RUNTIME_TEST": 6,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -31802,6 +33688,21 @@
       },
       {
         "from": "infrastructure",
+        "to": "market-delegation",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
         "to": "providers-services",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
@@ -31818,6 +33719,21 @@
       {
         "from": "infrastructure",
         "to": "purchasing",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "settlement",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
@@ -32000,7 +33916,7 @@
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 10,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
@@ -32066,10 +33982,12 @@
         "economic-engine",
         "logistics",
         "loyalty",
+        "market-delegation",
         "notifications",
         "orders",
         "payments",
         "platform-ops",
+        "settlement",
         "shared-cart",
         "wallet"
       ],
@@ -32282,6 +34200,7 @@
         "documents",
         "economic-engine",
         "local-stock",
+        "market-delegation",
         "notifications",
         "orders",
         "platform-ops",
@@ -32519,6 +34438,21 @@
       "readers": [],
       "lifecycleOwner": "catalog",
       "resolution": "single-writer"
+    },
+    "product_market_exposure": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "product_attributes": {
       "writers": [
@@ -33135,7 +35069,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-delegation"
+      ],
       "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },
@@ -33191,6 +35127,32 @@
       ],
       "lifecycleOwner": "platform-ops",
       "resolution": "single-writer"
+    },
+    "market_price_observations": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "market_price_observation_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "price_history": {
       "writers": [
@@ -33448,8 +35410,10 @@
       "readers": [
         "local-stock",
         "market-autonomy",
+        "market-delegation",
         "providers-services",
-        "recommendations"
+        "recommendations",
+        "settlement"
       ],
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
@@ -33566,7 +35530,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-delegation"
+      ],
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
     },
@@ -33609,6 +35575,216 @@
       ],
       "readers": [],
       "lifecycleOwner": "market-autonomy",
+      "resolution": "declared-table-owner"
+    },
+    "capability_registry": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "market_operating_assignments": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "payments",
+        "settlement"
+      ],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "assignment_capability_ceiling": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "assignment_memberships": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "membership_capabilities": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "ceiling_templates": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "ceiling_template_capabilities": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "market_delegation_audit": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "market_team_invitations": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "market_cash_control_policies": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "payments"
+      ],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "providers": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
+    "services": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
+    "physical_offers": {
+      "writers": [
+        {
+          "feature": "providers-services",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "providers-services",
+      "resolution": "single-writer"
+    },
+    "disputes": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "orders",
+      "resolution": "single-writer"
+    },
+    "market_settlements": {
+      "writers": [
+        {
+          "feature": "settlement",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-delegation"
+      ],
+      "lifecycleOwner": "settlement",
       "resolution": "declared-table-owner"
     },
     "alerts": {
@@ -33656,19 +35832,6 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
-    "disputes": {
-      "writers": [
-        {
-          "feature": "orders",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "orders",
-      "resolution": "single-writer"
-    },
     "cash_collections": {
       "writers": [
         {
@@ -33683,6 +35846,19 @@
       "resolution": "single-writer"
     },
     "cash_deposits": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "single-writer"
+    },
+    "cash_confirmation_controls": {
       "writers": [
         {
           "feature": "payments",
@@ -33742,45 +35918,6 @@
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
     },
-    "providers": {
-      "writers": [
-        {
-          "feature": "providers-services",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "providers-services",
-      "resolution": "single-writer"
-    },
-    "services": {
-      "writers": [
-        {
-          "feature": "providers-services",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "providers-services",
-      "resolution": "single-writer"
-    },
-    "physical_offers": {
-      "writers": [
-        {
-          "feature": "providers-services",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "providers-services",
-      "resolution": "single-writer"
-    },
     "inquiries": {
       "writers": [
         {
@@ -33806,6 +35943,19 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "market_settlement_events": {
+      "writers": [
+        {
+          "feature": "settlement",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "settlement",
+      "resolution": "declared-table-owner"
     },
     "basket_items": {
       "writers": [
@@ -33963,10 +36113,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 31,
-        "manifestsConnected": 31,
-        "technicalNodesTotal": 415,
-        "technicalNodesOwned": 415,
+        "manifestsDiscovered": 33,
+        "manifestsConnected": 33,
+        "technicalNodesTotal": 449,
+        "technicalNodesOwned": 449,
         "technicalOrphans": 0
       },
       "dash": {
@@ -34017,10 +36167,12 @@
         "loyalty",
         "market",
         "market-autonomy",
+        "market-delegation",
         "market-operator-dashboard",
         "platform",
         "purchasing",
         "refunds",
+        "settlement",
         "sourcing",
         "unsold-resolution",
         "wallet-loyalty"
@@ -34120,6 +36272,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> market-delegation",
+        "msg": "dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> providers-services",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"providers-services\""
       },
@@ -34127,6 +36284,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> settlement",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"settlement\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -34282,6 +36444,166 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / DELETE /api/market-delegation/markets/:marketCode/team/:membershipId — team.revoke",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/catalog/exposure — catalog.expose",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/client-cases/disputes — client.case.handle",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers — local_offer.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/local-offer/services — local_offer.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/network/providers — provider.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/network/relais — network.read",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/performance — finance.read (lecture seule, projection du moteur économique)",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/settlements — finance.read",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/structure-events — pricing.read",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/team — team.read",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers — provider.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate — provider.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend — provider.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais — network.create",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate — network.update",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend — network.suspend",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request — finance.act",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/structure-events — structure.event.record",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/team/invitations — team.invite",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / POST /api/market-delegation/team/invitations/:token/accept — utilisateur authentifié correspondant à l’email invité",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId — catalog.expose",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId — client.case.handle",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId — local_offer.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId — provider.manage",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId — network.update",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities — team.grant + team.revoke",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "orders / GET/POST /api/orders",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
@@ -34311,6 +36633,21 @@
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "settlement / GET /api/admin/market-settlements/markets/:marketCode/settlements — admin/finance central",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "settlement / POST /api/admin/market-settlements/markets/:marketCode/settlements/ready — attestation centrale",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "settlement / POST /api/admin/market-settlements/settlements/:settlementId/paid — attestation centrale de paiement",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /*.html",
         "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
@@ -34324,9 +36661,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 33,
-      "generatorLimitations": 18,
-      "classifiedCandidates": 51
+      "expectedTopology": 35,
+      "generatorLimitations": 53,
+      "classifiedCandidates": 88
     }
   }
 }
