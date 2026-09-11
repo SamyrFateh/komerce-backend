@@ -112,6 +112,32 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Actions transit / douane | `PROVEN` | mutations déléguées au scan engine et au service canonique des expéditions douane |
 | Garde de rôles | `PROVEN` | transit exécutable par `admin`, `agent_hub`, `agent_transitaire`; supervision pays sans geste terrain spécialisé |
 
+## Sourcing
+
+| Information cible | Statut | Motif |
+|---|---|---|
+| Demandes sourcing urgentes | `BACKEND_GAP` | aucune notion d'urgence / échéance dans le résumé sourcing actuel |
+| Fournisseurs en retard | `BACKEND_GAP` | `lead_time_days` et `supplier_delay_days` décrivent des délais, pas un retard observé par rapport à un engagement |
+| Références à restocker | `BACKEND_GAP` | `stock_available` appartient aux candidats fournisseur ; aucun seuil de stock Komerce / besoin de réapprovisionnement n'est fourni |
+| Décisions achats aujourd'hui | `BACKEND_GAP` | aucune file canonique d'achats à décider dans ce Workspace |
+| Références actives | `BACKEND_GAP` | `portfolio_products` compte le portefeuille analysé, pas les références actives du catalogue |
+| Couverture stock | `BACKEND_GAP` | pas de numérateur/dénominateur canonique de couverture de stock |
+| Délai moyen d'approvisionnement | `BACKEND_GAP` | les délais unitaires existent, mais aucun agrégat serveur canonique n'est fourni |
+| Taux de service fournisseurs | `BACKEND_GAP` | aucune métrique canonique de service fournisseur dans le résumé Workspace |
+| Coût d'achat moyen | `BACKEND_GAP` | les coûts unitaires existent, mais aucun coût moyen canonique n'est fourni |
+| Candidats sourcing | `PROVEN` | résumé `candidates_total` + collection `candidates` |
+| Candidats scannés | `PROVEN` | résumé `candidates_scanned`; le scan place explicitement le candidat en état `scanned` |
+| Watchlist | `PROVEN` | résumé `candidates_watchlist` + état candidat `watchlist` |
+| Promotions catalogue | `PROVEN` | résumé `candidates_promoted` + état `imported_to_catalog` |
+| Fournisseurs sourcing | `PROVEN` | résumé `sourcing_suppliers` + collection `suppliers` filtrée `partner_type=sourcing` |
+| Pipeline candidats | `PROJECTABLE` | regroupement visuel de compteurs serveur, sans taux de conversion ni priorité synthétique |
+| Performance fournisseur | `BACKEND_GAP` pour le KPI cible | détails fournisseur et stats existent, mais aucun taux de service canonique n'est exposé dans le résumé |
+| Pipeline d'approvisionnement | `PROJECTABLE` | imports, candidats et promotions décrivent le flux sourcing sans constituer un niveau de stock |
+| Alertes sourcing | `BACKEND_GAP` | aucune collection d'alertes dédiée |
+| Priorités sourcing | `BACKEND_GAP` | aucun score ou ordre canonique de priorité ; la decision strip ne reprend que les états `scanned` et `watchlist` non vides |
+| Prix de promotion | `PROVEN` comme décision humaine | la promotion exige un `price_kmf` explicite ; aucune recommandation économique ne devient automatiquement le prix final |
+| Scope | `PROVEN` | surface centrale `global_sourcing`, explicitement non market-scopée |
+
 ## Finance
 
 | Information cible | Statut | Motif |
@@ -137,4 +163,4 @@ Cette liste sépare les informations promises par les mocks des données effecti
 
 ## Lots suivants
 
-Les gaps Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
