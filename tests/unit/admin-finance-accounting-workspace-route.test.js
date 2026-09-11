@@ -105,7 +105,7 @@ beforeEach(() => {
   mockDisputeDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'disputed' });
 });
 
-test.each(['admin', 'finance', 'agent_relais'])('%s peut lire la comptabilité de son marché', async role => {
+test.each(['admin', 'finance', 'agent_relais', 'market_operator'])('%s peut lire la comptabilité de son marché', async role => {
   mockUserRole = role;
   const res = await request(app()).get('/api/admin/workspaces/accounting/market/CM?from=2026-08-20&to=2026-08-26&hours=72');
   expect(res.status).toBe(200);
@@ -115,6 +115,25 @@ test.each(['admin', 'finance', 'agent_relais'])('%s peut lire la comptabilité d
     to: '2026-08-26',
     hours: '72',
   });
+});
+
+test('market_operator lit la Finance pays mais ne crée, valide ni conteste un dépôt terrain', async () => {
+  mockUserRole = 'market_operator';
+  const create = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits').send({
+    amount_kmf: 1000,
+    deposit_method: 'bank',
+    period_start: '2026-08-20',
+    period_end: '2026-08-26',
+  });
+  const verify = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/verify').send({});
+  const dispute = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/dispute').send({ reason: 'écart' });
+
+  expect(create.status).toBe(403);
+  expect(verify.status).toBe(403);
+  expect(dispute.status).toBe(403);
+  expect(mockCreateDeposit).not.toHaveBeenCalled();
+  expect(mockVerifyDeposit).not.toHaveBeenCalled();
+  expect(mockDisputeDeposit).not.toHaveBeenCalled();
 });
 
 test('opérateur CM ne peut pas ouvrir CG', async () => {
