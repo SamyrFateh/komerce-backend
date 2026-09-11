@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 551
-- Files with full headers: 506
+- Scanned code files: 554
+- Files with full headers: 509
 - Files with lite headers: 45
-- Files with any headers: 551
+- Files with any headers: 554
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1307
-- Edges: 6536
+- Graph nodes: 1316
+- Edges: 6573
 - DB tables: 153
-- Doctrines: 422
+- Doctrines: 428
 - Impact areas: 181
-- Unresolved code edges: 617
-- Tables multi-écrivains directs (>=2): 68
+- Unresolved code edges: 620
+- Tables multi-écrivains directs (>=2): 69
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -47,7 +47,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
-- market-delegation: 22
+- market-delegation: 25
 - notification: 21
 - operations: 11
 - orders: 30
@@ -80,12 +80,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - external-adapter: 2
 - machine: 1
 - manual-test: 1
-- middleware: 21
+- middleware: 22
 - presenter: 1
-- route: 125
+- route: 126
 - route-manifest: 1
 - schema: 1
-- service: 252
+- service: 253
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -203,6 +203,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/require-dashboard-global-authority.js — dashboard-global-authorization-guard (admin-dashboard, high, full)
 - middleware/require-decision-signal-global-authority.js — decision-signal-global-authorization-guard (decision-signals, high, full)
 - middleware/require-market-delegated-role.js — market-delegation-runtime-role-bridge (market-delegation, high, full)
+- middleware/require-market-execution-capability.js — market-execution-capability-bridge (market-delegation, high, full)
 - middleware/require-market-scope.js — market-scope-authorization-guard (market, high, full)
 - middleware/require-non-production.js — runtime-environment-guard (infrastructure, high, full)
 - middleware/require-pricing-global-authority.js — pricing-global-authorization-guard (economic-engine, high, full)
@@ -302,6 +303,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/market-delegation-client-case.js — market-delegation-client-case-api (market-delegation, high, full)
 - routes/market-delegation-local-offer.js — market-delegation-local-offer-api (market-delegation, high, full)
 - routes/market-delegation-network.js — market-delegation-network-api (market-delegation, high, full)
+- routes/market-delegation-performance.js — market-delegation-performance-api (market-delegation, high, full)
 - routes/market-delegation-provider.js — market-delegation-provider-api (market-delegation, high, full)
 - routes/market-delegation-settlement.js — market-delegation-settlement-api (market-delegation, high, full)
 - routes/market-delegation-team.js — market-delegation-team-api (market-delegation, high, full)
@@ -386,6 +388,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/market-delegation-client-case-service.js — market-delegation-client-case-service (market-delegation, high, full)
 - services/market-delegation-local-offer-service.js — market-delegation-local-offer-service (market-delegation, high, full)
 - services/market-delegation-network-service.js — market-delegation-network-service (market-delegation, high, full)
+- services/market-delegation-performance-service.js — market-delegation-performance-service (market-delegation, high, full)
 - services/market-delegation-provider-service.js — market-delegation-provider-service (market-delegation, high, full)
 - services/market-delegation-service.js — market-delegation-write-service (market-delegation, high, full)
 - services/market-delegation-settlement-service.js — market-delegation-settlement-orchestration (market-delegation, high, full)
@@ -637,6 +640,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
 - WRITE services/market-cash-control-policy-service.js -> market_cash_control_policies
+- WRITE middleware/require-market-execution-capability.js -> market_delegation_audit
 - WRITE services/market-delegation-service.js -> market_delegation_audit
 - WRITE services/market-delegation-service.js -> market_operating_assignments
 - WRITE services/pricing-market-corridor.js -> market_price_observation_events
@@ -655,7 +659,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/otp-auth.js -> notification_log
 - WRITE services/notifications/parcel.js -> notification_log
 - WRITE services/simulator/state-advancer.js -> notification_log
-- WRITE services/market-scope-admin-service.js -> operator_market_scopes
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -832,6 +835,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incidents: 2 écrivains directs — services/incident-service.js, services/incident-write-service.js
 - inquiries: 2 écrivains directs — services/providers-inquiry-service.js, services/providers-service.js
 - loyalty_rewards: 2 écrivains directs — routes/admin-loyalty.js, services/loyalty-service.js
+- market_delegation_audit: 2 écrivains directs — middleware/require-market-execution-capability.js, services/market-delegation-service.js
 - order_incidents: 2 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
@@ -841,7 +845,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 - providers: 2 écrivains directs — services/provider-status-mutation-service.js, services/providers-service.js
-- recipients: 2 écrivains directs — routes/admin/users.js, services/order-checkout-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
@@ -906,6 +909,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: market operator dashboard -> routes/market-delegation-client-case.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-local-offer.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-performance.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-settlement.js (market operator dashboard)
 - uses: market operator dashboard -> routes/market-delegation-structure-event.js (market operator dashboard)
@@ -921,6 +925,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: middleware/require-dashboard-global-authority.js -> db.js (db.js)
 - depends: middleware/require-decision-signal-global-authority.js -> db.js (db.js)
 - depends: middleware/require-market-delegated-role.js -> db.js (db.js)
+- depends: middleware/require-market-execution-capability.js -> db.js (db.js)
 - depends: middleware/require-market-scope.js -> db.js (db.js)
 - depends: middleware/require-market-scope.js -> markets (M0) (markets (M0))
 - depends: middleware/require-market-scope.js -> operator_market_scopes (M1) (operator_market_scopes (M1))
@@ -973,8 +978,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: release à -> services/local-stock-service.js (release à)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
-- uses: routes that already admit market_operator -> middleware/require-market-delegated-role.js (routes that already admit market_operator)
-- uses: routes/* -> validators/index.js (routes/*)
 
 ## Files Still Without Headers Or Aggregation
 
