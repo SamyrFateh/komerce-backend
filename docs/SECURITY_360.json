@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T21:48:57.558Z",
+  "generatedAt": "2026-09-11T09:26:40.965Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 629,
@@ -1775,9 +1775,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1785,9 +1783,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1795,9 +1791,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1805,9 +1799,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1815,9 +1807,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1825,9 +1815,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1835,9 +1823,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
