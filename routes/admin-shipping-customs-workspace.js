@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, logistics, customs, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -28,7 +28,9 @@ const log = require('../utils/logger').child({ module: 'admin-shipping-customs-w
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_transitaire']);
+// Responsable pays : lecture/supervision strictement market-scoped.
+// Les gestes transit/douane restent séparés ci-dessous et ne lui sont pas accordés implicitement.
+const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']);
 const requireTransitAction = requireRole(['admin', 'agent_hub', 'agent_transitaire']);
 const requireCustomsAction = requireRole(['admin']);
 
