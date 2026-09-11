@@ -1,6 +1,6 @@
-/* Canonical admin navigation — approved Atelier économique mock is the UI contract.
- * NOTE 2026-09-11: this width treatment is transitional. The canonical target is
- * the two-level navigation defined in docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md.
+/* Canonical admin navigation — approved NAV-V2.1 mock is the UI contract.
+ * Two-level shell: N1 (.kmc-admin-primary-nav) + N2 contextuel
+ * (.kmc-admin-secondary-nav), per docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md.
  */
 .kmc-admin-navigation {
   position: sticky;
@@ -223,6 +223,82 @@
   white-space: nowrap;
 }
 
+/* Paramètres — zone utilitaire, réservé à l'autorité globale (doctrine §5). */
+.kmc-admin-settings-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.045);
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-settings-link:hover,
+.kmc-admin-settings-link:focus-visible {
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.34);
+  background: rgb(255 255 255 / 0.10);
+  outline: none;
+}
+
+.kmc-admin-settings-link.is-active {
+  color: #fff;
+  border-color: #4f8cff;
+  background: rgb(79 140 255 / 0.16);
+}
+
+/* N2 — espaces contextuels du domaine actif (doctrine §4/§8). Ligne claire
+   immédiatement sous le N1, jamais un gros bloc lourd. */
+.kmc-admin-secondary-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: min(1840px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+  background: #0c1526;
+}
+
+.kmc-admin-secondary-nav::-webkit-scrollbar { display: none; }
+
+.kmc-admin-secondary-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  color: rgb(255 255 255 / 0.64);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.kmc-admin-secondary-link:hover,
+.kmc-admin-secondary-link:focus-visible {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+  outline: none;
+}
+
+.kmc-admin-secondary-link.is-active {
+  color: #101b2e;
+  background: #cfe0ff;
+}
+
 /* Le sélecteur Market ID du mock devient le contrôle visible. Le shell de
    surface conserve son sélecteur canonique dans le DOM comme autorité et
    callback de rechargement ; il est piloté par le select de la barre. */
@@ -251,7 +327,8 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 }
 
 @media (max-width: 720px) {
-  .kmc-admin-navigation-inner {
+  .kmc-admin-navigation-inner,
+  .kmc-admin-secondary-nav {
     width: min(100% - 20px, 1840px);
   }
 
@@ -271,6 +348,7 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 @media (max-width: 480px) {
   .kmc-admin-back { display: none; }
   .kmc-admin-market-select { min-width: 108px; max-width: 126px; }
+  .kmc-admin-settings-link { padding: 0 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

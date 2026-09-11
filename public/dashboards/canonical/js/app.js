@@ -692,18 +692,32 @@
       global.KomerceCanonicalNavigation.mount({ user, surface });
     }
 
-    // Landing intelligente : si la surface courante appartient à un onglet
-    // primaire que ce rôle ne peut pas voir (docs/admin-nav-capability-map.md),
-    // on redirige vers sa landing plutôt que de rendre une vue qui va 403.
+    // Landing intelligente : si la surface courante appartient à un domaine
+    // N1 (docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md) que ce rôle ne peut
+    // pas voir, ou à un espace N2 non autorisé au sein d'un domaine par
+    // ailleurs visible (ex. agent_relais sur Expéditions & Douane), on
+    // redirige vers sa landing plutôt que de rendre une vue qui va 403.
     // Dashboard est toujours autorisé pour tout rôle connu de ALLOWED_ROLES,
     // donc la landing elle-même ne peut jamais redéclencher cette redirection.
     if (global.KomerceCanonicalNavigation
       && typeof global.KomerceCanonicalNavigation.visibleNavigationFor === 'function'
       && typeof global.KomerceCanonicalNavigation.activePrimarySurface === 'function') {
-      const visibleTabs = global.KomerceCanonicalNavigation.visibleNavigationFor(user, adminContext);
-      const visibleIds = visibleTabs.map(tab => tab.id);
-      const activeParent = global.KomerceCanonicalNavigation.activePrimarySurface(surface);
-      if (!visibleIds.includes(activeParent)) {
+      const nav = global.KomerceCanonicalNavigation;
+      const visibleDomains = nav.visibleNavigationFor(user, adminContext);
+      const visibleDomainIds = visibleDomains.map(domain => domain.id);
+      const activeDomainId = nav.activePrimarySurface(surface);
+      let authorized = visibleDomainIds.includes(activeDomainId);
+
+      if (authorized && typeof nav.activeSpaceFor === 'function' && typeof nav.visibleSpacesFor === 'function') {
+        const activeSpaceId = nav.activeSpaceFor(surface);
+        if (activeSpaceId) {
+          const activeDomain = visibleDomains.find(domain => domain.id === activeDomainId);
+          const visibleSpaceIds = nav.visibleSpacesFor(activeDomain, user && user.role).map(space => space.id);
+          authorized = visibleSpaceIds.includes(activeSpaceId);
+        }
+      }
+
+      if (!authorized) {
         const landing = defaultLandingSurface(user);
         global.location.replace(landing);
         return user;
