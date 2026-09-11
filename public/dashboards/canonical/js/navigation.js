@@ -5,13 +5,13 @@
  * @layer         ui-navigation
  * @criticality   medium
  * @inputs        canonical_surface, url_path, authenticated_user, server_admin_context
- * @outputs       mock_contract_navigation, logical_back_navigation, market_selector_proxy
+ * @outputs       capability_aligned_navigation, logical_back_navigation, market_selector_proxy
  * @depends       canonical admin app surface contract
  * @used-by       canonical admin runtime
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      four_primary_dashboards_no_legacy_navigation, mock_is_ui_contract
+ * @doctrine      country_manager_owns_market_scope, visible_destination_must_have_server_guard, client_market_id_never_authority
  * @impact-areas  admin-dashboard, navigation
  * @version       2026-09
  */
@@ -21,17 +21,9 @@
 (function initCanonicalNavigation(global) {
   'use strict';
 
-  // Contrat UI approuvé : ces six onglets sont la navigation visible Komerce.
-  // Les dashboards Canonical Pilotage / Commerce / Opérations / Finance restent
-  // les surfaces techniques sous-jacentes ; la barre expose les intentions
-  // métier, pas l'architecture interne.
-  // Les 6 onglets du mock approuvé restent la référence visuelle contractuelle.
-  // Les 4 suivants n'ont pas de mock dédié : ils exposent tels quels des
-  // workspaces Canonical déjà existants et déjà testés (operations/
-  // shipping-customs/sourcing/accounting), pour que les rôles opérationnels
-  // aient enfin un onglet primaire pertinent au lieu d'être cantonnés à
-  // Dashboard. Aucune logique métier nouvelle : le shell choisit juste où
-  // les afficher — voir docs/admin-nav-capability-map.md §9.
+  // Transition NAV-V2.0 : le shell est encore plat dans ce fichier, mais les
+  // destinations exposées doivent déjà respecter la doctrine d'autonomie pays.
+  // Le prochain lot remplace cette liste par les domaines N1 + espaces N2.
   const PRIMARY_NAV = Object.freeze([
     Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
     Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
@@ -45,16 +37,14 @@
     Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
   ]);
 
-  // Onglets visibles par rôle, vérifiés contre les guards serveur réels
-  // (voir docs/admin-nav-capability-map.md). Seuls admin et market_operator
-  // ont un accès serveur prouvé aux 6 onglets du mock ; les autres rôles
-  // opérationnels travaillent aujourd'hui via des workspaces Canonical
-  // secondaires ou le portail Legacy, hors de cette barre de navigation.
-  // Ne pas élargir un rôle ici sans élargir d'abord le guard serveur
-  // correspondant — l'UI ne doit jamais promettre un onglet qui 403.
+  // Transition capability-first : chaque destination visible ici correspond à
+  // une surface serveur réellement accessible. Pour market_operator, Catalogue
+  // est redirigé vers la projection pays capability-based, jamais vers le
+  // catalogue global admin-only. Shipping/Customs et Accounting sont en lecture
+  // market-scoped ; leurs mutations spécialisées gardent leurs guards propres.
   const ROLE_VISIBLE_TABS = Object.freeze({
     admin:              Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'settings', 'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace', 'accounting-workspace']),
-    market_operator:    Object.freeze(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']),
+    market_operator:    Object.freeze(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace']),
     finance:            Object.freeze(['dashboard', 'accounting-workspace']),
     sourcing:           Object.freeze(['dashboard', 'sourcing-workspace']),
     agent_hub:          Object.freeze(['dashboard', 'operations-workspace', 'shipping-customs-workspace']),
@@ -63,9 +53,6 @@
     support:            Object.freeze(['dashboard']),
   });
 
-  // Retourne le sous-ensemble de PRIMARY_NAV que ce rôle peut réellement
-  // utiliser. Un rôle absent de ROLE_VISIBLE_TABS ne voit que Dashboard —
-  // défense en profondeur, jamais un onglet non couvert par un guard connu.
   function visibleNavigationFor(user, adminContext) {
     const role = (user && user.role) || '';
     const allowedIds = ROLE_VISIBLE_TABS[role] || ['dashboard'];
@@ -85,6 +72,7 @@
     'pricing-workspace': 'pricing',
 
     'catalog-workspace': 'catalog',
+    'market-catalog': 'catalog',
     'sourcing-workspace': 'sourcing-workspace',
     'product-360': 'catalog',
 
@@ -98,11 +86,6 @@
     settings: 'settings',
   });
 
-  // Les onglets du mock remplacent le bouton Retour sur les workspaces
-  // principaux. Retour reste réservé aux vrais drill-downs / surfaces 360.
-  // operations-workspace / shipping-customs-workspace / accounting-workspace
-  // sont désormais des onglets primaires directs (voir PRIMARY_NAV) — plus
-  // de Retour redondant pour elles.
   const BACK_TARGETS = Object.freeze({
     'action-center': '/admin/pilotage',
     'order-360': '/admin/commerce',
@@ -121,8 +104,14 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
-    if (path === '/dashboards/canonical/access.html' || path === '/dashboards/canonical/market-autonomy.html') {
-      return path.includes('access') ? 'market-access' : 'market-autonomy';
+    if (
+      path === '/dashboards/canonical/access.html'
+      || path === '/dashboards/canonical/market-autonomy.html'
+      || path === '/dashboards/canonical/market-catalog.html'
+    ) {
+      if (path.includes('access')) return 'market-access';
+      if (path.includes('market-catalog')) return 'market-catalog';
+      return 'market-autonomy';
     }
     if (path === '/admin/settings') return 'settings';
 
@@ -138,6 +127,9 @@
   function hrefFor(item, user) {
     if (item.id === 'markets' && user && user.role === 'admin') {
       return '/dashboards/canonical/access.html';
+    }
+    if (item.id === 'catalog' && user && user.role === 'market_operator') {
+      return '/dashboards/canonical/market-catalog.html';
     }
     return item.href;
   }
@@ -236,9 +228,6 @@
   }
 
   function proxyMarketChange(doc, value) {
-    // Le sélecteur de page possède déjà le contrat serveur et le callback de
-    // rechargement. La barre du mock ne duplique aucune logique économique :
-    // elle pilote ce contrôle canonique lorsqu'il existe.
     if (doc && typeof doc.querySelector === 'function') {
       const canonicalSelect = doc.querySelector('.kmc-market-context-select');
       if (canonicalSelect && canonicalSelect !== doc.activeElement) {
@@ -250,8 +239,6 @@
       }
     }
 
-    // Les pages autonomes n'ont pas le shell de marché : le code marché reste
-    // une préférence de navigation, jamais une autorité. Les APIs revalident le scope.
     if (global.location) {
       const url = new URL(global.location.href);
       if (value) url.searchParams.set('market', value);
@@ -359,7 +346,7 @@
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
 
-    const requireMarket = ['pricing-workspace', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
+    const requireMarket = ['pricing-workspace', 'market-catalog', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
     const marketControl = createMarketControl(doc, adminContext, requireMarket);
     if (marketControl) utilities.appendChild(marketControl);
 
