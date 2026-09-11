@@ -1,0 +1,2 @@
+Ephemeral Railway one-shot trigger for staging ImageKit catalogue promotion.
+Do not merge this branch into main.
