@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      staging fixture only; external enrichment failures never mutate DB
- * @version       2026-09-v5
+ * @version       2026-09-v6
  */
 'use strict';
 
@@ -45,30 +45,30 @@ const COMMONS_QUERY_LIMIT = 50;
 const SUPPORTED_COMMONS_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const COMMONS_QUERIES = Object.freeze([
-  ['wristwatch isolated product photograph', 'Mode', 'Montres', /\b(watch|wristwatch|timepiece|rolex|seiko|casio|cartier)\b/i],
-  ['handbag isolated product photograph', 'Mode', 'Sacs', /\b(handbag|bag|purse|tote|satchel)\b/i],
-  ['sneaker shoe isolated product photograph', 'Mode', 'Chaussures', /\b(sneaker|shoe|trainer|adidas|nike|puma)\b/i],
-  ['dress clothing isolated product photograph', 'Mode', 'Vêtements', /\b(dress|shirt|jacket|coat|jeans|trouser|skirt|clothing|garment)\b/i],
-  ['backpack isolated product photograph', 'Mode', 'Sacs', /\b(backpack|rucksack|bag)\b/i],
-  ['sunglasses isolated product photograph', 'Mode', 'Accessoires', /\b(sunglasses|glasses|eyewear|ray-ban)\b/i],
-  ['perfume bottle isolated product photograph', 'Beauté', 'Parfums', /\b(perfume|parfum|fragrance|bottle)\b/i],
-  ['cosmetics makeup isolated product photograph', 'Beauté', 'Maquillage', /\b(makeup|cosmetic|lipstick|mascara|powder|foundation)\b/i],
-  ['skin care bottle isolated product photograph', 'Beauté', 'Soin', /\b(skincare|skin care|cream|lotion|serum|shampoo|wash|soap|moisturizer)\b/i],
-  ['smartphone isolated product photograph', 'Tech', 'Téléphones', /\b(smartphone|iphone|phone|mobile|samsung|huawei|pixel)\b/i],
-  ['headphones isolated product photograph', 'Tech', 'Accessoires', /\b(headphone|headphones|earphone|earphones|earbud|earbuds|headset|airpods|livepods)\b/i],
-  ['laptop computer isolated product photograph', 'Tech', 'Ordinateurs', /\b(laptop|notebook|macbook|computer)\b/i],
-  ['speaker audio isolated product photograph', 'Tech', 'Audio', /\b(speaker|soundbar|audio|jbl)\b/i],
-  ['kitchen utensil isolated product photograph', 'Maison', 'Cuisine', /\b(utensil|whisk|spatula|knife|fork|spoon|ladle|peeler|tongs)\b/i],
-  ['cookware isolated product photograph', 'Maison', 'Cuisine', /\b(cookware|pan|pot|kettle|skillet|saucepan)\b/i],
-  ['chair furniture isolated product photograph', 'Maison', 'Mobilier', /\b(chair|stool|armchair|seat)\b/i],
-  ['table furniture isolated product photograph', 'Maison', 'Mobilier', /\b(table|desk)\b/i],
-  ['lamp isolated product photograph', 'Maison', 'Décoration', /\b(lamp|lantern|light)\b/i],
-  ['vase isolated product photograph', 'Maison', 'Décoration', /\b(vase|planter|pottery)\b/i],
-  ['children toy isolated product photograph', 'Enfant', 'Jouets', /\b(toy|lego|doll|blocks|puzzle|chess|game)\b/i],
-  ['baby toy isolated product photograph', 'Enfant', 'Jouets', /\b(toy|rattle|teether|plush|doll)\b/i],
-  ['sports equipment isolated product photograph', 'Sport', 'Fitness', /\b(racket|racquet|dumbbell|weight|ball|helmet|glove|equipment|fitness|mat)\b/i],
-  ['fitness equipment isolated product photograph', 'Sport', 'Fitness', /\b(dumbbell|weight|barbell|kettlebell|treadmill|bike|bench|fitness|gym)\b/i],
-  ['football ball isolated product photograph', 'Sport', 'Sports collectifs', /\b(football|soccer ball|ball)\b/i],
+  ['wristwatch product photograph', 'Mode', 'Montres', /\b(watch|wristwatch|timepiece|rolex|seiko|casio|cartier)\b/i],
+  ['handbag fashion product photograph', 'Mode', 'Sacs', /\b(handbag|bag|purse|tote|satchel)\b/i],
+  ['sneaker shoe product photograph', 'Mode', 'Chaussures', /\b(sneaker|shoe|trainer|adidas|nike|puma)\b/i],
+  ['dress clothing product photograph', 'Mode', 'Vêtements', /\b(dress|shirt|jacket|coat|jeans|trouser|skirt|clothing|garment)\b/i],
+  ['backpack product photograph', 'Mode', 'Sacs', /\b(backpack|rucksack|bag)\b/i],
+  ['sunglasses product photograph', 'Mode', 'Accessoires', /\b(sunglasses|glasses|eyewear|ray-ban)\b/i],
+  ['perfume bottle product photograph', 'Beauté', 'Parfums', /\b(perfume|parfum|fragrance|bottle)\b/i],
+  ['cosmetics makeup product photograph', 'Beauté', 'Maquillage', /\b(makeup|cosmetic|lipstick|mascara|powder|foundation)\b/i],
+  ['skin care bottle product photograph', 'Beauté', 'Soin', /\b(skincare|skin care|cream|lotion|serum|shampoo|wash|soap|moisturizer)\b/i],
+  ['smartphone product photograph', 'Tech', 'Téléphones', /\b(smartphone|iphone|phone|mobile|samsung|huawei|pixel)\b/i],
+  ['headphones product photograph', 'Tech', 'Accessoires', /\b(headphone|headphones|earphone|earphones|earbud|earbuds|headset|airpods|livepods)\b/i],
+  ['laptop computer product photograph', 'Tech', 'Ordinateurs', /\b(laptop|notebook|macbook|computer)\b/i],
+  ['speaker electronics product photograph', 'Tech', 'Audio', /\b(speaker|soundbar|audio|jbl)\b/i],
+  ['kitchen utensil product photograph', 'Maison', 'Cuisine', /\b(utensil|whisk|spatula|knife|fork|spoon|ladle|peeler|tongs)\b/i],
+  ['cookware product photograph', 'Maison', 'Cuisine', /\b(cookware|pan|pot|kettle|skillet|saucepan)\b/i],
+  ['chair furniture product photograph', 'Maison', 'Mobilier', /\b(chair|stool|armchair|seat)\b/i],
+  ['table furniture product photograph', 'Maison', 'Mobilier', /\b(table|desk)\b/i],
+  ['lamp home product photograph', 'Maison', 'Décoration', /\b(lamp|lantern|light)\b/i],
+  ['vase home decoration product photograph', 'Maison', 'Décoration', /\b(vase|planter|pottery)\b/i],
+  ['children toy product photograph', 'Enfant', 'Jouets', /\b(toy|lego|doll|blocks|puzzle|chess|game)\b/i],
+  ['baby toy product photograph', 'Enfant', 'Jouets', /\b(toy|rattle|teether|plush|doll)\b/i],
+  ['sports equipment product photograph', 'Sport', 'Fitness', /\b(racket|racquet|dumbbell|weight|ball|helmet|glove|equipment|fitness|mat)\b/i],
+  ['fitness equipment product photograph', 'Sport', 'Fitness', /\b(dumbbell|weight|barbell|kettlebell|treadmill|bike|bench|fitness|gym)\b/i],
+  ['football sports product photograph', 'Sport', 'Sports collectifs', /\b(football|soccer ball|ball)\b/i],
 ]);
 
 const TITLE_BLOCKLIST = /\b(logo|flag|map|diagram|schema|icon|symbol|coat of arms|screenshot|poster|advertisement|advert|manual|patent|drawing|team|club|player|players|coach|tournament|cup|match|stadium|army|chief|president|astronaut|portrait|festival|ceremony|museum|exhibit|display|store|shop|mall|showroom|station|hotel|building|street|road|room|factory|ticket|event|people|person|child playing|counterfeit|seiz(?:e|es|ed)|hazardous)\b/i;
