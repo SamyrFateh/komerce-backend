@@ -62,6 +62,29 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Priorités terrain | `BACKEND_GAP` | aucune source canonique de priorisation ; l'UI conserve seulement l'ordre backend existant |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
 
+## Finance
+
+| Information cible | Statut | Motif |
+|---|---|---|
+| Paiements en attente | `PROVEN` | KPI `paiements_en_attente` |
+| Coûts incomplets | `PROVEN` | KPI `cmds_cout_incomplet` + complétude des coûts |
+| Variances élevées | `BACKEND_GAP` | `costing_orders.variance_kmf` existe, mais aucun seuil canonique de matérialité / gravité n'est fourni |
+| Variances observées | `PROJECTABLE` | sélection pure des commandes dont `variance_kmf` est non nulle, sans qualifier l'écart d'« élevé » |
+| Remboursements à suivre | `BACKEND_GAP` | les données actuelles exposent des remboursements finalisés / agrégés, pas un état d'action « à suivre » |
+| Remboursements période | `PROVEN` | KPI `remboursements` + `refunds.count` / `refunds.recent` quand présents |
+| CA encaissé | `PROVEN` | KPI `ca_encaisse` |
+| Coût réel | `PROVEN` | KPI `cout_reel` |
+| Marge consolidée | `PROVEN` sous réserve de couverture | KPI `marge_consolidee`; la complétude doit rester visible pour ne pas surinterpréter la marge réelle |
+| Complétude des coûts | `PROVEN` | KPI `taux_completude_couts` et data quality du costing |
+| Encaissements non rapprochés | `BACKEND_GAP` | aucun état de rapprochement canonique ; `paiements_en_attente` n'est pas un substitut |
+| Trajectoire financière | `PROVEN` | collection `trend` |
+| Commandes au costing incomplet | `PROJECTABLE` | `costing_orders.cost_status` et couverture disponibles ; aucune action métier n'est inventée |
+| Mix de paiement | `PROVEN` | collection `payment_mix` |
+| Rentabilité relais | `PROVEN` avec garde de couverture | `relay_profitability`; marge réelle explicitement inconnue lorsque le costing ne permet pas de la calculer |
+| Alertes Finance dédiées | `BACKEND_GAP` | aucune collection d'alertes Finance dédiée ; seuls les warnings KPI / data quality peuvent être projetés |
+| Workspaces autorisés | `PROVEN` | `FINANCE_SCHEMA.drill` filtré par rôle |
+| Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
+
 ## Lots suivants
 
-Les gaps Finance, Hub/Relais, Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Hub/Relais, Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
