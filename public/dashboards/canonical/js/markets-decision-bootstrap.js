@@ -88,6 +88,9 @@
       const node = doc.getElementById('canonical-admin-root');
       return node && node.querySelector('.kmc-access-hero') ? node : null;
     });
+    const management = root.querySelector('.kmc-access-panel');
+    if (management && !management.id) management.id = 'market-access-management';
+
     let host = doc.getElementById('markets-decision-admin-overview');
     if (!host) {
       host = doc.createElement('div');
@@ -131,6 +134,10 @@
         ? node
         : null;
     });
+    const pricesTable = root.querySelector('.kmc-workspace-table-wrap');
+    const pricesSection = pricesTable && pricesTable.parentNode;
+    if (pricesSection && !pricesSection.id) pricesSection.id = 'market-local-prices';
+
     let host = doc.getElementById('markets-decision-country-overview');
     if (!host) {
       host = doc.createElement('div');
