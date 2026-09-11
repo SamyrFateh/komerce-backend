@@ -9,7 +9,9 @@
 const path = require('path');
 const {
   DEFAULT_CURATED_INPUT,
+  DEFAULT_CURATED_INPUTS,
   parseArgs,
+  readProductInputs,
   resolveTarget,
   assertCuratedSource,
   roundKmf,
@@ -41,7 +43,7 @@ function curatedProduct(overrides = {}) {
 }
 
 describe('showcase-catalog', () => {
-  test('source vise 500 candidats par défaut, prepare consomme tout le catalogue curaté', () => {
+  test('source vise 500 candidats par défaut, prepare consomme les deux manifestes curatés V2', () => {
     const source = parseArgs(['source']);
     expect(source.command).toBe('source');
     expect(source.target).toBe(500);
@@ -49,8 +51,31 @@ describe('showcase-catalog', () => {
     const prepare = parseArgs(['prepare']);
     expect(prepare.command).toBe('prepare');
     expect(prepare.target).toBeNull();
-    expect(prepare.input).toBe(DEFAULT_CURATED_INPUT);
-    expect(path.basename(prepare.input)).toBe('staging-market-catalog-curated-v1.json');
+    expect(prepare.input).toBe(DEFAULT_CURATED_INPUTS);
+    expect(DEFAULT_CURATED_INPUTS).toHaveLength(2);
+    expect(DEFAULT_CURATED_INPUTS[0]).toBe(DEFAULT_CURATED_INPUT);
+    expect(DEFAULT_CURATED_INPUTS.map((file) => path.basename(file))).toEqual([
+      'staging-market-catalog-curated-v1.json',
+      'staging-market-catalog-curated-v2-additions.json',
+    ]);
+    expect(path.basename(prepare.manifest)).toBe('showcase-catalog-v2.json');
+  });
+
+  test('le showcase V2 agrège réellement les 40 produits curatés du seed marché', () => {
+    const products = readProductInputs(DEFAULT_CURATED_INPUTS);
+    const report = assertCuratedSource(products);
+
+    expect(products).toHaveLength(40);
+    expect(report).toEqual({ products: 40, refs: 40, heroes: 40 });
+    expect(new Set(products.map((product) => product.product_ref)).size).toBe(40);
+    expect(products.some((product) => product.category === 'Enfant')).toBe(true);
+    expect(products.some((product) => product.product_ref === 'KPR-990040')).toBe(true);
+  });
+
+  test('un --input explicite reste un manifeste unique pour les usages ciblés', () => {
+    const custom = parseArgs(['prepare', '--input', 'data/staging-market-catalog-curated-v1.json']);
+    expect(Array.isArray(custom.input)).toBe(false);
+    expect(path.basename(custom.input)).toBe('staging-market-catalog-curated-v1.json');
   });
 
   test('parseArgs autorise une cible explicite jusqu’à 1000 et refuse les bornes invalides', () => {
