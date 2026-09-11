@@ -44,7 +44,8 @@ describe('market-delegation structure-event service — recordStructureEvent', (
 
     expect(pricingPeriodStructure.recordStructureCostEvent).toHaveBeenCalledWith(
       expect.objectContaining({ scope_kind: 'MARKET_DIRECT', market_id: 'mkt-cm', charge_id: 'c1' }),
-      'u1'
+      'u1',
+      { executor: db }
     );
     expect(event.id).toBe('evt-1');
   });

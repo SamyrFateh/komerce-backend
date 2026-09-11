@@ -164,7 +164,7 @@ function snapshotFromCharge(charge) {
   };
 }
 
-async function recordStructureCostEvent(input = {}, actorId) {
+async function recordStructureCostEvent(input = {}, actorId, options = {}) {
   if (!actorId) throw new Error('actorId is required');
   if (!input.charge_id) throw new Error('charge_id is required');
 
@@ -179,9 +179,14 @@ async function recordStructureCostEvent(input = {}, actorId) {
   const fxSource = requiredText(input.fx_source, 'fx_source', 2, 200);
   const notes = input.notes == null ? null : requiredText(input.notes, 'notes', 1, 2000);
 
-  const client = await db.getClient();
+  const injectedExecutor = options && options.executor ? options.executor : null;
+  if (injectedExecutor && typeof injectedExecutor.query !== 'function') {
+    throw new TypeError('recordStructureCostEvent options.executor.query is required');
+  }
+  const client = injectedExecutor || await db.getClient();
+  const ownsTransaction = !injectedExecutor;
   try {
-    await client.query('BEGIN');
+    if (ownsTransaction) await client.query('BEGIN');
 
     const chargeRes = await client.query(
       `SELECT id, family, name, recurrence_period, is_active
@@ -262,13 +267,15 @@ async function recordStructureCostEvent(input = {}, actorId) {
       ]
     );
 
-    await client.query('COMMIT');
+    if (ownsTransaction) await client.query('COMMIT');
     return insertRes.rows[0];
   } catch (error) {
-    try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
+    if (ownsTransaction) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
+    }
     throw error;
   } finally {
-    client.release();
+    if (ownsTransaction && typeof client.release === 'function') client.release();
   }
 }
 
