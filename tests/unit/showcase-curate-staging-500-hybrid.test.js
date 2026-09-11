@@ -7,6 +7,7 @@
  */
 
 const {
+  canonicalCommonsMediaUrl,
   acceptableCommonsPage,
   mapCommonsPage,
   fetchCommonsQuery,
@@ -22,7 +23,7 @@ function commonsPage(overrides = {}) {
       mime: 'image/jpeg',
       width: 1200,
       height: 1200,
-      url: 'https://upload.wikimedia.org/original.jpg',
+      url: 'https://upload.wikimedia.org/original.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original#fragment',
       thumburl: 'https://upload.wikimedia.org/example.jpg?utm_source=commons.wikimedia.org&utm_content=thumbnail_unscaled',
       descriptionurl: 'https://commons.wikimedia.org/wiki/File:Example.jpg',
       extmetadata: {
@@ -36,13 +37,22 @@ function commonsPage(overrides = {}) {
 }
 
 describe('showcase-curate-staging-500-hybrid', () => {
+  test('canonise les médias Wikimedia sans query/hash et ne réécrit pas les autres hôtes', () => {
+    expect(canonicalCommonsMediaUrl({
+      url: 'https://upload.wikimedia.org/a.jpg?utm_source=commons#frag',
+    })).toBe('https://upload.wikimedia.org/a.jpg');
+    expect(canonicalCommonsMediaUrl({
+      url: 'https://cdn.example.test/a.jpg?variant=hero#frag',
+    })).toBe('https://cdn.example.test/a.jpg?variant=hero#frag');
+  });
+
   test('filtre les assets manifestement non produit et les images trop petites', () => {
     expect(acceptableCommonsPage(commonsPage())).toBe(true);
     expect(acceptableCommonsPage(commonsPage({ title: 'File:Brand logo.png' }))).toBe(false);
     expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/jpeg', width: 200, height: 200, url: 'https://upload.wikimedia.org/small.jpg' }] }))).toBe(false);
   });
 
-  test('mappe une source Commons avec provenance et URL originale sans thumbnail paramétré', () => {
+  test('mappe une source Commons avec provenance et URL originale canonique', () => {
     const mapped = mapCommonsPage(commonsPage(), 'headphones product photograph', 'Tech', 'Accessoires');
     expect(mapped).toMatchObject({
       source: 'commons:42',
@@ -50,7 +60,8 @@ describe('showcase-curate-staging-500-hybrid', () => {
       subcategory: 'Accessoires',
       image_url: 'https://upload.wikimedia.org/original.jpg',
     });
-    expect(mapped.image_url).not.toContain('utm_');
+    expect(mapped.image_url).not.toContain('?');
+    expect(mapped.image_url).not.toContain('#');
     expect(mapped.source_attribution.license).toBe('CC BY-SA 4.0');
   });
 
@@ -64,6 +75,7 @@ describe('showcase-curate-staging-500-hybrid', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
     expect(rows).toHaveLength(1);
     expect(rows[0].source).toBe('commons:42');
+    expect(rows[0].image_url).toBe('https://upload.wikimedia.org/original.jpg');
   });
 
   test('déduplique contre le noyau puis entre sources candidates', () => {
