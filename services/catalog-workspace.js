@@ -6,23 +6,26 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       products, boutique_categories, boutique_subcategories
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, reuse_domain_mutation_authorities, product_ref_is_public_identity
+ * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, reuse_domain_mutation_authorities, product_ref_is_public_identity, curated_catalog_cap_from_business_rules
  * @impact-areas  admin-dashboard, catalog, boutique
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
 
 const db = require('../db');
+const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
 const taxonomy = require('./boutique-taxonomy-admin');
+
+const CATALOG_CAP_FALLBACK = 120;
 
 class CatalogWorkspaceError extends Error {
   constructor(code, message, status = 400) {
@@ -77,6 +80,25 @@ async function querySummary() {
     inactive_products: Number(row.inactive_products) || 0,
     approval_pending: Number(row.approval_pending) || 0,
     needs_review: Number(row.needs_review) || 0,
+  };
+}
+
+async function queryCatalogCap() {
+  const cap = await getRuleNumber('CATALOG_CAP_MVP', CATALOG_CAP_FALLBACK);
+  return Number.isFinite(Number(cap)) && Number(cap) > 0 ? Number(cap) : CATALOG_CAP_FALLBACK;
+}
+
+function buildCurationState(summary, catalogCap) {
+  const published = Number(summary && summary.active_products) || 0;
+  const cap = Math.max(1, Number(catalogCap) || CATALOG_CAP_FALLBACK);
+  return {
+    catalog_cap_mvp: cap,
+    published_products: published,
+    remaining_slots: Math.max(0, cap - published),
+    fill_pct: Math.min(100, Math.round((published / cap) * 100)),
+    at_cap: published >= cap,
+    first_publication_authority: 'human_approval',
+    catalog_scope: 'global',
   };
 }
 
@@ -140,8 +162,9 @@ async function queryApprovalQueue(limit = 50) {
 }
 
 async function buildWorkspace(query = {}) {
-  const [summary, categories, products, approval] = await Promise.all([
+  const [summary, catalogCap, categories, products, approval] = await Promise.all([
     querySummary(),
+    queryCatalogCap(),
     taxonomy.listCategories(),
     queryProducts(query),
     queryApprovalQueue(query.approval_limit),
@@ -149,6 +172,7 @@ async function buildWorkspace(query = {}) {
   return {
     scope: { mode: 'global_catalog', label: 'Catalogue commun Komerce' },
     summary: { ...summary, categories: categories.filter(row => row.is_active).length },
+    curation: buildCurationState(summary, catalogCap),
     categories,
     products,
     approval,
@@ -246,5 +270,14 @@ module.exports = {
   createSubcategory: (key, body) => taxonomy.createSubcategory(key, body),
   updateSubcategory: (key, subKey, body) => taxonomy.updateSubcategory(key, subKey, body),
   deactivateSubcategory: (key, subKey) => taxonomy.deactivateSubcategory(key, subKey),
-  _test: { publicProduct, queryProducts, queryApprovalQueue, resolveProduct, sanitizeProductCreate, sanitizeProductUpdate },
+  _test: {
+    publicProduct,
+    queryProducts,
+    queryApprovalQueue,
+    queryCatalogCap,
+    buildCurationState,
+    resolveProduct,
+    sanitizeProductCreate,
+    sanitizeProductUpdate,
+  },
 };
