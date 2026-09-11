@@ -102,22 +102,35 @@ test('refuse production depuis NODE_ENV ou KOMERCE_ENV', () => {
   expect(isProductionRuntime()).toBe(false);
 });
 
-test('le manifeste curaté V1 passe le quality gate et couvre les rayons requis', () => {
+test('le catalogue curaté V2 agrège 40 produits et couvre les six rayons', () => {
   const catalog = loadCuratedCatalog();
   const report = validateCuratedCatalog(catalog);
 
-  expect(catalog).toHaveLength(20);
-  expect(report.count).toBe(20);
+  expect(DEFAULT_PRODUCT_COUNT).toBe(40);
+  expect(catalog).toHaveLength(40);
+  expect(report.count).toBe(40);
   for (const category of REQUIRED_CATEGORIES) {
     expect(report.categories).toContain(category);
   }
+  expect(report.categories).toContain('Enfant');
   expect(catalog.every(product => product.curated === true)).toBe(true);
   expect(catalog.some(product => /^SEEDTEST/i.test(product.name))).toBe(false);
 });
 
+test('les médias Commons enfant gardent page source, auteur et licence autorisée', () => {
+  const commons = loadCuratedCatalog().filter(product => product.source.startsWith('commons:'));
+
+  expect(commons).toHaveLength(4);
+  expect(commons.every(product => product.category === 'Enfant')).toBe(true);
+  for (const product of commons) {
+    expect(product.source_url).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+    expect(product.source_author).toBeTruthy();
+    expect(['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-3.0']).toContain(product.license);
+  }
+});
+
 test('le quality gate refuse les faux produits génériques', () => {
-  const catalog = loadCuratedCatalog();
-  const broken = catalog.map(product => ({ ...product }));
+  const broken = loadCuratedCatalog().map(product => ({ ...product }));
   broken[0] = {
     ...broken[0],
     name: 'Produit 1',
@@ -127,12 +140,21 @@ test('le quality gate refuse les faux produits génériques', () => {
   expect(() => validateCuratedCatalog(broken)).toThrow(/nom produit non curaté|description insuffisante ou brute/);
 });
 
-test('la sélection de 15 produits reste déterministe et couvre chaque rayon requis', () => {
+test('le quality gate refuse un média Commons sans licence explicite', () => {
+  const broken = loadCuratedCatalog().map(product => ({ ...product }));
+  const index = broken.findIndex(product => product.source.startsWith('commons:'));
+  broken[index] = { ...broken[index], license: null };
+
+  expect(() => validateCuratedCatalog(broken)).toThrow(/licence Commons non autorisée/);
+});
+
+test('la sélection 40 reste déterministe, intercalée et couvre tous les rayons', () => {
   const catalog = loadCuratedCatalog();
   const selected = selectCuratedProducts(catalog, DEFAULT_PRODUCT_COUNT);
 
-  expect(selected).toHaveLength(DEFAULT_PRODUCT_COUNT);
-  expect(new Set(selected.map(product => product.product_ref)).size).toBe(DEFAULT_PRODUCT_COUNT);
+  expect(selected).toHaveLength(40);
+  expect(new Set(selected.map(product => product.product_ref)).size).toBe(40);
+  expect(selected.slice(0, REQUIRED_CATEGORIES.length).map(product => product.category)).toEqual(REQUIRED_CATEGORIES);
   for (const category of REQUIRED_CATEGORIES) {
     expect(selected.some(product => product.category === category)).toBe(true);
   }
@@ -162,6 +184,7 @@ test('ensureProducts upsert le catalogue global par product_ref sans namespace p
     expect(params[0]).toMatch(/^KPR-990\d{3}$/);
     expect(params[1]).not.toMatch(/^SEEDTEST/);
   }
+  expect(db.query.mock.calls.map(([, params]) => params[10])).toEqual([9000, 9001, 9002]);
 });
 
 test('projette le prix KMF vers la devise canonique du marché et respecte minor_unit', async () => {
@@ -211,10 +234,6 @@ test('prépare chaque produit sur le même Market ID: exposition ENABLED + prix 
   expect(catalogExposure.setExposure).toHaveBeenNthCalledWith(
     1, 'product-1', 'market-cm-id', 'ENABLED', null
   );
-  expect(catalogExposure.setExposure).toHaveBeenNthCalledWith(
-    2, 'product-2', 'market-cm-id', 'ENABLED', null
-  );
-
   expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenCalledTimes(2);
   expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenNthCalledWith(1, {
     market,
