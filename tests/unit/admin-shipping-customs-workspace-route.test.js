@@ -122,13 +122,28 @@ beforeEach(() => {
   mockActivateCustomsShipment.mockResolvedValue({ reference: 'CUS-CM-001', is_active: true });
 });
 
-test.each(['admin', 'agent_hub', 'agent_transitaire'])('%s peut lire le Workspace de son marché', async role => {
+test.each(['admin', 'agent_hub', 'agent_transitaire', 'market_operator'])('%s peut lire le Workspace de son marché', async role => {
   mockUserRole = role;
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
   expect(res.status).toBe(200);
   expect(mockBuildWorkspace).toHaveBeenCalledWith({
     market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
   });
+});
+
+test('market_operator lit son flux mais ne reçoit aucun geste transit/douane spécialisé', async () => {
+  mockUserRole = 'market_operator';
+  const transit = await request(app())
+    .post('/api/admin/workspaces/shipping-customs/market/CM/parcels/PCL-CM-001/confirm-transit')
+    .send({});
+  const customs = await request(app())
+    .post('/api/admin/workspaces/shipping-customs/market/CM/customs/shipments')
+    .send({ reference: 'CUS-CM-001', shipment_date: '2026-08-26', cif_value_kmf: 100000 });
+
+  expect(transit.status).toBe(403);
+  expect(customs.status).toBe(403);
+  expect(mockConfirmTransit).not.toHaveBeenCalled();
+  expect(mockCreateCustomsShipment).not.toHaveBeenCalled();
 });
 
 test('opérateur CM ne peut pas ouvrir CG', async () => {
