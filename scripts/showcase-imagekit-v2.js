@@ -5,15 +5,15 @@
  * @domain        catalog
  * @layer         script
  * @criticality   low
- * @inputs        curated V1+V2 catalogue, IMAGEKIT_PRIVATE_KEY
- * @outputs       ImageKit-hosted showcase V2 manifest, strict media audit
+ * @inputs        curated showcase fixture, IMAGEKIT_PRIVATE_KEY
+ * @outputs       ImageKit-hosted showcase manifest, strict media audit
  * @depends       scripts/showcase-catalog.js, scripts/showcase-media-mirror.js, scripts/showcase-media-audit.js
  * @used-by       staging showcase preparation before any catalogue DB seed
  * @db-read       none
  * @db-write      none
  * @db-txn        no
  * @doctrine      curated staging fixtures only; media proof precedes DB mutation
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -31,14 +31,21 @@ const { audit: auditMedia } = require('./showcase-media-audit');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_TARGET = 40;
+const MAX_TARGET = 500;
 const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
 const NAMESPACE = 'showcase-v2';
 const MEDIA_PROVIDER = 'imagekit';
+
+function parseInput(value) {
+  if (Array.isArray(value)) return value;
+  return String(value || '').split(',').map((entry) => entry.trim()).filter(Boolean).map((entry) => path.resolve(entry));
+}
 
 function parseArgs(argv) {
   const out = {
     command: null,
     target: DEFAULT_TARGET,
+    input: DEFAULT_CURATED_INPUTS,
     manifest: DEFAULT_MANIFEST,
     network: false,
     strict: false,
@@ -51,6 +58,7 @@ function parseArgs(argv) {
     const [key, inline] = arg.split('=', 2);
     const next = () => inline ?? args[++i];
     if (key === '--target') out.target = Number.parseInt(next(), 10);
+    else if (key === '--input') out.input = parseInput(next());
     else if (key === '--manifest') out.manifest = path.resolve(next());
     else if (key === '--concurrency') out.concurrency = Number.parseInt(next(), 10);
     else if (arg === '--network') out.network = true;
@@ -60,8 +68,8 @@ function parseArgs(argv) {
   if (!['prepare', 'audit'].includes(out.command)) {
     throw new Error('Commande requise: prepare | audit');
   }
-  if (!Number.isInteger(out.target) || out.target < 1 || out.target > DEFAULT_TARGET) {
-    throw new Error(`--target doit être un entier entre 1 et ${DEFAULT_TARGET}`);
+  if (!Number.isInteger(out.target) || out.target < 1 || out.target > MAX_TARGET) {
+    throw new Error(`--target doit être un entier entre 1 et ${MAX_TARGET}`);
   }
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 25) {
     throw new Error('--concurrency doit être un entier entre 1 et 25');
@@ -100,19 +108,31 @@ async function mirrorProduct(product, uploader = uploadImageKitFile) {
   return { ...product, image_url: uploaded[0], images: uploaded };
 }
 
+async function pooledMirror(products, concurrency, uploader) {
+  const results = new Array(products.length);
+  let cursor = 0;
+  let completed = 0;
+  async function worker() {
+    while (true) {
+      const index = cursor++;
+      if (index >= products.length) return;
+      results[index] = await mirrorProduct(products[index], uploader);
+      completed += 1;
+      if (completed % 25 === 0 || completed === products.length) {
+        console.log(`[showcase:imagekit] ${completed}/${products.length}`);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, products.length)) }, worker));
+  return results;
+}
+
 async function prepare(options, { uploader = uploadImageKitFile } = {}) {
-  const source = readProductInputs(DEFAULT_CURATED_INPUTS);
+  const source = readProductInputs(options.input || DEFAULT_CURATED_INPUTS);
   assertCuratedSource(source);
   const target = resolveTarget(source, options.target);
-  const uploaded = [];
-
-  for (const product of source.slice(0, target)) {
-    // Séquentiel volontairement : noms stables + ré-exécution idempotente et
-    // pression réseau bornée. Une exécution interrompue peut être rejouée.
-    // eslint-disable-next-line no-await-in-loop
-    uploaded.push(await mirrorProduct(product, uploader));
-    if (uploaded.length % 10 === 0) console.log(`[showcase:imagekit] ${uploaded.length}/${target}`);
-  }
+  const selected = source.slice(0, target);
+  const uploaded = await pooledMirror(selected, options.concurrency || 10, uploader);
 
   fs.mkdirSync(path.dirname(options.manifest), { recursive: true });
   fs.writeFileSync(options.manifest, `${JSON.stringify(uploaded, null, 2)}\n`, 'utf8');
@@ -147,13 +167,16 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_TARGET,
+  MAX_TARGET,
   DEFAULT_MANIFEST,
   NAMESPACE,
   MEDIA_PROVIDER,
+  parseInput,
   parseArgs,
   productFolder,
   uploadSlot,
   mirrorProduct,
+  pooledMirror,
   prepare,
   audit,
 };

@@ -9,6 +9,7 @@
 const path = require('path');
 const {
   DEFAULT_TARGET,
+  MAX_TARGET,
   DEFAULT_MANIFEST,
   NAMESPACE,
   MEDIA_PROVIDER,
@@ -33,14 +34,20 @@ function product(overrides = {}) {
 }
 
 describe('showcase-imagekit-v2', () => {
-  test('le pipeline V2 vise exactement les 40 produits et le manifeste canonique', () => {
+  test('le défaut reste 40 mais le chemin staging explicite accepte 500', () => {
     const options = parseArgs(['prepare']);
     expect(DEFAULT_TARGET).toBe(40);
+    expect(MAX_TARGET).toBe(500);
     expect(options.target).toBe(40);
     expect(options.manifest).toBe(DEFAULT_MANIFEST);
     expect(path.basename(options.manifest)).toBe('showcase-catalog-v2.json');
     expect(NAMESPACE).toBe('showcase-v2');
     expect(MEDIA_PROVIDER).toBe('imagekit');
+
+    const large = parseArgs(['prepare', '--target', '500', '--input', 'data/catalogue-test-raw/showcase-curated-staging-500.json']);
+    expect(large.target).toBe(500);
+    expect(large.input).toHaveLength(1);
+    expect(() => parseArgs(['prepare', '--target', '501'])).toThrow(/entre 1 et 500/);
   });
 
   test('aucune action réseau n’est implicite sans commande prepare ou audit', () => {

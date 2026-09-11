@@ -48,6 +48,13 @@ describe('promote-showcase-imagekit-staging', () => {
     });
   });
 
+  test('autorise explicitement une cible staging jusqu’à 500', () => {
+    expect(parseArgs([
+      'promote', '--replace-active', '--target', '500', '--input', 'data/catalogue-test-raw/showcase-curated-staging-500.json',
+    ])).toMatchObject({ target: 500, replaceActive: true });
+    expect(() => parseArgs(['promote', '--replace-active', '--target', '501'])).toThrow(/entre 1 et 500/);
+  });
+
   test('déduplique et normalise les Market IDs', () => {
     expect(parseMarketCodes('cm, CG,cm,km')).toEqual(['CM', 'CG', 'KM']);
     expect(() => parseMarketCodes('CMR')).toThrow(/ISO alpha-2/);
@@ -69,12 +76,14 @@ describe('promote-showcase-imagekit-staging', () => {
     expect(runtimePromotionGuard()).toMatchObject({ env: 'production', optIn: true, allowed: false });
   });
 
-  test('valide uniquement des médias ImageKit canoniques du namespace showcase-v2', () => {
-    expect(validateHostedProducts([hostedProduct()], 1)).toEqual({ products: 1, refs: 1, images: 1 });
+  test('valide médias, contenu et stock strictement positif', () => {
+    expect(validateHostedProducts([hostedProduct()], 1)).toEqual({ products: 1, refs: 1, images: 1, stock_units: 32 });
 
     expect(() => validateHostedProducts([
       hostedProduct({ image_url: 'https://res.cloudinary.com/demo/image/upload/a.jpg', images: ['https://res.cloudinary.com/demo/image/upload/a.jpg'] }),
     ], 1)).toThrow(/non ImageKit canonique/);
+    expect(() => validateHostedProducts([hostedProduct({ stock: 0 })], 1)).toThrow(/stock entier > 0/);
+    expect(() => validateHostedProducts([hostedProduct({ description: 'trop court' })], 1)).toThrow(/description curatée/);
   });
 
   test('refuse shortfall, product_ref dupliqué et média dupliqué', () => {
