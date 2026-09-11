@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T09:26:40.965Z",
+  "generatedAt": "2026-09-11T13:05:18.646Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 629,
@@ -1649,7 +1649,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1658,7 +1659,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1667,7 +1669,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1676,7 +1679,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -2097,7 +2101,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2106,7 +2111,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2115,7 +2121,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2124,7 +2131,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2133,7 +2141,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2142,7 +2151,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2151,7 +2161,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {

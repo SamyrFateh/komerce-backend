@@ -117,12 +117,11 @@ module.exports = {
     consumes: [
       'market (operator_market_scopes, markets, Currency Boundary)',
       'auth (authenticate, requireRole + capabilities market-scoped)',
-      'dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace)',
+      'dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace — projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)',
       'catalog (vérité globale en lecture si nécessaire + projection/configuration product_market_exposure via son service owner)',
       'market-autonomy (décision locale DRAFT_PENDING_GATE via market-commercial-price-service ; aucun LOCAL_ACTIVE forcé)',
       'orders (commandes et order_items market-scoped)',
       'logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)',
-      'finance (projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)',
       'infrastructure (db.js — pool utilisé par les scripts de provisioning et de seed staging)',
     ],
   },
