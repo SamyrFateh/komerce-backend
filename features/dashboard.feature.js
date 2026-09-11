@@ -28,6 +28,7 @@ module.exports = {
       'Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback',
       'Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard',
       'Portail interne unique /admin — même shell Canonical pour administration centrale, opérateurs pays et rôles terrain autorisés',
+      'Operations Workspace : les rôles terrain natifs restent compatibles ; une membership pays peut exécuter une mutation seulement avec la capability execution.* exacte, résolue et auditée par market-delegation',
       'Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés',
       'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
@@ -213,7 +214,7 @@ module.exports = {
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
       'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
-      'market-delegation (bridge request-local des memberships projetées vers les surfaces dashboard qui admettent déjà market_operator)',
+      'market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)',
     ],
   },
 

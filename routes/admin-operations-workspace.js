@@ -22,6 +22,7 @@ const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { attachMarketExecutionRoleFor } = require('../middleware/require-market-execution-capability');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
@@ -29,12 +30,38 @@ const log = require('../utils/logger').child({ module: 'admin-operations-workspa
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-// market_operator ajouté en lecture — les mutations restent exclusivement
-// agent_hub (requireHubWorkspaceAction) et agent_relais (requireRelayWorkspaceAction).
+// La lecture garde la projection market_operator legacy. Les mutations terrain
+// restent compatibles avec les rôles natifs, mais une membership peut aussi
+// consommer UNE capability execution.* exacte sans mutation de users.role.
 const attachWorkspaceReadDelegation = attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireHubWorkspaceAction = requireRole(['admin', 'agent_hub']);
 const requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais']);
+
+const readWorkspaceGuards = [
+  attachWorkspaceReadDelegation,
+  requireWorkspaceReadRole,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+];
+
+function hubExecutionGuards(capability) {
+  return [
+    attachMarketExecutionRoleFor({ capability, compatibilityRole: 'agent_hub', nativeRoles: ['admin', 'agent_hub'] }),
+    requireHubWorkspaceAction,
+    attachAuthorizedMarkets,
+    requireWorkspaceMarketAccess,
+  ];
+}
+
+function relayExecutionGuards(capability) {
+  return [
+    attachMarketExecutionRoleFor({ capability, compatibilityRole: 'agent_relais', nativeRoles: ['admin', 'agent_relais'] }),
+    requireRelayWorkspaceAction,
+    attachAuthorizedMarkets,
+    requireWorkspaceMarketAccess,
+  ];
+}
 
 function rejectClientMarketAuthority(req, res, next) {
   const query = req.query || {};
@@ -85,6 +112,12 @@ function requireWorkspaceMarketAccess(req, res, next) {
   const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
   const marketGuard = requireMarketScope(() => targetMarketId);
 
+  // Une action EXECUTION a déjà prouvé assignment + membership + capability
+  // sur le marketCode serveur ; elle n'a pas besoin d'un scope legacy projeté.
+  if (req.marketExecution && String(req.marketExecution.market_id) === String(targetMarketId)) {
+    return next();
+  }
+
   if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
     return marketGuard(req, res, next);
   }
@@ -122,15 +155,11 @@ function sendWorkspaceError(err, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
-  attachWorkspaceReadDelegation,
-  requireWorkspaceReadRole,
   rejectClientMarketAuthority,
-  resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess
+  resolveRequestedMarket
 );
 
-router.get('/market/:marketCode', async (req, res, next) => {
+router.get('/market/:marketCode', ...readWorkspaceGuards, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
@@ -141,7 +170,7 @@ router.get('/market/:marketCode', async (req, res, next) => {
   }
 });
 
-router.post('/market/:marketCode/orders/:reference/mark-ordered', requireHubWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/orders/:reference/mark-ordered', ...hubExecutionGuards('execution.order.mark_ordered'), async (req, res, next) => {
   try {
     const result = await workspace.markOrdered(
       req.params.reference,
@@ -154,7 +183,7 @@ router.post('/market/:marketCode/orders/:reference/mark-ordered', requireHubWork
   }
 });
 
-router.post('/market/:marketCode/distribution/run', requireHubWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/distribution/run', ...hubExecutionGuards('execution.distribution.run'), async (req, res, next) => {
   try {
     const result = await workspace.runDistribution(req.workspaceMarket);
     return res.json({ ok: true, action: 'run_distribution', result });
@@ -163,7 +192,7 @@ router.post('/market/:marketCode/distribution/run', requireHubWorkspaceAction, a
   }
 });
 
-router.post('/market/:marketCode/parcels/:reference/ship', requireHubWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/parcels/:reference/ship', ...hubExecutionGuards('execution.parcel.ship'), async (req, res, next) => {
   try {
     const result = await workspace.scanParcel(
       req.params.reference,
@@ -177,7 +206,7 @@ router.post('/market/:marketCode/parcels/:reference/ship', requireHubWorkspaceAc
   }
 });
 
-router.post('/market/:marketCode/orders/:reference/confirm-cash', requireRelayWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/orders/:reference/confirm-cash', ...relayExecutionGuards('execution.cash.confirm'), async (req, res, next) => {
   try {
     const result = await workspace.confirmCash(
       req.params.reference,
@@ -190,7 +219,7 @@ router.post('/market/:marketCode/orders/:reference/confirm-cash', requireRelayWo
   }
 });
 
-router.post('/market/:marketCode/parcels/:reference/receive', requireRelayWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/parcels/:reference/receive', ...relayExecutionGuards('execution.parcel.receive'), async (req, res, next) => {
   try {
     const result = await workspace.scanParcel(
       req.params.reference,
@@ -204,7 +233,7 @@ router.post('/market/:marketCode/parcels/:reference/receive', requireRelayWorksp
   }
 });
 
-router.post('/market/:marketCode/parcels/:reference/collect', requireRelayWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/parcels/:reference/collect', ...relayExecutionGuards('execution.parcel.collect'), async (req, res, next) => {
   try {
     const result = await workspace.scanParcel(
       req.params.reference,
@@ -218,7 +247,7 @@ router.post('/market/:marketCode/parcels/:reference/collect', requireRelayWorksp
   }
 });
 
-router.post('/market/:marketCode/inventory/items/:itemId/assign', requireHubWorkspaceAction, async (req, res, next) => {
+router.post('/market/:marketCode/inventory/items/:itemId/assign', ...hubExecutionGuards('execution.inventory.assign'), async (req, res, next) => {
   try {
     const parcelReference = req.body && req.body.parcel_ref;
     const result = await workspace.assignInventory(
