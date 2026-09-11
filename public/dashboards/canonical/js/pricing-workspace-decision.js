@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_economic_truth, market_bounds_possible_human_decides, one_contribution_many_views
+ * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_economic_truth, market_bounds_possible_human_decides, one_contribution_many_views, missing_data_never_means_zero
  * @impact-areas  admin-dashboard, pricing, economic-engine, market-autonomy
  * @version       2026-09
  */
@@ -66,15 +66,24 @@
       .map(row => [row.product_ref, row]));
   }
 
-  function underFloorProducts(payload) {
+  function floorEvaluation(payload) {
     const products = productsByRef(payload);
-    return (Array.isArray(payload && payload.recommendations) ? payload.recommendations : [])
-      .map(recommendation => ({ recommendation, product: products.get(recommendation && recommendation.product_ref) || null }))
-      .filter(({ recommendation, product }) => {
-        const current = number(product && product.price_kmf);
-        const floor = number(recommendation && recommendation.minimum_safe_price_kmf);
-        return current != null && floor != null && current < floor;
-      });
+    const evaluated = [];
+    (Array.isArray(payload && payload.recommendations) ? payload.recommendations : []).forEach(recommendation => {
+      const product = products.get(recommendation && recommendation.product_ref) || null;
+      const current = number(product && product.price_kmf);
+      const floor = number(recommendation && recommendation.minimum_safe_price_kmf);
+      if (current == null || floor == null) return;
+      evaluated.push({ recommendation, product, current, floor, below_floor: current < floor });
+    });
+    return Object.freeze({
+      evaluated,
+      under_floor: evaluated.filter(row => row.below_floor),
+    });
+  }
+
+  function underFloorProducts(payload) {
+    return floorEvaluation(payload).under_floor;
   }
 
   function alertTone(alert) {
@@ -87,13 +96,13 @@
   function globalDecisionItems(payload) {
     const executive = payload && payload.economic && payload.economic.executive || {};
     const items = [];
-    const belowFloor = underFloorProducts(payload);
-    if (belowFloor.length) {
+    const floorState = floorEvaluation(payload);
+    if (floorState.under_floor.length) {
       items.push({
         key: 'price-below-safe-floor',
         label: 'Prix sous plancher serveur',
         helper: 'Prix actuel inférieur au minimum sûr déjà calculé par le moteur',
-        value: String(belowFloor.length),
+        value: String(floorState.under_floor.length),
         tone: 'critical',
         icon: '!',
         href: '#pricing-products',
@@ -116,12 +125,13 @@
   function globalMetricItems(payload) {
     const summary = payload && payload.summary || {};
     const executive = payload && payload.economic && payload.economic.executive || {};
+    const floorState = floorEvaluation(payload);
     return [
       { key: 'status', label: 'État économique', value: executive.status_label || executive.status || '—', tone: String(executive.status || '').toLowerCase().includes('critical') ? 'critical' : 'neutral' },
       { key: 'active-products', label: 'Produits actifs', value: formatNumber(summary.active_products), tone: 'neutral' },
       { key: 'active-costs', label: 'Coûts actifs', value: formatNumber(summary.active_cost_components), tone: 'neutral' },
-      { key: 'competitors', label: 'Obs. concurrence', value: formatNumber(summary.competitor_observations), tone: Number(summary.competitor_observations) > 0 ? 'neutral' : 'warning' },
-      { key: 'under-floor', label: 'Sous plancher sûr', value: String(underFloorProducts(payload).length), tone: underFloorProducts(payload).length ? 'critical' : 'positive' },
+      { key: 'competitors', label: 'Obs. concurrence', value: formatNumber(summary.competitor_observations), tone: 'neutral' },
+      { key: 'under-floor', label: 'Sous plancher sûr', value: floorState.evaluated.length ? String(floorState.under_floor.length) : '—', tone: floorState.under_floor.length ? 'critical' : 'neutral' },
     ];
   }
 
@@ -234,7 +244,7 @@
       if (!Number.isNaN(date.getTime())) generatedAt = date.toLocaleString('fr-FR');
     }
     return {
-      stateLabel: 'Décision serveur',
+      stateLabel: decision ? 'Décision serveur' : 'Décision serveur indisponible',
       scopeLabel: `${scope.market_name || marketCode || 'Marché'} · ${scope.market_code || marketCode || '—'}`,
       generatedAt,
       qualityLabel: access.read_only ? 'Viewer · lecture / simulation' : 'Manager · décision pays',
@@ -333,6 +343,7 @@
   return Object.freeze({
     number,
     productsByRef,
+    floorEvaluation,
     underFloorProducts,
     alertTone,
     globalDecisionItems,
