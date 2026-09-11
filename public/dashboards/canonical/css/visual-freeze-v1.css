@@ -70,6 +70,12 @@ body[data-admin-generation="canonical"] {
 
 .kmc-entity-shell { margin-inline: auto; }
 
+/* Le sélecteur transverse de la barre N1 est l'unique contrôle visible. La
+   page Catalogue pays conservait encore un second sélecteur dans son corps. */
+body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-market-context-select) {
+  display: none;
+}
+
 .kmc-admin-navigation {
   background: var(--kmc-freeze-nav);
   border-bottom-color: rgb(255 255 255 / 0.07);
