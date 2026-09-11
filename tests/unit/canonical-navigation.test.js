@@ -151,9 +151,6 @@ describe('canonical admin navigation — mock contract', () => {
     expect(identity.children[1].textContent).toBe('← Retour');
     expect(identity.children[1].href).toBe('/admin/commerce');
     expect(orders.attributes['aria-current']).toBe('page');
-    // « Opérations » est désormais un onglet légitime (le workspace
-    // operations-workspace) — seul « Finance », jamais promu en onglet
-    // primaire (le tab s'appelle « Comptabilité »), doit rester absent.
     expect(primary.children.map(link => link.textContent)).not.toContain('Finance');
   });
 
@@ -178,6 +175,29 @@ describe('canonical admin navigation — mock contract', () => {
     });
     const operatorMarkets = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
     expect(operatorMarkets.href).toBe('/dashboards/canonical/market-autonomy.html');
+  });
+
+  test('Catalogue reste global pour admin et devient Catalogue pays pour market_operator', () => {
+    const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
+    const adminHeader = adminEnv.api.mount({
+      document: adminEnv.document,
+      pathname: '/admin/pilotage',
+      surface: 'pilotage',
+      user: { role: 'admin' },
+    });
+    const adminCatalog = adminHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'catalog');
+    expect(adminCatalog.href).toBe('/admin/workspaces/catalog');
+
+    const operatorEnv = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
+    const operatorHeader = operatorEnv.api.mount({
+      document: operatorEnv.document,
+      pathname: '/dashboards/canonical/market-catalog.html',
+      surface: 'market-catalog',
+      user: { role: 'market_operator' },
+    });
+    const operatorCatalog = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'catalog');
+    expect(operatorCatalog.href).toBe('/dashboards/canonical/market-catalog.html');
+    expect(operatorCatalog.attributes['aria-current']).toBe('page');
   });
 
   test('le sélecteur Market ID est intégré à droite quand le contexte serveur est disponible', () => {
@@ -232,6 +252,26 @@ describe('canonical admin navigation — mock contract', () => {
     expect(select.value).toBe('CM');
     expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
     expect(select.children.map(option => option.textContent)).not.toContain('Global · Tous les marchés');
+  });
+
+  test('Catalogue pays exige lui aussi un Market ID explicite pour adminContext global', () => {
+    const env = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
+    const header = env.api.mount({
+      document: env.document,
+      pathname: '/dashboards/canonical/market-catalog.html',
+      surface: 'market-catalog',
+      user: { role: 'market_operator' },
+      adminContext: {
+        access: {
+          mode: 'global',
+          defaultMarket: 'CG',
+          allowedMarkets: ['CM', 'CG'],
+        },
+      },
+    });
+    const select = header.children[0].children[2].children[0].children[1];
+    expect(select.value).toBe('CG');
+    expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
   });
 
   test('le drapeau visible suit le Market ID sélectionné sans dépendre des emoji Windows', () => {
@@ -316,7 +356,7 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
     ]);
   });
 
-  test('market_operator voit 5 onglets — pas Catalogue ni Paramètres (admin only côté serveur)', () => {
+  test('market_operator voit ses 8 destinations pays — sans Paramètres global ni Sourcing', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = env.api.mount({
       document: env.document,
@@ -326,9 +366,12 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
     });
     const primary = header.children[0].children[1];
     const ids = primary.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']);
-    expect(ids).not.toContain('catalog');
+    expect(ids).toEqual([
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets',
+      'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace',
+    ]);
     expect(ids).not.toContain('settings');
+    expect(ids).not.toContain('sourcing-workspace');
   });
 
   test.each([
@@ -382,7 +425,10 @@ describe('canonical admin navigation — filtrage par rôle (docs/admin-nav-capa
   test('visibleNavigationFor est exposée et cohérente avec le rendu de mount()', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const tabs = env.api.visibleNavigationFor({ role: 'market_operator' }, null);
-    expect(tabs.map(t => t.id)).toEqual(['dashboard', 'pricing', 'orders', 'markets', 'operations-workspace']);
+    expect(tabs.map(t => t.id)).toEqual([
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets',
+      'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace',
+    ]);
   });
 
   test('chaque rôle connu voit au moins Dashboard, toujours en premier', () => {
