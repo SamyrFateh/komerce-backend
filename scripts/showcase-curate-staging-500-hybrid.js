@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      staging fixture only; external enrichment failures never mutate DB
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -224,6 +224,14 @@ function dedupeCandidates(products, nucleus) {
   return out;
 }
 
+function buildCandidatePool(validPrimary, commons, nucleus) {
+  // Primary candidates have already passed an explicit source-image GET when --network is enabled.
+  // Commons candidates are accepted from Wikimedia's imageinfo metadata here; the subsequent
+  // ImageKit mirror is the authoritative network/media gate before any DB mutation. Re-fetching
+  // hundreds of source URLs here caused CDN throttling false negatives without increasing safety.
+  return dedupeCandidates([...validPrimary, ...commons], nucleus);
+}
+
 async function build(options) {
   const nucleus = readProductInputs(DEFAULT_CURATED_INPUTS);
   assertCuratedSource(nucleus);
@@ -247,11 +255,10 @@ async function build(options) {
   if (missingAfterPrimary > 0) {
     commons = await collectCommonsPool({ perQuery: 20, minNeeded: missingAfterPrimary });
   }
-  const combined = dedupeCandidates([...validPrimary, ...commons], nucleus);
-  const valid = options.network ? await verifyCandidates(combined, options.concurrency) : combined;
-  const selected = balancedSelection(valid, needed);
+  const candidatePool = buildCandidatePool(validPrimary, commons, nucleus);
+  const selected = balancedSelection(candidatePool, needed);
   if (selected.length !== needed) {
-    throw new Error(`Pool hybride curatable insuffisant: ${selected.length}/${needed} après contrôle${options.network ? ' réseau' : ''}`);
+    throw new Error(`Pool hybride curatable insuffisant: ${selected.length}/${needed} avant miroir média`);
   }
 
   const curated = [
@@ -269,8 +276,10 @@ async function build(options) {
   console.log(JSON.stringify({
     output: options.output,
     source_mode: 'primary-plus-resilient-commons',
+    network_gate: options.network ? 'primary-verified-once; imagekit-mirror-is-final-media-gate' : 'imagekit-mirror-is-final-media-gate',
     primary_valid: validPrimary.length,
     commons_collected: commons.length,
+    candidate_pool: candidatePool.length,
     ...summary,
   }, null, 2));
   return { products: curated, summary };
@@ -299,5 +308,6 @@ module.exports = {
   fetchCommonsQuery,
   collectCommonsPool,
   dedupeCandidates,
+  buildCandidatePool,
   build,
 };
