@@ -11,13 +11,17 @@
 }
 
 .kmc-admin-navigation-inner {
-  width: min(1480px, calc(100% - 32px));
+  /* Le shell admin possède désormais 10 entrées pour admin. La limite historique
+     à 1480px amputait les derniers onglets (Sourcing / Comptabilité) dès que le
+     sélecteur de marché occupait sa largeur réelle. On utilise donc la largeur
+     desktop disponible, puis on passe en deux lignes avant que le menu sature. */
+  width: min(1840px, calc(100% - 32px));
   min-height: 64px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 26px;
+  gap: clamp(14px, 1.2vw, 26px);
 }
 
 .kmc-admin-navigation-identity,
@@ -84,6 +88,7 @@
 .kmc-admin-primary-link {
   position: relative;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   height: 64px;
   padding: 0 14px;
@@ -226,7 +231,11 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
   display: none;
 }
 
-@media (max-width: 1180px) {
+/* Avec 10 onglets + Market ID + compte, une seule ligne devient fragile bien
+   avant 1180px (notamment avec le scaling Windows). On bascule volontairement
+   en deux lignes avant tout clipping : utilitaires en haut, navigation complète
+   en dessous. */
+@media (max-width: 1660px) {
   .kmc-admin-navigation-inner {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
@@ -248,7 +257,7 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 
 @media (max-width: 720px) {
   .kmc-admin-navigation-inner {
-    width: min(100% - 20px, 1480px);
+    width: calc(100% - 20px);
   }
 
   .kmc-admin-home-label { font-size: 14px; }
