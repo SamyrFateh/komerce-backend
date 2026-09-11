@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, browser_never_supplies_market_id_authority
+ * @doctrine      workspace_acts_dashboard_observes, country_manager_supervises_without_field_agent_escalation, browser_never_supplies_market_id_authority
  * @impact-areas  admin-dashboard, logistics, customs
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -25,12 +25,17 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createShippingCustomsWorkspace() {
   const ENDPOINT_PREFIX = '/api/admin/workspaces/shipping-customs/market/';
   const MARKET_CODE = /^[A-Z]{2}$/;
+  const TRANSIT_ACTION_ROLES = Object.freeze(['admin', 'agent_hub', 'agent_transitaire']);
 
   function endpointFor(marketCode, suffix = '') {
     const code = String(marketCode || '').trim().toUpperCase();
     if (!MARKET_CODE.test(code)) throw new Error('canonical_shipping_customs_workspace_market_required');
     const tail = suffix ? '/' + String(suffix).replace(/^\/+/, '') : '';
     return ENDPOINT_PREFIX + encodeURIComponent(code) + tail;
+  }
+
+  function canConfirmTransit(user) {
+    return Boolean(user && TRANSIT_ACTION_ROLES.includes(user.role));
   }
 
   function text(doc, tag, className, value) {
@@ -83,17 +88,18 @@
     target.textContent = message || '';
   }
 
-  function createHeader(doc, payload) {
+  function createHeader(doc, payload, context) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · EXPÉDITIONS & DOUANE'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Faire avancer le flux international'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Piloter le flux international'));
+    const supervisionOnly = context.user && context.user.role === 'market_operator';
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · aucune action globale`
+      `${payload.scope.code} · ${payload.scope.name} · ${supervisionOnly ? 'supervision pays · gestes terrain délégués' : 'aucune action globale'}`
     ));
     header.appendChild(copy);
 
@@ -158,11 +164,14 @@
   }
 
   function renderTransit(rootNode, ui, doc, payload, context) {
+    const canAct = canConfirmTransit(context.user);
     const slot = createSection(
       rootNode,
       ui,
-      'Transitaire · Confirmer le transit',
-      'Seuls les colis déjà expédiés de ce marché sont actionnables. Le scan transit_confirmed est appliqué par le moteur logistique.'
+      canAct ? 'Transitaire · Confirmer le transit' : 'Expéditions · Supervision transit',
+      canAct
+        ? 'Seuls les colis déjà expédiés de ce marché sont actionnables. Le scan transit_confirmed est appliqué par le moteur logistique.'
+        : 'Le Responsable pays voit le flux de son marché. La confirmation physique du transit reste réservée aux agents habilités.'
     );
     const rows = payload.transit.ready || [];
     if (!rows.length) {
@@ -181,14 +190,18 @@
         tr.appendChild(td);
       });
       const actionCell = doc.createElement('td');
-      const button = makeButton(doc, 'Mettre en transit', 'confirm-transit');
-      actionCell.appendChild(button);
+      if (canAct) {
+        const button = makeButton(doc, 'Mettre en transit', 'confirm-transit');
+        actionCell.appendChild(button);
+        button.addEventListener('click', () => runAction(context, button, {
+          url: endpointFor(context.marketCode, `parcels/${encodeURIComponent(row.reference)}/confirm-transit`),
+          confirmMessage: `Confirmer le transit de ${row.reference} ?`,
+          successMessage: `${row.reference} est maintenant en transit.`,
+        }));
+      } else {
+        actionCell.appendChild(text(doc, 'span', 'kmc-workspace-note', 'Exécution déléguée'));
+      }
       tr.appendChild(actionCell);
-      button.addEventListener('click', () => runAction(context, button, {
-        url: endpointFor(context.marketCode, `parcels/${encodeURIComponent(row.reference)}/confirm-transit`),
-        confirmMessage: `Confirmer le transit de ${row.reference} ?`,
-        successMessage: `${row.reference} est maintenant en transit.`,
-      }));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -209,7 +222,9 @@
       rootNode,
       ui,
       'Douane · Expéditions',
-      'Création, déclaration et activation restent limitées au marché sélectionné. Les identifiants techniques ne quittent pas le serveur.'
+      context.user && context.user.role === 'market_operator'
+        ? 'Visibilité complète du dossier douane du marché. Les déclarations et mutations sensibles restent réservées à leurs capacités spécialisées.'
+        : 'Création, déclaration et activation restent limitées au marché sélectionné. Les identifiants techniques ne quittent pas le serveur.'
     );
 
     if (context.user && context.user.role === 'admin') {
@@ -286,6 +301,8 @@
           });
         });
         td.appendChild(toggle);
+      } else if (context.user && context.user.role === 'market_operator') {
+        td.appendChild(text(doc, 'span', 'kmc-workspace-note', 'Pilotage pays'));
       }
       tr.appendChild(td);
       tbody.appendChild(tr);
@@ -320,7 +337,7 @@
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload));
+    rootNode.appendChild(createHeader(doc, payload, context));
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
@@ -358,5 +375,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs } });
+  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, canConfirmTransit } });
 });
