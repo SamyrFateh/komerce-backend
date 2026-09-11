@@ -26,6 +26,7 @@ const catalogApproval = require('./catalog-approval');
 const taxonomy = require('./boutique-taxonomy-admin');
 
 const CATALOG_CAP_FALLBACK = 120;
+const APPROVAL_CONTENT_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
 
 class CatalogWorkspaceError extends Error {
   constructor(code, message, status = 400) {
@@ -69,7 +70,7 @@ async function querySummary() {
       COUNT(*) FILTER (
         WHERE lifecycle_status = 'candidate'
           AND is_active = FALSE
-          AND content_source IN ('connector_raw', 'ai_enriched')
+          AND content_source IN ('connector_raw', 'ai_enriched', 'manual')
       )::int AS approval_pending,
       COUNT(*) FILTER (WHERE needs_review = TRUE)::int AS needs_review
     FROM products
@@ -102,7 +103,7 @@ function buildCurationState(summary, catalogCap) {
   };
 }
 
-async function queryProducts({ search = null, category = null, status = null, limit = 100 } = {}) {
+async function queryProducts({ search = null, category = null, status = null, limit = 200 } = {}) {
   const conditions = [];
   const params = [];
   if (search) {
@@ -116,7 +117,7 @@ async function queryProducts({ search = null, category = null, status = null, li
   if (status === 'active') conditions.push('p.is_active = TRUE');
   if (status === 'inactive') conditions.push('p.is_active = FALSE');
   if (status === 'candidate') conditions.push("p.lifecycle_status = 'candidate'");
-  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  const safeLimit = Math.min(Math.max(Number(limit) || 200, 1), 200);
   params.push(safeLimit);
 
   const { rows } = await db.query(`
@@ -141,7 +142,7 @@ async function queryApprovalQueue(limit = 50) {
       FROM products
      WHERE lifecycle_status = 'candidate'
        AND is_active = FALSE
-       AND content_source IN ('connector_raw', 'ai_enriched')
+       AND content_source IN ('connector_raw', 'ai_enriched', 'manual')
      ORDER BY needs_review DESC, enrichment_confidence ASC NULLS FIRST
      LIMIT $1
   `, [safeLimit]);
@@ -279,5 +280,6 @@ module.exports = {
     resolveProduct,
     sanitizeProductCreate,
     sanitizeProductUpdate,
+    APPROVAL_CONTENT_SOURCES,
   },
 };
