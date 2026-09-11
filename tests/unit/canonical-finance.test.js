@@ -9,6 +9,7 @@
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const finance = require('../../public/dashboards/canonical/js/finance');
+const financeDecision = require('../../public/dashboards/canonical/js/finance-decision');
 
 function payloadFixture() {
   return {
@@ -112,6 +113,55 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     });
     expect(sources['finance.payment-mix'][0]).toEqual({ mode: 'stripe_eur', commandes: '3', montant: '90 000 KMF' });
     expect(sources['finance.refunds'][0]).toEqual(expect.objectContaining({ commande: 'CMD-R', methode: 'stripe', montant: '1 000 KMF' }));
+  });
+
+  test('la couche decision-first Finance ne fabrique ni seuil de variance ni rapprochement', () => {
+    const payload = payloadFixture();
+    const decisions = financeDecision.decisionItems(payload, finance);
+
+    expect(decisions.map(item => item.label)).toEqual([
+      'Paiements en attente',
+      'Coûts incomplets',
+      'Variances observées',
+      'Remboursements période',
+    ]);
+    expect(decisions.some(item => /variances élevées|à suivre|non rapprochés/i.test(item.label))).toBe(false);
+
+    expect(financeDecision.overviewCards(payload, finance)).toHaveLength(4);
+    expect(financeDecision.completenessProgress(payload, finance)[0]).toEqual({
+      label: 'Complétude des coûts',
+      value: '80 %',
+      percent: 80,
+      tone: 'warning',
+      helper: '2 commandes incomplètes',
+    });
+    expect(financeDecision.trendItems(payload, finance)[0]).toEqual(expect.objectContaining({
+      value: '75 %',
+      helper: expect.stringContaining('120 000 KMF'),
+    }));
+    expect(financeDecision.costingItems(payload, finance)[1]).toEqual(expect.objectContaining({
+      title: 'Coût réel',
+      value: '70 000 KMF',
+      tone: 'warning',
+    }));
+    expect(financeDecision.varianceItems(payload, finance)[0]).toEqual(expect.objectContaining({
+      title: 'CMD-C',
+      value: '+1 000 KMF',
+      tone: 'neutral',
+    }));
+    expect(financeDecision.paymentItems(payload, finance)[0]).toEqual(expect.objectContaining({
+      title: 'stripe_eur',
+      value: '90 000 KMF',
+    }));
+    expect(financeDecision.relayItems(payload, finance)[0]).toEqual(expect.objectContaining({
+      title: 'Relais Centre',
+      tone: 'warning',
+    }));
+    expect(financeDecision.refundItems(payload, finance)[0]).toEqual(expect.objectContaining({
+      title: 'CMD-R',
+      value: '1 000 KMF',
+    }));
+    expect(financeDecision.drillCards(finance, { role: 'admin' })).toHaveLength(2);
   });
 
   test('une marge réelle relais absente reste explicitement inconnue', () => {
