@@ -1,0 +1,32 @@
+/* Hub / Relais — couche visuelle decision-first additive au Workspace Canonical. */
+
+.kmc-workspace-decision-overview {
+  display: grid;
+  gap: 14px;
+  padding: 2px 0 4px;
+}
+
+.kmc-workspace-decision-heading {
+  display: grid;
+  gap: 4px;
+  padding: 0 2px;
+}
+
+.kmc-workspace-decision-heading .kmc-decision-dashboard-section-title,
+.kmc-workspace-decision-heading .kmc-decision-dashboard-section-copy {
+  margin: 0;
+}
+
+.kmc-workspace-decision-overview .kmc-summary-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kmc-workspace-decision-overview .kmc-summary-card {
+  min-height: 118px;
+}
+
+@media (max-width: 980px) {
+  .kmc-workspace-decision-overview .kmc-summary-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
