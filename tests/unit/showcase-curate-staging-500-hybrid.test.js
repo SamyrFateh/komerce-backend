@@ -22,7 +22,8 @@ function commonsPage(overrides = {}) {
       mime: 'image/jpeg',
       width: 1200,
       height: 1200,
-      thumburl: 'https://upload.wikimedia.org/example.jpg',
+      url: 'https://upload.wikimedia.org/original.jpg',
+      thumburl: 'https://upload.wikimedia.org/example.jpg?utm_source=commons.wikimedia.org&utm_content=thumbnail_unscaled',
       descriptionurl: 'https://commons.wikimedia.org/wiki/File:Example.jpg',
       extmetadata: {
         LicenseShortName: { value: 'CC BY-SA 4.0' },
@@ -38,17 +39,18 @@ describe('showcase-curate-staging-500-hybrid', () => {
   test('filtre les assets manifestement non produit et les images trop petites', () => {
     expect(acceptableCommonsPage(commonsPage())).toBe(true);
     expect(acceptableCommonsPage(commonsPage({ title: 'File:Brand logo.png' }))).toBe(false);
-    expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/jpeg', width: 200, height: 200, thumburl: 'https://upload.wikimedia.org/small.jpg' }] }))).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/jpeg', width: 200, height: 200, url: 'https://upload.wikimedia.org/small.jpg' }] }))).toBe(false);
   });
 
-  test('mappe une source Commons avec provenance et catégorie', () => {
+  test('mappe une source Commons avec provenance et URL originale sans thumbnail paramétré', () => {
     const mapped = mapCommonsPage(commonsPage(), 'headphones product photograph', 'Tech', 'Accessoires');
     expect(mapped).toMatchObject({
       source: 'commons:42',
       category: 'Tech',
       subcategory: 'Accessoires',
-      image_url: 'https://upload.wikimedia.org/example.jpg',
+      image_url: 'https://upload.wikimedia.org/original.jpg',
     });
+    expect(mapped.image_url).not.toContain('utm_');
     expect(mapped.source_attribution.license).toBe('CC BY-SA 4.0');
   });
 
