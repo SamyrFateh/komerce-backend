@@ -6,36 +6,28 @@
  * @layer         script
  * @owner         backend-core
  * @purpose       Générer un lot de commandes réalistes non-production,
- *                strictement scopées par Market ID, pour éprouver les vues,
- *                le catalogue local et les décisions pricing sans fuite
- *                inter-marchés.
+ *                strictement scopées par Market ID, à partir d'un catalogue
+ *                global curaté partagé entre les marchés.
  * @impact-areas  staging-only, market, catalog, market-autonomy, pricing-tests
  *
- * Toutes les lignes créées utilisent un namespace par marché
- * (`SEEDTEST-<MARKET>-...`) afin qu'un seed/cleanup CM ne puisse jamais
- * toucher les fixtures CG/KM ni les fixtures ITEST- d'intégration.
+ * Doctrine staging :
+ *   - le produit est global ; le Market ID décide exposition + prix local ;
+ *   - aucune copie `SEEDTEST <PAYS> produit N` n'est créée ;
+ *   - le catalogue curaté doit passer un quality gate statique avant écriture ;
+ *   - cleanup d'un marché ne supprime jamais le catalogue global ;
+ *   - chaque produit exposé reçoit seulement un DRAFT_PENDING_GATE : aucun
+ *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed.
  *
  * Usage :
  *   node scripts/seed-market-test-data.js --market CM --orders 60
  *   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
  *   node scripts/seed-market-test-data.js --market CM --cleanup
- *
- * Garde-fous :
- *   - refuse explicitement production ;
- *   - --market est obligatoire, y compris pour --cleanup ;
- *   - le marché doit déjà exister dans markets ;
- *   - orders.market_id est écrit explicitement comme snapshot du relais ;
- *   - relais et produits de seed sont namespacés par code marché ;
- *   - chaque produit de seed est explicitement ENABLED dans
- *     product_market_exposure pour CE market_id ;
- *   - chaque produit reçoit une décision locale DRAFT_PENDING_GATE dans la
- *     devise serveur du marché ; le seed ne contourne jamais le gate pour
- *     fabriquer artificiellement un LOCAL_ACTIVE ;
- *   - cleanup exige à la fois le tag du marché ET le market_id canonique.
  */
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const catalogExposure = require('../services/catalog-market-exposure-service');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
@@ -43,6 +35,9 @@ const { projectAmount, roundToMinorUnit } = require('../utils/currency');
 
 const TAG = 'SEEDTEST';
 const PRICE_SOURCE = 'staging_market_seed';
+const DEFAULT_PRODUCT_COUNT = 15;
+const CURATED_CATALOG_PATH = path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v1.json');
+const REQUIRED_CATEGORIES = Object.freeze(['Beauté', 'Mode', 'Tech', 'Maison', 'Sport']);
 
 const MARKET_TEST_PROFILES = Object.freeze({
   KM: Object.freeze({ phonePrefix: '+269', area: 'Ngazidja' }),
@@ -84,7 +79,6 @@ function marketTags(marketCode) {
     code,
     refPrefix: `${TAG}-${code}-`,
     relaisName: `${TAG} ${code} relais`,
-    productNamePrefix: `${TAG} ${code} produit`,
   };
 }
 
@@ -128,6 +122,127 @@ function isProductionRuntime() {
     .some(value => String(value || '').trim().toLowerCase() === 'production');
 }
 
+function loadCuratedCatalog(filePath = CURATED_CATALOG_PATH) {
+  if (!fs.existsSync(filePath)) throw new Error(`Catalogue curaté absent: ${filePath}`);
+  const catalog = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  validateCuratedCatalog(catalog);
+  return catalog;
+}
+
+function validateCuratedCatalog(catalog) {
+  if (!Array.isArray(catalog) || catalog.length < DEFAULT_PRODUCT_COUNT) {
+    throw new Error(`Catalogue curaté insuffisant: minimum ${DEFAULT_PRODUCT_COUNT} produits requis`);
+  }
+
+  const refs = new Set();
+  const names = new Set();
+  const heroes = new Set();
+  const sources = new Set();
+  const categories = new Set();
+
+  catalog.forEach((product, index) => {
+    const label = `catalog[${index}]`;
+    const ref = String(product.product_ref || '').trim();
+    const name = String(product.name || '').trim();
+    const description = String(product.description || '').trim();
+    const category = String(product.category || '').trim();
+    const subcategory = String(product.subcategory || '').trim();
+    const imageUrl = String(product.image_url || '').trim();
+    const source = String(product.source || '').trim();
+    const images = Array.isArray(product.images) ? product.images.map(v => String(v || '').trim()).filter(Boolean) : [];
+
+    if (!/^KPR-\d{6,}$/.test(ref)) throw new Error(`${label}: product_ref canonique invalide`);
+    if (refs.has(ref)) throw new Error(`${label}: product_ref dupliqué ${ref}`);
+    refs.add(ref);
+
+    if (name.length < 6 || /^SEEDTEST\b/i.test(name) || /^(Produit|Article)\s+\d+$/i.test(name)) {
+      throw new Error(`${label}: nom produit non curaté`);
+    }
+    const normalizedName = name.toLocaleLowerCase('fr');
+    if (names.has(normalizedName)) throw new Error(`${label}: nom dupliqué ${name}`);
+    names.add(normalizedName);
+
+    if (description.length < 45 || /Raw test product:/i.test(description)) {
+      throw new Error(`${label}: description insuffisante ou brute`);
+    }
+    if (!category || !subcategory) throw new Error(`${label}: catégorie/sous-catégorie requise`);
+    categories.add(category);
+
+    if (!Number.isFinite(Number(product.price_kmf)) || Number(product.price_kmf) <= 0) {
+      throw new Error(`${label}: price_kmf doit être > 0`);
+    }
+    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) < 0) {
+      throw new Error(`${label}: stock doit être un entier >= 0`);
+    }
+    if (!product.curated) throw new Error(`${label}: curated=true requis`);
+    if (!/^dummyjson:\d+$/.test(source)) throw new Error(`${label}: source traçable requise`);
+    if (sources.has(source)) throw new Error(`${label}: source dupliquée ${source}`);
+    sources.add(source);
+
+    try {
+      const hero = new URL(imageUrl);
+      if (hero.protocol !== 'https:') throw new Error('https required');
+    } catch (_) {
+      throw new Error(`${label}: image_url HTTPS invalide`);
+    }
+    if (!images.length || !images.includes(imageUrl)) throw new Error(`${label}: galerie doit contenir le hero`);
+    for (const url of images) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') throw new Error('https required');
+      } catch (_) {
+        throw new Error(`${label}: image galerie HTTPS invalide`);
+      }
+    }
+    if (heroes.has(imageUrl)) throw new Error(`${label}: hero dupliqué`);
+    heroes.add(imageUrl);
+  });
+
+  const missingCategories = REQUIRED_CATEGORIES.filter(category => !categories.has(category));
+  if (missingCategories.length) {
+    throw new Error(`Catalogue curaté incomplet: catégories manquantes ${missingCategories.join(', ')}`);
+  }
+
+  return {
+    count: catalog.length,
+    categories: [...categories].sort(),
+  };
+}
+
+function selectCuratedProducts(catalog, count = DEFAULT_PRODUCT_COUNT) {
+  if (!Number.isInteger(count) || count <= 0) throw new Error('count doit être un entier positif');
+  if (count > catalog.length) throw new Error(`Catalogue curaté: ${count} produits demandés, ${catalog.length} disponibles`);
+
+  const buckets = new Map(REQUIRED_CATEGORIES.map(category => [category, []]));
+  const others = [];
+  for (const product of catalog) {
+    if (buckets.has(product.category)) buckets.get(product.category).push(product);
+    else others.push(product);
+  }
+
+  const selected = [];
+  let round = 0;
+  while (selected.length < count) {
+    let added = false;
+    for (const category of REQUIRED_CATEGORIES) {
+      const candidate = buckets.get(category)[round];
+      if (candidate && selected.length < count) {
+        selected.push(candidate);
+        added = true;
+      }
+    }
+    if (!added) break;
+    round++;
+  }
+
+  if (selected.length < count) {
+    const selectedRefs = new Set(selected.map(product => product.product_ref));
+    const remainder = [...catalog, ...others].filter(product => !selectedRefs.has(product.product_ref));
+    selected.push(...remainder.slice(0, count - selected.length));
+  }
+  return selected;
+}
+
 async function ensureMarket(rawCode) {
   const code = normalizeMarketCode(rawCode);
   const { rows } = await db.query(
@@ -169,33 +284,50 @@ async function ensureRelais(market) {
   return created[0];
 }
 
-async function ensureProducts(count, marketCode) {
-  const tags = marketTags(marketCode);
-  const { rows: existing } = await db.query(
-    'SELECT * FROM products WHERE name LIKE $1 ORDER BY name',
-    [`${tags.productNamePrefix}%`]
-  );
-  if (existing.length >= count) return existing.slice(0, count);
+async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
+  const catalog = loadCuratedCatalog();
+  const selected = selectCuratedProducts(catalog, count);
+  const rows = [];
 
-  const toCreate = count - existing.length;
-  const created = [];
-  for (let i = existing.length; i < existing.length + toCreate; i++) {
-    const priceKmf = randomInt(2000, 45000);
-    const { rows } = await db.query(
-      `INSERT INTO products (name, price_kmf, price_eur, stock, category, is_active)
-       VALUES ($1, $2, $3, $4, $5, true)
+  for (let index = 0; index < selected.length; index++) {
+    const product = selected[index];
+    const { rows: upserted } = await db.query(
+      `INSERT INTO products (
+         product_ref, name, description, category, subcategory, price_kmf,
+         promo_pct, image_url, images, stock, is_active, is_available, sort_order
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, TRUE, TRUE, $11)
+       ON CONFLICT (product_ref) DO UPDATE SET
+         name = EXCLUDED.name,
+         description = EXCLUDED.description,
+         category = EXCLUDED.category,
+         subcategory = EXCLUDED.subcategory,
+         price_kmf = EXCLUDED.price_kmf,
+         promo_pct = EXCLUDED.promo_pct,
+         image_url = EXCLUDED.image_url,
+         images = EXCLUDED.images,
+         stock = EXCLUDED.stock,
+         is_active = TRUE,
+         is_available = TRUE,
+         sort_order = EXCLUDED.sort_order,
+         updated_at = NOW()
        RETURNING *`,
       [
-        `${tags.productNamePrefix} ${i + 1}`,
-        priceKmf,
-        Math.round((priceKmf / 750) * 100) / 100,
-        randomInt(20, 200),
-        'seed-test',
+        product.product_ref,
+        product.name,
+        product.description,
+        product.category,
+        product.subcategory,
+        product.price_kmf,
+        product.promo_pct,
+        product.image_url,
+        JSON.stringify(product.images),
+        product.stock,
+        9000 + index,
       ]
     );
-    created.push(rows[0]);
+    rows.push(upserted[0]);
   }
-  return [...existing, ...created];
+  return rows;
 }
 
 async function localDraftAmountForProduct(product, market) {
@@ -220,7 +352,6 @@ async function prepareProductsForMarket(products, market) {
   for (const product of products) {
     const localAmount = await localDraftAmountForProduct(product, market);
 
-    // catalog reste propriétaire de la projection product x market.
     await catalogExposure.setExposure(
       product.id,
       market.id,
@@ -229,8 +360,6 @@ async function prepareProductsForMarket(products, market) {
     );
     exposed++;
 
-    // Le seed crée uniquement la décision locale. L'autorisation économique et
-    // l'activation acheteur restent la responsabilité du gate canonique.
     await marketCommercialPrice.setMarketPriceDraft({
       market,
       productRef: product.product_ref,
@@ -257,12 +386,14 @@ async function createOrder({ marketId, marketCode, relaisId, products }) {
     chosen.push(products[randomInt(0, products.length - 1)]);
   }
 
-  const items = chosen.map(p => ({
-    product_id: p.id,
+  const items = chosen.map(product => ({
+    product_id: product.id,
     quantity: randomInt(1, 3),
-    price_kmf: p.price_kmf,
+    price_kmf: product.price_kmf,
   }));
-  const totalKmf = items.reduce((s, it) => s + it.quantity * it.price_kmf, 0);
+  const totalKmf = items.reduce((sum, item) => sum + item.quantity * item.price_kmf, 0);
+  const totalEurProjected = await projectAmount(totalKmf, 'KMF', 'EUR');
+  const totalEur = roundToMinorUnit(totalEurProjected, 2);
 
   const { rows: [order] } = await db.query(
     `INSERT INTO orders
@@ -277,18 +408,18 @@ async function createOrder({ marketId, marketCode, relaisId, products }) {
       relaisId,
       marketId,
       totalKmf,
-      Math.round((totalKmf / 750) * 100) / 100,
+      totalEur,
       'cash_relais',
       statusChoice === 'cancelled' || statusChoice === 'refunded' ? 'pending' : 'paid',
       statusChoice,
     ]
   );
 
-  for (const it of items) {
+  for (const item of items) {
     await db.query(
       `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
        VALUES ($1, $2, $3, $4)`,
-      [order.id, it.product_id, it.quantity, it.price_kmf]
+      [order.id, item.product_id, item.quantity, item.price_kmf]
     );
   }
 
@@ -302,7 +433,7 @@ async function cleanup(market) {
     'SELECT id FROM orders WHERE reference LIKE $1 AND market_id = $2',
     [`${tags.refPrefix}%`, market.id]
   );
-  const orderIds = orders.map(o => o.id);
+  const orderIds = orders.map(order => order.id);
   console.log(`[cleanup:${tags.code}] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
 
   if (orderIds.length > 0) {
@@ -313,15 +444,37 @@ async function cleanup(market) {
     );
   }
 
-  // product_market_exposure et product_market_price_* référencent product_id
-  // en ON DELETE CASCADE. Le namespace garantit que seuls les produits
-  // techniques de CE marché — et leurs projections locales — disparaissent.
-  await db.query('DELETE FROM products WHERE name LIKE $1', [`${tags.productNamePrefix}%`]);
+  const catalog = loadCuratedCatalog();
+  const refs = catalog.map(product => product.product_ref);
+  const { rows: products } = await db.query(
+    'SELECT id, product_ref FROM products WHERE product_ref = ANY($1::text[])',
+    [refs]
+  );
+  for (const product of products) {
+    await catalogExposure.setExposure(
+      product.id,
+      market.id,
+      catalogExposure.EXPOSURE.DISABLED,
+      null
+    );
+    try {
+      await marketCommercialPrice.resetMarketPriceDraft({
+        market,
+        productRef: product.product_ref,
+        reason: `${TAG} ${market.code} cleanup staging`,
+        source: PRICE_SOURCE,
+        actorId: null,
+      });
+    } catch (error) {
+      if (error?.code !== 'market_price_draft_not_found') throw error;
+    }
+  }
+
   await db.query(
     'DELETE FROM relais WHERE name = $1 AND market_id = $2',
     [tags.relaisName, market.id]
   );
-  console.log(`[cleanup:${tags.code}] Terminé — aucune donnée d'un autre marché n'a été ciblée.`);
+  console.log(`[cleanup:${tags.code}] Terminé — catalogue global préservé, projection marché retirée.`);
 }
 
 async function main(argv = process.argv) {
@@ -366,10 +519,15 @@ async function main(argv = process.argv) {
     return;
   }
 
+  const catalog = loadCuratedCatalog();
+  const selected = selectCuratedProducts(catalog, DEFAULT_PRODUCT_COUNT);
+  const categories = [...new Set(selected.map(product => product.category))].join(', ');
   const tags = marketTags(market.code);
+
   if (args.dryRun) {
     console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${tags.relaisName}" (marché ${market.code}).`);
-    console.log(`[dry-run] Préparerait 15 produits exposés avec prix local DRAFT_PENDING_GATE en ${market.currency}.`);
+    console.log(`[dry-run] Catalogue curaté global: ${selected.length} produits (${categories}).`);
+    console.log(`[dry-run] Les exposerait avec prix local DRAFT_PENDING_GATE en ${market.currency}.`);
     console.log('[dry-run] Aucune écriture effectuée.');
     return;
   }
@@ -377,8 +535,8 @@ async function main(argv = process.argv) {
   const relais = await ensureRelais(market);
   console.log(`[seed] Relais : ${relais.name} (${relais.id})`);
 
-  const products = await ensureProducts(15, market.code);
-  console.log(`[seed] ${products.length} produit(s) ${TAG}-${market.code} disponible(s).`);
+  const products = await ensureProducts(DEFAULT_PRODUCT_COUNT);
+  console.log(`[seed] Catalogue curaté global : ${products.length} produit(s), sans duplication par pays.`);
 
   const prepared = await prepareProductsForMarket(products, market);
   console.log(`[seed] Catalogue ${market.code} : ${prepared.exposed} exposé(s), ${prepared.drafts} prix local(aux) en attente de gate.`);
@@ -416,8 +574,8 @@ if (require.main === module) {
       if (process.exitCode) return;
       process.exit(0);
     })
-    .catch(err => {
-      console.error('❌ Erreur :', err.message);
+    .catch(error => {
+      console.error('❌ Erreur :', error.message);
       process.exit(1);
     });
 }
@@ -425,12 +583,18 @@ if (require.main === module) {
 module.exports = {
   TAG,
   PRICE_SOURCE,
+  DEFAULT_PRODUCT_COUNT,
+  CURATED_CATALOG_PATH,
+  REQUIRED_CATEGORIES,
   MARKET_TEST_PROFILES,
   normalizeMarketCode,
   marketTags,
   marketProfile,
   parseArgs,
   isProductionRuntime,
+  loadCuratedCatalog,
+  validateCuratedCatalog,
+  selectCuratedProducts,
   ensureMarket,
   ensureRelais,
   ensureProducts,
