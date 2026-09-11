@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      staging fixture only; external enrichment failures never mutate DB
- * @version       2026-09-v3
+ * @version       2026-09-v4
  */
 'use strict';
 
@@ -87,11 +87,26 @@ function stripHtml(value) {
     .trim();
 }
 
+function canonicalCommonsMediaUrl(info) {
+  const raw = String(info && (info.url || info.thumburl) || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname === 'upload.wikimedia.org') {
+      parsed.search = '';
+      parsed.hash = '';
+    }
+    return parsed.toString();
+  } catch {
+    return raw;
+  }
+}
+
 function acceptableCommonsPage(page) {
   const title = String(page && page.title || '');
   const info = page && page.imageinfo && page.imageinfo[0];
   if (!info || !String(info.mime || '').startsWith('image/')) return false;
-  if (!/^https:\/\//.test(String(info.url || info.thumburl || ''))) return false;
+  if (!/^https:\/\//.test(canonicalCommonsMediaUrl(info))) return false;
   if (TITLE_BLOCKLIST.test(title)) return false;
   const width = Number(info.width) || 0;
   const height = Number(info.height) || 0;
@@ -106,9 +121,7 @@ function acceptableCommonsPage(page) {
 function mapCommonsPage(page, query, category, subcategory) {
   if (!acceptableCommonsPage(page)) return null;
   const info = page.imageinfo[0];
-  // ImageKit fetches the original Wikimedia object reliably. `thumburl` can contain
-  // MediaWiki query parameters (`utm_*`, `thumbnail_unscaled`) that ImageKit rejects.
-  const url = info.url || info.thumburl;
+  const url = canonicalCommonsMediaUrl(info);
   const meta = info.extmetadata || {};
   return {
     name: String(page.title || '').replace(/^File:/i, '').trim(),
@@ -227,10 +240,6 @@ function dedupeCandidates(products, nucleus) {
 }
 
 function buildCandidatePool(validPrimary, commons, nucleus) {
-  // Primary candidates have already passed an explicit source-image GET when --network is enabled.
-  // Commons candidates are accepted from Wikimedia's imageinfo metadata here; the subsequent
-  // ImageKit mirror is the authoritative network/media gate before any DB mutation. Re-fetching
-  // hundreds of source URLs here caused CDN throttling false negatives without increasing safety.
   return dedupeCandidates([...validPrimary, ...commons], nucleus);
 }
 
@@ -305,6 +314,7 @@ module.exports = {
   REQUEST_GAP_MS,
   MAX_RETRIES,
   RETRY_DELAYS_MS,
+  canonicalCommonsMediaUrl,
   acceptableCommonsPage,
   mapCommonsPage,
   fetchCommonsQuery,
