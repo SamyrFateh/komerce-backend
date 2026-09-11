@@ -5,14 +5,14 @@
  * @layer         ui-orchestration
  * @criticality   high
  * @inputs        server_market_corridor_projection, server_market_decision_projection, pricing_workspace_projection
- * @outputs       readable_economic_decision_chain_dom, authorized_local_price_and_observation_requests
+ * @outputs       readable_economic_decision_chain_dom, sku_viability_decision_support, authorized_local_price_and_observation_requests
  * @depends       public/dashboards/canonical/js/pricing-workspace.js
  * @used-by       public/dashboards/canonical/index.html
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_economic_truth, market_bounds_possible_human_decides, local_evidence_never_silently_falls_back_to_global
- * @impact-areas  admin-dashboard, pricing, economic-engine, market-autonomy
+ * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_economic_truth, market_bounds_possible_human_decides, local_evidence_never_silently_falls_back_to_global, viability_is_decision_support_not_price_gate
+ * @impact-areas  admin-dashboard, pricing, economic-engine, market-autonomy, sourcing
  * @version       2026-09
  */
 
@@ -96,6 +96,24 @@
     return card;
   }
 
+  function viabilityTone(status) {
+    if (status === 'VIABLE') return 'positive';
+    if (status === 'VIABLE_UNDER_CONDITIONS') return 'warning';
+    if (status === 'NON_VIABLE_STRUCTURAL') return 'critical';
+    return 'neutral';
+  }
+
+  function viabilityHelper(viability = {}) {
+    const parts = [];
+    const targetContribution = viability.contribution_scenarios_kmf?.target_kmf;
+    const safeCeiling = viability.purchase_cost_ceiling_at_target_kmf?.safe_kmf;
+    const gap = viability.purchase_cost_gap_to_safe_ceiling_kmf;
+    if (targetContribution != null) parts.push(`Contribution cible ${formatKmf(targetContribution)}`);
+    if (safeCeiling != null) parts.push(`Achat max sûr ${formatKmf(safeCeiling)}`);
+    if (gap != null) parts.push(`Écart sourcing ${gap >= 0 ? '+' : ''}${formatKmf(gap)}`);
+    return parts.length ? parts.join(' · ') : (viability.reason || 'Décision support serveur');
+  }
+
   function corridorBlock(doc, corridor) {
     const block = el(doc, 'div', 'kmc-decision-chain-corridor');
     const local = corridor?.corridor?.local || {};
@@ -113,6 +131,20 @@
       points.appendChild(observedPoint(doc, 'Cible observée', local.target, currency));
       points.appendChild(observedPoint(doc, 'Haute', local.high, currency));
       block.appendChild(points);
+    }
+
+    if (local.viability) {
+      block.appendChild(step(
+        doc,
+        'sku-viability',
+        'Viabilité SKU',
+        local.viability.label || local.viability.status || '—',
+        viabilityHelper(local.viability),
+        viabilityTone(local.viability.status)
+      ));
+      if (local.viability.reason) {
+        block.appendChild(el(doc, 'small', 'kmc-decision-chain-note', local.viability.reason));
+      }
     }
 
     const global = corridor?.corridor?.global_reference || {};
