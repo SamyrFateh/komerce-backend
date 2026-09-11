@@ -11,7 +11,6 @@ const path = require('path');
 const marketsDecision = require('../../public/dashboards/canonical/js/markets-decision');
 
 const ROOT = path.join(__dirname, '..', '..');
-const CANONICAL = path.join(ROOT, 'public', 'dashboards', 'canonical');
 
 function read(relative) {
   return fs.readFileSync(path.join(ROOT, relative), 'utf8');
@@ -110,5 +109,7 @@ describe('decision-first Marchés', () => {
     expect(bootstrap).toContain('/api/admin/dashboard/context');
     expect(bootstrap).toContain('/api/admin/users?role=market_operator&limit=100');
     expect(bootstrap).toContain('/commercial-prices');
+    expect(bootstrap).toContain("management.id = 'market-access-management'");
+    expect(bootstrap).toContain("pricesSection.id = 'market-local-prices'");
   });
 });
