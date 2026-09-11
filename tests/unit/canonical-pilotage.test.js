@@ -9,6 +9,7 @@
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const pilotage = require('../../public/dashboards/canonical/js/pilotage');
+const pilotageDecision = require('../../public/dashboards/canonical/js/pilotage-decision');
 
 function payloadFixture() {
   return {
@@ -27,6 +28,11 @@ function payloadFixture() {
         action_url: '/admin/alerts?severity=critical',
         action_label: 'Voir les alertes',
       },
+      {
+        level: 'warning',
+        source: 'finance',
+        message: 'Coût à vérifier',
+      },
     ],
     view_blocks: [
       {
@@ -34,9 +40,24 @@ function payloadFixture() {
         subtitle: 'Voir, comprendre, décider',
         kpis_summary: [{ label: 'CA encaissé' }, { label: 'Commandes actives' }],
       },
+      {
+        title: 'Coût rendu relais',
+        subtitle: 'Dire la vérité économique',
+        kpis_summary: [{ key: 'cmds_cout_incomplet', label: 'Commandes à coût incomplet', value: 3, unit: 'count' }],
+      },
     ],
     economic_flow: {
       stages: [{ key: 'order', label: 'Commande', url: '/admin/orders-logistics' }],
+    },
+    principles: [
+      'Une seule source de vérité par KPI',
+      'Pas de coût manquant à 0',
+      'Le dashboard doit aider à décider',
+    ],
+    data_quality: {
+      generated_at: '2026-09-11T16:30:00.000Z',
+      warnings: ['Marge partielle'],
+      scope_enforced: true,
     },
   };
 }
@@ -111,6 +132,29 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       etape: 'Commande',
       destination: 'Opérations',
     });
+  });
+
+  test('la couche decision-first ne fabrique que des blocs prouvés par le payload', () => {
+    const payload = payloadFixture();
+    const decisions = pilotageDecision.decisionItems(payload, pilotage);
+    expect(decisions.map(item => item.label)).toEqual([
+      'Critiques ouvertes',
+      'Points d’attention',
+      'Problèmes costing',
+      'Qualité des données',
+    ]);
+    expect(decisions.some(item => /aujourd/i.test(item.label))).toBe(false);
+    expect(pilotageDecision.summaryCards(payload, pilotage)).toHaveLength(2);
+    expect(pilotageDecision.flowStages(payload, pilotage)[0]).toEqual(expect.objectContaining({
+      label: 'Commande',
+      helper: 'Opérations',
+    }));
+    expect(pilotageDecision.principles(payload)).toHaveLength(3);
+    expect(pilotageDecision.trust(payload)).toEqual(expect.objectContaining({
+      stateLabel: 'Données à jour',
+      scopeLabel: 'Vue globale',
+      warningLabel: '1 warning(s)',
+    }));
   });
 
   test('l’endpoint est résolu uniquement depuis AdminContext validé', () => {
