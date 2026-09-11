@@ -11,7 +11,7 @@
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      market_delegation_audit
  * @db-txn        none
- * @doctrine      execution_is_explicit_capability, audit_before_domain_mutation, users_role_never_mutated
+ * @doctrine      execution_is_explicit_capability, audit_before_domain_mutation, users_role_never_mutated, native_terrain_roles_keep_native_boundary
  * @impact-areas  market-delegation, dashboard, operations, authorization
  * @version       2026-09
  */
@@ -19,6 +19,8 @@
 
 const db = require('../db');
 const { resolveAuthorization, audit } = require('../services/market-delegation-service');
+
+const NATIVE_OPERATIONAL_ROLES = new Set(['admin', 'agent_hub', 'agent_relais']);
 
 function sendDelegationError(res, error) {
   if (!error || !error.code || !error.status) return false;
@@ -46,7 +48,12 @@ function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRol
 
   return async (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
-    if (native.has(req.user.role)) return next();
+
+    // Les rôles terrain/admin historiques ne passent jamais par le fallback
+    // capability. S'ils sont admis pour cette action, le requireRole aval les
+    // accepte ; sinon il les refuse en 403 comme avant ce bridge. Cela évite
+    // qu'un agent_hub tente d'emprunter une capability relais (ou inversement).
+    if (native.has(req.user.role) || NATIVE_OPERATIONAL_ROLES.has(req.user.role)) return next();
 
     try {
       const authz = await resolveAuthorization(db, {
@@ -98,4 +105,9 @@ function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRol
   };
 }
 
-module.exports = { attachMarketExecutionRoleFor, safeResourceParams, correlationId };
+module.exports = {
+  NATIVE_OPERATIONAL_ROLES,
+  attachMarketExecutionRoleFor,
+  safeResourceParams,
+  correlationId,
+};
