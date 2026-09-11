@@ -6,13 +6,13 @@
  * @criticality   high
  * @inputs        server_resolved_market, product_ref, local_market_price_observations
  * @outputs       market_price_corridor, selected_price_economics, audited_observation_mutations
- * @depends       db.js, services/pricing-engine.js, services/pricing-cdr.js, services/market-local-price-resolution-service.js, utils/currency.js
+ * @depends       db.js, services/pricing-engine.js, services/pricing-cdr.js, services/pricing-sku-viability.js, services/market-local-price-resolution-service.js, utils/currency.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       products, market_price_observations, competitor_prices, product_market_price_drafts
  * @db-write      market_price_observations, market_price_observation_events
  * @db-txn        observation_mutations_atomic
- * @doctrine      market_bounds_possible_human_decides, local_evidence_never_falls_back_silently, browser_never_supplies_market_id, corridor_is_observation_not_gate
- * @impact-areas  pricing, economic-engine, market-autonomy, admin-dashboard
+ * @doctrine      market_bounds_possible_human_decides, local_evidence_never_falls_back_silently, browser_never_supplies_market_id, corridor_is_observation_not_gate, viability_is_decision_support_not_price_gate
+ * @impact-areas  pricing, economic-engine, market-autonomy, admin-dashboard, sourcing
  * @version       2026-09
  */
 
@@ -22,6 +22,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
 const pricingCdr = require('./pricing-cdr');
+const { projectSkuViability } = require('./pricing-sku-viability');
 const { projectAmount } = require('../utils/currency');
 const { resolveActiveProductMarketPricing } = require('./market-local-price-resolution-service');
 
@@ -192,6 +193,8 @@ function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
     minimum_safe_price_kmf: pricing.minimum_safe_price_kmf ?? null,
     coverage_reference_price_kmf: pricing.recommended_price_kmf ?? null,
+    target_margin_pct: pricing.target_margin_pct ?? null,
+    safety_margin_pct: pricing.safety_margin_pct ?? null,
     strategy_risk: pricing.strategy_risk || null,
     data_quality: pricing.data_quality || null,
   };
@@ -224,11 +227,15 @@ function projectSensitivityPoint(point, economics = {}) {
 }
 
 function projectCorridorEconomics(corridor = {}, economics = {}) {
-  return {
+  const projected = {
     ...corridor,
     low: projectSensitivityPoint(corridor.low, economics),
     target: projectSensitivityPoint(corridor.target, economics),
     high: projectSensitivityPoint(corridor.high, economics),
+  };
+  return {
+    ...projected,
+    viability: projectSkuViability(projected, economics),
   };
 }
 
