@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      staging fixture only; every external source remains candidate-only until network/media gates pass
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -44,7 +44,9 @@ const MAKEUP_BASE_URL = 'https://makeup-api.herokuapp.com/api/v1/products.json';
 const OPEN_FOOD_BASE_URL = 'https://world.openfoodfacts.org/api/v2/search';
 const SOURCE_TIMEOUT_MS = 20000;
 const OPEN_FOOD_LIMIT = 220;
-const MAKEUP_LIMIT = 160;
+const MAKEUP_LIMIT = 240;
+const SOURCE_RETRY_DELAYS_MS = Object.freeze([1200, 3000, 6000]);
+const TRANSIENT_SOURCE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 const MAKEUP_TYPES = Object.freeze([
   'foundation',
@@ -65,6 +67,10 @@ const FAKESTORE_CATEGORY_MAP = new Map([
   ['jewelery', ['Mode', 'Bijoux']],
   ['electronics', ['Tech', 'Accessoires']],
 ]);
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function httpsUrl(value) {
   const raw = String(value || '').trim();
@@ -89,19 +95,46 @@ function makeupUrl(type) {
 
 async function fetchJson(url, options = {}) {
   const timeoutMs = options.timeoutMs || SOURCE_TIMEOUT_MS;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': options.userAgent || 'KomerceShowcaseBuilder/3.4 (https://komerce.co)' },
-      redirect: 'follow',
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`${url} -> HTTP ${response.status}`);
-    return response.json();
-  } finally {
-    clearTimeout(timer);
+  const retries = Number.isInteger(options.retries) ? options.retries : SOURCE_RETRY_DELAYS_MS.length;
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': options.userAgent || 'KomerceShowcaseBuilder/3.5 (https://komerce.co)' },
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+      if (response.ok) return response.json();
+
+      const error = new Error(`${url} -> HTTP ${response.status}`);
+      error.status = response.status;
+      lastError = error;
+      if (!TRANSIENT_SOURCE_STATUS.has(response.status) || attempt === retries) throw error;
+
+      const retryAfter = Number(response.headers && response.headers.get && response.headers.get('retry-after'));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : SOURCE_RETRY_DELAYS_MS[Math.min(attempt, SOURCE_RETRY_DELAYS_MS.length - 1)];
+      console.warn(`[showcase:primary] source transitoire ${response.status} — retry ${attempt + 1}/${retries} dans ${delay}ms: ${url}`);
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(delay);
+    } catch (error) {
+      lastError = error;
+      const retryableNetworkError = error.name === 'AbortError' || error.status == null;
+      if (!retryableNetworkError || attempt === retries) throw error;
+      const delay = SOURCE_RETRY_DELAYS_MS[Math.min(attempt, SOURCE_RETRY_DELAYS_MS.length - 1)];
+      console.warn(`[showcase:primary] source réseau transitoire — retry ${attempt + 1}/${retries} dans ${delay}ms: ${url}`);
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(delay);
+    } finally {
+      clearTimeout(timer);
+    }
   }
+
+  throw lastError || new Error(`${url} -> source indisponible`);
 }
 
 async function safeFetchJson(label, url, options = {}) {
@@ -352,6 +385,8 @@ module.exports = {
   SOURCE_TIMEOUT_MS,
   OPEN_FOOD_LIMIT,
   MAKEUP_LIMIT,
+  SOURCE_RETRY_DELAYS_MS,
+  TRANSIENT_SOURCE_STATUS,
   MAKEUP_TYPES,
   OPEN_FOOD_CATEGORIES,
   httpsUrl,
