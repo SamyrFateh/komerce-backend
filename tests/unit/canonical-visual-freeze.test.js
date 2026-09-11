@@ -10,7 +10,6 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const CANONICAL = path.join(ROOT, 'public', 'dashboards', 'canonical');
 
 function read(relative) {
   return fs.readFileSync(path.join(ROOT, relative), 'utf8');
@@ -67,5 +66,19 @@ describe('canonical visual freeze v1', () => {
     expect(css).toContain('.kmc-ui-state.is-empty');
     expect(css).toContain('@media (max-width: 720px)');
     expect(css).not.toMatch(/\.is-(?:critical|warning|positive)\s*\{\s*display\s*:\s*none/);
+  });
+
+  test('Catalogue pays ne rend pas un deuxième sélecteur Market ID sous la navigation', () => {
+    const css = read('public/dashboards/canonical/css/visual-freeze-v1.css');
+    expect(css).toContain('body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-market-context-select)');
+    expect(css).toMatch(/#market-catalog-root[^\{]+\{\s*display:\s*none;/s);
+  });
+
+  test('les workspaces N2 ne rendent plus de faux retour vers un overview potentiellement interdit', () => {
+    const css = read('public/dashboards/canonical/css/visual-freeze-v1.css');
+    expect(css).toContain('.kmc-workspace-nav-link:first-child[href="/admin/operations"]');
+    expect(css).toContain('.kmc-workspace-nav-link:first-child[href="/admin/finance"]');
+    expect(css).toContain('.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/operations"])');
+    expect(css).toContain('.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/finance"])');
   });
 });
