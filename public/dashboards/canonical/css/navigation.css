@@ -1,4 +1,7 @@
-/* Canonical admin navigation — approved Atelier économique mock is the UI contract. */
+/* Canonical admin navigation — approved Atelier économique mock is the UI contract.
+ * NOTE 2026-09-11: this width treatment is transitional. The canonical target is
+ * the two-level navigation defined in docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md.
+ */
 .kmc-admin-navigation {
   position: sticky;
   top: 0;
@@ -11,17 +14,13 @@
 }
 
 .kmc-admin-navigation-inner {
-  /* Le shell admin possède désormais 10 entrées pour admin. La limite historique
-     à 1480px amputait les derniers onglets (Sourcing / Comptabilité) dès que le
-     sélecteur de marché occupait sa largeur réelle. On utilise donc la largeur
-     desktop disponible, puis on passe en deux lignes avant que le menu sature. */
   width: min(1840px, calc(100% - 32px));
   min-height: 64px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(14px, 1.2vw, 26px);
+  gap: clamp(12px, 1.3vw, 24px);
 }
 
 .kmc-admin-navigation-identity,
@@ -231,10 +230,6 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
   display: none;
 }
 
-/* Avec 10 onglets + Market ID + compte, une seule ligne devient fragile bien
-   avant 1180px (notamment avec le scaling Windows). On bascule volontairement
-   en deux lignes avant tout clipping : utilitaires en haut, navigation complète
-   en dessous. */
 @media (max-width: 1660px) {
   .kmc-admin-navigation-inner {
     grid-template-columns: auto minmax(0, 1fr);
@@ -257,7 +252,7 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 
 @media (max-width: 720px) {
   .kmc-admin-navigation-inner {
-    width: calc(100% - 20px);
+    width: min(100% - 20px, 1840px);
   }
 
   .kmc-admin-home-label { font-size: 14px; }
