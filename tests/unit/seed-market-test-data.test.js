@@ -34,10 +34,13 @@ const marketCommercialPrice = require('../../services/market-commercial-price-se
 const { projectAmount, roundToMinorUnit } = require('../../utils/currency');
 const {
   PRICE_SOURCE,
+  FLAG,
   DEFAULT_PRODUCT_COUNT,
   REQUIRED_CATEGORIES,
   marketTags,
   marketProfile,
+  isTruthy,
+  runtimeSeedGuard,
   isProductionRuntime,
   loadCuratedCatalog,
   validateCuratedCatalog,
@@ -66,6 +69,7 @@ beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
   delete process.env.NODE_ENV;
   delete process.env.KOMERCE_ENV;
+  delete process.env.MARKET_STAGING_SEED_ENABLED;
   process.exitCode = undefined;
 });
 
@@ -90,16 +94,93 @@ test('les profils de relais ne réutilisent pas le +269 hors Comores', () => {
   expect(marketProfile({ code: 'CG', name: 'Congo' }).phonePrefix).toBe('+242');
 });
 
-test('refuse production depuis NODE_ENV ou KOMERCE_ENV', () => {
+test('KOMERCE_ENV=staging prime NODE_ENV=production pour la vérité business du runtime', () => {
   process.env.NODE_ENV = 'production';
-  expect(isProductionRuntime()).toBe(true);
-
-  delete process.env.NODE_ENV;
-  process.env.KOMERCE_ENV = 'production';
-  expect(isProductionRuntime()).toBe(true);
-
   process.env.KOMERCE_ENV = 'staging';
+
   expect(isProductionRuntime()).toBe(false);
+  expect(runtimeSeedGuard()).toMatchObject({
+    env: 'staging',
+    source: 'KOMERCE_ENV',
+    optIn: false,
+    allowed: false,
+  });
+});
+
+test('fallback NODE_ENV=production reste fail-closed si KOMERCE_ENV est absent', () => {
+  process.env.NODE_ENV = 'production';
+
+  expect(isProductionRuntime()).toBe(true);
+  expect(runtimeSeedGuard()).toMatchObject({
+    env: 'production',
+    source: 'NODE_ENV',
+    allowed: false,
+  });
+});
+
+test('KOMERCE_ENV=production reste production même si NODE_ENV=test', () => {
+  process.env.NODE_ENV = 'test';
+  process.env.KOMERCE_ENV = 'production';
+
+  expect(isProductionRuntime()).toBe(true);
+  expect(runtimeSeedGuard()).toMatchObject({
+    env: 'production',
+    source: 'KOMERCE_ENV',
+    allowed: false,
+  });
+});
+
+test('écriture staging exige un opt-in explicite, le dry-run non', () => {
+  process.env.KOMERCE_ENV = 'staging';
+
+  expect(FLAG).toBe('MARKET_STAGING_SEED_ENABLED');
+  expect(isTruthy('true')).toBe(true);
+  expect(isTruthy('1')).toBe(true);
+  expect(runtimeSeedGuard()).toMatchObject({ env: 'staging', optIn: false, allowed: false });
+  expect(runtimeSeedGuard({ requireOptIn: false })).toMatchObject({ env: 'staging', optIn: false, allowed: true });
+
+  process.env[FLAG] = 'true';
+  expect(runtimeSeedGuard()).toMatchObject({ env: 'staging', optIn: true, allowed: true });
+});
+
+test('un opt-in ne permet jamais une écriture hors staging', () => {
+  process.env.KOMERCE_ENV = 'production';
+  process.env[FLAG] = 'true';
+  expect(runtimeSeedGuard()).toMatchObject({ env: 'production', optIn: true, allowed: false });
+
+  process.env.KOMERCE_ENV = 'development';
+  expect(runtimeSeedGuard()).toMatchObject({ env: 'development', optIn: true, allowed: false });
+});
+
+test('main refuse toute écriture staging sans opt-in avant la moindre lecture DB', async () => {
+  process.env.KOMERCE_ENV = 'staging';
+  const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+  await main(['node', 'seed-market-test-data.js', '--market', 'CM', '--orders', '1']);
+
+  expect(process.exitCode).toBe(1);
+  expect(db.query).not.toHaveBeenCalled();
+  expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/MARKET_STAGING_SEED_ENABLED=true/));
+  errorSpy.mockRestore();
+});
+
+test('main dry-run accepte staging sans opt-in et reste sans écriture', async () => {
+  process.env.NODE_ENV = 'production';
+  process.env.KOMERCE_ENV = 'staging';
+  db.query.mockResolvedValueOnce({
+    rows: [{ id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF', minor_unit: 0 }],
+  });
+  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+  await main(['node', 'seed-market-test-data.js', '--market', 'CM', '--orders', '1', '--dry-run']);
+
+  expect(process.exitCode).toBeUndefined();
+  expect(db.query).toHaveBeenCalledTimes(1);
+  expect(db.query.mock.calls[0][0]).toMatch(/SELECT id, code, name, currency, minor_unit FROM markets/);
+  expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/Aucune écriture effectuée/));
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
+  logSpy.mockRestore();
 });
 
 test('le catalogue curaté V2 agrège 40 produits et couvre les six rayons', () => {
@@ -319,12 +400,15 @@ test('cleanup CM préserve le catalogue global et retire seulement la projection
   expect(deleteRelaisParams).toEqual(['SEEDTEST CM relais', 'market-cm-id']);
 });
 
-test('--cleanup sans --market est refusé avant toute lecture DB', async () => {
+test('--cleanup sans --market est refusé avant toute lecture DB une fois le runtime/opt-in valides', async () => {
+  process.env.KOMERCE_ENV = 'staging';
+  process.env[FLAG] = 'true';
   const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
   await main(['node', 'seed-market-test-data.js', '--cleanup']);
 
   expect(process.exitCode).toBe(1);
   expect(db.query).not.toHaveBeenCalled();
+  expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/--market est requis/));
   errorSpy.mockRestore();
 });
