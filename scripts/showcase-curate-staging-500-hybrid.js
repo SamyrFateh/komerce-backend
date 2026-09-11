@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      staging fixture only; external enrichment failures never mutate DB
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -91,7 +91,7 @@ function acceptableCommonsPage(page) {
   const title = String(page && page.title || '');
   const info = page && page.imageinfo && page.imageinfo[0];
   if (!info || !String(info.mime || '').startsWith('image/')) return false;
-  if (!/^https:\/\//.test(String(info.thumburl || info.url || ''))) return false;
+  if (!/^https:\/\//.test(String(info.url || info.thumburl || ''))) return false;
   if (TITLE_BLOCKLIST.test(title)) return false;
   const width = Number(info.width) || 0;
   const height = Number(info.height) || 0;
@@ -106,7 +106,9 @@ function acceptableCommonsPage(page) {
 function mapCommonsPage(page, query, category, subcategory) {
   if (!acceptableCommonsPage(page)) return null;
   const info = page.imageinfo[0];
-  const url = info.thumburl || info.url;
+  // ImageKit fetches the original Wikimedia object reliably. `thumburl` can contain
+  // MediaWiki query parameters (`utm_*`, `thumbnail_unscaled`) that ImageKit rejects.
+  const url = info.url || info.thumburl;
   const meta = info.extmetadata || {};
   return {
     name: String(page.title || '').replace(/^File:/i, '').trim(),
