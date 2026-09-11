@@ -12,6 +12,7 @@ on:
       - routes/admin-operations-workspace.js
       - public/dashboards/canonical/js/market-team.js
       - migrations/212_market_delegation_execution_ceiling.sql
+      - tests/helpers/marketDelegationE2EKit.js
       - tests/unit/market-delegation-execution-capability.test.js
       - tests/unit/market-delegation-team-ui.test.js
       - tests/unit/admin-operations-workspace-route.test.js
