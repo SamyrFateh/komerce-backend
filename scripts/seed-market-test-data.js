@@ -16,12 +16,14 @@
  *   - le catalogue curaté doit passer un quality gate statique avant écriture ;
  *   - cleanup d'un marché ne supprime jamais le catalogue global ;
  *   - chaque produit exposé reçoit seulement un DRAFT_PENDING_GATE : aucun
- *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed.
+ *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed ;
+ *   - KOMERCE_ENV est la vérité business de runtime et prime NODE_ENV ;
+ *   - toute écriture exige MARKET_STAGING_SEED_ENABLED=true.
  *
  * Usage :
- *   node scripts/seed-market-test-data.js --market CM --orders 60
+ *   MARKET_STAGING_SEED_ENABLED=true node scripts/seed-market-test-data.js --market CM --orders 60
  *   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
- *   node scripts/seed-market-test-data.js --market CM --cleanup
+ *   MARKET_STAGING_SEED_ENABLED=true node scripts/seed-market-test-data.js --market CM --cleanup
  */
 
 'use strict';
@@ -32,9 +34,11 @@ const db = require('../db');
 const catalogExposure = require('../services/catalog-market-exposure-service');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const { projectAmount, roundToMinorUnit } = require('../utils/currency');
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 
 const TAG = 'SEEDTEST';
 const PRICE_SOURCE = 'staging_market_seed';
+const FLAG = 'MARKET_STAGING_SEED_ENABLED';
 const DEFAULT_PRODUCT_COUNT = 40;
 const CURATED_CATALOG_PATH = path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v1.json');
 const CURATED_CATALOG_PATHS = Object.freeze([
@@ -122,9 +126,23 @@ function randomInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
+function isTruthy(value) {
+  return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
+}
+
+function runtimeSeedGuard({ requireOptIn = true } = {}) {
+  const { env, source } = resolveRuntimeEnvironment();
+  const optIn = isTruthy(process.env[FLAG]);
+  return {
+    env,
+    source,
+    optIn,
+    allowed: env === 'staging' && (!requireOptIn || optIn),
+  };
+}
+
 function isProductionRuntime() {
-  return [process.env.NODE_ENV, process.env.KOMERCE_ENV]
-    .some(value => String(value || '').trim().toLowerCase() === 'production');
+  return resolveRuntimeEnvironment().env === 'production';
 }
 
 function loadCuratedCatalog(filePaths = CURATED_CATALOG_PATHS) {
@@ -510,8 +528,14 @@ async function main(argv = process.argv) {
     return;
   }
 
-  if (isProductionRuntime()) {
-    console.error('❌ Refusé : runtime production. Ce script est réservé aux environnements de test/staging.');
+  const guard = runtimeSeedGuard({ requireOptIn: !args.dryRun });
+  if (guard.env !== 'staging') {
+    console.error(`❌ Refusé : runtime ${guard.env || 'inconnu'} via ${guard.source}. Ce script exige KOMERCE_ENV=staging.`);
+    process.exitCode = 1;
+    return;
+  }
+  if (!args.dryRun && !guard.optIn) {
+    console.error(`❌ Refusé : ${FLAG}=true est requis pour toute écriture staging.`);
     process.exitCode = 1;
     return;
   }
@@ -583,14 +607,14 @@ async function main(argv = process.argv) {
   console.log(`[seed]    Panier moyen (lignes) : ${(totalLignes / args.orders).toFixed(2)}`);
   console.log(`[seed]    Mono-article : ${monoArticle}/${args.orders} (${((100 * monoArticle) / args.orders).toFixed(1)}%)`);
   console.log('[seed] Relance la requête panier-moyen-mono-article.sql pour la vue exacte incluant status/exclusions.');
-  console.log(`[seed] Pour nettoyer ${market.code} : node scripts/seed-market-test-data.js --market ${market.code} --cleanup`);
+  console.log(`[seed] Pour nettoyer ${market.code} : ${FLAG}=true node scripts/seed-market-test-data.js --market ${market.code} --cleanup`);
 }
 
 function __doc_usage() {
   return `Usage :
-  node scripts/seed-market-test-data.js --market CM --orders 60
+  ${FLAG}=true node scripts/seed-market-test-data.js --market CM --orders 60
   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
-  node scripts/seed-market-test-data.js --market CM --cleanup`;
+  ${FLAG}=true node scripts/seed-market-test-data.js --market CM --cleanup`;
 }
 
 if (require.main === module) {
@@ -608,6 +632,7 @@ if (require.main === module) {
 module.exports = {
   TAG,
   PRICE_SOURCE,
+  FLAG,
   DEFAULT_PRODUCT_COUNT,
   CURATED_CATALOG_PATH,
   CURATED_CATALOG_PATHS,
@@ -617,6 +642,8 @@ module.exports = {
   marketTags,
   marketProfile,
   parseArgs,
+  isTruthy,
+  runtimeSeedGuard,
   isProductionRuntime,
   loadCuratedCatalog,
   validateCuratedCatalog,
