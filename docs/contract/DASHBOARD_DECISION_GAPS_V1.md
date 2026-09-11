@@ -40,6 +40,28 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Priorités commerciales | `BACKEND_GAP` | pas de source canonique de priorisation |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` et warnings KPI |
 
+## Opérations overview
+
+| Information cible | Statut | Motif |
+|---|---|---|
+| Incidents critiques | `PROJECTABLE` | comptage pur des `signals` de sévérité `critical` / `urgent` |
+| Points d'attention | `PROJECTABLE` | comptage pur des `signals` de sévérité `warning` |
+| Cash à sécuriser | `BACKEND_GAP` | `paiements_en_attente` donne un nombre d'éléments, pas une exposition cash fiable |
+| Décisions terrain aujourd'hui | `BACKEND_GAP` | aucune projection canonique d'actions prioritaires |
+| Commandes prêtes | `BACKEND_GAP` | `cmds_aujourdhui` et `active_orders` ne prouvent pas un état « prêt » |
+| Colis en transit | `PROVEN` | KPI `colis_transit` |
+| Dossiers douane ouverts | `BACKEND_GAP` | absent du payload overview Operations actuel |
+| Relais actifs | `BACKEND_GAP` | `disponibles_relais` mesure des disponibilités, pas le nombre de relais actifs |
+| Taux de service réseau | `BACKEND_GAP` | `taux_collecte_relais` et `taux_completude_scans` sont des KPI distincts |
+| Cartes workspaces / flux | `PROJECTABLE` | regroupement de KPI existants sans calcul métier |
+| Qualité d'exécution réseau | `PROVEN` | `taux_completude_scans` et `taux_collecte_relais` |
+| Signaux opérationnels | `PROVEN` | collection `signals` |
+| File d'exécution | `PROVEN` | `active_orders`, ordre serveur conservé |
+| Frictions / retards critiques | `PROVEN` | `critical_delays` et KPI `retards_critiques` |
+| Workspaces autorisés | `PROVEN` | `OPERATIONS_SCHEMA.drill` filtré par les rôles existants |
+| Priorités terrain | `BACKEND_GAP` | aucune source canonique de priorisation ; l'UI conserve seulement l'ordre backend existant |
+| Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
+
 ## Lots suivants
 
-Les gaps Opérations, Finance, Hub/Relais, Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Finance, Hub/Relais, Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
