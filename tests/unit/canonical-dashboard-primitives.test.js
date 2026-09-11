@@ -9,9 +9,11 @@
 const fs = require('fs');
 const path = require('path');
 const { createPrimitives } = require('../../public/dashboards/canonical/js/primitives');
+const { createDecisionPrimitives } = require('../../public/dashboards/canonical/js/decision-primitives');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SOURCE = path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'primitives.js');
+const DECISION_SOURCE = path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'decision-primitives.js');
 
 function fakeDocument() {
   const doc = {
@@ -28,6 +30,7 @@ function fakeDocument() {
         name: '',
         type: '',
         placeholder: '',
+        style: {},
         appendChild(child) {
           this.children.push(child);
           return child;
@@ -157,5 +160,77 @@ describe('LOT 2A-CANON — primitives dashboard', () => {
     const built = ChartPanel.render(host, { title: 'Trajectoire' });
     expect(built.slot.attributes['data-chart-slot']).toBe('');
     expect(host.children[0].attributes['data-chart-panel']).toBe('');
+  });
+});
+
+describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
+  test('expose une grammaire visuelle fermée sans modifier les primitives V1', () => {
+    const ui = createDecisionPrimitives(fakeDocument());
+    expect(Object.keys(ui)).toEqual([
+      'DecisionStrip',
+      'SummaryCards',
+      'FlowStrip',
+      'ProgressCards',
+      'Funnel',
+      'RankedList',
+      'PriorityList',
+      'InfoList',
+      'TrustFooter',
+    ]);
+    expect(Object.isFrozen(ui)).toBe(true);
+  });
+
+  test('reste purement présentation : zéro API, legacy, fetch ou innerHTML', () => {
+    const source = fs.readFileSync(DECISION_SOURCE, 'utf8');
+    expect(source).not.toMatch(/\/api\//);
+    expect(source).not.toMatch(/dashboards\/admin(?:-legacy)?\//);
+    expect(source).not.toMatch(/\.innerHTML\b/);
+    expect(source).not.toMatch(/\bfetch\s*\(/);
+  });
+
+  test('DecisionStrip rend la valeur, la tonalité et le CTA fournis', () => {
+    const doc = fakeDocument();
+    const { DecisionStrip } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    DecisionStrip.render(host, {
+      items: [{ key: 'critical', label: 'Critiques', value: 7, tone: 'critical', href: '#alerts', actionLabel: 'Voir →' }],
+    });
+    const card = host.children[0].children[0];
+    expect(card.className).toContain('is-critical');
+    expect(card.attributes['data-decision-key']).toBe('critical');
+    expect(card.children[1].children[0].textContent).toBe('7');
+    expect(card.children[2].attributes.href).toBe('#alerts');
+  });
+
+  test('Funnel conserve les valeurs et pertes déjà calculées', () => {
+    const doc = fakeDocument();
+    const { Funnel } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    Funnel.render(host, { stages: [{ label: 'Créées', value: 100, rate: '100%' }, { label: 'Payées', value: 72, loss: '28 perdues' }] });
+    const flow = host.children[0];
+    expect(flow.children[0].children[1].textContent).toBe('100');
+    expect(flow.children[2].children[1].textContent).toBe('72');
+    expect(flow.children[2].children[2].textContent).toBe('28 perdues');
+  });
+
+  test('ProgressCards borne uniquement la largeur visuelle sans toucher à la valeur métier', () => {
+    const doc = fakeDocument();
+    const { ProgressCards } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    ProgressCards.render(host, { items: [{ label: 'Couverture', value: '118 %', percent: 118 }] });
+    const card = host.children[0].children[0];
+    expect(card.children[1].textContent).toBe('118 %');
+    expect(card.children[2].children[0].style.width).toBe('100%');
+  });
+
+  test('TrustFooter rend fraîcheur et périmètre sans les inventer', () => {
+    const doc = fakeDocument();
+    const { TrustFooter } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    TrustFooter.render(host, { stateLabel: 'Données à jour', scopeLabel: 'KM · Comores', generatedAt: '11/09/2026 18:00' });
+    const footer = host.children[0];
+    expect(footer.attributes['data-trust-footer']).toBe('');
+    expect(footer.children[0].children[1].textContent).toBe('Données à jour');
+    expect(footer.children[0].children[2].textContent).toBe('KM · Comores');
   });
 });
