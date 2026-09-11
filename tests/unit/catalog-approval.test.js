@@ -1,28 +1,32 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
 /**
- * Tests unitaires — K-4 file d'approbation (DOCTRINE_CATALOGUE.md §6, §5)
+ * Tests unitaires — K-4 file de curation / approbation catalogue.
  *
  * Verrouille :
- *   §6 — approve publie (is_active/quality_validated) + garde de sanité
- *        (validatePublicationUpdate) ; refuse un candidat déjà décidé ;
- *   reject — raison obligatoire, trace dans `alerts`, ne publie jamais ;
- *   override — pose les overrides (délégué à catalog-overrides.js) PUIS
- *              publie dans le même geste ; refuse un champ hors whitelist
- *              et un lot vide.
+ * - source native/IA/manuelle visible dans la file ;
+ * - première publication humaine ;
+ * - garde de sanité ;
+ * - cap CATALOG_CAP_MVP appliqué avant activation ;
+ * - reject tracé ;
+ * - override + publication atomique au niveau métier.
  */
 
 jest.mock('../../services/catalog-overrides', () => ({
   upsertOverrides: jest.fn(),
 }));
 
+jest.mock('../../utils/rules', () => ({
+  getRuleNumber: jest.fn(),
+}));
+
 const { upsertOverrides } = require('../../services/catalog-overrides');
+const { getRuleNumber } = require('../../utils/rules');
 const approval = require('../../services/catalog-approval');
 
 const PRODUCT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -43,39 +47,43 @@ function candidateRow(over = {}) {
   };
 }
 
-function mockDb({ product } = {}) {
+function mockDb({ product, activeCount = 3, queueCount = 3 } = {}) {
   const calls = [];
   const q = {
     query: jest.fn(async (sql, params) => {
       calls.push({ sql, params });
       if (sql.includes('SELECT * FROM products')) return { rows: product ? [product] : [] };
-      if (sql.includes('SELECT COUNT(*)')) return { rows: [{ count: 3 }] };
+      if (sql.includes('COUNT(*)::int AS count') && sql.includes('is_active = TRUE')) {
+        return { rows: [{ count: activeCount }] };
+      }
+      if (sql.includes('SELECT COUNT(*)')) return { rows: [{ count: queueCount }] };
       if (sql.includes('SELECT') && sql.includes('FROM products')) return { rows: product ? [product] : [] };
       if (sql.startsWith('UPDATE products')) return { rows: [{ ...product, ...paramsToPatch(sql, params) }] };
       if (sql.includes('INSERT INTO alerts')) return { rows: [] };
-      throw new Error(`SQL non mocké: ${sql.slice(0, 60)}`);
+      throw new Error(`SQL non mocké: ${sql.slice(0, 80)}`);
     }),
   };
   return { q, calls };
 }
 
-// Best-effort : ne sert qu'à faire avancer les assertions de haut niveau,
-// pas à revalider le SQL colonne par colonne (déjà fait ailleurs).
 function paramsToPatch() { return {}; }
 
 beforeEach(() => {
   upsertOverrides.mockReset();
+  getRuleNumber.mockReset();
+  getRuleNumber.mockResolvedValue(120);
 });
 
 describe('getApprovalQueue', () => {
-  it('filtre sur candidate/inactif/pipeline et retourne items + total', async () => {
-    const { q, calls } = mockDb({ product: candidateRow() });
+  it('filtre sur candidate/inactif et inclut les préparations manuelles', async () => {
+    const { q, calls } = mockDb({ product: candidateRow({ content_source: 'manual' }) });
     const result = await approval.getApprovalQueue(q, { limit: 10, offset: 0 });
     expect(calls[0].sql).toContain("lifecycle_status = 'candidate'");
     expect(calls[0].sql).toContain('is_active = FALSE');
-    expect(calls[0].sql).toContain("content_source IN ('connector_raw', 'ai_enriched')");
+    expect(calls[0].sql).toContain("content_source IN ('connector_raw', 'ai_enriched', 'manual')");
     expect(result.total).toBe(3);
     expect(result.items).toHaveLength(1);
+    expect(approval.PENDING_SOURCES).toContain('manual');
   });
 });
 
@@ -93,6 +101,16 @@ describe('approveProduct', () => {
     expect(body.code).toBe('not_pending');
   });
 
+  it('409 si la sélection a atteint CATALOG_CAP_MVP', async () => {
+    const { q, calls } = mockDb({ product: candidateRow(), activeCount: 120 });
+    const { status, body } = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+    expect(status).toBe(409);
+    expect(body.code).toBe('catalog_cap_reached');
+    expect(body.catalog_cap_mvp).toBe(120);
+    expect(body.published_products).toBe(120);
+    expect(calls.find(c => c.sql.startsWith('UPDATE products'))).toBeUndefined();
+  });
+
   it('422 si la fiche ne passe pas la garde de sanité (prix invalide)', async () => {
     const { q } = mockDb({ product: candidateRow({ price_kmf: 0 }) });
     const { status, body } = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
@@ -100,14 +118,16 @@ describe('approveProduct', () => {
     expect(body.code).toBe('invalid_price');
   });
 
-  it('200 : publie et valide la référence (is_active + quality_validated)', async () => {
-    const { q, calls } = mockDb({ product: candidateRow() });
+  it('200 : publie et valide la référence sous le cap', async () => {
+    const { q, calls } = mockDb({ product: candidateRow(), activeCount: 40 });
     const { status } = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
     expect(status).toBe(200);
+    expect(getRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
     const updateCall = calls.find(c => c.sql.startsWith('UPDATE products'));
     expect(updateCall.sql).toContain('is_active = TRUE');
     expect(updateCall.sql).toContain('quality_validated = TRUE');
     expect(updateCall.sql).toContain('needs_review = FALSE');
+    expect(updateCall.sql).toContain("lifecycle_status = 'candidate'");
   });
 });
 
@@ -147,6 +167,16 @@ describe('overrideAndApprove', () => {
     expect(upsertOverrides).not.toHaveBeenCalled();
   });
 
+  it('refuse avant override lorsque le cap est plein', async () => {
+    const { q } = mockDb({ product: candidateRow(), activeCount: 120 });
+    const { status, body } = await approval.overrideAndApprove(
+      q, PRODUCT_ID, { fields: { name: 'Nom corrigé' } }, { id: 'admin-1' }
+    );
+    expect(status).toBe(409);
+    expect(body.code).toBe('catalog_cap_reached');
+    expect(upsertOverrides).not.toHaveBeenCalled();
+  });
+
   it('422 si un champ hors whitelist (délégué à catalog-overrides.js)', async () => {
     const { q } = mockDb({ product: candidateRow() });
     const err = Object.assign(new Error('Champ non retouchable'), { code: 'OVERRIDE_FIELD_NOT_ALLOWED' });
@@ -159,7 +189,7 @@ describe('overrideAndApprove', () => {
   });
 
   it('200 : pose les overrides puis publie dans le même geste', async () => {
-    const { q, calls } = mockDb({ product: candidateRow() });
+    const { q, calls } = mockDb({ product: candidateRow(), activeCount: 40 });
     upsertOverrides.mockResolvedValue({
       overridden: ['name'],
       product: candidateRow({ name: 'Nom corrigé' }),
