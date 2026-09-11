@@ -38,9 +38,9 @@ describe('showcase-curate-staging-500-primary', () => {
     expect(httpsUrl('data:image/png;base64,abc')).toBeNull();
   });
 
-  test('borne les deux sources volumineuses', () => {
+  test('borne les deux sources volumineuses avec suffisamment de réserve pour 500 produits', () => {
     expect(OPEN_FOOD_LIMIT).toBe(220);
-    expect(MAKEUP_LIMIT).toBe(160);
+    expect(MAKEUP_LIMIT).toBe(240);
     expect(openFoodUrl('Snacks', 100)).toContain('page_size=100');
     expect(openFoodUrl('Snacks', 100)).toContain('fields=');
     expect(makeupUrl('lipstick')).toContain('product_type=lipstick');
