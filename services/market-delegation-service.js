@@ -207,6 +207,35 @@ async function activeMembershipCapabilities(executor, membershipId) {
   return rows.map(row => row.capability);
 }
 
+async function grantableCapabilitiesForActor(executor, { assignmentId, actorUserId = null, actorIsCentral = false }) {
+  const db = requireExecutor(executor);
+  const { rows: ceilingRows } = await db.query(
+    `SELECT acc.capability, registry.class, registry.status
+       FROM assignment_capability_ceiling acc
+       JOIN capability_registry registry ON registry.capability = acc.capability
+      WHERE acc.assignment_id=$1::uuid
+        AND acc.revoked_at IS NULL
+      ORDER BY acc.capability`,
+    [assignmentId]
+  );
+  if (actorIsCentral) {
+    return ceilingRows.filter(row => row.status === 'LIVE').map(row => row.capability);
+  }
+  const membership = await activeMembershipForUser(db, assignmentId, actorUserId);
+  if (!membership) {
+    const error = new Error('market_delegation_grantor_membership_required');
+    error.code = 'MARKET_DELEGATION_GRANTOR_MEMBERSHIP_REQUIRED';
+    throw error;
+  }
+  const actorCaps = new Set(await activeMembershipCapabilities(db, membership.id));
+  const canDelegateExecution = actorCaps.has('team.grant');
+  return ceilingRows
+    .filter(row => actorCaps.has(row.capability) || (
+      canDelegateExecution && row.class === 'EXECUTION' && row.status === 'LIVE'
+    ))
+    .map(row => row.capability);
+}
+
 // Porte d'entrée générique de toute route market-delegation : résout le
 // marché → l'assignment ACTIVE → la membership de l'appelant → vérifie que la
 // capability requise est à la fois détenue par le membre et toujours dans le
@@ -258,11 +287,15 @@ async function assertGrantAllowed(db, { assignmentId, capabilities, actorUserId 
   if (!requested.length) return { requested, grantorMembership: null };
 
   const { rows: ceilingRows } = await db.query(
-    `SELECT capability FROM assignment_capability_ceiling
-      WHERE assignment_id=$1::uuid AND revoked_at IS NULL AND capability = ANY($2::text[])`,
+    `SELECT acc.capability, registry.class, registry.status
+       FROM assignment_capability_ceiling acc
+       JOIN capability_registry registry ON registry.capability = acc.capability
+      WHERE acc.assignment_id=$1::uuid
+        AND acc.revoked_at IS NULL
+        AND acc.capability = ANY($2::text[])`,
     [assignmentId, requested]
   );
-  const ceiling = new Set(ceilingRows.map(row => row.capability));
+  const ceiling = new Map(ceilingRows.map(row => [row.capability, row]));
   const aboveCeiling = requested.filter(capability => !ceiling.has(capability));
   if (aboveCeiling.length) {
     const error = new Error(`market_delegation_capability_above_ceiling:${aboveCeiling.join(',')}`);
@@ -279,7 +312,12 @@ async function assertGrantAllowed(db, { assignmentId, capabilities, actorUserId 
     throw error;
   }
   const grantorCaps = new Set(await activeMembershipCapabilities(db, grantorMembership.id));
-  const forbidden = requested.filter(capability => !grantorCaps.has(capability));
+  const canDelegateExecution = grantorCaps.has('team.grant');
+  const forbidden = requested.filter(capability => {
+    if (grantorCaps.has(capability)) return false;
+    const meta = ceiling.get(capability);
+    return !(canDelegateExecution && meta && meta.class === 'EXECUTION' && meta.status === 'LIVE');
+  });
   if (forbidden.length) {
     const error = new Error(`market_delegation_grant_exceeds_grantor:${forbidden.join(',')}`);
     error.code = 'MARKET_DELEGATION_GRANT_EXCEEDS_GRANTOR';
@@ -489,6 +527,7 @@ module.exports = {
   replaceCeiling,
   activeMembershipForUser,
   activeMembershipCapabilities,
+  grantableCapabilitiesForActor,
   assertGrantAllowed,
   addMembership,
   grantMembershipCapabilities,

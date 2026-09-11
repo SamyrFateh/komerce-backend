@@ -42,8 +42,22 @@ function bearer(userId, role = 'client') {
 }
 
 async function ensureCapabilityRegistry(db, cleanup) {
+  // Le snapshot Railway utilisé par les E2E porte le schéma du registre mais
+  // pas nécessairement ses lignes de référence : les migrations historiques
+  // déjà baselinées ne sont alors pas rejouées. Le fixture doit donc restaurer
+  // la vérité exécutable complète du registre MARKET/LIVE, pas seulement les
+  // capabilities DELEGATION dont il se sert pour fabriquer un manager.
+  const registryCapabilities = CAPABILITIES.filter((entry) =>
+    entry.status === 'LIVE' &&
+    entry.authority_scope === 'MARKET' &&
+    entry.delegation_mode === 'DELEGABLE'
+  );
+  const delegationCapabilities = registryCapabilities
+    .filter((entry) => entry.class === 'DELEGATION')
+    .map((entry) => entry.capability);
+
   const inserted = [];
-  for (const row of CAPABILITIES.filter((entry) => entry.class === 'DELEGATION' && entry.status === 'LIVE')) {
+  for (const row of registryCapabilities) {
     const { rows } = await db.query(
       `INSERT INTO capability_registry
         (capability, class, domain, authority_scope, delegation_mode, requires_audit, status)
@@ -55,7 +69,11 @@ async function ensureCapabilityRegistry(db, cleanup) {
     if (rows[0]) inserted.push(rows[0].capability);
   }
   for (const capability of inserted) cleanup.track('capability_registry', 'capability', capability);
-  return CAPABILITIES.filter((entry) => entry.class === 'DELEGATION' && entry.status === 'LIVE').map((entry) => entry.capability);
+
+  // Important : créer un fixture manager ne lui donne toujours que les droits
+  // DELEGATION. Les EXECUTION ne rentrent dans le ceiling qu'au travers de la
+  // migration/du lifecycle qui les ouvre, et ne sont jamais auto-grantées.
+  return delegationCapabilities;
 }
 
 async function ensureFixedCurrencyParities(db, cleanup) {

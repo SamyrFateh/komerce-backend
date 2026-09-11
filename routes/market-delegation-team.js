@@ -27,6 +27,7 @@ const { projectAssignment } = require('../services/market-scope-projector');
 const {
   resolveAuthorization,
   listTeam,
+  grantableCapabilitiesForActor,
   inviteTeamMember,
   acceptInvitation,
   replaceTeamMemberCapabilities,
@@ -82,7 +83,12 @@ router.get('/markets/:marketCode/team', authenticate, async (req, res, next) => 
     const result = await withTransaction(async (client) => {
       const authz = await authorization(client, req, 'team.read');
       const team = await listTeam(client, { assignmentId: authz.assignment_id });
-      return { authz, team };
+      const grantable = await grantableCapabilitiesForActor(client, {
+        assignmentId: authz.assignment_id,
+        actorUserId: req.user.id,
+        actorIsCentral: false,
+      });
+      return { authz, team, grantable };
     });
     res.json({
       market: {
@@ -93,6 +99,7 @@ router.get('/markets/:marketCode/team', authenticate, async (req, res, next) => 
       assignment_id: result.authz.assignment_id,
       actor_membership_id: result.authz.membership_id,
       actor_capabilities: result.authz.capabilities,
+      actor_grantable_capabilities: result.grantable,
       ...result.team,
     });
   } catch (error) {

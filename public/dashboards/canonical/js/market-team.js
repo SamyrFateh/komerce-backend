@@ -45,6 +45,13 @@
     'finance.act': 'Demander un règlement',
     'settlement.receive': 'Confirmer la réception d’un règlement',
     'cash_control.policy.manage': 'Gérer le contrôle des encaissements',
+    'execution.order.mark_ordered': 'Envoyer une commande au sourcing',
+    'execution.distribution.run': 'Lancer la répartition',
+    'execution.parcel.ship': 'Expédier un colis',
+    'execution.inventory.assign': 'Affecter l’inventaire à un colis',
+    'execution.parcel.receive': 'Réceptionner un colis au relais',
+    'execution.parcel.collect': 'Remettre un colis au client',
+    'execution.cash.confirm': 'Confirmer un encaissement terrain',
   });
 
   const READ_PRESET = Object.freeze([
@@ -56,6 +63,17 @@
     'network.read',
     'market_config.read',
     'finance.read',
+  ]);
+
+  const TERRAIN_PRESET = Object.freeze([
+    'operations.read',
+    'execution.order.mark_ordered',
+    'execution.distribution.run',
+    'execution.parcel.ship',
+    'execution.inventory.assign',
+    'execution.parcel.receive',
+    'execution.parcel.collect',
+    'execution.cash.confirm',
   ]);
 
   let mounting = false;
@@ -136,18 +154,21 @@
     return grid;
   }
 
-  function presetControls(checklist, available) {
+  function presetControls(checklist, available, actorCapabilities = []) {
     const wrap = el('div', 'kmc-team-presets');
     const read = el('button', 'kmc-workspace-action is-secondary', 'Preset lecture');
     read.type = 'button';
     read.addEventListener('click', () => setChecked(checklist, READ_PRESET.filter(cap => available.includes(cap))));
+    const terrain = el('button', 'kmc-workspace-action is-secondary', 'Preset terrain');
+    terrain.type = 'button';
+    terrain.addEventListener('click', () => setChecked(checklist, TERRAIN_PRESET.filter(cap => available.includes(cap))));
     const same = el('button', 'kmc-workspace-action is-secondary', 'Même périmètre que moi');
     same.type = 'button';
-    same.addEventListener('click', () => setChecked(checklist, available));
+    same.addEventListener('click', () => setChecked(checklist, actorCapabilities.filter(cap => available.includes(cap))));
     const none = el('button', 'kmc-workspace-action is-secondary', 'Tout décocher');
     none.type = 'button';
     none.addEventListener('click', () => setChecked(checklist, []));
-    wrap.append(read, same, none);
+    wrap.append(read, terrain, same, none);
     return wrap;
   }
 
@@ -161,7 +182,7 @@
     if (!team.actor_capabilities.includes('team.invite')) return null;
     const card = el('article', 'kmc-team-invite');
     card.appendChild(el('strong', '', 'Inviter un collaborateur'));
-    card.appendChild(el('p', 'kmc-team-help', 'Choisissez uniquement les droits nécessaires. Le serveur refuse tout droit que vous ne possédez pas vous-même.'));
+    card.appendChild(el('p', 'kmc-team-help', 'Choisissez uniquement les droits nécessaires. Les actions terrain sont délégables explicitement par team.grant et ne deviennent jamais vos propres droits d’exécution.'));
 
     const row = el('div', 'kmc-team-form-row');
     const email = global.document.createElement('input');
@@ -172,9 +193,9 @@
     row.appendChild(email);
     card.appendChild(row);
 
-    const available = [...team.actor_capabilities].sort();
+    const available = [...(team.actor_grantable_capabilities || team.actor_capabilities)].sort();
     const checklist = capabilityChecklist(available, READ_PRESET.filter(cap => available.includes(cap)));
-    card.appendChild(presetControls(checklist, available));
+    card.appendChild(presetControls(checklist, available, team.actor_capabilities));
     card.appendChild(checklist);
 
     const submit = el('button', 'kmc-workspace-action', 'Inviter');
@@ -273,9 +294,9 @@
       summary.textContent = 'Modifier les droits';
       details.appendChild(summary);
       const editor = el('div', 'kmc-team-member-editor');
-      const available = [...team.actor_capabilities].sort();
+      const available = [...(team.actor_grantable_capabilities || team.actor_capabilities)].sort();
       const checklist = capabilityChecklist(available, member.capabilities || []);
-      editor.appendChild(presetControls(checklist, available));
+      editor.appendChild(presetControls(checklist, available, team.actor_capabilities));
       editor.appendChild(checklist);
       const save = el('button', 'kmc-workspace-action', 'Enregistrer les droits');
       save.type = 'button';
