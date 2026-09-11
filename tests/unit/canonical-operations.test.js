@@ -9,6 +9,7 @@
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const operations = require('../../public/dashboards/canonical/js/operations');
+const operationsDecision = require('../../public/dashboards/canonical/js/operations-decision');
 
 function payloadFixture() {
   return {
@@ -72,6 +73,34 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       title: 'Colis bloqué',
       message: 'Bloqué depuis plusieurs jours · Vérifier le suivi',
     });
+  });
+
+  test('la couche decision-first Operations reste limitée aux faits prouvés', () => {
+    const payload = payloadFixture();
+    const decisions = operationsDecision.decisionItems(payload, operations);
+
+    expect(decisions.map(item => item.label)).toEqual([
+      'Incidents critiques',
+      'Retards critiques',
+      'Paiements en attente',
+    ]);
+    expect(decisions.some(item => /cash|décisions terrain|dossiers douane|relais actifs/i.test(item.label))).toBe(false);
+
+    expect(operationsDecision.workspaceSummary(payload, operations)).toHaveLength(4);
+    expect(operationsDecision.networkProgress(payload, operations)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Complétude scans', value: '92 %', percent: 92 }),
+      expect.objectContaining({ label: 'Collecte relais', value: '80 %', percent: 80 }),
+    ]));
+    expect(operationsDecision.priorityOrders(payload, operations)[0]).toEqual(expect.objectContaining({
+      title: 'CMD-1',
+      priority: '30 h',
+    }));
+    expect(operationsDecision.delayItems(payload, operations)[0]).toEqual(expect.objectContaining({
+      title: 'TRK-1',
+      value: '23 j',
+      tone: 'critical',
+    }));
+    expect(operationsDecision.drillCards(operations, { role: 'admin' })).toHaveLength(2);
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
