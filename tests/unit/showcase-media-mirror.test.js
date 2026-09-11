@@ -18,13 +18,20 @@ const {
 } = require('../../scripts/showcase-media-mirror');
 
 describe('showcase-media-mirror', () => {
-  test('vise 500 produits et Cloudinary par défaut, provider surchargeable', () => {
-    expect(parseArgs([]).target).toBe(500);
-    expect(parseArgs([]).mediaProvider).toBe('cloudinary');
-    expect(parseArgs(['--target', '750', '--media-provider', 'imagekit'])).toMatchObject({
-      target: 750,
-      mediaProvider: 'imagekit',
-    });
+  test('vise 500 produits et ImageKit par défaut, Cloudinary reste surcharge explicite', () => {
+    const previous = process.env.SHOWCASE_MEDIA_PROVIDER;
+    delete process.env.SHOWCASE_MEDIA_PROVIDER;
+    try {
+      expect(parseArgs([]).target).toBe(500);
+      expect(parseArgs([]).mediaProvider).toBe('imagekit');
+      expect(parseArgs(['--target', '750', '--media-provider', 'cloudinary'])).toMatchObject({
+        target: 750,
+        mediaProvider: 'cloudinary',
+      });
+    } finally {
+      if (previous === undefined) delete process.env.SHOWCASE_MEDIA_PROVIDER;
+      else process.env.SHOWCASE_MEDIA_PROVIDER = previous;
+    }
   });
 
   test('identifie uniquement les médias Wikimedia à bufferiser localement', () => {
