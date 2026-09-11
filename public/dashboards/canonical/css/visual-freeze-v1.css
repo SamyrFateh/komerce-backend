@@ -76,6 +76,18 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   display: none;
 }
 
+/* Les espaces N2 portent déjà le retour vers leur vue d'ensemble. Les anciens
+   liens de header sont redondants pour admin/market_operator et peuvent mener
+   vers un 403 pour les rôles terrain qui n'ont pas accès à l'overview. */
+.kmc-workspace-nav-link:first-child[href="/admin/operations"],
+.kmc-workspace-nav-link:first-child[href="/admin/finance"] {
+  display: none;
+}
+.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/operations"]),
+.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/finance"]) {
+  display: none;
+}
+
 .kmc-admin-navigation {
   background: var(--kmc-freeze-nav);
   border-bottom-color: rgb(255 255 255 / 0.07);
