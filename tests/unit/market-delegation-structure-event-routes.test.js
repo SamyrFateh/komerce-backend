@@ -23,6 +23,10 @@ describe('market-delegation structure-event routes', () => {
     expect(routeSource).not.toMatch(/req\.user\.role\s*===\s*['"]market_operator/);
   });
 
+  test('POST est enveloppé dans withTransaction : writer + audit partagent le même client', () => {
+    expect(routeSource).toMatch(/withTransaction\(client\s*=>\s*recordStructureEvent\(client/);
+  });
+
   test('no DELETE, no PUT — append-only, corrections go through recordStructureEvent as new events', () => {
     expect(routeSource).not.toMatch(/router\.delete/);
     expect(routeSource).not.toMatch(/router\.put/);

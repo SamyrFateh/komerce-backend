@@ -75,17 +75,16 @@ router.get('/markets/:marketCode/structure-events', authenticate, async (req, re
   }
 });
 
-// recordStructureEvent gère sa propre transaction via le writer canonique
-// (economic-engine) — pas de withTransaction ici, l'audit market-delegation
-// est un second appel distinct après succès. Voir la doc du service.
+// Une seule transaction englobe autorisation, writer economic-engine et audit.
+// Un échec d'audit rollbacke donc également le fait structurel append-only.
 router.post('/markets/:marketCode/structure-events', authenticate, async (req, res, next) => {
   try {
-    const event = await recordStructureEvent(db, {
+    const event = await withTransaction(client => recordStructureEvent(client, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
       correlationId: correlationId(req),
       payload: req.body || {},
-    });
+    }));
     res.status(201).json({ success: true, event });
   } catch (error) {
     if (sendDelegationError(res, error)) return;

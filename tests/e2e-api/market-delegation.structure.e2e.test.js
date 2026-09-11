@@ -180,7 +180,37 @@ describeE2E('E2E-MA-04 — market-delegation · structure MARKET_DIRECT', ({ db 
     expect(listBAsA.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
   });
 
-  it('5 — même un SQL direct ordinaire ne peut réécrire ni supprimer l’historique', async () => {
+  it('5 — si l’audit échoue, le fait économique est rollbacké dans la même transaction', async () => {
+    const correlation = 'e2e-ma-04-force-audit-fail';
+    const evidence = 'E2E-ATOMIC-ROLLBACK';
+    const constraintName = `e2e_audit_fail_${uuid().replace(/-/g, '')}`;
+
+    await db.query(
+      `ALTER TABLE market_delegation_audit
+         ADD CONSTRAINT "${constraintName}"
+         CHECK (correlation_id IS DISTINCT FROM '${correlation}') NOT VALID`
+    );
+    try {
+      const res = await request(app)
+        .post(`/api/market-delegation/markets/${fx.marketA.code}/structure-events`)
+        .set('Authorization', fx.managerA.token)
+        .set('x-correlation-id', correlation)
+        .send(accrual({ evidence_ref: evidence }));
+
+      expect(res.status).toBe(500);
+      const persisted = await db.query(
+        `SELECT COUNT(*)::int AS n
+           FROM economic_structure_cost_events
+          WHERE charge_id=$1 AND evidence_ref=$2`,
+        [chargeId, evidence]
+      );
+      expect(persisted.rows[0].n).toBe(0);
+    } finally {
+      await db.query(`ALTER TABLE market_delegation_audit DROP CONSTRAINT IF EXISTS "${constraintName}"`);
+    }
+  });
+
+  it('6 — même un SQL direct ordinaire ne peut réécrire ni supprimer l’historique', async () => {
     await expect(db.query(
       'UPDATE economic_structure_cost_events SET notes=$2 WHERE id=$1',
       [eventIds[0], 'Mutation interdite']

@@ -56,12 +56,10 @@ async function listStructureEvents(executor, { marketCode, actorUserId, chargeId
  * coïncidence : un scope_kind=GROUP ou un market_id envoyé est un refus
  * explicite, jamais une correction silencieuse.
  *
- * recordStructureCostEvent() gère sa propre transaction (BEGIN/COMMIT
- * internes via db.getClient()) — pas un executor injectable. L'audit
- * market-delegation est donc un second appel, après succès du premier :
- * deux écritures atomiques distinctes, pas une transaction unique combinée.
- * Documenté ici plutôt que de modifier la signature du writer canonique
- * (economic-engine, lifecycle owner).
+ * Le writer canonique accepte ici l'executor transactionnel du caller.
+ * Le fait économique et market_delegation_audit utilisent donc exactement
+ * la même transaction : si l'audit échoue, le fait est rollbacké.
+ * economic-engine reste lifecycle owner et seul writer de la table métier.
  */
 async function recordStructureEvent(executor, { marketCode, actorUserId, correlationId = null, payload = {} }) {
   const db = requireExecutor(executor);
@@ -79,13 +77,14 @@ async function recordStructureEvent(executor, { marketCode, actorUserId, correla
   try {
     event = await pricingPeriodStructure.recordStructureCostEvent(
       { ...payload, scope_kind: pricingPeriodStructure.SCOPE_KINDS.MARKET_DIRECT, market_id: authz.market_id },
-      actorUserId
+      actorUserId,
+      { executor: db }
     );
   } catch (error) {
     throw translateStructureEventError(error);
   }
 
-  // Second appel, transaction distincte — voir doc ci-dessus.
+  // Même executor transactionnel que le writer : vérité + preuve sont atomiques.
   await audit(db, {
     actorUserId, assignmentId: authz.assignment_id, membershipId: authz.membership_id,
     capability: 'structure.event.record', action: 'STRUCTURE_EVENT_RECORDED',

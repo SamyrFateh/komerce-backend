@@ -160,6 +160,21 @@ describe('pricing-period-structure — enregistrement append-only', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
+  test('réutilise un executor injecté sans ouvrir ni fermer une seconde transaction', async () => {
+    const injected = { query: jest.fn() };
+    injected.query
+      .mockResolvedValueOnce({ rows: [chargeRow()] })
+      .mockResolvedValueOnce({ rows: [{ id: 'event-atomic', ...baseInput(), recorded_by: 'actor-1' }] });
+
+    const result = await recordStructureCostEvent(baseInput(), 'actor-1', { executor: injected });
+
+    expect(result.id).toBe('event-atomic');
+    expect(db.getClient).not.toHaveBeenCalled();
+    expect(injected.query).toHaveBeenCalledTimes(2);
+    expect(injected.query.mock.calls.map(([sql]) => String(sql).trim())).not.toContain('BEGIN');
+    expect(injected.query.mock.calls.map(([sql]) => String(sql).trim())).not.toContain('COMMIT');
+  });
+
   test('MARKET_DIRECT vérifie que le marché existe et est actif', async () => {
     const client = mockClient();
     const input = baseInput({
