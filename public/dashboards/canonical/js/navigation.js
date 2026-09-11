@@ -30,7 +30,10 @@
     Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage', roles: Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) }),
     Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: Object.freeze(['admin', 'market_operator']) }),
     Object.freeze({ id: 'catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: Object.freeze(['admin', 'market_operator']) }),
-    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
+    // Commandes partage aujourd'hui la source canonique Commerce, mais possède
+    // sa représentation métier dédiée. Le query `view=orders` ne change ni
+    // endpoint ni scope : il sélectionne uniquement la projection UI.
+    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce?view=orders', roles: Object.freeze(['admin', 'market_operator']) }),
     Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/access.html', roles: Object.freeze(['admin', 'market_operator']) }),
     Object.freeze({
       id: 'operations',
@@ -135,8 +138,8 @@
 
   const BACK_TARGETS = Object.freeze({
     'action-center': '/admin/pilotage',
-    'order-360': '/admin/commerce',
-    'client-index': '/admin/commerce',
+    'order-360': '/admin/commerce?view=orders',
+    'client-index': '/admin/commerce?view=orders',
     'client-360': '/admin/clients',
     'product-360': '/admin/workspaces/catalog',
     demo: '/admin/pilotage',
