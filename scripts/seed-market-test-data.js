@@ -35,9 +35,14 @@ const { projectAmount, roundToMinorUnit } = require('../utils/currency');
 
 const TAG = 'SEEDTEST';
 const PRICE_SOURCE = 'staging_market_seed';
-const DEFAULT_PRODUCT_COUNT = 15;
+const DEFAULT_PRODUCT_COUNT = 40;
 const CURATED_CATALOG_PATH = path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v1.json');
-const REQUIRED_CATEGORIES = Object.freeze(['Beauté', 'Mode', 'Tech', 'Maison', 'Sport']);
+const CURATED_CATALOG_PATHS = Object.freeze([
+  CURATED_CATALOG_PATH,
+  path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v2-additions.json'),
+]);
+const REQUIRED_CATEGORIES = Object.freeze(['Beauté', 'Mode', 'Tech', 'Maison', 'Sport', 'Enfant']);
+const COMMONS_LICENSES = new Set(['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-3.0']);
 
 const MARKET_TEST_PROFILES = Object.freeze({
   KM: Object.freeze({ phonePrefix: '+269', area: 'Ngazidja' }),
@@ -122,9 +127,15 @@ function isProductionRuntime() {
     .some(value => String(value || '').trim().toLowerCase() === 'production');
 }
 
-function loadCuratedCatalog(filePath = CURATED_CATALOG_PATH) {
-  if (!fs.existsSync(filePath)) throw new Error(`Catalogue curaté absent: ${filePath}`);
-  const catalog = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+function loadCuratedCatalog(filePaths = CURATED_CATALOG_PATHS) {
+  const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+  const catalog = [];
+  for (const filePath of paths) {
+    if (!fs.existsSync(filePath)) throw new Error(`Catalogue curaté absent: ${filePath}`);
+    const rows = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!Array.isArray(rows)) throw new Error(`Catalogue curaté invalide: ${filePath}`);
+    catalog.push(...rows);
+  }
   validateCuratedCatalog(catalog);
   return catalog;
 }
@@ -175,9 +186,23 @@ function validateCuratedCatalog(catalog) {
       throw new Error(`${label}: stock doit être un entier >= 0`);
     }
     if (!product.curated) throw new Error(`${label}: curated=true requis`);
-    if (!/^dummyjson:\d+$/.test(source)) throw new Error(`${label}: source traçable requise`);
+
+    const dummySource = /^dummyjson:\d+$/.test(source);
+    const commonsSource = /^commons:[^\s]+$/i.test(source);
+    if (!dummySource && !commonsSource) throw new Error(`${label}: source traçable requise`);
     if (sources.has(source)) throw new Error(`${label}: source dupliquée ${source}`);
     sources.add(source);
+
+    if (commonsSource) {
+      const sourceUrl = String(product.source_url || '').trim();
+      const sourceAuthor = String(product.source_author || '').trim();
+      const license = String(product.license || '').trim();
+      if (!/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/i.test(sourceUrl)) {
+        throw new Error(`${label}: page source Commons requise`);
+      }
+      if (!sourceAuthor) throw new Error(`${label}: auteur Commons requis`);
+      if (!COMMONS_LICENSES.has(license)) throw new Error(`${label}: licence Commons non autorisée`);
+    }
 
     try {
       const hero = new URL(imageUrl);
@@ -585,6 +610,7 @@ module.exports = {
   PRICE_SOURCE,
   DEFAULT_PRODUCT_COUNT,
   CURATED_CATALOG_PATH,
+  CURATED_CATALOG_PATHS,
   REQUIRED_CATEGORIES,
   MARKET_TEST_PROFILES,
   normalizeMarketCode,
