@@ -181,7 +181,7 @@ function economicFixtureForProduct(product = {}) {
 
   const syntheticRatioPct = stableInt(`${ref}:purchase-ratio-v1`, ratioMin, ratioMax);
   const costKmf = Number.isFinite(providedCost) && providedCost > 0
-    ? roundKmf(providedCost)
+    ? Math.round(providedCost)
     : roundKmf(price * syntheticRatioPct / 100);
   const [minGrams, maxGrams] = CATEGORY_WEIGHT_GRAMS[product.category] || [150, 3000];
   const weightKg = Number.isFinite(providedWeight) && providedWeight > 0
