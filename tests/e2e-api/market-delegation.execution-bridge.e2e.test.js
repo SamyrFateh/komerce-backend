@@ -25,6 +25,15 @@ describeE2E('E2E-MA-EXEC — délégation terrain explicite', ({ db }) => {
 
   afterAll(async () => {
     if (fx) {
+      // Cette membership est créée dynamiquement par l'API pendant le scénario,
+      // donc elle n'appartient pas au registre initial du cleanup fixture.
+      // On retire d'abord son grant puis sa membership : le trigger DB peut
+      // ensuite supprimer/cascader le ceiling sans jamais contourner l'invariant
+      // "pas de retrait de ceiling avec grant membre actif".
+      if (terrainMembershipId) {
+        await db.query('DELETE FROM membership_capabilities WHERE membership_id=$1', [terrainMembershipId]);
+        await db.query('DELETE FROM assignment_memberships WHERE id=$1', [terrainMembershipId]);
+      }
       await db.query("DELETE FROM market_delegation_audit WHERE assignment_id IN ($1,$2)", [fx.assignmentA.id, fx.assignmentB.id]);
       await fx.cleanup.run();
     }
