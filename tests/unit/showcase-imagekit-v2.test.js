@@ -16,6 +16,7 @@ const {
   parseArgs,
   productFolder,
   uploadSlot,
+  uploadSourceImage,
   mirrorProduct,
 } = require('../../scripts/showcase-imagekit-v2');
 const { staticAudit } = require('../../scripts/showcase-media-audit');
@@ -85,6 +86,41 @@ describe('showcase-imagekit-v2', () => {
     });
     expect(mirrored.image_url).toBe('https://ik.imagekit.io/demo/komerce/staging/showcase-v2/kpr-990040/hero.jpg');
     expect(mirrored.images).toHaveLength(2);
+  });
+
+  test('fallback Wikimedia: remote fetch ImageKit refusé puis upload Blob local', async () => {
+    const sourceUrl = 'https://upload.wikimedia.org/wikipedia/commons/9/93/example.jpg';
+    const blob = new Blob([new Uint8Array(128)], { type: 'image/jpeg' });
+    const uploader = jest.fn()
+      .mockRejectedValueOnce(new Error('ImageKit upload failed (400): remote fetch refused'))
+      .mockResolvedValueOnce('https://ik.imagekit.io/demo/komerce/staging/showcase-v2/kpr-990040/hero.jpg');
+    const downloader = jest.fn(async () => ({ blob, filename: 'example.jpg', bytes: 128, type: 'image/jpeg' }));
+
+    const hosted = await uploadSourceImage(sourceUrl, {
+      folder: 'komerce/staging/showcase-v2/kpr-990040',
+      publicId: 'hero',
+    }, { uploader, downloader });
+
+    expect(downloader).toHaveBeenCalledWith(sourceUrl);
+    expect(uploader).toHaveBeenCalledTimes(2);
+    expect(uploader.mock.calls[0][0]).toBe(sourceUrl);
+    expect(uploader.mock.calls[1][0]).toBe(blob);
+    expect(uploader.mock.calls[1][1]).toMatchObject({
+      folder: 'komerce/staging/showcase-v2/kpr-990040',
+      publicId: 'hero',
+      filename: 'example.jpg',
+    });
+    expect(hosted).toContain('ik.imagekit.io');
+  });
+
+  test('un échec non-Wikimedia reste fatal sans masquer la source', async () => {
+    const uploader = jest.fn().mockRejectedValue(new Error('remote source failed'));
+    const downloader = jest.fn();
+    await expect(uploadSourceImage('https://source.example.test/hero.jpg', {
+      folder: 'komerce/staging/showcase-v2/kpr-990040',
+      publicId: 'hero',
+    }, { uploader, downloader })).rejects.toThrow('remote source failed');
+    expect(downloader).not.toHaveBeenCalled();
   });
 
   test('l’audit ImageKit refuse un manifeste qui mélange encore Cloudinary', () => {

@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      curated staging fixtures only; media proof precedes DB mutation
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -26,7 +26,11 @@ const {
   resolveTarget,
   normalizeImages,
 } = require('./showcase-catalog');
-const { uploadImageKitFile } = require('./showcase-media-mirror');
+const {
+  uploadImageKitFile,
+  downloadWikimediaMedia,
+  isWikimediaMediaUrl,
+} = require('./showcase-media-mirror');
 const { audit: auditMedia } = require('./showcase-media-audit');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -88,7 +92,25 @@ function uploadSlot(index) {
   return index === 0 ? 'hero' : `gallery-${String(index).padStart(2, '0')}`;
 }
 
-async function mirrorProduct(product, uploader = uploadImageKitFile) {
+async function uploadSourceImage(
+  sourceUrl,
+  uploadOptions,
+  { uploader = uploadImageKitFile, downloader = downloadWikimediaMedia } = {},
+) {
+  try {
+    return await uploader(sourceUrl, { ...uploadOptions, filename: sourceUrl });
+  } catch (error) {
+    if (!isWikimediaMediaUrl(sourceUrl)) throw error;
+    console.warn(`[showcase:imagekit] remote fetch Wikimedia refusé, fallback Blob: ${sourceUrl}`);
+    const downloaded = await downloader(sourceUrl);
+    return uploader(downloaded.blob, {
+      ...uploadOptions,
+      filename: downloaded.filename,
+    });
+  }
+}
+
+async function mirrorProduct(product, uploader = uploadImageKitFile, downloader = downloadWikimediaMedia) {
   const sourceImages = normalizeImages(product).slice(0, 3);
   if (!sourceImages.length) throw new Error(`${product.product_ref}: aucun média source`);
 
@@ -96,19 +118,19 @@ async function mirrorProduct(product, uploader = uploadImageKitFile) {
   const uploaded = [];
   for (let i = 0; i < sourceImages.length; i += 1) {
     const sourceUrl = sourceImages[i];
-    // ImageKit accepte une URL distante comme champ `file`; le serveur ImageKit
-    // récupère alors l'asset source sans exposer la clé privée au navigateur.
+    // Fast path: ImageKit fetch distant. Pour Wikimedia seulement, si le provider
+    // refuse le remote fetch, Komerce télécharge l'objet avec sa politique dédiée
+    // (User-Agent, Retry-After, MIME/taille) puis envoie le Blob à ImageKit.
     // eslint-disable-next-line no-await-in-loop
-    uploaded.push(await uploader(sourceUrl, {
+    uploaded.push(await uploadSourceImage(sourceUrl, {
       folder,
       publicId: uploadSlot(i),
-      filename: sourceUrl,
-    }));
+    }, { uploader, downloader }));
   }
   return { ...product, image_url: uploaded[0], images: uploaded };
 }
 
-async function pooledMirror(products, concurrency, uploader) {
+async function pooledMirror(products, concurrency, uploader, downloader) {
   const results = new Array(products.length);
   let cursor = 0;
   let completed = 0;
@@ -116,7 +138,7 @@ async function pooledMirror(products, concurrency, uploader) {
     while (true) {
       const index = cursor++;
       if (index >= products.length) return;
-      results[index] = await mirrorProduct(products[index], uploader);
+      results[index] = await mirrorProduct(products[index], uploader, downloader);
       completed += 1;
       if (completed % 25 === 0 || completed === products.length) {
         console.log(`[showcase:imagekit] ${completed}/${products.length}`);
@@ -127,12 +149,12 @@ async function pooledMirror(products, concurrency, uploader) {
   return results;
 }
 
-async function prepare(options, { uploader = uploadImageKitFile } = {}) {
+async function prepare(options, { uploader = uploadImageKitFile, downloader = downloadWikimediaMedia } = {}) {
   const source = readProductInputs(options.input || DEFAULT_CURATED_INPUTS);
   assertCuratedSource(source);
   const target = resolveTarget(source, options.target);
   const selected = source.slice(0, target);
-  const uploaded = await pooledMirror(selected, options.concurrency || 10, uploader);
+  const uploaded = await pooledMirror(selected, options.concurrency || 10, uploader, downloader);
 
   fs.mkdirSync(path.dirname(options.manifest), { recursive: true });
   fs.writeFileSync(options.manifest, `${JSON.stringify(uploaded, null, 2)}\n`, 'utf8');
@@ -175,6 +197,7 @@ module.exports = {
   parseArgs,
   productFolder,
   uploadSlot,
+  uploadSourceImage,
   mirrorProduct,
   pooledMirror,
   prepare,
