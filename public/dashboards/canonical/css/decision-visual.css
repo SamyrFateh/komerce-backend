@@ -1,0 +1,462 @@
+/* DASHBOARD DECISION VISUAL V1 — langage visuel partagé des dashboards Canonical. */
+
+.kmc-decision-strip,
+.kmc-summary-card-grid,
+.kmc-progress-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.kmc-decision-strip {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-progress-card,
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row {
+  --decision-accent: var(--kmc-blue);
+  --decision-soft: var(--kmc-blue-soft);
+  min-width: 0;
+  background: linear-gradient(145deg, var(--decision-soft) 0%, var(--kmc-card) 58%);
+  border: 1px solid color-mix(in srgb, var(--decision-accent) 20%, var(--kmc-line));
+  border-radius: var(--kmc-radius-md);
+  box-shadow: var(--kmc-shadow-card);
+}
+
+.kmc-decision-card.is-critical,
+.kmc-summary-card.is-critical,
+.kmc-progress-card.is-critical,
+.kmc-ranked-row.is-critical,
+.kmc-priority-row.is-critical,
+.kmc-info-row.is-critical {
+  --decision-accent: var(--kmc-critical);
+  --decision-soft: var(--kmc-critical-soft);
+}
+
+.kmc-decision-card.is-warning,
+.kmc-summary-card.is-warning,
+.kmc-progress-card.is-warning,
+.kmc-ranked-row.is-warning,
+.kmc-priority-row.is-warning,
+.kmc-info-row.is-warning {
+  --decision-accent: var(--kmc-warning);
+  --decision-soft: var(--kmc-warning-soft);
+}
+
+.kmc-decision-card.is-positive,
+.kmc-summary-card.is-positive,
+.kmc-progress-card.is-positive,
+.kmc-ranked-row.is-positive,
+.kmc-priority-row.is-positive,
+.kmc-info-row.is-positive {
+  --decision-accent: var(--kmc-positive);
+  --decision-soft: var(--kmc-positive-soft);
+}
+
+.kmc-decision-card.is-violet,
+.kmc-summary-card.is-violet,
+.kmc-progress-card.is-violet,
+.kmc-ranked-row.is-violet,
+.kmc-priority-row.is-violet,
+.kmc-info-row.is-violet {
+  --decision-accent: var(--kmc-violet);
+  --decision-soft: var(--kmc-violet-soft);
+}
+
+.kmc-decision-card {
+  min-height: 142px;
+  display: grid;
+  gap: 14px;
+  padding: 16px 17px 15px;
+  border-top: 3px solid var(--decision-accent);
+}
+
+.kmc-decision-card-heading,
+.kmc-summary-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.kmc-decision-card-icon,
+.kmc-summary-card-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--decision-accent);
+  background: color-mix(in srgb, var(--decision-soft) 72%, white);
+  border: 1px solid color-mix(in srgb, var(--decision-accent) 16%, var(--kmc-line));
+  border-radius: 11px;
+  font-weight: 900;
+}
+
+.kmc-decision-card-copy,
+.kmc-summary-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.kmc-decision-card-label,
+.kmc-summary-card-title,
+.kmc-progress-label,
+.kmc-ranked-title,
+.kmc-priority-title,
+.kmc-info-title {
+  color: var(--kmc-navy);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.kmc-decision-card-helper,
+.kmc-summary-card-subtitle,
+.kmc-progress-helper,
+.kmc-ranked-helper,
+.kmc-priority-helper,
+.kmc-info-helper {
+  color: var(--kmc-muted);
+  font-size: 11px;
+  line-height: 1.38;
+}
+
+.kmc-decision-card-value-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.kmc-decision-card-value {
+  color: var(--kmc-navy);
+  font-size: clamp(26px, 2.5vw, 35px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.kmc-decision-delta {
+  padding: 4px 7px;
+  color: var(--kmc-muted);
+  background: #f8fafc;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.kmc-decision-delta.is-positive { color: var(--kmc-positive); background: var(--kmc-positive-soft); }
+.kmc-decision-delta.is-warning { color: var(--kmc-warning); background: var(--kmc-warning-soft); }
+.kmc-decision-delta.is-critical { color: var(--kmc-critical); background: var(--kmc-critical-soft); }
+
+.kmc-decision-link,
+.kmc-ranked-action,
+.kmc-priority-action,
+.kmc-info-action {
+  justify-self: start;
+  color: color-mix(in srgb, var(--decision-accent) 82%, var(--kmc-navy));
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.kmc-decision-link:hover,
+.kmc-decision-link:focus-visible,
+.kmc-ranked-action:hover,
+.kmc-ranked-action:focus-visible,
+.kmc-priority-action:hover,
+.kmc-priority-action:focus-visible,
+.kmc-info-action:hover,
+.kmc-info-action:focus-visible {
+  text-decoration: underline;
+}
+
+.kmc-summary-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.kmc-summary-card {
+  min-height: 130px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.kmc-summary-card[href]:hover,
+.kmc-summary-card[href]:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--decision-accent) 38%, var(--kmc-line));
+  box-shadow: var(--kmc-shadow-card-hover);
+}
+
+.kmc-summary-card-arrow {
+  margin-left: auto;
+  color: var(--decision-accent);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.kmc-summary-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kmc-summary-card-metric {
+  display: grid;
+  gap: 2px;
+}
+
+.kmc-summary-card-metric-value {
+  color: var(--kmc-navy);
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.kmc-summary-card-metric-label {
+  color: var(--kmc-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.kmc-flow-strip,
+.kmc-funnel {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 1px 6px;
+  scrollbar-width: thin;
+}
+
+.kmc-flow-stage,
+.kmc-funnel-stage {
+  min-width: 150px;
+  flex: 1 0 150px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  color: inherit;
+  background: linear-gradient(145deg, var(--kmc-blue-soft), #fff);
+  border: 1px solid color-mix(in srgb, var(--kmc-blue) 18%, var(--kmc-line));
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.kmc-flow-stage-index {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--kmc-blue);
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--kmc-blue) 18%, var(--kmc-line));
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.kmc-flow-stage-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.kmc-flow-stage-label,
+.kmc-funnel-label {
+  color: var(--kmc-navy);
+  font-size: 11px;
+}
+
+.kmc-flow-stage-helper,
+.kmc-funnel-rate,
+.kmc-funnel-loss {
+  color: var(--kmc-muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.kmc-flow-arrow,
+.kmc-funnel-arrow {
+  align-self: center;
+  color: var(--kmc-blue);
+  font-weight: 900;
+}
+
+.kmc-progress-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.kmc-progress-card {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.kmc-progress-value {
+  color: var(--kmc-navy);
+  font-size: 22px;
+}
+
+.kmc-progress-track {
+  height: 7px;
+  overflow: hidden;
+  background: #e9eef5;
+  border-radius: 999px;
+}
+
+.kmc-progress-bar {
+  height: 100%;
+  display: block;
+  background: var(--decision-accent);
+  border-radius: inherit;
+}
+
+.kmc-funnel-stage {
+  min-width: 160px;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.kmc-funnel-value {
+  color: var(--kmc-navy);
+  font-size: 22px;
+}
+
+.kmc-funnel-loss {
+  color: var(--kmc-critical);
+}
+
+.kmc-ranked-list,
+.kmc-priority-list,
+.kmc-info-list {
+  display: grid;
+  gap: 8px;
+}
+
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.kmc-ranked-index,
+.kmc-priority-check,
+.kmc-info-index {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--decision-accent);
+  background: color-mix(in srgb, var(--decision-soft) 70%, white);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.kmc-ranked-copy,
+.kmc-priority-copy,
+.kmc-info-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+}
+
+.kmc-ranked-value {
+  flex: 0 0 auto;
+  color: var(--kmc-navy);
+  font-size: 13px;
+}
+
+.kmc-priority-badge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  color: var(--decision-accent);
+  background: color-mix(in srgb, var(--decision-soft) 78%, white);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.kmc-trust-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 12px;
+  color: var(--kmc-muted);
+  background: rgb(255 255 255 / 0.76);
+  border: 1px solid var(--kmc-line);
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.kmc-trust-footer-left,
+.kmc-trust-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kmc-trust-dot { color: var(--kmc-positive); font-size: 9px; }
+.kmc-trust-state { color: var(--kmc-positive); font-weight: 800; }
+.kmc-trust-warning { color: var(--kmc-warning); font-weight: 700; }
+
+.kmc-decision-dashboard-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .85fr);
+  gap: 14px;
+}
+
+.kmc-decision-dashboard-section-title {
+  margin: 0 0 10px;
+  color: var(--kmc-navy);
+  font-size: 15px;
+}
+
+.kmc-decision-dashboard-section-copy {
+  margin: -4px 0 11px;
+  color: var(--kmc-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.kmc-decision-surface-card {
+  min-width: 0;
+  padding: 16px;
+  background: var(--kmc-card);
+  border: 1px solid var(--kmc-line);
+  border-radius: var(--kmc-radius-lg);
+  box-shadow: var(--kmc-shadow-card);
+}
+
+@media (max-width: 900px) {
+  .kmc-decision-dashboard-grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .kmc-decision-strip,
+  .kmc-summary-card-grid,
+  .kmc-progress-grid { grid-template-columns: 1fr; }
+
+  .kmc-summary-card-metrics { grid-template-columns: 1fr 1fr; }
+  .kmc-trust-footer { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kmc-summary-card { transition: none; }
+}
