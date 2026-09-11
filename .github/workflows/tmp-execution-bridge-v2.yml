@@ -6,6 +6,7 @@ on:
       - feat/market-execution-capability-bridge-v2
     paths:
       - scripts/tmp-apply-execution-bridge-v2.js
+      - scripts/tmp-fix-execution-bridge-patcher.js
       - .github/workflows/tmp-execution-bridge-v2.yml
 
 permissions:
@@ -54,7 +55,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply bridge patch
-        run: node scripts/tmp-apply-execution-bridge-v2.js
+        run: node scripts/tmp-fix-execution-bridge-patcher.js
       - name: Commit patched sources
         run: |
           git config user.name "Komerce CI"
