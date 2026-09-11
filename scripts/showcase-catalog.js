@@ -13,12 +13,12 @@
  * @db-write      products
  * @db-txn        yes (seed command)
  * @doctrine      DOCTRINE_CATALOGUE.md, curated staging fixtures only
- * @version       2026-09-v3
+ * @version       2026-09-v4
  *
- * SHOWCASE V1 — pipeline staging strict :
+ * SHOWCASE V2 — pipeline staging strict :
  *   1. `source`   = construit seulement un POOL CANDIDAT depuis des sources publiques ;
- *   2. curation   = étape humaine explicite dans data/staging-market-catalog-curated-v1.json ;
- *   3. `prepare`  = miroir Cloudinary du manifeste CURATÉ, jamais du pool candidat ;
+ *   2. curation   = étape humaine explicite dans les manifestes curatés V1 + V2 ;
+ *   3. `prepare`  = agrège les sources curatées puis les miroir dans Cloudinary ;
  *   4. `audit`    = vérifie le manifeste Cloudinary canonique ;
  *   5. `seed`     = remplace le catalogue staging avec ce manifeste audité.
  *
@@ -41,8 +41,12 @@ const crypto = require('crypto');
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_SOURCE_TARGET = 500;
 const DEFAULT_CURATED_INPUT = path.join(ROOT, 'data', 'staging-market-catalog-curated-v1.json');
+const DEFAULT_CURATED_INPUTS = Object.freeze([
+  DEFAULT_CURATED_INPUT,
+  path.join(ROOT, 'data', 'staging-market-catalog-curated-v2-additions.json'),
+]);
 const DEFAULT_SOURCE_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v1-candidates.json');
-const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v1.json');
+const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
 const BLOCKED_LEGACY_INPUT = path.join(ROOT, 'db', 'seed-products-v2.json');
 const DUMMY_URL = 'https://dummyjson.com/products?limit=0';
 const PLATZI_URL = 'https://api.escuelajs.co/api/v1/products?offset=0&limit=500';
@@ -132,7 +136,7 @@ function parseArgs(argv) {
   const out = {
     command: 'audit',
     target: null,
-    input: DEFAULT_CURATED_INPUT,
+    input: DEFAULT_CURATED_INPUTS,
     sourceManifest: DEFAULT_SOURCE_MANIFEST,
     manifest: DEFAULT_MANIFEST,
     network: false,
@@ -163,7 +167,8 @@ function parseArgs(argv) {
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 25) {
     throw new Error('--concurrency doit être un entier entre 1 et 25');
   }
-  if (path.resolve(out.input) === path.resolve(BLOCKED_LEGACY_INPUT)) {
+  const inputs = Array.isArray(out.input) ? out.input : [out.input];
+  if (inputs.some((input) => path.resolve(input) === path.resolve(BLOCKED_LEGACY_INPUT))) {
     throw new Error('Entrée legacy interdite: db/seed-products-v2.json ne peut plus alimenter le showcase staging');
   }
   if (out.command === 'source' && out.target === null) out.target = DEFAULT_SOURCE_TARGET;
@@ -180,6 +185,17 @@ function readProductList(file) {
   if (!products || products.length === 0) {
     throw new Error(`Manifeste produits vide ou invalide: ${file}`);
   }
+  return products;
+}
+
+function readProductInputs(input) {
+  const files = Array.isArray(input) ? input : [input];
+  const products = [];
+  for (const file of files) {
+    if (!fs.existsSync(file)) throw new Error(`Catalogue curaté absent: ${file}`);
+    products.push(...readProductList(file));
+  }
+  if (!products.length) throw new Error('Catalogue curaté vide');
   return products;
 }
 
@@ -520,7 +536,7 @@ async function uploadRemoteImage(remoteUrl, { folder, publicId }) {
 }
 
 async function uploadProductMedia(product) {
-  const folder = `komerce/staging/showcase-v1/${product.product_ref.toLowerCase()}`;
+  const folder = `komerce/staging/showcase-v2/${product.product_ref.toLowerCase()}`;
   const sourceImages = normalizeImages(product).slice(0, 3);
   const uploaded = [];
   for (let i = 0; i < sourceImages.length; i += 1) {
@@ -533,8 +549,7 @@ async function uploadProductMedia(product) {
 }
 
 async function prepareCatalogue(options) {
-  if (!fs.existsSync(options.input)) throw new Error(`Catalogue curaté absent: ${options.input}`);
-  const source = readProductList(options.input);
+  const source = readProductInputs(options.input);
   assertCuratedSource(source);
   const target = resolveTarget(source, options.target);
 
@@ -718,9 +733,11 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_CURATED_INPUT,
+  DEFAULT_CURATED_INPUTS,
   BLOCKED_LEGACY_INPUT,
   parseArgs,
   readProductList,
+  readProductInputs,
   resolveTarget,
   assertCuratedSource,
   roundKmf,
