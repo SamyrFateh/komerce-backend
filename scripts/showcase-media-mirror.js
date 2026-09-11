@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      DOCTRINE_CATALOGUE.md, staging-only realistic fixtures
- * @version       2026-08-v3
+ * @version       2026-09-v4
  */
 'use strict';
 
@@ -35,6 +35,7 @@ const COMMONS_MIN_DELAY_MS = 1200;
 const COMMONS_MAX_ATTEMPTS = 4;
 const COMMONS_TIMEOUT_MS = 30000;
 const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
+const IMAGEKIT_MAX_ATTEMPTS = 4;
 
 let lastCommonsRequestAt = 0;
 
@@ -182,6 +183,22 @@ function imageKitFileName(publicId, sourceName = null) {
   return `${publicId}${safeExt}`;
 }
 
+function isRetryableImageKitStatus(status) {
+  return status === 429 || status >= 500;
+}
+
+function imageKitForm(file, { folder, publicId, filename = null }) {
+  const form = new FormData();
+  const sourceName = filename || (typeof file === 'string' ? file : null);
+  if (file instanceof Blob) form.set('file', file, filename || 'source-image');
+  else form.set('file', file);
+  form.set('fileName', imageKitFileName(publicId, sourceName));
+  form.set('folder', `/${String(folder || '').replace(/^\/+|\/+$/g, '')}`);
+  form.set('useUniqueFileName', 'false');
+  form.set('overwriteFile', 'true');
+  return form;
+}
+
 async function uploadCloudinaryFile(file, { folder, publicId, filename = null }) {
   const { cloudName, apiKey, apiSecret } = cloudinaryConfig();
   const timestamp = Math.floor(Date.now() / 1000);
@@ -207,28 +224,42 @@ async function uploadCloudinaryFile(file, { folder, publicId, filename = null })
   return body.secure_url;
 }
 
-async function uploadImageKitFile(file, { folder, publicId, filename = null }, options = {}) {
+async function uploadImageKitFile(file, uploadOptions, options = {}) {
   const { privateKey } = imageKitConfig();
   const fetchImpl = options.fetchImpl || fetch;
-  const form = new FormData();
-  const sourceName = filename || (typeof file === 'string' ? file : null);
-  if (file instanceof Blob) form.set('file', file, filename || 'source-image');
-  else form.set('file', file);
-  form.set('fileName', imageKitFileName(publicId, sourceName));
-  form.set('folder', `/${String(folder || '').replace(/^\/+|\/+$/g, '')}`);
-  form.set('useUniqueFileName', 'false');
-  form.set('overwriteFile', 'true');
+  const sleepImpl = options.sleepImpl || sleep;
+  const nowImpl = options.nowImpl || Date.now;
+  const maxAttempts = options.maxAttempts ?? IMAGEKIT_MAX_ATTEMPTS;
+  let lastError = null;
 
-  const response = await fetchImpl(IMAGEKIT_UPLOAD_URL, {
-    method: 'POST',
-    headers: { Authorization: imageKitAuthHeader(privateKey) },
-    body: form,
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || !body.url) {
-    throw new Error(`ImageKit upload failed (${response.status}): ${body.message || body.error?.message || 'unknown error'}`);
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    let response;
+    try {
+      response = await fetchImpl(IMAGEKIT_UPLOAD_URL, {
+        method: 'POST',
+        headers: { Authorization: imageKitAuthHeader(privateKey) },
+        body: imageKitForm(file, uploadOptions),
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 >= maxAttempts) throw error;
+      await sleepImpl(retryAfterMs(null, attempt, nowImpl()));
+      continue;
+    }
+
+    const body = await response.json().catch(() => ({}));
+    if (response.ok && body.url) return body.url;
+
+    lastError = new Error(`ImageKit upload failed (${response.status}): ${body.message || body.error?.message || 'unknown error'}`);
+    if (!isRetryableImageKitStatus(response.status) || attempt + 1 >= maxAttempts) throw lastError;
+
+    const retryAfter = response.headers && response.headers.get ? response.headers.get('retry-after') : null;
+    const delay = retryAfterMs(retryAfter, attempt, nowImpl());
+    console.warn(`[showcase:imagekit] upload ${response.status} transitoire — retry ${attempt + 1}/${maxAttempts} dans ${delay}ms`);
+    await sleepImpl(delay);
   }
-  return body.url;
+
+  throw lastError || new Error('ImageKit upload retries exhausted');
 }
 
 async function uploadHostedFile(file, uploadOptions, mediaProvider) {
@@ -283,6 +314,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  IMAGEKIT_MAX_ATTEMPTS,
   parseArgs,
   isWikimediaMediaUrl,
   mediaFilename,
@@ -291,5 +323,6 @@ module.exports = {
   downloadWikimediaMedia,
   imageKitAuthHeader,
   imageKitFileName,
+  isRetryableImageKitStatus,
   uploadImageKitFile,
 };

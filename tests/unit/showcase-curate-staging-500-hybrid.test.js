@@ -7,6 +7,7 @@
  */
 
 const {
+  COMMONS_QUERY_LIMIT,
   canonicalCommonsMediaUrl,
   acceptableCommonsPage,
   mapCommonsPage,
@@ -14,6 +15,8 @@ const {
   dedupeCandidates,
   buildCandidatePool,
 } = require('../../scripts/showcase-curate-staging-500-hybrid');
+
+const HEADPHONE_SIGNAL = /\b(headphone|headphones|earphone|earphones|earbud|earbuds|headset|airpods|livepods)\b/i;
 
 function commonsPage(overrides = {}) {
   return {
@@ -46,14 +49,19 @@ describe('showcase-curate-staging-500-hybrid', () => {
     })).toBe('https://cdn.example.test/a.jpg?variant=hero#frag');
   });
 
-  test('filtre les assets manifestement non produit et les images trop petites', () => {
-    expect(acceptableCommonsPage(commonsPage())).toBe(true);
-    expect(acceptableCommonsPage(commonsPage({ title: 'File:Brand logo.png' }))).toBe(false);
-    expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/jpeg', width: 200, height: 200, url: 'https://upload.wikimedia.org/small.jpg' }] }))).toBe(false);
+  test('filtre les assets non commerciaux, formats fragiles et images trop petites', () => {
+    expect(COMMONS_QUERY_LIMIT).toBe(50);
+    expect(acceptableCommonsPage(commonsPage(), HEADPHONE_SIGNAL)).toBe(true);
+    expect(acceptableCommonsPage(commonsPage({ title: 'File:Brand logo.png' }), HEADPHONE_SIGNAL)).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ title: 'File:Football team 1967.jpg' }), /football/i)).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ title: 'File:Shopping mall headphone store.jpg' }), HEADPHONE_SIGNAL)).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ title: 'File:David Hasemyer portrait.jpg' }), HEADPHONE_SIGNAL)).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/tiff', width: 1200, height: 1200, url: 'https://upload.wikimedia.org/archive.tif' }] }), HEADPHONE_SIGNAL)).toBe(false);
+    expect(acceptableCommonsPage(commonsPage({ imageinfo: [{ mime: 'image/jpeg', width: 300, height: 300, url: 'https://upload.wikimedia.org/small.jpg' }] }), HEADPHONE_SIGNAL)).toBe(false);
   });
 
-  test('mappe une source Commons avec provenance et URL originale canonique', () => {
-    const mapped = mapCommonsPage(commonsPage(), 'headphones product photograph', 'Tech', 'Accessoires');
+  test('mappe une source Commons commercialement pertinente avec provenance et URL canonique', () => {
+    const mapped = mapCommonsPage(commonsPage(), 'headphones isolated product photograph', 'Tech', 'Accessoires', HEADPHONE_SIGNAL);
     expect(mapped).toMatchObject({
       source: 'commons:42',
       category: 'Tech',
@@ -71,7 +79,7 @@ describe('showcase-curate-staging-500-hybrid', () => {
       .mockResolvedValueOnce({ ok: false, status: 429, headers })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ query: { pages: { 42: commonsPage() } } }) });
 
-    const rows = await fetchCommonsQuery('headphones product photograph', 'Tech', 'Accessoires', 20, fetchFn);
+    const rows = await fetchCommonsQuery('headphones isolated product photograph', 'Tech', 'Accessoires', 50, fetchFn, HEADPHONE_SIGNAL);
     expect(fetchFn).toHaveBeenCalledTimes(2);
     expect(rows).toHaveLength(1);
     expect(rows[0].source).toBe('commons:42');
