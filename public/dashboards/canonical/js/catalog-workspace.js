@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, product_360_explains
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, product_360_explains, curated_catalog_not_crud
  * @impact-areas  admin-dashboard, catalog
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -45,6 +45,15 @@
   function confidence(value) {
     const n = Number(value);
     return Number.isFinite(n) ? `${Math.round(n * 100)} %` : '—';
+  }
+
+  function formatSource(value) {
+    const labels = {
+      connector_raw: 'Source fournisseur',
+      ai_enriched: 'Assisté IA',
+      manual: 'Préparation humaine',
+    };
+    return labels[value] || value || '—';
   }
 
   async function jsonRequest(fetchFn, url, options = {}) {
@@ -85,9 +94,9 @@
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Piloter le catalogue commun'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Surface centrale · produits, taxonomie et validation humaine · aucun périmètre pays'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE CURATÉ'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Curater le catalogue Komerce'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Catalogue maître global · sélection courte · sources traçables · première publication validée humainement'));
     header.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -95,6 +104,9 @@
     const commerce = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Commerce');
     commerce.href = '/admin/commerce';
     nav.appendChild(commerce);
+    const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Alimenter via Sourcing');
+    sourcing.href = '/admin/sourcing';
+    nav.appendChild(sourcing);
     header.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
@@ -110,11 +122,11 @@
     return section.slot;
   }
 
-  function metricItems(summary = {}) {
+  function metricItems(summary = {}, curation = {}) {
     return [
-      { key: 'active', label: 'Produits actifs', value: formatNumber(summary.active_products), tone: 'neutral' },
-      { key: 'inactive', label: 'Brouillons / inactifs', value: formatNumber(summary.inactive_products), tone: summary.inactive_products ? 'warning' : 'neutral' },
-      { key: 'approval', label: 'À approuver', value: formatNumber(summary.approval_pending), tone: summary.approval_pending ? 'warning' : 'neutral' },
+      { key: 'published', label: 'Sélection publiée', value: formatNumber(curation.published_products ?? summary.active_products), tone: 'neutral' },
+      { key: 'cap', label: 'Cap catalogue', value: formatNumber(curation.catalog_cap_mvp), tone: curation.at_cap ? 'warning' : 'neutral' },
+      { key: 'approval', label: 'À curater', value: formatNumber(summary.approval_pending), tone: summary.approval_pending ? 'warning' : 'neutral' },
       { key: 'review', label: 'À relire', value: formatNumber(summary.needs_review), tone: summary.needs_review ? 'warning' : 'neutral' },
       { key: 'categories', label: 'Catégories actives', value: formatNumber(summary.categories), tone: 'neutral' },
     ];
@@ -144,16 +156,36 @@
     return cell;
   }
 
+  function renderCurationPolicy(rootNode, ui, doc, payload) {
+    const curation = payload.curation || {};
+    const slot = createSection(
+      rootNode,
+      ui,
+      'Politique de curation',
+      'La raffinerie propose ; le catalogue global sélectionne. Les marchés ne dupliquent jamais la fiche produit et leur pricing reste hors de ce Workspace.'
+    );
+    const published = formatNumber(curation.published_products);
+    const cap = formatNumber(curation.catalog_cap_mvp);
+    const remaining = formatNumber(curation.remaining_slots);
+    const fill = formatNumber(curation.fill_pct);
+    const message = curation.at_cap
+      ? `Cap atteint : ${published}/${cap} produits publiés. Toute nouvelle entrée doit remplacer une référence sortie de la sélection.`
+      : `${published}/${cap} produits publiés · ${remaining} places restantes · ${fill} % du cap utilisé.`;
+    const tone = curation.at_cap ? 'is-critical' : 'is-positive';
+    slot.appendChild(text(doc, 'div', `kmc-workspace-feedback ${tone}`, message));
+    slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Entrée : Sourcing / connecteurs / manuel → préparation FR → validation humaine → sélection publiée. Product 360 reste le drill-down explicatif.'));
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Validation humaine', 'Les candidats pipeline restent inactifs tant qu’un admin central ne les approuve pas.');
+    const slot = createSection(rootNode, ui, 'File de curation', 'Aucun candidat ne rejoint la sélection publiée sans décision humaine. La provenance reste visible au moment de décider.');
     const rows = payload.approval || [];
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit en attente d’approbation.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat en attente de curation.'));
       return;
     }
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Confiance</th><th>Source</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Réf. KMF</th><th>Confiance</th><th>Provenance</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
@@ -162,20 +194,20 @@
       tr.appendChild(td(doc, row.category));
       tr.appendChild(td(doc, formatKmf(row.price_kmf)));
       tr.appendChild(td(doc, confidence(row.enrichment_confidence)));
-      tr.appendChild(td(doc, row.content_source));
+      tr.appendChild(td(doc, formatSource(row.content_source)));
       const actions = doc.createElement('td');
 
-      const approve = makeButton(doc, 'Approuver', 'approve');
+      const approve = makeButton(doc, 'Ajouter à la sélection', 'approve');
       approve.addEventListener('click', () => {
-        if (!context.confirm(`Approuver ${row.product_ref} · ${row.name} ?`)) return;
+        if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
         runAction(context, approve, {
           url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/approve`,
-          successMessage: `${row.product_ref} publié.`,
+          successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
         });
       });
       actions.appendChild(approve);
 
-      const correct = makeButton(doc, 'Corriger + publier', 'override', true);
+      const correct = makeButton(doc, 'Corriger + ajouter', 'override', true);
       correct.addEventListener('click', () => {
         const name = context.prompt('Nom corrigé', row.name || '');
         if (name == null) return;
@@ -192,19 +224,19 @@
         runAction(context, correct, {
           url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/override`,
           body: { fields, reason },
-          successMessage: `${row.product_ref} corrigé et publié.`,
+          successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
         });
       });
       actions.appendChild(correct);
 
-      const reject = makeButton(doc, 'Rejeter', 'reject', true);
+      const reject = makeButton(doc, 'Écarter', 'reject', true);
       reject.addEventListener('click', () => {
-        const reason = context.prompt(`Raison du rejet de ${row.product_ref}`);
+        const reason = context.prompt(`Raison pour écarter ${row.product_ref}`);
         if (!reason || !reason.trim()) return;
         runAction(context, reject, {
           url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/reject`,
           body: { reason: reason.trim() },
-          successMessage: `${row.product_ref} rejeté.`,
+          successMessage: `${row.product_ref} écarté de la sélection.`,
         });
       });
       actions.appendChild(reject);
@@ -219,84 +251,39 @@
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Produits', 'Le Workspace agit. Product 360 explique l’état détaillé d’un produit.');
-    const bar = doc.createElement('div');
-    bar.className = 'kmc-workspace-section-actions';
-    const create = makeButton(doc, 'Nouveau produit', 'create-product');
-    bar.appendChild(create);
-    slot.appendChild(bar);
-
-    create.addEventListener('click', () => {
-      const name = context.prompt('Nom du produit');
-      if (!name) return;
-      const category = context.prompt('Catégorie');
-      if (!category) return;
-      const price = context.prompt('Prix KMF');
-      if (!price) return;
-      const stock = context.prompt('Stock (laisser vide si non borné)', '');
-      runAction(context, create, {
-        url: `${ENDPOINT}/products`,
-        body: {
-          name: name.trim(),
-          category: category.trim(),
-          price_kmf: Number(price),
-          ...(stock === '' || stock == null ? {} : { stock: Number(stock) }),
-        },
-        successMessage: 'Produit créé en brouillon.',
-      });
-    });
-
-    const rows = payload.products || [];
+    const slot = createSection(rootNode, ui, 'Sélection publiée', 'Le catalogue curaté montre les références retenues. Les prix pays ne se règlent pas ici ; Product 360 explique la fiche et son lignage.');
+    const rows = (payload.products || []).filter(row => row.is_active);
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit dans la sélection publiée.'));
       return;
     }
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th>Publication</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Provenance</th><th>Réf. KMF</th><th>État</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
       tr.appendChild(td(doc, row.product_ref));
       tr.appendChild(td(doc, row.name));
       tr.appendChild(td(doc, row.subcategory ? `${row.category} · ${row.subcategory}` : row.category));
+      tr.appendChild(td(doc, formatSource(row.content_source)));
       tr.appendChild(td(doc, formatKmf(row.price_kmf)));
-      tr.appendChild(td(doc, row.stock));
-      tr.appendChild(td(doc, row.is_active ? 'Actif' : (row.lifecycle_status || 'Inactif')));
+      tr.appendChild(td(doc, row.needs_review ? 'À relire' : 'Publiée'));
       const actions = doc.createElement('td');
 
       const detail = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
       detail.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
       actions.appendChild(detail);
 
-      const edit = makeButton(doc, 'Modifier', 'update-product', true);
-      edit.addEventListener('click', () => {
-        const price = context.prompt(`Prix KMF · ${row.product_ref}`, String(row.price_kmf));
-        if (price == null) return;
-        const stock = context.prompt(`Stock · ${row.product_ref}`, row.stock == null ? '' : String(row.stock));
-        if (stock == null) return;
-        runAction(context, edit, {
-          url: `${ENDPOINT}/products/${encodeURIComponent(row.product_ref)}/update`,
-          body: {
-            price_kmf: Number(price),
-            ...(stock === '' ? {} : { stock: Number(stock) }),
-          },
-          successMessage: `${row.product_ref} mis à jour.`,
+      const deactivate = makeButton(doc, 'Sortir de la sélection', 'deactivate-product', true);
+      deactivate.addEventListener('click', () => {
+        if (!context.confirm(`Sortir ${row.product_ref} de la sélection publiée ?`)) return;
+        runAction(context, deactivate, {
+          url: `${ENDPOINT}/products/${encodeURIComponent(row.product_ref)}/deactivate`,
+          successMessage: `${row.product_ref} retiré de la sélection publiée.`,
         });
       });
-      actions.appendChild(edit);
-
-      if (row.is_active) {
-        const deactivate = makeButton(doc, 'Désactiver', 'deactivate-product', true);
-        deactivate.addEventListener('click', () => {
-          if (!context.confirm(`Désactiver ${row.product_ref} ?`)) return;
-          runAction(context, deactivate, {
-            url: `${ENDPOINT}/products/${encodeURIComponent(row.product_ref)}/deactivate`,
-            successMessage: `${row.product_ref} désactivé.`,
-          });
-        });
-        actions.appendChild(deactivate);
-      }
+      actions.appendChild(deactivate);
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
@@ -308,7 +295,7 @@
   }
 
   function renderTaxonomy(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Taxonomie boutique', 'Catégories et sous-catégories sont pilotées en base ; aucune taxonomie n’est recodée dans le navigateur.');
+    const slot = createSection(rootNode, ui, 'Taxonomie boutique', 'Catégories et sous-catégories restent globales et pilotées en base ; aucun Market ID ne duplique la taxonomie.');
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     const create = makeButton(doc, 'Nouvelle catégorie', 'create-category');
@@ -399,7 +386,8 @@
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
+    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation) });
+    renderCurationPolicy(rootNode, ui, doc, payload);
     renderApproval(rootNode, ui, doc, payload, context);
     renderProducts(rootNode, ui, doc, payload, context);
     renderTaxonomy(rootNode, ui, doc, payload, context);
@@ -430,7 +418,7 @@
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
-        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
+        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE CURATÉ'));
         panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Accès Catalogue indisponible'));
         panel.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', error.message));
         rootNode.appendChild(panel);
