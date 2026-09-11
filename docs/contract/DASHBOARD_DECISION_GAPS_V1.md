@@ -86,6 +86,32 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Actions terrain | `PROVEN` | mutations existantes réutilisent les autorités métier : state machine commande, distribution, scan engine, paiement et inventaire |
 | Scope / qualité | `PROVEN` | `data_quality.scope_enforced`, `scope_mode=market` et `action_context=single_market_only` |
 
+## Expéditions & Douane
+
+| Information cible | Statut | Motif |
+|---|---|---|
+| Colis bloqués | `BACKEND_GAP` | le Workspace expose les statuts `shipped` / `in_transit`, mais aucun signal canonique de blocage |
+| Dossiers douane à traiter | `PROJECTABLE` | `customs_pending` et `customs_candidates` décrivent des files d'action distinctes ; aucune priorité supplémentaire n'est calculée |
+| Transit au-delà du seuil | `BACKEND_GAP` | `shipped_at` existe sur les colis, mais aucun SLA / seuil canonique n'est fourni |
+| Documents expirants | `BACKEND_GAP` | aucun contrat documentaire / date d'expiration dans le payload Workspace |
+| Colis à mettre en transit | `PROVEN` | résumé `transit_ready` + `transit.ready`, limité aux colis `shipped` |
+| Colis en transit | `PROVEN` | résumé `transit_active` + `transit.in_transit` |
+| Colis à rattacher douane | `PROVEN` | résumé `customs_candidates` + `customs.candidates`, colis sans expédition douane active |
+| Douane à déclarer | `PROVEN` | résumé `customs_pending`, expéditions actives au statut `pending` |
+| Douane déclarée | `PROVEN` | résumé `customs_declared`, expéditions actives au statut `declared` |
+| Expéditions en cours | `BACKEND_GAP` | aucune métrique canonique unique ne fusionne transit et dossiers douane sans changer la sémantique |
+| Dossiers douane ouverts | `BACKEND_GAP` | le contrat distingue `pending`, `declared`, actif/inactif ; pas de statut canonique générique « ouvert » |
+| Délai moyen | `BACKEND_GAP` | dates présentes, mais aucun délai agrégé canonique fourni par le serveur |
+| Coûts logistiques | `PROVEN` au niveau dossier | `customs.shipments` expose `freight_kmf`, `customs_paid_kmf` et `cif_value_kmf`, sans agrégat decision-first inventé |
+| Taux conformité documents | `BACKEND_GAP` | aucune mesure de conformité documentaire dans le contrat Workspace |
+| Flux international Transit / Douane | `PROJECTABLE` | regroupement visuel des compteurs serveur sans faire croire à un funnel de cohorte |
+| Arrivées à venir | `BACKEND_GAP` | aucune ETA / date d'arrivée prévue fournie |
+| Cas douane prioritaires | `BACKEND_GAP` | aucune sévérité ni règle de priorité douane dans le payload |
+| Historique transit | `PROVEN` | `transit.history`, événements `transit_confirmed` appliqués |
+| Alertes documentaires | `BACKEND_GAP` | aucune collection d'alertes documents |
+| Actions transit / douane | `PROVEN` | mutations déléguées au scan engine et au service canonique des expéditions douane |
+| Garde de rôles | `PROVEN` | transit exécutable par `admin`, `agent_hub`, `agent_transitaire`; supervision pays sans geste terrain spécialisé |
+
 ## Finance
 
 | Information cible | Statut | Motif |
@@ -111,4 +137,4 @@ Cette liste sépare les informations promises par les mocks des données effecti
 
 ## Lots suivants
 
-Les gaps Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
