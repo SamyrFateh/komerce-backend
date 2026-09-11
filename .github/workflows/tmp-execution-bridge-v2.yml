@@ -5,12 +5,22 @@ on:
     branches:
       - feat/market-execution-capability-bridge-v2
     paths:
-      - scripts/tmp-apply-execution-bridge-v2.js
-      - scripts/tmp-fix-execution-bridge-patcher.js
+      - middleware/require-market-execution-capability.js
+      - services/market-delegation-service.js
+      - services/market-delegation-team-service.js
+      - routes/market-delegation-team.js
+      - routes/admin-operations-workspace.js
+      - public/dashboards/canonical/js/market-team.js
+      - migrations/212_market_delegation_execution_ceiling.sql
+      - tests/unit/market-delegation-execution-capability.test.js
+      - tests/unit/market-delegation-team-ui.test.js
+      - tests/unit/admin-operations-workspace-route.test.js
+      - tests/unit/canonical-operations-workspace-boundary.test.js
+      - tests/e2e-api/market-delegation.execution-bridge.e2e.test.js
       - .github/workflows/tmp-execution-bridge-v2.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   qualify:
@@ -54,27 +64,6 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Apply bridge patch
-        run: node scripts/tmp-fix-execution-bridge-patcher.js
-      - name: Commit patched sources
-        run: |
-          git config user.name "Komerce CI"
-          git config user.email "ci@komerce.test"
-          git add migrations/212_market_delegation_execution_ceiling.sql \
-            middleware/require-market-execution-capability.js \
-            services/market-delegation-service.js \
-            services/market-delegation-team-service.js \
-            routes/market-delegation-team.js \
-            routes/admin-operations-workspace.js \
-            public/dashboards/canonical/js/market-team.js \
-            features/market-delegation.feature.js \
-            features/dashboard.feature.js \
-            tests/unit/market-delegation-execution-capability.test.js \
-            tests/unit/market-delegation-team-ui.test.js \
-            tests/unit/canonical-operations-workspace-boundary.test.js \
-            tests/e2e-api/market-delegation.execution-bridge.e2e.test.js
-          git commit -m "feat(execution): bridge delegated terrain capabilities"
-          git push origin HEAD:feat/market-execution-capability-bridge-v2
       - name: Targeted unit tests
         run: >-
           npx jest --runInBand
