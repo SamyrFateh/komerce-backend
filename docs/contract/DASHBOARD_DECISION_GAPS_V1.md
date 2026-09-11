@@ -62,6 +62,30 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Priorités terrain | `BACKEND_GAP` | aucune source canonique de priorisation ; l'UI conserve seulement l'ordre backend existant |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
 
+## Hub / Relais
+
+| Information cible | Statut | Motif |
+|---|---|---|
+| Collectes en retard | `BACKEND_GAP` | la file `relay.to_collect` indique les colis disponibles à remettre, mais aucun SLA / seuil de retard canonique n'est fourni |
+| Hubs en tension | `BACKEND_GAP` | les tailles de files existent, mais aucune capacité nominale ni seuil de tension n'est défini |
+| Relais à approvisionner | `BACKEND_GAP` | le payload ne fournit pas de seuil de stock / besoin de réapprovisionnement par relais |
+| Cash à sécuriser | `BACKEND_GAP` | `relay.cash_pending` expose les paiements cash à encaisser, pas un indicateur canonique de risque ou d'exposition cash |
+| Cash à encaisser | `PROVEN` | résumé serveur `relay_cash_pending` + file `relay.cash_pending` |
+| Commandes à lancer | `PROVEN` | résumé serveur `hub_to_order` + file `hub.to_order` |
+| Commandes à répartir | `PROVEN` | résumé serveur `hub_unassigned` + `distribution.unassigned` |
+| Colis à expédier | `PROVEN` | résumé serveur `hub_to_ship` + file `hub.to_ship` |
+| Colis à réceptionner | `PROVEN` | résumé serveur `relay_to_receive` + file `relay.to_receive` |
+| Colis disponibles relais / à remettre | `PROVEN` | résumé serveur `relay_to_collect` + file `relay.to_collect` |
+| Inventaire à affecter | `PROVEN` | résumé serveur `inventory_to_assign` + `inventory.items` |
+| Taux de collecte | `BACKEND_GAP` | aucune base de calcul / période de référence n'est fournie par ce Workspace |
+| Commandes prêtes | `BACKEND_GAP` | les files décrivent des actions précises, pas une notion générique « prête » |
+| Relais actifs | `BACKEND_GAP` | aucune collection / métrique de relais actifs dans le payload Workspace |
+| Incidents terrain | `BACKEND_GAP` | aucune collection d'incidents dédiée dans le payload Workspace |
+| Cartes Hub / Relais / Inventaire | `PROJECTABLE` | regroupement visuel des compteurs serveur, sans agrégat métier ni scoring supplémentaire |
+| Decision strip | `PROJECTABLE` | sélection des files non vides dans l'ordre serveur/UI existant ; aucun score de priorité n'est calculé |
+| Actions terrain | `PROVEN` | mutations existantes réutilisent les autorités métier : state machine commande, distribution, scan engine, paiement et inventaire |
+| Scope / qualité | `PROVEN` | `data_quality.scope_enforced`, `scope_mode=market` et `action_context=single_market_only` |
+
 ## Finance
 
 | Information cible | Statut | Motif |
@@ -87,4 +111,4 @@ Cette liste sépare les informations promises par les mocks des données effecti
 
 ## Lots suivants
 
-Les gaps Hub/Relais, Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Expéditions & Douane, Sourcing, Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
