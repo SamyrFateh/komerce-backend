@@ -7,6 +7,7 @@
  */
 
 const {
+  DEFAULT_MEDIA_PROVIDER,
   resolveMediaProvider,
   isCanonicalCloudinaryUrl,
   isCanonicalImageKitUrl,
@@ -17,7 +18,19 @@ describe('showcase-media-provider', () => {
   const cloudinary = 'https://res.cloudinary.com/demo/image/upload/v1/komerce/staging/showcase-v2/showcase-v2-0001/hero.jpg';
   const imagekit = 'https://ik.imagekit.io/demo/komerce/staging/showcase-v2/showcase-v2-0001/hero.jpg';
 
-  test('résout uniquement les deux providers explicitement supportés', () => {
+  test('ImageKit est le provider canonique par défaut', () => {
+    const previous = process.env.SHOWCASE_MEDIA_PROVIDER;
+    delete process.env.SHOWCASE_MEDIA_PROVIDER;
+    try {
+      expect(DEFAULT_MEDIA_PROVIDER).toBe('imagekit');
+      expect(resolveMediaProvider()).toBe('imagekit');
+    } finally {
+      if (previous === undefined) delete process.env.SHOWCASE_MEDIA_PROVIDER;
+      else process.env.SHOWCASE_MEDIA_PROVIDER = previous;
+    }
+  });
+
+  test('Cloudinary reste une compatibilité explicite, jamais le défaut', () => {
     expect(resolveMediaProvider('CLOUDINARY')).toBe('cloudinary');
     expect(resolveMediaProvider('imagekit')).toBe('imagekit');
     expect(() => resolveMediaProvider('autre')).toThrow(/SHOWCASE_MEDIA_PROVIDER invalide/);
