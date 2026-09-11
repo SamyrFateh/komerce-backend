@@ -5,30 +5,32 @@
  * @domain        catalog
  * @layer         script
  * @criticality   medium
- * @inputs        curated V1+V2 catalogue, ImageKit, DATABASE_URL, canonical markets
+ * @inputs        curated showcase catalogue, ImageKit, DATABASE_URL, canonical markets
  * @outputs       hosted global products, market exposures, local price drafts
  * @depends       db.js, scripts/showcase-imagekit-v2.js, scripts/showcase-media-provider.js, scripts/seed-market-test-data.js, middleware/require-non-production.js
  * @used-by       staging catalogue acceptance before E2E scenarios
  * @db-read       markets, products
  * @db-write      products, product_market_exposure, product_market_price_drafts
  * @db-txn        yes (product upsert + final retirement are isolated transactions)
- * @doctrine      media proof precedes DB mutation; market exposure precedes legacy retirement
- * @version       2026-09-v1
+ * @doctrine      media proof precedes DB mutation; market exposure precedes legacy retirement; staging fixtures remain explicit
+ * @version       2026-09-v2
  */
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const {
   DEFAULT_TARGET,
+  MAX_TARGET,
   DEFAULT_MANIFEST,
   NAMESPACE,
   MEDIA_PROVIDER,
   prepare,
   audit,
 } = require('./showcase-imagekit-v2');
-const { normalizeImages } = require('./showcase-catalog');
+const { DEFAULT_CURATED_INPUTS, normalizeImages } = require('./showcase-catalog');
 const { isCanonicalMediaUrl } = require('./showcase-media-provider');
 const { ensureMarket, prepareProductsForMarket } = require('./seed-market-test-data');
 
@@ -54,10 +56,16 @@ function parseMarketCodes(value) {
   return [...new Set(codes)];
 }
 
+function parseInput(value) {
+  if (Array.isArray(value)) return value;
+  return String(value || '').split(',').map((entry) => entry.trim()).filter(Boolean).map((entry) => path.resolve(entry));
+}
+
 function parseArgs(argv) {
   const out = {
     command: null,
     target: DEFAULT_TARGET,
+    input: DEFAULT_CURATED_INPUTS,
     manifest: DEFAULT_MANIFEST,
     markets: [...DEFAULT_MARKETS],
     replaceActive: false,
@@ -70,7 +78,8 @@ function parseArgs(argv) {
     const [key, inline] = arg.split('=', 2);
     const next = () => inline ?? args[++i];
     if (key === '--target') out.target = Number.parseInt(next(), 10);
-    else if (key === '--manifest') out.manifest = require('path').resolve(next());
+    else if (key === '--input') out.input = parseInput(next());
+    else if (key === '--manifest') out.manifest = path.resolve(next());
     else if (key === '--markets') out.markets = parseMarketCodes(next());
     else if (key === '--concurrency') out.concurrency = Number.parseInt(next(), 10);
     else if (arg === '--replace-active') out.replaceActive = true;
@@ -79,8 +88,8 @@ function parseArgs(argv) {
 
   if (out.command !== 'promote') throw new Error('Commande requise: promote');
   if (!out.replaceActive) throw new Error('promote exige --replace-active (retrait explicite de l’ancien catalogue actif)');
-  if (!Number.isInteger(out.target) || out.target < 1 || out.target > DEFAULT_TARGET) {
-    throw new Error(`--target doit être un entier entre 1 et ${DEFAULT_TARGET}`);
+  if (!Number.isInteger(out.target) || out.target < 1 || out.target > MAX_TARGET) {
+    throw new Error(`--target doit être un entier entre 1 et ${MAX_TARGET}`);
   }
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 25) {
     throw new Error('--concurrency doit être un entier entre 1 et 25');
@@ -94,24 +103,32 @@ function validateHostedProducts(products, target) {
   }
   const refs = new Set();
   const media = new Set();
+  let stockUnits = 0;
   for (const product of products) {
-    if (!/^KPR-\d{6,}$/.test(String(product.product_ref || ''))) {
-      throw new Error(`product_ref canonique invalide: ${product.product_ref || '(vide)'}`);
+    const ref = String(product.product_ref || '');
+    if (!/^KPR-\d{6,}$/.test(ref)) throw new Error(`product_ref canonique invalide: ${ref || '(vide)'}`);
+    if (refs.has(ref)) throw new Error(`product_ref dupliqué: ${ref}`);
+    refs.add(ref);
+    if (!String(product.name || '').trim()) throw new Error(`${ref}: nom requis`);
+    if (String(product.description || '').trim().length < 24) throw new Error(`${ref}: description curatée requise`);
+    if (!String(product.category || '').trim() || !String(product.subcategory || '').trim()) {
+      throw new Error(`${ref}: catégorie et sous-catégorie requises`);
     }
-    if (refs.has(product.product_ref)) throw new Error(`product_ref dupliqué: ${product.product_ref}`);
-    refs.add(product.product_ref);
+    if (!(Number(product.price_kmf) > 0)) throw new Error(`${ref}: prix KMF > 0 requis`);
+    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) <= 0) throw new Error(`${ref}: stock entier > 0 requis`);
+    stockUnits += Number(product.stock);
 
     const images = normalizeImages(product);
-    if (!images.length || !product.image_url) throw new Error(`${product.product_ref}: hero ImageKit requis`);
+    if (!images.length || !product.image_url) throw new Error(`${ref}: hero ImageKit requis`);
     for (const url of images) {
       if (!isCanonicalMediaUrl(url, MEDIA_PROVIDER, NAMESPACE)) {
-        throw new Error(`${product.product_ref}: média non ImageKit canonique: ${url}`);
+        throw new Error(`${ref}: média non ImageKit canonique: ${url}`);
       }
-      if (media.has(url)) throw new Error(`${product.product_ref}: média dupliqué: ${url}`);
+      if (media.has(url)) throw new Error(`${ref}: média dupliqué: ${url}`);
       media.add(url);
     }
   }
-  return { products: products.length, refs: refs.size, images: media.size };
+  return { products: products.length, refs: refs.size, images: media.size, stock_units: stockUnits };
 }
 
 async function withTransaction(work) {
@@ -137,10 +154,12 @@ async function upsertHostedProducts(products) {
       for (let index = 0; index < batch.length; index += 1) {
         const product = batch[index];
         const sortOrder = Number.isInteger(Number(product.sort_order)) ? Number(product.sort_order) : offset + index;
+        const sourceTitle = String(product.source_title || product.name || '').trim();
         const { rows: upserted } = await client.query(
           `INSERT INTO products
-             (product_ref,name,description,category,subcategory,price_kmf,promo_pct,image_url,images,stock,is_active,is_available,sort_order)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,TRUE,TRUE,$11)
+             (product_ref,name,description,category,subcategory,price_kmf,promo_pct,image_url,images,stock,is_active,is_available,sort_order,
+              name_source,description_source,source_locale,content_source,quality_validated,needs_review,lifecycle_status)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,TRUE,TRUE,$11,$12,$13,'fr','manual',TRUE,FALSE,'active')
            ON CONFLICT (product_ref) DO UPDATE SET
              name=EXCLUDED.name,
              description=EXCLUDED.description,
@@ -154,6 +173,13 @@ async function upsertHostedProducts(products) {
              is_active=TRUE,
              is_available=TRUE,
              sort_order=EXCLUDED.sort_order,
+             name_source=EXCLUDED.name_source,
+             description_source=EXCLUDED.description_source,
+             source_locale=EXCLUDED.source_locale,
+             content_source=EXCLUDED.content_source,
+             quality_validated=TRUE,
+             needs_review=FALSE,
+             lifecycle_status='active',
              updated_at=NOW()
            RETURNING *`,
           [
@@ -168,6 +194,8 @@ async function upsertHostedProducts(products) {
             JSON.stringify(product.images || [product.image_url]),
             product.stock,
             sortOrder,
+            sourceTitle || product.name,
+            product.description,
           ],
         );
         rows.push(upserted[0]);
@@ -209,6 +237,8 @@ async function verifyFinalCatalog(productRefs) {
   const { rows: [row] } = await db.query(
     `SELECT
        COUNT(*) FILTER (WHERE product_ref = ANY($1::text[]) AND is_active=TRUE)::int AS curated_active,
+       COUNT(*) FILTER (WHERE product_ref = ANY($1::text[]) AND is_active=TRUE AND stock > 0)::int AS curated_in_stock,
+       COALESCE(SUM(stock) FILTER (WHERE product_ref = ANY($1::text[]) AND is_active=TRUE),0)::bigint AS stock_units,
        COUNT(*) FILTER (
          WHERE is_active=TRUE
            AND COALESCE(product_ref,'') NOT LIKE 'GOLDEN-%'
@@ -217,10 +247,15 @@ async function verifyFinalCatalog(productRefs) {
        FROM products`,
     [productRefs],
   );
-  if (row.curated_active !== productRefs.length || row.unexpected_active !== 0) {
-    throw new Error(`Réconciliation catalogue invalide: curated=${row.curated_active}/${productRefs.length}, unexpected=${row.unexpected_active}`);
+  if (row.curated_active !== productRefs.length || row.curated_in_stock !== productRefs.length || row.unexpected_active !== 0) {
+    throw new Error(`Réconciliation catalogue invalide: curated=${row.curated_active}/${productRefs.length}, in_stock=${row.curated_in_stock}/${productRefs.length}, unexpected=${row.unexpected_active}`);
   }
-  return row;
+  return {
+    curated_active: Number(row.curated_active),
+    curated_in_stock: Number(row.curated_in_stock),
+    stock_units: Number(row.stock_units),
+    unexpected_active: Number(row.unexpected_active),
+  };
 }
 
 async function promote(options) {
@@ -233,6 +268,7 @@ async function promote(options) {
   await prepare({
     command: 'prepare',
     target: options.target,
+    input: options.input || DEFAULT_CURATED_INPUTS,
     manifest: options.manifest,
     network: false,
     strict: false,
@@ -260,9 +296,11 @@ async function promote(options) {
     namespace: NAMESPACE,
     products: mediaReport.products,
     images: mediaReport.images,
+    stock_units: finalState.stock_units,
     markets,
     retired_legacy_products: retired,
     curated_active: finalState.curated_active,
+    curated_in_stock: finalState.curated_in_stock,
     unexpected_active: finalState.unexpected_active,
   };
   console.log(JSON.stringify(summary, null, 2));
@@ -287,6 +325,7 @@ module.exports = {
   isTruthy,
   runtimePromotionGuard,
   parseMarketCodes,
+  parseInput,
   parseArgs,
   validateHostedProducts,
   upsertHostedProducts,
