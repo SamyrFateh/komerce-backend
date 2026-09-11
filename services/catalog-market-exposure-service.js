@@ -11,7 +11,7 @@
  * @db-read       product_market_exposure, products, markets
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
- * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection
+ * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection, missing_exposure_is_disabled
  * @impact-areas  catalog, market-delegation
  * @version       2026-09
  */
@@ -46,9 +46,14 @@ async function getExposure(productId, marketId, executor = db) {
 }
 
 /**
- * Liste l'exposition de tous les produits déjà décidés pour un marché
- * (les produits sans ligne restent implicitement DISABLED, non listés ici —
- * l'appelant les traite comme absents/non exposés).
+ * Projette tous les produits actifs du catalogue global dans le contexte d'un
+ * marché. Une absence de décision explicite reste DISABLED (fail-closed), mais
+ * elle est désormais visible dans le read-model afin que le Responsable pays
+ * puisse prendre une décision d'exposition sans qu'une ligne pme préexiste.
+ *
+ * Important : cette lecture ne crée aucune ligne product_market_exposure et ne
+ * modifie jamais le catalogue global. `decision_recorded=false` distingue le
+ * défaut fail-closed d'un masquage explicitement décidé.
  *
  * @param {string} marketId
  * @param {object} [executor]
@@ -56,11 +61,24 @@ async function getExposure(productId, marketId, executor = db) {
  */
 async function listExposureForMarket(marketId, executor = db) {
   const { rows } = await executor.query(
-    `SELECT pme.product_id, pme.commercial_exposure, pme.decided_at, p.name AS product_name, p.sku
-       FROM product_market_exposure pme
-       JOIN products p ON p.id = pme.product_id
-      WHERE pme.market_id = $1
-      ORDER BY p.name`,
+    `SELECT p.id AS product_id,
+            p.product_ref,
+            p.name AS product_name,
+            p.sku,
+            p.category,
+            p.subcategory,
+            p.image_url,
+            p.is_available,
+            p.needs_review,
+            COALESCE(pme.commercial_exposure, 'DISABLED') AS commercial_exposure,
+            pme.decided_at,
+            (pme.product_id IS NOT NULL) AS decision_recorded
+       FROM products p
+       LEFT JOIN product_market_exposure pme
+         ON pme.product_id = p.id
+        AND pme.market_id = $1
+      WHERE p.is_active = TRUE
+      ORDER BY p.name, p.product_ref`,
     [marketId]
   );
   return rows;
