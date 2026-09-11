@@ -9,6 +9,7 @@
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const commerce = require('../../public/dashboards/canonical/js/commerce');
+const commerceDecision = require('../../public/dashboards/canonical/js/commerce-decision');
 
 function payloadFixture() {
   return {
@@ -107,6 +108,47 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
   test('une marge réelle absente reste explicitement inconnue', () => {
     const sources = commerce.resolveSources({ product_profitability: [{ name: 'X', orders: 2, revenue_kmf: 10000, estimated_margin_kmf: 2000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
     expect(sources['commerce.product-profitability'][0]['marge-reelle']).toBe('—');
+  });
+
+  test('la couche decision-first Commerce n’invente aucune donnée du mock', () => {
+    const payload = payloadFixture();
+    const decisions = commerceDecision.decisionItems(payload, commerce);
+
+    expect(decisions.map(item => item.label)).toEqual([
+      'Commandes perdues',
+      'Costing incomplet',
+    ]);
+    expect(decisions.some(item => /rupture|prix à recalibrer|conversion|aujourd/i.test(item.label))).toBe(false);
+
+    expect(commerceDecision.metricItems(payload, commerce)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'commandes-perdues', value: '2' }),
+    ]));
+    expect(commerceDecision.rankedCategories(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Électronique',
+      value: '90 000 KMF',
+    }));
+    expect(commerceDecision.rankedProducts(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Téléphone',
+      value: '90 000 KMF',
+    }));
+    expect(commerceDecision.funnelStages(payload, commerce)[1]).toEqual({
+      label: 'Payées',
+      value: '10',
+      rate: '83,3 %',
+    });
+    expect(commerceDecision.profitabilityItems(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Téléphone',
+      tone: 'warning',
+    }));
+  });
+
+  test('une marge commerciale négative devient un signal, jamais une cible inventée', () => {
+    const payload = payloadFixture();
+    payload.kpis = payload.kpis.map(item => item.key === 'marge_consolidee' ? { ...item, value: -5000 } : item);
+    const decisions = commerceDecision.decisionItems(payload, commerce);
+    expect(decisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Marge négative', tone: 'critical', value: '-5 000 KMF' }),
+    ]));
   });
 
   test('résout l’endpoint uniquement depuis AdminContext', () => {
