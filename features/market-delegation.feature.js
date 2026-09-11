@@ -56,7 +56,7 @@ module.exports = {
       'Market Operating Assignment : mandat unique actif par Market ID',
       'ceiling template et plafond effectif concédé par le central',
       'memberships et capabilities membres, toujours sous le plafond',
-      'règle de délégation grant(member) ⊆ grant(grantor) ⊆ ceiling(assignment)',
+      'règle de délégation : DELEGATION reste grant(member) ⊆ grant(grantor) ⊆ ceiling ; EXECUTION LIVE peut être accordé par team.grant sous ceiling sans devenir un droit du grantor',
       'audit append-only des mutations de délégation',
       'calcul déterministe de la projection vers operator_market_scopes, persistée exclusivement par la boundary de la feature market',
       'autonomy_rate calculé uniquement sur la classe DELEGATION',
@@ -82,6 +82,7 @@ module.exports = {
       'migration 205 : promotion LIVE de client.case.handle backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; la migration elle-même n’écrit jamais refund_kmf/refund_eur',
       'LOT 6 (settlement) : lecture via finance.read, READY -> REQUESTED via finance.act et PAID -> RECEIVED via settlement.receive ; market-delegation autorise et audite mais la feature settlement possède market_settlements et les écritures',
       'migration 209 : finance.act + settlement.receive deviennent LIVE et sont backfillées dans les ceilings actifs ; auto-grant seulement aux managers déjà dotés de team.grant + team.revoke + finance.read',
+      'LOT 8 (execution bridge) : les 7 capabilities execution.* LIVE entrent dans le ceiling/template sans auto-grant manager ; team.grant peut les déléguer explicitement à un membre terrain et chaque consommation est auditée avant la mutation métier',
     ],
     out: [
       'référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market',
@@ -118,9 +119,11 @@ module.exports = {
       'migrations/207_market_delegation_catalog_expose_live.sql',
       'migrations/209_market_delegation_settlement_live.sql',
       'migrations/210_market_delegation_structure_event_record_live.sql',
+      'migrations/212_market_delegation_execution_ceiling.sql',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
+      'middleware/require-market-execution-capability.js',
     ],
     services: [
       'services/capability-registry.js',
@@ -173,6 +176,8 @@ module.exports = {
       'tests/unit/market-delegation-structure-event-routes.test.js',
       'tests/unit/market-delegation-performance-service.test.js',
       'tests/unit/market-delegation-performance-routes.test.js',
+      'tests/unit/market-delegation-execution-capability.test.js',
+      'tests/e2e-api/market-delegation.execution-bridge.e2e.test.js',
     ],
   },
 
