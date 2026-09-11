@@ -1,0 +1,118 @@
+{
+  "version": "1.0",
+  "frozen_at": "2026-09-11",
+  "doctrine": "docs/doctrine/DASHBOARD_DECISION_VISUAL_DOCTRINE_V1.md",
+  "principle": "one_glance_understand_problem_decide_then_drill",
+  "mocks": [
+    {
+      "id": "MOCK-DASH-001",
+      "screen": "Pilotage",
+      "nav": ["Dashboard", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_komerce_comores.png",
+      "gen_id": "3714a9da-0f8b-4bfa-9c0b-5aea7dd0caaa",
+      "decision_strip": ["Critiques ouvertes", "Points d’attention", "Problèmes costing", "Décisions à prendre aujourd’hui"],
+      "kpis": ["CA encaissé", "Commandes actives", "Marge consolidée", "Alertes critiques", "Complétude des coûts"],
+      "representations": ["domain_overview_cards", "economic_flow", "cross_domain_alerts", "principles"]
+    },
+    {
+      "id": "MOCK-DASH-002",
+      "screen": "Commerce",
+      "nav": ["Dashboard", "Commerce"],
+      "artifact": "tableau_de_bord_commercial_komerce.png",
+      "gen_id": "4cdce773-2b63-4b38-92bd-6e72e301ff31",
+      "decision_strip": ["Ruptures sur best-sellers", "Prix à recalibrer", "Conversions sous cible", "Décisions commerciales aujourd’hui"],
+      "kpis": ["CA", "Panier moyen", "Taux de conversion", "Commandes perdues", "Produits actifs vendus"],
+      "representations": ["ranked_categories", "sales_channels", "growing_products", "commercial_funnel", "commercial_alerts", "product_arbitration", "priority_actions"]
+    },
+    {
+      "id": "MOCK-ECO-001",
+      "screen": "Atelier économique",
+      "nav": ["Atelier économique", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_économique_komerce_aux_comores.png",
+      "gen_id": "07ec441f-0f0d-4faf-b0b2-739251226326",
+      "decision_strip": ["SKUs à recalibrer", "Coûts incomplets", "Contribution sous cible", "Décisions pricing aujourd’hui"],
+      "kpis": ["Contribution réelle", "Couverture coûts", "Commandes contributives", "Colis contributifs", "CDR moyen", "Marge consolidée"],
+      "representations": ["sku_market_range_table", "equilibrium_plan", "quick_simulations", "decision_quality_problems", "economic_principles"]
+    },
+    {
+      "id": "MOCK-CAT-001",
+      "screen": "Catalogue pays",
+      "nav": ["Catalogue", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_catalogue_komerce.png",
+      "gen_id": "72ab8264-c94e-4b8f-b7b7-567895db942f",
+      "decision_strip": ["Produits sans prix local", "Fiches à compléter", "Médias manquants", "Produits à publier"],
+      "kpis": ["Produits actifs", "Taux d’exposition", "Couverture images", "Traductions complètes", "Produits en attente de validation"],
+      "representations": ["local_configuration", "products_to_fix", "catalog_health_by_category", "top_categories", "catalog_alerts"]
+    },
+    {
+      "id": "MOCK-ORD-001",
+      "screen": "Commandes",
+      "nav": ["Commandes", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_commandes_komerce.png",
+      "gen_id": "15bced51-14be-4086-b61d-659de8415af7",
+      "decision_strip": ["Paiements en attente", "Commandes bloquées", "Retraits en retard", "Litiges ouverts"],
+      "kpis": ["Commandes créées", "Payées", "Expédiées", "Disponibles relais", "Retirées"],
+      "representations": ["order_funnel", "stage_losses", "sla_customer_promise", "priority_orders", "order_alerts"]
+    },
+    {
+      "id": "MOCK-MKT-001",
+      "screen": "Marchés",
+      "nav": ["Marchés", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_komerce_des_marchés.png",
+      "gen_id": "9708dbef-ae60-46d2-be99-9c2dc2f0117b",
+      "decision_strip": ["Invitations en attente", "Accès à réviser", "Tests bloqués", "Décisions d’activation"],
+      "kpis": ["Market IDs actifs", "Managers pays", "Membres délégués", "Capabilities terrain actives", "Audits récents"],
+      "representations": ["profile_domain_visibility", "market_team", "domain_readiness", "access_alerts", "audit_summary"]
+    },
+    {
+      "id": "MOCK-OPS-001",
+      "screen": "Opérations overview",
+      "nav": ["Opérations", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_des_opérations_komerce.png",
+      "gen_id": "adf7ddc7-1c4b-4058-aa54-64b8ef8bd0f7",
+      "decision_strip": ["Incidents critiques", "Points d’attention", "Cash à sécuriser", "Décisions terrain aujourd’hui"],
+      "kpis": ["Commandes prêtes", "Colis en transit", "Dossiers douane ouverts", "Relais actifs", "Taux de service réseau"],
+      "representations": ["workspace_summary_cards", "network_execution", "operation_signals", "friction_table", "priority_actions"]
+    },
+    {
+      "id": "MOCK-OPS-002",
+      "screen": "Hub / Relais",
+      "nav": ["Opérations", "Hub / Relais"],
+      "artifact": "tableau_de_bord_des_opérations_komerce.png",
+      "gen_id": "5f2795d4-cbad-465b-ac74-239bd062610b",
+      "decision_strip": ["Collectes en retard", "Hubs en tension", "Relais à approvisionner", "Cash à sécuriser"],
+      "kpis": ["Disponibles relais", "Taux de collecte", "Commandes prêtes", "Relais actifs", "Incidents terrain"],
+      "representations": ["network_performance", "operation_signals", "relay_watch_table", "priority_actions"]
+    },
+    {
+      "id": "MOCK-OPS-003",
+      "screen": "Expéditions & Douane",
+      "nav": ["Opérations", "Expéditions & Douane"],
+      "artifact": "tableau_de_bord_expéditions_et_douane.png",
+      "gen_id": "d0b2ebc9-bc67-4f6b-806e-39cc5c61bedf",
+      "decision_strip": ["Colis bloqués", "Dossiers douane à traiter", "Transit au-delà du seuil", "Documents expirants"],
+      "kpis": ["Expéditions en cours", "Dossiers douane ouverts", "Délai moyen", "Coûts logistiques", "Taux conformité documents"],
+      "representations": ["international_flow", "upcoming_arrivals", "priority_customs_cases", "shipment_tracking", "document_alerts", "priority_actions"]
+    },
+    {
+      "id": "MOCK-OPS-004",
+      "screen": "Sourcing",
+      "nav": ["Opérations", "Sourcing"],
+      "artifact": "tableau_sourcing_komerce_aux_comores.png",
+      "gen_id": "759a0805-64da-48cd-83e3-086a88f4e2c3",
+      "decision_strip": ["Demandes sourcing urgentes", "Fournisseurs en retard", "Références à restocker", "Décisions achats aujourd’hui"],
+      "kpis": ["Références actives", "Couverture stock", "Délai moyen d’approvisionnement", "Taux de service fournisseurs", "Coût d’achat moyen"],
+      "representations": ["purchase_needs", "supplier_performance", "supply_pipeline", "sourcing_alerts", "priority_actions"]
+    },
+    {
+      "id": "MOCK-FIN-001",
+      "screen": "Finance",
+      "nav": ["Finance", "Vue d’ensemble"],
+      "artifact": "tableau_de_bord_financier_komercecresics.png",
+      "gen_id": "41068967-445c-4421-adce-6b5ccc8b9534",
+      "decision_strip": ["Paiements en attente", "Coûts incomplets", "Variances élevées", "Remboursements à suivre"],
+      "kpis": ["CA encaissé", "Coût réel", "Marge consolidée", "Complétude des coûts", "Encaissements non rapprochés"],
+      "representations": ["financial_trend", "incomplete_cost_orders", "payment_mix", "relay_profitability", "finance_alerts"]
+    }
+  ]
+}
