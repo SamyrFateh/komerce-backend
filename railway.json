@@ -1,9 +1,6 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
-  "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "node public/boutique/scripts/deploy-css.js"
-  },
+  "build": { "builder": "RAILPACK", "buildCommand": "node public/boutique/scripts/deploy-css.js" },
   "deploy": {
     "startCommand": "node scripts/promote-showcase-imagekit-staging.js promote --replace-active",
     "restartPolicyType": "NEVER"
