@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      DOCTRINE_CATALOGUE.md, staging-only realistic fixtures
- * @version       2026-08-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -25,6 +25,8 @@ const { resolveMediaProvider, isCanonicalMediaUrl } = require('./showcase-media-
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_TARGET = 500;
 const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
+const NETWORK_MAX_ATTEMPTS = 5;
+const NETWORK_RETRY_DELAYS_MS = Object.freeze([2000, 5000, 10000, 20000]);
 
 function parseArgs(argv) {
   const out = {
@@ -57,6 +59,39 @@ function parseArgs(argv) {
     throw new Error('--concurrency doit être un entier entre 1 et 25');
   }
   return out;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function retryableNetworkResult(result) {
+  if (!result || result.ok) return false;
+  const status = Number(result.status);
+  if (!Number.isFinite(status) || status <= 0) return true;
+  return status === 404 || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+async function verifyMediaUrlWithRetry(url, options = {}) {
+  const verifier = options.verifier || verifyImageUrl;
+  const sleepImpl = options.sleepImpl || sleep;
+  const maxAttempts = options.maxAttempts ?? NETWORK_MAX_ATTEMPTS;
+  const delays = options.delays || NETWORK_RETRY_DELAYS_MS;
+  let result = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    result = await verifier(url);
+    if (result && result.ok) return { ...result, attempts: attempt + 1 };
+    if (!retryableNetworkResult(result) || attempt + 1 >= maxAttempts) {
+      return { ...(result || { ok: false, reason: 'unknown' }), attempts: attempt + 1 };
+    }
+    const delay = delays[Math.min(attempt, delays.length - 1)] || 0;
+    console.warn(`[showcase:media:audit] média indisponible ${result.status || result.reason || 'réseau'} — retry ${attempt + 1}/${maxAttempts} dans ${delay}ms: ${url}`);
+    // eslint-disable-next-line no-await-in-loop
+    await sleepImpl(delay);
+  }
+  return { ...(result || { ok: false, reason: 'unknown' }), attempts: maxAttempts };
 }
 
 async function pooledMap(items, concurrency, mapper) {
@@ -112,7 +147,7 @@ async function audit(options) {
   const report = staticAudit(products, options);
   const urls = [...new Set(products.flatMap(normalizeImages))];
   report.networkFailures = options.network
-    ? (await pooledMap(urls, options.concurrency, async (url) => ({ url, ...(await verifyImageUrl(url)) }))).filter((row) => !row.ok)
+    ? (await pooledMap(urls, options.concurrency, async (url) => ({ url, ...(await verifyMediaUrlWithRetry(url)) }))).filter((row) => !row.ok)
     : [];
 
   console.log(JSON.stringify({
@@ -134,7 +169,7 @@ async function audit(options) {
     ...report.missingHero.map((v) => `missing hero #${v.index}`),
     ...report.invalidProvider.map((v) => `non-${options.mediaProvider} ${v.url}`),
     ...report.malformed.map((v) => `malformed ${v.url}`),
-    ...report.networkFailures.map((v) => `network ${v.url}: ${v.reason || v.status}`),
+    ...report.networkFailures.map((v) => `network ${v.url}: ${v.reason || v.status} after ${v.attempts || 1} attempt(s)`),
   ];
   if (report.targetShortfall) errors.push(`target shortfall: ${report.targetShortfall}`);
   if (options.strict && errors.length) {
@@ -155,4 +190,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { parseArgs, staticAudit, audit };
+module.exports = {
+  NETWORK_MAX_ATTEMPTS,
+  NETWORK_RETRY_DELAYS_MS,
+  parseArgs,
+  retryableNetworkResult,
+  verifyMediaUrlWithRetry,
+  staticAudit,
+  audit,
+};
