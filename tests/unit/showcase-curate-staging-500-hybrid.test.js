@@ -11,6 +11,7 @@ const {
   mapCommonsPage,
   fetchCommonsQuery,
   dedupeCandidates,
+  buildCandidatePool,
 } = require('../../scripts/showcase-curate-staging-500-hybrid');
 
 function commonsPage(overrides = {}) {
@@ -72,5 +73,18 @@ describe('showcase-curate-staging-500-hybrid', () => {
       { source: 'platzi:3', image_url: 'https://img/d.jpg', category: 'Tech' },
     ], nucleus);
     expect(rows).toEqual([{ source: 'platzi:3', image_url: 'https://img/c.jpg', category: 'Tech' }]);
+  });
+
+  test('combine les primaires déjà vérifiés et Commons sans second GET réseau', () => {
+    const nucleus = [{ source: 'dummyjson:1', image_url: 'https://img/a.jpg' }];
+    const primary = [{ source: 'dummyjson:2', image_url: 'https://img/b.jpg', category: 'Tech' }];
+    const commons = [
+      { source: 'commons:42', image_url: 'https://img/c.jpg', category: 'Mode' },
+      { source: 'commons:43', image_url: 'https://img/b.jpg', category: 'Mode' },
+    ];
+    expect(buildCandidatePool(primary, commons, nucleus)).toEqual([
+      primary[0],
+      commons[0],
+    ]);
   });
 });
