@@ -38,6 +38,13 @@
       .find(item => item && item.key === key) || null;
   }
 
+  function metricDisplay(base, item) {
+    if (!item || item.value == null) return '—';
+    if (item.unit === 'KMF') return base.formatKmf(item.value);
+    if (item.unit === '%') return `${base.formatNumber(item.value)} %`;
+    return base.formatNumber(item.value, 0);
+  }
+
   function overallWarningCount(payload) {
     const quality = payload && payload.data_quality && typeof payload.data_quality === 'object'
       ? payload.data_quality : null;
@@ -94,7 +101,7 @@
         key: 'negative-margin',
         label: 'Marge négative',
         helper: 'Marge consolidée de la période',
-        value: base.metricValue(margin),
+        value: metricDisplay(base, margin),
         tone: 'critical',
         icon: '!',
         href: '#commerce-kpis',
@@ -336,6 +343,7 @@
 
   return Object.freeze({
     kpi,
+    metricDisplay,
     overallWarningCount,
     incompleteProfitability,
     decisionItems,
