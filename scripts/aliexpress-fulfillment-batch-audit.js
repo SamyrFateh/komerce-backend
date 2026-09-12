@@ -5,7 +5,7 @@
  * @domain        purchasing
  * @layer         script
  * @criticality   high
- * @inputs        active AliExpress product_skus, destination country, live supplier APIs
+ * @inputs        active AliExpress product_skus, destination country, explicit ship-from country, live supplier APIs
  * @outputs       bounded fulfillment-readiness verdict distribution
  * @depends       db.js, services/suppliers/supplier-fulfillment-readiness.js
  * @db-read       product_skus, sourcing_candidates (via fulfillment adapter)
@@ -18,10 +18,7 @@
 'use strict';
 
 const db = require('../db');
-const {
-  VERDICT,
-  evaluateSupplierFulfillmentReadiness,
-} = require('../services/suppliers/supplier-fulfillment-readiness');
+const { VERDICT, evaluateSupplierFulfillmentReadiness } = require('../services/suppliers/supplier-fulfillment-readiness');
 
 const AUDIT_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_FULFILLMENT_AUDIT';
 const DEFAULT_LIMIT = 20;
@@ -35,13 +32,26 @@ function runtime(env = process.env) {
   return String(env.KOMERCE_ENV || '').trim().toLowerCase() || 'unknown';
 }
 
+function destinationCountry(env = process.env) {
+  const code = String(env.KOMERCE_ALIEXPRESS_COUNTRY_CODE || 'KM').trim().toUpperCase();
+  if (!/^[A-Z]{2,3}$/.test(code)) throw new Error(`KOMERCE_ALIEXPRESS_COUNTRY_CODE invalide: ${code}`);
+  return code;
+}
+
+function sendGoodsCountry(env = process.env) {
+  const code = String(env.KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE || '').trim().toUpperCase();
+  if (!code) throw new Error('KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE requis');
+  if (!/^[A-Z]{2,3}$/.test(code)) throw new Error(`KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE invalide: ${code}`);
+  return code;
+}
+
 function guard(env = process.env) {
   const rt = runtime(env);
-  if (rt !== 'staging') {
-    throw new Error(`REFUS: audit fulfillment AliExpress réservé à KOMERCE_ENV=staging (actuel=${rt})`);
-  }
+  if (rt !== 'staging') throw new Error(`REFUS: audit fulfillment AliExpress réservé à KOMERCE_ENV=staging (actuel=${rt})`);
   if (!truthy(env[AUDIT_FLAG])) throw new Error(`${AUDIT_FLAG}=1 requis`);
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
+  destinationCountry(env);
+  sendGoodsCountry(env);
   return rt;
 }
 
@@ -55,12 +65,6 @@ function delayMs(env = process.env) {
   const raw = Number(env.KOMERCE_ALIEXPRESS_FULFILLMENT_AUDIT_DELAY_MS || 300);
   if (!Number.isFinite(raw)) return 300;
   return Math.max(0, Math.min(5000, Math.trunc(raw)));
-}
-
-function destinationCountry(env = process.env) {
-  const code = String(env.KOMERCE_ALIEXPRESS_COUNTRY_CODE || 'KM').trim().toUpperCase();
-  if (!/^[A-Z]{2,3}$/.test(code)) throw new Error(`KOMERCE_ALIEXPRESS_COUNTRY_CODE invalide: ${code}`);
-  return code;
 }
 
 async function candidateRows(dbImpl, limit) {
@@ -136,12 +140,8 @@ function summarize(items) {
 }
 
 function assertNoSupplierMutation(items) {
-  const violation = items.find(item =>
-    item.evidence?.place_order_invoked === true || item.evidence?.payment_invoked === true
-  );
-  if (violation) {
-    throw new Error(`SAFETY VIOLATION: mutation fournisseur détectée pour ${violation.product_sku_id}`);
-  }
+  const violation = items.find(item => item.evidence?.place_order_invoked === true || item.evidence?.payment_invoked === true);
+  if (violation) throw new Error(`SAFETY VIOLATION: mutation fournisseur détectée pour ${violation.product_sku_id}`);
 }
 
 async function run(env = process.env, deps = {}) {
@@ -151,6 +151,7 @@ async function run(env = process.env, deps = {}) {
   const wait = deps.sleepImpl || sleep;
   const limit = auditLimit(env);
   const countryCode = destinationCountry(env);
+  const sendGoodsCountryCode = sendGoodsCountry(env);
   const pauseMs = delayMs(env);
   const rows = await candidateRows(dbImpl, limit);
   const items = [];
@@ -163,7 +164,7 @@ async function run(env = process.env, deps = {}) {
         db: dbImpl,
         productSkuId: row.product_sku_id,
         quantity: 1,
-        destination: { country_code: countryCode },
+        destination: { country_code: countryCode, send_goods_country_code: sendGoodsCountryCode },
         context: { env },
       });
     } catch (error) {
@@ -186,13 +187,11 @@ async function run(env = process.env, deps = {}) {
     runtime: rt,
     proof: 'aliexpress-fulfillment-batch-v1',
     destination_country_code: countryCode,
+    send_goods_country_code: sendGoodsCountryCode,
     requested_limit: limit,
     selected: rows.length,
     ...aggregate,
-    hard_stop: {
-      place_order_invoked: false,
-      payment_invoked: false,
-    },
+    hard_stop: { place_order_invoked: false, payment_invoked: false },
     items,
   };
   console.log(`[aliexpress-fulfillment-batch-audit] summary=${JSON.stringify(out)}`);
@@ -214,10 +213,11 @@ module.exports = {
   MAX_LIMIT,
   truthy,
   runtime,
+  destinationCountry,
+  sendGoodsCountry,
   guard,
   auditLimit,
   delayMs,
-  destinationCountry,
   candidateRows,
   compactVerdict,
   summarize,

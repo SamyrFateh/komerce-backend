@@ -21,6 +21,7 @@ function env(overrides = {}) {
     DATABASE_URL: 'postgres://test',
     KOMERCE_ALLOW_ALIEXPRESS_FULFILLMENT_AUDIT: '1',
     KOMERCE_ALIEXPRESS_COUNTRY_CODE: 'KM',
+    KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE: 'CN',
     KOMERCE_ALIEXPRESS_FULFILLMENT_AUDIT_DELAY_MS: '0',
     ...overrides,
   };
@@ -37,6 +38,12 @@ describe('aliexpress-fulfillment-batch-audit', () => {
   it('exige le flag humain explicite', () => {
     expect(() => audit.guard(env({ KOMERCE_ALLOW_ALIEXPRESS_FULFILLMENT_AUDIT: '0' })))
       .toThrow(`${audit.AUDIT_FLAG}=1 requis`);
+  });
+
+  it('exige un pays d’expédition explicite pour le fret AliExpress', () => {
+    expect(() => audit.guard(env({ KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE: '' })))
+      .toThrow(/SEND_GOODS_COUNTRY_CODE requis/);
+    expect(audit.sendGoodsCountry(env())).toBe('CN');
   });
 
   it('borne le nombre de SKU audités', () => {
@@ -102,10 +109,12 @@ describe('aliexpress-fulfillment-batch-audit', () => {
     expect(evaluate.mock.calls[0][0]).toMatchObject({
       productSkuId: 'sku-1',
       quantity: 1,
-      destination: { country_code: 'KM' },
+      destination: { country_code: 'KM', send_goods_country_code: 'CN' },
     });
     expect(out).toMatchObject({
       runtime: 'staging',
+      destination_country_code: 'KM',
+      send_goods_country_code: 'CN',
       selected: 2,
       evaluated: 2,
       ready: 1,
