@@ -5,10 +5,10 @@
  * @layer         service
  * @criticality   high
  * @inputs        structure_cost_event, canonical_period_bounds, optional_market_id, optional_allocation_policies
- * @outputs       append_only_structure_fact, period_structure_truth, governed_group_allocation
+ * @outputs       append_only_structure_fact, period_structure_truth, governed_group_allocation, structure_cost_event_history
  * @depends       db
- * @used-by       future pricing coverage gate
- * @db-read       charges, economic_structure_cost_events, markets, orders
+ * @used-by       routes/admin-pricing-workspace.js
+ * @db-read       charges, economic_structure_cost_events, markets, orders, users
  * @db-write      economic_structure_cost_events
  * @db-txn        append_only_fact_recording
  * @doctrine      pricing_market_viability_period_structure_truth
@@ -164,7 +164,7 @@ function snapshotFromCharge(charge) {
   };
 }
 
-async function recordStructureCostEvent(input = {}, actorId) {
+async function recordStructureCostEvent(input = {}, actorId, options = {}) {
   if (!actorId) throw new Error('actorId is required');
   if (!input.charge_id) throw new Error('charge_id is required');
 
@@ -179,9 +179,14 @@ async function recordStructureCostEvent(input = {}, actorId) {
   const fxSource = requiredText(input.fx_source, 'fx_source', 2, 200);
   const notes = input.notes == null ? null : requiredText(input.notes, 'notes', 1, 2000);
 
-  const client = await db.getClient();
+  const injectedExecutor = options && options.executor ? options.executor : null;
+  if (injectedExecutor && typeof injectedExecutor.query !== 'function') {
+    throw new TypeError('recordStructureCostEvent options.executor.query is required');
+  }
+  const client = injectedExecutor || await db.getClient();
+  const ownsTransaction = !injectedExecutor;
   try {
-    await client.query('BEGIN');
+    if (ownsTransaction) await client.query('BEGIN');
 
     const chargeRes = await client.query(
       `SELECT id, family, name, recurrence_period, is_active
@@ -262,14 +267,67 @@ async function recordStructureCostEvent(input = {}, actorId) {
       ]
     );
 
-    await client.query('COMMIT');
+    if (ownsTransaction) await client.query('COMMIT');
     return insertRes.rows[0];
   } catch (error) {
-    try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
+    if (ownsTransaction) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* noop */ }
+    }
     throw error;
   } finally {
-    client.release();
+    if (ownsTransaction && typeof client.release === 'function') client.release();
   }
+}
+
+// Lecture pure — historique des faits N3 pour une charge donnée, filtré par
+// périmètre. Sert l'écran d'ajustement (formulaire séparé) : affiche ce qui a
+// déjà été enregistré avant de permettre un nouvel ACCRUAL/ADJUSTMENT/REVERSAL.
+// Ne recompute rien : chaque ligne est le fait append-only tel qu'enregistré.
+async function listStructureCostEvents(options = {}) {
+  const chargeId = options.chargeId || null;
+  const scopeKind = options.scopeKind ? String(options.scopeKind).trim().toUpperCase() : null;
+  if (scopeKind && !Object.values(SCOPE_KINDS).includes(scopeKind)) {
+    throw new Error('invalid scope_kind');
+  }
+  const marketId = options.marketId || null;
+  const limit = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
+
+  const conditions = [];
+  const params = [];
+  if (chargeId) {
+    params.push(chargeId);
+    conditions.push(`charge_id = $${params.length}`);
+  }
+  if (scopeKind) {
+    params.push(scopeKind);
+    conditions.push(`scope_kind = $${params.length}`);
+  }
+  if (marketId) {
+    params.push(marketId);
+    conditions.push(`market_id = $${params.length}`);
+  } else if (scopeKind === SCOPE_KINDS.GROUP) {
+    conditions.push('market_id IS NULL');
+  }
+  params.push(limit);
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const { rows } = await db.query(
+    `SELECT ece.id, ece.charge_id, ece.charge_family_snapshot, ece.charge_name_snapshot,
+            ece.recurrence_period_snapshot, ece.scope_kind, ece.market_id, m.code AS market_code,
+            ece.event_kind, ece.adjusts_event_id,
+            ece.economic_from, ece.economic_to,
+            ece.amount_original, ece.currency, ece.fx_rate_to_kmf, ece.fx_source, ece.amount_kmf,
+            ece.source_kind, ece.evidence_ref, ece.notes,
+            ece.recorded_by, u.full_name AS recorded_by_name, ece.recorded_at
+       FROM economic_structure_cost_events ece
+       LEFT JOIN markets m ON m.id = ece.market_id
+       LEFT JOIN users u ON u.id = ece.recorded_by
+       ${where}
+      ORDER BY ece.recorded_at DESC
+      LIMIT $${params.length}`,
+    params
+  );
+  return rows;
 }
 
 function overlapRatio(row, queryFrom, queryTo) {
@@ -683,17 +741,23 @@ async function allocateGroupPools(truth, period, marketId, rawPolicies) {
     }
 
     const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);
+    const marketShare = allocation.decisional
+      ? allocation.shares.find((share) => String(share.market_id) === String(marketId))
+      : null;
     charges.push({
       ...pool,
       ...allocation,
       policy,
       basis_source: basis.basis_source,
       basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),
+      market_share_kmf: allocation.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,
+      market_allocation_ratio: allocation.decisional && marketShare
+        ? Number(marketShare.allocation_ratio)
+        : null,
     });
 
     if (allocation.decisional) {
       allocatedGroupPool += pool.group_pool_kmf;
-      const marketShare = allocation.shares.find((share) => String(share.market_id) === String(marketId));
       marketPartial += Number(marketShare?.allocated_kmf || 0);
     }
   }
@@ -777,7 +841,9 @@ module.exports = {
   ALLOCATION_POLICY_KINDS,
   ALLOCATION_BASIS_KINDS,
   ALLOCATION_ELIGIBILITY_KINDS,
+  SOURCE_KINDS,
   recordStructureCostEvent,
+  listStructureCostEvents,
   computePeriodStructureTruth,
   _aggregateRows: aggregateRows,
   _overlapRatio: overlapRatio,

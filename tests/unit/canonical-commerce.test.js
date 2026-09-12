@@ -9,10 +9,12 @@
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const commerce = require('../../public/dashboards/canonical/js/commerce');
+const commerceDecision = require('../../public/dashboards/canonical/js/commerce-decision');
 
 function payloadFixture() {
   return {
     period: 30,
+    scope: { mode: 'market', market: { code: 'CM', name: 'Cameroun', currency: 'XAF' } },
     kpis: [
       { key: 'ca_encaisse', value: 120000, unit: 'KMF', data_quality: {} },
       { key: 'cmds_creees', value: 12, unit: 'count', data_quality: {} },
@@ -25,6 +27,33 @@ function payloadFixture() {
     product_profitability: [
       { product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', orders: 3, quantity: 3, revenue_kmf: 90000, estimated_margin_kmf: 36000, consolidated_margin_kmf: 25000, cost_coverage_pct: 66.7 },
     ],
+    product_viability: [
+      {
+        product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
+        status: 'VIABLE_UNDER_CONDITIONS', label: 'Viable sous conditions',
+        reason: 'La cible marché exige une meilleure condition de sourcing.',
+        sourcing_action: 'RENEGOTIATE_OR_REPOSITION', market_confidence: 'high',
+        purchase_cost_gap_to_safe_ceiling_kmf: -2000,
+      },
+    ],
+    decision_signals: [
+      {
+        key: 'sku-viability:PRD-1', kind: 'sku_viable_under_conditions', severity: 'warning',
+        label: 'SKU à renégocier / repositionner', helper: 'Téléphone · La cible marché exige une meilleure condition de sourcing.',
+        value: 'Téléphone', product_ref: 'PRD-1', source: 'pricing_market_corridor',
+        destination: { kind: 'pricing_workspace', market_code: 'CM', product_ref: 'PRD-1' },
+      },
+      {
+        key: 'orders-lost', kind: 'orders_lost', severity: 'critical', label: 'Commandes perdues',
+        helper: 'Perte explicitement remontée par le funnel', value_count: 2,
+        destination: { kind: 'commerce_funnel' },
+      },
+      {
+        key: 'profitability-incomplete', kind: 'costing_incomplete', severity: 'warning', label: 'Costing incomplet',
+        helper: 'Produits sans marge réelle complète', value_count: 1,
+        destination: { kind: 'commerce_profitability' },
+      },
+    ],
     categories: [
       { category: 'Électronique', orders: 3, quantity: 3, revenue_kmf: 90000 },
     ],
@@ -35,6 +64,7 @@ function payloadFixture() {
       ],
       lost: 2,
     },
+    data_quality: { warnings: [], decision_authority: 'server' },
   };
 }
 
@@ -109,6 +139,72 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(sources['commerce.product-profitability'][0]['marge-reelle']).toBe('—');
   });
 
+  test('la couche decision-first consomme la priorité serveur et ouvre l’Atelier sans recalculer la viabilité', () => {
+    const payload = payloadFixture();
+    const decisions = commerceDecision.decisionItems(payload, commerce);
+
+    expect(decisions.map(item => item.label)).toEqual([
+      'SKU à renégocier / repositionner',
+      'Commandes perdues',
+      'Costing incomplet',
+    ]);
+    expect(decisions[0]).toMatchObject({
+      tone: 'warning',
+      value: 'Téléphone',
+      href: '/admin/workspaces/pricing?market=CM',
+      actionLabel: 'Ouvrir l’Atelier →',
+    });
+    expect(decisions.some(item => /rupture|prix à recalibrer|conversion|aujourd/i.test(item.label))).toBe(false);
+
+    expect(commerceDecision.metricItems(payload, commerce)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'commandes-perdues', value: '2' }),
+    ]));
+    expect(commerceDecision.rankedCategories(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Électronique',
+      value: '90 000 KMF',
+    }));
+    expect(commerceDecision.rankedProducts(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Téléphone',
+      value: '90 000 KMF',
+    }));
+    expect(commerceDecision.viabilityItems(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Téléphone',
+      tone: 'warning',
+      value: 'Écart sourcing -2 000 KMF',
+    }));
+    expect(commerceDecision.funnelStages(payload, commerce)[1]).toEqual({
+      label: 'Payées',
+      value: '10',
+      rate: '83,3 %',
+    });
+    expect(commerceDecision.profitabilityItems(payload, commerce)[0]).toEqual(expect.objectContaining({
+      title: 'Téléphone',
+      tone: 'warning',
+    }));
+  });
+
+  test('un signal serveur de marge négative garde sa valeur et sa sévérité', () => {
+    const payload = payloadFixture();
+    payload.decision_signals = [{
+      key: 'negative-margin', kind: 'negative_margin', severity: 'critical',
+      label: 'Marge négative', helper: 'Marge consolidée de la période', value_kmf: -5000,
+    }];
+    const decisions = commerceDecision.decisionItems(payload, commerce);
+    expect(decisions).toEqual([
+      expect.objectContaining({ label: 'Marge négative', tone: 'critical', value: '-5 000 KMF' }),
+    ]);
+  });
+
+  test('sans nouveau contrat serveur, le fallback historique reste strictement projection-only', () => {
+    const payload = payloadFixture();
+    delete payload.decision_signals;
+    payload.kpis = payload.kpis.map(item => item.key === 'marge_consolidee' ? { ...item, value: -5000 } : item);
+    const decisions = commerceDecision.decisionItems(payload, commerce);
+    expect(decisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Marge négative', tone: 'critical', value: '-5 000 KMF' }),
+    ]));
+  });
+
   test('résout l’endpoint uniquement depuis AdminContext', () => {
     expect(commerce.endpointForContext(globalContext(), adminContextContract))
       .toBe('/api/admin/dashboard/commerce');
@@ -137,6 +233,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
       renderer,
       adminContext: marketContext(),
       contextContract: adminContextContract,
+      user: { role: 'admin' },
     });
 
     expect(fetch).toHaveBeenCalledWith(

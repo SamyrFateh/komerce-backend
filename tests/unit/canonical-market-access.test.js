@@ -91,6 +91,34 @@ describe('canonical market access', () => {
     }));
   });
 
+  test('resetOperatorPassword utilise la route admin existante sans toucher au scope marché', async () => {
+    const api = loadModule();
+    const fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({ success: true }),
+    });
+
+    await api.resetOperatorPassword(fetch, 'operator 1', 'NouveauPass1');
+
+    expect(fetch).toHaveBeenCalledWith('/api/admin/users/operator%201/password', expect.objectContaining({
+      credentials: 'include',
+      method: 'PUT',
+      headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ password: 'NouveauPass1' }),
+    }));
+  });
+
+  test('resetOperatorPassword refuse un mot de passe vide avant tout appel réseau', async () => {
+    const api = loadModule();
+    const fetch = jest.fn();
+
+    await expect(api.resetOperatorPassword(fetch, 'operator-1', '')).rejects.toMatchObject({
+      code: 'PASSWORD_REQUIRED',
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   test('la surface utilise market_code/scope_role et ne construit jamais une autorité market_id', () => {
     loadModule();
     const source = fs.readFileSync(
@@ -100,6 +128,8 @@ describe('canonical market access', () => {
 
     expect(source).toContain("market_scope: { market_code: market.value, scope_role: role.value }");
     expect(source).toContain("JSON.stringify({ market_code: market.value, scope_role: role.value })");
+    expect(source).toContain("'Réinitialiser le mot de passe'");
+    expect(source).toContain('/api/admin/users/${encodeURIComponent(userId)}/password');
     expect(source).not.toMatch(/JSON\.stringify\([^)]*market_id/s);
   });
 });

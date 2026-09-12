@@ -449,3 +449,161 @@ describe('decideInquiry', () => {
     expect(result.status).toBe('declined');
   });
 });
+
+describe('listProviders / getOwnedProvider / updateProvider', () => {
+  const MARKET_CM = 'market-cm';
+  const MARKET_CG = 'market-cg';
+  const PROVIDER_ID = 'provider-1';
+
+  it('listProviders scope la requête au marché et trie suspendus en dernier', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CM, status: 'active' }] });
+    const rows = await svc.listProviders(MARKET_CM);
+    expect(rows).toHaveLength(1);
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/WHERE market_id = \$1/);
+    expect(params).toEqual([MARKET_CM]);
+  });
+
+  it('getOwnedProvider renvoie null — jamais une erreur — pour un provider d’un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CG, status: 'active' }] });
+    const result = await svc.getOwnedProvider(PROVIDER_ID, MARKET_CM);
+    expect(result).toBeNull();
+  });
+
+  it('getOwnedProvider renvoie le provider quand le marché correspond', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CM, status: 'active' }] });
+    const result = await svc.getOwnedProvider(PROVIDER_ID, MARKET_CM);
+    expect(result.id).toBe(PROVIDER_ID);
+  });
+
+  it('updateProvider renvoie null sans écrire si le provider appartient à un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CG, status: 'active' }] });
+    const result = await svc.updateProvider(PROVIDER_ID, MARKET_CM, { name: 'Hijack' });
+    expect(result).toBeNull();
+    expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement la lecture, aucun UPDATE
+  });
+
+  it('updateProvider ne réassigne jamais le marché, même si patch en contenait un', async () => {
+    const svc = loadService();
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CM, name: 'Old', phone: '1' }] })
+      .mockImplementationOnce(async (sql, params) => {
+        expect(sql).toMatch(/UPDATE providers/);
+        const setClause = sql.split('WHERE')[0];
+        expect(setClause).not.toMatch(/market_id/); // market_id jamais dans le SET, seulement dans le WHERE
+        expect(params[5]).toBe(MARKET_CM); // condition d'appartenance, pas une réassignation
+        return { rows: [{ id: PROVIDER_ID, market_id: MARKET_CM, name: 'New', phone: '2' }] };
+      });
+    const result = await svc.updateProvider(PROVIDER_ID, MARKET_CM, { name: 'New', phone: '2' });
+    expect(result.after.name).toBe('New');
+  });
+
+  it('updateProvider refuse un nom vide', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, market_id: MARKET_CM, name: 'Old', phone: '1' }] });
+    await expect(svc.updateProvider(PROVIDER_ID, MARKET_CM, { name: '  ' })).rejects.toThrow(/name et phone/);
+  });
+});
+
+describe('listServicesForMarket / getOwnedService / setServiceExposure', () => {
+  const MARKET_CM = 'market-cm';
+  const MARKET_CG = 'market-cg';
+  const SERVICE_ID = 'service-1';
+
+  it('listServicesForMarket scope la requête au marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: SERVICE_ID, market_id: MARKET_CM, commercial_exposure: 'DISABLED' }] });
+    const rows = await svc.listServicesForMarket(MARKET_CM);
+    expect(rows).toHaveLength(1);
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/WHERE market_id = \$1/);
+    expect(params).toEqual([MARKET_CM]);
+  });
+
+  it('getOwnedService renvoie null — jamais une erreur — pour un service d’un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: SERVICE_ID, market_id: MARKET_CG }] });
+    const result = await svc.getOwnedService(SERVICE_ID, MARKET_CM);
+    expect(result).toBeNull();
+  });
+
+  it('setServiceExposure refuse une valeur hors ENABLED/DISABLED', async () => {
+    const svc = loadService();
+    await expect(svc.setServiceExposure(SERVICE_ID, MARKET_CM, 'MAYBE')).rejects.toThrow(/exposition invalide/);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('setServiceExposure renvoie null sans écrire si le service appartient à un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: SERVICE_ID, market_id: MARKET_CG }] });
+    const result = await svc.setServiceExposure(SERVICE_ID, MARKET_CM, 'ENABLED');
+    expect(result).toBeNull();
+    expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement la lecture
+  });
+
+  it('setServiceExposure est idempotent si déjà dans l’état demandé — aucun UPDATE émis', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: SERVICE_ID, market_id: MARKET_CM, commercial_exposure: 'ENABLED' }] });
+    const result = await svc.setServiceExposure(SERVICE_ID, MARKET_CM, 'ENABLED');
+    expect(result.changed).toBe(false);
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('setServiceExposure nominal : DISABLED -> ENABLED', async () => {
+    const svc = loadService();
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: SERVICE_ID, market_id: MARKET_CM, commercial_exposure: 'DISABLED' }] })
+      .mockImplementationOnce(async (sql, params) => {
+        expect(sql).toMatch(/UPDATE services SET commercial_exposure/);
+        expect(params[1]).toBe('ENABLED');
+        return { rows: [{ id: SERVICE_ID, market_id: MARKET_CM, commercial_exposure: 'ENABLED' }] };
+      });
+    const result = await svc.setServiceExposure(SERVICE_ID, MARKET_CM, 'ENABLED');
+    expect(result.changed).toBe(true);
+    expect(result.after.commercial_exposure).toBe('ENABLED');
+  });
+});
+
+describe('listPhysicalOffersForMarket / getOwnedPhysicalOffer / setPhysicalOfferExposure', () => {
+  const MARKET_CM = 'market-cm';
+  const MARKET_CG = 'market-cg';
+  const OFFER_ID = 'offer-1';
+
+  it('listPhysicalOffersForMarket scope la requête au marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: OFFER_ID, market_id: MARKET_CM }] });
+    const rows = await svc.listPhysicalOffersForMarket(MARKET_CM);
+    expect(rows).toHaveLength(1);
+    expect(mockQuery.mock.calls[0][1]).toEqual([MARKET_CM]);
+  });
+
+  it('getOwnedPhysicalOffer renvoie null pour une offre d’un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: OFFER_ID, market_id: MARKET_CG }] });
+    const result = await svc.getOwnedPhysicalOffer(OFFER_ID, MARKET_CM);
+    expect(result).toBeNull();
+  });
+
+  it('setPhysicalOfferExposure nominal : DISABLED -> ENABLED', async () => {
+    const svc = loadService();
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: OFFER_ID, market_id: MARKET_CM, commercial_exposure: 'DISABLED' }] })
+      .mockImplementationOnce(async (sql, params) => {
+        expect(sql).toMatch(/UPDATE physical_offers SET commercial_exposure/);
+        expect(params[1]).toBe('ENABLED');
+        return { rows: [{ id: OFFER_ID, market_id: MARKET_CM, commercial_exposure: 'ENABLED' }] };
+      });
+    const result = await svc.setPhysicalOfferExposure(OFFER_ID, MARKET_CM, 'ENABLED');
+    expect(result.changed).toBe(true);
+  });
+
+  it('setPhysicalOfferExposure refuse une valeur hors ENABLED/DISABLED, avant toute requête', async () => {
+    const svc = loadService();
+    await expect(svc.setPhysicalOfferExposure(OFFER_ID, MARKET_CM, 'MAYBE')).rejects.toThrow(/exposition invalide/);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+});

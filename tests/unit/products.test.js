@@ -126,6 +126,42 @@ describe('GET /api/products — liste', () => {
     expect(params).toEqual([100, 0]);
   });
 
+  it('sans ?market → aucune clause d\'exposition dans le SQL (comportement historique préservé, cutover LOT 4)', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    await request(buildApp()).get('/api/products');
+    const [sql] = mockDbQuery.mock.calls[0];
+    expect(sql).not.toContain('product_market_exposure');
+  });
+
+  it('avec ?market=CM valide → clause EXISTS product_market_exposure ajoutée, code passé en premier paramètre positionnel', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [] }) // liste (vide dans ce test)
+      .mockResolvedValueOnce({ rows: [{ id: 'mkt-cm', code: 'CM', currency: 'XAF', minor_unit: 0 }] }) // resolveMarketByCode (appelé avant le count)
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] }); // count
+    const res = await request(buildApp()).get('/api/products?market=CM');
+    expect(res.status).toBe(200);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('EXISTS (SELECT 1 FROM product_market_exposure pme');
+    expect(sql).toContain('pme_mkt.code = $1');
+    expect(sql).toContain("pme.commercial_exposure = 'ENABLED'");
+    expect(params[0]).toBe('CM');
+    expect(mockDbQuery).toHaveBeenCalledTimes(3);
+  });
+
+  it('code marché malformé (pas 2 lettres) → aucune clause d\'exposition ajoutée ; l\'erreur vient de la résolution de prix pré-existante, pas de mon changement', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(buildApp()).get('/api/products?market=XYZ');
+    const [sql] = mockDbQuery.mock.calls[0];
+    expect(sql).not.toContain('product_market_exposure');
+    // market-local-price-resolution-service.js rejette déjà tout code hors
+    // format 2 lettres avant que je touche ce fichier (comportement
+    // pré-existant, pas un effet de mon câblage d'exposition) ; le handler
+    // d'erreur générique ne traduit pas ce .status en 400, d'où 500.
+    expect(res.status).toBe(500);
+  });
+
   it('filtres combinés → conditions et params dans l\'ordre', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })
@@ -233,6 +269,27 @@ describe('GET /api/products/:id — détail', () => {
     expect(res.status).toBe(200);
     expect(res.body.variants).toBeUndefined();
     expect(mockDbQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('sans ?market → aucune clause d\'exposition, 1 seul paramètre positionnel (comportement historique préservé)', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID, name: 'Produit A', has_variants: false }] });
+    await request(buildApp()).get(`/api/products/${VALID_UUID}`);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).not.toContain('product_market_exposure');
+    expect(params).toEqual([VALID_UUID]);
+  });
+
+  it('avec ?market=CM → clause EXISTS product_market_exposure ajoutée en second paramètre', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: VALID_UUID, name: 'Produit A', has_variants: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'mkt-cm', code: 'CM', currency: 'XAF', minor_unit: 0 }] }) // resolveMarketByCode
+      .mockResolvedValueOnce({ rows: [] }); // product_market_price_drafts (aucune décision locale active)
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}?market=CM`);
+    expect(res.status).toBe(200);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('EXISTS (SELECT 1 FROM product_market_exposure pme');
+    expect(sql).toContain('pme_mkt.code = $2');
+    expect(params).toEqual([VALID_UUID, 'CM']);
   });
 
   it('produit avec variantes → groupées par variant_type', async () => {

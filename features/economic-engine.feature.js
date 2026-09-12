@@ -41,7 +41,7 @@ module.exports = {
   },
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Calculer le prix, le cout et la marge d\'un produit ou d\'une commande selon une strategie tarifaire versionnee.',
+  service: 'Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -49,11 +49,12 @@ module.exports = {
       'moteur de pricing et application des regles',
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
-      'vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges',
-      'vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché',
-      'gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué',
+      'vérité des charges de structure de période issue de faits économiques append-only, distincte des configurations de charges',
+      'vérité du risque de période issue de faits append-only et d un watermark de revue explicite par marché',
+      'gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées',
       'politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only',
-      'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact',
+      'corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale',
+      'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
         'economic-engine au Lot O2, était @domain dashboard)',
@@ -61,6 +62,7 @@ module.exports = {
     out: [
       'affichage produit cote catalogue (feature catalog, qui consomme economic-engine)',
       'facturation finale (feature orders)',
+      'autorisation et audit de l’enregistrement délégué d’un fait MARKET_DIRECT par un opérateur pays (feature market-delegation, capability structure.event.record) — appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni écrire directement dans economic_structure_cost_events',
     ],
   },
 
@@ -111,9 +113,10 @@ module.exports = {
       'services/pricing-risk-period.js',
       'services/pricing-market-decision-policy.js',
       'services/pricing-market-decision-projection.js',
-    
+      'services/pricing-market-corridor.js',
       'services/sourcing-analysis.js',
-      'services/sourcing-mutations.js',],
+      'services/sourcing-mutations.js',
+    ],
     routes: [
       'routes/pricing-strategy.js',
       'routes/pricing.js',
@@ -127,8 +130,8 @@ module.exports = {
       'routes/admin-finance-config.js',
       'routes/admin-pricing-components.js',
       'routes/admin-risk-provisions.js',
-    
-      'routes/sourcing.js',],
+      'routes/sourcing.js',
+    ],
     migrations: [
       'migrations/019_finance_columns.sql',
       'migrations/033_parametres_extension.sql',
@@ -160,8 +163,10 @@ module.exports = {
       'migrations/166_economic_structure_cost_events.sql',
       'migrations/167_economic_risk_period_truth.sql',
       'migrations/168_pricing_market_decision_policy_events.sql',
+      'migrations/191_cost_component_economic_classification.sql',
+      'migrations/192_market_price_observations.sql',
     ],
-      dash: [
+    dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/PricingView.js',
       'dashboards/admin/js/views/PricingStrategyView.js',
@@ -170,7 +175,7 @@ module.exports = {
       'dashboards/admin/js/views/EconomicView.js',
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
-        tests: [
+    tests: [
       'tests/unit/admin-cost-components.test.js',
       'tests/unit/cost-component-admin-service.test.js',
       'tests/unit/admin-costing.test.js',
@@ -200,6 +205,7 @@ module.exports = {
       'tests/unit/pricing-risk-period.test.js',
       'tests/unit/pricing-market-decision-policy.test.js',
       'tests/unit/pricing-market-decision-projection.test.js',
+      'tests/unit/pricing-market-corridor.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
       'tests/unit/pricing-route.test.js',
@@ -253,13 +259,16 @@ module.exports = {
   // ── Contrat d'interface ──────────────────────────────────────────────────
   docs: [
     'docs/contract/PRICING_WORKSPACE_4F.md',
+    'docs/contract/PRICING_MARKET_CORRIDOR_4X.md',
     'docs/adr/ADR-009-source-verite-unifiee.md',
     'docs/adr/ADR-010-pricing-reads-db.md',
     'docs/adr/ADR-011-pricing-extensible-3-niveaux.md',
     'docs/doctrine/DOCTRINE_ALLOCATION_COUTS.md',
+    'docs/doctrine/DOCTRINE_CLASSIFICATION_CHARGES.md',
     'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
     'docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md',
     'docs/doctrine/DOCTRINE_ECONOMIQUE_KOMERCE.md',
+    'docs/doctrine/DOCTRINE_PILOTAGE_CONTRIBUTION_EQUILIBRE_TEMPS_REEL.md',
     'docs/doctrine/DOCTRINE_LEVIERS_MARGE.md',
     'docs/doctrine/DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md',
     'docs/doctrine/DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md',
@@ -304,6 +313,8 @@ module.exports = {
       'fabrics: R',
       'finance_config: RW',
       'garment_models: R',
+      'market_price_observations: RW!',
+      'market_price_observation_events: W!',
       'order_item_cost_imputations: R',
       'order_item_real_cost_allocations: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — seul écrivain réel (via services/cost-allocation/*.js)
       'order_items: R',
@@ -359,6 +370,9 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/corridor',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/price-observations',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate',
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
       // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/cost-components',
@@ -450,9 +464,10 @@ module.exports = {
       'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)',
       'market-autonomy (décision de prix local et activation LOCAL_ACTIVE consommées par la projection économique sans transfert d ownership)',
+      'market-delegation (bridge request-local des memberships projetées vers Pricing marché, sans mutation du rôle global)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
-'catalog (donnees produit source)',
+      'catalog (donnees produit source)',
       'auth',
       'dashboard',
       'orders',
@@ -487,18 +502,21 @@ module.exports = {
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de formule de prix ou d audit price_history doit rester derrière les services propriétaires economic-engine',
+  authority: 'backend-core — toute frontière économique, règle de contribution, couverture ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee',
     'aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js',
-    'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel',
+    'chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, sa nature économique, son périmètre d allocation, son niveau de vérité et son chemin d impact sans promouvoir une configuration en réel',
+    'une charge fixe configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
+    'les articles génèrent la contribution ; le portefeuille absorbe collectivement les charges de structure ; aucune quote-part fixe analytique ne devient dette intrinsèque du SKU',
+    'le coût variable complet est la frontière économique unitaire ; le marché borne le possible et le prix final exige une décision marché ou humaine autorisée',
     'une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée',
-    'une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité',
     'un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro',
     'la fenêtre et les seuils du gate de décision marché proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur',
-    'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite',
+    'un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, charges de structure marché décisionnelles et vérité risque de période explicite',
+    'une référence globale de concurrence reste informative et ne devient jamais silencieusement une preuve marché locale',
   ],
 
 };

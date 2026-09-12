@@ -19,6 +19,18 @@
  * - seules les capacités locales (statut, contexte, verbe) distinguent Discovery.
  */
 @media (min-width: 900px) {
+  /*
+   * La surface Discovery desktop est montée avant #k-desktop-catalog-wrap,
+   * donc hors de #k-catalog-section. switchView() masque le catalogue quand
+   * on quitte l'onglet Boutique mais ce sibling resterait visible sans ce
+   * scope. k-view-* est l'état canonique de navigation posé synchroniquement
+   * par b-nav.js : Discovery ne doit jamais fuiter dans Favoris, Suivi ou
+   * Mon Komerce.
+   */
+  body:not(.k-view-shop) #k-discovery-local {
+    display: none;
+  }
+
   .k-discovery-header {
     align-items: center;
     padding: 16px 0 10px;

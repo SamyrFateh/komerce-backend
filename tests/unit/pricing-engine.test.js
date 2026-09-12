@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -42,12 +41,15 @@ describe('pricing-engine', () => {
       survival_price_kmf: 1000,
       minimum_safe_price_kmf: 1800,
       recommended_price_kmf: 3000,
-      test_price_kmf: 2500,
+      economic_reference_price_kmf: 3000,
+      test_price_kmf: 3000,
       target_margin_pct: 40,
       safety_margin_pct: 15,
+      price_authority: 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION',
+      fixed_structure_in_price: false,
     });
     out.computeScenarios.mockReturnValue([{ id: 'honest_baseline' }]);
-    out.computeStrategies.mockReturnValue({ mechanical: { price_kmf: 3000 } });
+    out.computeStrategies.mockReturnValue([{ id: 'mechanical', authority: 'REFERENCE_ONLY' }]);
     out.buildProportions.mockReturnValue({ families: [] });
     out.computeHealthStatus.mockReturnValue('healthy');
     out.computeSourcingDecision.mockReturnValue('PRIORITY');
@@ -85,7 +87,7 @@ describe('pricing-engine', () => {
     };
   }
 
-  it('computeMarketConfidence retourne unknown sans productId sans acces DB', async () => {
+  it('computeMarketConfidence retourne unknown sans productId sans accès DB', async () => {
     const result = await engine.computeMarketConfidence(null);
 
     expect(result.market_confidence).toBe('unknown');
@@ -108,7 +110,7 @@ describe('pricing-engine', () => {
     expect(result.market_signals.days_to_first_sale).toBeGreaterThanOrEqual(4);
   });
 
-  it('computeMarketConfidence retourne unknown avec warning si DB echoue', async () => {
+  it('computeMarketConfidence retourne unknown avec warning si DB échoue', async () => {
     db.query.mockRejectedValueOnce(new Error('db_down'));
 
     const result = await engine.computeMarketConfidence('prod-001');
@@ -117,7 +119,7 @@ describe('pricing-engine', () => {
     expect(result.warnings[0]).toContain('db_down');
   });
 
-  it('recommend orchestre produit DB, CDR, prix, santé, marché et sortie canonique', async () => {
+  it('recommend expose coût variable, contribution et structure analytique sans fabriquer de prix final', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'prod-001', category: 'food', cost_kmf: 900, weight_kg: 1.2, price_kmf: 2400 }] })
       .mockResolvedValueOnce({ rows: [{ paid_orders: '6', unique_buyers: '6', first_sale_at: new Date().toISOString() }] })
@@ -128,28 +130,37 @@ describe('pricing-engine', () => {
     expect(cdr.loadGlobalConfig).toHaveBeenCalledTimes(1);
     expect(cdr.computeCDR).toHaveBeenCalledWith(expect.objectContaining({ id: 'prod-001', category: 'food', cost_kmf: 900, weight_kg: 1.2, price_kmf: 2400 }), expect.objectContaining({ channel: 'cash_relais' }));
     expect(out.computePrices).toHaveBeenCalledWith(baseCdr(), { target_marge_brute_pct: 40 }, expect.objectContaining({ target_marge_brute_pct: 40 }));
-    expect(out.computeHealthStatus).toHaveBeenCalledWith(2400, 1500, expect.any(Number));
+    expect(out.computeHealthStatus).toHaveBeenCalledWith(2400, 1400, expect.any(Number));
     expect(out.computeSourcingDecision).toHaveBeenCalledWith({ health_status: 'healthy', market_confidence: 'validated', weight_kg: 1.2 });
     expect(result).toMatchObject({
       subject_type: 'catalog_product',
       product_id: 'prod-001',
       category: 'food',
-      n1_landed_relay_cost_kmf: 1350,
-      n2_business_variable_cost_kmf: 50,
+      flow_variable_cost_kmf: 1350,
+      business_variable_cost_kmf: 50,
       variable_cost_complete_kmf: 1400,
-      n3_fixed_overhead_allocation_kmf: 100,
-      cdr_complete_kmf: 1500,
+      contribution_kmf: 1000,
+      structure_allocation_reference_kmf: 100,
+      structure_allocation_authority: 'ANALYTICAL_ONLY_NOT_SKU_DEBT',
+      fully_loaded_cost_reference_kmf: 1500,
+      fully_loaded_reference_authority: 'ANALYTICAL_ONLY_NOT_PRICE_FLOOR',
+      economic_reference_price_kmf: 3000,
       recommended_price_kmf: 3000,
-      final_price_kmf: 3000,
-      pricing_strategy: 'mechanical',
-      strategy_risk: 'covered',
+      recommended_price_authority: 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION',
+      final_price_kmf: null,
+      price_decision_status: 'MARKET_OR_HUMAN_DECISION_REQUIRED',
+      pricing_strategy: 'market_bounded',
+      strategy_risk: null,
       market_confidence: 'validated',
       sourcing_decision: 'PRIORITY',
       data_quality: { confidence: 'high' },
     });
+    expect(result).not.toHaveProperty('n1_landed_relay_cost_kmf');
+    expect(result).not.toHaveProperty('n2_business_variable_cost_kmf');
+    expect(result).not.toHaveProperty('n3_fixed_overhead_allocation_kmf');
   });
 
-  it('recommend applique les overrides finance sans muter la config passee', async () => {
+  it('recommend applique les overrides de structure sans muter la config passée', async () => {
     const config = baseConfig();
 
     await engine.recommend({
@@ -166,10 +177,28 @@ describe('pricing-engine', () => {
     expect(ctx.config.charges).toEqual([{ recurrence_period: 'monthly', amount_kmf: 20000, is_active: true }]);
   });
 
-  it('recommend classe strategy_risk destructive ou undercovered selon prix final', async () => {
+  it('recommend classe le prix explicite uniquement par rapport aux frontières variables', async () => {
     await expect(engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 0, pricing_strategy: 'manual', final_price_kmf: 1300 }, { config: baseConfig() }))
-      .resolves.toMatchObject({ strategy_risk: 'destructive' });
+      .resolves.toMatchObject({ strategy_risk: 'destructive', price_decision_status: 'EXPLICIT_DECISION_PROVIDED' });
     await expect(engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 0, pricing_strategy: 'manual', final_price_kmf: 1450 }, { config: baseConfig() }))
-      .resolves.toMatchObject({ strategy_risk: 'undercovered' });
+      .resolves.toMatchObject({ strategy_risk: 'contributive_low_buffer' });
+    await expect(engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 0, pricing_strategy: 'manual', final_price_kmf: 2000 }, { config: baseConfig() }))
+      .resolves.toMatchObject({ strategy_risk: 'contributive' });
+  });
+
+  it('une hausse de structure ne crée toujours aucun final_price_kmf', async () => {
+    out.buildCostBreakdown.mockReturnValueOnce({
+      landed_relay: { product_purchase: 1000, freight: 200, customs: 100, local_distribution: 50, relay: 0 },
+      business: { payment: 30, risk_provision: 20, fixed_overhead: 9000 },
+      landed_relay_cost_kmf: 1350,
+      business_complete_cost_kmf: 10400,
+    });
+
+    const result = await engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 2400 }, { config: baseConfig() });
+
+    expect(result.variable_cost_complete_kmf).toBe(1400);
+    expect(result.structure_allocation_reference_kmf).toBe(9000);
+    expect(result.final_price_kmf).toBeNull();
+    expect(result.price_decision_status).toBe('MARKET_OR_HUMAN_DECISION_REQUIRED');
   });
 });

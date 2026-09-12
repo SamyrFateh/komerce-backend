@@ -1,0 +1,361 @@
+/*
+ * KOMERCE CANONICAL — VISUAL FREEZE V1
+ *
+ * Couche de finition transversale. Elle ne porte aucune logique métier :
+ * - même largeur utile sur N1/N2, dashboards, workspaces et pages pays ;
+ * - hiérarchie N1 sombre / N2 claire ;
+ * - densité, rayons, cartes et actions cohérents ;
+ * - couleurs sémantiques conservées, sans repeindre les états métier ;
+ * - responsive commun desktop / tablette / mobile.
+ */
+
+:root {
+  --kmc-shell-max: 1480px;
+  --kmc-shell-gutter: 32px;
+  --kmc-shell-gutter-mobile: 24px;
+  --kmc-page-gap: 14px;
+  --kmc-freeze-nav: #0f1a2e;
+  --kmc-freeze-nav-strong: #0b1423;
+  --kmc-freeze-n2: #f8fafc;
+  --kmc-freeze-n2-active: #e9f1ff;
+  --kmc-freeze-border: #dfe6ef;
+  --kmc-freeze-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 28px rgb(15 23 42 / 0.055);
+}
+
+body[data-admin-generation="canonical"] {
+  background:
+    radial-gradient(circle at 12% -8%, rgb(59 130 246 / 0.055), transparent 30rem),
+    radial-gradient(circle at 90% 0%, rgb(244 184 96 / 0.055), transparent 28rem),
+    var(--kmc-paper);
+}
+
+.kmc-admin-navigation-inner,
+.kmc-admin-secondary-nav,
+.kmc-dashboard,
+.kmc-market-context,
+[data-canonical-surface] > .kmc-ui-state,
+[data-canonical-surface="pricing-workspace"],
+.kmc-operations-workspace,
+.kmc-client-index,
+.kmc-workspace,
+.kmc-access-shell,
+.kmc-entity-shell {
+  width: min(var(--kmc-shell-max), calc(100% - var(--kmc-shell-gutter)));
+  max-width: var(--kmc-shell-max);
+}
+
+.kmc-dashboard {
+  margin-top: 18px;
+  margin-bottom: 56px;
+  gap: var(--kmc-page-gap);
+}
+
+[data-canonical-surface="pricing-workspace"],
+.kmc-operations-workspace,
+.kmc-client-index,
+.kmc-workspace {
+  margin: 18px auto 56px;
+}
+
+.kmc-workspace {
+  display: grid;
+  gap: var(--kmc-page-gap);
+}
+
+.kmc-access-shell {
+  margin: 18px auto 56px;
+  padding: 0;
+  gap: var(--kmc-page-gap);
+}
+
+.kmc-entity-shell { margin-inline: auto; }
+
+/* Le sélecteur transverse de la barre N1 est l'unique contrôle visible. La
+   page Catalogue pays conservait encore un second sélecteur dans son corps. */
+body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-market-context-select) {
+  display: none;
+}
+
+/* Les espaces N2 portent déjà le retour vers leur vue d'ensemble. Les anciens
+   liens de header sont redondants pour admin/market_operator et peuvent mener
+   vers un 403 pour les rôles terrain qui n'ont pas accès à l'overview. */
+.kmc-workspace-nav-link:first-child[href="/admin/operations"],
+.kmc-workspace-nav-link:first-child[href="/admin/finance"] {
+  display: none;
+}
+.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/operations"]),
+.kmc-workspace-nav:has(> .kmc-workspace-nav-link:only-child[href="/admin/finance"]) {
+  display: none;
+}
+
+.kmc-admin-navigation {
+  background: var(--kmc-freeze-nav);
+  border-bottom-color: rgb(255 255 255 / 0.07);
+  box-shadow: 0 7px 22px rgb(15 23 42 / 0.13);
+}
+
+.kmc-admin-navigation-inner { min-height: 64px; gap: 16px; }
+.kmc-admin-home { min-height: 64px; }
+.kmc-admin-primary-nav {
+  justify-content: center;
+  gap: 1px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+.kmc-admin-primary-link {
+  padding-inline: 12px;
+  color: rgb(255 255 255 / 0.70);
+  font-size: 12.5px;
+}
+.kmc-admin-primary-link.is-active { background: rgb(255 255 255 / 0.065); }
+.kmc-admin-primary-link.is-active::after {
+  left: 12px;
+  right: 12px;
+  background: #73a6ff;
+}
+.kmc-admin-utility-nav { gap: 8px; }
+.kmc-admin-market-select,
+.kmc-admin-account,
+.kmc-admin-settings-link,
+.kmc-admin-logout { min-height: 34px; }
+.kmc-admin-market-select { min-width: 156px; background: #17253d; }
+.kmc-admin-account { padding-inline: 10px; }
+.kmc-admin-settings-link,
+.kmc-admin-logout { background: rgb(255 255 255 / 0.055); }
+
+.kmc-admin-secondary-nav {
+  gap: 6px;
+  margin: 0 auto;
+  padding: 7px 0 8px;
+  color: var(--kmc-ink);
+  background: var(--kmc-freeze-n2);
+  border-top: 0;
+  border-bottom: 1px solid var(--kmc-freeze-border);
+  box-shadow: 0 1px 0 rgb(15 23 42 / 0.02);
+}
+.kmc-admin-secondary-link {
+  height: 31px;
+  color: #58667a;
+  border: 1px solid transparent;
+}
+.kmc-admin-secondary-link:hover,
+.kmc-admin-secondary-link:focus-visible {
+  color: var(--kmc-navy);
+  background: #fff;
+  border-color: var(--kmc-line);
+}
+.kmc-admin-secondary-link.is-active {
+  color: #174ea6;
+  background: var(--kmc-freeze-n2-active);
+  border-color: #cfe0ff;
+  box-shadow: inset 0 0 0 1px rgb(79 140 255 / 0.05);
+}
+
+@media (min-width: 1321px) and (max-width: 1660px) {
+  .kmc-admin-navigation-inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: none;
+    gap: 16px;
+    padding: 0;
+  }
+  .kmc-admin-navigation-identity,
+  .kmc-admin-primary-nav,
+  .kmc-admin-utility-nav { grid-area: auto; }
+  .kmc-admin-primary-nav { height: 64px; margin-top: 0; }
+  .kmc-admin-primary-link { height: 64px; }
+}
+
+.kmc-dashboard-header,
+.kmc-workspace-header,
+.kmc-access-hero {
+  border: 1px solid var(--kmc-freeze-border);
+  border-left: 4px solid var(--surface-accent, var(--kmc-amber-strong));
+  border-radius: 14px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--surface-soft, #fffaf0) 72%, #fff) 0%, #fff 72%);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+}
+.kmc-dashboard-header { padding: 17px 20px 18px; gap: 6px; }
+.kmc-dashboard-header::after { opacity: .8; }
+.kmc-dashboard-title,
+.kmc-workspace-title,
+.kmc-access-hero h1 { letter-spacing: -0.03em; }
+.kmc-dashboard-title { font-size: clamp(26px, 3vw, 36px); }
+.kmc-dashboard-description,
+.kmc-workspace-subtitle,
+.kmc-access-hero p { max-width: 860px; }
+.kmc-workspace-header { padding: 18px 20px; gap: 12px 20px; }
+.kmc-workspace-kicker,
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-access-kicker { font-size: 10px; letter-spacing: .105em; }
+.kmc-workspace-title { font-size: clamp(24px, 2.6vw, 33px); }
+.kmc-workspace-nav { align-self: start; justify-content: flex-end; }
+.kmc-workspace-nav-link {
+  min-height: 32px;
+  padding: 6px 10px;
+  color: #26364d;
+  background: #fff;
+  border-color: var(--kmc-freeze-border);
+  box-shadow: 0 1px 2px rgb(15 23 42 / .03);
+}
+.kmc-access-hero { padding: 19px 20px; gap: 9px; }
+
+.kmc-decision-surface-card,
+.kmc-section,
+.kmc-alert-panel,
+.kmc-chart-panel,
+.kmc-access-panel,
+.kmc-access-operator {
+  border-color: var(--kmc-freeze-border);
+  box-shadow: var(--kmc-freeze-shadow);
+}
+.kmc-decision-surface-card { padding: 17px 18px; border-radius: 14px; }
+.kmc-decision-strip,
+.kmc-summary-card-grid,
+.kmc-progress-grid,
+.kmc-metric-strip { gap: 10px; }
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-progress-card,
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row,
+.kmc-metric-card {
+  border-color: color-mix(in srgb, var(--decision-accent, var(--metric-accent, var(--kmc-blue))) 18%, var(--kmc-freeze-border));
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.035), 0 6px 18px rgb(15 23 42 / 0.035);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--decision-soft, var(--metric-soft, #f8fafc)) 72%, #fff) 0%, #fff 62%);
+}
+.kmc-decision-card { min-height: 132px; gap: 11px; padding: 14px 15px; }
+.kmc-decision-card-value { font-size: clamp(24px, 2.2vw, 32px); }
+.kmc-summary-card { min-height: 118px; gap: 11px; padding: 14px 15px; }
+.kmc-metric-card { min-height: 96px; gap: 5px; padding: 15px 16px 14px; }
+.kmc-metric-card::after {
+  width: 30px;
+  height: 30px;
+  top: 12px;
+  right: 12px;
+  border-radius: 10px;
+}
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row { min-height: 48px; padding: 10px 11px; }
+.kmc-section-header,
+.kmc-chart-header { padding: 17px 18px 0; }
+.kmc-section-body,
+.kmc-chart-slot { padding: 17px 18px 18px; }
+.kmc-section-title,
+.kmc-chart-title,
+.kmc-alert-panel-title { font-size: 15px; }
+.kmc-section-title::before {
+  width: 5px;
+  height: 16px;
+  box-shadow: 0 0 0 3px rgb(244 184 96 / 0.10);
+}
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  color: #fff;
+  border-color: #203a63;
+  background: linear-gradient(180deg, #294d7c 0%, #203d67 100%);
+  box-shadow: 0 1px 2px rgb(15 23 42 / .12);
+}
+.kmc-workspace-action:hover,
+.kmc-workspace-action:focus-visible,
+.kmc-access-button.is-primary:hover,
+.kmc-access-button.is-primary:focus-visible {
+  color: #fff;
+  border-color: #142b4c;
+  background: linear-gradient(180deg, #24466f 0%, #19365d 100%);
+}
+.kmc-workspace-action.is-secondary,
+.kmc-access-button:not(.is-primary):not(.is-danger) {
+  color: #26364d;
+  border-color: var(--kmc-line-strong);
+  background: #fff;
+  box-shadow: none;
+}
+.kmc-workspace-action:disabled,
+.kmc-access-button:disabled { opacity: .56; box-shadow: none; }
+
+.kmc-table-wrap,
+.kmc-workspace-table-wrap {
+  border-color: var(--kmc-freeze-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+}
+.kmc-data-table th,
+.kmc-workspace-table th { color: #5f6e82; background: #f8fafc; }
+.kmc-data-table tbody tr:hover,
+.kmc-workspace-table tbody tr:hover { background: #f8fbff; }
+.kmc-ui-state.is-empty,
+.kmc-workspace-empty {
+  border-color: var(--kmc-freeze-border);
+  background: radial-gradient(circle at 50% 0%, rgb(59 130 246 / .055), transparent 18rem), #fff;
+}
+.kmc-trust-footer { background: #f8fafc; border-color: var(--kmc-freeze-border); }
+
+@media (max-width: 1320px) {
+  .kmc-admin-navigation-inner {
+    width: min(var(--kmc-shell-max), calc(100% - var(--kmc-shell-gutter)));
+  }
+  .kmc-admin-primary-nav { justify-content: flex-start; }
+}
+
+@media (max-width: 900px) {
+  .kmc-workspace-header { grid-template-columns: 1fr; }
+  .kmc-workspace-nav { justify-content: flex-start; }
+  .kmc-decision-strip,
+  .kmc-summary-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  :root { --kmc-shell-gutter: var(--kmc-shell-gutter-mobile); }
+  .kmc-admin-navigation-inner,
+  .kmc-admin-secondary-nav,
+  .kmc-dashboard,
+  .kmc-market-context,
+  [data-canonical-surface] > .kmc-ui-state,
+  [data-canonical-surface="pricing-workspace"],
+  .kmc-operations-workspace,
+  .kmc-client-index,
+  .kmc-workspace,
+  .kmc-access-shell,
+  .kmc-entity-shell {
+    width: calc(100% - var(--kmc-shell-gutter-mobile));
+  }
+  .kmc-admin-navigation-inner { gap: 0 10px; }
+  .kmc-admin-primary-link { padding-inline: 10px; }
+  .kmc-admin-market-select { min-width: 112px; max-width: 138px; }
+  .kmc-dashboard,
+  [data-canonical-surface="pricing-workspace"],
+  .kmc-operations-workspace,
+  .kmc-client-index,
+  .kmc-workspace,
+  .kmc-access-shell { margin-top: 12px; margin-bottom: 36px; }
+  .kmc-dashboard-header,
+  .kmc-workspace-header,
+  .kmc-access-hero { padding: 14px 15px; }
+  .kmc-decision-strip,
+  .kmc-summary-card-grid,
+  .kmc-progress-grid,
+  .kmc-metric-strip { grid-template-columns: 1fr; }
+  .kmc-decision-card,
+  .kmc-summary-card,
+  .kmc-metric-card { min-height: auto; }
+}
+
+@media (max-width: 520px) {
+  .kmc-admin-settings-link,
+  .kmc-admin-logout { padding-inline: 8px; font-size: 10.5px; }
+  .kmc-admin-market-flag { left: 9px; }
+  .kmc-admin-market-select.has-flag { padding-left: 36px; }
+  .kmc-ranked-row,
+  .kmc-priority-row,
+  .kmc-info-row { align-items: flex-start; flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kmc-decision-card,
+  .kmc-summary-card,
+  .kmc-metric-card,
+  .kmc-workspace-action { transition: none !important; }
+}

@@ -1,23 +1,26 @@
-/* Canonical admin navigation — one cockpit, four primary dashboards. */
+/* Canonical admin navigation — approved NAV-V2.1 mock is the UI contract.
+ * Two-level shell: N1 (.kmc-admin-primary-nav) + N2 contextuel
+ * (.kmc-admin-secondary-nav), per docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md.
+ */
 .kmc-admin-navigation {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 80;
   width: 100%;
-  background: color-mix(in srgb, var(--kmc-card) 95%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--kmc-line) 82%, transparent);
-  box-shadow: 0 1px 0 rgb(15 23 42 / 0.02), 0 6px 20px rgb(15 23 42 / 0.025);
-  backdrop-filter: blur(14px);
+  color: #fff;
+  background: #101b2e;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.14);
 }
 
 .kmc-admin-navigation-inner {
-  width: min(1440px, calc(100% - 32px));
-  min-height: 62px;
+  width: min(1840px, calc(100% - 32px));
+  min-height: 64px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(190px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
+  gap: clamp(12px, 1.3vw, 24px);
 }
 
 .kmc-admin-navigation-identity,
@@ -28,50 +31,36 @@
 }
 
 .kmc-admin-navigation-identity {
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .kmc-admin-home {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  min-width: 0;
-  color: var(--kmc-navy);
-  font-weight: 800;
+  min-height: 42px;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.08em;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.kmc-admin-home-mark {
-  width: 30px;
-  height: 30px;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  color: var(--kmc-card);
-  background: linear-gradient(145deg, #17243b, var(--kmc-navy));
-  border-radius: 9px;
-  box-shadow: 0 5px 14px rgb(15 26 46 / 0.16);
-  font-size: 15px;
-  line-height: 1;
-}
-
 .kmc-admin-home-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .kmc-admin-back {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  padding: 6px 9px;
-  color: var(--kmc-muted);
-  border: 1px solid var(--kmc-line);
-  border-radius: var(--kmc-radius-sm);
-  background: rgb(255 255 255 / 0.66);
-  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 8px;
+  color: rgb(255 255 255 / 0.64);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.04);
+  font-size: 11px;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -79,177 +68,287 @@
 
 .kmc-admin-back:hover,
 .kmc-admin-back:focus-visible {
-  color: var(--kmc-navy);
-  border-color: var(--kmc-line-strong);
-  background: var(--kmc-card);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.28);
+  background: rgb(255 255 255 / 0.09);
 }
 
 .kmc-admin-primary-nav {
-  justify-content: center;
-  gap: 4px;
+  justify-content: flex-start;
+  gap: 2px;
   min-width: 0;
+  height: 64px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+
+.kmc-admin-primary-nav::-webkit-scrollbar { display: none; }
 
 .kmc-admin-primary-link {
-  --nav-accent: var(--kmc-amber-strong, #d9901a);
-  --nav-soft: var(--kmc-warning-soft, #fff8e6);
   position: relative;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  min-height: 40px;
-  padding: 8px 13px;
-  color: var(--kmc-muted);
-  border: 1px solid transparent;
-  border-radius: 9px;
+  height: 64px;
+  padding: 0 14px;
+  color: rgb(255 255 255 / 0.68);
+  border: 0;
+  background: transparent;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
-}
-
-.kmc-admin-primary-link[href="/admin/commerce"] {
-  --nav-accent: var(--kmc-blue, #3b82f6);
-  --nav-soft: var(--kmc-blue-soft, #eef5ff);
-}
-
-.kmc-admin-primary-link[href="/admin/operations"] {
-  --nav-accent: var(--kmc-teal, #0f9f91);
-  --nav-soft: var(--kmc-teal-soft, #ecfdf8);
-}
-
-.kmc-admin-primary-link[href="/admin/finance"] {
-  --nav-accent: var(--kmc-violet, #7c5ce5);
-  --nav-soft: var(--kmc-violet-soft, #f4f0ff);
+  transition: color 120ms ease, background 120ms ease;
 }
 
 .kmc-admin-primary-link:hover,
 .kmc-admin-primary-link:focus-visible {
-  color: var(--kmc-navy);
-  border-color: color-mix(in srgb, var(--nav-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--nav-soft) 76%, var(--kmc-card));
+  color: #fff;
+  background: rgb(255 255 255 / 0.055);
+  outline: none;
 }
 
 .kmc-admin-primary-link.is-active {
-  color: var(--kmc-navy);
-  border-color: color-mix(in srgb, var(--nav-accent) 22%, transparent);
-  background: var(--nav-soft);
-}
-
-.kmc-admin-primary-link.is-active::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  margin-right: 7px;
-  flex: 0 0 auto;
-  background: var(--nav-accent);
-  border-radius: 999px;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--nav-accent) 13%, transparent);
+  color: #fff;
+  background: rgb(255 255 255 / 0.075);
 }
 
 .kmc-admin-primary-link.is-active::after {
   content: '';
   position: absolute;
-  left: 13px;
-  right: 13px;
-  bottom: 3px;
-  height: 2px;
-  background: var(--nav-accent);
-  border-radius: 999px;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 3px;
+  background: #4f8cff;
+  border-radius: 3px 3px 0 0;
 }
 
 .kmc-admin-utility-nav {
   justify-content: flex-end;
-  gap: 7px;
+  gap: 10px;
+  min-width: 0;
 }
 
-.kmc-admin-utility-link {
+.kmc-admin-market-control {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 6px 10px;
-  color: var(--kmc-muted);
-  border: 1px solid transparent;
-  border-radius: var(--kmc-radius-sm);
+}
+
+.kmc-admin-market-flag {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  z-index: 1;
+  width: 20px;
+  height: 14px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.20);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.kmc-admin-market-flag[hidden] { display: none; }
+
+.kmc-admin-market-select {
+  min-width: 148px;
+  height: 36px;
+  padding: 0 34px 0 12px;
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 9px;
+  background: #17253d;
+  font: inherit;
   font-size: 12px;
   font-weight: 700;
+  outline: none;
+}
+
+.kmc-admin-market-select.has-flag {
+  padding-left: 40px;
+}
+
+.kmc-admin-market-select:hover,
+.kmc-admin-market-select:focus-visible {
+  border-color: rgb(255 255 255 / 0.42);
+  background: #1b2c48;
+}
+
+.kmc-admin-market-select option {
+  color: #111827;
+  background: #fff;
+}
+
+.kmc-admin-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.045);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kmc-admin-logout:hover,
+.kmc-admin-logout:focus-visible {
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.34);
+  background: rgb(255 255 255 / 0.10);
+  outline: none;
+}
+
+.kmc-admin-logout:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.kmc-admin-account {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 11px;
+  color: rgb(255 255 255 / 0.82);
+  border-left: 1px solid rgb(255 255 255 / 0.14);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+/* Paramètres — zone utilitaire, réservé à l'autorité globale (doctrine §5). */
+.kmc-admin-settings-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.045);
+  font-size: 11px;
+  font-weight: 750;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.kmc-admin-utility-link:hover,
-.kmc-admin-utility-link:focus-visible,
-.kmc-admin-utility-link.is-active {
-  color: var(--kmc-navy);
-  border-color: var(--kmc-line);
-  background: var(--kmc-card);
+.kmc-admin-settings-link:hover,
+.kmc-admin-settings-link:focus-visible {
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.34);
+  background: rgb(255 255 255 / 0.10);
+  outline: none;
 }
 
-.kmc-admin-demo-link::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  margin-right: 7px;
-  background: var(--kmc-positive);
+.kmc-admin-settings-link.is-active {
+  color: #fff;
+  border-color: #4f8cff;
+  background: rgb(79 140 255 / 0.16);
+}
+
+/* N2 — espaces contextuels du domaine actif (doctrine §4/§8). Ligne claire
+   immédiatement sous le N1, jamais un gros bloc lourd. */
+.kmc-admin-secondary-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: min(1840px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+  background: #0c1526;
+}
+
+.kmc-admin-secondary-nav::-webkit-scrollbar { display: none; }
+
+.kmc-admin-secondary-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  color: rgb(255 255 255 / 0.64);
   border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
 }
 
-@media (max-width: 980px) {
+.kmc-admin-secondary-link:hover,
+.kmc-admin-secondary-link:focus-visible {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+  outline: none;
+}
+
+.kmc-admin-secondary-link.is-active {
+  color: #101b2e;
+  background: #cfe0ff;
+}
+
+/* Le sélecteur Market ID du mock devient le contrôle visible. Le shell de
+   surface conserve son sélecteur canonique dans le DOM comme autorité et
+   callback de rechargement ; il est piloté par le select de la barre. */
+body:has(.kmc-admin-market-select) .kmc-market-context {
+  display: none;
+}
+
+@media (max-width: 1660px) {
   .kmc-admin-navigation-inner {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       'identity utilities'
       'primary primary';
-    gap: 0 12px;
-    padding: 9px 0 8px;
+    gap: 0 16px;
+    padding: 8px 0 0;
   }
 
   .kmc-admin-navigation-identity { grid-area: identity; }
   .kmc-admin-utility-nav { grid-area: utilities; }
-
   .kmc-admin-primary-nav {
     grid-area: primary;
-    justify-content: flex-start;
-    margin-top: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    height: 48px;
+    margin-top: 2px;
   }
-
-  .kmc-admin-primary-nav::-webkit-scrollbar { display: none; }
+  .kmc-admin-primary-link { height: 48px; }
 }
 
-@media (max-width: 620px) {
-  .kmc-admin-navigation-inner {
-    width: min(100% - 24px, 1440px);
-    grid-template-columns: minmax(0, 1fr) auto;
+@media (max-width: 720px) {
+  .kmc-admin-navigation-inner,
+  .kmc-admin-secondary-nav {
+    width: min(100% - 20px, 1840px);
   }
 
-  .kmc-admin-home-label {
-    font-size: 13px;
+  .kmc-admin-home-label { font-size: 14px; }
+  .kmc-admin-market-select { min-width: 118px; max-width: 150px; }
+  .kmc-admin-account { display: none; }
+  .kmc-admin-primary-link {
+    padding-inline: 11px;
+    font-size: 12px;
   }
-
-  .kmc-admin-back {
-    padding-inline: 8px;
-  }
-
-  .kmc-admin-utility-link {
-    padding-inline: 8px;
-  }
-
-  .kmc-admin-demo-link {
-    font-size: 0;
-  }
-
-  .kmc-admin-demo-link::before {
-    margin-right: 0;
+  .kmc-admin-primary-link.is-active::after {
+    left: 11px;
+    right: 11px;
   }
 }
 
-@media (max-width: 430px) {
-  .kmc-admin-home-label { display: none; }
-  .kmc-admin-navigation-identity { gap: 7px; }
-  .kmc-admin-primary-link { padding-inline: 11px; }
-  .kmc-admin-primary-link.is-active::after { left: 11px; right: 11px; }
+@media (max-width: 480px) {
+  .kmc-admin-back { display: none; }
+  .kmc-admin-market-select { min-width: 108px; max-width: 126px; }
+  .kmc-admin-settings-link { padding: 0 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

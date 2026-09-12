@@ -6,54 +6,35 @@
  * @criticality   critical
  * @inputs        cash_ref_code, relais_actor, order_reference
  * @outputs       payment_confirmation, stock_transition, rollback_or_alert
- * @depends       services/order-payment-confirmation.js, db.js
+ * @depends       services/order-payment-confirmation.js, services/cash-confirmation-control-service.js, db.js
  * @used-by       routes/payments.js, relais-dashboard
- * @db-read       orders, users
- * @db-write      alerts, orders
- * @db-txn        cash_confirmation_idempotency, rollback_or_alert_on_stock_failure
- * @doctrine      payment_to_stock_single_entry, cash_validation_tracee, cash_rollback_vs_stripe_alert
+ * @db-read       orders, users, market_operating_assignments, market_cash_control_policies, cash_confirmation_controls
+ * @db-write      alerts, orders, cash_collections, cash_confirmation_controls
+ * @db-txn        cash_confirmation_idempotency, shared_cash_control, rollback_or_alert_on_stock_failure
+ * @doctrine      payment_to_stock_single_entry, cash_validation_tracee, cash_rollback_vs_stripe_alert, partner_cash_policy_enforced
  * @impact-areas  cash, orders, stock, relais, notifications, sourcing
- * @version       2026-06
+ * @version       2026-09
  */
 
 'use strict';
 
 /**
- * KOMERCE — services/payment-cash-confirm.js  (R5)
+ * KOMERCE — services/payment-cash-confirm.js
  *
- * Logique métier de confirmation cash par code de référence,
- * extraite de routes/payments.js (POST /api/payments/cash/confirm).
- * La route reste une façade : auth + validate + appel service + réponse.
- *
- * ╔══════════════════════════════════════════════════════════════════════╗
- * ║  Invariants respectés                                               ║
- * ║  I-01 : toute transition passe par order-status-machine            ║
- * ║  I-02 : confirmPaymentCycle = seul point d'entrée paiement→stock   ║
- * ╚══════════════════════════════════════════════════════════════════════╝
- *
- * Exports :
- *   confirmCashByReference({ cashRefCode, actor, triggerPurchasing, db })
+ * Confirmation cash par cash_ref_code. Toute confirmation passe par la même
+ * Cash Control Boundary que /api/cash/collect et /api/pickup/pay-cash.
  */
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { ensureSecretGenerated, cacheCodeForReveal } = require('./pickup-secret-service');
 const { markCashPaidAt } = require('./order-mutation-service');
+const {
+  prepareCashConfirmation,
+  finalizeCashConfirmation,
+} = require('./cash-confirmation-control-service');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-cash-confirm' });
 
-// ─── confirmCashByReference ────────────────────────────────────────────────────
-/**
- * Confirme un paiement cash par cash_ref_code.
- * Ouvre sa propre transaction (BEGIN/COMMIT/ROLLBACK), vérifie le cross-relais,
- * appelle confirmPaymentCycle, puis déclenche notification/purchasing post-commit.
- *
- * @param {object} opts
- * @param {string} opts.cashRefCode
- * @param {object} opts.actor               — { id, role } depuis req.user
- * @param {Function} opts.triggerPurchasing
- * @param {object} opts.db                  — module db (pool)
- * @returns {{ status: number, body: object }}
- */
 async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, db }) {
   if (!cashRefCode) {
     return { status: 400, body: { error: 'cash_ref_code requis' } };
@@ -65,7 +46,8 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
 
     const { rows } = await client.query(
       `SELECT * FROM orders
-       WHERE cash_ref_code = $1 AND payment_mode = 'cash_relais' AND payment_status = 'pending'`,
+       WHERE cash_ref_code = $1 AND payment_mode = 'cash_relais' AND payment_status = 'pending'
+       FOR UPDATE`,
       [cashRefCode]
     );
     if (!rows.length) {
@@ -75,7 +57,7 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
 
     const order = rows[0];
 
-    // Cross-relais check
+    // Cross-relais check — invariant central non désactivable.
     if (actor.role === 'agent_relais') {
       let agentRelaisId = null;
       let checkPossible = true;
@@ -117,11 +99,41 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
       }
     }
 
-    // Hub I-02
-    const cycleResult = await confirmPaymentCycle({
-      orderId:  order.id,
+    const control = await prepareCashConfirmation({
+      dbClient: client,
+      order,
       actor,
-      source:   'cash_confirm',
+      source: 'payments_cash_confirm',
+    });
+
+    if (!control.allowed) {
+      if (control.pending_second) {
+        // Le premier visa est une vraie décision de contrôle : on le conserve,
+        // mais aucune vérité de paiement/stock n'est créée avant le second acteur.
+        await client.query('COMMIT');
+        return {
+          status: control.status || 202,
+          body: {
+            success: false,
+            pending_second_approval: true,
+            code: control.code,
+            message: control.message,
+            reference: order.reference,
+            required_approvals: control.control?.required_approvals || 2,
+          },
+        };
+      }
+      await client.query('ROLLBACK');
+      return {
+        status: control.status || 409,
+        body: { error: control.message, code: control.code },
+      };
+    }
+
+    const cycleResult = await confirmPaymentCycle({
+      orderId: order.id,
+      actor,
+      source: 'cash_confirm',
       dbClient: client,
     });
 
@@ -138,19 +150,24 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
       };
     }
 
-    // Code de retrait canonique — généré ici, à la confirmation du paiement.
-    // Idempotent : no-op si déjà généré (ex. régénéré ailleurs entre-temps).
     const secretResult = await ensureSecretGenerated({
-      orderId:  order.id,
+      orderId: order.id,
       relaisId: order.relais_id || null,
-      channel:  'cash_confirm',
+      channel: 'cash_confirm',
       dbClient: client,
     });
 
+    await client.query(
+      `INSERT INTO cash_collections (order_id, amount_kmf, collected_by, relais_id)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (order_id) DO NOTHING`,
+      [order.id, Number(order.total_kmf), actor.id, order.relais_id]
+    );
+
     await markCashPaidAt(client, order.id);
+    await finalizeCashConfirmation({ dbClient: client, orderId: order.id });
     await client.query('COMMIT');
 
-    // Après commit (comme Stripe/PayPal/wallet) : cache pour révélation one-shot.
     if (secretResult.code) {
       cacheCodeForReveal(order.id, secretResult.code)
         .catch(e => log.error({ err: e }, '[CASH-CONFIRM] cacheCodeForReveal error:'));
@@ -159,15 +176,17 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
     const response = {
       status: 200,
       body: {
-        message:   'Paiement espèces confirmé — commande validée',
+        message: 'Paiement espèces confirmé — commande validée',
         reference: order.reference,
-        paid_at:   new Date().toISOString(),
+        paid_at: new Date().toISOString(),
+        cash_control: {
+          required_approvals: control.control?.required_approvals || 1,
+          second_approval: Boolean(control.second_approval),
+        },
         next_step: 'Sourcing déclenché automatiquement — bon de commande à l\'agent Dubai',
       },
     };
 
-    // Post-commit fire-and-forget — non bloquant
-    // LOY-01 — Hook fidélité gros panier
     try {
       const loyaltyService = require('./loyalty-service');
       loyaltyService.handleOrderConfirmed({ orderId: order.id })
@@ -189,9 +208,8 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
     }
 
     return response;
-
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => {});
     throw err;
   } finally {
     client.release();

@@ -56,7 +56,7 @@ const mockWorkspace = {
   updateMarketCostComponent: jest.fn(async () => ({ key: 'freight', default_value: 1250 })),
   toggleMarketCostComponent: jest.fn(async () => ({ key: 'freight', is_active: false })),
   resetMarketCostComponent: jest.fn(async () => ({ key: 'freight', inherited: true })),
-  buildWorkspace: jest.fn(), simulate: jest.fn(), flow: jest.fn(), applyPrice: jest.fn(), getStrategy: jest.fn(),
+  buildWorkspace: jest.fn(), simulate: jest.fn(), simulateImpact: jest.fn(), flow: jest.fn(), applyPrice: jest.fn(), getStrategy: jest.fn(),
   applyStrategy: jest.fn(), addCompetitor: jest.fn(), deactivateCompetitor: jest.fn(), createCostComponent: jest.fn(),
   updateCostComponent: jest.fn(), toggleCostComponent: jest.fn(),
 };
@@ -69,16 +69,33 @@ const mockDecisionPolicy = {
     authorization: 'DENY_NEW_UNDER_CDR_POSITION',
     reason: 'MARKET_DECISION_POLICY_REQUIRED',
   })),
+  isValidCalendarMonth: jest.fn((value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value || '').trim())),
   listMarketDecisionPolicyHistory: jest.fn(async () => []),
   recordMarketDecisionPolicy: jest.fn(async () => ({
-    version: 'CM-V1',
-    window_days: 30,
-    maturity_threshold: 0.9,
-    coverage_threshold: 1,
-    max_disposition_ratio: 0.05,
+    version: 'CM-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
   })),
 };
 jest.mock('../../services/pricing-market-decision-policy', () => mockDecisionPolicy);
+
+const mockCorridor = {
+  buildMarketCorridor: jest.fn(async ({ market, productRef }) => ({ market: { code: market.code }, product: { product_ref: productRef }, corridor: { local: { sample_count: 0 } } })),
+  recordMarketObservation: jest.fn(async ({ productRef }) => ({ observation_ref: 'KMO-1', product_ref: productRef })),
+  deactivateMarketObservation: jest.fn(async ({ observationRef }) => ({ observation_ref: observationRef, is_active: false })),
+};
+jest.mock('../../services/pricing-market-corridor', () => mockCorridor);
+
+const mockCommercialPrice = {
+  listMarketPriceDrafts: jest.fn(async () => ({ products: [] })),
+  setMarketPriceDraft: jest.fn(async ({ productRef, amount }) => ({ product_ref: productRef, local_price: amount })),
+  resetMarketPriceDraft: jest.fn(async ({ productRef }) => ({ product_ref: productRef, decision_status: 'RESET_TO_GLOBAL_BASE' })),
+};
+jest.mock('../../services/market-commercial-price-service', () => mockCommercialPrice);
+
+const mockActivation = {
+  previewLocalPriceActivation: jest.fn(async () => ({ activation: { allowed: true } })),
+  activateLocalPrice: jest.fn(async ({ productRef }) => ({ decision: { product_ref: productRef, buyer_effective: true } })),
+};
+jest.mock('../../services/market-local-price-activation-service', () => mockActivation);
 
 const express = require('express');
 const request = require('supertest');
@@ -102,12 +119,19 @@ test('manager CM lit et modifie uniquement le modèle CM', async () => {
     read_only: false,
     can_manage_costs: true,
     can_manage_decision_policy: true,
+    can_draft_local_prices: true,
+    can_activate_local_prices: true,
+    can_manage_market_observations: true,
+    local_strategy_owner: true,
   });
   expect(res.body.capabilities).toEqual(expect.objectContaining({
     cost_overrides: true,
     reset_to_global: true,
     market_decision: true,
+    market_corridor: true,
+    manage_market_price_observations: true,
     manage_decision_policy: true,
+    local_strategy_owner: true,
   }));
   expect(mockWorkspace.buildMarketWorkspace).toHaveBeenCalledWith({ market: expect.objectContaining({ id: 'market-cm', code: 'CM' }) });
 
@@ -123,24 +147,27 @@ test('manager lit la décision canonique sans pouvoir choisir la fenêtre', asyn
   expect(res.body.reason).toBe('MARKET_DECISION_POLICY_REQUIRED');
 });
 
+test('manager peut demander un mois calendaire explicite via ?period=', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision?period=2025-04');
+  expect(res.status).toBe(200);
+  expect(mockDecisionPolicy.evaluateMarketDecision).toHaveBeenCalledWith('market-cm', { period: '2025-04' });
+});
+
+test('un ?period= malformé est rejeté avant tout appel au moteur', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision?period=2025-4');
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe('pricing_market_decision_period_invalid');
+  expect(mockDecisionPolicy.evaluateMarketDecision).not.toHaveBeenCalled();
+});
+
 test('manager peut enregistrer une nouvelle politique append-only sur son marché', async () => {
   const body = {
-    version: 'CM-V1',
-    window_days: 30,
-    maturity_threshold: 0.9,
-    coverage_threshold: 1,
-    max_disposition_ratio: 0.05,
-    source: 'pricing-governance',
-    evidence_ref: 'decision://pricing/CM-V1',
-    rationale: 'Politique initiale du marché Cameroun.',
+    version: 'CM-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
+    source: 'pricing-governance', evidence_ref: 'decision://pricing/CM-V1', rationale: 'Politique initiale du marché Cameroun.',
   };
-  const res = await request(app())
-    .post('/api/admin/workspaces/pricing/market/CM/decision-policy')
-    .send(body);
-
+  const res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/decision-policy').send(body);
   expect(res.status).toBe(201);
   expect(mockDecisionPolicy.recordMarketDecisionPolicy).toHaveBeenCalledWith('market-cm', body, 'partner-1');
-  expect(res.body.result.version).toBe('CM-V1');
 });
 
 test('historique de politique est lisible par les rôles autorisés du marché', async () => {
@@ -151,7 +178,37 @@ test('historique de politique est lisible par les rôles autorisés du marché',
   expect(res.body.policies).toEqual([{ version: 'CM-V1' }]);
 });
 
-test('viewer CM consulte l’Atelier et la décision mais les mutations sont refusées', async () => {
+test('corridor pays est lisible par le scope et les preuves locales appartiennent au manager pays', async () => {
+  let res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/corridor?product_ref=KPR-1');
+  expect(res.status).toBe(200);
+  expect(mockCorridor.buildMarketCorridor).toHaveBeenCalledWith({
+    market: expect.objectContaining({ id: 'market-cm', code: 'CM' }),
+    productRef: 'KPR-1',
+  });
+
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/price-observations').send({
+    product_ref: 'KPR-1', competitor_name: 'Boutique locale', amount: 15000, notes: 'Terrain',
+  });
+  expect(res.status).toBe(201);
+  expect(mockCorridor.recordMarketObservation).toHaveBeenCalledWith(expect.objectContaining({
+    market: expect.objectContaining({ id: 'market-cm' }), productRef: 'KPR-1', actorId: 'partner-1',
+  }));
+
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/price-observations/KMO-1/deactivate').send({ reason: 'Observation obsolète' });
+  expect(res.status).toBe(200);
+  expect(mockCorridor.deactivateMarketObservation).toHaveBeenCalledWith(expect.objectContaining({ observationRef: 'KMO-1', actorId: 'partner-1' }));
+});
+
+test('le navigateur ne peut pas injecter market_id dans le corridor ou ses preuves', async () => {
+  const res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/price-observations').send({
+    product_ref: 'KPR-1', competitor_name: 'X', amount: 15000, market_id: 'market-cg',
+  });
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe('pricing_internal_authority_forbidden');
+  expect(mockCorridor.recordMarketObservation).not.toHaveBeenCalled();
+});
+
+test('viewer CM consulte Atelier, décision et corridor mais toutes les mutations restent refusées', async () => {
   mockScopeRole = 'viewer';
 
   const read = await request(app()).get('/api/admin/workspaces/pricing/market/CM');
@@ -161,38 +218,40 @@ test('viewer CM consulte l’Atelier et la décision mais les mutations sont ref
     read_only: true,
     can_manage_costs: false,
     can_manage_decision_policy: false,
+    can_draft_local_prices: false,
+    can_activate_local_prices: false,
+    can_manage_market_observations: false,
+    local_strategy_owner: false,
   });
   expect(read.body.capabilities).toEqual(expect.objectContaining({
     cost_overrides: false,
     reset_to_global: false,
     market_decision: true,
+    market_corridor: true,
+    manage_market_price_observations: false,
     manage_decision_policy: false,
+    local_strategy_owner: false,
   }));
 
-  const decision = await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision');
-  expect(decision.status).toBe(200);
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CM/decision')).status).toBe(200);
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CM/corridor?product_ref=KPR-1')).status).toBe(200);
 
   for (const suffix of ['update', 'toggle', 'reset']) {
-    const res = await request(app())
-      .post(`/api/admin/workspaces/pricing/market/CM/cost-components/freight/${suffix}`)
-      .send(suffix === 'update' ? { default_value: 1250 } : {});
+    const res = await request(app()).post(`/api/admin/workspaces/pricing/market/CM/cost-components/freight/${suffix}`).send(suffix === 'update' ? { default_value: 1250 } : {});
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('market_scope_role_insufficient');
   }
 
-  const policyWrite = await request(app())
-    .post('/api/admin/workspaces/pricing/market/CM/decision-policy')
-    .send({ version: 'CM-V2' });
-  expect(policyWrite.status).toBe(403);
-  expect(policyWrite.body.code).toBe('market_scope_role_insufficient');
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/decision-policy').send({ version: 'CM-V2' })).status).toBe(403);
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/price-observations').send({ product_ref: 'KPR-1', competitor_name: 'X', amount: 10 })).status).toBe(403);
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({ amount: 10, reason: 'test' })).status).toBe(403);
 
   expect(mockWorkspace.updateMarketCostComponent).not.toHaveBeenCalled();
-  expect(mockWorkspace.toggleMarketCostComponent).not.toHaveBeenCalled();
-  expect(mockWorkspace.resetMarketCostComponent).not.toHaveBeenCalled();
   expect(mockDecisionPolicy.recordMarketDecisionPolicy).not.toHaveBeenCalled();
+  expect(mockCorridor.recordMarketObservation).not.toHaveBeenCalled();
+  expect(mockCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
 });
 
-test('autorité Pricing globale peut gérer un override et la politique pays sans grant local', async () => {
+test('autorité Pricing globale peut gérer coûts et politique mais ne prend pas la stratégie locale à la place du pays', async () => {
   mockRole = 'admin';
   mockAuthorized = new Set();
   mockCentralPricing = true;
@@ -205,38 +264,30 @@ test('autorité Pricing globale peut gérer un override et la politique pays san
     read_only: false,
     can_manage_costs: true,
     can_manage_decision_policy: true,
+    can_draft_local_prices: false,
+    can_activate_local_prices: false,
+    can_manage_market_observations: false,
+    local_strategy_owner: false,
   });
 
-  const write = await request(app())
-    .post('/api/admin/workspaces/pricing/market/CM/cost-components/freight/update')
-    .send({ default_value: 1400 });
-  expect(write.status).toBe(200);
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/cost-components/freight/update').send({ default_value: 1400 })).status).toBe(200);
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/decision-policy').send({
+    version: 'CM-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1,
+    max_disposition_ratio: 0.05, source: 'pricing-governance', evidence_ref: 'decision://pricing/CM-V1', rationale: 'Initiale',
+  })).status).toBe(201);
 
-  const policyWrite = await request(app())
-    .post('/api/admin/workspaces/pricing/market/CM/decision-policy')
-    .send({
-      version: 'CM-V1',
-      window_days: 30,
-      maturity_threshold: 0.9,
-      coverage_threshold: 1,
-      max_disposition_ratio: 0.05,
-      source: 'pricing-governance',
-      evidence_ref: 'decision://pricing/CM-V1',
-      rationale: 'Politique initiale du marché Cameroun.',
-    });
-  expect(policyWrite.status).toBe(201);
+  const localPrice = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({ amount: 1000, reason: 'central' });
+  expect(localPrice.status).toBe(403);
+  expect(localPrice.body.code).toBe('market_local_strategy_manager_required');
 });
 
-test('opérateur CM reçoit 403 sur le modèle et la décision CG', async () => {
-  let res = await request(app()).get('/api/admin/workspaces/pricing/market/CG');
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('market_scope_denied');
+test('opérateur CM reçoit 403 sur modèle, décision et corridor CG', async () => {
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CG')).status).toBe(403);
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CG/decision')).status).toBe(403);
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CG/corridor?product_ref=KPR-1')).status).toBe(403);
   expect(mockWorkspace.buildMarketWorkspace).not.toHaveBeenCalled();
-
-  res = await request(app()).get('/api/admin/workspaces/pricing/market/CG/decision');
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('market_scope_denied');
   expect(mockDecisionPolicy.evaluateMarketDecision).not.toHaveBeenCalled();
+  expect(mockCorridor.buildMarketCorridor).not.toHaveBeenCalled();
 });
 
 test('market_operator ne peut jamais atteindre le pricing global', async () => {

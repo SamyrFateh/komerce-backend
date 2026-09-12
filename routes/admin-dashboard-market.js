@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, dashboard_filters
  * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
  * @db-write      none
@@ -21,6 +21,7 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const {
   hasDashboardGlobalAuthority,
@@ -38,7 +39,9 @@ const log = require('../utils/logger').child({ module: 'admin-dashboard-market' 
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire']);
+const attachCanonicalContextDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);
+const requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance']);
+const attachMarketDashboardDelegation = attachMarketDelegatedRoleFor(['admin', 'market_operator']);
 const requireMarketDashboardReadRole = requireRole(['admin', 'market_operator']);
 
 function rejectClientMarketId(req, res, next) {
@@ -114,6 +117,7 @@ function requireDashboardMarketRead(req, res, next) {
 router.get(
   '/context',
   authenticate,
+  attachCanonicalContextDelegation,
   requireCanonicalContextRole,
   async (req, res, next) => {
     try {
@@ -135,6 +139,7 @@ router.get(
 router.get(
   '/unified/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -156,6 +161,7 @@ router.get(
 router.get(
   '/commerce/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -176,6 +182,7 @@ router.get(
 router.get(
   '/operations/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
@@ -196,6 +203,7 @@ router.get(
 router.get(
   '/finance/market/:marketCode',
   authenticate,
+  attachMarketDashboardDelegation,
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,

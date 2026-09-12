@@ -14,6 +14,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const { mountHtmlRoutes } = require('../../bootstrap/html-routes');
+const shippingUi = require('../../public/dashboards/canonical/js/shipping-customs-workspace.js');
 const ROOT = path.join(__dirname, '..', '..');
 const CANONICAL = path.join(ROOT, 'public', 'dashboards', 'canonical');
 
@@ -65,6 +66,13 @@ test('le navigateur 4B appelle uniquement son namespace Canonical', () => {
   expect(source).not.toMatch(/parcel_id\s*:/);
 });
 
+test('Responsable pays voit 4B mais ne reçoit pas le bouton de confirmation transit', () => {
+  expect(shippingUi._test.canConfirmTransit({ role: 'market_operator' })).toBe(false);
+  expect(shippingUi._test.canConfirmTransit({ role: 'agent_transitaire' })).toBe(true);
+  expect(shippingUi._test.canConfirmTransit({ role: 'agent_hub' })).toBe(true);
+  expect(shippingUi._test.canConfirmTransit({ role: 'admin' })).toBe(true);
+});
+
 test('le service réutilise scan-engine et customs-shipment-service au lieu du Legacy', () => {
   const source = fs.readFileSync(path.join(ROOT, 'services', 'shipping-customs-workspace.js'), 'utf8');
   expect(source).toContain("require('./scan-engine')");
@@ -79,6 +87,7 @@ test('aucun endpoint de mutation globale 4B n existe', () => {
   const mutationLines = route.split('\n').filter(line => /router\.post\(/.test(line));
   expect(mutationLines.length).toBeGreaterThan(0);
   mutationLines.forEach(line => expect(line).toContain('/market/:marketCode/'));
+  expect(route).toContain("requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_transitaire', 'market_operator'])");
   expect(route).toContain("requireCustomsAction = requireRole(['admin'])");
   expect(route).toContain("requireTransitAction = requireRole(['admin', 'agent_hub', 'agent_transitaire'])");
 });

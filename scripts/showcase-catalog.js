@@ -5,29 +5,32 @@
  * @domain        catalog
  * @layer         script
  * @criticality   low
- * @inputs        DummyJSON, Platzi Fake Store, Wikimedia Commons, Cloudinary, DATABASE_URL
- * @outputs       source manifest, Cloudinary manifest, staging products
+ * @inputs        curated staging catalog, optional public candidate sources, Cloudinary, DATABASE_URL
+ * @outputs       candidate manifest, Cloudinary manifest, staging products
  * @depends       db.js, Node fetch/FormData/crypto/fs/path
  * @used-by       staging showcase preparation, realistic boutique/E2E testing
  * @db-read       products
  * @db-write      products
  * @db-txn        yes (seed command)
- * @doctrine      DOCTRINE_CATALOGUE.md, staging-only realistic fixtures
- * @version       2026-08-v2
+ * @doctrine      DOCTRINE_CATALOGUE.md, curated staging fixtures only
+ * @version       2026-09-v4
  *
- * SHOWCASE V1 — catalogue staging reproductible, vitrine + tests réalistes.
+ * SHOWCASE V2 — pipeline staging strict :
+ *   1. `source`   = construit seulement un POOL CANDIDAT depuis des sources publiques ;
+ *   2. curation   = étape humaine explicite dans les manifestes curatés V1 + V2 ;
+ *   3. `prepare`  = agrège les sources curatées puis les miroir dans Cloudinary ;
+ *   4. `audit`    = vérifie le manifeste Cloudinary canonique ;
+ *   5. `seed`     = remplace le catalogue staging avec ce manifeste audité.
  *
- * Le vieux seed de 467 produits n'est PLUS une source média : son cloud
- * Cloudinary historique dloffvvdz répond 401. On reconstruit donc le pool
- * depuis des sources publiques distinctes, puis on réhéberge les assets dans
- * le Cloudinary staging courant avant tout seed DB.
+ * Le legacy db/seed-products-v2.json est explicitement interdit comme entrée.
+ * Il ne doit plus pouvoir réinjecter des couples nom/image incohérents.
  *
  * Commandes :
  *   node scripts/showcase-catalog.js source --target 500 --network --strict
- *   node scripts/showcase-catalog.js prepare --target 500
- *   node scripts/showcase-catalog.js audit --target 500 --network --strict
+ *   node scripts/showcase-catalog.js prepare
+ *   node scripts/showcase-catalog.js audit --network --strict
  *   KOMERCE_ALLOW_SHOWCASE_SEED=1 DATABASE_URL=... \
- *     node scripts/showcase-catalog.js seed --target 500 --replace-active
+ *     node scripts/showcase-catalog.js seed --replace-active
  */
 'use strict';
 
@@ -36,10 +39,15 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
-const DEFAULT_TARGET = 500;
-const DEFAULT_SOURCE_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v1-source.json');
-const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v1.json');
-const LEGACY_INPUT = path.join(ROOT, 'db', 'seed-products-v2.json');
+const DEFAULT_SOURCE_TARGET = 500;
+const DEFAULT_CURATED_INPUT = path.join(ROOT, 'data', 'staging-market-catalog-curated-v1.json');
+const DEFAULT_CURATED_INPUTS = Object.freeze([
+  DEFAULT_CURATED_INPUT,
+  path.join(ROOT, 'data', 'staging-market-catalog-curated-v2-additions.json'),
+]);
+const DEFAULT_SOURCE_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v1-candidates.json');
+const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
+const BLOCKED_LEGACY_INPUT = path.join(ROOT, 'db', 'seed-products-v2.json');
 const DUMMY_URL = 'https://dummyjson.com/products?limit=0';
 const PLATZI_URL = 'https://api.escuelajs.co/api/v1/products?offset=0&limit=500';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
@@ -116,19 +124,19 @@ const TITLE_REPLACEMENTS = [
 ];
 
 const DESCRIPTION_BY_CATEGORY = Object.freeze({
-  Mode: 'Sélection mode pour le quotidien, choisie pour sa présentation et sa polyvalence.',
-  Beauté: 'Produit beauté de démonstration pour tester une fiche catalogue riche et lisible.',
-  Tech: 'Produit tech de démonstration pour éprouver prix, médias, recherche et navigation.',
-  Maison: 'Article maison de démonstration, utile pour tester une vitrine catalogue dense.',
-  Enfant: 'Article enfant de démonstration pour tester le rendu et la navigation par rayon.',
-  Sport: 'Article sport de démonstration pour tester filtres, cartes produit et parcours d’achat.',
+  Mode: 'Sélection mode candidate à curater avant toute publication staging.',
+  Beauté: 'Produit beauté candidat à curater avant toute publication staging.',
+  Tech: 'Produit tech candidat à curater avant toute publication staging.',
+  Maison: 'Article maison candidat à curater avant toute publication staging.',
+  Enfant: 'Article enfant candidat à curater avant toute publication staging.',
+  Sport: 'Article sport candidat à curater avant toute publication staging.',
 });
 
 function parseArgs(argv) {
   const out = {
     command: 'audit',
-    target: DEFAULT_TARGET,
-    input: LEGACY_INPUT,
+    target: null,
+    input: DEFAULT_CURATED_INPUTS,
     sourceManifest: DEFAULT_SOURCE_MANIFEST,
     manifest: DEFAULT_MANIFEST,
     network: false,
@@ -152,12 +160,18 @@ function parseArgs(argv) {
     else if (arg === '--replace-active') out.replaceActive = true;
     else throw new Error(`Argument inconnu: ${arg}`);
   }
-  if (!Number.isInteger(out.target) || out.target < 1 || out.target > 1000) {
+
+  if (out.target !== null && (!Number.isInteger(out.target) || out.target < 1 || out.target > 1000)) {
     throw new Error('--target doit être un entier entre 1 et 1000');
   }
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 25) {
     throw new Error('--concurrency doit être un entier entre 1 et 25');
   }
+  const inputs = Array.isArray(out.input) ? out.input : [out.input];
+  if (inputs.some((input) => path.resolve(input) === path.resolve(BLOCKED_LEGACY_INPUT))) {
+    throw new Error('Entrée legacy interdite: db/seed-products-v2.json ne peut plus alimenter le showcase staging');
+  }
+  if (out.command === 'source' && out.target === null) out.target = DEFAULT_SOURCE_TARGET;
   return out;
 }
 
@@ -165,9 +179,66 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function readProductList(file) {
+  const body = readJson(file);
+  const products = Array.isArray(body) ? body : body && Array.isArray(body.products) ? body.products : null;
+  if (!products || products.length === 0) {
+    throw new Error(`Manifeste produits vide ou invalide: ${file}`);
+  }
+  return products;
+}
+
+function readProductInputs(input) {
+  const files = Array.isArray(input) ? input : [input];
+  const products = [];
+  for (const file of files) {
+    if (!fs.existsSync(file)) throw new Error(`Catalogue curaté absent: ${file}`);
+    products.push(...readProductList(file));
+  }
+  if (!products.length) throw new Error('Catalogue curaté vide');
+  return products;
+}
+
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
+}
+
+function resolveTarget(products, requestedTarget) {
+  const target = requestedTarget == null ? products.length : requestedTarget;
+  if (products.length < target) {
+    throw new Error(`Manifeste sous cible: ${products.length}/${target}`);
+  }
+  return target;
+}
+
+function assertCuratedSource(products) {
+  const refs = new Set();
+  const heroes = new Set();
+  const errors = [];
+  products.forEach((product, index) => {
+    const label = product.product_ref || `#${index}`;
+    if (product.curated !== true) errors.push(`${label}: curated=true requis`);
+    if (!/^KPR-\d{6,}$/.test(String(product.product_ref || ''))) errors.push(`${label}: product_ref KPR canonique requis`);
+    if (refs.has(product.product_ref)) errors.push(`${label}: product_ref dupliqué`);
+    refs.add(product.product_ref);
+    if (!String(product.name || '').trim() || /^(produit|article|item)(\s|$)/i.test(String(product.name || '').trim())) {
+      errors.push(`${label}: nom générique interdit`);
+    }
+    const description = String(product.description || '').trim();
+    if (description.length < 24 || /^Raw test product:/i.test(description)) errors.push(`${label}: description curatée requise`);
+    if (!String(product.category || '').trim() || !String(product.subcategory || '').trim()) errors.push(`${label}: catégorie/sous-catégorie requises`);
+    if (!(Number(product.price_kmf) > 0)) errors.push(`${label}: price_kmf > 0 requis`);
+    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) < 0) errors.push(`${label}: stock entier >= 0 requis`);
+    if (!/^https:\/\//.test(String(product.image_url || ''))) errors.push(`${label}: image hero HTTPS requise`);
+    if (!String(product.source || '').trim()) errors.push(`${label}: source traçable requise`);
+    if (heroes.has(product.image_url)) errors.push(`${label}: image hero dupliquée`);
+    heroes.add(product.image_url);
+  });
+  if (errors.length) {
+    throw new Error(`Catalogue curaté invalide (${errors.length})\n${errors.slice(0, 20).map((v) => `  - ${v}`).join('\n')}`);
+  }
+  return { products: products.length, refs: refs.size, heroes: heroes.size };
 }
 
 function roundKmf(value) {
@@ -185,7 +256,7 @@ function localizeTitle(title) {
   let value = String(title || '').replace(/^File:/i, '').replace(/[_-]+/g, ' ').trim();
   value = value.replace(/\.(jpe?g|png|webp|gif|tiff?)$/i, '').replace(/\s+/g, ' ');
   for (const [pattern, replacement] of TITLE_REPLACEMENTS) value = value.replace(pattern, replacement);
-  return value.slice(0, 120) || 'Produit Komerce';
+  return value.slice(0, 120) || 'Candidat catalogue';
 }
 
 function cleanDescription(value, category, name) {
@@ -223,37 +294,20 @@ function normalizeImages(product) {
   return [...new Set([product.image_url, ...images].map((v) => String(v || '').trim()).filter(Boolean))];
 }
 
-function normalizeSeedProduct(product, index) {
-  const images = normalizeImages(product);
-  return {
-    product_ref: `SHOWCASE-V1-${String(index + 1).padStart(4, '0')}`,
-    name: String(product.name || `Produit ${index + 1}`).trim(),
-    description: String(product.description_fr || product.description || product.name || '').trim(),
-    category: String(product.category || 'Maison').trim(),
-    subcategory: product.subcategory ? String(product.subcategory).trim() : null,
-    price_kmf: roundKmf(product.price_kmf),
-    promo_pct: Number.isFinite(Number(product.promo_pct)) ? Number(product.promo_pct) : null,
-    image_url: images[0] || null,
-    images,
-    sort_order: index,
-    source: 'seed-products-v2',
-  };
-}
-
-function decorateProduct(product, index) {
-  const ref = `SHOWCASE-V1-${String(index + 1).padStart(4, '0')}`;
+function decorateCandidate(product, index) {
   const name = localizeTitle(product.name);
   const category = product.category || 'Maison';
   const promoSeed = stableInt(`${product.source}:promo`, 0, 99);
   return {
     ...product,
-    product_ref: ref,
+    product_ref: `CANDIDATE-V1-${String(index + 1).padStart(4, '0')}`,
     name,
     description: cleanDescription(product.description, category, name),
     price_kmf: roundKmf(product.price_kmf || stableInt(product.source, 1500, 85000)),
     promo_pct: product.promo_pct ?? (promoSeed < 28 ? stableInt(`${product.source}:pct`, 8, 45) : null),
     stock: stableInt(`${product.source}:stock`, 2, 70),
     sort_order: index,
+    curated: false,
   };
 }
 
@@ -323,7 +377,7 @@ function mapCommonsPage(page, query, category, subcategory) {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url, { headers: { 'User-Agent': 'KomerceShowcaseBuilder/2.0' }, redirect: 'follow' });
+  const response = await fetch(url, { headers: { 'User-Agent': 'KomerceShowcaseBuilder/3.0' }, redirect: 'follow' });
   if (!response.ok) throw new Error(`${url} -> HTTP ${response.status}`);
   return response.json();
 }
@@ -359,11 +413,9 @@ async function collectSourceProducts(target) {
     const mapped = mapPlatziProduct(product);
     if (mapped?.image_url) pool.push(mapped);
   }
-
   if (pool.length < target) {
     for (const [query, category, subcategory] of COMMONS_QUERIES) {
-      const rows = await fetchCommons(query, category, subcategory, 35);
-      pool.push(...rows);
+      pool.push(...await fetchCommons(query, category, subcategory, 35));
       if (pool.length >= target + 80) break;
     }
   }
@@ -375,7 +427,7 @@ async function collectSourceProducts(target) {
     if (!product.image_url || seenSources.has(product.source) || seenHeroes.has(product.image_url)) continue;
     seenSources.add(product.source);
     seenHeroes.add(product.image_url);
-    distinct.push(decorateProduct(product, distinct.length));
+    distinct.push(decorateCandidate(product, distinct.length));
   }
   return distinct;
 }
@@ -401,7 +453,7 @@ async function verifyImageUrl(url, timeoutMs = 12000) {
   try {
     const response = await fetch(url, {
       method: 'GET',
-      headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8', 'User-Agent': 'KomerceShowcaseAudit/2.0' },
+      headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8', 'User-Agent': 'KomerceShowcaseAudit/3.0' },
       redirect: 'follow',
       signal: controller.signal,
     });
@@ -409,12 +461,11 @@ async function verifyImageUrl(url, timeoutMs = 12000) {
     const reader = response.body?.getReader?.();
     const firstChunk = reader ? await reader.read() : { value: null };
     if (reader) await reader.cancel().catch(() => {});
-    const sampledBytes = firstChunk.value?.byteLength || 0;
     return {
-      ok: response.ok && type.startsWith('image/') && sampledBytes > 64,
+      ok: response.ok && type.startsWith('image/') && (firstChunk.value?.byteLength || 0) > 64,
       status: response.status,
       type,
-      bytes: sampledBytes,
+      bytes: firstChunk.value?.byteLength || 0,
     };
   } catch (error) {
     return { ok: false, reason: error.name === 'AbortError' ? 'timeout' : error.message };
@@ -432,14 +483,15 @@ async function verifySourcePool(products, concurrency) {
 }
 
 async function buildSourceManifest(options) {
-  const pool = await collectSourceProducts(options.target);
-  console.log(`[showcase] pool source brut: ${pool.length}`);
+  const pool = await collectSourceProducts(options.target || DEFAULT_SOURCE_TARGET);
+  console.log(`[showcase] pool candidat brut: ${pool.length}`);
   const valid = options.network ? await verifySourcePool(pool, options.concurrency) : pool;
-  const selected = valid.slice(0, options.target).map((product, index) => decorateProduct(product, index));
+  const target = options.target || DEFAULT_SOURCE_TARGET;
+  const selected = valid.slice(0, target);
   writeJson(options.sourceManifest, selected);
-  console.log(`[showcase] source manifest: ${selected.length}/${options.target} -> ${options.sourceManifest}`);
-  if (options.strict && selected.length < options.target) {
-    throw new Error(`Source pool insuffisant: ${selected.length}/${options.target} médias valides`);
+  console.log(`[showcase] candidats: ${selected.length}/${target} -> ${options.sourceManifest}`);
+  if (options.strict && selected.length < target) {
+    throw new Error(`Pool candidat insuffisant: ${selected.length}/${target} médias valides`);
   }
   return selected;
 }
@@ -484,7 +536,7 @@ async function uploadRemoteImage(remoteUrl, { folder, publicId }) {
 }
 
 async function uploadProductMedia(product) {
-  const folder = `komerce/staging/showcase-v1/${product.product_ref.toLowerCase()}`;
+  const folder = `komerce/staging/showcase-v2/${product.product_ref.toLowerCase()}`;
   const sourceImages = normalizeImages(product).slice(0, 3);
   const uploaded = [];
   for (let i = 0; i < sourceImages.length; i += 1) {
@@ -497,19 +549,17 @@ async function uploadProductMedia(product) {
 }
 
 async function prepareCatalogue(options) {
-  const source = fs.existsSync(options.sourceManifest)
-    ? readJson(options.sourceManifest)
-    : await buildSourceManifest({ ...options, network: true, strict: true });
-  if (source.length < options.target) throw new Error(`Source manifest sous cible: ${source.length}/${options.target}`);
+  const source = readProductInputs(options.input);
+  assertCuratedSource(source);
+  const target = resolveTarget(source, options.target);
 
   const uploaded = [];
-  for (const product of source.slice(0, options.target)) {
-    const row = await uploadProductMedia(product);
-    uploaded.push(row);
-    if (uploaded.length % 25 === 0) console.log(`[showcase] Cloudinary ${uploaded.length}/${options.target}`);
+  for (const product of source.slice(0, target)) {
+    uploaded.push(await uploadProductMedia(product));
+    if (uploaded.length % 25 === 0) console.log(`[showcase] Cloudinary ${uploaded.length}/${target}`);
   }
   writeJson(options.manifest, uploaded);
-  console.log(`[showcase] Cloudinary manifest: ${uploaded.length} -> ${options.manifest}`);
+  console.log(`[showcase] manifeste Cloudinary curaté: ${uploaded.length} -> ${options.manifest}`);
   return uploaded;
 }
 
@@ -540,10 +590,13 @@ function staticAudit(products, target = null) {
 }
 
 async function auditCatalogue(options) {
-  const file = fs.existsSync(options.manifest) ? options.manifest : options.input;
-  const products = readJson(file);
+  if (!fs.existsSync(options.manifest)) {
+    throw new Error(`Manifest Cloudinary absent: ${options.manifest}. Lancer d'abord prepare.`);
+  }
+  const products = readProductList(options.manifest);
+  assertCuratedSource(products);
   const report = staticAudit(products, options.target);
-  report.file = file;
+  report.file = options.manifest;
   if (options.network) {
     const urls = [...new Set(products.flatMap(normalizeImages))];
     const checks = await pooledMap(urls, options.concurrency, async (url) => ({ url, ...(await verifyImageUrl(url)) }));
@@ -551,7 +604,7 @@ async function auditCatalogue(options) {
   } else report.networkFailures = [];
 
   console.log(JSON.stringify({
-    file,
+    file: options.manifest,
     products: report.totalProducts,
     images: report.totalImages,
     unique_images: report.uniqueImages,
@@ -590,8 +643,11 @@ async function seedCatalogue(options) {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
   if (!fs.existsSync(options.manifest)) throw new Error(`Manifest absent: ${options.manifest}`);
 
-  const products = readJson(options.manifest).slice(0, options.target);
-  const report = staticAudit(products, options.target);
+  const allProducts = readProductList(options.manifest);
+  assertCuratedSource(allProducts);
+  const target = resolveTarget(allProducts, options.target);
+  const products = allProducts.slice(0, target);
+  const report = staticAudit(products, target);
   if (report.missingHero.length || report.nonCloudinary.length || report.fetchProxy.length || report.malformed.length || report.targetShortfall) {
     throw new Error('Manifest non canonique: lancer audit --network --strict avant seed');
   }
@@ -616,15 +672,15 @@ async function seedCatalogue(options) {
         values.push(
           product.product_ref,
           product.name,
-          product.description || product.name,
+          product.description,
           product.category,
-          product.subcategory || null,
+          product.subcategory,
           product.price_kmf,
           product.promo_pct || null,
           product.image_url,
           JSON.stringify(product.images || [product.image_url]),
-          product.stock || 10,
-          product.sort_order || 0,
+          product.stock,
+          product.sort_order || offset,
         );
       }
       await client.query(
@@ -640,12 +696,17 @@ async function seedCatalogue(options) {
       );
     }
 
+    const refs = products.map((product) => product.product_ref);
     const { rows: [count] } = await client.query(
-      `SELECT COUNT(*)::int AS count FROM products WHERE is_active=TRUE AND product_ref LIKE 'SHOWCASE-V1-%'`
+      `SELECT COUNT(*)::int AS count
+         FROM products
+        WHERE is_active=TRUE
+          AND product_ref = ANY($1::text[])`,
+      [refs]
     );
     if (count.count !== products.length) throw new Error(`Post-seed mismatch: attendu ${products.length}, obtenu ${count.count}`);
     await client.query('COMMIT');
-    console.log(`[showcase] COMMIT — ${count.count} produits showcase actifs`);
+    console.log(`[showcase] COMMIT — ${count.count} produits curatés actifs`);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -671,14 +732,20 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DEFAULT_CURATED_INPUT,
+  DEFAULT_CURATED_INPUTS,
+  BLOCKED_LEGACY_INPUT,
   parseArgs,
+  readProductList,
+  readProductInputs,
+  resolveTarget,
+  assertCuratedSource,
   roundKmf,
   stableInt,
   isCloudinaryUrl,
   isCanonicalCloudinaryUpload,
   isCloudinaryFetchProxy,
   normalizeImages,
-  normalizeSeedProduct,
   localizeTitle,
   mapDummyProduct,
   mapPlatziProduct,
@@ -686,4 +753,7 @@ module.exports = {
   staticAudit,
   verifyImageUrl,
   collectSourceProducts,
+  prepareCatalogue,
+  auditCatalogue,
+  seedCatalogue,
 };

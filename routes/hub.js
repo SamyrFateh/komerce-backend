@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, parcel_items, parcels, users
  * @db-write      none
@@ -35,6 +35,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForOperator } = require('../middleware/require-market-scope');
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
@@ -45,7 +46,7 @@ const uploadHub = require('../middleware/upload-hub');
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 // Les lectures terrain peuvent être supervisées par un market_operator, mais
 // uniquement sur les orders.market_id résolus depuis operator_market_scopes.
-const hubRead = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const hubRead = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 
 function addMarketScope(req, conditions, params, column = 'o.market_id') {
   if (req.user.role !== 'market_operator') return;

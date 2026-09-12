@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Drapeau du Congo-Brazzaville">
+  <rect width="900" height="600" fill="#009543"/>
+  <path fill="#fbde4a" d="M0 440L660 0h240v160L240 600H0z"/>
+  <path fill="#dc241f" d="M240 600l660-440v440z"/>
+</svg>

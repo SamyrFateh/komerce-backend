@@ -47,9 +47,10 @@ module.exports = {
   perimeter: {
     in: [
       'integration Stripe et PayPal (intent, capture, webhook, evenements)',
-      'Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG)',
+      'Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG, KartaPay KM vers MVola/Holo)',
       'réconciliation périodique des paiements Mobile Money pending si callback perdu',
       'paiement cash au retrait et relances cash',
+      'contrôle partagé de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts',
       'confirmation de paiement et idempotence webhook/callback',
     ],
     out: [
@@ -73,6 +74,7 @@ module.exports = {
       'services/confirm-pickup-cash-payment.js',
       'services/payment-paypal-events.js',
       'services/cash-operations.js',
+      'services/cash-confirmation-control-service.js',
       'services/cash-deposit-service.js',
       'services/reconciliation-service.js',
       'services/payment-mobile-money.js',
@@ -80,6 +82,7 @@ module.exports = {
       'services/mobile-money/registry.js',
       'services/mobile-money/orange-money-cm.js',
       'services/mobile-money/mtn-momo-cg.js',
+      'services/mobile-money/kartapay-km.js',
     ],
     routes: [
       'routes/cash.js',
@@ -92,6 +95,8 @@ module.exports = {
       'migrations/079_paypal_payment_mode.sql',
       'migrations/148_cash_deposit_business_reference.sql',
       'migrations/169_mobile_money_foundation.sql',
+      'migrations/171_kartapay_km_mobile_money.sql',
+      'migrations/199_cash_confirmation_control.sql',
     ],
     boutique: [
       // Payment-specific uniquement. Le tunnel général b-checkout* appartient
@@ -111,6 +116,7 @@ module.exports = {
       'tests/unit/payments-webhook.test.js',
       'tests/unit/paypal-client.test.js',
       'tests/unit/cash-operations-service.test.js',
+      'tests/unit/cash-confirmation-control-service.test.js',
       'tests/unit/cash-deposit-service.test.js',
       'tests/unit/cash-reminder-service.test.js',
       'tests/unit/cash-route.test.js',
@@ -124,6 +130,7 @@ module.exports = {
       'tests/unit/mobile-money-providers.test.js',
       'tests/unit/payment-mobile-money.test.js',
       'tests/unit/mobile-money-reconciliation.test.js',
+      'tests/unit/kartapay-webhook.test.js',
       'public/boutique/tests/unit/b-mobile-money.test.js',
     ],
   },
@@ -150,6 +157,9 @@ module.exports = {
     tables: [
       'cash_collections: RW',
       'cash_deposits: RW',
+      'cash_confirmation_controls: RW',
+      'market_cash_control_policies: R',
+      'market_operating_assignments: R',
       'incidents: R',
       'market_payment_providers: R',
       'mobile_money_transactions: RW',
@@ -167,8 +177,8 @@ module.exports = {
   security: {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 13,
-    totalRoutes: 18,
-    note: "Stripe/PayPal conservent leurs gardes existantes. Mobile Money ajoute des routes utilisateur protégées et un callback public qui n'accorde aucune confiance au body : toute confirmation relit le statut serveur-à-serveur chez le provider. Les secrets providers restent exclusivement en environnement.",
+    totalRoutes: 19,
+    note: "Stripe/PayPal conservent leurs gardes existantes. Mobile Money ajoute des routes utilisateur protégées, des callbacks publics qui relisent le statut serveur-à-serveur, et pour KartaPay un webhook HMAC vérifié avant cette relecture. Les secrets providers restent exclusivement en environnement.",
   },
   contract: {
     exposes: [
@@ -180,6 +190,7 @@ module.exports = {
       'GET /api/payments/mobile-money/transactions/:transactionId',
       'POST /api/payments/mobile-money/transactions/:transactionId/refresh',
       'POST /api/payments/mobile-money/callback/:provider/:transactionId',
+      'POST /api/payments/mobile-money/webhook/:provider',
       'GET /api/payments/mobile-money/admin/pending',
       'POST /api/cash/collect/:orderId',
       'GET /api/cash/collections',
@@ -213,6 +224,7 @@ module.exports = {
       'logistics (generation du code retrait pickup au moment du paiement)',
       'loyalty (recalcul de palier apres paiement confirme)',
       'purchasing (verification/reapprovisionnement apres encaissement)',
+      'market-delegation (politique de contrôle cash du partenaire ; payments reste propriétaire de la vérité d’encaissement)',
     ],
   },
 
@@ -227,12 +239,17 @@ module.exports = {
       test: 'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js' },
     { statement: 'Mobile Money ne confirme jamais sur le body callback : le statut est relu chez le provider et montant/devise sont comparés au snapshot transactionnel',
       test: 'tests/unit/payment-mobile-money.test.js' },
+    { statement: 'un webhook KartaPay doit être signé, rapproché à la tentative locale, puis relu par API authentifiée avant confirmation',
+      test: 'tests/unit/kartapay-webhook.test.js' },
     { statement: 'un callback Mobile Money perdu est repris par une réconciliation périodique bornée et idempotente',
       test: 'tests/unit/mobile-money-reconciliation.test.js' },
     'aucun secret de paiement en dur dans le code',
     { statement: 'un paiement confirme ne peut etre confirme deux fois',
       test: 'tests/invariants/payments.no-double-confirm.test.js' },
     'un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)',
+    { statement: 'tous les chemins cash passent par un contrôle partagé avant de créer la vérité paiement/stock', test: 'tests/unit/cash-confirmation-control-service.test.js' },
+    { statement: 'en DUAL_ALWAYS le premier acteur ne peut jamais être son propre second approbateur', test: 'tests/unit/cash-confirmation-control-service.test.js' },
+    { statement: 'le montant cash confirmé reste dérivé de la commande et n’est jamais saisi librement dans le contrôle', test: 'tests/unit/cash-confirmation-control-service.test.js' },
   ],
 
 };

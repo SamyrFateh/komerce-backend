@@ -39,11 +39,62 @@
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
     DEMO: 'demo',
+    SETTINGS: 'settings',
   });
+
+  // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md.
+  // Chaque rôle atterrit sur le premier onglet qu'il peut réellement charger
+  // côté serveur ; aujourd'hui seuls admin et market_operator ont des
+  // onglets primaires au-delà de Dashboard.
+  // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md §9.
+  // Chaque rôle atterrit directement sur son onglet primaire pertinent,
+  // pas sur un Dashboard générique qui ne reflète pas son métier.
+  const ROLE_DEFAULT_LANDING = Object.freeze({
+    admin:              '/admin/pilotage',
+    market_operator:    '/admin/pilotage',
+    finance:            '/admin/workspaces/accounting',
+    sourcing:           '/admin/workspaces/sourcing',
+    agent_hub:          '/admin/workspaces/operations',
+    agent_relais:       '/admin/workspaces/operations',
+    agent_transitaire:  '/admin/workspaces/shipping-customs',
+    support:            '/admin/pilotage',
+  });
+
+  function defaultLandingSurface(user) {
+    const role = (user && user.role) || '';
+    return ROLE_DEFAULT_LANDING[role] || '/admin/pilotage';
+  }
 
   function loginUrl() {
     const next = global.location.pathname + global.location.search + global.location.hash;
     return '/login.html?next=' + encodeURIComponent(next);
+  }
+
+  async function resolveDelegatedPortalUser(user) {
+    if (!user || ALLOWED_ROLES.has(user.role)) return user || null;
+
+    try {
+      const response = await global.fetch('/api/admin/dashboard/context', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return null;
+
+      const context = await response.json();
+      const access = context && context.access;
+      if (!context || !context.actor || context.actor.role !== 'market_operator') return null;
+      if (!access || access.mode !== 'market' || !Array.isArray(access.allowedMarkets) || !access.allowedMarkets.length) return null;
+
+      return {
+        ...user,
+        persisted_role: user.role,
+        role: 'market_operator',
+        role_source: 'market_delegation_context',
+      };
+    } catch (_) {
+      return null;
+    }
   }
 
   async function requireSession() {
@@ -59,12 +110,13 @@
     }
 
     const user = await response.json();
-    if (!ALLOWED_ROLES.has(user.role)) {
+    const effectiveUser = await resolveDelegatedPortalUser(user);
+    if (!effectiveUser) {
       global.location.replace('/');
       throw new Error('forbidden');
     }
 
-    return user;
+    return effectiveUser;
   }
 
   async function requireAdminContext() {
@@ -119,6 +171,7 @@
       return SURFACES.ACTION_CENTER;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
+    if (path === '/admin/settings') return SURFACES.SETTINGS;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
     if (path === '/admin/finance' || path === '/admin-next/finance') return SURFACES.FINANCE;
@@ -138,6 +191,17 @@
     return code;
   }
 
+  // Convertit un code ISO 3166-1 alpha-2 en emoji drapeau via les Regional
+  // Indicator Symbols (U+1F1E6..U+1F1FF, un par lettre A-Z). Fonctionne pour
+  // tout code à 2 lettres sans table de correspondance à maintenir.
+  function regionFlagEmoji(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(normalized)) return '';
+    const base = 0x1f1e6;
+    const codePoints = [...normalized].map(letter => base + (letter.charCodeAt(0) - 65));
+    return String.fromCodePoint(...codePoints);
+  }
+
   function marketChoices(adminContext, options = {}) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) {
@@ -149,7 +213,9 @@
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
     }
     access.allowedMarkets.forEach(code => {
-      choices.push(Object.freeze({ value: code, marketCode: code, label: marketDisplayName(code) }));
+      const flag = regionFlagEmoji(code);
+      const label = flag ? `${flag} ${marketDisplayName(code)}` : marketDisplayName(code);
+      choices.push(Object.freeze({ value: code, marketCode: code, label }));
     });
     return Object.freeze(choices);
   }
@@ -442,6 +508,19 @@
     const surface = global.document.createElement('div');
     surface.setAttribute('data-canonical-surface', options.surface);
 
+    const renderCurrent = requestedMarket => options.render(surface, user, adminContext, requestedMarket);
+    const renderAtomically = async requestedMarket => {
+      // Pricing garde l'Atelier courant visible pendant que le marché suivant
+      // se construit hors DOM. Le swap n'arrive qu'après un rendu réussi :
+      // aucun flash du workspace historique, aucun écran blanc en cas d'échec.
+      const stage = global.document.createElement('div');
+      stage.className = 'kmc-market-surface-stage';
+      stage.dataset.marketSurfaceStage = '';
+      await options.render(stage, user, adminContext, requestedMarket);
+      surface.replaceChildren(stage);
+      return stage;
+    };
+
     const selector = mountMarketSelector({
       document: global.document,
       container: root,
@@ -449,11 +528,13 @@
       contextContract: global.KomerceAdminContext,
       title: options.title,
       requireMarket: Boolean(options.requireMarket),
-      onChange: requestedMarket => options.render(surface, user, adminContext, requestedMarket),
+      onChange: requestedMarket => options.atomicSwap
+        ? renderAtomically(requestedMarket)
+        : renderCurrent(requestedMarket),
     });
 
     root.appendChild(surface);
-    return options.render(surface, user, adminContext, selector.initialMarket);
+    return renderCurrent(selector.initialMarket);
   }
 
   function renderPilotageShell(root, user, adminContext) {
@@ -527,7 +608,8 @@
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'pricing-workspace',
       title: 'Workspace Pricing / Atelier des coûts',
-      requireMarket: user && user.role === 'market_operator',
+      requireMarket: true,
+      atomicSwap: true,
       render: renderPricingWorkspace,
     });
   }
@@ -541,8 +623,22 @@
     });
   }
 
+  // Paramètres migré dans le shell Canonical : KomerceCanonicalSettingsWorkspace
+  // (public/dashboards/canonical/js/settings-workspace.js) est un module
+  // Canonical natif — fetch direct, zéro dépendance au shell Legacy.
+  async function renderSettingsWorkspace(root) {
+    root.innerHTML = '';
+    if (!global.KomerceCanonicalSettingsWorkspace || typeof global.KomerceCanonicalSettingsWorkspace.render !== 'function') {
+      root.innerHTML = '<p style="padding:40px;text-align:center;color:#dc2626">'
+        + '❌ KomerceCanonicalSettingsWorkspace indisponible — script non chargé</p>';
+      return;
+    }
+    await global.KomerceCanonicalSettingsWorkspace.render(root);
+  }
+
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
@@ -564,10 +660,23 @@
   async function boot() {
     const root = document.getElementById('canonical-admin-root');
     if (!root) throw new Error('canonical_admin_root_missing');
-
     const user = await requireSession();
+
+    // `/admin` est l'unique porte d'entrée interne. Une session déjà ouverte
+    // doit obtenir exactement la même landing métier qu'une session qui vient
+    // de passer par /login.html, avant tout chargement d'un AdminContext qui
+    // pourrait ne pas appartenir au rôle (Hub, Relais, Finance, etc.).
+    const entryPath = String(global.location.pathname || '');
+    if (entryPath === '/admin' || entryPath === '/admin/') {
+      const landing = defaultLandingSurface(user);
+      if (landing !== entryPath) {
+        global.location.replace(landing);
+        return user;
+      }
+    }
+
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
@@ -583,6 +692,38 @@
       global.KomerceCanonicalNavigation.mount({ user, surface });
     }
 
+    // Landing intelligente : si la surface courante appartient à un domaine
+    // N1 (docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md) que ce rôle ne peut
+    // pas voir, ou à un espace N2 non autorisé au sein d'un domaine par
+    // ailleurs visible (ex. agent_relais sur Expéditions & Douane), on
+    // redirige vers sa landing plutôt que de rendre une vue qui va 403.
+    // Dashboard est toujours autorisé pour tout rôle connu de ALLOWED_ROLES,
+    // donc la landing elle-même ne peut jamais redéclencher cette redirection.
+    if (global.KomerceCanonicalNavigation
+      && typeof global.KomerceCanonicalNavigation.visibleNavigationFor === 'function'
+      && typeof global.KomerceCanonicalNavigation.activePrimarySurface === 'function') {
+      const nav = global.KomerceCanonicalNavigation;
+      const visibleDomains = nav.visibleNavigationFor(user, adminContext);
+      const visibleDomainIds = visibleDomains.map(domain => domain.id);
+      const activeDomainId = nav.activePrimarySurface(surface);
+      let authorized = visibleDomainIds.includes(activeDomainId);
+
+      if (authorized && typeof nav.activeSpaceFor === 'function' && typeof nav.visibleSpacesFor === 'function') {
+        const activeSpaceId = nav.activeSpaceFor(surface);
+        if (activeSpaceId) {
+          const activeDomain = visibleDomains.find(domain => domain.id === activeDomainId);
+          const visibleSpaceIds = nav.visibleSpacesFor(activeDomain, user && user.role).map(space => space.id);
+          authorized = visibleSpaceIds.includes(activeSpaceId);
+        }
+      }
+
+      if (!authorized) {
+        const landing = defaultLandingSurface(user);
+        global.location.replace(landing);
+        return user;
+      }
+    }
+
     await renderReady(root, user, adminContext);
     return user;
   }
@@ -591,9 +732,11 @@
     SURFACES,
     boot,
     requireSession,
+    resolveDelegatedPortalUser,
     requireAdminContext,
     surfaceForPath,
     marketDisplayName,
+    regionFlagEmoji,
     marketChoices,
     initialRequestedMarket,
     mountMarketSelector,
@@ -624,6 +767,8 @@
     renderPricingWorkspaceShell,
     renderDemo,
     renderReady,
+    ROLE_DEFAULT_LANDING,
+    defaultLandingSurface,
   };
 
   if (document.readyState === 'loading') {

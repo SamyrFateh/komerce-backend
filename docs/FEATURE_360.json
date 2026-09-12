@@ -21,6 +21,7 @@
         "features/loyalty.feature.js",
         "features/market.feature.js",
         "features/market-autonomy.feature.js",
+        "features/market-delegation.feature.js",
         "features/market-operator-dashboard.feature.js",
         "features/notifications.feature.js",
         "features/orders.feature.js",
@@ -30,6 +31,7 @@
         "features/purchasing.feature.js",
         "features/recommendations.feature.js",
         "features/refunds.feature.js",
+        "features/settlement.feature.js",
         "features/shared-cart.feature.js",
         "features/sourcing.feature.js",
         "features/unsold-resolution.feature.js",
@@ -47,17 +49,17 @@
     }
   },
   "summary": {
-    "features": 35,
-    "healthy": 34,
-    "attention": 1,
+    "features": 37,
+    "healthy": 35,
+    "attention": 2,
     "blocked": 0,
-    "businessDependencies": 250,
+    "businessDependencies": 272,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 3,
-    "gateHealthy": 32,
+    "debtItemsTotal": 6,
+    "gateHealthy": 34,
     "gateBlocked": 2
   },
   "projectionIntegrity": {
@@ -810,6 +812,13 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -846,6 +855,13 @@
         },
         {
           "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "settlement",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -1503,6 +1519,13 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1539,6 +1562,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "settlement",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -2288,14 +2318,18 @@
           "glossaire metier EN->FR (catalog_glossary)",
           "file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active",
           "bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée",
-          "pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique"
+          "pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique",
+          "product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services",
+          "migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle",
+          "services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique"
         ],
         "out": [
           "calcul du prix final et valorisation transport (feature economic-engine)",
           "decision de rail, routing et eligibilite logistique dynamique (feature logistics)",
           "mise en avant / classement (feature recommendations)",
           "fiche snapshot lecture seule du panier partage (feature shared-cart)",
-          "checkout final et paiement (features orders/payments)"
+          "checkout final et paiement (features orders/payments)",
+          "décision d’exposition produit x marché (qui écrit product_market_exposure) : feature market-delegation, capability catalog.expose"
         ]
       },
       "authority": "backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
@@ -2663,7 +2697,7 @@
             ]
           },
           "migrations": {
-            "count": 14,
+            "count": 16,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2733,6 +2767,16 @@
               {
                 "declared": "migrations/163_supplier_catalog_sync_checkpoints.sql",
                 "resolvedPath": "migrations/163_supplier_catalog_sync_checkpoints.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/202_catalog_product_market_exposure.sql",
+                "resolvedPath": "migrations/202_catalog_product_market_exposure.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/206_catalog_product_market_exposure_snapshot.sql",
+                "resolvedPath": "migrations/206_catalog_product_market_exposure_snapshot.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -2813,7 +2857,7 @@
             ]
           },
           "services": {
-            "count": 42,
+            "count": 43,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2838,6 +2882,11 @@
               {
                 "declared": "services/catalog-enrichment.js",
                 "resolvedPath": "services/catalog-enrichment.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-market-exposure-service.js",
+                "resolvedPath": "services/catalog-market-exposure-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3028,7 +3077,7 @@
             ]
           },
           "tests": {
-            "count": 62,
+            "count": 65,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -3106,6 +3155,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-market-exposure-service.test.js",
+                "resolvedPath": "tests/unit/catalog-market-exposure-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-market-exposure-snapshot.test.js",
+                "resolvedPath": "tests/unit/catalog-market-exposure-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-overrides.test.js",
                 "resolvedPath": "tests/unit/catalog-overrides.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3148,6 +3207,11 @@
               {
                 "declared": "tests/unit/catalog-promotion.test.js",
                 "resolvedPath": "tests/unit/catalog-promotion.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-public-exposure-gate.test.js",
+                "resolvedPath": "tests/unit/catalog-public-exposure-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3353,7 +3417,7 @@
             ]
           }
         },
-        "totalFiles": 193,
+        "totalFiles": 199,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -3627,6 +3691,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "product_market_exposure",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_sku_media",
             "resolution": "declared-table-owner"
           },
@@ -3696,6 +3764,12 @@
           },
           {
             "table": "product_content_sections",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_market_exposure",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -3795,6 +3869,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "product_market_exposure",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_sku_media",
             "resolution": "declared-table-owner"
           },
@@ -3864,6 +3942,12 @@
           },
           {
             "table": "product_content_sections",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_market_exposure",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -4126,6 +4210,21 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "market-operator-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -4699,7 +4798,7 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.",
+      "service": "Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.",
       "perimeter": {
         "in": [
           "routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)",
@@ -4707,6 +4806,9 @@
           "Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement",
           "Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback",
           "Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard",
+          "Portail interne unique /admin — même shell Canonical pour administration centrale, opérateurs pays et rôles terrain autorisés",
+          "Operations Workspace : les rôles terrain natifs restent compatibles ; une membership pays peut exécuter une mutation seulement avec la capability execution.* exacte, résolue et auditée par market-delegation",
+          "Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés",
           "AdminContext canonical — projection UI d'une autorité market déjà résolue côté serveur, jamais une source d'autorisation locale",
           "auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis"
         ],
@@ -4727,6 +4829,9 @@
         "Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard",
         "Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance",
         "canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins",
+        "/admin est la porte d’entrée interne unique ; les URLs /admin/** spécialisées sont des destinations/deep-links et non des portails métiers séparés",
+        "authentification et autorisation restent séparées : login établit l’identité, le runtime et les APIs serveur contrôlent rôle, scope, Market ID et capabilities",
+        "un futur OTP peut renforcer la preuve d’identité ou une action sensible sans devenir une source de rôle, scope, Market ID ou capability",
         "/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé",
         "auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me",
         "Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché",
@@ -5503,7 +5608,7 @@
             ]
           },
           "tests": {
-            "count": 66,
+            "count": 67,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -5603,6 +5708,11 @@
               {
                 "declared": "tests/unit/canonical-action-center-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-action-center-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-admin-app.test.js",
+                "resolvedPath": "tests/unit/canonical-admin-app.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5838,7 +5948,7 @@
             ]
           }
         },
-        "totalFiles": 214,
+        "totalFiles": 215,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6269,6 +6379,13 @@
         },
         {
           "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -7336,35 +7453,40 @@
         "kind": "business-feature",
         "status": "production"
       },
-      "service": "Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.",
+      "service": "Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.",
       "perimeter": {
         "in": [
           "moteur de pricing et application des regles",
           "audit des changements de prix produit dans price_history",
           "allocation de cout",
-          "vérité N3 de période issue de faits économiques append-only, distincte des configurations de charges",
-          "vérité risque N2 de période issue de faits append-only et d un watermark de revue explicite par marché",
-          "gate de couverture économique par marché, fail-closed sur maturité, risque et N3 attribué",
+          "vérité des charges de structure de période issue de faits économiques append-only, distincte des configurations de charges",
+          "vérité du risque de période issue de faits append-only et d un watermark de revue explicite par marché",
+          "gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées",
           "politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only",
-          "explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, niveau de vérité et impact",
+          "corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale",
+          "explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact",
           "strategies tarifaires et matrices admin",
           "gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain economic-engine au Lot O2, était @domain dashboard)"
         ],
         "out": [
           "affichage produit cote catalogue (feature catalog, qui consomme economic-engine)",
-          "facturation finale (feature orders)"
+          "facturation finale (feature orders)",
+          "autorisation et audit de l’enregistrement délégué d’un fait MARKET_DIRECT par un opérateur pays (feature market-delegation, capability structure.event.record) — appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni écrire directement dans economic_structure_cost_events"
         ]
       },
-      "authority": "backend-core — tout changement de formule de prix ou d audit price_history doit rester derrière les services propriétaires economic-engine",
+      "authority": "backend-core — toute frontière économique, règle de contribution, couverture ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU",
       "invariants": [
         "une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee",
         "aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js",
-        "chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, son niveau de vérité, ses moteurs de variation et son chemin d impact sans promouvoir une configuration en réel",
+        "chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, sa nature économique, son périmètre d allocation, son niveau de vérité et son chemin d impact sans promouvoir une configuration en réel",
+        "une charge fixe configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité",
+        "les articles génèrent la contribution ; le portefeuille absorbe collectivement les charges de structure ; aucune quote-part fixe analytique ne devient dette intrinsèque du SKU",
+        "le coût variable complet est la frontière économique unitaire ; le marché borne le possible et le prix final exige une décision marché ou humaine autorisée",
         "une disposition de maturité ne transforme jamais une commande immature en MATURE et reste bornée par une politique externe versionnée",
-        "une charge N3 configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité",
         "un zéro de risque réalisé n existe que derrière un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zéro",
         "la fenêtre et les seuils du gate de décision marché proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur",
-        "un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, N3 marché décisionnel et vérité risque de période explicite"
+        "un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, charges de structure marché décisionnelles et vérité risque de période explicite",
+        "une référence globale de concurrence reste informative et ne devient jamais silencieusement une preuve marché locale"
       ],
       "implementation": {
         "byCategory": {
@@ -7414,7 +7536,7 @@
             ]
           },
           "migrations": {
-            "count": 26,
+            "count": 28,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -7545,6 +7667,16 @@
                 "declared": "migrations/168_pricing_market_decision_policy_events.sql",
                 "resolvedPath": "migrations/168_pricing_market_decision_policy_events.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/191_cost_component_economic_classification.sql",
+                "resolvedPath": "migrations/191_cost_component_economic_classification.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/192_market_price_observations.sql",
+                "resolvedPath": "migrations/192_market_price_observations.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -7619,7 +7751,7 @@
             ]
           },
           "services": {
-            "count": 38,
+            "count": 39,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -7737,6 +7869,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-market-corridor.js",
+                "resolvedPath": "services/pricing-market-corridor.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-market-coverage.js",
                 "resolvedPath": "services/pricing-market-coverage.js",
                 "status": "resolved-in-technical-graph"
@@ -7814,7 +7951,7 @@
             ]
           },
           "tests": {
-            "count": 69,
+            "count": 70,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -8047,6 +8184,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-market-corridor.test.js",
+                "resolvedPath": "tests/unit/pricing-market-corridor.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-market-coverage.test.js",
                 "resolvedPath": "tests/unit/pricing-market-coverage.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8184,7 +8326,7 @@
             ]
           }
         },
-        "totalFiles": 156,
+        "totalFiles": 160,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -8244,6 +8386,14 @@
           {
             "table": "finance_config",
             "resolution": "single-writer"
+          },
+          {
+            "table": "market_price_observation_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_price_observations",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "order_item_real_cost_allocations",
@@ -8365,6 +8515,18 @@
           },
           {
             "table": "finance_config",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_price_observation_events",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_price_observations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8578,6 +8740,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "market_price_observation_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_price_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_item_real_cost_allocations",
             "resolution": "declared-table-owner"
           },
@@ -8697,6 +8867,18 @@
           },
           {
             "table": "finance_config",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_price_observation_events",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_price_observations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -8869,7 +9051,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 91
+          "count": 94
         }
       },
       "businessDependencies": [
@@ -8953,6 +9135,13 @@
           ]
         },
         {
+          "provider": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -9024,6 +9213,14 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -10310,7 +10507,7 @@
             ]
           },
           "scripts": {
-            "count": 92,
+            "count": 91,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -10733,11 +10930,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "scripts/seed-market-test-data.js",
-                "resolvedPath": "scripts/seed-market-test-data.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "scripts/seed.js",
                 "resolvedPath": "scripts/seed.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10910,7 +11102,7 @@
             ]
           }
         },
-        "totalFiles": 283,
+        "totalFiles": 282,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11282,6 +11474,13 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "market-operator-dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11348,6 +11547,13 @@
           ]
         },
         {
+          "consumer": "settlement",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11382,7 +11588,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 11,
+        "compositionRootRelations": 13,
         "details": [
           {
             "to": "auth-identity",
@@ -11413,11 +11619,19 @@
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
+            "to": "market-delegation",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
             "to": "providers-services",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
             "to": "purchasing",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "settlement",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -12600,7 +12814,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -12693,6 +12907,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/relais-mutation-service.js",
+                "resolvedPath": "services/relais-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/routing.js",
                 "resolvedPath": "services/routing.js",
                 "status": "resolved-in-technical-graph"
@@ -12720,7 +12939,7 @@
             ]
           },
           "tests": {
-            "count": 45,
+            "count": 46,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
@@ -12898,6 +13117,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relais-mutation-service.test.js",
+                "resolvedPath": "tests/unit/relais-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relais.test.js",
                 "resolvedPath": "tests/unit/relais.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12970,7 +13194,7 @@
             ]
           }
         },
-        "totalFiles": 99,
+        "totalFiles": 101,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13339,8 +13563,23 @@
             "status": "resolved"
           },
           {
+            "fn": "createRelais",
+            "file": "services/relais-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "detachUserFromScans",
             "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "getOwnedRelais",
+            "file": "services/relais-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listRelais",
+            "file": "services/relais-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -13374,8 +13613,18 @@
             "status": "resolved"
           },
           {
+            "fn": "setRelaisActive",
+            "file": "services/relais-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "transitionParcelStatus",
             "file": "services/parcel-operations.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateRelais",
+            "file": "services/relais-mutation-service.js",
             "status": "resolved"
           }
         ],
@@ -13446,6 +13695,13 @@
         },
         {
           "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13577,6 +13833,14 @@
           "consumer": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -14314,6 +14578,21 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "market-operator-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14336,6 +14615,13 @@
         },
         {
           "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "settlement",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
@@ -14408,7 +14694,10 @@
           "consommation LOCAL_ACTIVE par catalogue, liste partagée et checkout via boundary propriétaire",
           "refus fail-closed si une granularité SKU/variante explicite entrerait en conflit",
           "projection manager/viewer de la capacité réellement disponible",
-          "surface Canonical de test de l’autonomie pays"
+          "surface Canonical de test de l’autonomie pays",
+          "surface équipe pays intégrée : lecture, invitation, délégation et révocation de capabilities, dont provider.manage lorsqu’il est LIVE",
+          "parcours explicite d’acceptation d’invitation avec retour vers le Market ID résolu côté serveur",
+          "politique de protection des encaissements intégrée à Autonomie pays : cash actif/suspendu et validation SINGLE/DUAL_ALWAYS"
         ],
         "out": [
           "mutation de products.price_kmf global",
@@ -14452,21 +14741,59 @@
         {
           "statement": "seul un market_operator manager peut persister ou activer une stratégie de prix locale",
           "test": "tests/unit/market-commercial-price-service.test.js"
+        },
+        {
+          "statement": "le lien d’invitation conserve next pendant le login, permet la création d’un compte client, l’acceptation est explicite, puis le token est retiré et le marché vient du contexte serveur",
+          "test": "tests/unit/market-delegation-team-ui.test.js"
+        },
+        {
+          "statement": "la politique cash est affichée dans Autonomie pays sans market_id navigateur et n’est modifiable que si le serveur renvoie can_manage",
+          "test": "tests/unit/market-cash-control-ui.test.js"
         }
       ],
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 2,
+            "count": 8,
             "files": [
+              {
+                "declared": "dashboards/canonical/css/market-cash-control.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-cash-control.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/market-team.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-team.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "dashboards/canonical/js/market-autonomy.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-autonomy.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/market-cash-control.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-team.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-team.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/team-invite.js",
+                "resolvedPath": "public/dashboards/canonical/js/team-invite.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/market-autonomy.html",
                 "resolvedPath": "public/dashboards/canonical/market-autonomy.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/team-invite.html",
+                "resolvedPath": "public/dashboards/canonical/team-invite.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -14507,11 +14834,21 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 5,
             "files": [
+              {
+                "declared": "tests/unit/market-cash-control-ui.test.js",
+                "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/market-commercial-price-service.test.js",
                 "resolvedPath": "tests/unit/market-commercial-price-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-team-ui.test.js",
+                "resolvedPath": "tests/unit/market-delegation-team-ui.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -14527,7 +14864,7 @@
             ]
           }
         },
-        "totalFiles": 10,
+        "totalFiles": 18,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14684,6 +15021,13 @@
           ]
         },
         {
+          "consumer": "market-operator-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14695,6 +15039,1239 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 2,
+        "declaredNotObservedEvidence": [
+          "auth-identity",
+          "market-delegation"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 2,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"auth-identity\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"market-delegation\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "market-delegation",
+      "kind": "business-feature",
+      "status": "staging",
+      "manifestFile": "features/market-delegation.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "market-delegation",
+        "kind": "business-feature",
+        "status": "staging"
+      },
+      "service": "Déléguer de façon explicite, auditable et révocable l’autorité d’exploitation d’un Market ID à un opérateur principal et à son équipe, tout en préservant les frontières GROUP de Komerce.",
+      "perimeter": {
+        "in": [
+          "capability_registry : registre exécutable DELEGATION / EXECUTION / BOUNDARY",
+          "Market Operating Assignment : mandat unique actif par Market ID",
+          "ceiling template et plafond effectif concédé par le central",
+          "memberships et capabilities membres, toujours sous le plafond",
+          "règle de délégation : DELEGATION reste grant(member) ⊆ grant(grantor) ⊆ ceiling ; EXECUTION LIVE peut être accordé par team.grant sous ceiling sans devenir un droit du grantor",
+          "audit append-only des mutations de délégation",
+          "calcul déterministe de la projection vers operator_market_scopes, persistée exclusivement par la boundary de la feature market",
+          "autonomy_rate calculé uniquement sur la classe DELEGATION",
+          "LOT 1A : lecture équipe, invitation, acceptation, modification capabilities et révocation par capabilities team.*",
+          "invitation persistée 72 h par défaut, token brut jamais stocké et capabilities revalidées à l’acceptation",
+          "anti-lockout : la dernière membership possédant team.grant ne peut pas être retirée silencieusement",
+          "adoption legacy : scopes actifs convertis en assignments/memberships, manager vers DELEGATION LIVE et viewer vers whitelist read-only",
+          "bridge runtime request-local : une membership active déjà projetée peut satisfaire market_operator uniquement sur les routes qui admettent explicitement ce rôle",
+          "reprojection transactionnelle après création, acceptation, modification de capabilities ou révocation de membership",
+          "politique cash partenaire par assignment : activation/désactivation et SINGLE ou DUAL_ALWAYS",
+          "LOT 2A : réseau local (relais) — création, modification, suspension et réactivation par capabilities network.*, jamais de hard-delete",
+          "un relais reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché",
+          "un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner",
+          "LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct",
+          "LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test",
+          "LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events",
+          "migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique",
+          "LOT 4 (local-offer) : exposition commerciale des services/offres physiques déjà créés — capability local_offer.manage, toggle ENABLED/DISABLED sur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression",
+          "un service ou une offre physique reste rattaché à son marché d’origine ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource",
+          "migration 204 : promotion LIVE de local_offer.manage backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers",
+          "LOT 5 (client-case) : workflow de litige (disputes) — capability client.case.handle, transitions open/processing/resolved/closed et note de résolution via dispute-mutation-service.js (orders, lifecycle owner), jamais refund_kmf/refund_eur",
+          "un litige reste rattaché à son marché d’origine (via order_id → orders.market_id) ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource",
+          "migration 205 : promotion LIVE de client.case.handle backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; la migration elle-même n’écrit jamais refund_kmf/refund_eur",
+          "LOT 6 (settlement) : lecture via finance.read, READY -> REQUESTED via finance.act et PAID -> RECEIVED via settlement.receive ; market-delegation autorise et audite mais la feature settlement possède market_settlements et les écritures",
+          "migration 209 : finance.act + settlement.receive deviennent LIVE et sont backfillées dans les ceilings actifs ; auto-grant seulement aux managers déjà dotés de team.grant + team.revoke + finance.read",
+          "LOT 8 (execution bridge) : les 7 capabilities execution.* LIVE entrent dans le ceiling/template sans auto-grant manager ; team.grant peut les déléguer explicitement à un membre terrain et chaque consommation est auditée avant la mutation métier"
+        ],
+        "out": [
+          "référentiel markets, Currency Boundary et persistance operator_market_scopes : feature market",
+          "rôle global users.role et user.role.set : frontière auth-identity/GROUP, jamais déléguée au partenaire",
+          "règles d’allocation GROUP et vérité économique consolidée : economic-engine",
+          "fonctions Hub/transit mutualisées : hors Market Operating Assignment",
+          "providers/relais comme principaux locaux secondaires : jamais des assignments concurrents ; leur gestion locale reste déléguable sans transformer leur identité en user_role",
+          "lecture publique du réseau relais (GET /api/relais) et son cycle de vie technique hors délégation : feature logistics, propriétaire de la table relais",
+          "routage inter-îles KM (island/island_code consommés par services/routing.js) : hors périmètre, couplage géographique pré-existant non résolu par cette feature",
+          "catalogue global (products) : feature catalog, jamais modifié par cette feature — product_market_exposure n’est qu’une projection",
+          "câblage du chemin de lecture storefront (catalog-public-view.js / catalog-product-detail.js) : feature catalog, propriétaire de publicCatalogVisibilitySql() et de la logique de résolution marché ; market-delegation ne fait qu’autoriser/auditer la décision d’exposition qui alimente cette lecture",
+          "calcul automatique commission/revenue_share et payout bancaire/Mobile Money : hors LOT 6 ; la feature settlement ne fait qu’attester/tracer le cycle sans inventer de formule ni déclencher de transfert",
+          "vérité d’encaissement et état de double confirmation : feature payments",
+          "contrat juridique partenaire complet : hors backend, seule sa projection exécutable pourra entrer plus tard",
+          "montant et décision de remboursement (disputes.refund_kmf/disputes.refund_eur) : feature refunds, jamais délégable — vérité financière irréversible. client.case.handle ne pilote que le workflow (statut, résolution textuelle), jamais le chiffre",
+          "cycle de vie status (draft/active/suspended) des services et offres physiques : hors périmètre de local_offer.manage, qui ne bascule que commercial_exposure ; isServiceExposable/isPhysicalOfferExposable continuent d’exiger les deux (status ET exposure) — providers-services reste propriétaire du cycle complet",
+          "création READY, choix amount/currency et passage REQUESTED -> PAID : jamais une autorité de l’opérateur pays ; READY et PAID restent centraux dans la feature settlement"
+        ]
+      },
+      "authority": "backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.",
+      "invariants": [
+        {
+          "statement": "un Market ID possède au plus un Market Operating Assignment ACTIVE",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "operator_market_scopes reste une projection de compatibilité persistée par sa lifecycle owner market ; require-market-scope.js ne dépend jamais directement des tables de délégation",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "une membership ne reçoit aucun scope legacy si elle ne détient pas le socle viewer complet ; manager exige toutes les capabilities DELEGATION actuellement LIVE du ceiling mais jamais les futures MISSING",
+          "test": "tests/unit/market-delegation-runtime-bridge.test.js"
+        },
+        {
+          "statement": "les mutations de membership reprojettent operator_market_scopes dans la même transaction afin que révocation et changement de niveau prennent effet atomiquement",
+          "test": "tests/unit/market-delegation-runtime-bridge.test.js"
+        },
+        {
+          "statement": "le rôle market_operator dérivé est request-local, prouvé par une projection de membership active et ne modifie jamais users.role",
+          "test": "tests/unit/market-delegation-runtime-bridge.test.js"
+        },
+        {
+          "statement": "un token d’invitation brut n’est jamais persisté ; seul son SHA-256 est stocké",
+          "test": "tests/unit/market-delegation-team-service.test.js"
+        },
+        {
+          "statement": "les capabilities d’une invitation sont revalidées contre le grantor courant et le ceiling au moment de l’acceptation",
+          "test": "tests/unit/market-delegation-team-service.test.js"
+        },
+        {
+          "statement": "retirer la dernière membership possédant team.grant échoue fort afin d’éviter un lockout local",
+          "test": "tests/unit/market-delegation-team-service.test.js"
+        },
+        {
+          "statement": "les routes équipe refusent market_id/marketId venant du client comme preuve d’autorité",
+          "test": "tests/unit/market-delegation-team-routes.test.js"
+        },
+        {
+          "statement": "le backfill legacy ne pré-accorde jamais une capability future/MISSING et ne développe pas une membership déjà adoptée",
+          "test": "tests/unit/market-delegation-legacy-backfill.test.js"
+        },
+        {
+          "statement": "le partenaire peut durcir sa politique cash sans fournir de market_id client et toute mutation est auditée",
+          "test": "tests/unit/market-cash-control-policy-service.test.js"
+        },
+        {
+          "statement": "un relais ne peut jamais être lu ou modifié par une membership d’un autre marché ; la réponse est 404, jamais 403, pour ne pas confirmer l’existence de la ressource",
+          "test": "tests/unit/market-delegation-network-service.test.js"
+        },
+        {
+          "statement": "suspendre un relais ne le supprime jamais (is_active=false uniquement) ; aucun DELETE FROM relais n’existe dans le service réseau",
+          "test": "tests/unit/market-delegation-network-service.test.js"
+        },
+        {
+          "statement": "network.create/update/suspend n’injectent aucune géographie par défaut ; island/island_code sont optionnels et jamais renseignés silencieusement",
+          "test": "tests/unit/market-delegation-network-service.test.js"
+        },
+        {
+          "statement": "les routes réseau refusent market_id/marketId venant du client comme preuve d’autorité, comme les routes équipe",
+          "test": "tests/unit/market-delegation-network-routes.test.js"
+        },
+        {
+          "statement": "un provider ne peut jamais être modifié par une membership d’un autre marché ; la réponse est 404 pour ne pas confirmer son existence",
+          "test": "tests/unit/market-delegation-provider-service.test.js"
+        },
+        {
+          "statement": "suspendre un provider ne le supprime jamais ; il reste réactivable et son Market ID est immuable par cette boundary",
+          "test": "tests/unit/market-delegation-provider-service.test.js"
+        },
+        {
+          "statement": "setExposure fait un upsert sur (product_id, market_id) — jamais de doublon, jamais de SQL direct sur products",
+          "test": "tests/unit/market-delegation-catalog-service.test.js"
+        },
+        {
+          "statement": "exposer/masquer un produit est capability-based (catalog.expose, LIVE) et audité ; la migration d’activation (207) n’écrit jamais dans product_market_exposure, séparée strictement du snapshot de compatibilité (206)",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "les routes catalog refusent market_id/marketId venant du client comme preuve d’autorité, comme les routes équipe et réseau",
+          "test": "tests/unit/market-delegation-catalog-routes.test.js"
+        },
+        {
+          "statement": "local_offer.manage ne bascule que commercial_exposure — jamais le status (draft/active/suspended) du service ou de l’offre physique, qui reste propriété de providers-services",
+          "test": "tests/unit/market-delegation-local-offer-service.test.js"
+        },
+        {
+          "statement": "un service ou une offre physique ne peut jamais être exposé/masqué par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence",
+          "test": "tests/unit/market-delegation-local-offer-service.test.js"
+        },
+        {
+          "statement": "migration 204 backfille le ceiling des assignments actifs et auto-accorde local_offer.manage aux managers déjà reconnus (team.grant + team.revoke + network.read), jamais aux viewers",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "les routes local-offer refusent market_id/marketId venant du client comme preuve d’autorité",
+          "test": "tests/unit/market-delegation-local-offer-routes.test.js"
+        },
+        {
+          "statement": "client.case.handle ne permet aucune transition directe (ex. open -> resolved) ; le workflow suit open -> processing -> resolved|closed",
+          "test": "tests/unit/dispute-mutation-service.test.js"
+        },
+        {
+          "statement": "client.case.handle n’écrit jamais refund_kmf ni refund_eur — ni le service d’orchestration, ni la frontière orders, ni la migration de promotion ; le remboursement reste feature refunds",
+          "test": "tests/unit/market-delegation-client-case-service.test.js"
+        },
+        {
+          "statement": "les routes client-case refusent explicitement refund_kmf/refund_eur dans le corps de la requête, même si le client les envoie",
+          "test": "tests/unit/market-delegation-client-case-routes.test.js"
+        },
+        {
+          "statement": "un litige ne peut jamais être lu ou modifié par une membership d’un autre marché ; la réponse est 404, pour ne pas confirmer son existence",
+          "test": "tests/unit/market-delegation-client-case-service.test.js"
+        },
+        {
+          "statement": "migration 205 backfille le ceiling des assignments actifs et auto-accorde client.case.handle aux managers déjà reconnus, jamais aux viewers, sans jamais toucher refund_kmf/refund_eur",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "finance.act ne fait que READY -> REQUESTED sur un settlement du même assignment et n’accepte aucun champ monétaire",
+          "test": "tests/unit/market-delegation-settlement-service.test.js"
+        },
+        {
+          "statement": "settlement.receive ne fait que PAID -> RECEIVED et reste une capability distincte de finance.act",
+          "test": "tests/unit/market-delegation-settlement-service.test.js"
+        },
+        {
+          "statement": "les routes settlement pays refusent market_id/marketId, amount, currency, statut et preuve de paiement comme autorité ; REQUEST n’accepte aucun body et RECEIVE seulement receipt_note",
+          "test": "tests/unit/market-delegation-settlement-routes.test.js"
+        },
+        {
+          "statement": "migration 209 active les deux capabilities settlement sans jamais créer ni modifier une ligne market_settlements",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        },
+        {
+          "statement": "structure.event.record force toujours scope_kind=MARKET_DIRECT et le market_id résolu serveur ; un scope_kind=GROUP dans le payload est un refus explicite (403), jamais une correction silencieuse",
+          "test": "tests/unit/market-delegation-structure-event-service.test.js"
+        },
+        {
+          "statement": "aucun SQL direct sur economic_structure_cost_events depuis market-delegation — recordStructureCostEvent() (economic-engine) reste le seul writer, jamais dupliqué",
+          "test": "tests/unit/market-delegation-structure-event-service.test.js"
+        },
+        {
+          "statement": "la lecture des faits structure réutilise pricing.read (déjà LIVE) — aucune nouvelle capability de lecture créée pour ce lot",
+          "test": "tests/unit/market-delegation-structure-event-service.test.js"
+        },
+        {
+          "statement": "migration 210 active structure.event.record sans jamais créer ni modifier un événement economic_structure_cost_events",
+          "test": "tests/unit/market-delegation-p0.test.js"
+        }
+      ],
+      "implementation": {
+        "byCategory": {
+          "middleware": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "middleware/require-market-delegated-role.js",
+                "resolvedPath": "middleware/require-market-delegated-role.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/require-market-execution-capability.js",
+                "resolvedPath": "middleware/require-market-execution-capability.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 15,
+            "files": [
+              {
+                "declared": "migrations/193_market_delegation_capability_registry.sql",
+                "resolvedPath": "migrations/193_market_delegation_capability_registry.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/194_market_delegation_assignments.sql",
+                "resolvedPath": "migrations/194_market_delegation_assignments.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/195_operator_market_scopes_projection_marker.sql",
+                "resolvedPath": "migrations/195_operator_market_scopes_projection_marker.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/196_market_delegation_team.sql",
+                "resolvedPath": "migrations/196_market_delegation_team.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/197_market_delegation_legacy_scope_backfill.sql",
+                "resolvedPath": "migrations/197_market_delegation_legacy_scope_backfill.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/198_market_cash_control_policy.sql",
+                "resolvedPath": "migrations/198_market_cash_control_policy.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/200_market_delegation_relais_island_nullable.sql",
+                "resolvedPath": "migrations/200_market_delegation_relais_island_nullable.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/201_market_network_promotion_agent_optional.sql",
+                "resolvedPath": "migrations/201_market_network_promotion_agent_optional.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/203_market_delegation_provider_manage_live.sql",
+                "resolvedPath": "migrations/203_market_delegation_provider_manage_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/204_market_delegation_local_offer_manage_live.sql",
+                "resolvedPath": "migrations/204_market_delegation_local_offer_manage_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/205_market_delegation_client_case_handle_live.sql",
+                "resolvedPath": "migrations/205_market_delegation_client_case_handle_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/207_market_delegation_catalog_expose_live.sql",
+                "resolvedPath": "migrations/207_market_delegation_catalog_expose_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/209_market_delegation_settlement_live.sql",
+                "resolvedPath": "migrations/209_market_delegation_settlement_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/210_market_delegation_structure_event_record_live.sql",
+                "resolvedPath": "migrations/210_market_delegation_structure_event_record_live.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/212_market_delegation_execution_ceiling.sql",
+                "resolvedPath": "migrations/212_market_delegation_execution_ceiling.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 10,
+            "files": [
+              {
+                "declared": "routes/market-delegation-cash-control.js",
+                "resolvedPath": "routes/market-delegation-cash-control.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-catalog.js",
+                "resolvedPath": "routes/market-delegation-catalog.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-client-case.js",
+                "resolvedPath": "routes/market-delegation-client-case.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-local-offer.js",
+                "resolvedPath": "routes/market-delegation-local-offer.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-network.js",
+                "resolvedPath": "routes/market-delegation-network.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-performance.js",
+                "resolvedPath": "routes/market-delegation-performance.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-provider.js",
+                "resolvedPath": "routes/market-delegation-provider.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-settlement.js",
+                "resolvedPath": "routes/market-delegation-settlement.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-structure-event.js",
+                "resolvedPath": "routes/market-delegation-structure-event.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-team.js",
+                "resolvedPath": "routes/market-delegation-team.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "services": {
+            "count": 13,
+            "files": [
+              {
+                "declared": "services/capability-registry.js",
+                "resolvedPath": "services/capability-registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-cash-control-policy-service.js",
+                "resolvedPath": "services/market-cash-control-policy-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-catalog-service.js",
+                "resolvedPath": "services/market-delegation-catalog-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-client-case-service.js",
+                "resolvedPath": "services/market-delegation-client-case-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-local-offer-service.js",
+                "resolvedPath": "services/market-delegation-local-offer-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-network-service.js",
+                "resolvedPath": "services/market-delegation-network-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-performance-service.js",
+                "resolvedPath": "services/market-delegation-performance-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-provider-service.js",
+                "resolvedPath": "services/market-delegation-provider-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-service.js",
+                "resolvedPath": "services/market-delegation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-settlement-service.js",
+                "resolvedPath": "services/market-delegation-settlement-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-structure-event-service.js",
+                "resolvedPath": "services/market-delegation-structure-event-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-team-service.js",
+                "resolvedPath": "services/market-delegation-team-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-scope-projector.js",
+                "resolvedPath": "services/market-scope-projector.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 25,
+            "files": [
+              {
+                "declared": "tests/e2e-api/market-delegation.execution-bridge.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/market-delegation.execution-bridge.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-cash-control-policy-service.test.js",
+                "resolvedPath": "tests/unit/market-cash-control-policy-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-cash-control-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-cash-control-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-catalog-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-catalog-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-catalog-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-catalog-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-client-case-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-client-case-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-client-case-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-client-case-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-execution-capability.test.js",
+                "resolvedPath": "tests/unit/market-delegation-execution-capability.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-legacy-backfill.test.js",
+                "resolvedPath": "tests/unit/market-delegation-legacy-backfill.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-local-offer-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-local-offer-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-local-offer-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-local-offer-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-network-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-network-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-network-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-network-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-p0.test.js",
+                "resolvedPath": "tests/unit/market-delegation-p0.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-performance-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-performance-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-performance-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-performance-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-provider-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-provider-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-provider-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-provider-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-runtime-bridge.test.js",
+                "resolvedPath": "tests/unit/market-delegation-runtime-bridge.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-settlement-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-settlement-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-settlement-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-settlement-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-structure-event-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-structure-event-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-structure-event-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-structure-event-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-team-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-team-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-team-service.test.js",
+                "resolvedPath": "tests/unit/market-delegation-team-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 65,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "assignment_capability_ceiling",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "assignment_memberships",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "capability_registry",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "ceiling_template_capabilities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "ceiling_templates",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_cash_control_policies",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_delegation_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_operating_assignments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_team_invitations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "membership_capabilities",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "assignment_capability_ceiling",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "assignment_memberships",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "capability_registry",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "ceiling_template_capabilities",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "ceiling_templates",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_cash_control_policies",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_delegation_audit",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_operating_assignments",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_team_invitations",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "membership_capabilities",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "disputes",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "economic_structure_cost_events",
+            "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "market_settlements",
+            "lifecycleOwner": "settlement"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "operator_market_scopes",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "physical_offers",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "product_market_exposure",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "providers",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "services",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "assignment_capability_ceiling",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "assignment_memberships",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "capability_registry",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "ceiling_template_capabilities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "ceiling_templates",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_cash_control_policies",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_delegation_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_operating_assignments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_team_invitations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "membership_capabilities",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "assignment_capability_ceiling",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "assignment_memberships",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "capability_registry",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "ceiling_template_capabilities",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "ceiling_templates",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_cash_control_policies",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_delegation_audit",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_operating_assignments",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_team_invitations",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "membership_capabilities",
+            "mode": "RW",
+            "lifecycleOwner": "market-delegation",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "disputes",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "economic_structure_cost_events",
+            "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "market_settlements",
+            "lifecycleOwner": "settlement"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "operator_market_scopes",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "physical_offers",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "product_market_exposure",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "providers",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "services",
+            "lifecycleOwner": "providers-services"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "acceptInvitation",
+            "file": "services/market-delegation-team-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "addMembership",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "attachMarketDelegatedRoleFor",
+            "file": "middleware/require-market-delegated-role.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "confirmSettlementReceived",
+            "file": "services/market-delegation-settlement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createProvider",
+            "file": "services/market-delegation-provider-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createRelais",
+            "file": "services/market-delegation-network-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "grantMembershipCapabilities",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "inviteTeamMember",
+            "file": "services/market-delegation-team-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listDisputes",
+            "file": "services/market-delegation-client-case-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listExposure",
+            "file": "services/market-delegation-catalog-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listPhysicalOffers",
+            "file": "services/market-delegation-local-offer-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listServices",
+            "file": "services/market-delegation-local-offer-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listSettlements",
+            "file": "services/market-delegation-settlement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listStructureEvents",
+            "file": "services/market-delegation-structure-event-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "projectAssignment",
+            "file": "services/market-scope-projector.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "projectionDrift",
+            "file": "services/market-scope-projector.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "readMarketCashPolicy",
+            "file": "services/market-cash-control-policy-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordStructureEvent",
+            "file": "services/market-delegation-structure-event-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "replaceCeiling",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "replaceMembershipCapabilities",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "requestSettlement",
+            "file": "services/market-delegation-settlement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveActiveAssignmentByMarketCode",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveAuthorization",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "revokeMembership",
+            "file": "services/market-delegation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setExposure",
+            "file": "services/market-delegation-catalog-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPhysicalOfferExposure",
+            "file": "services/market-delegation-local-offer-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setProviderStatus",
+            "file": "services/market-delegation-provider-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setRelaisActive",
+            "file": "services/market-delegation-network-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setServiceExposure",
+            "file": "services/market-delegation-local-offer-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateDisputeWorkflow",
+            "file": "services/market-delegation-client-case-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateMarketCashPolicy",
+            "file": "services/market-cash-control-policy-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateProvider",
+            "file": "services/market-delegation-provider-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateRelais",
+            "file": "services/market-delegation-network-service.js",
+            "status": "resolved"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "settlement",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        }
+      ],
+      "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "settlement",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -14752,20 +16329,27 @@
         "kind": "unclassified",
         "status": "staging"
       },
-      "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de piloter son marché (KPIs, commandes, clients, ventes, relais, Hub, pricing en lecture), de gérer ses relais partenaires, et de superviser les opérations Hub de son marché — sans jamais voir les données d'un autre marché ni effectuer d'opérations physiques Hub.",
+      "service": "Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de décider et exploiter son marché : KPIs, commandes, catalogue pays, pricing local, réseau Hub/Relais, douane, expéditions et Finance pays — sans jamais voir les données d'un autre marché ni recevoir automatiquement les gestes physiques ou autorités globales des rôles spécialisés.",
       "perimeter": {
         "in": [
-          "Operations Workspace (routes/admin-operations-workspace.js, possédé par `dashboard`) : rattachement d'une ligne de rôle, lecture ouverte au market_operator (mutations restent agent_hub/agent_relais)",
-          "Navigation Canonical : filtrage des utility links par rôle (Accès pays et Démo = admin only)",
-          "Remontage navigation après résolution async de la session pour appliquer le filtrage rôle",
+          "Operations Workspace (routes/admin-operations-workspace.js, possédé par `dashboard`) : pilotage Hub/Relais market-scoped ; mutations terrain restent agent_hub/agent_relais selon capability",
+          "Catalogue pays : exposition/configuration produit × marché via les primitives market-scoped ; aucune mutation de la vérité catalogue globale",
+          "Expéditions & Douane : visibilité, supervision et configuration du marché ; gestes physiques/transit spécialisés restent soumis aux capabilities dédiées",
+          "Finance pays : recettes, coûts, marges, rapprochements, justificatifs et configuration locale livrée ; actes comptables sensibles restent explicitement délégués",
+          "Navigation Canonical : domaines visibles selon responsibilities/capabilities effectives, jamais selon une simple promesse UI",
+          "Remontage navigation après résolution async de la session pour appliquer le filtrage rôle/capability",
           "Script CLI provision-market-operator.js : création utilisateur + scope atomique, idempotent",
-          "Parcours complet : login → context → 4 dashboards scopés → workspaces scopés → partners CRUD"
+          "Script CLI seed-market-test-data.js : banc staging strictement Market ID pour catalogue, pricing et commandes de recette pays",
+          "Parcours complet cible : login → context → dashboards scopés → Catalogue pays → Atelier → Commandes → Opérations/Douane/Expéditions → Finance pays → équipe/partners"
         ],
         "out": [
           "Dashboard Legacy (admin/) — gelé, market_operator volontairement exclu de ROLE_SHELLS",
-          "Mutations Hub physiques (scan, pack, seal, ship) — réservées agent_hub",
-          "Catalogue global, sourcing, douane, comptabilité — réservés admin/finance/sourcing",
-          "Pricing mutations globales (apply strategy, update competitor) — réservées admin/sourcing",
+          "Catalogue GLOBAL / vérité produit globale / requireCatalogGlobalAuthority — reste une autorité centrale ; ne pas confondre avec Catalogue pays",
+          "Mutations Hub physiques (scan, pack, seal, ship) — capacités spécialisées agent_hub/admin sauf délégation future explicite",
+          "Mutations terrain relais (réception, remise, cash) — capacités spécialisées agent_relais/admin sauf délégation future explicite",
+          "Actes comptables globaux, consolidation cross-market et autorités financières centrales — hors délégation pays",
+          "Sourcing global — reste séparé tant que sa délégation pays n'est pas explicitement décidée",
+          "Pricing mutations globales (apply strategy, update competitor global) — réservées aux autorités correspondantes ; la décision locale reste au pays",
           "Refacturation multi-marché (Railway, Hub fixe) — chantier séparé, dépend du ratio de couverture",
           "Ratio de couverture par marché — chantier pricing Phase 3d, pas ce lot"
         ]
@@ -14774,29 +16358,39 @@
       "invariants": [
         "Le scope serveur est l'autorité — le navigateur ne choisit jamais son marché",
         "Un market_operator sans scope actif dans operator_market_scopes n'accède à rien",
-        "Les mutations physiques Hub (scan/pack/seal/ship) restent exclusivement agent_hub + admin",
-        "Les mutations terrain relais (réception/remise/cash) restent exclusivement agent_relais + admin",
-        "Les 4 dashboards primaires restent visibles pour tous les rôles autorisés — le scope des données est serveur",
-        "Les utility links admin (Accès pays, Démo) sont masqués pour les non-admin",
-        "agent_hub garde la vue Hub globale (tous les marchés, Hub unique)",
-        "agent_relais reste limité à son relais_id physique",
+        "Le Responsable pays doit disposer des outils correspondant à sa responsabilité : Catalogue pays, Atelier, Commandes, Opérations, Douane, Expéditions et Finance pays",
+        "Un guard actuellement trop restrictif sur une responsabilité cible est un gap d'implémentation à fermer, pas une justification pour retirer cette responsabilité de la doctrine",
+        "Catalogue pays ne peut jamais modifier silencieusement la vérité catalogue globale",
+        "Les mutations physiques Hub (scan/pack/seal/ship) restent exclusivement derrière des capabilities terrain explicites",
+        "Les mutations terrain relais (réception/remise/cash) restent exclusivement derrière des capabilities terrain explicites",
+        "Finance pays ne donne jamais implicitement une autorité comptable globale ou cross-market",
+        "Les utility links d'autorité globale sont masqués pour les profils non autorisés",
+        "agent_hub garde les droits Hub correspondant à son périmètre opérationnel",
+        "agent_relais reste limité à son relais_id physique pour ses gestes terrain",
         "Le dashboard Legacy (admin/) ne reçoit jamais market_operator dans ROLE_SHELLS — il est gelé",
-        "Le provisioning est idempotent — ne recrée ni user ni scope existants"
+        "Le provisioning est idempotent — ne recrée ni user ni scope existant",
+        "Le seed staging ne crée, n'expose ni ne nettoie jamais une donnée d'un autre Market ID",
+        "Le seed staging ne fabrique jamais un prix LOCAL_ACTIVE sans passage par le gate économique canonique"
       ],
       "implementation": {
         "byCategory": {
           "scripts": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "scripts/provision-market-operator.js",
                 "resolvedPath": "scripts/provision-market-operator.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/seed-market-test-data.js",
+                "resolvedPath": "scripts/seed-market-test-data.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "tests/unit/canonical-navigation.test.js",
@@ -14807,11 +16401,16 @@
                 "declared": "tests/unit/canonical-operations-workspace-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-operations-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/seed-market-test-data.test.js",
+                "resolvedPath": "tests/unit/seed-market-test-data.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 3,
+        "totalFiles": 5,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14836,7 +16435,28 @@
       },
       "businessDependencies": [
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-autonomy",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -14858,11 +16478,12 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 3,
+        "declaredNotObserved": 4,
         "declaredNotObservedEvidence": [
           "auth",
           "dashboard",
-          "market"
+          "logistics",
+          "orders"
         ]
       },
       "governanceHealth": {
@@ -14883,7 +16504,7 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 4,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
@@ -14898,7 +16519,12 @@
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
-            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"orders\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           }
         ]
       },
@@ -15610,12 +17236,13 @@
           "snapshot de cout a la commande",
           "rattachement aux colis et aux achats fournisseurs",
           "collecte QR au retrait",
-          "projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement"
+          "projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement",
+          "workflow de litige (disputes) : statut open/processing/resolved/closed et note de résolution — services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)"
         ],
         "out": [
           "encaissement du paiement (feature payments)",
           "logique panier partage (feature shared-cart, consommatrice d'orders)",
-          "remboursement (feature refunds, lecture seule sur orders)",
+          "remboursement (feature refunds, lecture seule sur orders) — le montant refund_kmf/refund_eur d'un litige n'est ni lu ni écrit par le workflow de statut, même quand le litige passe resolved/closed",
           "tarification (feature economic-engine, orders ne fait que la consommer)",
           "matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)",
           "engagement fournisseur : création, confirmation, réception et annulation d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders déclenche la synchronisation d'annulation via l'API interne purchasing, sans SQL direct sur purchase_orders"
@@ -15628,6 +17255,10 @@
         {
           "statement": "tout remboursement retourne au payeur, jamais au destinataire",
           "test": "tests/invariants/orders.refund-to-payer.test.js"
+        },
+        {
+          "statement": "le workflow de statut d'un litige (dispute-mutation-service.js) n'écrit jamais refund_kmf ni refund_eur, quel que soit le statut atteint — le montant reste une décision distincte, jamais un effet de bord d'un changement de statut",
+          "test": "tests/unit/dispute-mutation-service.test.js"
         },
         {
           "statement": "reference de commande lisible et unique",
@@ -15728,7 +17359,7 @@
             ]
           },
           "services": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -15738,6 +17369,11 @@
               {
                 "declared": "services/cancel-order-purchase-orders.js",
                 "resolvedPath": "services/cancel-order-purchase-orders.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dispute-mutation-service.js",
+                "resolvedPath": "services/dispute-mutation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15813,7 +17449,7 @@
             ]
           },
           "tests": {
-            "count": 37,
+            "count": 38,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -15863,6 +17499,11 @@
               {
                 "declared": "tests/unit/delete-order-cascade.test.js",
                 "resolvedPath": "tests/unit/delete-order-cascade.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dispute-mutation-service.test.js",
+                "resolvedPath": "tests/unit/dispute-mutation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -16013,7 +17654,7 @@
             ]
           }
         },
-        "totalFiles": 69,
+        "totalFiles": 71,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
@@ -16794,6 +18435,14 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16923,9 +18572,10 @@
       "perimeter": {
         "in": [
           "integration Stripe et PayPal (intent, capture, webhook, evenements)",
-          "Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG)",
+          "Mobile Money multi-provider par marché (Orange Money CM, MTN MoMo CG, KartaPay KM vers MVola/Holo)",
           "réconciliation périodique des paiements Mobile Money pending si callback perdu",
           "paiement cash au retrait et relances cash",
+          "contrôle partagé de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts",
           "confirmation de paiement et idempotence webhook/callback"
         ],
         "out": [
@@ -16950,6 +18600,10 @@
           "test": "tests/unit/payment-mobile-money.test.js"
         },
         {
+          "statement": "un webhook KartaPay doit être signé, rapproché à la tentative locale, puis relu par API authentifiée avant confirmation",
+          "test": "tests/unit/kartapay-webhook.test.js"
+        },
+        {
           "statement": "un callback Mobile Money perdu est repris par une réconciliation périodique bornée et idempotente",
           "test": "tests/unit/mobile-money-reconciliation.test.js"
         },
@@ -16958,7 +18612,19 @@
           "statement": "un paiement confirme ne peut etre confirme deux fois",
           "test": "tests/invariants/payments.no-double-confirm.test.js"
         },
-        "un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)"
+        "un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)",
+        {
+          "statement": "tous les chemins cash passent par un contrôle partagé avant de créer la vérité paiement/stock",
+          "test": "tests/unit/cash-confirmation-control-service.test.js"
+        },
+        {
+          "statement": "en DUAL_ALWAYS le premier acteur ne peut jamais être son propre second approbateur",
+          "test": "tests/unit/cash-confirmation-control-service.test.js"
+        },
+        {
+          "statement": "le montant cash confirmé reste dérivé de la commande et n’est jamais saisi librement dans le contrôle",
+          "test": "tests/unit/cash-confirmation-control-service.test.js"
+        }
       ],
       "implementation": {
         "byCategory": {
@@ -16988,7 +18654,7 @@
             ]
           },
           "migrations": {
-            "count": 3,
+            "count": 5,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -17003,6 +18669,16 @@
               {
                 "declared": "migrations/169_mobile_money_foundation.sql",
                 "resolvedPath": "migrations/169_mobile_money_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/171_kartapay_km_mobile_money.sql",
+                "resolvedPath": "migrations/171_kartapay_km_mobile_money.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/199_cash_confirmation_control.sql",
+                "resolvedPath": "migrations/199_cash_confirmation_control.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -17038,8 +18714,13 @@
             ]
           },
           "services": {
-            "count": 17,
+            "count": 19,
             "files": [
+              {
+                "declared": "services/cash-confirmation-control-service.js",
+                "resolvedPath": "services/cash-confirmation-control-service.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/cash-deposit-service.js",
                 "resolvedPath": "services/cash-deposit-service.js",
@@ -17068,6 +18749,11 @@
               {
                 "declared": "services/mobile-money-reconciliation.js",
                 "resolvedPath": "services/mobile-money-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/mobile-money/kartapay-km.js",
+                "resolvedPath": "services/mobile-money/kartapay-km.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17128,7 +18814,7 @@
             ]
           },
           "tests": {
-            "count": 23,
+            "count": 25,
             "files": [
               {
                 "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
@@ -17143,6 +18829,11 @@
               {
                 "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cash-confirmation-control-service.test.js",
+                "resolvedPath": "tests/unit/cash-confirmation-control-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17173,6 +18864,11 @@
               {
                 "declared": "tests/unit/create-stripe-order-intent.test.js",
                 "resolvedPath": "tests/unit/create-stripe-order-intent.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/kartapay-webhook.test.js",
+                "resolvedPath": "tests/unit/kartapay-webhook.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17248,7 +18944,7 @@
             ]
           }
         },
-        "totalFiles": 52,
+        "totalFiles": 58,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,
@@ -17305,6 +19001,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_confirmation_controls",
+            "resolution": "single-writer"
+          },
+          {
             "table": "cash_deposits",
             "resolution": "single-writer"
           },
@@ -17324,6 +19024,12 @@
         "writesTables": [
           {
             "table": "cash_collections",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cash_confirmation_controls",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -17357,6 +19063,14 @@
           {
             "table": "incidents",
             "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "market_cash_control_policies",
+            "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "market_operating_assignments",
+            "lifecycleOwner": "market-delegation"
           },
           {
             "table": "market_payment_providers",
@@ -17395,6 +19109,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_confirmation_controls",
+            "resolution": "single-writer"
+          },
+          {
             "table": "cash_deposits",
             "resolution": "single-writer"
           },
@@ -17414,6 +19132,12 @@
         "writesTables": [
           {
             "table": "cash_collections",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cash_confirmation_controls",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -17449,6 +19173,14 @@
             "lifecycleOwner": "incident-management"
           },
           {
+            "table": "market_cash_control_policies",
+            "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "market_operating_assignments",
+            "lifecycleOwner": "market-delegation"
+          },
+          {
             "table": "market_payment_providers",
             "lifecycleOwner": null
           },
@@ -17481,7 +19213,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 24
+          "count": 25
         }
       },
       "businessDependencies": [
@@ -17549,6 +19281,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -18694,7 +20433,13 @@
           "POST /api/providers-services/inquiries — mutation client authentifiée, téléphone demandeur dérivé de la session canonique serveur",
           "consumer Boutique des actions request/callback — identité Komerce puis création de l’Inquiry propriétaire",
           "seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production",
-          "seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception"
+          "seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception",
+          "listProviders(marketId) — lecture scopée marché, suspendus en dernier",
+          "getOwnedProvider(providerId, marketId) — null (jamais une erreur) si le provider existe sur un autre marché",
+          "updateProvider(providerId, marketId, patch) — coordonnées uniquement ; le marché n’est jamais réassignable par cette voie",
+          "listServicesForMarket(marketId) / listPhysicalOffersForMarket(marketId) — lecture scopée marché, masqués en dernier",
+          "getOwnedService(serviceId, marketId) / getOwnedPhysicalOffer(physicalOfferId, marketId) — null (jamais une erreur) si la ressource existe sur un autre marché",
+          "setServiceExposure(serviceId, marketId, exposure) / setPhysicalOfferExposure(physicalOfferId, marketId, exposure) — bascule commercial_exposure uniquement, jamais le status ; idempotent (changed:false sans écriture si déjà dans l’état demandé)"
         ],
         "out": [
           "authentification provider (pas de users / user_role pour le provider)",
@@ -18821,8 +20566,13 @@
             ]
           },
           "services": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "services/provider-status-mutation-service.js",
+                "resolvedPath": "services/provider-status-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/providers-inquiry-service.js",
                 "resolvedPath": "services/providers-inquiry-service.js",
@@ -18841,8 +20591,13 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 6,
             "files": [
+              {
+                "declared": "tests/unit/provider-status-mutation-service.test.js",
+                "resolvedPath": "tests/unit/provider-status-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/providers-inquiry-service.test.js",
                 "resolvedPath": "tests/unit/providers-inquiry-service.test.js",
@@ -18871,7 +20626,7 @@
             ]
           }
         },
-        "totalFiles": 17,
+        "totalFiles": 19,
         "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
           "count": 4,
@@ -19069,6 +20824,14 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
         {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -20135,6 +21898,318 @@
             "family": "NON_RUNTIME_TEST"
           }
         ]
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "settlement",
+      "kind": "business-feature",
+      "status": "staging",
+      "manifestFile": "features/settlement.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "settlement",
+        "kind": "business-feature",
+        "status": "staging"
+      },
+      "service": "Tracer de bout en bout le règlement dû à un opérateur pays : READY attesté centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.",
+      "perimeter": {
+        "in": [
+          "market_settlements : snapshot monétaire amount + currency immuable, rattaché au Market Operating Assignment et jamais supprimé",
+          "market_settlement_events : journal strictement append-only READY_ATTESTED / REQUESTED / PAID / RECEIVED",
+          "création READY exclusivement par acteur central admin/finance, montant explicitement attesté et devise dérivée du marché côté serveur",
+          "machine stricte READY -> REQUESTED -> PAID -> RECEIVED, également protégée par trigger DB",
+          "boundary lifecycle interne consommée par market-delegation pour REQUESTED et RECEIVED"
+        ],
+        "out": [
+          "promotion des capabilities finance.act + settlement.receive : migration 209 possédée par market-delegation, pas par ce slice lifecycle",
+          "route et service d’orchestration délégués : propriété market-delegation ; settlement ne revendique que la boundary lifecycle",
+          "calcul automatique du montant dû : aucune règle commission/margin_share/revenue_share fiable n’existe encore dans le code",
+          "payout bancaire ou Mobile Money : aucun transfert externe n’est initié par cette feature dans ce lot",
+          "choix de devise par le navigateur : currency vient toujours de markets.currency",
+          "modification d’un READY existant : amount/currency/assignment/source sont immuables ; une correction future crée une nouvelle attestation, jamais un UPDATE silencieux",
+          "suppression destructive d’un settlement ou réécriture d’un événement financier : interdites au niveau DB",
+          "refund client : feature refunds, totalement distincte du settlement opérateur",
+          "réconciliation cash terrain -> Komerce : feature payments/dashboard, flux économique inverse et distinct",
+          "configuration générale du marché : market_config.update reste hors périmètre"
+        ]
+      },
+      "authority": "backend-core — toute modification de amount/currency, de la machine de statut ou du sens de PAID exige une décision financière explicite ; finance.act ne doit jamais devenir un payout implicite.",
+      "invariants": [
+        "READY signifie montant attesté par l’autorité centrale, jamais montant calculé implicitement par Komerce",
+        "amount, currency, market_id, assignment_id et provenance de l’attestation sont immuables après création",
+        "currency est dérivée de markets.currency côté serveur et vérifiée en DB ; aucun client ne choisit la devise",
+        "la boundary lifecycle ne connaît aucun rôle pays : l’autorisation finance.act / settlement.receive reste dans market-delegation",
+        "seul le central peut faire REQUESTED -> PAID et une payment_reference est obligatoire",
+        "market_settlements ne peut jamais être supprimé ; une correction crée une nouvelle attestation",
+        "market_settlement_events est append-only : UPDATE et DELETE bloqués par trigger DB",
+        "la migration d’activation des capabilities ne crée ni ne modifie aucune vérité market_settlements"
+      ],
+      "implementation": {
+        "byCategory": {
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/208_market_settlement_foundation.sql",
+                "resolvedPath": "migrations/208_market_settlement_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "routes/admin-market-settlement.js",
+                "resolvedPath": "routes/admin-market-settlement.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "services": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "services/market-settlement-service.js",
+                "resolvedPath": "services/market-settlement-service.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "tests/e2e-api/settlement.state-machine.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/settlement.state-machine.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-market-settlement-routes.test.js",
+                "resolvedPath": "tests/unit/admin-market-settlement-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-settlement-migration.test.js",
+                "resolvedPath": "tests/unit/market-settlement-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-settlement-service.test.js",
+                "resolvedPath": "tests/unit/market-settlement-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 7,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "market_settlement_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_settlements",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "market_settlement_events",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_settlements",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "market_operating_assignments",
+            "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "market_settlement_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "market_settlements",
+            "resolution": "declared-table-owner"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "market_settlement_events",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_settlements",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "market_operating_assignments",
+            "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "markets",
+            "lifecycleOwner": "market"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "confirmReceived()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
+            "fn": "createReadySettlement()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
+            "fn": "listForAssignment()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
+            "fn": "markPaid()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
+            "fn": "requestSettlement()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "provider": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        }
+      ],
+      "consumedBy": [
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",

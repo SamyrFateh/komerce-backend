@@ -47,6 +47,9 @@ module.exports = {
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
+      'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
+      'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
+      'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
     ],
     out: [
       'calcul du prix final et valorisation transport (feature economic-engine)',
@@ -54,6 +57,7 @@ module.exports = {
       'mise en avant / classement (feature recommendations)',
       'fiche snapshot lecture seule du panier partage (feature shared-cart)',
       'checkout final et paiement (features orders/payments)',
+      'décision d’exposition produit x marché (qui écrit product_market_exposure) : feature market-delegation, capability catalog.expose',
     ],
   },
 
@@ -97,6 +101,7 @@ module.exports = {
       'services/suppliers/media-normalizer.js',
       'services/suppliers/promotion-classifier.js',
       'services/suppliers/source-product-normalizer.js',
+      'services/catalog-market-exposure-service.js',
       'services/suppliers/connectors/api-connector.base.js',
       'services/suppliers/connectors/manual-connector.js',
       'services/suppliers/connectors/csv-connector.js',
@@ -141,6 +146,8 @@ module.exports = {
       'migrations/150_catalog_import_business_ref.sql',
       'migrations/147_catalog_global_access_grants.sql',
       'migrations/163_supplier_catalog_sync_checkpoints.sql',
+      'migrations/202_catalog_product_market_exposure.sql',
+      'migrations/206_catalog_product_market_exposure_snapshot.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -246,6 +253,13 @@ module.exports = {
       'tests/unit/product-price-audit.test.js',
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
+      // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 2.
+      // products.price_kmf/cost_kmf/unsold_price_kmf (migration 215,
+      // integer -> numeric). v_shipment_density dépend de cost_kmf (trouvé
+      // par exécution réelle) et agrège une marge à travers 5 tables : le
+      // test construit la chaîne complète pour vérifier l'exactitude au
+      // centime, pas seulement que la vue reste interrogeable.
+      'tests/e2e-api/products.kmf-numeric.e2e.test.js',
       'tests/unit/catalog-product-detail.test.js',
       'tests/unit/catalog-test-placeholder-migration.test.js',
       'tests/unit/modal-mobile-canonical.test.js',
@@ -276,6 +290,9 @@ module.exports = {
       'tests/unit/canonical-catalog-workspace-boundary.test.js',
       'tests/unit/canonical-catalog-authority-boundary.test.js',
       'tests/unit/require-catalog-global-authority.test.js',
+      'tests/unit/catalog-market-exposure-service.test.js',
+      'tests/unit/catalog-market-exposure-snapshot.test.js',
+      'tests/unit/catalog-public-exposure-gate.test.js',
     ],
   },
 
@@ -300,6 +317,7 @@ module.exports = {
       'product_variants: RW!',
       'product_content_profile: RW',
       'product_content_sections: RW',
+      'product_market_exposure: RW!',
       'product_attributes: RW',
       'products: RW!',
       'sourcing_candidates: R',
@@ -398,6 +416,8 @@ module.exports = {
 
   invariants: [
     'un produit publie a toujours passe product-publication-guard.js',
+    { statement: 'products.price_kmf/cost_kmf/unsold_price_kmf (numeric depuis la migration 215) conservent leurs centimes et v_shipment_density calcule une marge exacte au centime à travers sa chaîne à 5 tables',
+      test: 'tests/e2e-api/products.kmf-numeric.e2e.test.js' },
     'jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)',
     'la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide',
     'une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique ; une source pauvre reste pauvre honnêtement',

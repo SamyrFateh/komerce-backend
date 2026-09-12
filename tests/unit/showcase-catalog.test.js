@@ -6,33 +6,118 @@
  * @test-requires none
  */
 
+const path = require('path');
 const {
+  DEFAULT_CURATED_INPUT,
+  DEFAULT_CURATED_INPUTS,
   parseArgs,
+  readProductInputs,
+  resolveTarget,
+  assertCuratedSource,
   roundKmf,
   isCloudinaryUrl,
   isCanonicalCloudinaryUpload,
   isCloudinaryFetchProxy,
   normalizeImages,
-  normalizeSeedProduct,
   localizeTitle,
   mapDummyProduct,
   cloudinarySignature,
   staticAudit,
 } = require('../../scripts/showcase-catalog');
 
-describe('showcase-catalog', () => {
-  test('parseArgs vise 500 produits par défaut et autorise 1000', () => {
-    const defaults = parseArgs(['prepare']);
-    expect(defaults.command).toBe('prepare');
-    expect(defaults.target).toBe(500);
+function curatedProduct(overrides = {}) {
+  return {
+    product_ref: 'KPR-990001',
+    name: 'Palette de fards avec miroir',
+    description: 'Palette compacte avec miroir intégré et plusieurs teintes pour varier les maquillages du quotidien.',
+    category: 'Beauté',
+    subcategory: 'Maquillage',
+    price_kmf: 9500,
+    stock: 32,
+    image_url: 'https://cdn.example.com/palette.webp',
+    images: ['https://cdn.example.com/palette.webp'],
+    source: 'dummyjson:2',
+    curated: true,
+    ...overrides,
+  };
+}
 
-    const max = parseArgs(['prepare', '--target', '1000']);
-    expect(max.target).toBe(1000);
+describe('showcase-catalog', () => {
+  test('source vise 500 candidats par défaut, prepare consomme les deux manifestes curatés V2', () => {
+    const source = parseArgs(['source']);
+    expect(source.command).toBe('source');
+    expect(source.target).toBe(500);
+
+    const prepare = parseArgs(['prepare']);
+    expect(prepare.command).toBe('prepare');
+    expect(prepare.target).toBeNull();
+    expect(prepare.input).toBe(DEFAULT_CURATED_INPUTS);
+    expect(DEFAULT_CURATED_INPUTS).toHaveLength(2);
+    expect(DEFAULT_CURATED_INPUTS[0]).toBe(DEFAULT_CURATED_INPUT);
+    expect(DEFAULT_CURATED_INPUTS.map((file) => path.basename(file))).toEqual([
+      'staging-market-catalog-curated-v1.json',
+      'staging-market-catalog-curated-v2-additions.json',
+    ]);
+    expect(path.basename(prepare.manifest)).toBe('showcase-catalog-v2.json');
   });
 
-  test('parseArgs refuse une cible hors borne', () => {
+  test('le showcase V2 agrège réellement les 40 produits curatés du seed marché', () => {
+    const products = readProductInputs(DEFAULT_CURATED_INPUTS);
+    const report = assertCuratedSource(products);
+
+    expect(products).toHaveLength(40);
+    expect(report).toEqual({ products: 40, refs: 40, heroes: 40 });
+    expect(new Set(products.map((product) => product.product_ref)).size).toBe(40);
+    expect(products.some((product) => product.category === 'Enfant')).toBe(true);
+    expect(products.some((product) => product.product_ref === 'KPR-990040')).toBe(true);
+  });
+
+  test('un --input explicite reste un manifeste unique pour les usages ciblés', () => {
+    const custom = parseArgs(['prepare', '--input', 'data/staging-market-catalog-curated-v1.json']);
+    expect(Array.isArray(custom.input)).toBe(false);
+    expect(path.basename(custom.input)).toBe('staging-market-catalog-curated-v1.json');
+  });
+
+  test('parseArgs autorise une cible explicite jusqu’à 1000 et refuse les bornes invalides', () => {
+    expect(parseArgs(['prepare', '--target', '40']).target).toBe(40);
+    expect(parseArgs(['source', '--target', '1000']).target).toBe(1000);
     expect(() => parseArgs(['prepare', '--target', '0'])).toThrow(/entre 1 et 1000/);
     expect(() => parseArgs(['prepare', '--target', '1001'])).toThrow(/entre 1 et 1000/);
+  });
+
+  test('le vieux db/seed-products-v2.json est explicitement interdit comme input', () => {
+    expect(() => parseArgs(['prepare', '--input', 'db/seed-products-v2.json']))
+      .toThrow(/Entrée legacy interdite/);
+    expect(() => parseArgs(['audit', '--input=db/seed-products-v2.json']))
+      .toThrow(/Entrée legacy interdite/);
+  });
+
+  test('resolveTarget prend tout le manifeste par défaut et fail-closed si cible trop grande', () => {
+    const products = [curatedProduct(), curatedProduct({ product_ref: 'KPR-990002', image_url: 'https://cdn.example.com/b.webp' })];
+    expect(resolveTarget(products, null)).toBe(2);
+    expect(resolveTarget(products, 1)).toBe(1);
+    expect(() => resolveTarget(products, 3)).toThrow(/sous cible/);
+  });
+
+  test('quality gate accepte une fiche réellement curatée', () => {
+    expect(assertCuratedSource([curatedProduct()])).toEqual({ products: 1, refs: 1, heroes: 1 });
+  });
+
+  test('quality gate refuse produit générique, description brute, ref non canonique et absence de curation', () => {
+    expect(() => assertCuratedSource([curatedProduct({
+      product_ref: 'SHOWCASE-V1-0001',
+      name: 'Produit 1',
+      description: 'Raw test product: Some Item',
+      curated: false,
+    })])).toThrow(/Catalogue curaté invalide/);
+  });
+
+  test('quality gate refuse deux produits qui réutilisent la même image hero', () => {
+    const hero = 'https://cdn.example.com/shared.webp';
+    expect(() => assertCuratedSource([
+      curatedProduct({ product_ref: 'KPR-990001', image_url: hero }),
+      curatedProduct({ product_ref: 'KPR-990002', name: 'Rouge à lèvres mat', image_url: hero }),
+    ])).toThrow(/image hero dupliquée/);
   });
 
   test('Cloudinary upload canonique et fetch proxy sont distingués', () => {
@@ -54,26 +139,7 @@ describe('showcase-catalog', () => {
     expect(normalizeImages({ image_url: hero, images: [hero, second, second] })).toEqual([hero, second]);
   });
 
-  test('normalizeSeedProduct produit une référence stable et une description française', () => {
-    const hero = 'https://res.cloudinary.com/demo/image/upload/a.jpg';
-    const product = normalizeSeedProduct({
-      name: 'Produit test',
-      description: 'English source',
-      description_fr: 'Description française',
-      category: 'Maison',
-      subcategory: 'Cuisine',
-      price_kmf: 4123,
-      promo_pct: 12,
-      image_url: hero,
-    }, 7);
-
-    expect(product.product_ref).toBe('SHOWCASE-V1-0008');
-    expect(product.description).toBe('Description française');
-    expect(product.price_kmf).toBe(4000);
-    expect(product.images).toEqual([hero]);
-  });
-
-  test('localizeTitle traduit les principaux noms de rayon sans inventer le produit', () => {
+  test('localizeTitle reste un outil de pool candidat et ne prétend pas faire une vraie curation', () => {
     expect(localizeTitle('Classic Red Dress and Shoes')).toBe('Classic Red robe and chaussures');
     expect(localizeTitle('Luxury Perfume')).toBe('Luxury parfum');
   });

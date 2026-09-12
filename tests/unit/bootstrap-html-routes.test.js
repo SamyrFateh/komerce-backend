@@ -393,6 +393,26 @@ describe('bootstrap/html-routes', () => {
         expect.any(Function)
       );
     });
+
+    test('/admin/settings sert désormais le shell Canonical (plus Legacy)', () => {
+      const res = fakeRes();
+      app._routes['/admin/settings']({ query: {} }, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+      expect(res.sendFile).toHaveBeenCalledWith(
+        require('path').join(PUBLIC_DIR, 'dashboards', 'canonical', 'index.html'),
+        expect.any(Function)
+      );
+    });
+
+    test('/admin/settings?legacy=1 conserve le rollback Legacy 1', () => {
+      const res = fakeRes();
+      app._routes['/admin/settings']({ query: { legacy: '1' } }, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+      expect(res.sendFile).toHaveBeenCalledWith(
+        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
+        expect.any(Function)
+      );
+    });
   });
 
   describe('/portail et /pilotage — portail de pilotage', () => {

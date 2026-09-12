@@ -32,11 +32,12 @@ module.exports = {
       'rattachement aux colis et aux achats fournisseurs',
       'collecte QR au retrait',
       'projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement',
+      'workflow de litige (disputes) : statut open/processing/resolved/closed et note de résolution — services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)',
     ],
     out: [
       'encaissement du paiement (feature payments)',
       'logique panier partage (feature shared-cart, consommatrice d\'orders)',
-      'remboursement (feature refunds, lecture seule sur orders)',
+      'remboursement (feature refunds, lecture seule sur orders) — le montant refund_kmf/refund_eur d\'un litige n\'est ni lu ni écrit par le workflow de statut, même quand le litige passe resolved/closed',
       'tarification (feature economic-engine, orders ne fait que la consommer)',
       'matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)',
       'engagement fournisseur : création, confirmation, réception et annulation d\'un bon de commande ' +
@@ -67,6 +68,7 @@ module.exports = {
       'services/order-checkout-persistence.js',
       'services/order-post-commit-hooks.js',
       'services/admin-order-refund.js',
+      'services/dispute-mutation-service.js',
       'services/cancel-order-purchase-orders.js',
       'services/order-payment-confirmation.js',
       'services/order-item-availability-service.js',
@@ -104,6 +106,20 @@ module.exports = {
       // Scénario vertical : orders est la feature PROPRIETAIRE ; auth,
       // catalog, payments et logistics sont traversées, pas co-proprietaires.
       'tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js',
+      // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 1a.
+      // Preuve contre Postgres réel que orders.total_kmf (migration 213,
+      // integer -> numeric) reste correcte : décodage number (pas string),
+      // centimes préservés, deux vues dépendantes (suppliers_stats,
+      // v_order_margins) et deux fonctions PL/pgSQL (compute_real_margin,
+      // auto_unsold) inchangées en valeur.
+      'tests/e2e-api/orders.total-kmf-numeric.e2e.test.js',
+      // E2E fonctionnel — chantier currency debt, LOT 1b. Les 10 colonnes
+      // monétaires restantes d'orders (migration 214, integer -> numeric),
+      // suite de la 213. Couvre spécifiquement le trigger column-specific
+      // trg_compute_real_margin (BEFORE UPDATE OF cost_real_kmf) : Postgres
+      // bloque un ALTER TYPE sur une colonne référencée par la DÉFINITION
+      // d'un trigger, pas seulement son corps — trouvé par exécution réelle.
+      'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
@@ -119,6 +135,7 @@ module.exports = {
       'tests/unit/order-post-commit-hooks.test.js',
       'tests/unit/order-item-availability-service.test.js',
       'tests/unit/order-mutation-service.test.js',
+      'tests/unit/dispute-mutation-service.test.js',
       'tests/unit/payment-service.test.js',
       'tests/unit/order-service.test.js',
       'tests/unit/orderParcelLinkRules.test.js',
@@ -298,8 +315,14 @@ module.exports = {
   invariants: [
     'annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)',
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
+    { statement: 'orders.total_kmf (numeric depuis la migration 213) reste décodée en number côté JS, jamais en string — sans quoi toute arithmétique bare sur ce champ deviendrait une concaténation de chaînes',
+      test: 'tests/e2e-api/orders.total-kmf-numeric.e2e.test.js' },
+    { statement: 'les 10 colonnes monétaires restantes d\'orders (migration 214) conservent leurs centimes après conversion, et trg_compute_real_margin reste strictement column-specific (BEFORE UPDATE OF cost_real_kmf), vérifié par inspection directe de la définition en base, pas par inférence comportementale',
+      test: 'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js' },
     { statement: 'tout remboursement retourne au payeur, jamais au destinataire',
       test: 'tests/invariants/orders.refund-to-payer.test.js' },
+    { statement: 'le workflow de statut d\'un litige (dispute-mutation-service.js) n\'écrit jamais refund_kmf ni refund_eur, quel que soit le statut atteint — le montant reste une décision distincte, jamais un effet de bord d\'un changement de statut',
+      test: 'tests/unit/dispute-mutation-service.test.js' },
     { statement: 'reference de commande lisible et unique',
       test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
     { statement: 'snapshot de cout figure a la creation, jamais recalcule retroactivement',

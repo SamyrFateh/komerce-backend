@@ -30,25 +30,18 @@ test('URL Pricing et anciens points d?entr?e convergent vers Canonical avec roll
 
   const canonicalRes = fakeRes();
   app._routes['/admin/workspaces/pricing']({}, canonicalRes);
-  expect(canonicalRes.setHeader)
-    .toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+  expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
 
   for (const routePath of [
-    '/admin/pricing',
-    '/admin/pricing-workshop',
-    '/admin/pricing-strategy',
-    '/admin/economic-flow',
-    '/admin/economic',
+    '/admin/pricing', '/admin/pricing-workshop', '/admin/pricing-strategy', '/admin/economic-flow', '/admin/economic',
   ]) {
     const canonicalAliasRes = fakeRes();
     app._routes[routePath]({ query: {} }, canonicalAliasRes);
-    expect(canonicalAliasRes.redirect)
-      .toHaveBeenCalledWith(302, '/admin/workspaces/pricing');
+    expect(canonicalAliasRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/pricing');
 
     const legacyRes = fakeRes();
     app._routes[routePath]({ query: { legacy: '1' } }, legacyRes);
-    expect(legacyRes.setHeader)
-      .toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
   }
 });
 
@@ -81,12 +74,29 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
 test('Atelier market rend le viewer en lecture seule et réserve les mutations au manager', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1218');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1301');
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace-economic-v3.css?v=1301');
   expect(presentation).toContain('payload.capabilities?.cost_overrides');
   expect(presentation).toContain("payload.access?.read_only !== true");
   expect(presentation).toContain('input.disabled = true');
   expect(presentation).toContain('Lecture seule');
-  expect(presentation).toContain('manager pays');
+  expect(presentation).toContain('manager');
+});
+
+test('Atelier expose nature, périmètre et allocation sans niveaux N dans sa présentation métier', () => {
+  const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
+  const migration = fs.readFileSync(path.join(ROOT, 'migrations', '191_cost_component_economic_classification.sql'), 'utf8');
+  expect(presentation).toContain('Charges fixes directes');
+  expect(presentation).toContain('Charges fixes mutualisées');
+  expect(presentation).toContain('Coûts variables');
+  expect(presentation).toContain('allocation_perimeter');
+  expect(presentation).toContain('economic_nature');
+  expect(presentation).toContain('Ajuster / affiner les charges');
+  expect(presentation).not.toContain('N1 ·');
+  expect(presentation).not.toContain('N2 ·');
+  expect(presentation).not.toContain('N3 ·');
+  expect(migration).toContain('economic_nature');
+  expect(migration).toContain('allocation_perimeter');
 });
 
 test('Décision marché est lue du serveur, affichée avant l’atelier et reste fail-closed', () => {
@@ -94,7 +104,7 @@ test('Décision marché est lue du serveur, affichée avant l’atelier et reste
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace.js'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace.js?v=1218');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace.js?v=1301');
   expect(source).toContain("`${endpointFor(context)}/decision`");
   expect(source).toContain("`${endpointFor(context)}/decision-policy/history`");
   expect(source).toContain('decision.decision_status');
@@ -125,7 +135,8 @@ test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et 
   expect(presentation).toContain('Qualité de vérité');
   expect(css).toContain('.kmc-cost-explain-body');
   expect(service).toContain('never_promote_config_to_real');
-  expect(service).toContain('N3 → charge économique de période');
+  expect(service).toContain('charges de période à couvrir');
+  expect(service).toContain('charge_nature_is_distinct_from_allocation_perimeter');
 });
 
 test('Pricing Canonical est global et utilise uniquement refs métier navigateur', () => {

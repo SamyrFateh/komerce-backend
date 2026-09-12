@@ -26,6 +26,18 @@
   const GLOBAL_ENDPOINT = '/api/admin/dashboard/operations';
   const MARKET_ENDPOINT_PREFIX = '/api/admin/dashboard/operations/market/';
 
+  // Approfondir (drill) filtré par rôle — voir docs/admin-nav-capability-map.md.
+  const DRILL_ROLE_MAP = Object.freeze({
+    'operations-workspace': Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']),
+    'shipping-customs-workspace': Object.freeze(['admin', 'agent_hub', 'agent_transitaire']),
+  });
+
+  function visibleDrillSchema(schema, user) {
+    const role = (user && user.role) || '';
+    const drill = schema.drill.filter(item => (DRILL_ROLE_MAP[item.id] || []).includes(role));
+    return Object.freeze({ ...schema, drill: Object.freeze(drill) });
+  }
+
   const OPERATIONS_SCHEMA = Object.freeze({
     id: 'operations',
     title: 'Opérations',
@@ -226,15 +238,16 @@
     }
 
     const renderer = rendererContract.createRenderer({ document: doc, ui });
-    renderer.render(rootNode, OPERATIONS_SCHEMA, { state: 'loading', stateMessage: 'Chargement des Opérations…' });
+    const schema = visibleDrillSchema(OPERATIONS_SCHEMA, options.user);
+    renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement des Opérations…' });
 
     return jsonRequest(fetchFn, endpoint)
       .then(payload => {
-        const result = renderer.render(rootNode, OPERATIONS_SCHEMA, { data: resolveSources(payload) });
+        const result = renderer.render(rootNode, schema, { data: resolveSources(payload) });
         return Object.freeze({ payload, result, endpoint });
       })
       .catch(error => {
-        renderer.render(rootNode, OPERATIONS_SCHEMA, { state: 'error', stateMessage: error.message });
+        renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
         throw error;
       });
   }
@@ -243,6 +256,8 @@
     GLOBAL_ENDPOINT,
     MARKET_ENDPOINT_PREFIX,
     OPERATIONS_SCHEMA,
+    DRILL_ROLE_MAP,
+    visibleDrillSchema,
     KPI_KEYS,
     formatNumber,
     projectMetrics,

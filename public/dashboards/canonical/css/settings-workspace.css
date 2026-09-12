@@ -1,0 +1,13 @@
+/* Paramètres (KomerceCanonicalSettingsWorkspace) — alias les tokens Canonical
+   existants (base.css) sous les noms attendus par les composants portés
+   depuis SettingsView. Aucune valeur brute dupliquée : source unique dans
+   base.css. Voir docs/admin-nav-capability-map.md §7. */
+:root {
+  --text-primary: var(--kmc-ink);
+  --text-secondary: var(--kmc-muted);
+  --bg-card: var(--kmc-card);
+  --bg-secondary: var(--kmc-paper);
+  --border: var(--kmc-line);
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+}

@@ -4,9 +4,9 @@
  * @domain        admin-dashboard
  * @layer         ui-workspace
  * @criticality   medium
- * @inputs        admin_session, active_markets, admin_users, market_scope_mutations
- * @outputs       market_operator_provisioning_ui, demo_credentials
- * @depends       /api/auth/me, /api/admin/users, /api/admin/dashboard/context
+ * @inputs        admin_session, active_markets, admin_users, market_scope_mutations, password_reset_mutations
+ * @outputs       market_operator_provisioning_ui, demo_credentials, password_reset_ui
+ * @depends       /api/auth/me, /api/admin/users, /api/admin/users/:id/password, /api/admin/dashboard/context
  * @used-by       /dashboards/canonical/access.html
  * @db-read       none
  * @db-write      none
@@ -85,6 +85,23 @@
       throw error;
     }
     return payload;
+  }
+
+  async function resetOperatorPassword(fetchImpl, userId, password) {
+    if (!userId) {
+      const error = new Error('Utilisateur introuvable.');
+      error.code = 'USER_REQUIRED';
+      throw error;
+    }
+    if (typeof password !== 'string' || !password) {
+      const error = new Error('Nouveau mot de passe requis.');
+      error.code = 'PASSWORD_REQUIRED';
+      throw error;
+    }
+    return requestJson(fetchImpl, `/api/admin/users/${encodeURIComponent(userId)}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
   }
 
   function randomHex(bytes = 8) {
@@ -252,6 +269,55 @@
       actions.appendChild(save);
       editor.appendChild(actions);
       card.appendChild(editor);
+
+      const passwordEditor = el(doc, 'div', 'kmc-access-scope-editor');
+      const newPassword = input(doc, 'new_password', 'password', 'Nouveau mot de passe');
+      passwordEditor.appendChild(field(doc, 'Mot de passe', newPassword, { wide: true }));
+
+      const passwordActions = el(doc, 'div', 'kmc-access-actions');
+      const generatePassword = el(doc, 'button', 'kmc-access-button', 'Générer');
+      generatePassword.type = 'button';
+      generatePassword.addEventListener('click', () => {
+        newPassword.value = `Kmc!${randomHex(7)}A9`;
+        setFeedback(feedback, `Mot de passe fort généré pour ${user.full_name || user.email}. Copie-le ou clique Réinitialiser pour l’appliquer.`, 'success');
+      });
+      passwordActions.appendChild(generatePassword);
+
+      const copyPassword = el(doc, 'button', 'kmc-access-button', 'Copier');
+      copyPassword.type = 'button';
+      copyPassword.addEventListener('click', async () => {
+        if (!newPassword.value) {
+          setFeedback(feedback, 'Génère ou saisis d’abord un mot de passe.', 'error');
+          return;
+        }
+        if (global.navigator && global.navigator.clipboard && typeof global.navigator.clipboard.writeText === 'function') {
+          await global.navigator.clipboard.writeText(newPassword.value);
+          setFeedback(feedback, `Mot de passe copié pour ${user.full_name || user.email}.`, 'success');
+        }
+      });
+      passwordActions.appendChild(copyPassword);
+
+      const resetPassword = el(doc, 'button', 'kmc-access-button is-primary', 'Réinitialiser le mot de passe');
+      resetPassword.type = 'button';
+      resetPassword.addEventListener('click', async () => {
+        resetPassword.disabled = true;
+        generatePassword.disabled = true;
+        copyPassword.disabled = true;
+        try {
+          await resetOperatorPassword(fetchImpl, user.id, newPassword.value);
+          setFeedback(feedback, `Mot de passe réinitialisé pour ${user.full_name || user.email}. Copie-le et transmets-le maintenant.`, 'success');
+        } catch (error) {
+          setFeedback(feedback, error.message, 'error');
+        } finally {
+          resetPassword.disabled = false;
+          generatePassword.disabled = false;
+          copyPassword.disabled = false;
+        }
+      });
+      passwordActions.appendChild(resetPassword);
+      passwordEditor.appendChild(passwordActions);
+      card.appendChild(passwordEditor);
+
       container.appendChild(card);
     });
   }
@@ -266,7 +332,7 @@
     const hero = el(doc, 'section', 'kmc-access-hero');
     hero.appendChild(el(doc, 'p', 'kmc-access-kicker', 'GOUVERNANCE · ACCÈS PAYS'));
     hero.appendChild(el(doc, 'h1', '', 'Responsables pays'));
-    hero.appendChild(el(doc, 'p', '', 'Créer un market_operator, attribuer ses marchés et choisir viewer ou manager. Les droits restent résolus côté serveur ; aucun market_id du navigateur ne fait autorité.'));
+    hero.appendChild(el(doc, 'p', '', 'Créer un market_operator, attribuer ses marchés, choisir viewer ou manager et administrer ses identifiants. Les droits restent résolus côté serveur ; aucun market_id du navigateur ne fait autorité.'));
 
     const demo = el(doc, 'div', 'kmc-access-demo');
     const demoCopy = el(doc, 'div', '');
@@ -328,7 +394,7 @@
     const listPanel = el(doc, 'section', 'kmc-access-panel');
     const listHeader = el(doc, 'div', 'kmc-access-panel-header');
     listHeader.appendChild(el(doc, 'h2', '', 'Accès actifs'));
-    listHeader.appendChild(el(doc, 'p', '', 'Un même opérateur peut recevoir plusieurs pays. Un changement de niveau conserve l’historique côté serveur.'));
+    listHeader.appendChild(el(doc, 'p', '', 'Un même opérateur peut recevoir plusieurs pays. Tu peux aussi réinitialiser ici son mot de passe sans modifier son scope.'));
     listPanel.appendChild(listHeader);
     const operators = el(doc, 'div', 'kmc-access-operators');
     listPanel.appendChild(operators);
@@ -418,6 +484,7 @@
     boot,
     requireAdmin,
     requestJson,
+    resetOperatorPassword,
     buildDemoCredentials,
     marketOptions,
     marketsFromAdminContext,

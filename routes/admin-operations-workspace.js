@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, workspace_action
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/operations-workspace
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-execution-capability, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/operations-workspace
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, logistics, inventory, orders, payments, market-authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -21,6 +21,8 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { attachMarketExecutionRoleFor } = require('../middleware/require-market-execution-capability');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
@@ -28,11 +30,29 @@ const log = require('../utils/logger').child({ module: 'admin-operations-workspa
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-// market_operator ajouté en lecture — les mutations restent exclusivement
-// agent_hub (requireHubWorkspaceAction) et agent_relais (requireRelayWorkspaceAction).
+// La lecture garde la projection market_operator legacy. Les mutations terrain
+// restent compatibles avec les rôles natifs, mais une membership peut aussi
+// consommer UNE capability execution.* exacte sans mutation de users.role.
+const attachWorkspaceReadDelegation = attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
 const requireHubWorkspaceAction = requireRole(['admin', 'agent_hub']);
 const requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais']);
+
+function attachHubExecutionCapability(capability) {
+  return attachMarketExecutionRoleFor({
+    capability,
+    compatibilityRole: 'agent_hub',
+    nativeRoles: ['admin', 'agent_hub'],
+  });
+}
+
+function attachRelayExecutionCapability(capability) {
+  return attachMarketExecutionRoleFor({
+    capability,
+    compatibilityRole: 'agent_relais',
+    nativeRoles: ['admin', 'agent_relais'],
+  });
+}
 
 function rejectClientMarketAuthority(req, res, next) {
   const query = req.query || {};
@@ -83,6 +103,12 @@ function requireWorkspaceMarketAccess(req, res, next) {
   const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
   const marketGuard = requireMarketScope(() => targetMarketId);
 
+  // Une action EXECUTION a déjà prouvé assignment + membership + capability
+  // sur le marketCode serveur ; elle n'a pas besoin d'un scope legacy projeté.
+  if (req.marketExecution && String(req.marketExecution.market_id) === String(targetMarketId)) {
+    return next();
+  }
+
   if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
     return marketGuard(req, res, next);
   }
@@ -120,114 +146,171 @@ function sendWorkspaceError(err, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
-  requireWorkspaceReadRole,
   rejectClientMarketAuthority,
-  resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess
+  resolveRequestedMarket
 );
 
-router.get('/market/:marketCode', async (req, res, next) => {
-  try {
-    res.set('Cache-Control', 'private, no-store');
-    const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
-    return res.json(payload);
-  } catch (err) {
-    log.error({ err, market: req.workspaceMarket && req.workspaceMarket.code }, '[operations-workspace] read failed');
-    return sendWorkspaceError(err, res, next);
+// Les requireRole restent volontairement visibles dans les chaînes de routes :
+// Security360 peut ainsi prouver statiquement la frontière admin/terrain, tandis
+// que le middleware execution placé juste avant peut fournir le rôle compatible
+// uniquement après preuve de la capability exacte.
+router.get(
+  '/market/:marketCode',
+  attachWorkspaceReadDelegation,
+  requireWorkspaceReadRole,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
+      return res.json(payload);
+    } catch (err) {
+      log.error({ err, market: req.workspaceMarket && req.workspaceMarket.code }, '[operations-workspace] read failed');
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/orders/:reference/mark-ordered', requireHubWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.markOrdered(
-      req.params.reference,
-      req.workspaceMarket,
-      actionActor(req)
-    );
-    return res.json({ ok: true, action: 'mark_ordered', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/orders/:reference/mark-ordered',
+  attachHubExecutionCapability('execution.order.mark_ordered'),
+  requireHubWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.markOrdered(
+        req.params.reference,
+        req.workspaceMarket,
+        actionActor(req)
+      );
+      return res.json({ ok: true, action: 'mark_ordered', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/distribution/run', requireHubWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.runDistribution(req.workspaceMarket);
-    return res.json({ ok: true, action: 'run_distribution', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/distribution/run',
+  attachHubExecutionCapability('execution.distribution.run'),
+  requireHubWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.runDistribution(req.workspaceMarket);
+      return res.json({ ok: true, action: 'run_distribution', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/parcels/:reference/ship', requireHubWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.scanParcel(
-      req.params.reference,
-      'ship',
-      req.workspaceMarket,
-      actionActor(req)
-    );
-    return res.json({ ok: true, action: 'ship', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/parcels/:reference/ship',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.scanParcel(
+        req.params.reference,
+        'ship',
+        req.workspaceMarket,
+        actionActor(req)
+      );
+      return res.json({ ok: true, action: 'ship', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/orders/:reference/confirm-cash', requireRelayWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.confirmCash(
-      req.params.reference,
-      req.workspaceMarket,
-      actionActor(req)
-    );
-    return res.json({ ok: true, action: 'confirm_cash', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/orders/:reference/confirm-cash',
+  attachRelayExecutionCapability('execution.cash.confirm'),
+  requireRelayWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.confirmCash(
+        req.params.reference,
+        req.workspaceMarket,
+        actionActor(req)
+      );
+      return res.json({ ok: true, action: 'confirm_cash', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/parcels/:reference/receive', requireRelayWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.scanParcel(
-      req.params.reference,
-      'receive',
-      req.workspaceMarket,
-      actionActor(req)
-    );
-    return res.json({ ok: true, action: 'receive', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/parcels/:reference/receive',
+  attachRelayExecutionCapability('execution.parcel.receive'),
+  requireRelayWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.scanParcel(
+        req.params.reference,
+        'receive',
+        req.workspaceMarket,
+        actionActor(req)
+      );
+      return res.json({ ok: true, action: 'receive', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/parcels/:reference/collect', requireRelayWorkspaceAction, async (req, res, next) => {
-  try {
-    const result = await workspace.scanParcel(
-      req.params.reference,
-      'collect',
-      req.workspaceMarket,
-      actionActor(req)
-    );
-    return res.json({ ok: true, action: 'collect', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/parcels/:reference/collect',
+  attachRelayExecutionCapability('execution.parcel.collect'),
+  requireRelayWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.scanParcel(
+        req.params.reference,
+        'collect',
+        req.workspaceMarket,
+        actionActor(req)
+      );
+      return res.json({ ok: true, action: 'collect', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
-router.post('/market/:marketCode/inventory/items/:itemId/assign', requireHubWorkspaceAction, async (req, res, next) => {
-  try {
-    const parcelReference = req.body && req.body.parcel_ref;
-    const result = await workspace.assignInventory(
-      req.params.itemId,
-      parcelReference,
-      req.workspaceMarket
-    );
-    return res.json({ ok: true, action: 'assign_inventory', result });
-  } catch (err) {
-    return sendWorkspaceError(err, res, next);
+router.post(
+  '/market/:marketCode/inventory/items/:itemId/assign',
+  attachHubExecutionCapability('execution.inventory.assign'),
+  requireHubWorkspaceAction,
+  attachAuthorizedMarkets,
+  requireWorkspaceMarketAccess,
+  async (req, res, next) => {
+    try {
+      const parcelReference = req.body && req.body.parcel_ref;
+      const result = await workspace.assignInventory(
+        req.params.itemId,
+        parcelReference,
+        req.workspaceMarket
+      );
+      return res.json({ ok: true, action: 'assign_inventory', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
   }
-});
+);
 
 module.exports = router;
 module.exports._test = {

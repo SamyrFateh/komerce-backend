@@ -7,8 +7,8 @@
  * @purpose       Unique module frontière frontend : porte les données pays
  *                consommées par le hero, la home et les surfaces de navigation.
  *                Aucun autre fichier boutique ne doit contenir de littéral pays.
- * @impact-areas  boutique, hero, home, footer
- * @version       2026-08
+ * @impact-areas  boutique, hero, home, footer, checkout
+ * @version       2026-09
  *
  * DOCTRINE (cf. KOMERCE_MARKET_LAYER_FREEZE.md §3) :
  *   MarketContext = navigation — contextuel, client, commutable, NON autorisant.
@@ -31,6 +31,8 @@ const MARKETS = {
     pickup_label:    'Retrait relais',
     currency:        'KMF',
     minor_unit:      0,
+    relay_group_label: 'Île',
+    relay_default_zone: null,
     seo_title:       'Komerce — La boutique en ligne des Comores',
     seo_description: 'La boutique en ligne des Comores. Mode, tech, maison, beauté — commandez depuis l\'Europe, retirez en cash chez votre relais local.',
     og_title:        'Komerce — La boutique comorienne',
@@ -50,6 +52,8 @@ const MARKETS = {
     pickup_label:    'Retrait relais',
     currency:        'EUR',
     minor_unit:      2,
+    relay_group_label: 'Zone',
+    relay_default_zone: null,
     seo_title:       'Komerce — La boutique en ligne de Mayotte',
     seo_description: 'La boutique en ligne de Mayotte. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
     og_title:        'Komerce — La boutique mahoraise',
@@ -68,6 +72,8 @@ const MARKETS = {
     pickup_label:    'Retrait relais',
     currency:        'XAF',
     minor_unit:      0,
+    relay_group_label: 'Ville',
+    relay_default_zone: 'Yaoundé',
     seo_title:       'Komerce — La boutique en ligne du Cameroun',
     seo_description: 'La boutique en ligne du Cameroun. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
     og_title:        'Komerce — La boutique camerounaise',
@@ -86,6 +92,8 @@ const MARKETS = {
     pickup_label:    'Retrait relais',
     currency:        'XAF',
     minor_unit:      0,
+    relay_group_label: 'Ville',
+    relay_default_zone: 'Brazzaville',
     seo_title:       'Komerce — La boutique en ligne de Brazzaville',
     seo_description: 'La boutique en ligne de Brazzaville. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
     og_title:        'Komerce — La boutique de Brazzaville',

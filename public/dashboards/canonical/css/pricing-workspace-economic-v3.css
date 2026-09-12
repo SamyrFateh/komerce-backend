@@ -1,0 +1,140 @@
+/* Atelier économique v3 — nature / périmètre / allocation */
+
+.kmc-cost-formula-rail {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.kmc-cost-formula-step.is-marché { border-top: 3px solid #2563eb; }
+.kmc-cost-formula-step.is-contribution { border-top: 3px solid #059669; }
+.kmc-cost-formula-step.is-couverture { border-top: 3px solid #7c3aed; }
+
+.kmc-cost-group.is-fixed_direct {
+  --cost-accent: #7c3aed;
+  --cost-accent-soft: #f5f3ff;
+}
+
+.kmc-cost-group.is-mutualized {
+  --cost-accent: #0f766e;
+  --cost-accent-soft: #f0fdfa;
+}
+
+.kmc-cost-group.is-variable_direct {
+  --cost-accent: #2563eb;
+  --cost-accent-soft: #eff6ff;
+}
+
+.kmc-cost-card.is-fixed_direct { --cost-accent: #7c3aed; --cost-accent-soft: #f5f3ff; }
+.kmc-cost-card.is-mutualized { --cost-accent: #0f766e; --cost-accent-soft: #f0fdfa; }
+.kmc-cost-card.is-variable_direct { --cost-accent: #2563eb; --cost-accent-soft: #eff6ff; }
+
+.kmc-cost-pill.is-fixed {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.kmc-cost-pill.is-variable {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.kmc-cost-pill.is-mutualized {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.kmc-cost-pill.is-allocation {
+  border-color: #dbeafe;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.kmc-cost-refine {
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--cost-accent) 14%, #e2e8f0);
+  margin-top: 2px;
+}
+
+.kmc-cost-refine > summary {
+  width: fit-content;
+  margin-top: 8px;
+  cursor: pointer;
+  color: var(--cost-accent);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.kmc-cost-refine > .kmc-cost-card-list {
+  margin-top: 12px;
+}
+
+.kmc-cost-classification-editor {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.kmc-cost-select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--kmc-line-strong, #cbd5e1);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--kmc-ink, #0f172a);
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Les résultats calculés restent volontairement plus discrets que les leviers. */
+.kmc-flow-equilibrium-metric.is-derived,
+.kmc-flow-equilibrium-unit.is-derived {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.kmc-flow-equilibrium-details {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 4px;
+}
+
+.kmc-flow-equilibrium-details > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kmc-flow-equilibrium-details-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Les anciennes métriques N restent des aliases techniques du moteur mais ne sont plus une lecture UI. */
+.kmc-sim-metric[data-sim-metric="n1_landed_relay_cost_kmf"],
+.kmc-sim-metric[data-sim-metric="n2_business_variable_cost_kmf"],
+.kmc-sim-metric[data-sim-metric="n3_fixed_overhead_allocation_kmf"],
+.kmc-sim-metric[data-sim-metric="cdr_complete_kmf"] {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .kmc-cost-classification-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kmc-cost-formula-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .kmc-cost-formula-plus {
+    display: none;
+  }
+}

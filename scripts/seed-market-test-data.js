@@ -5,47 +5,55 @@
  * @domain        admin-dashboard
  * @layer         script
  * @owner         backend-core
- * @purpose       Générer un lot de commandes réalistes en staging (relais,
- *                produits, order_items en distribution variée) pour que les
- *                requêtes de viabilité pricing (panier moyen, mono-article,
- *                cf. docs/doctrine/DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md)
- *                aient un volume statistiquement lisible.
- * @impact-areas  staging-only — ne touche jamais un environnement où
- *                NODE_ENV=production
+ * @purpose       Générer un lot de commandes réalistes non-production,
+ *                strictement scopées par Market ID, à partir d'un catalogue
+ *                global curaté partagé entre les marchés.
+ * @impact-areas  staging-only, market, catalog, market-autonomy, pricing-tests
  *
- * Toutes les lignes créées sont taguées ('SEEDTEST-' en préfixe de reference/
- * name) pour rester identifiables et supprimables sans toucher aux données
- * réelles ou aux fixtures ITEST- des tests d'intégration.
+ * Doctrine staging :
+ *   - le produit est global ; le Market ID décide exposition + prix local ;
+ *   - aucune copie `SEEDTEST <PAYS> produit N` n'est créée ;
+ *   - le catalogue curaté doit passer un quality gate statique avant écriture ;
+ *   - cleanup d'un marché ne supprime jamais le catalogue global ;
+ *   - chaque produit exposé reçoit seulement un DRAFT_PENDING_GATE : aucun
+ *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed ;
+ *   - KOMERCE_ENV est la vérité business de runtime et prime NODE_ENV ;
+ *   - toute écriture exige MARKET_STAGING_SEED_ENABLED=true.
  *
  * Usage :
- *   node scripts/seed-market-test-data.js --market CM --orders 60
+ *   MARKET_STAGING_SEED_ENABLED=true node scripts/seed-market-test-data.js --market CM --orders 60
  *   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
- *   node scripts/seed-market-test-data.js --market CM --cleanup
- *
- * Garde-fous :
- *   - Refuse de tourner si NODE_ENV=production (vérification explicite,
- *     même si ce script ne devrait jamais être pointé sur la prod).
- *   - Le marché doit déjà exister (markets.code) — ce script ne crée pas
- *     de marché, il seed des commandes dessus.
- *   - Idempotent au sens : relançable sans dédoublonner le relais/produits
- *     taguée SEEDTEST (réutilisés s'ils existent déjà), mais chaque run
- *     ajoute de nouvelles commandes (pas de dédup sur les commandes —
- *     utilise --cleanup avant de relancer si tu veux repartir propre).
+ *   MARKET_STAGING_SEED_ENABLED=true node scripts/seed-market-test-data.js --market CM --cleanup
  */
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
+const catalogExposure = require('../services/catalog-market-exposure-service');
+const marketCommercialPrice = require('../services/market-commercial-price-service');
+const { projectAmount, roundToMinorUnit } = require('../utils/currency');
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 
 const TAG = 'SEEDTEST';
-const REF_PREFIX = `${TAG}-`;
-const RELAIS_NAME = `${TAG} relais`;
-const PRODUCT_NAME_PREFIX = `${TAG} produit`;
+const PRICE_SOURCE = 'staging_market_seed';
+const FLAG = 'MARKET_STAGING_SEED_ENABLED';
+const DEFAULT_PRODUCT_COUNT = 40;
+const CURATED_CATALOG_PATH = path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v1.json');
+const CURATED_CATALOG_PATHS = Object.freeze([
+  CURATED_CATALOG_PATH,
+  path.join(__dirname, '..', 'data', 'staging-market-catalog-curated-v2-additions.json'),
+]);
+const REQUIRED_CATEGORIES = Object.freeze(['Beauté', 'Mode', 'Tech', 'Maison', 'Sport', 'Enfant']);
+const COMMONS_LICENSES = new Set(['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-3.0']);
 
-// Distribution volontairement réaliste et non uniforme : beaucoup de
-// commandes à 1-2 articles, une traîne plus courte vers 3-6, quelques
-// commandes "grosses" à 8-12 — pour éviter qu'une seule commande atypique
-// ne pilote la moyenne comme observé sur les 5 commandes actuelles.
+const MARKET_TEST_PROFILES = Object.freeze({
+  KM: Object.freeze({ phonePrefix: '+269', area: 'Ngazidja' }),
+  CM: Object.freeze({ phonePrefix: '+237', area: 'Cameroun' }),
+  CG: Object.freeze({ phonePrefix: '+242', area: 'Congo' }),
+});
+
 const ITEM_COUNT_WEIGHTS = [
   { n: 1, weight: 35 },
   { n: 2, weight: 25 },
@@ -67,6 +75,29 @@ const STATUS_WEIGHTS = [
   { status: 'cancelled', weight: 3 },
   { status: 'refunded', weight: 2 },
 ];
+
+function normalizeMarketCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) throw new Error('market code must be ISO alpha-2');
+  return code;
+}
+
+function marketTags(marketCode) {
+  const code = normalizeMarketCode(marketCode);
+  return {
+    code,
+    refPrefix: `${TAG}-${code}-`,
+    relaisName: `${TAG} ${code} relais`,
+  };
+}
+
+function marketProfile(market) {
+  const code = normalizeMarketCode(market.code);
+  return MARKET_TEST_PROFILES[code] || {
+    phonePrefix: '+999',
+    area: market.name || code,
+  };
+}
 
 function parseArgs(argv) {
   const args = { orders: 60, market: null, dryRun: false, cleanup: false };
@@ -95,8 +126,172 @@ function randomInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-async function ensureMarket(code) {
-  const { rows } = await db.query('SELECT id, code, name, currency FROM markets WHERE code = $1', [code]);
+function isTruthy(value) {
+  return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
+}
+
+function runtimeSeedGuard({ requireOptIn = true } = {}) {
+  const { env, source } = resolveRuntimeEnvironment();
+  const optIn = isTruthy(process.env[FLAG]);
+  return {
+    env,
+    source,
+    optIn,
+    allowed: env === 'staging' && (!requireOptIn || optIn),
+  };
+}
+
+function isProductionRuntime() {
+  return resolveRuntimeEnvironment().env === 'production';
+}
+
+function loadCuratedCatalog(filePaths = CURATED_CATALOG_PATHS) {
+  const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+  const catalog = [];
+  for (const filePath of paths) {
+    if (!fs.existsSync(filePath)) throw new Error(`Catalogue curaté absent: ${filePath}`);
+    const rows = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!Array.isArray(rows)) throw new Error(`Catalogue curaté invalide: ${filePath}`);
+    catalog.push(...rows);
+  }
+  validateCuratedCatalog(catalog);
+  return catalog;
+}
+
+function validateCuratedCatalog(catalog) {
+  if (!Array.isArray(catalog) || catalog.length < DEFAULT_PRODUCT_COUNT) {
+    throw new Error(`Catalogue curaté insuffisant: minimum ${DEFAULT_PRODUCT_COUNT} produits requis`);
+  }
+
+  const refs = new Set();
+  const names = new Set();
+  const heroes = new Set();
+  const sources = new Set();
+  const categories = new Set();
+
+  catalog.forEach((product, index) => {
+    const label = `catalog[${index}]`;
+    const ref = String(product.product_ref || '').trim();
+    const name = String(product.name || '').trim();
+    const description = String(product.description || '').trim();
+    const category = String(product.category || '').trim();
+    const subcategory = String(product.subcategory || '').trim();
+    const imageUrl = String(product.image_url || '').trim();
+    const source = String(product.source || '').trim();
+    const images = Array.isArray(product.images) ? product.images.map(v => String(v || '').trim()).filter(Boolean) : [];
+
+    if (!/^KPR-\d{6,}$/.test(ref)) throw new Error(`${label}: product_ref canonique invalide`);
+    if (refs.has(ref)) throw new Error(`${label}: product_ref dupliqué ${ref}`);
+    refs.add(ref);
+
+    if (name.length < 6 || /^SEEDTEST\b/i.test(name) || /^(Produit|Article)\s+\d+$/i.test(name)) {
+      throw new Error(`${label}: nom produit non curaté`);
+    }
+    const normalizedName = name.toLocaleLowerCase('fr');
+    if (names.has(normalizedName)) throw new Error(`${label}: nom dupliqué ${name}`);
+    names.add(normalizedName);
+
+    if (description.length < 45 || /Raw test product:/i.test(description)) {
+      throw new Error(`${label}: description insuffisante ou brute`);
+    }
+    if (!category || !subcategory) throw new Error(`${label}: catégorie/sous-catégorie requise`);
+    categories.add(category);
+
+    if (!Number.isFinite(Number(product.price_kmf)) || Number(product.price_kmf) <= 0) {
+      throw new Error(`${label}: price_kmf doit être > 0`);
+    }
+    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) < 0) {
+      throw new Error(`${label}: stock doit être un entier >= 0`);
+    }
+    if (!product.curated) throw new Error(`${label}: curated=true requis`);
+
+    const dummySource = /^dummyjson:\d+$/.test(source);
+    const commonsSource = /^commons:[^\s]+$/i.test(source);
+    if (!dummySource && !commonsSource) throw new Error(`${label}: source traçable requise`);
+    if (sources.has(source)) throw new Error(`${label}: source dupliquée ${source}`);
+    sources.add(source);
+
+    if (commonsSource) {
+      const sourceUrl = String(product.source_url || '').trim();
+      const sourceAuthor = String(product.source_author || '').trim();
+      const license = String(product.license || '').trim();
+      if (!/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/i.test(sourceUrl)) {
+        throw new Error(`${label}: page source Commons requise`);
+      }
+      if (!sourceAuthor) throw new Error(`${label}: auteur Commons requis`);
+      if (!COMMONS_LICENSES.has(license)) throw new Error(`${label}: licence Commons non autorisée`);
+    }
+
+    try {
+      const hero = new URL(imageUrl);
+      if (hero.protocol !== 'https:') throw new Error('https required');
+    } catch (_) {
+      throw new Error(`${label}: image_url HTTPS invalide`);
+    }
+    if (!images.length || !images.includes(imageUrl)) throw new Error(`${label}: galerie doit contenir le hero`);
+    for (const url of images) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') throw new Error('https required');
+      } catch (_) {
+        throw new Error(`${label}: image galerie HTTPS invalide`);
+      }
+    }
+    if (heroes.has(imageUrl)) throw new Error(`${label}: hero dupliqué`);
+    heroes.add(imageUrl);
+  });
+
+  const missingCategories = REQUIRED_CATEGORIES.filter(category => !categories.has(category));
+  if (missingCategories.length) {
+    throw new Error(`Catalogue curaté incomplet: catégories manquantes ${missingCategories.join(', ')}`);
+  }
+
+  return {
+    count: catalog.length,
+    categories: [...categories].sort(),
+  };
+}
+
+function selectCuratedProducts(catalog, count = DEFAULT_PRODUCT_COUNT) {
+  if (!Number.isInteger(count) || count <= 0) throw new Error('count doit être un entier positif');
+  if (count > catalog.length) throw new Error(`Catalogue curaté: ${count} produits demandés, ${catalog.length} disponibles`);
+
+  const buckets = new Map(REQUIRED_CATEGORIES.map(category => [category, []]));
+  const others = [];
+  for (const product of catalog) {
+    if (buckets.has(product.category)) buckets.get(product.category).push(product);
+    else others.push(product);
+  }
+
+  const selected = [];
+  let round = 0;
+  while (selected.length < count) {
+    let added = false;
+    for (const category of REQUIRED_CATEGORIES) {
+      const candidate = buckets.get(category)[round];
+      if (candidate && selected.length < count) {
+        selected.push(candidate);
+        added = true;
+      }
+    }
+    if (!added) break;
+    round++;
+  }
+
+  if (selected.length < count) {
+    const selectedRefs = new Set(selected.map(product => product.product_ref));
+    const remainder = [...catalog, ...others].filter(product => !selectedRefs.has(product.product_ref));
+    selected.push(...remainder.slice(0, count - selected.length));
+  }
+  return selected;
+}
+
+async function ensureMarket(rawCode) {
+  const code = normalizeMarketCode(rawCode);
+  const { rows } = await db.query(
+    'SELECT id, code, name, currency, minor_unit FROM markets WHERE code = $1',
+    [code]
+  );
   if (rows.length === 0) {
     const { rows: all } = await db.query('SELECT code FROM markets ORDER BY code');
     throw new Error(
@@ -107,10 +302,12 @@ async function ensureMarket(code) {
   return rows[0];
 }
 
-async function ensureRelais(marketId) {
+async function ensureRelais(market) {
+  const tags = marketTags(market.code);
+  const profile = marketProfile(market);
   const { rows } = await db.query(
-    `SELECT * FROM relais WHERE name = $1 AND market_id = $2 LIMIT 1`,
-    [RELAIS_NAME, marketId]
+    'SELECT * FROM relais WHERE name = $1 AND market_id = $2 LIMIT 1',
+    [tags.relaisName, market.id]
   );
   if (rows.length > 0) return rows[0];
 
@@ -119,174 +316,344 @@ async function ensureRelais(marketId) {
      VALUES ($1, $2, $3, $4, $5, $6, true)
      RETURNING *`,
     [
-      RELAIS_NAME,
-      `${TAG} agent`,
-      `+269${randomInt(3000000, 3999999)}`,
-      `${TAG} adresse de test`,
-      'Ngazidja',
-      marketId,
+      tags.relaisName,
+      `${TAG} ${tags.code} agent`,
+      `${profile.phonePrefix}${randomInt(3000000, 9999999)}`,
+      `${TAG} ${tags.code} adresse de test`,
+      profile.area,
+      market.id,
     ]
   );
   return created[0];
 }
 
-async function ensureProducts(count) {
-  const { rows: existing } = await db.query(
-    `SELECT * FROM products WHERE name LIKE $1 ORDER BY name`,
-    [`${PRODUCT_NAME_PREFIX}%`]
-  );
-  if (existing.length >= count) return existing.slice(0, count);
+async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
+  const catalog = loadCuratedCatalog();
+  const selected = selectCuratedProducts(catalog, count);
+  const rows = [];
 
-  const toCreate = count - existing.length;
-  const created = [];
-  for (let i = existing.length; i < existing.length + toCreate; i++) {
-    const priceKmf = randomInt(2000, 45000);
-    const { rows } = await db.query(
-      `INSERT INTO products (name, price_kmf, price_eur, stock, category, is_active)
-       VALUES ($1, $2, $3, $4, $5, true)
+  for (let index = 0; index < selected.length; index++) {
+    const product = selected[index];
+    const { rows: upserted } = await db.query(
+      `INSERT INTO products (
+         product_ref, name, description, category, subcategory, price_kmf,
+         promo_pct, image_url, images, stock, is_active, is_available, sort_order
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, TRUE, TRUE, $11)
+       ON CONFLICT (product_ref) DO UPDATE SET
+         name = EXCLUDED.name,
+         description = EXCLUDED.description,
+         category = EXCLUDED.category,
+         subcategory = EXCLUDED.subcategory,
+         price_kmf = EXCLUDED.price_kmf,
+         promo_pct = EXCLUDED.promo_pct,
+         image_url = EXCLUDED.image_url,
+         images = EXCLUDED.images,
+         stock = EXCLUDED.stock,
+         is_active = TRUE,
+         is_available = TRUE,
+         sort_order = EXCLUDED.sort_order,
+         updated_at = NOW()
        RETURNING *`,
       [
-        `${PRODUCT_NAME_PREFIX} ${i + 1}`,
-        priceKmf,
-        Math.round((priceKmf / 750) * 100) / 100, // conversion approx KMF->EUR pour cohérence d'affichage
-        randomInt(20, 200),
-        'seed-test',
+        product.product_ref,
+        product.name,
+        product.description,
+        product.category,
+        product.subcategory,
+        product.price_kmf,
+        product.promo_pct,
+        product.image_url,
+        JSON.stringify(product.images),
+        product.stock,
+        9000 + index,
       ]
     );
-    created.push(rows[0]);
+    rows.push(upserted[0]);
   }
-  return [...existing, ...created];
+  return rows;
 }
 
-async function createOrder({ relaisId, products }) {
+async function localDraftAmountForProduct(product, market) {
+  if (!product?.product_ref) {
+    throw new Error(`Produit de seed sans product_ref canonique (${product?.id || 'unknown'})`);
+  }
+  const projected = await projectAmount(Number(product.price_kmf), 'KMF', market.currency);
+  const amount = roundToMinorUnit(projected, Number(market.minor_unit) || 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`Projection de prix locale invalide pour ${product.product_ref} (${market.code})`);
+  }
+  return amount;
+}
+
+async function prepareProductsForMarket(products, market) {
+  if (!market?.id || !market?.code || !market?.currency) {
+    throw new Error('prepareProductsForMarket: canonical market is required');
+  }
+
+  let exposed = 0;
+  let drafts = 0;
+  for (const product of products) {
+    const localAmount = await localDraftAmountForProduct(product, market);
+
+    await catalogExposure.setExposure(
+      product.id,
+      market.id,
+      catalogExposure.EXPOSURE.ENABLED,
+      null
+    );
+    exposed++;
+
+    await marketCommercialPrice.setMarketPriceDraft({
+      market,
+      productRef: product.product_ref,
+      amount: localAmount,
+      reason: `${TAG} ${market.code} prix local de test`,
+      source: PRICE_SOURCE,
+      actorId: null,
+    });
+    drafts++;
+  }
+
+  return { exposed, drafts };
+}
+
+async function createOrder({ marketId, marketCode, relaisId, products }) {
+  if (!marketId) throw new Error('createOrder: marketId is required');
+  const tags = marketTags(marketCode);
   const statusChoice = pickWeighted(STATUS_WEIGHTS).status;
   const itemCount = pickWeighted(ITEM_COUNT_WEIGHTS).n;
-  const ref = `${REF_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const ref = `${tags.refPrefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  // Sélection de N produits distincts (ou avec remise si le pool est petit)
   const chosen = [];
   for (let i = 0; i < itemCount; i++) {
     chosen.push(products[randomInt(0, products.length - 1)]);
   }
 
-  const items = chosen.map(p => ({
-    product_id: p.id,
+  const items = chosen.map(product => ({
+    product_id: product.id,
     quantity: randomInt(1, 3),
-    price_kmf: p.price_kmf,
+    price_kmf: product.price_kmf,
   }));
-  const totalKmf = items.reduce((s, it) => s + it.quantity * it.price_kmf, 0);
+  const totalKmf = items.reduce((sum, item) => sum + item.quantity * item.price_kmf, 0);
+  const totalEurProjected = await projectAmount(totalKmf, 'KMF', 'EUR');
+  const totalEur = roundToMinorUnit(totalEurProjected, 2);
 
   const { rows: [order] } = await db.query(
     `INSERT INTO orders
-       (reference, relais_id, total_kmf, total_eur, payment_mode, payment_status, status, created_at)
-     VALUES ($1, $2, $3, $4, $5::public.payment_mode, $6::public.payment_status, $7::public.order_status,
+       (reference, relais_id, market_id, total_kmf, total_eur,
+        payment_mode, payment_status, status, created_at)
+     VALUES ($1, $2, $3, $4, $5,
+             $6::public.payment_mode, $7::public.payment_status, $8::public.order_status,
              now() - (random() * interval '90 days'))
      RETURNING *`,
     [
       ref,
       relaisId,
+      marketId,
       totalKmf,
-      Math.round((totalKmf / 750) * 100) / 100,
+      totalEur,
       'cash_relais',
       statusChoice === 'cancelled' || statusChoice === 'refunded' ? 'pending' : 'paid',
       statusChoice,
     ]
   );
 
-  for (const it of items) {
+  for (const item of items) {
     await db.query(
       `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
        VALUES ($1, $2, $3, $4)`,
-      [order.id, it.product_id, it.quantity, it.price_kmf]
+      [order.id, item.product_id, item.quantity, item.price_kmf]
     );
   }
 
   return { order, itemCount };
 }
 
-async function cleanup() {
-  const { rows: orders } = await db.query(`SELECT id FROM orders WHERE reference LIKE $1`, [`${REF_PREFIX}%`]);
-  const orderIds = orders.map(o => o.id);
-  console.log(`[cleanup] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
+async function cleanup(market) {
+  if (!market?.id) throw new Error('cleanup: canonical market is required');
+  const tags = marketTags(market.code);
+  const { rows: orders } = await db.query(
+    'SELECT id FROM orders WHERE reference LIKE $1 AND market_id = $2',
+    [`${tags.refPrefix}%`, market.id]
+  );
+  const orderIds = orders.map(order => order.id);
+  console.log(`[cleanup:${tags.code}] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
+
   if (orderIds.length > 0) {
-    await db.query(`DELETE FROM order_items WHERE order_id = ANY($1::uuid[])`, [orderIds]);
-    await db.query(`DELETE FROM orders WHERE id = ANY($1::uuid[])`, [orderIds]);
+    await db.query('DELETE FROM order_items WHERE order_id = ANY($1::uuid[])', [orderIds]);
+    await db.query(
+      'DELETE FROM orders WHERE id = ANY($1::uuid[]) AND market_id = $2',
+      [orderIds, market.id]
+    );
   }
-  await db.query(`DELETE FROM products WHERE name LIKE $1`, [`${PRODUCT_NAME_PREFIX}%`]);
-  await db.query(`DELETE FROM relais WHERE name = $1`, [RELAIS_NAME]);
-  console.log('[cleanup] Terminé — relais, produits et commandes SEEDTEST supprimés.');
+
+  const catalog = loadCuratedCatalog();
+  const refs = catalog.map(product => product.product_ref);
+  const { rows: products } = await db.query(
+    'SELECT id, product_ref FROM products WHERE product_ref = ANY($1::text[])',
+    [refs]
+  );
+  for (const product of products) {
+    await catalogExposure.setExposure(
+      product.id,
+      market.id,
+      catalogExposure.EXPOSURE.DISABLED,
+      null
+    );
+    try {
+      await marketCommercialPrice.resetMarketPriceDraft({
+        market,
+        productRef: product.product_ref,
+        reason: `${TAG} ${market.code} cleanup staging`,
+        source: PRICE_SOURCE,
+        actorId: null,
+      });
+    } catch (error) {
+      if (error?.code !== 'market_price_draft_not_found') throw error;
+    }
+  }
+
+  await db.query(
+    'DELETE FROM relais WHERE name = $1 AND market_id = $2',
+    [tags.relaisName, market.id]
+  );
+  console.log(`[cleanup:${tags.code}] Terminé — catalogue global préservé, projection marché retirée.`);
 }
 
-async function main() {
-  const args = parseArgs(process.argv);
+async function main(argv = process.argv) {
+  const args = parseArgs(argv);
 
   if (args.help) {
     console.log(__doc_usage());
     return;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ Refusé : NODE_ENV=production. Ce script est réservé au staging.');
+  const guard = runtimeSeedGuard({ requireOptIn: !args.dryRun });
+  if (guard.env !== 'staging') {
+    console.error(`❌ Refusé : runtime ${guard.env || 'inconnu'} via ${guard.source}. Ce script exige KOMERCE_ENV=staging.`);
     process.exitCode = 1;
     return;
   }
-
-  if (args.cleanup) {
-    await cleanup();
+  if (!args.dryRun && !guard.optIn) {
+    console.error(`❌ Refusé : ${FLAG}=true est requis pour toute écriture staging.`);
+    process.exitCode = 1;
     return;
   }
 
   if (!args.market) {
-    console.error('❌ --market est requis (ex: --market CM). Utilise --help pour la liste des options.');
+    console.error('❌ --market est requis, y compris avec --cleanup (ex: --market CM).');
     process.exitCode = 1;
     return;
   }
+
+  let market;
+  try {
+    market = await ensureMarket(args.market);
+  } catch (error) {
+    console.error(`❌ ${error.message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`[seed] Marché : ${market.code} — ${market.name} (${market.currency})`);
+
+  if (args.cleanup) {
+    await cleanup(market);
+    return;
+  }
+
   if (!Number.isInteger(args.orders) || args.orders <= 0) {
     console.error('❌ --orders doit être un entier positif.');
     process.exitCode = 1;
     return;
   }
 
-  const market = await ensureMarket(args.market);
-  console.log(`[seed] Marché : ${market.code} — ${market.name}`);
+  const catalog = loadCuratedCatalog();
+  const selected = selectCuratedProducts(catalog, DEFAULT_PRODUCT_COUNT);
+  const categories = [...new Set(selected.map(product => product.category))].join(', ');
+  const tags = marketTags(market.code);
 
   if (args.dryRun) {
-    console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${RELAIS_NAME}" (marché ${market.code}).`);
+    console.log(`[dry-run] Créerait ${args.orders} commande(s) sur le relais "${tags.relaisName}" (marché ${market.code}).`);
+    console.log(`[dry-run] Catalogue curaté global: ${selected.length} produits (${categories}).`);
+    console.log(`[dry-run] Les exposerait avec prix local DRAFT_PENDING_GATE en ${market.currency}.`);
     console.log('[dry-run] Aucune écriture effectuée.');
     return;
   }
 
-  const relais = await ensureRelais(market.id);
+  const relais = await ensureRelais(market);
   console.log(`[seed] Relais : ${relais.name} (${relais.id})`);
 
-  const products = await ensureProducts(15);
-  console.log(`[seed] ${products.length} produit(s) SEEDTEST disponible(s).`);
+  const products = await ensureProducts(DEFAULT_PRODUCT_COUNT);
+  console.log(`[seed] Catalogue curaté global : ${products.length} produit(s), sans duplication par pays.`);
+
+  const prepared = await prepareProductsForMarket(products, market);
+  console.log(`[seed] Catalogue ${market.code} : ${prepared.exposed} exposé(s), ${prepared.drafts} prix local(aux) en attente de gate.`);
 
   let monoArticle = 0;
   let totalLignes = 0;
   for (let i = 0; i < args.orders; i++) {
-    const { itemCount } = await createOrder({ relaisId: relais.id, products });
+    const { itemCount } = await createOrder({
+      marketId: market.id,
+      marketCode: market.code,
+      relaisId: relais.id,
+      products,
+    });
     totalLignes += itemCount;
     if (itemCount === 1) monoArticle++;
   }
 
-  console.log(`[seed] ✅ ${args.orders} commande(s) créée(s).`);
+  console.log(`[seed] ✅ ${args.orders} commande(s) créée(s) pour ${market.code}.`);
   console.log(`[seed]    Panier moyen (lignes) : ${(totalLignes / args.orders).toFixed(2)}`);
   console.log(`[seed]    Mono-article : ${monoArticle}/${args.orders} (${((100 * monoArticle) / args.orders).toFixed(1)}%)`);
   console.log('[seed] Relance la requête panier-moyen-mono-article.sql pour la vue exacte incluant status/exclusions.');
-  console.log(`[seed] Pour nettoyer : node scripts/seed-market-test-data.js --cleanup`);
+  console.log(`[seed] Pour nettoyer ${market.code} : ${FLAG}=true node scripts/seed-market-test-data.js --market ${market.code} --cleanup`);
 }
 
 function __doc_usage() {
   return `Usage :
-  node scripts/seed-market-test-data.js --market CM --orders 60
+  ${FLAG}=true node scripts/seed-market-test-data.js --market CM --orders 60
   node scripts/seed-market-test-data.js --market CM --orders 60 --dry-run
-  node scripts/seed-market-test-data.js --cleanup`;
+  ${FLAG}=true node scripts/seed-market-test-data.js --market CM --cleanup`;
 }
 
-main()
-  .then(() => process.exit(process.exitCode || 0))
-  .catch(err => {
-    console.error('❌ Erreur :', err.message);
-    process.exit(1);
-  });
+if (require.main === module) {
+  main()
+    .then(() => {
+      if (process.exitCode) return;
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('❌ Erreur :', error.message);
+      process.exit(1);
+    });
+}
+
+module.exports = {
+  TAG,
+  PRICE_SOURCE,
+  FLAG,
+  DEFAULT_PRODUCT_COUNT,
+  CURATED_CATALOG_PATH,
+  CURATED_CATALOG_PATHS,
+  REQUIRED_CATEGORIES,
+  MARKET_TEST_PROFILES,
+  normalizeMarketCode,
+  marketTags,
+  marketProfile,
+  parseArgs,
+  isTruthy,
+  runtimeSeedGuard,
+  isProductionRuntime,
+  loadCuratedCatalog,
+  validateCuratedCatalog,
+  selectCuratedProducts,
+  ensureMarket,
+  ensureRelais,
+  ensureProducts,
+  localDraftAmountForProduct,
+  prepareProductsForMarket,
+  createOrder,
+  cleanup,
+  main,
+};

@@ -9,6 +9,11 @@
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+const mockGetRuleNumber = jest.fn();
+jest.mock('../../utils/rules', () => ({
+  getRuleNumber: (...args) => mockGetRuleNumber(...args),
+}));
+
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
 const mockDeleteProduct = jest.fn();
@@ -43,6 +48,7 @@ const workspace = require('../../services/catalog-workspace');
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGetRuleNumber.mockResolvedValue(120);
   mockListCategories.mockResolvedValue([{ key: 'Maison', label: 'Maison', is_active: true, subcategories: [] }]);
   mockQuery.mockImplementation(async sql => {
     const text = String(sql);
@@ -62,13 +68,35 @@ beforeEach(() => {
   });
 });
 
-test('projection Catalogue ne sort que les identités métier', async () => {
+test('projection Catalogue ne sort que les identités métier et expose le cap de curation', async () => {
   const payload = await workspace.buildWorkspace({});
   expect(payload.scope).toEqual({ mode: 'global_catalog', label: 'Catalogue commun Komerce' });
   expect(payload.products[0].product_ref).toBe('KPR-000001');
   expect(payload.approval[0].product_ref).toBe('KPR-000002');
   expect(JSON.stringify(payload)).not.toContain('internal-uuid');
   expect(payload.summary.categories).toBe(1);
+  expect(mockGetRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
+  expect(payload.curation).toEqual({
+    catalog_cap_mvp: 120,
+    published_products: 1,
+    remaining_slots: 119,
+    fill_pct: 1,
+    at_cap: false,
+    first_publication_authority: 'human_approval',
+    catalog_scope: 'global',
+  });
+});
+
+test('état de curation borne le remplissage à 100 % quand le cap est atteint', () => {
+  expect(workspace._test.buildCurationState({ active_products: 125 }, 120)).toEqual({
+    catalog_cap_mvp: 120,
+    published_products: 125,
+    remaining_slots: 0,
+    fill_pct: 100,
+    at_cap: true,
+    first_publication_authority: 'human_approval',
+    catalog_scope: 'global',
+  });
 });
 
 test('update résout product_ref côté serveur puis délègue product-admin-service', async () => {

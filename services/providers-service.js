@@ -7,7 +7,7 @@
  * @inputs        provider_id, service_id, physical_offer_id, inquiry_id, market_id, texte libre
  * @outputs       provider_row, service_row, physical_offer_row, inquiry_row
  * @depends       db
- * @used-by       (aucun — shadow, appel direct scripts/tests dans cette PR)
+ * @used-by       services/market-delegation-provider-service.js
  * @db-read       providers, services, physical_offers, inquiries, markets
  * @db-write      providers, services, physical_offers, inquiries
  * @db-txn        single_statement_sufficient
@@ -62,6 +62,10 @@ const PROVIDER_STATUS = Object.freeze({
   SUSPENDED: 'suspended',
 });
 
+// Même patron que catalog-market-exposure-service.js — commercial_exposure
+// est un flag séparé du status, jamais un raccourci "actif = exposé".
+const EXPOSURE = Object.freeze({ ENABLED: 'ENABLED', DISABLED: 'DISABLED' });
+
 const SERVICE_STATUS = Object.freeze({
   DRAFT:     'draft',
   ACTIVE:    'active',
@@ -93,14 +97,14 @@ const INQUIRY_STATUS = Object.freeze({
  * @param {string} params.marketId
  * @returns {Promise<object>}
  */
-async function createProvider({ name, phone, marketId }) {
+async function createProvider({ name, phone, marketId }, executor = db) {
   if (!name || !phone) {
     throw new Error('createProvider: name et phone sont requis');
   }
   if (!marketId) {
     throw new Error('createProvider: market_id est requis');
   }
-  const { rows: marketRows } = await db.query(
+  const { rows: marketRows } = await executor.query(
     'SELECT id FROM markets WHERE id = $1 AND is_active = true',
     [marketId]
   );
@@ -108,7 +112,7 @@ async function createProvider({ name, phone, marketId }) {
     throw new Error(`createProvider: marché introuvable ou inactif (${marketId})`);
   }
 
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `INSERT INTO providers (name, phone, market_id, status)
      VALUES ($1, $2, $3, $4)
      RETURNING id, name, phone, market_id, status, created_at, updated_at`,
@@ -125,13 +129,14 @@ async function createProvider({ name, phone, marketId }) {
  *
  * @param {string} providerId
  * @param {'pending'|'active'|'suspended'} status
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
  * @returns {Promise<object>}
  */
-async function setProviderStatus(providerId, status) {
+async function setProviderStatus(providerId, status, executor = db) {
   if (!Object.values(PROVIDER_STATUS).includes(status)) {
     throw new Error(`setProviderStatus: statut invalide (${status})`);
   }
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `UPDATE providers SET status = $2, updated_at = now()
      WHERE id = $1
      RETURNING id, name, phone, market_id, status, created_at, updated_at`,
@@ -141,9 +146,77 @@ async function setProviderStatus(providerId, status) {
   return rows[0];
 }
 
-async function getProvider(providerId) {
-  const { rows } = await db.query('SELECT * FROM providers WHERE id = $1', [providerId]);
+async function getProvider(providerId, executor = db) {
+  const { rows } = await executor.query('SELECT * FROM providers WHERE id = $1', [providerId]);
   return rows[0] || null;
+}
+
+/**
+ * Liste les providers d'un marché, les actifs/en attente d'abord.
+ *
+ * @param {string} marketId
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
+ * @returns {Promise<object[]>}
+ */
+async function listProviders(marketId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT id, name, phone, market_id, status, public_phone, public_whatsapp, created_at, updated_at
+       FROM providers
+      WHERE market_id = $1
+      ORDER BY (status = 'suspended'), name`,
+    [marketId]
+  );
+  return rows;
+}
+
+/**
+ * Récupère un provider en garantissant qu'il appartient au marché indiqué.
+ * Renvoie null (jamais une erreur distincte) si le provider existe mais sur
+ * un autre marché — l'appelant traite ce cas comme "introuvable" (404), pour
+ * ne jamais confirmer l'existence d'une ressource hors périmètre.
+ *
+ * @param {string} providerId
+ * @param {string} marketId
+ * @returns {Promise<object|null>}
+ */
+async function getOwnedProvider(providerId, marketId, executor = db) {
+  const provider = await getProvider(providerId, executor);
+  if (!provider || provider.market_id !== marketId) return null;
+  return provider;
+}
+
+/**
+ * Modifie les coordonnées d'un provider. Le marché n'est jamais réassignable
+ * ici — un provider ne change pas de Market ID par une simple mise à jour.
+ *
+ * @param {string} providerId
+ * @param {string} marketId
+ * @param {object} patch
+ * @param {string} [patch.name]
+ * @param {string} [patch.phone]
+ * @param {string|null} [patch.publicPhone]
+ * @param {string|null} [patch.publicWhatsapp]
+ * @param {object} [executor] exécuteur transactionnel optionnel (défaut : pool module)
+ * @returns {Promise<object|null>} null si le provider n'existe pas sur ce marché
+ */
+async function updateProvider(providerId, marketId, patch = {}, executor = db) {
+  const before = await getOwnedProvider(providerId, marketId, executor);
+  if (!before) return null;
+
+  const name = patch.name !== undefined ? String(patch.name || '').trim() : before.name;
+  const phone = patch.phone !== undefined ? String(patch.phone || '').trim() : before.phone;
+  if (!name || !phone) throw new Error('updateProvider: name et phone sont requis');
+  const publicPhone = patch.publicPhone !== undefined ? (patch.publicPhone || null) : before.public_phone;
+  const publicWhatsapp = patch.publicWhatsapp !== undefined ? (patch.publicWhatsapp || null) : before.public_whatsapp;
+
+  const { rows } = await executor.query(
+    `UPDATE providers
+        SET name = $2, phone = $3, public_phone = $4, public_whatsapp = $5, updated_at = now()
+      WHERE id = $1 AND market_id = $6
+      RETURNING id, name, phone, market_id, status, public_phone, public_whatsapp, created_at, updated_at`,
+    [providerId, name, phone, publicPhone, publicWhatsapp, marketId]
+  );
+  return { before, after: rows[0] };
 }
 
 // ── Service ──────────────────────────────────────────────────────────────
@@ -195,8 +268,8 @@ async function createService({ providerId, title, description = null, marketId, 
   return rows[0];
 }
 
-async function getService(serviceId) {
-  const { rows } = await db.query(
+async function getService(serviceId, executor = db) {
+  const { rows } = await executor.query(
     `SELECT s.*, p.name AS provider_name
        FROM services s
        JOIN providers p ON p.id = s.provider_id
@@ -204,6 +277,68 @@ async function getService(serviceId) {
     [serviceId]
   );
   return rows[0] || null;
+}
+
+/**
+ * Liste les services d'un marché, exposés en premier.
+ *
+ * @param {string} marketId
+ * @param {object} [executor]
+ * @returns {Promise<object[]>}
+ */
+async function listServicesForMarket(marketId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT id, provider_id, title, description, market_id, zone, status, commercial_exposure, created_at, updated_at
+       FROM services
+      WHERE market_id = $1
+      ORDER BY (commercial_exposure = 'DISABLED'), title`,
+    [marketId]
+  );
+  return rows;
+}
+
+/**
+ * Récupère un service en garantissant qu'il appartient au marché indiqué.
+ * null (jamais une erreur) si le service existe sur un autre marché — pour
+ * ne jamais confirmer l'existence d'une ressource hors périmètre.
+ *
+ * @param {string} serviceId
+ * @param {string} marketId
+ * @param {object} [executor]
+ * @returns {Promise<object|null>}
+ */
+async function getOwnedService(serviceId, marketId, executor = db) {
+  const service = await getService(serviceId, executor);
+  if (!service || String(service.market_id) !== String(marketId)) return null;
+  return service;
+}
+
+/**
+ * Bascule l'exposition commerciale d'un service. N'active jamais le statut
+ * lui-même (draft -> active reste un autre levier) : isServiceExposable()
+ * continue d'exiger status=active + exposure=ENABLED + provider actif.
+ *
+ * @param {string} serviceId
+ * @param {string} marketId
+ * @param {'ENABLED'|'DISABLED'} exposure
+ * @param {object} [executor]
+ * @returns {Promise<object|null>} null si le service n'existe pas sur ce marché
+ */
+async function setServiceExposure(serviceId, marketId, exposure, executor = db) {
+  if (!Object.values(EXPOSURE).includes(exposure)) {
+    throw new Error(`setServiceExposure: exposition invalide (${exposure})`);
+  }
+  const before = await getOwnedService(serviceId, marketId, executor);
+  if (!before) return null;
+  if (before.commercial_exposure === exposure) return { before, after: before, changed: false };
+
+  const { rows } = await executor.query(
+    `UPDATE services SET commercial_exposure = $2, updated_at = now()
+      WHERE id = $1 AND market_id = $3
+      RETURNING id, provider_id, title, description, market_id, zone, status, commercial_exposure, created_at, updated_at`,
+    [serviceId, exposure, marketId]
+  );
+  return { before, after: rows[0], changed: true };
 }
 
 /**
@@ -298,8 +433,8 @@ async function createPhysicalOffer({ providerId, title, description = null, mark
   return rows[0];
 }
 
-async function getPhysicalOffer(physicalOfferId) {
-  const { rows } = await db.query(
+async function getPhysicalOffer(physicalOfferId, executor = db) {
+  const { rows } = await executor.query(
     `SELECT po.*, p.name AS provider_name
        FROM physical_offers po
        JOIN providers p ON p.id = po.provider_id
@@ -307,6 +442,66 @@ async function getPhysicalOffer(physicalOfferId) {
     [physicalOfferId]
   );
   return rows[0] || null;
+}
+
+/**
+ * Liste les offres physiques d'un marché, exposées en premier.
+ *
+ * @param {string} marketId
+ * @param {object} [executor]
+ * @returns {Promise<object[]>}
+ */
+async function listPhysicalOffersForMarket(marketId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT id, provider_id, title, description, market_id, zone, status, commercial_exposure, created_at, updated_at
+       FROM physical_offers
+      WHERE market_id = $1
+      ORDER BY (commercial_exposure = 'DISABLED'), title`,
+    [marketId]
+  );
+  return rows;
+}
+
+/**
+ * Récupère une offre physique en garantissant qu'elle appartient au marché
+ * indiqué. null (jamais une erreur) si l'offre existe sur un autre marché.
+ *
+ * @param {string} physicalOfferId
+ * @param {string} marketId
+ * @param {object} [executor]
+ * @returns {Promise<object|null>}
+ */
+async function getOwnedPhysicalOffer(physicalOfferId, marketId, executor = db) {
+  const offer = await getPhysicalOffer(physicalOfferId, executor);
+  if (!offer || String(offer.market_id) !== String(marketId)) return null;
+  return offer;
+}
+
+/**
+ * Bascule l'exposition commerciale d'une offre physique. Même garde que
+ * setServiceExposure : n'active jamais le statut lui-même.
+ *
+ * @param {string} physicalOfferId
+ * @param {string} marketId
+ * @param {'ENABLED'|'DISABLED'} exposure
+ * @param {object} [executor]
+ * @returns {Promise<object|null>} null si l'offre n'existe pas sur ce marché
+ */
+async function setPhysicalOfferExposure(physicalOfferId, marketId, exposure, executor = db) {
+  if (!Object.values(EXPOSURE).includes(exposure)) {
+    throw new Error(`setPhysicalOfferExposure: exposition invalide (${exposure})`);
+  }
+  const before = await getOwnedPhysicalOffer(physicalOfferId, marketId, executor);
+  if (!before) return null;
+  if (before.commercial_exposure === exposure) return { before, after: before, changed: false };
+
+  const { rows } = await executor.query(
+    `UPDATE physical_offers SET commercial_exposure = $2, updated_at = now()
+      WHERE id = $1 AND market_id = $3
+      RETURNING id, provider_id, title, description, market_id, zone, status, commercial_exposure, created_at, updated_at`,
+    [physicalOfferId, exposure, marketId]
+  );
+  return { before, after: rows[0], changed: true };
 }
 
 /**
@@ -468,6 +663,7 @@ async function getInquiry(inquiryId) {
 }
 
 module.exports = {
+  EXPOSURE,
   PROVIDER_STATUS,
   SERVICE_STATUS,
   PHYSICAL_OFFER_STATUS,
@@ -475,11 +671,20 @@ module.exports = {
   createProvider,
   setProviderStatus,
   getProvider,
+  listProviders,
+  getOwnedProvider,
+  updateProvider,
   createService,
   getService,
+  listServicesForMarket,
+  getOwnedService,
+  setServiceExposure,
   isServiceExposable,
   createPhysicalOffer,
   getPhysicalOffer,
+  listPhysicalOffersForMarket,
+  getOwnedPhysicalOffer,
+  setPhysicalOfferExposure,
   isPhysicalOfferExposable,
   createInquiry,
   answerInquiry,

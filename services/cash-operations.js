@@ -6,78 +6,39 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/order-payment-confirmation.js, utils/logger.js
+ * @depends       services/order-payment-confirmation.js, services/cash-confirmation-control-service.js, utils/logger.js
  * @used-by       routes/cash.js
- * @db-read       cash_collections, orders, users
- * @db-write      alerts, cash_collections
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  payment
- * @version       2026-06
+ * @db-read       cash_collections, orders, users, market_operating_assignments, market_cash_control_policies, cash_confirmation_controls
+ * @db-write      alerts, cash_collections, cash_confirmation_controls
+ * @db-txn        caller_owned, locked_order, shared_cash_control
+ * @doctrine      payment_to_stock_single_entry, partner_cash_policy_enforced, no_free_amount_entry
+ * @impact-areas  payment, cash, relay
+ * @version       2026-09
  */
 
 'use strict';
 
-/**
- * KOMERCE — services/cash-operations.js  (R5)
- *
- * Logique métier de collecte cash extraite de routes/cash.js.
- * La route reste une façade : auth + validate + appel service + réponse.
- *
- * ╔══════════════════════════════════════════════════════════════════════╗
- * ║  Invariants respectés                                               ║
- * ║  I-01 : toute transition passe par order-status-machine            ║
- * ║  I-02 : confirmPaymentCycle = seul point d'entrée paiement→stock   ║
- * ╚══════════════════════════════════════════════════════════════════════╝
- *
- * Exports :
- *   collectCash({ orderId, agentUser, dbClient })
- */
-
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { ensureSecretGenerated } = require('./pickup-secret-service');
+const {
+  prepareCashConfirmation,
+  finalizeCashConfirmation,
+} = require('./cash-confirmation-control-service');
 const { createAlert } = require('../utils/alerts');
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'cash-operations' });
 
-// ─── collectCash ──────────────────────────────────────────────────────────────
-/**
- * Confirme l'encaissement cash d'une commande par un agent relais.
- * Appelée dans une transaction fournie par la route (dbClient).
- *
- * Chemins de sortie (la route construit la réponse HTTP) :
- *   { order_not_found }          — 404
- *   { invalid_payment_mode }     — 400
- *   { invalid_payment_status, payment_status } — 409 (déjà 'paid'/'refunded'/etc.)
- *   { invalid_status, status }   — 409
- *   { cross_relais_blocked }     — 403 + alerte insérée
- *   { agent_config_error }       — 403 + alerte insérée
- *   { already_collected, id }    — 409
- *   { stock_blocked, items }     — 409, ROLLBACK effectué
- *   { success, collection, noop }— 201
- *
- * @param {object} opts
- * @param {string}  opts.orderId     — UUID commande
- * @param {object}  opts.agentUser   — { id, role, relais_id? } depuis req.user
- * @param {object}  opts.dbClient    — client pg déjà dans BEGIN par la route
- * @returns {object}
- */
 async function collectCash({ orderId, agentUser, dbClient }) {
-  const client  = dbClient;
+  const client = dbClient;
   const agentId = agentUser.id;
 
-  // 1. Vérifier la commande (FOR UPDATE — race condition protection)
   const { rows: [order] } = await client.query(`
-    SELECT id, total_kmf, payment_mode, payment_status, status, relais_id
+    SELECT id, total_kmf, payment_mode, payment_status, status, relais_id, market_id
     FROM orders WHERE id = $1 FOR UPDATE
   `, [orderId]);
 
   if (!order) return { order_not_found: true };
-
-  if (order.payment_mode !== 'cash_relais') {
-    return { invalid_payment_mode: true };
-  }
-
+  if (order.payment_mode !== 'cash_relais') return { invalid_payment_mode: true };
   if (order.payment_status !== 'pending') {
     return { invalid_payment_status: true, payment_status: order.payment_status };
   }
@@ -87,7 +48,6 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     return { invalid_status: true, status: order.status };
   }
 
-  // 2. Cross-relais check : l'agent_relais ne peut encaisser qu'au relais où il est affecté
   if (agentUser.role === 'agent_relais') {
     let agentRelaisId = null;
     let checkPossible = true;
@@ -102,7 +62,6 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     }
 
     if (!checkPossible || !agentRelaisId) {
-      // Persistée hors transaction (pool), attendue avant retour — cf. P0-D.
       await _insertSecurityAlert(
         'cash_collect_agent_config_error',
         orderId,
@@ -124,7 +83,31 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     }
   }
 
-  // 3. Vérifier doublon
+  const control = await prepareCashConfirmation({
+    dbClient: client,
+    order,
+    actor: { id: agentId, role: agentUser.role },
+    source: 'cash_collect',
+  });
+
+  if (!control.allowed) {
+    if (control.pending_second) {
+      return {
+        pending_second_approval: true,
+        control_status: control.status || 202,
+        control_code: control.code,
+        control_message: control.message,
+        required_approvals: control.control?.required_approvals || 2,
+      };
+    }
+    return {
+      cash_control_blocked: true,
+      control_status: control.status || 409,
+      control_code: control.code,
+      control_message: control.message,
+    };
+  }
+
   const { rows: existing } = await client.query(
     'SELECT id FROM cash_collections WHERE order_id = $1', [orderId]
   );
@@ -132,7 +115,7 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     return { already_collected: true, collection_id: existing[0].id };
   }
 
-  // 4. Option C : montant = order.total_kmf (anti-fraude, pas de saisie manuelle)
+  // Le montant reste exclusivement dérivé de la commande : jamais de saisie libre.
   const amountKmf = Number(order.total_kmf);
 
   const { rows: [collection] } = await client.query(`
@@ -140,56 +123,39 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     VALUES ($1, $2, $3, $4) RETURNING *
   `, [orderId, amountKmf, agentId, order.relais_id]);
 
-  // 5. Hub I-02 : cycle paiement → stock
   const cycleResult = await confirmPaymentCycle({
     orderId,
-    actor:    { id: agentId, role: agentUser.role },
-    source:   'cash_confirm',
+    actor: { id: agentId, role: agentUser.role },
+    source: 'cash_confirm',
     dbClient: client,
   });
 
   if (cycleResult.stockBlocked) {
-    // La route fera ROLLBACK après ce retour
     return { stock_blocked: true, insufficient_items: cycleResult.insufficientItems };
   }
 
-  // Code de retrait canonique — généré ici, à la confirmation du paiement.
-  // Idempotent : no-op si déjà généré. Le clair (une seule fois) est renvoyé
-  // à la route pour cacheCodeForReveal() APRÈS COMMIT.
   const secretResult = await ensureSecretGenerated({
     orderId,
     relaisId: order.relais_id || null,
-    channel:  'cash_confirm',
+    channel: 'cash_confirm',
     dbClient: client,
   });
 
+  await finalizeCashConfirmation({ dbClient: client, orderId });
+
   return {
-    success:    true,
+    success: true,
     collection,
-    noop:       cycleResult.noop,
+    noop: cycleResult.noop,
     amount_kmf: amountKmf,
     pickupCodeToCache: secretResult.code || null,
+    cash_control: {
+      required_approvals: control.control?.required_approvals || 1,
+      second_approval: Boolean(control.second_approval),
+    },
   };
 }
 
-// ─── Helper interne ───────────────────────────────────────────────────────────
-
-/**
- * Persiste une alerte de sécurité (tentative cross-relais / agent mal
- * configuré) HORS de la transaction métier de la route appelante.
- *
- * Décision transactionnelle (P0-D) : ces alertes doivent survivre à un
- * ROLLBACK de la commande — un ROLLBACK n'annule pas la réalité de la
- * tentative de fraude/mauvaise config, qui reste opérationnellement
- * pertinente pour le triage sécurité. Elles sont donc écrites via le POOL
- * (`db`), jamais via le `client` transactionnel de la route (qui peut être
- * rollback juste après ce retour), et ATTENDUES séquentiellement — jamais
- * deux queries concurrentes non séquencées sur le même PoolClient (c'était
- * le bug : l'ancien code utilisait `client.query(...)` sans `await`, en
- * pleine transaction que la route s'apprêtait à ROLLBACK).
- * Non-bloquant : un échec de persistance de CETTE alerte ne doit jamais
- * faire échouer la réponse 403 déjà décidée.
- */
 async function _insertSecurityAlert(type, entityId, title, description) {
   try {
     await createAlert(db, {

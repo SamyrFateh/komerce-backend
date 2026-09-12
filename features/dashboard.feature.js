@@ -17,7 +17,7 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ──────────────────────────────────────────────────────
-  service: 'Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.',
+  service: 'Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.',
 
   // ── Périmètre ──────────────────────────────────────────────────────────
   perimeter: {
@@ -27,6 +27,9 @@ module.exports = {
       'Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement',
       'Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback',
       'Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard',
+      'Portail interne unique /admin — même shell Canonical pour administration centrale, opérateurs pays et rôles terrain autorisés',
+      'Operations Workspace : les rôles terrain natifs restent compatibles ; une membership pays peut exécuter une mutation seulement avec la capability execution.* exacte, résolue et auditée par market-delegation',
+      'Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés',
       'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],
@@ -59,6 +62,7 @@ module.exports = {
     'docs/design/TOUR-DE-CONTROLE-DASHBOARDS.md',
     'docs/design/analyse-dashboard-pilotage.md',
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
+      'docs/doctrine/ADMIN_INTERNAL_PORTAL_DOCTRINE.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
       'docs/contract/ACTION_CENTER_4G.md',
       'docs/contract/CLIENT_INDEX_4I.md',
@@ -210,6 +214,7 @@ module.exports = {
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
       'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
+      'market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)',
     ],
   },
 
@@ -273,6 +278,9 @@ module.exports = {
     'Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard',
     'Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance',
     'canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins',
+    '/admin est la porte d’entrée interne unique ; les URLs /admin/** spécialisées sont des destinations/deep-links et non des portails métiers séparés',
+    'authentification et autorisation restent séparées : login établit l’identité, le runtime et les APIs serveur contrôlent rôle, scope, Market ID et capabilities',
+    'un futur OTP peut renforcer la preuve d’identité ou une action sensible sans devenir une source de rôle, scope, Market ID ou capability',
     '/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé',
     'auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me',
     'Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché',
@@ -288,6 +296,7 @@ module.exports = {
     'npx jest tests/unit/canonical-dashboard-primitives.test.js --runInBand',
     'npx jest tests/unit/canonical-dashboard-schema-renderer.test.js --runInBand',
     'npx jest tests/unit/canonical-dashboard-admin-context.test.js --runInBand',
+    'npx jest tests/unit/canonical-admin-app.test.js --runInBand',
     'npx jest tests/unit/admin-demo-order-flow.test.js tests/unit/canonical-demo-order-flow.test.js --runInBand',
     'npm run dashboards:360:check',
     'npm run map:check',
@@ -481,6 +490,7 @@ module.exports = {
       'tests/unit/admin-radar.test.js',
       // tests/unit/admin-rules.test.js — retiré (B2, 2026-07-29) : suit routes/admin-rules.js vers business-rules.
       'tests/unit/admin-system.test.js',
+      'tests/unit/canonical-admin-app.test.js',
       'tests/unit/canonical-dashboard-boundary.test.js',
       'tests/unit/canonical-dashboard-primitives.test.js',
       'tests/unit/canonical-dashboard-schema-renderer.test.js',

@@ -13,9 +13,9 @@
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
  * @db-txn        promoteCandidate : transaction dédiée
- * @doctrine      single_sourcing_candidate_mutation_authority, catalog_promotion_owner_respected
- * @impact-areas  sourcing, catalog
- * @version       2026-08
+ * @doctrine      single_sourcing_candidate_mutation_authority, catalog_promotion_owner_respected, engine_price_is_not_market_decision, explicit_human_price_required_before_promotion
+ * @impact-areas  sourcing, catalog, economic-engine
+ * @version       2026-09
  */
 
 'use strict';
@@ -172,6 +172,18 @@ async function rejectCandidate(id, reason = '', actorId = null, q = db) {
   return { state: 'rejected', rejected_reason: text || null };
 }
 
+function requireExplicitPromotionPrice(body = {}) {
+  const explicitPrice = Number(body.price_kmf);
+  if (!Number.isFinite(explicitPrice) || explicitPrice <= 0) {
+    throw new SourcingCandidateActionError(
+      400,
+      'Prix explicite requis avant promotion. La recommandation économique du moteur n’est pas une décision de marché.',
+      'candidate_explicit_price_required'
+    );
+  }
+  return explicitPrice;
+}
+
 async function promoteCandidate(id, body = {}, actorId = null) {
   const client = await db.getClient();
   let productId = null;
@@ -204,15 +216,10 @@ async function promoteCandidate(id, body = {}, actorId = null) {
       }
     }
 
-    const scanResult = candidate.scan_result || {};
-    const initialPrice = body.price_kmf
-      || scanResult.test_price_kmf
-      || scanResult.recommended_price_kmf
-      || scanResult.minimum_safe_price_kmf
-      || 0;
-    if (!initialPrice) {
-      throw new SourcingCandidateActionError(400, 'Pas de prix calculé. Re-scannez le candidat avant import.', 'candidate_price_missing');
-    }
+    // Doctrine prix : le scan fournit des frontières et des références économiques,
+    // jamais le prix final. Une promotion vers le catalogue exige donc le prix
+    // choisi explicitement par l'opérateur. Aucun fallback test/recommandé/plancher.
+    const initialPrice = requireExplicitPromotionPrice(body);
 
     productId = await createDraftProductFromSourcingCandidate(client, {
       candidate,
@@ -233,7 +240,11 @@ async function promoteCandidate(id, body = {}, actorId = null) {
       `INSERT INTO sourcing_candidate_events
          (candidate_id, event_type, old_state, new_state, changes, triggered_by)
        VALUES ($1, 'imported', $2, 'imported_to_catalog', $3, $4)`,
-      [id, candidate.state, JSON.stringify({ product_id: productId, price_kmf: initialPrice }), actorId || null]
+      [id, candidate.state, JSON.stringify({
+        product_id: productId,
+        price_kmf: initialPrice,
+        price_decision: 'EXPLICIT_HUMAN_INPUT',
+      }), actorId || null]
     );
     await client.query('COMMIT');
   } catch (err) {
@@ -249,6 +260,7 @@ async function promoteCandidate(id, body = {}, actorId = null) {
     candidate_id: id,
     promotion,
     enrichment,
+    price_decision: 'EXPLICIT_HUMAN_INPUT',
     message: enrichment.status === 'ok'
       ? 'Produit créé en mode inactif, fiche FR générée. Approuvez-la quand prête.'
       : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
@@ -263,4 +275,5 @@ module.exports = {
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
+  _requireExplicitPromotionPrice: requireExplicitPromotionPrice,
 };

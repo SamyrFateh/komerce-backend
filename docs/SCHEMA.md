@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 133 | Vérifié sur le dump live Railway. |
+| Tables | 149 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 355 | Performance + contraintes uniques |
-| Foreign keys | 227 | Cohérence relationnelle |
-| Fonctions | 19 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 37 | Triggers présents dans le dump live Railway. |
+| Index | 377 | Performance + contraintes uniques |
+| Foreign keys | 279 | Cohérence relationnelle |
+| Fonctions | 26 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 44 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -85,13 +85,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). |
-| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. **Migration 162 (2026-09-04, `intended_migration_schema`)** : + `fulfillment_source` TEXT nullable, snapshot immuable du verdict transactionnel `LOCAL_STOCK | IMPORT` pour les nouvelles lignes ; `NULL` reste réservé aux lignes historiques/synthétiques sans provenance fiable et ne vaut jamais `IMPORT`. Doctrine : `docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md`. |
+| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d'affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. **Migration 162 (2026-09-04, `intended_migration_schema`)** : + `fulfillment_source` TEXT nullable, snapshot immuable du verdict transactionnel `LOCAL_STOCK | IMPORT` pour les nouvelles lignes ; `NULL` reste réservé aux lignes historiques/synthétiques sans provenance fiable et ne vaut jamais `IMPORT`. Doctrine : `docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md`. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
-| `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer N2 (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable pour figer N3 séparément. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
+| `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
 | `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). |
 
 ### 4.2 Logistique colis (5 tables)
@@ -149,9 +149,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
 | `market_payment_providers` | Providers Mobile Money autorisés par marché, sans credential persistée ; l'activation métier reste distincte de la configuration secrète runtime. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `cash_confirmation_controls` | État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement. **Migration 199 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `market_settlements` | Vérité de règlement du Market Operating Assignment ; snapshot amount + currency immuable et cycle READY -> REQUESTED -> PAID -> RECEIVED, sans payout implicite. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `market_settlement_events` | Journal financier append-only du lifecycle settlement ; UPDATE et DELETE interdits, distinct de market_delegation_audit. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
 ### 4.5 Paniers et catalogue
+
 
 | Table | Rôle |
 |---|---|
@@ -173,6 +177,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `product_content_profile` | Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_content_sections` | Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
+| `product_market_exposure` | Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct. **Migration 202 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
 
@@ -188,7 +193,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cart_shares` | Partage de panier (token public). |
 | `shared_cart_saved_access` | Bibliothèque « Mes listes » : listes reçues qu’un utilisateur a explicitement choisi de sauvegarder. UNIQUE(user_id, shared_cart_id). Migration 127. |
 
-### 4.8 Pricing et économie (19 tables)
+### 4.8 Pricing et économie (tables live + 2 objets visés)
 
 | Table | Rôle |
 |---|---|
@@ -202,23 +207,24 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `pricing_category_dims` | Dimensions catégorie. |
 | `pricing_category_taxes` | Taxes par catégorie. |
 | `pricing_matrices_audit` | Audit matrices. |
-| `cost_components` | Composantes de coûts. |
+| `cost_components` | Composantes de coûts. **Migration 191 (2026-09-08, `intended_migration_schema`)** : + `economic_nature` pour distinguer `VARIABLE` / `FIXED`, et + `allocation_perimeter` pour distinguer `DIRECT` / `MUTUALIZED`. Ces deux axes sont indépendants de la base d'allocation ; `MUTUALIZED` n'est ni une nature économique ni un synonyme de commande/colis. |
 | `cost_component_events` | Événements composantes coût. |
 | `cost_component_market_overrides` | Overrides market-scoped de valeur/activation sur le modèle global `cost_components`; absence de ligne = héritage global. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `cost_component_market_override_events` | Journal append-only des créations, mises à jour et resets d'overrides de composantes de coûts par marché. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `risk_provisions` | Provisions risques. |
 | `cost_benchmarks` | Seuils de part de coût attendue par famille/catégorie (`expected_share_pct`, `warn_ratio` 1.30, `alert_ratio` 1.60). Alimente les alertes d'écart coût. |
 | `charges` | Charges fixes. |
-| `competitor_prices` | Prix concurrents. |
+| `competitor_prices` | Prix concurrents globaux/informatifs ; ils ne constituent pas le corridor local d'un marché. |
 | `price_history` | Historique prix. |
 | `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
-| `economic_structure_cost_events` | Journal append-only des charges économiques N3 de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
-| `economic_risk_cost_events` | Journal append-only des coûts de risque N2 réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `economic_structure_cost_events` | Journal append-only des charges structurelles de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. Ces charges sont couvertes collectivement par la contribution du portefeuille ; elles ne constituent pas une dette SKU. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `economic_risk_cost_events` | Journal append-only des coûts de risque réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_drafts` | Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
-
+| `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
+| `market_price_observation_events` | Journal append-only des créations et désactivations d'observations de prix marché avec acteur, raison et snapshot ; aucune réécriture historique. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
 
 
 
@@ -271,12 +277,12 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
 
-### 4.12 bis — Marchés, autorisations globales et Passkeys (9 tables)
+### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
 
 | Table | Rôle |
 |---|---|
 | `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |
-| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. |
+| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. **Migration 195 (2026-09-09, `intended_migration_schema`)** : + `projected_from_membership_id` UUID nullable, FK vers `assignment_memberships(id)`, marque l’origine d’une projection de délégation ; `NULL` signifie scope legacy/historique non attribué à une membership. |
 | `currency_parities` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |
 | `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
 | `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |
@@ -284,7 +290,16 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sourcing_global_access_grants` | Grants persistés autorisant explicitement les surfaces Sourcing globales ; aucune autorité globale implicite. **Migration 149 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `pricing_global_access_grants` | Grants persistés autorisant explicitement le Pricing Workspace global ; aucune élévation implicite depuis le navigateur. **Migration 152 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `decision_signal_global_access_grants` | Grants persistés autorisant explicitement l’Action Center global et les signaux de décision transverses. **Migration 153 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
-
+| `capability_registry` | Registre exécutable des capabilities DELEGATION / EXECUTION / BOUNDARY, de leur portée et de leur statut ; le KPI d’autonomie ne prend que DELEGATION au dénominateur. **Migration 193 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_operating_assignments` | Mandat d’exploitation économique d’un Market ID ; au plus une ligne ACTIVE par marché. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `assignment_capability_ceiling` | Plafond effectif des capabilities MARKET/DELEGABLE concédées par le central à un assignment. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `assignment_memberships` | Membres agissant sous un Market Operating Assignment, avec historique explicite de révocation. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `membership_capabilities` | Capabilities actives de chaque membership, structurellement bornées par le ceiling de l’assignment. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `ceiling_templates` | Templates versionnés de plafond central ; un seul template peut être courant. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
+| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
 ### 4.13 Monitoring et alertes (10 tables)

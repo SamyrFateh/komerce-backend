@@ -6,12 +6,12 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-network.js, routes/market-delegation-provider.js, routes/market-delegation-catalog.js, routes/market-delegation-local-offer.js, routes/market-delegation-client-case.js, routes/market-delegation-settlement.js, routes/market-delegation-structure-event.js, routes/market-delegation-performance.js, routes/admin-market-settlement.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
- * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail
+ * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail, market-delegation
  * @version       2026-09
  */
 
@@ -116,6 +116,16 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const sharesRouter = require('../routes/shares');
   const localStockRouter = require('../routes/local-stock');
   const providersServicesRouter = require('../routes/providers-services');
+  const marketDelegationTeamRouter = require('../routes/market-delegation-team');
+  const marketDelegationCashControlRouter = require('../routes/market-delegation-cash-control');
+  const marketDelegationNetworkRouter = require('../routes/market-delegation-network');
+  const marketDelegationProviderRouter = require('../routes/market-delegation-provider');
+  const marketDelegationCatalogRouter = require('../routes/market-delegation-catalog');
+  const marketDelegationLocalOfferRouter = require('../routes/market-delegation-local-offer');
+  const marketDelegationClientCaseRouter = require('../routes/market-delegation-client-case');
+  const marketDelegationSettlementRouter = require('../routes/market-delegation-settlement');
+  const marketDelegationStructureEventRouter = require('../routes/market-delegation-structure-event');
+  const marketDelegationPerformanceRouter = require('../routes/market-delegation-performance');
   const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic');
@@ -133,6 +143,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminShippingCustomsWorkspaceRouter = require('../routes/admin-shipping-customs-workspace');
   const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');
   const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');
+  const adminMarketSettlementRouter = require('../routes/admin-market-settlement');
   const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');
   const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');
   const adminActionCenterRouter = require('../routes/admin-action-center');
@@ -152,6 +163,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/workspaces/shipping-customs', adminShippingCustomsWorkspaceRouter);
   app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);
   app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);
+  app.use('/api/admin/market-settlements', adminMarketSettlementRouter);
   app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);
   app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);
   app.use('/api/admin/action-center', adminActionCenterRouter);
@@ -222,6 +234,18 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/unsold',     unsoldRouter);
   app.use('/api/shared-carts/saved', sharedCartSavedRouter);
   app.use('/api/shares',     sharesRouter);
+  // LOT 1A Market Delegation — auth identifie, membership/capability autorise.
+  // Le code marché est résolu serveur ; aucun market_id client n'est une preuve d'autorité.
+  app.use('/api/market-delegation', marketDelegationTeamRouter);
+  app.use('/api/market-delegation', marketDelegationCashControlRouter);
+  app.use('/api/market-delegation', marketDelegationNetworkRouter);
+  app.use('/api/market-delegation', marketDelegationProviderRouter);
+  app.use('/api/market-delegation', marketDelegationCatalogRouter);
+  app.use('/api/market-delegation', marketDelegationLocalOfferRouter);
+  app.use('/api/market-delegation', marketDelegationClientCaseRouter);
+  app.use('/api/market-delegation', marketDelegationSettlementRouter);
+  app.use('/api/market-delegation', marketDelegationStructureEventRouter);
+  app.use('/api/market-delegation', marketDelegationPerformanceRouter);
   // Vague 2 D6 — GET read-only, aucune mutation, jamais de champ interne
   // (téléphone, provider_id, pourquoi d'une indisponibilité). commercial_
   // exposure reste DISABLED partout : monté = joignable, pas = visible.

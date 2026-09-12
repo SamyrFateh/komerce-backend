@@ -33,8 +33,40 @@
  */
 
 require('dotenv').config();
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 const log = require('./utils/logger').forModule('db');
+
+// ── FIX 2026-09 : NUMERIC/DECIMAL retournés en nombre, pas en chaîne ────────
+// node-postgres retourne par défaut les colonnes numeric/decimal (OID 1700)
+// en JS `string`, jamais en `number` — précaution générique du driver contre
+// la perte de précision, indépendante du schéma Komerce. Convention actuelle
+// du code : chaque site de lecture fait son propre Number()/parseFloat() sur
+// les colonnes déjà numeric (total_eur, price_eur...) — voir par exemple
+// services/invoice-service.js, services/payment-paypal.js.
+//
+// Cette convention par site devient intenable au fil de la conversion
+// currency debt (audit 09-2026, docs/doctrine/ — colonnes `*_kmf` en integer
+// migrées vers numeric+currency domaine par domaine) : un `integer` renvoie
+// déjà un `number`, donc chaque colonne convertie change silencieusement le
+// type JS de tout site qui la lit, sans erreur immédiate — `total_kmf + fee`
+// devient une concaténation de chaînes, pas une addition. Un correctif par
+// site (des dizaines de fichiers par colonne) ne serait pas fiable à relire
+// et se reproduirait à chaque colonne convertie.
+//
+// setTypeParser() enregistre un hook de décodage protocole (OID → parseur)
+// au niveau du module `pg` lui-même : jamais de requête, jamais de
+// connexion, jamais de client concerné. C'est une classe de changement
+// totalement différente du monkey-patch pool.query/pool.connect retiré en
+// hotfix V2.10 (cf. note ci-dessous) — celui-là interceptait le CYCLE DE VIE
+// des requêtes/connexions pour TOUS les appelants, y compris les chemins
+// chauds, et a saturé le pool. Ceci ne touche que la DÉSÉRIALISATION d'une
+// valeur déjà reçue, une fois, au chargement du module — même prix pour
+// price_eur (déjà numeric, Number() applique de toute façon derrière) que
+// pour toute future colonne convertie. parseFloat() perd la précision
+// arbitraire de numeric au-delà de ~15 chiffres significatifs, ce que ce
+// codebase n'approche à aucun endroit identifié (montants, pas de calcul
+// scientifique).
+types.setTypeParser(1700, parseFloat);
 
 // ── FIX 2026-07-09 : filet de sécurité idle_in_transaction ─────────────────
 // `statement_timeout` (30s) ne protège que les requêtes SQL actives. Si un

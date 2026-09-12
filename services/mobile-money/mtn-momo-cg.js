@@ -22,10 +22,23 @@ const log = require('../../utils/logger').child({ module: 'mtn-momo-cg' });
 
 const SUCCESS = new Set(['SUCCESSFUL', 'SUCCESS', 'COMPLETED', 'PAID']);
 const FAILED  = new Set(['FAILED', 'REJECTED', 'CANCELLED', 'CANCELED', 'EXPIRED']);
+
+// MTN impose EUR dans son environnement développeur Sandbox. Cette monnaie est
+// uniquement un contrat de transport de test : la vérité métier du marché Congo
+// reste XAF dans Komerce et ne doit jamais être réécrite pour satisfaire le Sandbox.
+const SANDBOX_CURRENCY = 'EUR';
+const SANDBOX_AMOUNT = 1000;
+
 let tokenCache = null;
 
 function trimSlash(value) {
   return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function runtimeEnvironment() {
+  return String(process.env.KOMERCE_ENV || process.env.NODE_ENV || '')
+    .trim()
+    .toLowerCase();
 }
 
 function config() {
@@ -41,12 +54,26 @@ function config() {
   };
 }
 
+function isSandboxTransport(c = config()) {
+  return runtimeEnvironment() !== 'production'
+    && String(c.targetEnv || '').trim().toLowerCase() === 'sandbox';
+}
+
 function isConfigured() {
   const c = config();
-  return Boolean(
+  const complete = Boolean(
     c.baseUrl && c.subscriptionKey && c.apiUser && c.apiKey && c.targetEnv &&
     c.tokenUrl && c.requestToPayUrl
   );
+  if (!complete) return false;
+
+  // Un credential Sandbox ne doit jamais rendre MTN disponible sur un runtime
+  // métier production. C'est un garde-fou runtime en plus du provisioning Railway.
+  if (runtimeEnvironment() === 'production'
+      && String(c.targetEnv).trim().toLowerCase() === 'sandbox') {
+    return false;
+  }
+  return true;
 }
 
 function publicConfig() {
@@ -142,6 +169,26 @@ function authHeaders(c, token) {
   };
 }
 
+function providerMoney(c, amount, currency) {
+  if (isSandboxTransport(c)) {
+    return { amount: SANDBOX_AMOUNT, currency: SANDBOX_CURRENCY };
+  }
+  return { amount, currency: String(currency || '').toUpperCase() };
+}
+
+function assertSandboxStatusContract(body) {
+  const providerAmount = Number(body?.amount);
+  const providerCurrency = String(body?.currency || '').trim().toUpperCase();
+  if (!Number.isFinite(providerAmount)
+      || providerAmount !== SANDBOX_AMOUNT
+      || providerCurrency !== SANDBOX_CURRENCY) {
+    const err = new Error('MTN MoMo Sandbox: montant/devise de transport incohérents');
+    err.code = 'mtn_momo_sandbox_contract_mismatch';
+    err.safeBody = safeJson(body);
+    throw err;
+  }
+}
+
 async function initiate({ orderReference, amount, currency, msisdn, callbackUrl, fetchImpl = global.fetch }) {
   const c = config();
   const payer = normalizeMsisdn(msisdn);
@@ -153,6 +200,8 @@ async function initiate({ orderReference, amount, currency, msisdn, callbackUrl,
 
   const token = await getAccessToken(fetchImpl);
   const externalTransactionId = crypto.randomUUID();
+  const money = providerMoney(c, amount, currency);
+  const sandbox = isSandboxTransport(c);
   const res = await fetchImpl(c.requestToPayUrl, {
     method: 'POST',
     headers: {
@@ -162,8 +211,8 @@ async function initiate({ orderReference, amount, currency, msisdn, callbackUrl,
       'X-Callback-Url': callbackUrl,
     },
     body: JSON.stringify({
-      amount: String(amount),
-      currency,
+      amount: String(money.amount),
+      currency: money.currency,
       externalId: orderReference,
       payer: {
         partyIdType: 'MSISDN',
@@ -182,16 +231,24 @@ async function initiate({ orderReference, amount, currency, msisdn, callbackUrl,
     throw err;
   }
 
-  log.info({ order_reference: orderReference, reference_id: externalTransactionId },
-    '[MTN-MOMO-CG] RequestToPay accepté');
+  log.info({
+    order_reference: orderReference,
+    reference_id: externalTransactionId,
+    sandbox_transport: sandbox,
+  }, '[MTN-MOMO-CG] RequestToPay accepté');
+
   return {
     externalTransactionId,
     status: 'pending',
     providerStatus: 'PENDING',
-    safePayload: {},
+    safePayload: sandbox
+      ? { sandbox_transport: true, amount: SANDBOX_AMOUNT, currency: SANDBOX_CURRENCY }
+      : {},
     clientAction: {
       type: 'approval',
-      message: 'Validez la demande de paiement MTN MoMo sur votre téléphone.',
+      message: sandbox
+        ? 'Test MTN Sandbox en cours — aucune validation réelle sur téléphone n’est requise.'
+        : 'Validez la demande de paiement MTN MoMo sur votre téléphone.',
     },
   };
 }
@@ -205,13 +262,26 @@ async function getStatus({ externalTransactionId, fetchImpl = global.fetch }) {
     headers: authHeaders(c, token),
   });
   const body = await parseResponse(res);
+  const sandbox = isSandboxTransport(c);
+
+  if (sandbox) {
+    // Le provider Sandbox ne peut pas refléter le montant XAF métier : il impose
+    // son contrat synthétique EUR. On vérifie strictement CE contrat ici puis on
+    // laisse la couche métier conserver son snapshot XAF autoritatif.
+    assertSandboxStatusContract(body);
+  }
 
   return {
     status: normalizeStatus(body),
     providerStatus: String(body.status || 'UNKNOWN'),
-    amount: body.amount == null ? null : Number(body.amount),
-    currency: body.currency ? String(body.currency).toUpperCase() : null,
-    safePayload: safeJson(body),
+    // En Sandbox, l'EUR/1000 est uniquement un transport de test et ne doit pas
+    // être comparé ni persisté comme vérité économique de la commande Congo.
+    amount: sandbox ? null : (body.amount == null ? null : Number(body.amount)),
+    currency: sandbox ? null : (body.currency ? String(body.currency).toUpperCase() : null),
+    safePayload: {
+      ...safeJson(body),
+      ...(sandbox ? { sandbox_transport: true } : {}),
+    },
   };
 }
 

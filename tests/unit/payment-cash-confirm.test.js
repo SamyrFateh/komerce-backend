@@ -18,7 +18,23 @@
 
 'use strict';
 
-const { makeClient } = require('../integration/test-harness/mock-db');
+const { makeClient: makeBaseClient } = require('../integration/test-harness/mock-db');
+
+// Les tests de façade ne consomment pas une entrée de script DB pour le nouveau
+// journal cash_collections ajouté au chemin référence ; la boundary elle-même a
+// sa suite dédiée. On conserve néanmoins l'appel dans client.calls.
+function makeClient(script = []) {
+  const client = makeBaseClient(script);
+  const baseQuery = client.query;
+  client.query = jest.fn(async (sql, params = []) => {
+    if (/INSERT\s+INTO\s+cash_collections/i.test(String(sql))) {
+      client.calls.push({ sql, params });
+      return { rows: [], rowCount: 1 };
+    }
+    return baseQuery(sql, params);
+  });
+  return client;
+}
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
@@ -28,6 +44,13 @@ jest.mock('../../utils/logger', () => ({
 const mockConfirmPaymentCycle = jest.fn();
 jest.mock('../../services/order-payment-confirmation', () => ({
   confirmPaymentCycle: (...args) => mockConfirmPaymentCycle(...args),
+}));
+
+const mockPrepareCashConfirmation = jest.fn();
+const mockFinalizeCashConfirmation = jest.fn();
+jest.mock('../../services/cash-confirmation-control-service', () => ({
+  prepareCashConfirmation: (...args) => mockPrepareCashConfirmation(...args),
+  finalizeCashConfirmation: (...args) => mockFinalizeCashConfirmation(...args),
 }));
 
 const mockNotifyPaymentConfirmed = jest.fn().mockResolvedValue(undefined);
@@ -54,6 +77,8 @@ const ORDER = {
   reference: 'KMC-001',
   relais_id: 'relais-1',
   cash_ref_code: 'CASH-001',
+  market_id: 'market-1',
+  total_kmf: '12000',
 };
 
 function makeDb(client, extraQueryImpl) {
@@ -64,6 +89,13 @@ function makeDb(client, extraQueryImpl) {
 }
 
 beforeEach(() => {
+  mockPrepareCashConfirmation.mockReset();
+  mockPrepareCashConfirmation.mockResolvedValue({
+    allowed: true, approved: true, second_approval: false,
+    control: { required_approvals: 1 },
+  });
+  mockFinalizeCashConfirmation.mockReset();
+  mockFinalizeCashConfirmation.mockResolvedValue({ state: 'CONFIRMED' });
   mockConfirmPaymentCycle.mockReset();
   mockNotifyPaymentConfirmed.mockClear();
   mockHandleOrderConfirmed.mockClear();
@@ -123,6 +155,27 @@ describe('confirmCashByReference', () => {
 
     expect(result.status).toBe(403);
     expect(result.body.error).toMatch(/Configuration agent incomplète/);
+  });
+
+  test('202 au premier visa DUAL sans exécuter le cycle paiement', async () => {
+    const client = makeClient([{ rows: [ORDER] }]);
+    const db = makeDb(client);
+    mockPrepareCashConfirmation.mockResolvedValueOnce({
+      allowed: false, pending_second: true, status: 202,
+      code: 'CASH_SECOND_ACTOR_REQUIRED',
+      message: 'Une seconde personne habilitée doit confirmer cet encaissement.',
+      control: { required_approvals: 2 },
+    });
+
+    const result = await confirmCashByReference({
+      cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+    });
+
+    expect(result.status).toBe(202);
+    expect(result.body.pending_second_approval).toBe(true);
+    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
+    const { expectTransactionCommitted } = require('../integration/test-harness/mock-db');
+    expectTransactionCommitted(client);
   });
 
   test('409 + rollback si stock insuffisant', async () => {

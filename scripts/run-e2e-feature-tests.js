@@ -47,6 +47,7 @@ const LOTS = {
   3: ['business-rules', 'economic-engine', 'notifications', 'documents',
       'recommendations', 'incident-management', 'decision-signals', 'dashboard',
       'platform-ops', 'infrastructure', 'sourcing'],
+  4: ['market-delegation'],
 };
 
 function parseArgs(argv) {

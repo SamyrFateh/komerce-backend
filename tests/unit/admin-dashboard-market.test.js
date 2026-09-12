@@ -134,7 +134,7 @@ describe('GET /api/admin/dashboard/context', () => {
     expect(JSON.stringify(res.body)).not.toContain('market_id');
   });
 
-  test.each(['agent_hub', 'agent_relais'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
+  test.each(['agent_hub', 'agent_relais', 'finance'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
     mockCurrentUser = { id: `${role}-1`, role };
 
     const contextRes = await request(makeApp()).get('/api/admin/dashboard/context');
@@ -160,7 +160,9 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     mockCurrentUser = { id: 'client-1', role: 'client' };
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
     expect(res.status).toBe(403);
-    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery.mock.calls[0][0]).toContain('operator_market_scopes');
+    expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM markets'))).toBe(false);
   });
 
   test('market_operator CM lit son cockpit CM mais ne peut pas lire CG', async () => {

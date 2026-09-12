@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 520
-- Files with full headers: 475
+- Scanned code files: 554
+- Files with full headers: 509
 - Files with lite headers: 45
-- Files with any headers: 520
+- Files with any headers: 554
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1186
-- Edges: 6051
-- DB tables: 137
-- Doctrines: 353
-- Impact areas: 176
-- Unresolved code edges: 586
-- Tables multi-écrivains directs (>=2): 65
+- Graph nodes: 1321
+- Edges: 6583
+- DB tables: 153
+- Doctrines: 433
+- Impact areas: 181
+- Unresolved code edges: 620
+- Tables multi-écrivains directs (>=2): 69
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -32,29 +32,31 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 95
+- catalog: 96
 - checkout: 3
 - customs: 6
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 55
+- economic-engine: 56
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
 - local-stock: 3
-- logistics: 45
+- logistics: 46
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
+- market-delegation: 25
 - notification: 21
 - operations: 11
-- orders: 29
-- payment: 24
-- providers-services: 6
+- orders: 30
+- payment: 26
+- providers-services: 7
 - purchasing: 8
 - recommendations: 6
 - refunds: 2
+- settlement: 2
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
@@ -78,12 +80,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - external-adapter: 2
 - machine: 1
 - manual-test: 1
-- middleware: 20
+- middleware: 22
 - presenter: 1
-- route: 115
+- route: 126
 - route-manifest: 1
 - schema: 1
-- service: 232
+- service: 253
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -124,6 +126,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/cash.js — payment-cash (payment, critical, full)
 - routes/hub-mark-ordered.js — orders-hub-mark-ordered (orders, critical, full)
 - routes/inventory-api.js — inventory-inventory-api (inventory, critical, full)
+- routes/market-delegation-cash-control.js — market-cash-control-policy-api (market-delegation, critical, full)
+- routes/market-delegation-structure-event.js — market-delegation-structure-event-api (market-delegation, critical, full)
 - routes/order-api-v2.js — orders-order-api-v2 (orders, critical, full)
 - routes/orders.js — orders-http-facade (orders, critical, full)
 - routes/orders/cancel.js — orders-cancel (orders, critical, full)
@@ -142,14 +146,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/admin-order-refund.js — orders-admin-order-refund (orders, critical, full)
 - services/cancel-order-purchase-orders.js — orders-cancel-order-purchase-orders-boundary (orders, critical, full)
 - services/cart-share-service.js — shared-cart-orders-boundary (shared-cart, critical, full)
+- services/cash-confirmation-control-service.js — cash-confirmation-control-service (payment, critical, full)
 - services/cash-operations.js — payment-cash-operations (payment, critical, full)
 - services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
+- services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
+- services/market-cash-control-policy-service.js — market-cash-control-policy-service (market-delegation, critical, full)
+- services/market-delegation-structure-event-service.js — market-delegation-structure-event-service (market-delegation, critical, full)
 - services/market-local-price-activation-service.js — market-local-price-activation-orchestrator (market-autonomy, critical, full)
 - services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
 - services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
+- services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)
@@ -193,6 +202,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/require-catalog-global-authority.js — catalog-global-authorization-guard (catalog, high, full)
 - middleware/require-dashboard-global-authority.js — dashboard-global-authorization-guard (admin-dashboard, high, full)
 - middleware/require-decision-signal-global-authority.js — decision-signal-global-authorization-guard (decision-signals, high, full)
+- middleware/require-market-delegated-role.js — market-delegation-runtime-role-bridge (market-delegation, high, full)
+- middleware/require-market-execution-capability.js — market-execution-capability-bridge (market-delegation, high, full)
 - middleware/require-market-scope.js — market-scope-authorization-guard (market, high, full)
 - middleware/require-non-production.js — runtime-environment-guard (infrastructure, high, full)
 - middleware/require-pricing-global-authority.js — pricing-global-authorization-guard (economic-engine, high, full)
@@ -251,6 +262,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-finance-accounting-workspace.js — canonical-finance-accounting-workspace-route (admin-dashboard, high, full)
 - routes/admin-finance-config.js — economic-engine-admin-finance-config (economic-engine, high, full)
 - routes/admin-loyalty.js — loyalty-admin-rewards (loyalty, high, full)
+- routes/admin-market-settlement.js — admin-market-settlement-api (settlement, high, full)
 - routes/admin-operations-workspace.js — canonical-operations-workspace-route (admin-dashboard, high, full)
 - routes/admin-order-360.js — canonical-order-360-route (admin-dashboard, high, full)
 - routes/admin-pricing-components.js — economic-engine-admin-pricing-components (economic-engine, high, full)
@@ -287,6 +299,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/economic.js — economic-router (economic-engine, high, full)
 - routes/finance.js — economic-engine-finance (economic-engine, high, full)
 - routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
+- routes/market-delegation-catalog.js — market-delegation-catalog-api (market-delegation, high, full)
+- routes/market-delegation-client-case.js — market-delegation-client-case-api (market-delegation, high, full)
+- routes/market-delegation-local-offer.js — market-delegation-local-offer-api (market-delegation, high, full)
+- routes/market-delegation-network.js — market-delegation-network-api (market-delegation, high, full)
+- routes/market-delegation-performance.js — market-delegation-performance-api (market-delegation, high, full)
+- routes/market-delegation-provider.js — market-delegation-provider-api (market-delegation, high, full)
+- routes/market-delegation-settlement.js — market-delegation-settlement-api (market-delegation, high, full)
+- routes/market-delegation-team.js — market-delegation-team-api (market-delegation, high, full)
 - routes/otp.js — client-otp-session (auth-identity, high, full)
 - routes/parcel-api-v2.js — logistics-parcel-api-v2 (logistics, high, full)
 - routes/parcel-api-v2/helpers.js — logistics-helpers (logistics, high, full)
@@ -308,11 +328,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/authkey-client.js — authkey-whatsapp-adapter (notification, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/boutique-taxonomy-admin.js — boutique-taxonomy-admin-service (catalog, high, full)
+- services/capability-registry.js — market-delegation-capability-registry (market-delegation, high, full)
 - services/cash-deposit-service.js — payment-cash-deposit-service (payment, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-candidate-product-service.js — catalog-candidate-product-owner (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
 - services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
+- services/catalog-market-exposure-service.js — catalog-market-exposure-service (catalog, high, full)
 - services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
 - services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
 - services/catalog-product-mutation-service.js — catalog-product-mutation-service (catalog, high, full)
@@ -362,7 +384,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
+- services/market-delegation-catalog-service.js — market-delegation-catalog-service (market-delegation, high, full)
+- services/market-delegation-client-case-service.js — market-delegation-client-case-service (market-delegation, high, full)
+- services/market-delegation-local-offer-service.js — market-delegation-local-offer-service (market-delegation, high, full)
+- services/market-delegation-network-service.js — market-delegation-network-service (market-delegation, high, full)
+- services/market-delegation-performance-service.js — market-delegation-performance-service (market-delegation, high, full)
+- services/market-delegation-provider-service.js — market-delegation-provider-service (market-delegation, high, full)
+- services/market-delegation-service.js — market-delegation-write-service (market-delegation, high, full)
+- services/market-delegation-settlement-service.js — market-delegation-settlement-orchestration (market-delegation, high, full)
+- services/market-delegation-team-service.js — market-delegation-team-service (market-delegation, high, full)
 - services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
+- services/market-scope-projector.js — market-delegation-scope-projector (market-delegation, high, full)
+- services/market-settlement-service.js — market-settlement-lifecycle-owner (settlement, high, full)
 - services/mobile-money-reconciliation.js — mobile-money-reconciliation (payment, high, full)
 - services/mobile-money/registry.js — mobile-money-provider-registry (payment, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
@@ -395,6 +428,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-market-corridor.js — pricing-market-corridor-owner (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
 - services/pricing-market-decision-policy.js — economic-engine-pricing-market-decision-policy (economic-engine, high, full)
 - services/pricing-market-decision-projection.js — economic-engine-pricing-market-decision-projection (economic-engine, high, full)
@@ -414,9 +448,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-sku-service.js — catalog-product-sku-service (catalog, high, full)
 - services/product-variant-service.js — catalog-product-variant-service (catalog, high, full)
 - services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
+- services/provider-status-mutation-service.js — providers-services-status-mutation-service (providers-services, high, full)
 - services/providers-service.js — providers-services-providers-service (providers-services, high, full)
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/radar-alerts/cash-reconciliation-signals.js — radar-cash-reconciliation-signals (decision-signals, high, full)
+- services/relais-mutation-service.js — logistics-relais-mutation-service (logistics, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
@@ -523,6 +559,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-operations.js -> alerts
 - WRITE utils/alerts.js -> alerts
 - WRITE utils/parcelSync.js -> alerts
+- WRITE services/market-delegation-service.js -> assignment_capability_ceiling
+- WRITE services/market-delegation-service.js -> assignment_memberships
 - WRITE routes/admin/system.js -> basket_items
 - WRITE services/shared-cart-creation.js -> basket_items
 - WRITE services/shared-cart-engine.js -> basket_items
@@ -542,6 +580,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cart-share-service.js -> cart_shares
 - WRITE services/cash-operations.js -> cash_collections
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
+- WRITE services/payment-cash-confirm.js -> cash_collections
+- WRITE services/cash-confirmation-control-service.js -> cash_confirmation_controls
+- WRITE services/cash-operations.js -> cash_confirmation_controls
+- WRITE services/confirm-pickup-cash-payment.js -> cash_confirmation_controls
+- WRITE services/payment-cash-confirm.js -> cash_confirmation_controls
 - WRITE routes/cash.js -> cash_deposits
 - WRITE services/cash-deposit-service.js -> cash_deposits
 - WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
@@ -565,6 +608,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
+- WRITE services/dispute-mutation-service.js -> disputes
 - WRITE services/pricing-risk-period.js -> economic_risk_cost_events
 - WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
 - WRITE bootstrap/crons.js -> economic_snapshots
@@ -595,6 +639,16 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/market-cash-control-policy-service.js -> market_cash_control_policies
+- WRITE middleware/require-market-execution-capability.js -> market_delegation_audit
+- WRITE services/market-delegation-service.js -> market_delegation_audit
+- WRITE services/market-delegation-service.js -> market_operating_assignments
+- WRITE services/pricing-market-corridor.js -> market_price_observation_events
+- WRITE services/pricing-market-corridor.js -> market_price_observations
+- WRITE services/market-settlement-service.js -> market_settlement_events
+- WRITE services/market-settlement-service.js -> market_settlements
+- WRITE services/market-delegation-team-service.js -> market_team_invitations
+- WRITE services/market-delegation-service.js -> membership_capabilities
 - WRITE services/payment-mobile-money.js -> mobile_money_transactions
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
@@ -605,24 +659,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/otp-auth.js -> notification_log
 - WRITE services/notifications/parcel.js -> notification_log
 - WRITE services/simulator/state-advancer.js -> notification_log
-- WRITE services/market-scope-admin-service.js -> operator_market_scopes
-- WRITE routes/hub-dashboard.js -> order_comments
-- WRITE routes/hub-mark-ordered.js -> order_comments
-- WRITE routes/relay-dashboard.js -> order_comments
-- WRITE services/operations-workspace.js -> order_comments
-- WRITE routes/hub-dashboard.js -> order_incidents
-- WRITE routes/relay-dashboard.js -> order_incidents
-- WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
-- WRITE services/cost-allocation/allocate.js -> order_item_real_cost_allocations
-- WRITE services/cost-allocation/index.js -> order_item_real_cost_allocations
-- WRITE services/transport-cost-allocation.js -> order_item_real_cost_allocations
-- WRITE routes/admin/delete-order-cascade.js -> order_items
-- WRITE routes/admin/system.js -> order_items
-- WRITE services/order-checkout-persistence.js -> order_items
-- WRITE services/order-checkout-service.js -> order_items
-- WRITE services/order-item-availability-service.js -> order_items
-- WRITE services/order-status-machine.js -> order_items
-- WRITE services/scan-engine.js -> order_items
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -630,11 +666,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pickup-exceptional-collection-service.js -> alerts (via pickup-collection-service)
 - WRITE services/pickup-secret-service.js -> alerts (via pickup-collection-service)
 - WRITE services/pickup-secret-service.js -> alerts (via pickup-exceptional-collection-service)
+- WRITE routes/market-delegation-team.js -> assignment_memberships (via market-delegation-team-service)
+- WRITE services/market-delegation-team-service.js -> assignment_memberships (via market-delegation-service)
 - WRITE services/finance-accounting-workspace.js -> cash_deposits (via cash-deposit-service)
 - WRITE services/sourcing-candidate-actions.js -> catalog_media (via catalog-promotion)
 - WRITE services/sourcing-workspace.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/shipping-customs-workspace.js -> customs_shipment_parcels (via customs-shipment-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
+- WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
+- WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
+- WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE routes/admin/system.js -> incidents (via incident-write-service)
 - WRITE routes/admin/users.js -> incidents (via incident-write-service)
 - WRITE routes/ops-api.js -> incidents (via incident-write-service)
@@ -646,7 +688,36 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/providers-services.js -> inquiries (via providers-inquiry-service)
 - WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
 - WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
+- WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
+- WRITE routes/market-delegation-cash-control.js -> market_delegation_audit (via market-cash-control-policy-service)
+- WRITE routes/market-delegation-catalog.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-client-case.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-local-offer.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-network.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-provider.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-settlement.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-structure-event.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-team.js -> market_delegation_audit (via market-delegation-team-service)
+- WRITE services/market-cash-control-policy-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-catalog-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-client-case-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-local-offer-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-network-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-provider-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-settlement-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-structure-event-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-team-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/admin-market-settlement.js -> market_settlement_events (via market-settlement-service)
+- WRITE routes/market-delegation-settlement.js -> market_settlement_events (via market-settlement-service)
+- WRITE services/market-delegation-settlement-service.js -> market_settlement_events (via market-settlement-service)
+- WRITE routes/admin-market-settlement.js -> market_settlements (via market-settlement-service)
+- WRITE routes/market-delegation-settlement.js -> market_settlements (via market-settlement-service)
+- WRITE services/market-delegation-settlement-service.js -> market_settlements (via market-settlement-service)
+- WRITE routes/market-delegation-team.js -> market_team_invitations (via market-delegation-team-service)
+- WRITE routes/market-delegation-team.js -> membership_capabilities (via market-delegation-team-service)
+- WRITE services/market-delegation-team-service.js -> membership_capabilities (via market-delegation-service)
 - WRITE routes/admin/users.js -> operator_market_scopes (via market-scope-admin-service)
+- WRITE routes/market-delegation-team.js -> operator_market_scopes (via market-scope-projector)
 - WRITE services/shipping-customs-workspace.js -> order_item_real_cost_allocations (via customs-shipment-service)
 - WRITE routes/orders/create.js -> order_items (via order-checkout-service)
 - WRITE services/operations-workspace.js -> order_items (via scan-engine)
@@ -711,41 +782,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> parcels (via customs-shipment-service)
 - WRITE services/simulator/state-advancer.js -> parcels (via parcel-operations)
 - WRITE services/sourcing-workspace.js -> partners (via partner-admin-service)
-- WRITE services/pickup-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> pickup_print_tokens (via pickup-collection-recorder)
-- WRITE services/pickup-secret-service.js -> pickup_print_tokens (via pickup-secret-access-service)
-- WRITE services/pickup-secret-service.js -> pickup_print_tokens (via pickup-collection-service)
-- WRITE services/pickup-secret-service.js -> pickup_print_tokens (via pickup-exceptional-collection-service)
-- WRITE services/pickup-collection-service.js -> pickup_reveal_codes (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> pickup_reveal_codes (via pickup-collection-recorder)
-- WRITE services/pickup-secret-service.js -> pickup_reveal_codes (via pickup-secret-access-service)
-- WRITE services/pickup-secret-service.js -> pickup_reveal_codes (via pickup-collection-service)
-- WRITE services/pickup-secret-service.js -> pickup_reveal_codes (via pickup-exceptional-collection-service)
-- WRITE services/apply-pricing-updates.js -> price_history (via economic-price-audit-service)
-- WRITE services/sourcing-candidate-actions.js -> product_sku_media (via catalog-promotion)
-- WRITE services/sourcing-workspace.js -> product_sku_media (via sourcing-candidate-actions)
-- WRITE services/order-payment-confirmation.js -> product_skus (via product-admin-service)
-- WRITE services/product-admin-service.js -> product_skus (via product-stock-service)
-- WRITE services/sourcing-candidate-actions.js -> product_skus (via catalog-promotion)
-- WRITE services/sourcing-workspace.js -> product_skus (via sourcing-candidate-actions)
-- WRITE services/operations-workspace.js -> product_variants (via order-status-machine)
-- WRITE services/order-payment-confirmation.js -> product_variants (via product-admin-service)
-- WRITE services/order-status-machine.js -> product_variants (via product-admin-service)
-- WRITE services/parcel-auto-create-service.js -> product_variants (via order-status-machine)
-- WRITE services/parcel-operations.js -> product_variants (via order-status-machine)
-- WRITE services/pickup-collection-recorder.js -> product_variants (via order-status-machine)
-- WRITE services/pickup-collection-service.js -> product_variants (via order-status-machine)
-- WRITE services/pickup-collection-service.js -> product_variants (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> product_variants (via pickup-collection-recorder)
-- WRITE services/pickup-secret-service.js -> product_variants (via pickup-collection-service)
-- WRITE services/pickup-secret-service.js -> product_variants (via pickup-exceptional-collection-service)
-- WRITE services/product-admin-service.js -> product_variants (via product-stock-service)
-- WRITE services/scan-engine.js -> product_variants (via order-status-machine)
-- WRITE services/scan-operations.js -> product_variants (via order-status-machine)
-- WRITE services/sourcing-candidate-actions.js -> product_variants (via catalog-promotion)
-- WRITE services/sourcing-mutations.js -> product_variants (via catalog-product-mutation-service)
-- WRITE services/sourcing-workspace.js -> product_variants (via sourcing-candidate-actions)
-- WRITE utils/parcelSync.js -> product_variants (via order-status-machine)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
@@ -770,32 +806,36 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
 - basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
+- cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - order_comments: 4 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js, services/operations-workspace.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
+- cash_collections: 3 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - order_item_real_cost_allocations: 3 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
 - product_skus: 3 écrivains directs — services/catalog-promotion.js, services/product-sku-service.js, services/product-stock-service.js
+- relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
-- cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
 - cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
 - charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
+- disputes: 2 écrivains directs — routes/admin/delete-order-cascade.js, services/dispute-mutation-service.js
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
 - exchange_rates: 2 écrivains directs — routes/admin-finance-config.js, services/pricing-rates.js
 - incidents: 2 écrivains directs — services/incident-service.js, services/incident-write-service.js
 - inquiries: 2 écrivains directs — services/providers-inquiry-service.js, services/providers-service.js
 - loyalty_rewards: 2 écrivains directs — routes/admin-loyalty.js, services/loyalty-service.js
+- market_delegation_audit: 2 écrivains directs — middleware/require-market-execution-capability.js, services/market-delegation-service.js
 - order_incidents: 2 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
@@ -804,11 +844,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_market_price_draft_events: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
-- recipients: 2 écrivains directs — routes/admin/users.js, services/order-checkout-service.js
-- refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
-- relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
-- revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
-- shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
+- providers: 2 écrivains directs — services/provider-status-mutation-service.js, services/providers-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
@@ -822,14 +858,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Unresolved Code Edges
 
-- uses: (aucun — shadow -> services/providers-service.js ((aucun — shadow)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
-- uses: appel direct scripts/tests dans cette PR) -> services/providers-service.js (appel direct scripts/tests dans cette PR))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
@@ -844,8 +878,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
 - uses: canonical sourcing workspace -> routes/admin-sourcing-workspace.js (canonical sourcing workspace)
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
+- uses: central finance workspace -> routes/admin-market-settlement.js (central finance workspace)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
 - uses: checkout -> routes/otp.js (checkout)
+- uses: CI -> services/capability-registry.js (CI)
 - depends: core/test-whatsapp-notifications.js -> services/authkey-client (services/authkey-client)
 - depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
 - uses: customs -> services/order-mutation-service.js (customs)
@@ -859,7 +895,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
 - uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
-- uses: future pricing coverage gate -> services/pricing-period-structure.js (future pricing coverage gate)
 - uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
@@ -869,11 +904,28 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: logistics -> services/order-mutation-service.js (logistics)
 - uses: magic-link validation -> utils/auth-session.js (magic-link validation)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
+- uses: market autonomy UI -> routes/market-delegation-cash-control.js (market autonomy UI)
+- uses: market operator dashboard -> routes/market-delegation-catalog.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-client-case.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-local-offer.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-performance.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-settlement.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-structure-event.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-team.js (market operator dashboard)
+- uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
+- uses: market-delegation routes -> services/market-delegation-service.js (market-delegation routes)
+- uses: market-delegation-service -> services/capability-registry.js (market-delegation-service)
+- uses: market-delegation -> services/market-scope-admin-service.js (market-delegation)
+- uses: market-scope-projector -> services/market-delegation-service.js (market-scope-projector)
 - depends: middleware/auth-guest.js -> db (db)
 - depends: middleware/auth.js -> db (db)
 - depends: middleware/require-catalog-global-authority.js -> db.js (db.js)
 - depends: middleware/require-dashboard-global-authority.js -> db.js (db.js)
 - depends: middleware/require-decision-signal-global-authority.js -> db.js (db.js)
+- depends: middleware/require-market-delegated-role.js -> db.js (db.js)
+- depends: middleware/require-market-execution-capability.js -> db.js (db.js)
 - depends: middleware/require-market-scope.js -> db.js (db.js)
 - depends: middleware/require-market-scope.js -> markets (M0) (markets (M0))
 - depends: middleware/require-market-scope.js -> operator_market_scopes (M1) (operator_market_scopes (M1))
@@ -926,22 +978,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: release à -> services/local-stock-service.js (release à)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
-- uses: routes/* -> validators/index.js (routes/*)
-- depends: routes/admin-client-360.js -> middleware/auth (middleware/auth)
-- depends: routes/admin-client-360.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
-- depends: routes/admin-client-360.js -> middleware/require-market-scope (middleware/require-market-scope)
-- depends: routes/admin-client-360.js -> services/client-360 (services/client-360)
-- depends: routes/admin-client-index.js -> db (db)
-- depends: routes/admin-client-index.js -> middleware/auth (middleware/auth)
-- depends: routes/admin-client-index.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
-- depends: routes/admin-client-index.js -> middleware/require-market-scope (middleware/require-market-scope)
-- depends: routes/admin-client-index.js -> services/client-index (services/client-index)
-- depends: routes/admin-costing.js -> db.js (db.js)
-- depends: routes/admin-costing.js -> services/* (services/*)
-- depends: routes/admin-customs-categories.js -> db.js (db.js)
-- depends: routes/admin-customs-categories.js -> services/* (services/*)
-- depends: routes/admin-customs-shipments.js -> db.js (db.js)
-- depends: routes/admin-customs-shipments.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

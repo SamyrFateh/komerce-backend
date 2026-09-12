@@ -1,0 +1,218 @@
+/* Market Team — délégation locale sur la surface Autonomie pays */
+
+.kmc-team-section {
+  display: grid;
+  gap: 16px;
+}
+
+.kmc-team-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.kmc-team-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.kmc-team-pill.is-active {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.kmc-team-invite,
+.kmc-team-member,
+.kmc-team-pending {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.kmc-team-invite {
+  background: linear-gradient(180deg, #f8fbff, #fff 120px);
+}
+
+.kmc-team-form-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.kmc-team-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--kmc-line-strong, #cbd5e1);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--kmc-navy, #0f1a2e);
+  font: inherit;
+}
+
+.kmc-team-input:focus {
+  border-color: #2563eb;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / .12);
+}
+
+.kmc-team-capabilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.kmc-team-capability {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px 9px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.kmc-team-capability input {
+  margin-top: 3px;
+}
+
+.kmc-team-capability strong {
+  display: block;
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 12px;
+}
+
+.kmc-team-capability small {
+  display: block;
+  margin-top: 2px;
+  color: var(--kmc-muted, #64748b);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.kmc-team-presets,
+.kmc-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.kmc-team-list {
+  display: grid;
+  gap: 10px;
+}
+
+.kmc-team-member-head,
+.kmc-team-pending-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.kmc-team-member-copy,
+.kmc-team-pending-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.kmc-team-member-copy strong,
+.kmc-team-pending-copy strong {
+  color: var(--kmc-navy, #0f1a2e);
+}
+
+.kmc-team-member-copy small,
+.kmc-team-pending-copy small,
+.kmc-team-help {
+  color: var(--kmc-muted, #64748b);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.kmc-team-member details {
+  border-top: 1px solid var(--kmc-line, #e2e8f0);
+  padding-top: 10px;
+}
+
+.kmc-team-member summary {
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.kmc-team-member-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.kmc-team-invite-result {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.kmc-team-invite-result[hidden] {
+  display: none;
+}
+
+.kmc-team-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.kmc-team-empty {
+  padding: 12px;
+  border: 1px dashed var(--kmc-line-strong, #cbd5e1);
+  border-radius: 12px;
+  color: var(--kmc-muted, #64748b);
+  font-size: 12px;
+}
+
+.kmc-team-invite-page {
+  width: min(620px, calc(100% - 32px));
+  margin: 72px auto;
+  padding: 24px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 55px rgb(15 23 42 / .08);
+}
+
+.kmc-team-invite-page h1 {
+  margin: 6px 0 10px;
+}
+
+@media (max-width: 720px) {
+  .kmc-team-form-row,
+  .kmc-team-link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .kmc-team-member-head,
+  .kmc-team-pending-head {
+    display: grid;
+  }
+}

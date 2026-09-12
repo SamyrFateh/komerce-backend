@@ -360,9 +360,10 @@
     if (period) {
       const periodLine = doc.createElement('div');
       periodLine.className = 'kmc-market-decision-period';
-      periodLine.appendChild(text(doc, 'strong', '', `Fenêtre canonique · ${formatNumber(period.width_days)} jours`));
+      const isCalendar = period.source === 'calendar_month_selection';
+      periodLine.appendChild(text(doc, 'strong', '', isCalendar ? `Mois calendaire · ${formatNumber(period.width_days)} jours` : `Fenêtre canonique · ${formatNumber(period.width_days)} jours`));
       periodLine.appendChild(text(doc, 'span', '', `${formatDateTime(period.from)} → ${formatDateTime(period.to)}`));
-      periodLine.appendChild(text(doc, 'small', '', 'Période dérivée côté serveur depuis la politique active.'));
+      periodLine.appendChild(text(doc, 'small', '', isCalendar ? 'Période bornée sur le mois calendaire sélectionné.' : 'Période dérivée côté serveur depuis la politique active.'));
       slot.appendChild(periodLine);
     }
     appendPolicySummary(doc, slot, policy);

@@ -1,0 +1,63 @@
+/* Decision-first shared controls — small contextual filters without restoring the legacy toolbar. */
+.kmc-decision-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px 10px 14px;
+  background: color-mix(in srgb, var(--kmc-card) 96%, transparent);
+  border: 1px solid var(--kmc-line);
+  border-radius: var(--kmc-radius-md);
+  box-shadow: 0 1px 2px rgb(15 23 42 / .03);
+}
+
+.kmc-decision-toolbar-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.kmc-decision-toolbar-label {
+  color: var(--kmc-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.kmc-decision-toolbar-value {
+  color: var(--kmc-navy);
+  font-size: 13px;
+}
+
+.kmc-decision-toolbar-select {
+  min-width: 132px;
+  min-height: 36px;
+  padding: 7px 32px 7px 10px;
+  color: var(--kmc-navy);
+  background: var(--kmc-card);
+  border: 1px solid var(--kmc-line-strong);
+  border-radius: var(--kmc-radius-sm);
+  font-weight: 700;
+  outline: none;
+}
+
+.kmc-decision-toolbar-select:hover,
+.kmc-decision-toolbar-select:focus-visible {
+  border-color: var(--kmc-navy);
+}
+
+.kmc-decision-toolbar-select:focus-visible {
+  box-shadow: 0 0 0 3px rgb(15 26 46 / .1);
+}
+
+@media (max-width: 560px) {
+  .kmc-decision-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .kmc-decision-toolbar-select {
+    width: 100%;
+  }
+}

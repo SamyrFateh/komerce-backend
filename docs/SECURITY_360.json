@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-07T22:38:54.751Z",
+  "generatedAt": "2026-09-11T13:05:18.646Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 585,
-    "protected": 532,
-    "public": 53,
+    "total": 629,
+    "protected": 575,
+    "public": 54,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -148,6 +148,12 @@
       "kind": "APPLICATION_GUARD",
       "evidence": "routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js",
       "rationale": "Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique."
+    },
+    {
+      "key": "POST /api/payments/mobile-money/webhook/{provider}",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/payments-mobile-money.js; services/mobile-money/kartapay-km.js; tests/unit/kartapay-webhook.test.js; features/payments.feature.js",
+      "rationale": "Webhook gateway public au niveau transport mais authentifié par HMAC-SHA256 KartaPay, rapproché à la tentative locale puis relu par API provider authentifiée avant toute confirmation canonique."
     },
     {
       "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
@@ -718,7 +724,8 @@
         "market_operator",
         "agent_hub",
         "agent_relais",
-        "agent_transitaire"
+        "agent_transitaire",
+        "finance"
       ]
     },
     {
@@ -1023,6 +1030,30 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-settlements/markets/{marketCode}/settlements",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/settlements/{settlementId}/paid",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
       ]
     },
     {
@@ -1618,7 +1649,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1627,7 +1659,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1636,7 +1669,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1645,7 +1679,8 @@
       "roles": [
         "admin",
         "finance",
-        "agent_relais"
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
@@ -1744,9 +1779,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1754,9 +1787,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1764,9 +1795,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1774,9 +1803,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1784,9 +1811,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1794,9 +1819,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_relais"
       ]
     },
     {
@@ -1804,9 +1827,7 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
+        "agent_hub"
       ]
     },
     {
@@ -1864,7 +1885,23 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/charges",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/commercial-prices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -1920,6 +1957,22 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activate",
       "level": "PROTECTED",
       "roles": [
@@ -1953,6 +2006,22 @@
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/simulate-impact",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2004,6 +2073,22 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/structure-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/pricing",
       "level": "PROTECTED",
       "roles": [
@@ -2016,7 +2101,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2025,7 +2111,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2034,7 +2121,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2043,7 +2131,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2052,7 +2141,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2061,7 +2151,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2070,7 +2161,8 @@
       "roles": [
         "admin",
         "agent_hub",
-        "agent_transitaire"
+        "agent_transitaire",
+        "market_operator"
       ]
     },
     {
@@ -2991,6 +3083,166 @@
       ]
     },
     {
+      "key": "GET /api/market-delegation/markets/{marketCode}/cash-control-policy",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/cash-control-policy",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/client-cases/disputes",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/local-offer/physical-offers/{physicalOfferId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/local-offer/physical-offers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/local-offer/services/{serviceId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/local-offer/services",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/activate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/suspend",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/network/providers/{providerId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/network/providers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/providers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/activate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/suspend",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/network/relais",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/relais",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/performance",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/receive",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/request",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/settlements",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/structure-events",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/market-delegation/markets/{marketCode}/team/{membershipId}/capabilities",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/market-delegation/markets/{marketCode}/team/{membershipId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/market-delegation/markets/{marketCode}/team/invitations/{invitationId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/team/invitations",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/team",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/team/invitations/{token}/accept",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "GET /api/modules/{type}",
       "level": "PUBLIC",
       "roles": []
@@ -3288,6 +3540,11 @@
     {
       "key": "GET /api/payments/mobile-money/transactions/{transactionId}",
       "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/mobile-money/webhook/{provider}",
+      "level": "PUBLIC",
       "roles": []
     },
     {

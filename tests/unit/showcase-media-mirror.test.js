@@ -7,6 +7,7 @@
  */
 
 const {
+  IMAGEKIT_MAX_ATTEMPTS,
   parseArgs,
   isWikimediaMediaUrl,
   mediaFilename,
@@ -15,16 +16,25 @@ const {
   downloadWikimediaMedia,
   imageKitAuthHeader,
   imageKitFileName,
+  isRetryableImageKitStatus,
+  uploadImageKitFile,
 } = require('../../scripts/showcase-media-mirror');
 
 describe('showcase-media-mirror', () => {
-  test('vise 500 produits et Cloudinary par défaut, provider surchargeable', () => {
-    expect(parseArgs([]).target).toBe(500);
-    expect(parseArgs([]).mediaProvider).toBe('cloudinary');
-    expect(parseArgs(['--target', '750', '--media-provider', 'imagekit'])).toMatchObject({
-      target: 750,
-      mediaProvider: 'imagekit',
-    });
+  test('vise 500 produits et ImageKit par défaut, Cloudinary reste surcharge explicite', () => {
+    const previous = process.env.SHOWCASE_MEDIA_PROVIDER;
+    delete process.env.SHOWCASE_MEDIA_PROVIDER;
+    try {
+      expect(parseArgs([]).target).toBe(500);
+      expect(parseArgs([]).mediaProvider).toBe('imagekit');
+      expect(parseArgs(['--target', '750', '--media-provider', 'cloudinary'])).toMatchObject({
+        target: 750,
+        mediaProvider: 'cloudinary',
+      });
+    } finally {
+      if (previous === undefined) delete process.env.SHOWCASE_MEDIA_PROVIDER;
+      else process.env.SHOWCASE_MEDIA_PROVIDER = previous;
+    }
   });
 
   test('identifie uniquement les médias Wikimedia à bufferiser localement', () => {
@@ -58,6 +68,63 @@ describe('showcase-media-mirror', () => {
     expect(retryAfterMs('3', 0, 1000)).toBe(3000);
     expect(retryAfterMs(null, 0, 1000)).toBe(1000);
     expect(retryAfterMs(null, 8, 1000)).toBe(30000);
+  });
+
+  test('classe 429 et 5xx ImageKit comme transitoires, pas les erreurs 4xx permanentes', () => {
+    expect(IMAGEKIT_MAX_ATTEMPTS).toBe(4);
+    expect(isRetryableImageKitStatus(429)).toBe(true);
+    expect(isRetryableImageKitStatus(500)).toBe(true);
+    expect(isRetryableImageKitStatus(503)).toBe(true);
+    expect(isRetryableImageKitStatus(400)).toBe(false);
+    expect(isRetryableImageKitStatus(401)).toBe(false);
+  });
+
+  test('retente un 500 ImageKit puis réussit sans abandonner le média', async () => {
+    const previous = process.env.IMAGEKIT_PRIVATE_KEY;
+    process.env.IMAGEKIT_PRIVATE_KEY = 'private_test';
+    const headers = { get: () => null };
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 500, headers, json: async () => ({ message: 'rare transient failure' }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers, json: async () => ({ url: 'https://ik.imagekit.io/demo/hero.jpg' }) });
+    const sleepImpl = jest.fn(async () => {});
+    try {
+      const result = await uploadImageKitFile(
+        new Blob([new Uint8Array(128)], { type: 'image/jpeg' }),
+        { folder: 'komerce/staging/showcase-v2/kpr-990040', publicId: 'hero', filename: 'source.jpg' },
+        { fetchImpl, sleepImpl, nowImpl: () => 1000, maxAttempts: 2 },
+      );
+      expect(result).toBe('https://ik.imagekit.io/demo/hero.jpg');
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(sleepImpl).toHaveBeenCalledWith(1000);
+    } finally {
+      if (previous === undefined) delete process.env.IMAGEKIT_PRIVATE_KEY;
+      else process.env.IMAGEKIT_PRIVATE_KEY = previous;
+    }
+  });
+
+  test('ne retente pas une erreur ImageKit 400 permanente', async () => {
+    const previous = process.env.IMAGEKIT_PRIVATE_KEY;
+    process.env.IMAGEKIT_PRIVATE_KEY = 'private_test';
+    const headers = { get: () => null };
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      headers,
+      json: async () => ({ message: 'invalid file' }),
+    });
+    const sleepImpl = jest.fn(async () => {});
+    try {
+      await expect(uploadImageKitFile(
+        'https://example.test/bad.jpg',
+        { folder: 'komerce/staging/showcase-v2/kpr-990040', publicId: 'hero', filename: 'bad.jpg' },
+        { fetchImpl, sleepImpl, maxAttempts: 4 },
+      )).rejects.toThrow(/ImageKit upload failed \(400\)/);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      expect(sleepImpl).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.IMAGEKIT_PRIVATE_KEY;
+      else process.env.IMAGEKIT_PRIVATE_KEY = previous;
+    }
   });
 
   test('retente un 429 Wikimedia puis renvoie un Blob image avec User-Agent identifié', async () => {

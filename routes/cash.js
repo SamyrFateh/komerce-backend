@@ -102,6 +102,23 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       await client.query('ROLLBACK');
       return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\'encaisser' });
     }
+    if (result.pending_second_approval) {
+      await client.query('COMMIT');
+      return res.status(result.control_status || 202).json({
+        success: false,
+        pending_second_approval: true,
+        code: result.control_code,
+        message: result.control_message,
+        required_approvals: result.required_approvals || 2,
+      });
+    }
+    if (result.cash_control_blocked) {
+      await client.query('ROLLBACK');
+      return res.status(result.control_status || 409).json({
+        error: result.control_message || 'Encaissement bloqué par la politique cash.',
+        code: result.control_code || 'CASH_CONTROL_BLOCKED',
+      });
+    }
     if (result.already_collected) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Cash déjà déclaré pour cette commande', collection_id: result.collection_id });
@@ -155,6 +172,7 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       message: `Cash confirmé : ${result.amount_kmf.toLocaleString('fr-FR')} KMF`,
       collection: result.collection,
       payment_cycle: { noop: result.noop },
+      cash_control: result.cash_control || { required_approvals: 1, second_approval: false },
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
