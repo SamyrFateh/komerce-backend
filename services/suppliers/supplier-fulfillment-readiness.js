@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_sku.id, quantity, destination
  * @outputs       supplier_fulfillment_verdict
- * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/aliexpress-fulfillment-adapter.js
+ * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/aliexpress-fulfillment-adapter.js
  * @used-by       internal purchasing callers
  * @db-read       product_skus
  * @db-write      none
@@ -17,6 +17,7 @@
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
+const adapterContract = require('./supplier-fulfillment-adapter-contract');
 const aliexpressAdapter = require('./aliexpress-fulfillment-adapter');
 
 const VERDICT = Object.freeze({
@@ -83,14 +84,42 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
     return result(VERDICT.BLOCKED_IDENTITY, { product_sku_id: row.id }, String(error.message || error));
   }
 
-  const adapter = adapters[identity.provider];
-  if (!adapter || typeof adapter.evaluate !== 'function') {
-    return result(VERDICT.SUPPLIER_UNAVAILABLE, { product_sku_id: row.id, provider: identity.provider }, `Aucun adapter fulfillment pour ${identity.provider}`);
+  const adapterCheck = adapterContract.validateAdapter(identity.provider, adapters[identity.provider]);
+  if (!adapterCheck.ok) {
+    return result(
+      VERDICT.SUPPLIER_UNAVAILABLE,
+      { product_sku_id: row.id, provider: identity.provider },
+      adapterCheck.reason
+    );
   }
 
-  const verdict = await adapter.evaluate({ db, row, identity, quantity, destination, context, VERDICT, result });
-  if (!verdict || typeof verdict.status !== 'string' || typeof verdict.ready !== 'boolean') {
-    return result(VERDICT.PREFLIGHT_FAILED, { product_sku_id: row.id, provider: identity.provider }, 'Adapter fulfillment invalide');
+  let verdict;
+  try {
+    verdict = await adapterCheck.adapter.evaluate({
+      db,
+      row,
+      identity,
+      quantity,
+      destination,
+      context,
+      VERDICT,
+      result,
+    });
+  } catch (error) {
+    return result(
+      VERDICT.PREFLIGHT_FAILED,
+      { product_sku_id: row.id, provider: identity.provider },
+      `Adapter fulfillment ${identity.provider} a levé une erreur non normalisée: ${String(error.message || error)}`
+    );
+  }
+
+  const verdictCheck = adapterContract.validateVerdict(verdict, VERDICT);
+  if (!verdictCheck.ok) {
+    return result(
+      VERDICT.PREFLIGHT_FAILED,
+      { product_sku_id: row.id, provider: identity.provider },
+      verdictCheck.reason
+    );
   }
   return verdict;
 }
