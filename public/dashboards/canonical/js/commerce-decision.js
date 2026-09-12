@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, decision_first_dashboard_visuals, server_decision_signal_authority
- * @impact-areas  admin-dashboard, commerce, economic-engine
+ * @impact-areas  admin-dashboard, commerce, economic-engine, local-stock
  * @version       2026-09
  */
 'use strict';
@@ -69,6 +69,10 @@
     if (destination.kind === 'pricing_workspace') {
       const suffix = destination.market_code ? `?market=${encodeURIComponent(destination.market_code)}` : '';
       return { href: `/admin/workspaces/pricing${suffix}`, actionLabel: 'Ouvrir l’Atelier →' };
+    }
+    if (destination.kind === 'market_catalog') {
+      const suffix = destination.market_code ? `?market=${encodeURIComponent(destination.market_code)}` : '';
+      return { href: `/dashboards/canonical/market-catalog.html${suffix}`, actionLabel: 'Voir le Catalogue pays →' };
     }
     if (destination.kind === 'commerce_funnel') return { href: '#commerce-funnel', actionLabel: 'Voir le funnel →' };
     if (destination.kind === 'commerce_profitability') return { href: '#commerce-profitability', actionLabel: 'Voir la rentabilité →' };

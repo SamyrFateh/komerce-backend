@@ -36,7 +36,20 @@ function payloadFixture() {
         purchase_cost_gap_to_safe_ceiling_kmf: -2000,
       },
     ],
+    product_availability: [
+      {
+        product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
+        state: 'LOCAL_EXPOSED_UNAVAILABLE', commercial_exposure: 'ENABLED', authority: 'LOCAL_STOCK',
+      },
+    ],
     decision_signals: [
+      {
+        key: 'best-seller-local-unavailable:PRD-1', kind: 'best_seller_local_unavailable', severity: 'warning',
+        label: 'Best-seller sans disponibilité immédiate',
+        helper: 'Téléphone · stock local exposé sans unité immédiatement disponible ; l’import peut rester disponible.',
+        value: 'Téléphone', product_ref: 'PRD-1', source: 'local_stock_service',
+        destination: { kind: 'market_catalog', market_code: 'CM', product_ref: 'PRD-1' },
+      },
       {
         key: 'sku-viability:PRD-1', kind: 'sku_viable_under_conditions', severity: 'warning',
         label: 'SKU à renégocier / repositionner', helper: 'Téléphone · La cible marché exige une meilleure condition de sourcing.',
@@ -139,16 +152,23 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(sources['commerce.product-profitability'][0]['marge-reelle']).toBe('—');
   });
 
-  test('la couche decision-first consomme la priorité serveur et ouvre l’Atelier sans recalculer la viabilité', () => {
+  test('la couche decision-first consomme la priorité serveur avec CTA Catalogue pays et Atelier', () => {
     const payload = payloadFixture();
     const decisions = commerceDecision.decisionItems(payload, commerce);
 
     expect(decisions.map(item => item.label)).toEqual([
+      'Best-seller sans disponibilité immédiate',
       'SKU à renégocier / repositionner',
       'Commandes perdues',
       'Costing incomplet',
     ]);
     expect(decisions[0]).toMatchObject({
+      tone: 'warning',
+      value: 'Téléphone',
+      href: '/dashboards/canonical/market-catalog.html?market=CM',
+      actionLabel: 'Voir le Catalogue pays →',
+    });
+    expect(decisions[1]).toMatchObject({
       tone: 'warning',
       value: 'Téléphone',
       href: '/admin/workspaces/pricing?market=CM',

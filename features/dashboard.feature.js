@@ -200,7 +200,8 @@ module.exports = {
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'payments (lecture paiements)',
       'logistics (lecture colis)',
-      'inventory (lecture stock)',
+      'inventory (lecture stock hub/transit)',
+      'local-stock (lecture de disponibilité physique market-scoped via local-stock-service ; jamais products.stock)',
       'economic-engine (métriques financières)',
       'wallet (soldes et crédits)',
       'auth',
@@ -212,7 +213,7 @@ module.exports = {
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
-      'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
+      'decision-signals (services/radar-queries.js — routes/admin-radar.js ; Commerce réutilise son vocabulaire de projection sans persistance market implicite)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
       'market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)',
     ],
