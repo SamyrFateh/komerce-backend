@@ -170,7 +170,7 @@ describe('home-controller', () => {
       ]);
       state.activeSubcat = 'chaussures';
       state.products = [
-        { id: 'p-photo', product_ref: 'PHOTO-001', category: 'mode', subcategory: 'chaussures', image_url: 'https://cdn.example.test/chaussure.webp', sort_order: 1 },
+        { id: 'p-photo', product_ref: 'PHOTO-001', category: 'mode', subcategory: 'chaussures', image_url: 'https://cdn.example.test/chaussure.webp', sort_order: 1, is_shelf_curated: true },
       ];
 
       renderSubcatRail('mode', { count: 42 });

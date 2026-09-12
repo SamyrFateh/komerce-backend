@@ -26,6 +26,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const ORDER_ID = '00000000-0000-0000-0000-0000000000c1';
 const PRODUCT_ID = '00000000-0000-0000-0000-0000000000b1';
 const RELAIS_ID = '00000000-0000-0000-0000-0000000000a1';
+const MARKET_ID = '00000000-0000-0000-0000-0000000000e1';
 const HUB_USER_ID = '00000000-0000-0000-0000-000000000002';
 
 jest.setTimeout(30000);
@@ -59,16 +60,23 @@ async function resetOrderState() {
     VALUES ('${PRODUCT_ID}', 'Produit Test TXG', 10000)
     ON CONFLICT (id) DO NOTHING;
   `);
+  // market_id est désormais NOT NULL sur relais/orders (doctrine market-scoping) —
+  // fixture dédiée TXG-05 pour ne pas dépendre d'un marché de seed externe.
   await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address)
-    VALUES ('${RELAIS_ID}', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni')
+    INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
+    VALUES ('${MARKET_ID}', 'TX5', 'TXG-05 Test Market', 'KMF', 0, TRUE)
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`
-    INSERT INTO orders (id, reference, relais_id, total_kmf, payment_mode, status)
-    VALUES ($1, 'KOM-TEST-TXG05', $2, 10000, 'cash_relais', 'preparation')
+    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+    VALUES ('${RELAIS_ID}', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', '${MARKET_ID}')
+    ON CONFLICT (id) DO NOTHING;
+  `);
+  await pool.query(`
+    INSERT INTO orders (id, reference, market_id, relais_id, total_kmf, payment_mode, status)
+    VALUES ($1, 'KOM-TEST-TXG05', $3, $2, 10000, 'cash_relais', 'preparation')
     ON CONFLICT (id) DO UPDATE SET status = 'preparation'
-  `, [ORDER_ID, RELAIS_ID]);
+  `, [ORDER_ID, RELAIS_ID, MARKET_ID]);
   await pool.query(`
     INSERT INTO order_items (id, order_id, product_id, price_kmf, quantity)
     VALUES ('00000000-0000-0000-0000-0000000000d1', $1, $2, 10000, 1)

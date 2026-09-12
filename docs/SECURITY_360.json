@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-12T08:17:14.826Z",
+  "generatedAt": "2026-09-12T18:03:17.114Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 633,
-    "protected": 578,
+    "total": 637,
+    "protected": 582,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -309,24 +309,59 @@
       ]
     },
     {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/action-center/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
       "key": "POST /api/admin/action-center/signals/{signalRef}/acknowledge",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "POST /api/admin/action-center/signals/{signalRef}/resolve",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "POST /api/admin/action-center/signals/{signalRef}/snooze",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {

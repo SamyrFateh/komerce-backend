@@ -28,30 +28,48 @@ const LOCATION = 'KM_MAIN';
 const FLAG = 'DISCOVERY_CJ_LOCAL_REPAIR_ENABLED';
 const SUPPLIER = 'CJdropshipping';
 const GOLDEN_PRODUCT_ID = 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001';
-const TARGET_CJ_LOCAL = 12;
-const TARGET_CANDIDATES = 18;
+const TARGET_CJ_LOCAL = 24;
+const TARGET_CANDIDATES = 30;
 
-// Deux représentants CJ réels par grand univers public. Le rail local reste
-// une sélection éditoriale bornée, pas un miroir intégral des 63 produits.
+// Quatre représentants CJ réels par grand univers public (Local Quality V2 :
+// 2 produits/univers laissait le rail desktop visuellement pauvre). Le rail
+// local reste une sélection éditoriale bornée, pas un miroir intégral des 63
+// produits — chaque univers pioche dans les familles déjà seedées par
+// cj-real-showcase-seed.js qui correspondent à ses sous-catégories réelles
+// (voir SUBCATEGORY_VISUALS dans public/boutique/js/render/category-shelf-visuals.js).
+// Là où l'univers n'a que 3 familles distinctes, un second slot d'une famille
+// existante complète le 4e représentant plutôt que d'inventer une famille.
 const CJ_LOCAL_PRODUCTS = Object.freeze([
-  // Mode & Beauté
+  // Mode & Beauté — women, beauty, men, kids
   Object.freeze({ family: 'women',     sortOrder: slotSortOrder(0, 0),  qtyPhysical: 18 }),
   Object.freeze({ family: 'beauty',    sortOrder: slotSortOrder(3, 0),  qtyPhysical: 16 }),
-  // Maison
+  Object.freeze({ family: 'men',       sortOrder: slotSortOrder(1, 0),  qtyPhysical: 15 }),
+  Object.freeze({ family: 'kids',      sortOrder: slotSortOrder(2, 0),  qtyPhysical: 14 }),
+  // Maison — comfort, kitchen, decor, kids-home
   Object.freeze({ family: 'comfort',   sortOrder: slotSortOrder(4, 0),  qtyPhysical: 14 }),
   Object.freeze({ family: 'kitchen',   sortOrder: slotSortOrder(5, 0),  qtyPhysical: 13 }),
-  // Tech
+  Object.freeze({ family: 'decor',     sortOrder: slotSortOrder(6, 0),  qtyPhysical: 12 }),
+  Object.freeze({ family: 'kids-home', sortOrder: slotSortOrder(7, 0),  qtyPhysical: 11 }),
+  // Tech — phones, audio, watches + 2e slot audio (pas de 4e famille tech dédiée)
   Object.freeze({ family: 'phones',    sortOrder: slotSortOrder(8, 0),  qtyPhysical: 12 }),
   Object.freeze({ family: 'audio',     sortOrder: slotSortOrder(9, 0),  qtyPhysical: 11 }),
-  // Bricolage
+  Object.freeze({ family: 'watches',   sortOrder: slotSortOrder(10, 0), qtyPhysical: 10 }),
+  Object.freeze({ family: 'audio',     sortOrder: slotSortOrder(9, 1),  qtyPhysical: 10 }),
+  // Bricolage — tools, electric, security + 2e slot tools
   Object.freeze({ family: 'tools',     sortOrder: slotSortOrder(11, 0), qtyPhysical: 10 }),
   Object.freeze({ family: 'electric',  sortOrder: slotSortOrder(12, 0), qtyPhysical: 9 }),
-  // Créations personnelles
+  Object.freeze({ family: 'security',  sortOrder: slotSortOrder(13, 0), qtyPhysical: 9 }),
+  Object.freeze({ family: 'tools',     sortOrder: slotSortOrder(11, 1), qtyPhysical: 9 }),
+  // Créations personnelles — ceremony, gift, printing + 2e slot gift
   Object.freeze({ family: 'ceremony',  sortOrder: slotSortOrder(14, 0), qtyPhysical: 9 }),
   Object.freeze({ family: 'gift',      sortOrder: slotSortOrder(15, 0), qtyPhysical: 8 }),
-  // Auto
+  Object.freeze({ family: 'printing',  sortOrder: slotSortOrder(16, 0), qtyPhysical: 8 }),
+  Object.freeze({ family: 'gift',      sortOrder: slotSortOrder(15, 1), qtyPhysical: 8 }),
+  // Auto — filters, car-light, brakes, moto
   Object.freeze({ family: 'filters',   sortOrder: slotSortOrder(17, 0), qtyPhysical: 8 }),
   Object.freeze({ family: 'car-light', sortOrder: slotSortOrder(19, 0), qtyPhysical: 7 }),
+  Object.freeze({ family: 'brakes',    sortOrder: slotSortOrder(18, 0), qtyPhysical: 7 }),
+  Object.freeze({ family: 'moto',      sortOrder: slotSortOrder(20, 0), qtyPhysical: 7 }),
 ]);
 
 const PHYSICAL_OFFERS = Object.freeze({
@@ -130,28 +148,23 @@ function buildCandidates(products) {
   const golden = `product:${GOLDEN_PRODUCT_ID}`;
   return [
     golden,
-    // Mode & Beauté — 2 produits
-    p[0],
-    p[1],
-    // Maison — 2 produits + 2 capacités locales partagées
-    p[2],
-    p[3],
-    // Tech — 2 produits ; le climatiseur et l'électricité complètent la catégorie
-    p[4],
-    p[5],
+    // Mode & Beauté — 4 produits (women, beauty, men, kids)
+    p[0], p[1], p[2], p[3],
+    // Maison — 4 produits (comfort, kitchen, decor, kids-home) + 2 capacités locales partagées
+    p[4], p[5], p[6], p[7],
+    // Tech — 4 produits (phones, audio, watches, audio#2) ; le climatiseur et
+    // l'électricité complètent la catégorie
+    p[8], p[9], p[10], p[11],
     `service:${SERVICES.CLIMATISEUR}@Maison|Tech`,
-    // Bricolage — 2 produits + offre matière + service électrique
-    p[6],
-    p[7],
+    // Bricolage — 4 produits (tools, electric, security, tools#2) + offre matière + service électrique
+    p[12], p[13], p[14], p[15],
     `physical_offer:${PHYSICAL_OFFERS.CIMENT}@Bricolage`,
     `service:${SERVICES.ELECTRICITE}@Bricolage|Tech`,
-    // Créations personnelles — 2 produits + offre réception
-    p[8],
-    p[9],
+    // Créations personnelles — 4 produits (ceremony, gift, printing, gift#2) + offre réception
+    p[16], p[17], p[18], p[19],
     `physical_offer:${PHYSICAL_OFFERS.PLATEAU_RECEPTION}@Maison|Créations personnelles`,
-    // Auto — 2 produits + mécanique locale
-    p[10],
-    p[11],
+    // Auto — 4 produits (filters, car-light, brakes, moto) + mécanique locale
+    p[20], p[21], p[22], p[23],
     `service:${SERVICES.MECANIQUE}@Auto`,
   ].filter(Boolean);
 }

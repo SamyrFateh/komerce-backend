@@ -170,8 +170,11 @@ describe('route boundary invariants', () => {
   test('Hub dashboard keeps physical mutations out of market_operator', () => {
     const source = read('routes/hub-dashboard.js');
     expect(source).toContain("const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])]");
-    expect(source).toContain("const hubRead      = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator'])");
-    expect(source).toContain("const hubSupervise = [authenticate, requireRole(['admin', 'agent_hub', 'market_operator'])");
+    // GAP-1 (2026-09) : attachMarketDelegatedRoleFor précède désormais
+    // requireRole sur hubRead/hubSupervise (projection de rôle délégué
+    // marché) — la portée admin/agent_hub/market_operator reste inchangée.
+    expect(source).toContain("const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator'])");
+    expect(source).toContain("const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator'])");
   });
 
   test('Relais and Partners consume the central scope-role resolver', () => {

@@ -44,12 +44,17 @@ describe('TEST-1B transactional flows', () => {
       tracking_phone: '+269000000',
       tracking_phone_secondary: null,
       relais_id: 'relais-1',
+      market_id: 'market-1',
     };
 
     const client = makeClient([
       { rows: [order] },
       { rows: [{ relais_id: 'relais-1' }] },
-      { rows: [], rowCount: 1 },
+      { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy (aucune assignment -> policy par défaut)
+      { rows: [] }, // prepareCashConfirmation: getControlForUpdate (pas de contrôle existant)
+      { rows: [{ id: 'control-1', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
+      { rows: [], rowCount: 1 }, // INSERT INTO cash_collections
+      { rows: [{ id: 'control-1', state: 'CONFIRMED' }] }, // finalizeCashConfirmation: UPDATE cash_confirmation_controls
     ]);
     mockDb.connect.mockResolvedValue(client);
     mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
@@ -91,11 +96,15 @@ describe('TEST-1B transactional flows', () => {
       tracking_phone: null,
       tracking_phone_secondary: null,
       relais_id: 'relais-1',
+      market_id: 'market-1',
     };
 
     const client = makeClient([
       { rows: [order] },
       { rows: [{ relais_id: 'relais-1' }] },
+      { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy
+      { rows: [] }, // prepareCashConfirmation: getControlForUpdate
+      { rows: [{ id: 'control-2', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
     ]);
     mockDb.connect.mockResolvedValue(client);
     mockConfirmPaymentCycle.mockResolvedValue({
