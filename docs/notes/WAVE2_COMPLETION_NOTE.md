@@ -1,0 +1,1 @@
+Wave 2 remains the same sourcing wave. The completion worker only adds new distinct supplier product IDs through the canonical importer until the clean count reaches 500. It does not promote or expose products.
