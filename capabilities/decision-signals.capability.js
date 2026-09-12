@@ -60,7 +60,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/153_action_center_signal_authority.sql',
-      'migrations/218_decision_signals_market_scope.sql',
+      'migrations/219_decision_signals_market_scope.sql',
     ],
     tests: [
       'tests/unit/radar-queries.test.js',
