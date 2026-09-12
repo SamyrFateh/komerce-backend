@@ -76,7 +76,15 @@ jest.mock('pg', () => {
     }
   }
 
-  return { Pool: FakePool };
+  return {
+    Pool: FakePool,
+    // db.js enregistre un parseur NUMERIC (OID 1700) au chargement du module
+    // — voir le FIX 2026-09 dans db.js. Le vrai module `pg` expose toujours
+    // `types.setTypeParser` ; ce mock doit refléter cette forme, sinon
+    // require('../../db') lève au chargement pour CE test-ci seulement, sans
+    // rapport avec ce que le test vérifie (cycle de vie pool/client).
+    types: { setTypeParser: jest.fn() },
+  };
 });
 
 jest.mock('../../utils/logger', () => ({
