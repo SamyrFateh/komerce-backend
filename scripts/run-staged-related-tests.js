@@ -176,7 +176,10 @@ function fallbackTests(workspace, sourceFiles, tracked) {
 }
 
 function directStagedTests(workspace, files) {
-  return files.filter(workspace.isUnitTest).map(file => path.resolve(ROOT, file));
+  return files
+    .filter(workspace.isUnitTest)
+    .map(file => path.resolve(ROOT, file))
+    .filter(file => fs.existsSync(file));
 }
 
 function runWorkspace(workspace, files, tracked) {
