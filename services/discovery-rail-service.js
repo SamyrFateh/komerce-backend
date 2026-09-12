@@ -44,10 +44,11 @@ const { composeDiscoveryRail } = require('./discovery-rail-composer');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED_KINDS = new Set(['product', 'physical_offer', 'service']);
-// 18 reste un pool éditorial borné : mobile en sélectionne 4, desktop filtre
-// ensuite par catégorie. Ce plafond permet 2 produits par grand univers +
-// quelques services/offres partagés sans transformer Discovery en catalogue bis.
-const MAX_EDITORIAL_CANDIDATES = 18;
+// 30 reste un pool éditorial borné : mobile en sélectionne 4, desktop filtre
+// ensuite par catégorie. Ce plafond permet 4 produits par grand univers
+// (Local Quality V2 — desktop rempli proprement) + quelques services/offres
+// partagés, sans transformer Discovery en catalogue bis.
+const MAX_EDITORIAL_CANDIDATES = 30;
 
 function isEnabled() {
   const raw = String(process.env.DISCOVERY_RAIL_ENABLED || '').trim().toLowerCase();
