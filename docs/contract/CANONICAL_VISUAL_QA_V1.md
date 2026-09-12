@@ -39,7 +39,7 @@ Le QA vérifie simultanément :
 | Commerce / Commandes | `/admin/commerce` | admin / market_operator | décision + KPI + funnel | Order 360 / Client 360 | READY |
 | Atelier économique | `/admin/workspaces/pricing` | admin / market_operator | état économique + frontières + couverture | simulation / mutation pricing | READY |
 | Catalogue global | `/admin/workspaces/catalog` | admin | curation + relecture + cap | Product 360 / validation | READY |
-| Catalogue pays | `/dashboards/canonical/market-catalog.html` | market_operator | exposition actuelle | exposer / masquer | **PARTIAL** |
+| Catalogue pays | `/dashboards/canonical/market-catalog.html` | market_operator | couverture, exposition, décisions manquantes, relectures | exposer / confirmer masqué | **READY** |
 | Marchés admin | `/dashboards/canonical/access.html` | admin | scopes / managers / gaps | provisioning | READY |
 | Autonomie pays | `/dashboards/canonical/market-autonomy.html` | market_operator | état du Market ID | équipe / cash / décisions locales | READY |
 | Opérations overview | `/admin/operations` | admin / market_operator | incidents + flux | workspaces opérationnels | READY |
@@ -73,13 +73,20 @@ Aucun seuil nouveau n'est calculé côté navigateur.
 
 **Correction :** le freeze masque ce contrôle redondant lorsque le sélecteur N1 est présent. Le contrôle interne reste dans le DOM comme relais technique de navigation, mais l'utilisateur ne voit qu'une seule autorité de contexte.
 
-### QA-003 — Catalogue pays reste trop « configuration »
+### QA-003 — Catalogue pays trop « configuration »
 
-**Constat :** le payload actuel expose uniquement les décisions d'exposition déjà créées. Les produits sans ligne sont implicitement `DISABLED` mais ne sont pas listés par `listExposureForMarket`. On ne peut donc pas afficher honnêtement « produits à publier », « couverture du catalogue global », « prix local manquant » ou « médias manquants » à partir de ce payload.
+**Constat initial :** l'ancien read-model ne listait que les produits possédant déjà une ligne `product_market_exposure`. Les produits sans décision étaient bien `DISABLED` par doctrine fail-closed, mais invisibles pour le Responsable pays.
 
-**Statut :** `BACKEND_GAP / READ-MODEL GAP`.
+**Correction :** le read-model serveur projette désormais **tous les produits actifs du catalogue global** par `LEFT JOIN` sur `product_market_exposure` :
+- absence de ligne → `DISABLED` ;
+- `decision_recorded=false` distingue le défaut fail-closed d'un masquage explicitement décidé ;
+- le serveur fournit `catalog_products`, `exposed_products`, `hidden_products`, `undecided_products`, `explicit_hidden_products`, `exposed_needs_review` et `exposure_pct` ;
+- le navigateur ne reconstruit pas ces KPI ;
+- un produit sans décision peut être **Exposé** ou **Garder masqué**, ce qui enregistre enfin une décision explicite du marché.
 
-**Décision :** ne pas fabriquer ces KPI côté navigateur. Le prochain lot Catalogue pays doit enrichir le read-model serveur avant de compléter le mock.
+**Statut :** `FIXED`.
+
+Les notions non prouvées restent volontairement absentes : prix local manquant, médias manquants, traduction incomplète ou objectif arbitraire d'exposition.
 
 ### QA-004 — liens « Retour Dashboard » redondants et parfois non autorisés
 

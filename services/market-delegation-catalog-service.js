@@ -41,6 +41,32 @@ async function listExposure(executor, { marketId }) {
   return exposureService.listExposureForMarket(marketId, requireExecutor(executor));
 }
 
+function summarizeExposure(rows) {
+  const exposure = Array.isArray(rows) ? rows : [];
+  const catalogProducts = exposure.length;
+  const exposedProducts = exposure.filter(row => row && row.commercial_exposure === exposureService.EXPOSURE.ENABLED).length;
+  const hiddenProducts = Math.max(0, catalogProducts - exposedProducts);
+  const undecidedProducts = exposure.filter(row => row && row.decision_recorded !== true).length;
+  const decidedProducts = Math.max(0, catalogProducts - undecidedProducts);
+  const explicitHiddenProducts = exposure.filter(row => row
+    && row.decision_recorded === true
+    && row.commercial_exposure === exposureService.EXPOSURE.DISABLED).length;
+  const exposedNeedsReview = exposure.filter(row => row
+    && row.commercial_exposure === exposureService.EXPOSURE.ENABLED
+    && row.needs_review === true).length;
+
+  return Object.freeze({
+    catalog_products: catalogProducts,
+    exposed_products: exposedProducts,
+    hidden_products: hiddenProducts,
+    decided_products: decidedProducts,
+    undecided_products: undecidedProducts,
+    explicit_hidden_products: explicitHiddenProducts,
+    exposed_needs_review: exposedNeedsReview,
+    exposure_pct: catalogProducts > 0 ? Math.round((exposedProducts / catalogProducts) * 100) : null,
+  });
+}
+
 async function setExposure(executor, { marketCode, actorUserId, correlationId = null, productId, exposure }) {
   const db = requireExecutor(executor);
   const authz = await resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: 'catalog.expose' });
@@ -79,5 +105,6 @@ module.exports = {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
   listExposure,
+  summarizeExposure,
   setExposure,
 };
