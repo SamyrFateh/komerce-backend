@@ -102,6 +102,11 @@ module.exports = {
       'tests/unit/invoices-route.test.js',
       'tests/unit/documents-route.test.js',
       'tests/unit/pdf-renderer.test.js',
+      // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 4.
+      // invoices.subtotal_kmf/shipping_kmf/total_kmf (migration 217,
+      // integer -> numeric) : décodage number, centimes préservés,
+      // cohérence subtotal + shipping == total.
+      'tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js',
     ],
   },
 

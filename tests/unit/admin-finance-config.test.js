@@ -178,7 +178,7 @@ describe('admin-finance-config — PUT / validation', () => {
   });
 
   it('400 si un champ int est hors borne min', async () => {
-    const res = await request(app).put('/api/admin/finance-config').send({ cost_fixed_sourcing_kmf: -1 });
+    const res = await request(app).put('/api/admin/finance-config').send({ delai_transit_jours: -1 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/entier >= 0/);
   });
@@ -186,6 +186,24 @@ describe('admin-finance-config — PUT / validation', () => {
   it('400 si un champ int n\'est pas entier (flottant)', async () => {
     const res = await request(app).put('/api/admin/finance-config').send({ delai_transit_jours: 5.5 });
     expect(res.status).toBe(400);
+  });
+
+  it('400 si un champ decimal (ex-int, migration 217) est hors borne min', async () => {
+    const res = await request(app).put('/api/admin/finance-config').send({ cost_fixed_sourcing_kmf: -1 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/nombre >= 0/);
+  });
+
+  it('accepte des centimes sur un champ ex-int passé en decimal (migration 217)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...baseCfg, cost_fixed_sourcing_kmf: 1000.25 }] });
+
+    const res = await request(app)
+      .put('/api/admin/finance-config')
+      .send({ cost_fixed_sourcing_kmf: 1000.25 });
+
+    expect(res.status).toBe(200);
+    const updateSql = mockQuery.mock.calls[0][0];
+    expect(updateSql).toMatch(/cost_fixed_sourcing_kmf/);
   });
 
   it('400 si un champ decimal dépasse la borne max', async () => {
