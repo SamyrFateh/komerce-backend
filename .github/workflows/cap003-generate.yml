@@ -11,6 +11,13 @@ jobs:
   generate:
     if: github.head_ref == 'feat/cap003-market-signals-v2'
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: cap003-audit-only-jwt-secret
+      META_WA_APP_SECRET: cap003-audit-only-app-secret
+      META_WA_VERIFY_TOKEN: cap003-audit-only-verify-token
+      META_WA_TOKEN: cap003-audit-only-token
+      META_WA_PHONE_NUMBER_ID: '000000000000000'
+      ADMIN_WHATSAPP: '0000000000'
     steps:
       - uses: actions/checkout@v4
         with:
