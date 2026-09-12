@@ -90,7 +90,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain("s.status IN ('open','acknowledged')");
-    expect(params).toEqual([null, null, null, null, null, 50, 0]);
+    expect(params).toEqual([null, null, null, null, null, null, 50, 0]);
   });
 
   it('?status=resolved → filtre explicite remplace le défaut', async () => {
@@ -98,7 +98,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     await request(buildApp()).get('/api/admin/signals?status=resolved');
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('s.status = $1');
-    expect(params).toEqual(['resolved', null, null, null, null, 50, 0]);
+    expect(params).toEqual(['resolved', null, null, null, null, null, 50, 0]);
   });
 
   it('filtres combinés (severity, signal_type, owner_role) → tous appliqués dans les slots fixes', async () => {
@@ -108,7 +108,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     expect(sql).toContain('s.severity = $2');
     expect(sql).toContain('s.signal_type = $3');
     expect(sql).toContain('s.owner_role = $4');
-    expect(params).toEqual([null, 'urgent', 'sla_breach', 'hub', null, 50, 0]);
+    expect(params).toEqual([null, 'urgent', 'sla_breach', 'hub', null, null, 50, 0]);
   });
 
   it('?family=ops → mappe vers les signal_type connus (ANY)', async () => {
@@ -118,7 +118,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     expect(sql).toContain('s.signal_type = ANY($5::text[])');
     expect(params[4]).toEqual(['parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order', 'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']);
     expect(params.slice(0, 4)).toEqual([null, null, null, null]);
-    expect(params.slice(5)).toEqual([50, 0]);
+    expect(params.slice(5)).toEqual([null, 50, 0]);
   });
 
   it('?family=inconnu → ignoré sans modifier la structure SQL', async () => {
@@ -126,7 +126,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     await request(buildApp()).get('/api/admin/signals?family=inexistant');
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))');
-    expect(params).toEqual([null, null, null, null, null, 50, 0]);
+    expect(params).toEqual([null, null, null, null, null, null, 50, 0]);
   });
 
   it('une valeur de filtre reste un paramètre et ne modifie jamais la structure SQL', async () => {
@@ -136,7 +136,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).not.toContain(malicious);
     expect(sql).toContain('s.severity = $2');
-    expect(params).toEqual([null, malicious, null, null, null, 50, 0]);
+    expect(params).toEqual([null, malicious, null, null, null, null, 50, 0]);
   });
 
   it('limit/offset par défaut = 50/0', async () => {
@@ -238,8 +238,10 @@ describe('POST /api/admin/signals/:id/acknowledge', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, signal: { id: 's1', status: 'acknowledged' } });
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain("WHERE id = $1 AND status = 'open'");
-    expect(params).toEqual(['s1']);
+    expect(sql).toContain("WHERE id = $1");
+    expect(sql).toContain("AND market_id IS NOT DISTINCT FROM $2::uuid");
+    expect(sql).toContain("AND status = 'open'");
+    expect(params).toEqual(['s1', null]);
   });
 });
 
@@ -254,21 +256,21 @@ describe('POST /api/admin/signals/:id/snooze', () => {
     mockDbQuery.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 's1', status: 'snoozed' }] });
     await request(buildApp()).post('/api/admin/signals/s1/snooze').send({ hours: 12 });
     const [, params] = mockDbQuery.mock.calls[0];
-    expect(params).toEqual(['s1', '12']);
+    expect(params).toEqual(['s1', '12', null]);
   });
 
   it('hours absent → défaut 24', async () => {
     mockDbQuery.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 's1' }] });
     await request(buildApp()).post('/api/admin/signals/s1/snooze').send({});
     const [, params] = mockDbQuery.mock.calls[0];
-    expect(params).toEqual(['s1', '24']);
+    expect(params).toEqual(['s1', '24', null]);
   });
 
   it('hours invalide (non-numérique) → fallback 24', async () => {
     mockDbQuery.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 's1' }] });
     await request(buildApp()).post('/api/admin/signals/s1/snooze').send({ hours: 'abc' });
     const [, params] = mockDbQuery.mock.calls[0];
-    expect(params).toEqual(['s1', '24']);
+    expect(params).toEqual(['s1', '24', null]);
   });
 
   it('ne s\'applique qu\'aux signaux open/acknowledged', async () => {
@@ -292,7 +294,7 @@ describe('POST /api/admin/signals/:id/resolve', () => {
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain("status IN ('open','acknowledged','snoozed')");
-    expect(params).toEqual(['s1', 'admin-1']);
+    expect(params).toEqual(['s1', 'admin-1', null]);
   });
 });
 
@@ -308,6 +310,9 @@ describe('DELETE /api/admin/signals/:id', () => {
     const res = await request(buildApp()).delete('/api/admin/signals/s1');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, deleted: 's1' });
-    expect(mockDbQuery).toHaveBeenCalledWith('DELETE FROM signals WHERE id = $1 RETURNING id', ['s1']);
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      'DELETE FROM signals WHERE id = $1 AND market_id IS NOT DISTINCT FROM $2::uuid RETURNING id',
+      ['s1', null]
+    );
   });
 });

@@ -284,6 +284,11 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/action-center/signals/{signalRef}/acknowledge', method: 'post', schema: null },
   { prefix: '/api/admin/action-center/signals/{signalRef}/snooze', method: 'post', schema: null },
   { prefix: '/api/admin/action-center/signals/{signalRef}/resolve', method: 'post', schema: null },
+  // CAP-003 — Canonical Action Center market-scoped lifecycle
+  { prefix: '/api/admin/action-center/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge', method: 'post', schema: null },
+  { prefix: '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze', method: 'post', schema: null },
+  { prefix: '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve', method: 'post', schema: null },
 
 ];
 
@@ -296,6 +301,10 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/market/{marketCode}': { get: { fields: ['scope','summary','signals','pagination'], source: 'test' } },
+  '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
   '/api/admin/workspaces/pricing/market/{marketCode}/decision': {
