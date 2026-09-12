@@ -27,6 +27,7 @@ const {
 const VERDICTS = Object.freeze({
   READY: 'FULFILLMENT_READY',
   BLOCKED_IDENTITY: 'BLOCKED_SUPPLIER_IDENTITY',
+  SKU_INACTIVE: 'SKU_INACTIVE',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   SUPPLIER_UNAVAILABLE: 'SUPPLIER_UNAVAILABLE',
   PRICE_DRIFT_BLOCKED: 'PRICE_DRIFT_BLOCKED',
@@ -43,10 +44,10 @@ function mappingFromSku(sku) {
   if (!sku || typeof sku !== 'object' || Array.isArray(sku)) {
     throw blockedSupplierIdentity('product_sku requis pour le fulfillment');
   }
-  if (sku.source && sku.source !== 'SUPPLIER') {
-    throw blockedSupplierIdentity('un SKU manuel ne porte aucune autorité d’achat fournisseur', {
+  if (sku.source !== 'SUPPLIER') {
+    throw blockedSupplierIdentity('seul un SKU source=SUPPLIER porte une autorité d’achat fournisseur', {
       product_sku_id: sku.id || null,
-      source: sku.source,
+      source: sku.source || null,
     });
   }
 
@@ -182,6 +183,19 @@ async function assessSupplierFulfillment({
   adapterOptions = {},
 } = {}) {
   const qty = positiveInt(quantity);
+
+  if (sku?.is_active === false) {
+    return {
+      product_sku_id: sku.id || null,
+      product_id: sku.product_id || null,
+      provider: sku?.supplier_order_identity?.provider || null,
+      quantity: qty,
+      identity: null,
+      ready: false,
+      verdict: VERDICTS.SKU_INACTIVE,
+    };
+  }
+
   let mapping;
   try {
     mapping = mappingFromSku(sku);
