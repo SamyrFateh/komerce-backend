@@ -31,16 +31,25 @@ const MARKET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const CATEGORY_BY_FAMILY = Object.freeze({
   women: 'Mode & Beauté',
   beauty: 'Mode & Beauté',
+  men: 'Mode & Beauté',
+  kids: 'Mode & Beauté',
   comfort: 'Maison',
   kitchen: 'Maison',
+  decor: 'Maison',
+  'kids-home': 'Maison',
   phones: 'Tech',
   audio: 'Tech',
+  watches: 'Tech',
   tools: 'Bricolage',
   electric: 'Bricolage',
+  security: 'Bricolage',
   ceremony: 'Créations personnelles',
   gift: 'Créations personnelles',
+  printing: 'Créations personnelles',
   filters: 'Auto',
   'car-light': 'Auto',
+  brakes: 'Auto',
+  moto: 'Auto',
 });
 
 function cjRow(config, index) {
@@ -57,16 +66,16 @@ function cjRow(config, index) {
 
 beforeEach(() => jest.clearAllMocks());
 
-test('le plan local ne dépend plus d’aucune ref SHOWCASE-V2 et met 2 CJ dans chacun des six univers', () => {
+test('le plan local ne dépend plus d’aucune ref SHOWCASE-V2 et met 4 CJ dans chacun des six univers', () => {
   expect(repair.CJ_LOCAL_PRODUCTS.map(item => item.sortOrder)).toEqual([
-    -1063, -1054,
-    -1051, -1048,
-    -1039, -1036,
-    -1030, -1027,
-    -1021, -1018,
-    -1012, -1006,
+    -1063, -1054, -1060, -1057,
+    -1051, -1048, -1045, -1042,
+    -1039, -1036, -1033, -1035,
+    -1030, -1027, -1024, -1029,
+    -1021, -1018, -1015, -1017,
+    -1012, -1006, -1009, -1003,
   ]);
-  expect(new Set(repair.CJ_LOCAL_PRODUCTS.map(item => item.sortOrder)).size).toBe(12);
+  expect(new Set(repair.CJ_LOCAL_PRODUCTS.map(item => item.sortOrder)).size).toBe(24);
 
   const categoryCounts = repair.CJ_LOCAL_PRODUCTS.reduce((acc, item) => {
     const category = CATEGORY_BY_FAMILY[item.family];
@@ -74,12 +83,12 @@ test('le plan local ne dépend plus d’aucune ref SHOWCASE-V2 et met 2 CJ dans 
     return acc;
   }, {});
   expect(categoryCounts).toEqual({
-    'Mode & Beauté': 2,
-    Maison: 2,
-    Tech: 2,
-    Bricolage: 2,
-    'Créations personnelles': 2,
-    Auto: 2,
+    'Mode & Beauté': 4,
+    Maison: 4,
+    Tech: 4,
+    Bricolage: 4,
+    'Créations personnelles': 4,
+    Auto: 4,
   });
 
   const source = fs.readFileSync(
@@ -91,7 +100,7 @@ test('le plan local ne dépend plus d’aucune ref SHOWCASE-V2 et met 2 CJ dans 
   expect(source).toContain('publicCatalogVisibilitySql');
 });
 
-test('resolveCjProducts exige 12 vrais produits CJ publiables et conserve l’ordre éditorial', async () => {
+test('resolveCjProducts exige 24 vrais produits CJ publiables et conserve l’ordre éditorial', async () => {
   const rows = repair.CJ_LOCAL_PRODUCTS.map(cjRow).reverse();
   db.query.mockResolvedValueOnce({ rows });
 
@@ -114,18 +123,18 @@ test('resolveCjProducts exige 12 vrais produits CJ publiables et conserve l’or
 
 test('un représentant CJ manquant fait échouer le repair au lieu de dégrader silencieusement le rail', async () => {
   db.query.mockResolvedValueOnce({
-    rows: repair.CJ_LOCAL_PRODUCTS.slice(0, 11).map(cjRow),
+    rows: repair.CJ_LOCAL_PRODUCTS.slice(0, 23).map(cjRow),
   });
 
   await expect(repair.resolveCjProducts()).rejects.toThrow(/Représentant CJ local introuvable/);
 });
 
-test('les 12 CJ passent par le owner local-stock et sont exposés commercialement', async () => {
+test('les 24 CJ passent par le owner local-stock et sont exposés commercialement', async () => {
   const products = repair.CJ_LOCAL_PRODUCTS.map(cjRow);
   await repair.exposeCjProducts(MARKET_ID, products);
 
-  expect(setLocalStock).toHaveBeenCalledTimes(12);
-  expect(setLocalStockExposure).toHaveBeenCalledTimes(12);
+  expect(setLocalStock).toHaveBeenCalledTimes(24);
+  expect(setLocalStockExposure).toHaveBeenCalledTimes(24);
   for (const [index, product] of products.entries()) {
     expect(setLocalStock).toHaveBeenCalledWith({
       productId: product.id,
@@ -139,12 +148,12 @@ test('les 12 CJ passent par le owner local-stock et sont exposés commercialemen
   }
 });
 
-test('la politique éditoriale reste bornée à 18 cartes et enrichit chaque catégorie sans catalogue bis', () => {
+test('la politique éditoriale reste bornée à 30 cartes et enrichit chaque catégorie sans catalogue bis', () => {
   const products = repair.CJ_LOCAL_PRODUCTS.map(cjRow);
   const candidates = repair.buildCandidates(products);
 
-  expect(candidates).toHaveLength(18);
-  expect(candidates.filter(item => item.startsWith('product:'))).toHaveLength(13);
+  expect(candidates).toHaveLength(30);
+  expect(candidates.filter(item => item.startsWith('product:'))).toHaveLength(25);
   expect(candidates.filter(item => item.startsWith('physical_offer:'))).toHaveLength(2);
   expect(candidates.filter(item => item.startsWith('service:'))).toHaveLength(3);
   expect(candidates[0]).toBe('product:aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001');

@@ -134,16 +134,34 @@ function escapeAttribute(value) {
 }
 
 /**
- * Picks one deterministic REAL catalog image for a subcategory.
- * The catalog remains the media source of truth: no parallel subcategory asset catalog.
- * Stable ordering prevents the navigation image from changing with ranking/shuffle order.
+ * Picks a deterministic REAL catalog image for a subcategory, but only among
+ * explicitly curated candidates (product.is_shelf_curated === true).
+ *
+ * Avant ce chantier, la fonction retombait sur le premier produit disponible
+ * par sort_order dès qu'aucun candidat curaté n'existait — une logique
+ * implicite qui pouvait faire remonter n'importe quelle photo fournisseur
+ * (y compris une photo lifestyle/mannequin sans rapport avec l'article) comme
+ * visuel de toute une sous-catégorie, pour tous les clients, même ceux qui ne
+ * voient jamais ce produit précis. Cette dégradation silencieuse est retirée :
+ * sans candidat curaté, la fonction retourne null et l'appelant retombe sur
+ * son visuel de secours propre (cutout/sprite existant, voir
+ * getShelfSubcategoryVisual) plutôt que d'exposer une mauvaise photo.
+ *
+ * product.is_shelf_curated reste un champ optionnel côté produit : tant que
+ * l'API catalogue ne l'expose pas encore, cette fonction ne choisit plus
+ * aucune photo (comportement sûr par défaut) — l'activation réelle de la
+ * curation est un chantier de suivi côté API/catalog, pas une régression de
+ * cette fonction.
  */
 export function getShelfSubcategoryProductImage(products, categoryKey, subcategoryKey) {
   if (!Array.isArray(products) || !products.length || !subcategoryKey) return null;
   const canonicalCategory = normalizeCategoryKey(categoryKey);
-  const candidates = products
+  const curated = products.filter((product) => product && product.is_shelf_curated === true);
+  if (!curated.length) return null;
+
+  const candidates = curated
     .filter((product) => {
-      if (!product || !normalizeProductImageUrl(product.image_url)) return false;
+      if (!normalizeProductImageUrl(product.image_url)) return false;
       if (normalizeCategoryKey(product.category) !== canonicalCategory) return false;
       return matchesSubcategory(categoryKey, subcategoryKey, product.subcategory);
     })
@@ -157,9 +175,8 @@ export function getShelfSubcategoryProductImage(products, categoryKey, subcatego
     });
   if (candidates.length) return normalizeProductImageUrl(candidates[0].image_url);
 
-  const categoryCandidates = products
-    .filter((product) => product
-      && normalizeProductImageUrl(product.image_url)
+  const categoryCandidates = curated
+    .filter((product) => normalizeProductImageUrl(product.image_url)
       && normalizeCategoryKey(product.category) === canonicalCategory)
     .sort((a, b) => {
       const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : Number.MAX_SAFE_INTEGER;
