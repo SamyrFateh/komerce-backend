@@ -51,12 +51,10 @@ function makeClick(target) {
   };
 }
 
-function mountProductControl({ id = 'p-1', action = 'add', mobile = false } = {}) {
-  const cardClass = mobile ? 'k-discovery-card' : 'k-card k-discovery-canonical-card';
-  const infoClass = mobile ? 'k-discovery-info' : 'k-card-info';
+function mountProductControl({ id = 'p-1', action = 'add' } = {}) {
   document.body.innerHTML = `
-    <article class="${cardClass}" data-discovery-kind="product" data-discovery-ref="${id}">
-      <div class="${infoClass}">
+    <article class="k-card k-discovery-canonical-card" data-discovery-kind="product" data-discovery-ref="${id}">
+      <div class="k-card-info">
         <div class="k-card-add" data-add="${id}">
           <button class="k-card-add-trigger" data-action="${action}" type="button">+</button>
         </div>
@@ -71,7 +69,7 @@ beforeEach(() => {
   state.products = [];
 });
 
-test('le + d’un Product local desktop ajoute au panier sans ouvrir la fiche', () => {
+test('le + d’un Product local ajoute au panier sans ouvrir la fiche', () => {
   state.products = [{ id: 'p-1', name: 'Savon', has_variants: false }];
   const button = mountProductControl();
   const event = makeClick(button);
@@ -84,13 +82,15 @@ test('le + d’un Product local desktop ajoute au panier sans ouvrir la fiche', 
   expect(mockOpenModal).not.toHaveBeenCalled();
 });
 
-test('le + d’un Product local mobile suit exactement le même chemin quickAdd', () => {
+test('le même shell canonique conserve exactement le chemin quickAdd sur mobile', () => {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
   state.products = [{ id: 'p-1', name: 'Savon', has_variants: false }];
-  const button = mountProductControl({ mobile: true });
+  const button = mountProductControl();
   const event = makeClick(button);
 
   handleDiscoveryClick(event);
 
+  expect(button.closest('.k-discovery-canonical-card.k-card')).not.toBeNull();
   expect(event.preventDefault).toHaveBeenCalledTimes(1);
   expect(event.stopPropagation).toHaveBeenCalledTimes(1);
   expect(mockQuickAdd).toHaveBeenCalledWith('p-1', button, { hasVariants: false });
@@ -107,21 +107,13 @@ test('un Product à variantes conserve le garde-fou canonique quickAdd', () => {
   expect(mockOpenModal).not.toHaveBeenCalled();
 });
 
-test('le stepper et le review restent délégués aux propriétaires panier sur desktop et mobile', () => {
+test('le stepper et le review restent délégués aux propriétaires panier sur le shell unique', () => {
   const decrement = mountProductControl({ action: 'decrement' });
   handleDiscoveryClick(makeClick(decrement));
   expect(mockQuickRemove).toHaveBeenCalledWith('p-1', decrement);
 
-  const mobileDecrement = mountProductControl({ action: 'decrement', mobile: true });
-  handleDiscoveryClick(makeClick(mobileDecrement));
-  expect(mockQuickRemove).toHaveBeenCalledWith('p-1', mobileDecrement);
-
   const review = mountProductControl({ action: 'review' });
   handleDiscoveryClick(makeClick(review));
-  expect(mockOpenCartWithHighlight).toHaveBeenCalledWith('p-1');
-
-  const mobileReview = mountProductControl({ action: 'review', mobile: true });
-  handleDiscoveryClick(makeClick(mobileReview));
   expect(mockOpenCartWithHighlight).toHaveBeenCalledWith('p-1');
 });
 
