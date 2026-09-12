@@ -12,7 +12,12 @@ const request = require('supertest');
 let mockUser = { id: 'admin-1', role: 'admin' };
 let mockAllowGrant = true;
 
-jest.mock('../../db', () => ({ query: jest.fn() }));
+const mockClient = { query: jest.fn() };
+const mockWithTransaction = jest.fn(work => work(mockClient));
+jest.mock('../../db', () => ({
+  query: jest.fn(),
+  withTransaction: work => mockWithTransaction(work),
+}));
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
@@ -38,6 +43,13 @@ jest.mock('../../services/market-delegation-service', () => ({
   audit: (...args) => mockAudit(...args),
 }));
 
+const mockSignalAdmin = {
+  acknowledgeByRef: jest.fn(),
+  snoozeByRef: jest.fn(),
+  resolveByRef: jest.fn(),
+};
+jest.mock('../../services/signal-admin-service', () => mockSignalAdmin);
+
 const mockWorkspace = {
   buildWorkspace: jest.fn(),
   buildMarketWorkspace: jest.fn(),
@@ -45,6 +57,13 @@ const mockWorkspace = {
   acknowledge: jest.fn(),
   snooze: jest.fn(),
   resolve: jest.fn(),
+  requireSignalRef: jest.fn(ref => {
+    const normalized = String(ref || '').trim().toUpperCase();
+    if (!/^KSG-\d{6,}$/.test(normalized)) {
+      throw Object.assign(new Error('Référence signal invalide'), { status: 400, code: 'action_center_signal_ref_invalid' });
+    }
+    return normalized;
+  }),
 };
 jest.mock('../../services/action-center-workspace', () => mockWorkspace);
 
@@ -71,6 +90,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 'admin-1', role: 'admin' };
   mockAllowGrant = true;
+  mockWithTransaction.mockImplementation(work => work(mockClient));
   mockHasGlobalAuthority.mockImplementation(() => Promise.resolve(mockAllowGrant));
   mockResolveAssignment.mockResolvedValue({ ...MARKET_AUTHZ, membership_id: undefined });
   mockResolveAuthorization.mockResolvedValue(MARKET_AUTHZ);
@@ -120,9 +140,9 @@ test('market_operator GET resolves market server-side through dashboard.market.r
   expect(JSON.stringify(res.body)).not.toContain(MARKET_AUTHZ.market_id);
 });
 
-test('market lifecycle requires decision_signal.manage, exact market id and writes delegation audit', async () => {
+test('market lifecycle is atomic: signal mutation and delegation audit share the same transaction client', async () => {
   mockUser = { id: 'operator-cm', role: 'market_operator' };
-  mockWorkspace.acknowledge.mockResolvedValue({ signal_ref: 'KSG-000010', status: 'acknowledged' });
+  mockSignalAdmin.acknowledgeByRef.mockResolvedValue({ signal_ref: 'KSG-000010', status: 'acknowledged' });
 
   const res = await request(app())
     .post('/api/admin/action-center/market/CM/signals/KSG-000010/acknowledge')
@@ -132,14 +152,45 @@ test('market lifecycle requires decision_signal.manage, exact market id and writ
   expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), {
     userId: 'operator-cm', marketCode: 'CM', requiredCapability: 'decision_signal.manage',
   });
-  expect(mockWorkspace.acknowledge).toHaveBeenCalledWith('KSG-000010', MARKET_AUTHZ.market_id);
-  expect(mockAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+  expect(mockWithTransaction).toHaveBeenCalledTimes(1);
+  expect(mockSignalAdmin.acknowledgeByRef).toHaveBeenCalledWith('KSG-000010', MARKET_AUTHZ.market_id, mockClient);
+  expect(mockAudit).toHaveBeenCalledWith(mockClient, expect.objectContaining({
     actorUserId: 'operator-cm',
     assignmentId: MARKET_AUTHZ.assignment_id,
     membershipId: MARKET_AUTHZ.membership_id,
     capability: 'decision_signal.manage',
     action: 'DECISION_SIGNAL_ACKNOWLEDGED',
   }));
+});
+
+test('snooze and resolve market lifecycle also use exact market scope and same transaction client', async () => {
+  mockUser = { id: 'operator-cm', role: 'market_operator' };
+  mockSignalAdmin.snoozeByRef.mockResolvedValue({ signal_ref: 'KSG-000011', status: 'snoozed', snoozed_until: 'later' });
+  mockSignalAdmin.resolveByRef.mockResolvedValue({ signal_ref: 'KSG-000012', status: 'resolved', resolved_at: 'now' });
+
+  const snooze = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000011/snooze').send({ hours: 24 });
+  const resolve = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000012/resolve').send({});
+
+  expect(snooze.status).toBe(200);
+  expect(resolve.status).toBe(200);
+  expect(mockSignalAdmin.snoozeByRef).toHaveBeenCalledWith('KSG-000011', 24, MARKET_AUTHZ.market_id, mockClient);
+  expect(mockSignalAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000012', 'operator-cm', MARKET_AUTHZ.market_id, mockClient);
+  expect(mockAudit).toHaveBeenCalledTimes(2);
+  expect(mockAudit.mock.calls.every(call => call[0] === mockClient)).toBe(true);
+});
+
+test('audit failure fails the whole market lifecycle transaction boundary', async () => {
+  mockUser = { id: 'operator-cm', role: 'market_operator' };
+  mockSignalAdmin.acknowledgeByRef.mockResolvedValue({ signal_ref: 'KSG-000010', status: 'acknowledged' });
+  mockAudit.mockRejectedValue(new Error('audit unavailable'));
+
+  const res = await request(app())
+    .post('/api/admin/action-center/market/CM/signals/KSG-000010/acknowledge')
+    .send({});
+
+  expect(res.status).toBe(500);
+  expect(res.body.error).toBe('audit unavailable');
+  expect(mockWithTransaction).toHaveBeenCalledTimes(1);
 });
 
 test('admin market view still requires explicit global decision-signal authority', async () => {
