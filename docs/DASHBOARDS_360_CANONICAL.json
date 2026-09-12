@@ -1,0 +1,1838 @@
+{
+  "generatedAt": "2026-09-12T21:24:32.909Z",
+  "summary": {
+    "navItems": 12,
+    "navMatrixEntries": 35,
+    "canonicalModules": 49,
+    "apiEdgesTraced": 58,
+    "surfaceWithoutModule": 0,
+    "navHrefUnresolved": 0,
+    "unprovenContracts": 30,
+    "notFoundContracts": 0,
+    "notFoundDynamic": 8,
+    "unresolvedFetches": 15,
+    "legacyDependencies": 0,
+    "clientMarketAuthoritySuspects": 0,
+    "moduleFilesWithoutHeader": 0
+  },
+  "navMatrix": [
+    {
+      "role": "admin",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "finance",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "sourcing",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "agent_hub",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "agent_relais",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "agent_transitaire",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "support",
+      "itemId": "dashboard",
+      "label": "Dashboard",
+      "href": "/admin/pilotage",
+      "surfaceId": "pilotage",
+      "resolvedVia": "app-default-fallback",
+      "moduleFiles": [
+        "pilotage-decision.js",
+        "pilotage.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "pricing",
+      "label": "Atelier économique",
+      "href": "/admin/workspaces/pricing",
+      "surfaceId": "pricing-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "pricing-workspace.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "pricing",
+      "label": "Atelier économique",
+      "href": "/admin/workspaces/pricing",
+      "surfaceId": "pricing-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "pricing-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "catalog",
+      "label": "Catalogue",
+      "href": "/admin/workspaces/catalog",
+      "surfaceId": "catalog-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "catalog-workspace-decision.js",
+        "catalog-workspace.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "catalog",
+      "label": "Catalogue",
+      "href": "/dashboards/canonical/market-catalog.html",
+      "surfaceId": "market-catalog",
+      "resolvedVia": "standalone-html",
+      "moduleFiles": []
+    },
+    {
+      "role": "admin",
+      "itemId": "orders",
+      "label": "Commandes",
+      "href": "/admin/commerce",
+      "surfaceId": "commerce",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "commerce-decision.js",
+        "commerce.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "orders",
+      "label": "Commandes",
+      "href": "/admin/commerce",
+      "surfaceId": "commerce",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "commerce-decision.js",
+        "commerce.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "markets",
+      "label": "Marchés",
+      "href": "/dashboards/canonical/access.html",
+      "surfaceId": "market-access",
+      "resolvedVia": "standalone-html",
+      "moduleFiles": []
+    },
+    {
+      "role": "market_operator",
+      "itemId": "markets",
+      "label": "Marchés",
+      "href": "/dashboards/canonical/market-autonomy.html",
+      "surfaceId": "market-autonomy",
+      "resolvedVia": "standalone-html",
+      "moduleFiles": []
+    },
+    {
+      "role": "admin",
+      "itemId": "operations-overview",
+      "label": "Vue d’ensemble",
+      "href": "/admin/operations",
+      "surfaceId": "operations",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-decision.js",
+        "operations.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "operations-overview",
+      "label": "Vue d’ensemble",
+      "href": "/admin/operations",
+      "surfaceId": "operations",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-decision.js",
+        "operations.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "operations-workspace",
+      "label": "Hub / Relais",
+      "href": "/admin/workspaces/operations",
+      "surfaceId": "operations-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-workspace-decision.js",
+        "operations-workspace.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "operations-workspace",
+      "label": "Hub / Relais",
+      "href": "/admin/workspaces/operations",
+      "surfaceId": "operations-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-workspace-decision.js",
+        "operations-workspace.js"
+      ]
+    },
+    {
+      "role": "agent_hub",
+      "itemId": "operations-workspace",
+      "label": "Hub / Relais",
+      "href": "/admin/workspaces/operations",
+      "surfaceId": "operations-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-workspace-decision.js",
+        "operations-workspace.js"
+      ]
+    },
+    {
+      "role": "agent_relais",
+      "itemId": "operations-workspace",
+      "label": "Hub / Relais",
+      "href": "/admin/workspaces/operations",
+      "surfaceId": "operations-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "operations-workspace-decision.js",
+        "operations-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "shipping-customs-workspace",
+      "label": "Expéditions & Douane",
+      "href": "/admin/workspaces/shipping-customs",
+      "surfaceId": "shipping-customs-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "shipping-customs-workspace-decision.js",
+        "shipping-customs-workspace.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "shipping-customs-workspace",
+      "label": "Expéditions & Douane",
+      "href": "/admin/workspaces/shipping-customs",
+      "surfaceId": "shipping-customs-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "shipping-customs-workspace-decision.js",
+        "shipping-customs-workspace.js"
+      ]
+    },
+    {
+      "role": "agent_hub",
+      "itemId": "shipping-customs-workspace",
+      "label": "Expéditions & Douane",
+      "href": "/admin/workspaces/shipping-customs",
+      "surfaceId": "shipping-customs-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "shipping-customs-workspace-decision.js",
+        "shipping-customs-workspace.js"
+      ]
+    },
+    {
+      "role": "agent_transitaire",
+      "itemId": "shipping-customs-workspace",
+      "label": "Expéditions & Douane",
+      "href": "/admin/workspaces/shipping-customs",
+      "surfaceId": "shipping-customs-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "shipping-customs-workspace-decision.js",
+        "shipping-customs-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "sourcing-workspace",
+      "label": "Sourcing",
+      "href": "/admin/workspaces/sourcing",
+      "surfaceId": "sourcing-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "sourcing-workspace-decision.js",
+        "sourcing-workspace.js"
+      ]
+    },
+    {
+      "role": "sourcing",
+      "itemId": "sourcing-workspace",
+      "label": "Sourcing",
+      "href": "/admin/workspaces/sourcing",
+      "surfaceId": "sourcing-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "sourcing-workspace-decision.js",
+        "sourcing-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "finance-overview",
+      "label": "Vue d’ensemble",
+      "href": "/admin/finance",
+      "surfaceId": "finance",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-decision.js",
+        "finance.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "finance-overview",
+      "label": "Vue d’ensemble",
+      "href": "/admin/finance",
+      "surfaceId": "finance",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-decision.js",
+        "finance.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "accounting-workspace",
+      "label": "Comptabilité",
+      "href": "/admin/workspaces/accounting",
+      "surfaceId": "accounting-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-accounting-workspace-decision.js",
+        "finance-accounting-workspace.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "accounting-workspace",
+      "label": "Comptabilité",
+      "href": "/admin/workspaces/accounting",
+      "surfaceId": "accounting-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-accounting-workspace-decision.js",
+        "finance-accounting-workspace.js"
+      ]
+    },
+    {
+      "role": "finance",
+      "itemId": "accounting-workspace",
+      "label": "Comptabilité",
+      "href": "/admin/workspaces/accounting",
+      "surfaceId": "accounting-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-accounting-workspace-decision.js",
+        "finance-accounting-workspace.js"
+      ]
+    },
+    {
+      "role": "agent_relais",
+      "itemId": "accounting-workspace",
+      "label": "Comptabilité",
+      "href": "/admin/workspaces/accounting",
+      "surfaceId": "accounting-workspace",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "finance-accounting-workspace-decision.js",
+        "finance-accounting-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "settings",
+      "label": "Paramètres",
+      "href": "/admin/settings",
+      "surfaceId": "settings",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "settings-workspace.js"
+      ]
+    }
+  ],
+  "apiEdges": [
+    {
+      "module": "action-center.js",
+      "rawUrl": "/api/admin/dashboard/context",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/dashboard/context",
+      "matchedRoute": "/api/admin/dashboard/context",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "action-center.js",
+      "rawUrl": "path",
+      "httpMethod": "POST",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "action-center.js",
+      "rawUrl": "context.endpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "app.js",
+      "rawUrl": "/api/admin/dashboard/context",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/dashboard/context",
+      "matchedRoute": "/api/admin/dashboard/context",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "app.js",
+      "rawUrl": "/api/auth/me",
+      "httpMethod": "GET",
+      "normalized": "/api/auth/me",
+      "matchedRoute": "/api/auth/me",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "app.js",
+      "rawUrl": "/api/admin/dashboard/context",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/dashboard/context",
+      "matchedRoute": "/api/admin/dashboard/context",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/approve",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/approval/{param}/approve",
+      "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/approve",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/override",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/approval/{param}/override",
+      "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/override",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/reject",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/approval/{param}/reject",
+      "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/reject",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/products/${encodeURIComponent(row.product_ref)}/deactivate",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/products/{param}/deactivate",
+      "matchedRoute": "/api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/categories",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/categories",
+      "matchedRoute": "/api/admin/workspaces/catalog/categories",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/categories/${encodeURIComponent(row.key)}/update",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/categories/{param}/update",
+      "matchedRoute": "/api/admin/workspaces/catalog/categories/{key}/update",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog/categories/${encodeURIComponent(row.key)}/subcategories",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/catalog/categories/{param}/subcategories",
+      "matchedRoute": "/api/admin/workspaces/catalog/categories/{key}/subcategories",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/catalog",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/workspaces/catalog",
+      "matchedRoute": "/api/admin/workspaces/catalog",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "client-360.js",
+      "rawUrl": "/api/admin/entities/clients/${param}",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/entities/clients/{param}",
+      "matchedRoute": "/api/admin/entities/clients/{clientPhone}",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "demo-order-flow.js",
+      "rawUrl": "/api/orders/${selectedId}/status",
+      "httpMethod": "PATCH",
+      "normalized": "/api/orders/{param}/status",
+      "matchedRoute": "/api/orders/{id}/status",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "demo-order-flow.js",
+      "rawUrl": "/api/admin/demo/orders/${orderId}/timeline",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/demo/orders/{param}/timeline",
+      "matchedRoute": "/api/admin/demo/orders/{orderId}/timeline",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "demo-order-flow.js",
+      "rawUrl": "/api/admin/orders?limit=30",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/orders",
+      "matchedRoute": "/api/admin/orders",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "finance-accounting-workspace.js",
+      "rawUrl": "/api/admin/workspaces/accounting/market/${param}${param}${param}",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/accounting/market/{param}{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "finance-accounting-workspace.js",
+      "rawUrl": "/api/admin/workspaces/accounting/market/${param}${param}${param}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/accounting/market/{param}{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "market-autonomy.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-cash-control.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-catalog.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-team.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "markets-decision-bootstrap.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "navigation.js",
+      "rawUrl": "/api/auth/logout",
+      "httpMethod": "POST",
+      "normalized": "/api/auth/logout",
+      "matchedRoute": "/api/auth/logout",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "operations-workspace.js",
+      "rawUrl": "/api/admin/workspaces/operations/market/${param}${param}",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/operations/market/{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "operations-workspace.js",
+      "rawUrl": "/api/admin/workspaces/operations/market/${param}${param}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/operations/market/{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "operations.js",
+      "rawUrl": "endpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "order-360.js",
+      "rawUrl": "/api/admin/entities/orders/${param}",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/entities/orders/{param}",
+      "matchedRoute": "/api/admin/entities/orders/{orderReference}",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "pilotage.js",
+      "rawUrl": "endpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "pricing-structure-event-panel.js",
+      "rawUrl": "config.chargesEndpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "pricing-structure-event-panel.js",
+      "rawUrl": "config.submitEndpoint",
+      "httpMethod": "POST",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "pricing-workspace-simulation.js",
+      "rawUrl": "endpoint(workspace, options.requestedMarket)",
+      "httpMethod": "POST",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}/decision",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}/decision",
+      "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}/decision",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}/decision-policy/history",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}/decision-policy/history",
+      "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}/strategy?product_ref=${encodeURIComponent(productRef)}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}/strategy",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}/strategy?product_ref=${encodeURIComponent(productRef)}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}/strategy",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}/strategy?product_ref=${encodeURIComponent(productRef)}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}/strategy",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "pricing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/pricing/market/${encodeURIComponent(context.requestedMarket)}",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/workspaces/pricing/market/{param}",
+      "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "product-360.js",
+      "rawUrl": "/api/admin/entities/products/${param}",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/entities/products/{param}",
+      "matchedRoute": "/api/admin/entities/products/{productRef}",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "settings-workspace.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "shipping-customs-workspace.js",
+      "rawUrl": "/api/admin/workspaces/shipping-customs/market/${param}${param}",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/shipping-customs/market/{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "shipping-customs-workspace.js",
+      "rawUrl": "/api/admin/workspaces/shipping-customs/market/${param}${param}",
+      "httpMethod": "GET*",
+      "normalized": "/api/admin/workspaces/shipping-customs/market/{param}{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(row.candidate_ref)}/update",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/update",
+      "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/update",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(row.candidate_ref)}/scan",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/scan",
+      "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(row.candidate_ref)}/watchlist",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/watchlist",
+      "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(row.candidate_ref)}/promote",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/promote",
+      "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(row.candidate_ref)}/reject",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/reject",
+      "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/imports",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/imports",
+      "matchedRoute": "/api/admin/workspaces/sourcing/imports",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/products/${encodeURIComponent(row.product_ref)}/update",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/products/{param}/update",
+      "matchedRoute": "/api/admin/workspaces/sourcing/products/{productRef}/update",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/suppliers",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/suppliers",
+      "matchedRoute": "/api/admin/workspaces/sourcing/suppliers",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/suppliers/${encodeURIComponent(row.partner_ref)}/update",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/suppliers/{param}/update",
+      "matchedRoute": "/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/suppliers/${encodeURIComponent(row.partner_ref)}/${row.is_active ? 'deactivate' : 'activate'}",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/suppliers/{param}/${row.is_active ",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "sourcing-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/workspaces/sourcing",
+      "matchedRoute": "/api/admin/workspaces/sourcing",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "team-invite.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "team-invite.js",
+      "rawUrl": "/api/auth/me",
+      "httpMethod": "GET",
+      "normalized": "/api/auth/me",
+      "matchedRoute": "/api/auth/me",
+      "contractStatus": "UNKNOWN"
+    }
+  ],
+  "modules": [
+    {
+      "file": "action-center.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-action-center-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "action_center_handles_derived_signals_only",
+        "server_admin_context_selects_market_endpoint",
+        "browser_signal_ref_only",
+        "canonical_admin_no_legacy_imports"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalActionCenter"
+      ],
+      "fetchCount": 3
+    },
+    {
+      "file": "admin-context.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-context",
+      "domain": "dashboard",
+      "layer": "ui-contract",
+      "criticality": "high",
+      "doctrine": [
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceAdminContext"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "app.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-entrypoint",
+      "domain": "admin-dashboard",
+      "layer": "ui-entrypoint",
+      "criticality": "medium",
+      "doctrine": [
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalAdmin"
+      ],
+      "fetchCount": 3
+    },
+    {
+      "file": "catalog-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-catalog-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "decision_first_dashboard_visuals",
+        "curated_catalog_not_crud"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCatalogWorkspace"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "catalog-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-catalog-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "canonical_admin_no_legacy_imports",
+        "global_catalog_not_market_scoped",
+        "product_360_explains",
+        "curated_catalog_not_crud"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCatalogWorkspace"
+      ],
+      "fetchCount": 8
+    },
+    {
+      "file": "client-360.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-client-360-entity",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "entity_360_reunites_without_recomputing",
+        "canonical_admin_no_legacy_imports",
+        "client_account_facets_global_only"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalClient360"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "client-index.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-client-index",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority",
+        "client_index_finds_client_360",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalClientIndex"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "commerce-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-commerce-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals",
+        "server_decision_signal_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCommerce"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "commerce.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-commerce-dashboard",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCommerce"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "dashboard-renderer.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-dashboard-renderer",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_schema_closed_types",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceDashboardRenderer"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "dashboard-schema.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-dashboard-schema",
+      "domain": "admin-dashboard",
+      "layer": "ui-contract",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_schema_closed_types",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceDashboardSchema"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "decision-primitives.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-dashboard-decision-primitives",
+      "domain": "admin-dashboard",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceDecisionUI"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "demo-order-flow.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-demo-order-flow",
+      "domain": "admin-dashboard",
+      "layer": "ui-module",
+      "criticality": "medium",
+      "doctrine": [
+        "canonical_admin_no_legacy_imports"
+      ],
+      "exportsGlobals": [
+        "KomerceDemoOrderFlow"
+      ],
+      "fetchCount": 3
+    },
+    {
+      "file": "finance-accounting-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-accounting-workspace-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalFinanceAccountingWorkspace"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "finance-accounting-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-finance-accounting-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "canonical_admin_no_legacy_imports",
+        "browser_never_supplies_market_id_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalFinanceAccountingWorkspace"
+      ],
+      "fetchCount": 2
+    },
+    {
+      "file": "finance-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-finance-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalFinance"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "finance.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-finance-dashboard",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalFinance"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "market-access.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-market-access-admin",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "server_market_scope_is_authority",
+        "no_client_market_id_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalMarketAccess",
+        "KomerceCanonicalAdmin"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "market-autonomy.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-country-autonomy-test-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "server_scope_is_authority",
+        "country_manager_owns_local_strategy",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
+      "file": "market-cash-control.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-autonomy-cash-control-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "partner_owns_cash_control_policy",
+        "central_floor_not_business_thresholds",
+        "server_scope_is_authority"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
+      "file": "market-catalog-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-country-catalog-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-projection",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "missing_exposure_is_disabled",
+        "market_catalog_summary_is_server_truth"
+      ],
+      "exportsGlobals": [
+        "KomerceMarketCatalogDecision"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "market-catalog.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-country-catalog-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "high",
+      "doctrine": [
+        "catalog_global_truth_stays_central",
+        "market_operator_configures_market_exposure",
+        "client_market_id_never_authority",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceMarketCatalog"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "market-team.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-autonomy-team-delegation-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "ui_never_grants_more_than_server_actor_capabilities",
+        "server_scope_is_authority"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
+      "file": "markets-decision-bootstrap.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-markets-decision-bootstrap",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "server_market_scope_is_authority",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceMarketsDecisionBootstrap"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "markets-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-markets-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "server_market_scope_is_authority",
+        "dashboard_no_business_recompute",
+        "country_manager_owns_local_strategy"
+      ],
+      "exportsGlobals": [
+        "KomerceMarketsDecision"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "navigation.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-navigation",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "medium",
+      "doctrine": [
+        "country_manager_owns_market_scope",
+        "visible_destination_must_have_server_guard",
+        "client_market_id_never_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalNavigation"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "operations-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-operations-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOperations"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "operations-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-operations-workspace-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOperationsWorkspace"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "operations-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-operations-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "canonical_admin_no_legacy_imports",
+        "browser_never_supplies_market_id_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOperationsWorkspace"
+      ],
+      "fetchCount": 2
+    },
+    {
+      "file": "operations.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-operations-dashboard",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOperations"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "order-360.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-order-360-entity",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "entity_360_reunites_without_recomputing",
+        "canonical_admin_no_legacy_imports"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOrder360"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "pilotage-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pilotage-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalPilotage"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pilotage.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pilotage-dashboard",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalPilotage"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "pricing-decision-chain.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-decision-chain-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "browser_never_recomputes_economic_truth",
+        "market_bounds_possible_human_decides",
+        "local_evidence_never_silently_falls_back_to_global",
+        "viability_is_decision_support_not_price_gate"
+      ],
+      "exportsGlobals": [
+        "KomercePricingDecisionChain"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pricing-economic-cockpit.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-economic-cockpit-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "mock_is_ui_contract",
+        "variable_or_fixed_is_nature_direct_or_mutualized_is_perimeter",
+        "mutualized_quote_part_is_market_scoped",
+        "calculated_values_are_read_only",
+        "final_market_price_is_primary_product_lever",
+        "browser_never_recomputes_economic_truth"
+      ],
+      "exportsGlobals": [
+        "KomercePricingEconomicCockpit"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pricing-equilibrium-panel.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-equilibrium-panel",
+      "domain": "admin-dashboard",
+      "layer": "ui-presentation",
+      "criticality": "high",
+      "doctrine": [
+        "one_contribution_many_views",
+        "browser_never_recomputes_economic_truth",
+        "derived_values_are_not_editable"
+      ],
+      "exportsGlobals": [
+        "KomercePricingEquilibriumPanel"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pricing-structure-event-panel.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-structure-event-panel-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "structure_adjustments_are_a_separate_form_not_inline",
+        "browser_never_recomputes_economic_truth",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalStructureEventPanel"
+      ],
+      "fetchCount": 2
+    },
+    {
+      "file": "pricing-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-decision-overview",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "browser_never_recomputes_economic_truth",
+        "market_bounds_possible_human_decides",
+        "one_contribution_many_views",
+        "missing_data_never_means_zero"
+      ],
+      "exportsGlobals": [
+        "KomercePricingDecisionOverview"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pricing-workspace-presentation.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-workshop-presentation",
+      "domain": "admin-dashboard",
+      "layer": "ui-presentation",
+      "criticality": "medium",
+      "doctrine": [
+        "presentation_only_server_remains_authority",
+        "workspace_acts_dashboard_observes",
+        "viewer_reads_manager_writes",
+        "every_cost_line_is_explainable",
+        "charge_nature_is_distinct_from_allocation_perimeter"
+      ],
+      "exportsGlobals": [
+        "KomercePricingWorkshopPresentation"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "pricing-workspace-simulation.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-impact-simulation-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "server_computes_pricing",
+        "simulation_never_persists",
+        "same_engine_before_after",
+        "observed_real_never_auto_applies"
+      ],
+      "exportsGlobals": [
+        "KomercePricingImpactSimulation"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "pricing-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-pricing-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "server_authoritative_market_decision_policy",
+        "browser_business_refs_only",
+        "server_computes_pricing"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalPricingWorkspace"
+      ],
+      "fetchCount": 7
+    },
+    {
+      "file": "primitives.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-dashboard-primitives",
+      "domain": "admin-dashboard",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "canonical_admin_no_legacy_imports",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalUI"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "product-360.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-product-360-entity",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "entity_360_reunites_without_recomputing",
+        "canonical_admin_no_legacy_imports",
+        "product_ref_is_business_identity"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalProduct360"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "settings-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-settings-workspace",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "canonical_admin_no_legacy_imports"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalSettingsWorkspace"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "shipping-customs-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-shipping-customs-workspace-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalShippingCustomsWorkspace"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "shipping-customs-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-shipping-customs-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "country_manager_supervises_without_field_agent_escalation",
+        "browser_never_supplies_market_id_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalShippingCustomsWorkspace"
+      ],
+      "fetchCount": 2
+    },
+    {
+      "file": "sourcing-workspace-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-sourcing-workspace-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals",
+        "global_sourcing_not_market_scoped"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalSourcingWorkspace"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "sourcing-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-sourcing-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "canonical_admin_no_legacy_imports",
+        "global_sourcing_not_market_scoped",
+        "browser_business_refs_only"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalSourcingWorkspace"
+      ],
+      "fetchCount": 11
+    },
+    {
+      "file": "team-invite.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-team-invitation-acceptance-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "invitation_acceptance_is_explicit",
+        "server_context_is_authority",
+        "token_removed_after_acceptance"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 2
+    }
+  ],
+  "diagnostics": {
+    "surfaceWithoutModule": [],
+    "navHrefUnresolved": [],
+    "unprovenContracts": [
+      "GET /api/admin/dashboard/context",
+      "GET /api/admin/demo/orders/{orderId}/timeline",
+      "GET /api/admin/entities/clients/{clientPhone}",
+      "GET /api/admin/entities/orders/{orderReference}",
+      "GET /api/admin/entities/products/{productRef}",
+      "GET /api/admin/orders",
+      "GET /api/admin/workspaces/catalog",
+      "GET /api/admin/workspaces/pricing/market/{marketCode}",
+      "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
+      "GET /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
+      "GET /api/admin/workspaces/sourcing",
+      "GET /api/auth/me",
+      "PATCH /api/orders/{id}/status",
+      "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",
+      "POST /api/admin/workspaces/catalog/approval/{productRef}/override",
+      "POST /api/admin/workspaces/catalog/approval/{productRef}/reject",
+      "POST /api/admin/workspaces/catalog/categories",
+      "POST /api/admin/workspaces/catalog/categories/{key}/subcategories",
+      "POST /api/admin/workspaces/catalog/categories/{key}/update",
+      "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
+      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
+      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/scan",
+      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/update",
+      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
+      "POST /api/admin/workspaces/sourcing/imports",
+      "POST /api/admin/workspaces/sourcing/products/{productRef}/update",
+      "POST /api/admin/workspaces/sourcing/suppliers",
+      "POST /api/admin/workspaces/sourcing/suppliers/{partnerRef}/update",
+      "POST /api/auth/logout"
+    ],
+    "notFoundContracts": [],
+    "notFoundDynamic": [
+      "GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
+      "GET* /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)",
+      "GET* /api/admin/workspaces/pricing/market/{param}/strategy (pricing-workspace.js)",
+      "GET* /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
+      "POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
+      "POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)",
+      "POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
+      "POST /api/admin/workspaces/sourcing/suppliers/{param}/${row.is_active  (sourcing-workspace.js)"
+    ],
+    "unresolvedFetches": [
+      "config.chargesEndpoint (pricing-structure-event-panel.js)",
+      "config.submitEndpoint (pricing-structure-event-panel.js)",
+      "context.endpoint (action-center.js)",
+      "endpoint (operations.js)",
+      "endpoint (pilotage.js)",
+      "endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)",
+      "path (action-center.js)",
+      "url (market-autonomy.js)",
+      "url (market-cash-control.js)",
+      "url (market-catalog.js)",
+      "url (market-team.js)",
+      "url (markets-decision-bootstrap.js)",
+      "url (pricing-workspace.js)",
+      "url (settings-workspace.js)",
+      "url (team-invite.js)"
+    ],
+    "legacyDependencies": [],
+    "clientMarketAuthoritySuspects": [],
+    "moduleFilesWithoutHeader": []
+  }
+}
