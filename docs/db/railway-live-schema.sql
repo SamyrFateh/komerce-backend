@@ -1130,7 +1130,7 @@ CREATE TABLE public.cart_shares (
 CREATE TABLE public.cash_collections (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     order_id uuid NOT NULL,
-    amount_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
     collected_by uuid NOT NULL,
     relais_id uuid,
     confirmed_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -1195,7 +1195,7 @@ CREATE SEQUENCE public.cash_deposit_ref_seq
 CREATE TABLE public.cash_deposits (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     agent_id uuid NOT NULL,
-    amount_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
     deposit_method text NOT NULL,
     reference text,
     proof_url text,
@@ -5373,7 +5373,7 @@ CREATE SEQUENCE public.refund_receipt_seq
 CREATE TABLE public.refunds (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     order_id uuid NOT NULL,
-    amount_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
     amount_eur numeric(10,2),
     refund_type text NOT NULL,
     refund_method text NOT NULL,
@@ -6035,8 +6035,8 @@ CREATE TABLE public.sourcing_global_access_grants (
 CREATE TABLE public.store_credits (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
-    amount_kmf integer NOT NULL,
-    remaining_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    remaining_kmf numeric(14,2) NOT NULL,
     reason text,
     source_order_id uuid,
     expires_at timestamp with time zone,
