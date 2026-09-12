@@ -64,6 +64,12 @@ jest.mock('../../services/catalog-enrichment', () => ({
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({ fetchProducts: jest.fn() }));
 jest.mock('../../services/suppliers/connectors/manual-connector', () => ({ fetchProducts: jest.fn() }));
 jest.mock('../../services/suppliers/connectors/noon-connector', () => ({ IS_ACTIVE: false, INACTIVE_REASON: 'Non implémenté' }));
+// Le catalogue de connecteurs API n'est plus limité à Noon (dispatch étendu à
+// CJ et AliExpress, voir services/sourcing-import-dispatch.js). On les mocke
+// avec le même pattern déterministe que Noon pour ne pas dépendre de
+// process.env (CJ_API_KEY, etc.) en test.
+jest.mock('../../services/suppliers/connectors/cj-connector', () => ({ IS_ACTIVE: false, INACTIVE_REASON: 'CJ non configuré (test)' }));
+jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({ IS_ACTIVE: false, INACTIVE_REASON: 'AliExpress non configuré (test)' }));
 
 const csvConnector = require('../../services/suppliers/connectors/csv-connector');
 const manualConnector = require('../../services/suppliers/connectors/manual-connector');
@@ -105,9 +111,14 @@ describe('sourcing-scanner — GET /connectors', () => {
       { type: 'csv', active: true, label: 'CSV import' },
       { type: 'manual', active: true, label: 'Saisie manuelle' },
     ]);
-    expect(res.body.api_suppliers).toEqual([
+    // Le catalogue de connecteurs API est extensible (dispatch multi-fournisseur,
+    // CJ et AliExpress s'ajoutent à Noon) : la cardinalité exacte ne fait pas
+    // partie du contrat, seule la présence/état de chaque connecteur déclaré compte.
+    expect(res.body.api_suppliers).toEqual(expect.arrayContaining([
       { supplier: 'noon', active: false, label: 'Noon API', reason: 'Non implémenté' },
-    ]);
+      { supplier: 'cj', active: false, label: 'CJdropshipping API', reason: 'CJ non configuré (test)' },
+      { supplier: 'aliexpress', active: false, label: 'AliExpress Dropshipper API', reason: 'AliExpress non configuré (test)' },
+    ]));
   });
 });
 
@@ -720,6 +731,12 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
       IS_ACTIVE: true,
       INACTIVE_REASON: null,
     }));
+    jest.doMock('../../services/suppliers/connectors/cj-connector', () => ({
+      IS_ACTIVE: false, INACTIVE_REASON: 'CJ non configuré (test)',
+    }));
+    jest.doMock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({
+      IS_ACTIVE: false, INACTIVE_REASON: 'AliExpress non configuré (test)',
+    }));
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
     }));
@@ -740,9 +757,9 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
       isolatedApp.use('/api/admin/sourcing', router);
 
       const connectorsRes = await request(isolatedApp).get('/api/admin/sourcing/connectors');
-      expect(connectorsRes.body.api_suppliers).toEqual([
+      expect(connectorsRes.body.api_suppliers).toEqual(expect.arrayContaining([
         { supplier: 'noon', active: true, label: 'Noon API', reason: null },
-      ]);
+      ]));
 
       await request(isolatedApp).post('/api/admin/sourcing/catalogs/import').send({ source_type: 'api', supplier_id: 'noon' });
       dispatcher = mockImportCatalog.mock.calls[mockImportCatalog.mock.calls.length - 1][2];
@@ -755,6 +772,12 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
     // module non mocké pour les requires suivants, pas le mock de tête de fichier).
     jest.doMock('../../services/suppliers/connectors/noon-connector', () => ({
       IS_ACTIVE: false, INACTIVE_REASON: 'Non implémenté',
+    }));
+    jest.doMock('../../services/suppliers/connectors/cj-connector', () => ({
+      IS_ACTIVE: false, INACTIVE_REASON: 'CJ non configuré (test)',
+    }));
+    jest.doMock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({
+      IS_ACTIVE: false, INACTIVE_REASON: 'AliExpress non configuré (test)',
     }));
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
@@ -886,9 +909,26 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     expect(res.status).toBe(400);
   });
 
-  it('POST /candidates/:id/import-product : price_kmf absent du body, utilise test_price_kmf du scan', async () => {
+  it('POST /candidates/:id/import-product : price_kmf absent du body → 400 (aucun fallback sur le scan, doctrine prix explicite)', async () => {
+    // Doctrine (services/sourcing-candidate-actions.js requireExplicitPromotionPrice) :
+    // le scan fournit des frontières économiques, jamais le prix final. Même si
+    // scan_result.test_price_kmf existe, il ne sert plus de repli implicite.
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000 }, product_name: 'X', normalized_source_contract: null }] },
+    ]);
+    mockGetClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Prix explicite requis/);
+    const insertCall = client.calls.find((c) => /INSERT INTO products/.test(c.sql));
+    expect(insertCall).toBeUndefined();
+  });
+
+  it('POST /candidates/:id/import-product : price_kmf fourni explicitement dans le body → utilisé tel quel (jamais le scan)', async () => {
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000, recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] },
       { rows: [{ id: 'prod-3' }] },
       { rows: [] },
       { rows: [] },
@@ -896,11 +936,13 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
 
-    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({});
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf: 9500 });
 
     expect(res.status).toBe(200);
     const insertParams = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).params;
-    expect(insertParams).toContain(7000); // initialPrice via test_price_kmf
+    expect(insertParams).toContain(9500); // initialPrice = prix opérateur explicite
+    expect(insertParams).not.toContain(7000);
+    expect(insertParams).not.toContain(3000);
   });
 
   it('POST /candidates/:id/import-product : komerce_category/purchase_price_kmf/description/weight absents → replis appliqués', async () => {
@@ -914,10 +956,14 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
 
-    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
+    // price_kmf reste obligatoire (doctrine prix explicite) : seuls
+    // komerce_category/purchase_price_kmf/description/weight ont un repli.
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf: 4200 });
 
     expect(res.status).toBe(200);
     const insertParams = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).params;
+    expect(insertParams).toContain(4200);     // initialPrice = prix opérateur explicite
+    expect(insertParams).not.toContain(3000); // jamais recommended_price_kmf du scan
     expect(insertParams).toContain('autre');  // komerce_category fallback
     expect(insertParams).toContain(0);        // purchase_price_kmf fallback
     expect(insertParams).toContain(null);     // description / weightKg fallback

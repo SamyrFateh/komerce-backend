@@ -25,12 +25,15 @@
   root.KomercePricingImpactSimulation = api;
   api.install(root);
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createPricingImpactSimulation() {
+  // Contrat canonique (2026-09) : les clés correspondent aux champs de
+  // services/pricing-workspace.js (SIMULATION_DECISION_FIELDS), eux-mêmes
+  // alignés sur services/pricing-engine.js.
   const METRICS = Object.freeze([
-    ['n1_landed_relay_cost_kmf', 'N1 · rendu relais', 'kmf'],
-    ['n2_business_variable_cost_kmf', 'N2 · variable business', 'kmf'],
-    ['n3_fixed_overhead_allocation_kmf', 'N3 · structure', 'kmf'],
+    ['landed_relay_cost_kmf', 'N1 · rendu relais', 'kmf'],
+    ['business_variable_cost_kmf', 'N2 · variable business', 'kmf'],
+    ['structure_allocation_reference_kmf', 'N3 · structure', 'kmf'],
     ['variable_cost_complete_kmf', 'Coût variable', 'kmf'],
-    ['cdr_complete_kmf', 'CDR complet', 'kmf'],
+    ['fully_loaded_cost_reference_kmf', 'CDR complet', 'kmf'],
     ['contribution_kmf', 'Contribution', 'kmf'],
     ['minimum_safe_price_kmf', 'Plancher', 'kmf'],
     ['recommended_price_kmf', 'Prix conseillé', 'kmf'],

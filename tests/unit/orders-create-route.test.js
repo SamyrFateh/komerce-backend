@@ -149,6 +149,7 @@ function validBody(overrides = {}) {
   return {
     items: [{ product_id: 'prod-1', quantity: 2 }],
     payment_mode: 'cash_relais',
+    relais_id: RELAIS.id,
     recipient_name: 'Fatima',
     recipient_phone: '+269222',
     ...overrides,
@@ -227,23 +228,22 @@ describe('orders/create — résolution relais', () => {
     expectTransactionRolledBack(client);
   });
 
-  it('relais_id absent → sélectionne le relais actif par défaut', async () => {
-    const client = makeClient([
-      { rows: [RELAIS] }, // SELECT relais par défaut
-      { rows: [] }, // recipient lookup
-      { rows: [{ id: 'recip-1' }] }, // INSERT recipient
-      { rows: [PRODUCT] }, // SELECT products
-      { rows: [orderRow()] }, // INSERT orders
-      { rows: [] }, // INSERT order_status_history
-      { rows: [] }, // INSERT order_items
-      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
-    ]);
+  it('relais_id absent → 400 relay_required (aucun fallback implicite)', async () => {
+    // Lot 3 : le checkout exige un relais explicite, voir
+    // services/order-checkout-service.js et
+    // tests/unit/order-checkout-service-relay-boundary.test.js. Le service
+    // ne sélectionne plus jamais un relais actif par défaut.
+    const client = makeClient([]);
     db.getClient.mockResolvedValue(client);
 
-    const res = await request(app).post('/api/orders').send(validBody());
+    const res = await request(app).post('/api/orders').send(validBody({ relais_id: undefined }));
 
-    expect(res.status).toBe(201);
-    expect(resolveRoutingFromRelais).toHaveBeenCalledWith(RELAIS);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'relais_id obligatoire — le checkout exige un relais explicite',
+      code: 'relay_required',
+    });
+    expectTransactionRolledBack(client);
   });
 
   it('RoutingError → status/code propagés, rollback', async () => {
@@ -706,8 +706,7 @@ describe('orders/create — wallet', () => {
       { rows: [orderRow()] }, // INSERT orders
       { rows: [] }, // INSERT order_status_history
       { rows: [] }, // UPDATE wallet_applied_kmf
-      { rows: [] }, // INSERT order_items
-      { rows: [] }, // Vague 2 D2 : allocateForOrderItem (no-op, pas de local_stock)
+      { rows: [] }, // INSERT order_items (PRODUCT.has_variants=false, pas LOCAL_STOCK → pas d'allocateForOrderItem)
       { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
       { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
       { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)

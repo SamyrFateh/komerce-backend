@@ -94,9 +94,12 @@ test('simulation impact utilise le même moteur avant/après sans persister', as
     finance: {}, categories: {}, provisions: [], charges: [], cost_benchmarks: [],
     components: [{ key: 'freight', label: 'Fret', family: 'landed_relay', category: 'freight', default_value: 1000, unit: 'kmf', source: 'default', confidence: 'medium' }],
   });
+  // Contrat canonique (2026-09) : n1_/n2_/n3_/cdr_complete_kmf remplacés par
+  // landed_relay_cost_kmf / business_variable_cost_kmf /
+  // structure_allocation_reference_kmf / fully_loaded_cost_reference_kmf.
   mockFlow
-    .mockResolvedValueOnce({ n1_landed_relay_cost_kmf: 5000, n2_business_variable_cost_kmf: 500, n3_fixed_overhead_allocation_kmf: 700, variable_cost_complete_kmf: 5500, cdr_complete_kmf: 6200, contribution_kmf: 2500, minimum_safe_price_kmf: 5500, recommended_price_kmf: 8000, final_price_kmf: 8000 })
-    .mockResolvedValueOnce({ n1_landed_relay_cost_kmf: 5500, n2_business_variable_cost_kmf: 500, n3_fixed_overhead_allocation_kmf: 700, variable_cost_complete_kmf: 6000, cdr_complete_kmf: 6700, contribution_kmf: 2500, minimum_safe_price_kmf: 6000, recommended_price_kmf: 8500, final_price_kmf: 8500 });
+    .mockResolvedValueOnce({ landed_relay_cost_kmf: 5000, business_variable_cost_kmf: 500, structure_allocation_reference_kmf: 700, variable_cost_complete_kmf: 5500, fully_loaded_cost_reference_kmf: 6200, contribution_kmf: 2500, minimum_safe_price_kmf: 5500, recommended_price_kmf: 8000, final_price_kmf: 8000 })
+    .mockResolvedValueOnce({ landed_relay_cost_kmf: 5500, business_variable_cost_kmf: 500, structure_allocation_reference_kmf: 700, variable_cost_complete_kmf: 6000, fully_loaded_cost_reference_kmf: 6700, contribution_kmf: 2500, minimum_safe_price_kmf: 6000, recommended_price_kmf: 8500, final_price_kmf: 8500 });
 
   const result = await workspace.simulateImpact({
     product_ref: 'KPR-000001',
@@ -108,7 +111,7 @@ test('simulation impact utilise le même moteur avant/après sans persister', as
   expect(mockFlow.mock.calls[1][1].config.components[0].default_value).toBe(1500);
   expect(result.persisted).toBe(false);
   expect(result.source_of_truth).toBe('pricing-engine');
-  expect(result.delta.n1_landed_relay_cost_kmf).toBe(500);
+  expect(result.delta.landed_relay_cost_kmf).toBe(500);
   expect(result.delta.recommended_price_kmf).toBe(500);
   expect(result.overrides[0]).toMatchObject({ key: 'freight', before: 1000, after: 1500, delta: 500 });
 });

@@ -49,11 +49,12 @@ describe('Dashboard — vérité unique (relaie le moteur)', () => {
       const price  = Number(input.current_price_kmf) || 0;
       const margin = price > 0 ? Math.round((1 - CDR / price) * 1000) / 10 : null;
       return {
-        cdr_complete_kmf:           CDR,
-        recommended_price_kmf:      RECO,
-        current_price_kmf:          price,
-        variable_cost_complete_kmf: VAR,
-        n3_fixed_overhead_allocation_kmf: N3,
+        // Contrat canonique du moteur (2026-09), cf. pricing-contract-compat.js
+        fully_loaded_cost_reference_kmf:    CDR,
+        recommended_price_kmf:              RECO,
+        current_price_kmf:                  price,
+        variable_cost_complete_kmf:         VAR,
+        structure_allocation_reference_kmf: N3,
         estimated_margin_pct:       margin,
         health_status:    price > 0 && price < CDR ? 'loss' : (margin >= 40 ? 'healthy' : 'fragile'),
         sourcing_decision: price > 0 && price < CDR ? 'LOSS' : 'TEST',
@@ -135,8 +136,8 @@ describe('computeDashboard — branches complémentaires', () => {
     });
     engine.loadGlobalConfig.mockResolvedValue({});
     engine.recommend.mockResolvedValue({
-      cdr_complete_kmf: 14007, recommended_price_kmf: 20000, current_price_kmf: 30000,
-      variable_cost_complete_kmf: 9000, n3_fixed_overhead_allocation_kmf: 5250,
+      fully_loaded_cost_reference_kmf: 14007, recommended_price_kmf: 20000, current_price_kmf: 30000,
+      variable_cost_complete_kmf: 9000, structure_allocation_reference_kmf: 5250,
       estimated_margin_pct: 53, health_status: 'strong', sourcing_decision: 'INCREASE_PRICE', market_confidence: 'validated',
     });
 
@@ -154,8 +155,8 @@ describe('computeDashboard — branches complémentaires', () => {
     });
     engine.loadGlobalConfig.mockResolvedValue({});
     engine.recommend.mockResolvedValue({
-      cdr_complete_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
-      variable_cost_complete_kmf: 9000, n3_fixed_overhead_allocation_kmf: 5250,
+      fully_loaded_cost_reference_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
+      variable_cost_complete_kmf: 9000, structure_allocation_reference_kmf: 5250,
       estimated_margin_pct: 6.7, health_status: 'fragile', sourcing_decision: 'TEST', market_confidence: 'testing',
     });
 
@@ -176,8 +177,8 @@ describe('computeDashboard — branches complémentaires', () => {
     });
     engine.loadGlobalConfig.mockResolvedValue({});
     engine.recommend.mockResolvedValue({
-      cdr_complete_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
-      variable_cost_complete_kmf: 9000, n3_fixed_overhead_allocation_kmf: 5250,
+      fully_loaded_cost_reference_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
+      variable_cost_complete_kmf: 9000, structure_allocation_reference_kmf: 5250,
       estimated_margin_pct: 6.7, health_status: 'fragile', sourcing_decision: 'TEST', market_confidence: 'testing',
     });
 
@@ -195,8 +196,8 @@ describe('computeDashboard — branches complémentaires', () => {
     });
     engine.loadGlobalConfig.mockResolvedValue({});
     engine.recommend.mockResolvedValue({
-      cdr_complete_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
-      variable_cost_complete_kmf: 9000, n3_fixed_overhead_allocation_kmf: 5250,
+      fully_loaded_cost_reference_kmf: 14007, recommended_price_kmf: 15500, current_price_kmf: 15000,
+      variable_cost_complete_kmf: 9000, structure_allocation_reference_kmf: 5250,
       estimated_margin_pct: 6.7, health_status: 'fragile', sourcing_decision: 'TEST', market_confidence: 'testing',
     });
 
@@ -216,8 +217,8 @@ describe('computeDashboard — branches complémentaires', () => {
     });
     engine.loadGlobalConfig.mockResolvedValue({});
     engine.recommend.mockResolvedValue({
-      cdr_complete_kmf: 14007, recommended_price_kmf: 20000, current_price_kmf: 20000,
-      variable_cost_complete_kmf: 9000, n3_fixed_overhead_allocation_kmf: 5250,
+      fully_loaded_cost_reference_kmf: 14007, recommended_price_kmf: 20000, current_price_kmf: 20000,
+      variable_cost_complete_kmf: 9000, structure_allocation_reference_kmf: 5250,
       estimated_margin_pct: 30, health_status: 'healthy', sourcing_decision: 'TEST', market_confidence: 'validated',
     });
 

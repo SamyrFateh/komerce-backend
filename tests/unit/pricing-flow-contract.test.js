@@ -31,8 +31,8 @@ const config = {
 
 const REQUIRED = [
   'category', 'channel', 'current_price_kmf',
-  'n1_landed_relay_cost_kmf', 'n2_business_variable_cost_kmf', 'variable_cost_complete_kmf',
-  'contribution_kmf', 'n3_fixed_overhead_allocation_kmf', 'n3_allocation_unit', 'n3_formula', 'cdr_complete_kmf',
+  'landed_relay_cost_kmf', 'business_variable_cost_kmf', 'variable_cost_complete_kmf',
+  'contribution_kmf', 'structure_allocation_reference_kmf', 'fully_loaded_cost_reference_kmf',
   'minimum_safe_price_kmf', 'recommended_price_kmf', 'final_price_kmf',
   'pricing_strategy', 'strategy_risk', 'safety_margin_pct', 'sourcing_decision',
   'data_quality', 'allocations', 'allocation_averages', 'proportions', 'strategies',
@@ -53,12 +53,12 @@ describe('Contrat moteur — vue /flow', () => {
     expect(reco[k]).toBeDefined();
   });
   it('final_price reflète l\'override', () => expect(reco.final_price_kmf).toBe(9000));
-  it('strategy_risk = undercovered ou destructive (9000 sous CDR)', () =>
-    expect(['undercovered', 'destructive']).toContain(reco.strategy_risk));
-  it('variable_cost_complete = N1 + N2', () =>
-    expect(reco.variable_cost_complete_kmf).toBe(reco.n1_landed_relay_cost_kmf + reco.n2_business_variable_cost_kmf));
-  it('cdr_complete = variable + N3', () =>
-    expect(reco.cdr_complete_kmf).toBe(reco.variable_cost_complete_kmf + reco.n3_fixed_overhead_allocation_kmf));
+  it('strategy_risk = contributive_low_buffer ou destructive (9000 sous CDR)', () =>
+    expect(['contributive_low_buffer', 'destructive']).toContain(reco.strategy_risk));
+  it('variable_cost_complete = coût landed_relay + coût variable business', () =>
+    expect(reco.variable_cost_complete_kmf).toBe(reco.landed_relay_cost_kmf + reco.business_variable_cost_kmf));
+  it('fully_loaded_cost_reference = variable + structure allocation', () =>
+    expect(reco.fully_loaded_cost_reference_kmf).toBe(reco.variable_cost_complete_kmf + reco.structure_allocation_reference_kmf));
   it('6 stratégies canoniques', () => expect(reco.strategies).toHaveLength(6));
   it('allocations non vides', () => expect(reco.allocations.length).toBeGreaterThan(0));
 });

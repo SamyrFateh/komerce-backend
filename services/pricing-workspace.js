@@ -38,12 +38,12 @@ const REAL_COST_TYPE_BY_CATEGORY = Object.freeze({
   marketing_campaign: 'marketing',
 });
 const SIMULATION_DECISION_FIELDS = Object.freeze([
-  'n1_landed_relay_cost_kmf',
-  'n2_business_variable_cost_kmf',
+  'landed_relay_cost_kmf',
+  'business_variable_cost_kmf',
   'variable_cost_complete_kmf',
   'contribution_kmf',
-  'n3_fixed_overhead_allocation_kmf',
-  'cdr_complete_kmf',
+  'structure_allocation_reference_kmf',
+  'fully_loaded_cost_reference_kmf',
   'minimum_safe_price_kmf',
   'recommended_price_kmf',
   'final_price_kmf',

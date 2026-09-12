@@ -314,7 +314,8 @@ function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
     purchase_cost_kmf: pricing.purchase_cost_kmf ?? null,
     variable_cost_outside_purchase_kmf: pricing.variable_cost_outside_purchase_kmf ?? null,
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,
-    cdr_reference_kmf: pricing.cdr_complete_kmf ?? null,
+    // Contrat canonique (2026-09) : cdr_complete_kmf → fully_loaded_cost_reference_kmf
+    cdr_reference_kmf: pricing.fully_loaded_cost_reference_kmf ?? null,
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
     minimum_safe_price_kmf: pricing.minimum_safe_price_kmf ?? null,
     coverage_reference_price_kmf: pricing.recommended_price_kmf ?? null,

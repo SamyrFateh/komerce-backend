@@ -453,7 +453,7 @@
     const items = [
       ['Rendu relais', result.landed_relay_cost_kmf],
       ['Coût variable', result.variable_cost_complete_kmf || result.business_complete_cost_kmf],
-      ['CDR complet', result.cdr_complete_kmf || result.cost_complete_estimated_kmf],
+      ['CDR complet', result.fully_loaded_cost_reference_kmf || result.cost_complete_estimated_kmf],
       ['Plancher', result.minimum_safe_price_kmf],
       ['Conseillé', result.recommended_price_kmf],
     ];
