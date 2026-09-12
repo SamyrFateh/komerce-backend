@@ -4,7 +4,7 @@
 
 Une unité vendable Komerce n'est **Fulfillment Ready** que si elle se résout sans ambiguïté vers exactement une unité commandable chez son fournisseur.
 
-La chaîne canonique est :
+La chaîne cible est :
 
 `product_skus.id → supplier_sku → supplier_unit_ref → supplier_order_identity → adaptateur fournisseur`
 
@@ -66,8 +66,8 @@ Un changement de prix ou de stock ne crée donc jamais une nouvelle identité SK
 2. Une identité doit résoudre exactement une unité fournisseur.
 3. `0` résolution ou plusieurs résolutions = `BLOCKED_SUPPLIER_IDENTITY`.
 4. Une identité absente n'est jamais reconstruite à partir d'un libellé humain au moment de l'achat.
-5. Les anciennes lignes sans identité restent valides pour le catalogue mais ne sont pas déclarées Fulfillment Ready.
-6. Un refresh fournisseur peut enrichir/re-promouvoir une identité manquante ; il ne doit jamais l'inventer.
+5. Les anciennes données sans identité restent valides pour le catalogue mais ne sont pas déclarées Fulfillment Ready.
+6. Un refresh fournisseur peut obtenir une identité native manquante ; il ne doit jamais l'inventer.
 7. Le payload opaque ne doit contenir ni prix, ni stock, ni fret.
 8. `placeOrder()` n'est accessible qu'après un preflight qui a revalidé stock, prix, disponibilité et fret contre la même identité.
 
@@ -80,6 +80,10 @@ Chaque connecteur fournisseur est responsable de deux opérations :
 
 Le domaine Purchasing ne doit jamais parser directement un payload brut d'import pour deviner une variante.
 
-## Migration historique
+## Lots de persistance
 
-Les SKU déjà présents avant cette doctrine ne sont pas backfillés artificiellement. Leur `supplier_unit_ref` et `supplier_order_identity` restent `NULL` jusqu'à un refresh/re-import/re-promotion qui fournit une identité native prouvée.
+Le premier lot introduit l'identité dans le contrat `NormalizedSupplierProduct V2`. Elle est donc conservée dans `normalized_source_contract` et survit à la suppression volontaire de `raw_payload` dans ce snapshot.
+
+La persistance directe de cette identité sur `product_skus` est un lot séparé et obligatoire avant de déclarer le catalogue **Supplier-Mapped / Fulfillment Ready**. Ce lot devra ajouter les colonnes canoniques et les alimenter pendant promotion/re-promotion, sans backfill heuristique des lignes historiques.
+
+Les promotions historiques restent utilisables comme point de départ d'un refresh fournisseur, mais jamais comme autorité suffisante pour construire une commande fournisseur si l'identité canonique n'est pas présente.
