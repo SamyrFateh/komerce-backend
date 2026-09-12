@@ -35,6 +35,11 @@ function plan(feeds, categories) {
   return out;
 }
 
+function isEmptyResultError(error) {
+  const message = String(error?.message || error || '');
+  return /\bresult\s+is\s+empty\b|\bempty\s+result\b/i.test(message);
+}
+
 async function countClean() {
   const { rows: [row] } = await db.query(
     `SELECT COUNT(*)::int count FROM sourcing_candidates sc
@@ -70,4 +75,4 @@ async function importProducts(config, n, products, spec) {
   return result.body;
 }
 
-module.exports = { SURFACE_ID, plan, countClean, seenIds, importProducts };
+module.exports = { SURFACE_ID, plan, isEmptyResultError, countClean, seenIds, importProducts };
