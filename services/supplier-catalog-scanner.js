@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @version       2026-09
  */
 
 /**
@@ -81,9 +81,19 @@ function convertToKMF(amount, currency, finance) {
   return Math.round(v * fx.usd_kmf);
 }
 
+function findAvailableCategory(cats, keys) {
+  for (const key of keys || []) {
+    const cat = cats.find(c => c.key === key);
+    if (cat) return cat;
+  }
+  return null;
+}
+
 /**
- * Mappe une catégorie fournisseur (texte libre) vers une customs_categories.key Komerce.
- * Logique simple par mots-clés FR + EN.
+ * Mappe une catégorie/description fournisseur (texte libre) vers une
+ * customs_categories.key Komerce. Les aliases gardent la compatibilité avec
+ * les anciens jeux de catégories tout en privilégiant les 8 catégories
+ * douanières canoniques actuellement seedées.
  */
 function mapCategory(supplierCat, komerceCats) {
   const cats = Array.isArray(komerceCats) ? komerceCats : [];
@@ -91,25 +101,73 @@ function mapCategory(supplierCat, komerceCats) {
     const fallback = cats.find(c => c.key === 'autre') || cats[0];
     return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
   }
-  const s = supplierCat.toLowerCase();
+  const s = String(supplierCat).toLowerCase();
   const rules = [
-    { keys: ['phone', 'mobile', 'téléphone', 'smartphone'], catKey: 'phones' },
-    { keys: ['cloth', 'vetement', 'vêtement', 'robe', 'chemise', 'pantalon', 'fashion'], catKey: 'vetements' },
-    { keys: ['tissu', 'fabric', 'textile'], catKey: 'tissus' },
-    { keys: ['cosmetic', 'beauty', 'parfum', 'cosmétique', 'maquillage'], catKey: 'cosmetiques' },
-    { keys: ['toy', 'jouet', 'enfant', 'kids'], catKey: 'enfants' },
-    { keys: ['accessoire', 'accessory', 'bag', 'sac'], catKey: 'accessoires' },
-    { keys: ['cuisine', 'kitchen', 'maison', 'home'], catKey: 'maison' },
-    { keys: ['electronic', 'gadget', 'electrique'], catKey: 'electronique' },
+    { keys: ['evening dress', 'formal suit', 'ceremon', 'cérémon', 'abaya', 'wedding dress'], catKeys: ['ceremonie', 'vetements'] },
+    { keys: ['phone', 'mobile', 'téléphone', 'telephone', 'smartphone'], catKeys: ['phones'] },
+    { keys: ['cosmetic', 'beauty', 'beauté', 'parfum', 'perfume', 'cosmétique', 'maquillage', 'skin care', 'skincare'], catKeys: ['cosmetiques'] },
+    { keys: ['toy', 'jouet', 'enfant', 'kids', 'school supplies', 'school bag'], catKeys: ['enfants', 'vetements'] },
+    { keys: ['home appliance', 'household appliance', 'electronic', 'electronics', 'gadget', 'electrique', 'électrique', 'headphone', 'speaker', 'smartwatch', 'wrist watch'], catKeys: ['electro', 'electronique', 'maison'] },
+    { keys: ['power tool', 'hand tool', 'outillage', 'hardware', 'quincailler', 'padlock', 'door lock', 'brake', 'car oil filter', 'car air filter', 'motorcycle', 'car led', 'headlight'], catKeys: ['materiels', 'autre'] },
+    { keys: ['kitchenware', 'kitchen utensil', 'cuisine', 'ustensil'], catKeys: ['materiels', 'maison', 'mariage'] },
+    { keys: ['gift', 'cadeau', 'home decor', 'déco', 'deco', 'jewelry', 'bijou', 'vaisselle'], catKeys: ['mariage', 'accessoires', 'autre'] },
+    { keys: ['cloth', 'clothing', 'vetement', 'vêtement', 'robe', 'dress', 'shirt', 'chemise', 'pantalon', 'fashion', 'tissu', 'fabric', 'textile'], catKeys: ['vetements', 'tissus'] },
+    { keys: ['bag', 'sac', 'accessoire', 'accessory'], catKeys: ['mariage', 'accessoires', 'materiels'] },
+    { keys: ['maison', 'home'], catKeys: ['mariage', 'maison', 'materiels'] },
   ];
   for (const r of rules) {
-    if (r.keys.some(k => s.includes(k))) {
-      const cat = cats.find(c => c.key === r.catKey);
-      if (cat) return { key: cat.key, source: 'mapped', confidence: 'medium' };
-    }
+    if (!r.keys.some(k => s.includes(k))) continue;
+    const cat = findAvailableCategory(cats, r.catKeys);
+    if (cat) return { key: cat.key, source: 'mapped', confidence: 'medium' };
   }
   const fallback = cats.find(c => c.key === 'autre') || cats[0];
   return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
+}
+
+const DISCOVERY_SEGMENT_CATEGORY_KEYS = Object.freeze({
+  'mode-femme': ['vetements'],
+  'mode-homme': ['vetements'],
+  'mode-enfant': ['enfants', 'vetements'],
+  beaute: ['cosmetiques'],
+  'maison-confort': ['electro', 'maison'],
+  'maison-cuisine': ['materiels', 'maison', 'mariage'],
+  'maison-deco': ['mariage', 'maison'],
+  'maison-enfants': ['enfants'],
+  'tech-phones': ['phones'],
+  'tech-audio': ['electro', 'electronique'],
+  'tech-montres': ['electro', 'electronique'],
+  'bricolage-outillage': ['materiels'],
+  'bricolage-electricite': ['materiels', 'electro'],
+  'bricolage-securite': ['materiels'],
+  'creation-ceremonie': ['ceremonie', 'vetements'],
+  'creation-cadeau': ['mariage'],
+  'creation-impression': ['mariage', 'materiels'],
+  'auto-filtres': ['materiels'],
+  'auto-freinage': ['materiels'],
+  'auto-eclairage': ['materiels', 'electro'],
+  'auto-moto': ['materiels'],
+});
+
+function mapProductCategory(product, komerceCats) {
+  const cats = Array.isArray(komerceCats) ? komerceCats : [];
+  const discovery = product?.raw_payload?.discovery || {};
+  const segmentKeys = DISCOVERY_SEGMENT_CATEGORY_KEYS[String(discovery.segment_id || '')];
+  const segmentCat = findAvailableCategory(cats, segmentKeys);
+  if (segmentCat) {
+    return { key: segmentCat.key, source: 'mapped', confidence: 'high' };
+  }
+
+  // Pour les feeds non segmentés, la preuve sémantique la plus riche est le
+  // nom produit + le contexte de découverte. La catégorie fournisseur Ali est
+  // souvent seulement un identifiant numérique et ne suffit pas à elle seule.
+  const hint = [
+    discovery.target_category,
+    discovery.target_subcategory,
+    discovery.keyword,
+    product?.product_name,
+    product?.supplier_category,
+  ].filter(Boolean).join(' ');
+  return mapCategory(hint || product?.supplier_category, cats);
 }
 
 /**
@@ -120,8 +178,9 @@ function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
     return { value: Number(suppliedWeight), source: 'supplier', confidence: 'high' };
   }
   const defaults = {
-    phones: 0.3, vetements: 0.4, tissus: 0.6, cosmetiques: 0.2,
-    enfants: 0.5, accessoires: 0.3, maison: 1.5, electronique: 1.0,
+    phones: 0.3, vetements: 0.4, tissus: 0.6, ceremonie: 0.5,
+    cosmetiques: 0.2, enfants: 0.5, mariage: 0.6, materiels: 1.0,
+    accessoires: 0.3, maison: 1.5, electro: 1.0, electronique: 1.0,
     autre: 0.5,
   };
   const cat = (komerceCats || []).find(c => c.key === categoryKey);
@@ -149,8 +208,9 @@ function estimateVolume(dimensions, categoryKey) {
     return { value: (lcm * wcm * hcm) / 1_000_000, source: 'supplier', confidence: 'high' };
   }
   const defaults = {
-    phones: 0.001, vetements: 0.005, tissus: 0.008, cosmetiques: 0.0008,
-    enfants: 0.006, accessoires: 0.003, maison: 0.020, electronique: 0.010,
+    phones: 0.001, vetements: 0.005, tissus: 0.008, ceremonie: 0.007,
+    cosmetiques: 0.0008, enfants: 0.006, mariage: 0.006, materiels: 0.010,
+    accessoires: 0.003, maison: 0.020, electro: 0.010, electronique: 0.010,
     autre: 0.005,
   };
   return {
@@ -191,8 +251,10 @@ async function normalizeCandidate(product, options = {}) {
   const komerceCats = Object.values(config.categories || {});
   const dataSources = {};
 
-  // Catégorie
-  const catMap = mapCategory(product.supplier_category, komerceCats);
+  // Catégorie : conserver la provenance de découverte quand elle existe, puis
+  // fallback sémantique. Ne jamais écraser une segmentation riche par un code
+  // fournisseur opaque tel que "AliExpress category 63705".
+  const catMap = mapProductCategory(product, komerceCats);
   const komerceCategory = catMap.key;
   dataSources.category = catMap.source;
 
@@ -249,6 +311,20 @@ async function normalizeCandidate(product, options = {}) {
 // SCAN (réutilise pricing-engine)
 // ═══════════════════════════════════════════════════════════════════════
 
+function economicTestHealth(reco = {}) {
+  const price = Number(reco.test_price_kmf) || 0;
+  const variable = Number(reco.variable_cost_complete_kmf ?? reco.variable_cost_estimated_kmf) || 0;
+  if (!(price > 0) || !(variable > 0)) return { status: 'unknown', margin_pct: null };
+  const marginPct = ((price - variable) / price) * 100;
+  let status;
+  if (price < variable) status = 'loss';
+  else if (marginPct < 15) status = 'danger';
+  else if (marginPct < 25) status = 'fragile';
+  else if (marginPct <= 40) status = 'healthy';
+  else status = 'strong';
+  return { status, margin_pct: Number(marginPct.toFixed(1)) };
+}
+
 /**
  * Scanne un candidat normalisé via pricing-engine.recommend().
  * Retourne le résultat doctrine + override la sourcing_decision selon §10.
@@ -271,6 +347,20 @@ async function scanCandidate(candidate, options = {}) {
     };
   }
 
+  // Une catégorie réellement non résolue reste un blocage de Raffinerie. On ne
+  // laisse plus le fallback de tableau transformer silencieusement l'inconnu en
+  // première catégorie (historiquement `phones`).
+  if (candidate.data_sources?.category === 'default') {
+    return {
+      scan_result: null,
+      sourcing_decision: 'WATCH',
+      reason: 'Catégorie Komerce non résolue — décision impossible.',
+      recommended_action: 'Compléter ou corriger la catégorie avant promotion.',
+      market_confidence: 'unknown',
+      confidence: candidate.confidence || 'low',
+    };
+  }
+
   const input = {
     product_id: null,
     category: candidate.komerce_category || 'autre',
@@ -282,25 +372,34 @@ async function scanCandidate(candidate, options = {}) {
   };
 
   const reco = await pricingEngine.recommend(input, { config });
+  const testHealth = economicTestHealth(reco);
+  const scanResult = {
+    ...reco,
+    economic_test_health_status: testHealth.status,
+    economic_test_margin_pct: testHealth.margin_pct,
+  };
 
-  // Override §10 : sans données marché, jamais PRIORITY
+  // Sans prix marché/humain, `health_status` reste honnêtement `unknown`.
+  // La Raffinerie peut néanmoins décider TEST à partir de la référence
+  // économique de test, qui reste explicitement NON autoritaire sur le marché.
+  const decisionHealth = reco.health_status === 'unknown' ? testHealth.status : reco.health_status;
   let sourcingDecision = reco.sourcing_decision;
   let reason = reco.reason || '';
-  if (reco.health_status === 'loss') {
+  if (decisionHealth === 'loss') {
     sourcingDecision = 'LOSS';
-    reason = reason || 'Coût supérieur au prix recommandé — produit non rentabilisable.';
-  } else if (reco.health_status === 'danger') {
+    reason = reason || 'Référence test sous le coût variable — produit non rentabilisable.';
+  } else if (decisionHealth === 'danger') {
     sourcingDecision = 'AVOID';
-    reason = reason || 'Marge dangereusement faible. Renégocier ou éviter.';
-  } else if (reco.health_status === 'fragile') {
+    reason = reason || 'Référence test à contribution dangereusement faible. Renégocier ou éviter.';
+  } else if (decisionHealth === 'fragile') {
     sourcingDecision = 'WATCH';
-    reason = reason || 'Marge fragile. Surveiller les coûts terrain avant sourcing massif.';
-  } else if (reco.health_status === 'healthy' || reco.health_status === 'strong') {
+    reason = reason || 'Référence test à contribution fragile. Surveiller les coûts terrain avant sourcing.';
+  } else if (decisionHealth === 'healthy' || decisionHealth === 'strong') {
     sourcingDecision = 'TEST';
-    reason = 'Marge satisfaisante mais demande marché inconnue. Tester en faible quantité avant sourcing massif.';
+    reason = 'Référence économique de test contributive ; demande marché encore inconnue. Tester en faible quantité sans traiter cette référence comme un prix marché.';
   } else {
     sourcingDecision = 'WATCH';
-    reason = 'Données insuffisantes pour décider. Compléter prix achat / poids / catégorie.';
+    reason = 'Données économiques insuffisantes pour décider. Compléter coût, poids, volume ou catégorie.';
   }
 
   const recommendedAction = ({
@@ -312,11 +411,11 @@ async function scanCandidate(candidate, options = {}) {
   })[sourcingDecision] || 'À examiner manuellement';
 
   return {
-    scan_result: reco,
+    scan_result: scanResult,
     sourcing_decision: sourcingDecision,
     reason,
     recommended_action: recommendedAction,
-    market_confidence: 'unknown',
+    market_confidence: reco.market_confidence || 'unknown',
     confidence: candidate.confidence || 'low',
   };
 }
@@ -333,6 +432,8 @@ module.exports = {
   // Helpers exposés (utiles pour tests)
   convertToKMF,
   mapCategory,
+  mapProductCategory,
+  economicTestHealth,
   estimateWeight,
   estimateVolume,
   computeConfidence,
