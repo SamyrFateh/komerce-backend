@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        authenticated_actor, server_route_market_code, signal_ref, action_payload
  * @outputs       canonical_action_center_projection, signal_lifecycle_action_results
- * @depends       db.js, middleware/auth.js, middleware/require-decision-signal-global-authority.js, services/action-center-workspace.js, services/market-delegation-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-decision-signal-global-authority.js, services/action-center-workspace.js, services/signal-admin-service.js, services/market-delegation-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       decision_signal_global_access_grants, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write-via:signal-admin-service signals
  * @db-write-via:market-delegation-service market_delegation_audit
- * @db-txn        none
+ * @db-txn        market_signal_lifecycle_plus_delegation_audit_atomic
  * @doctrine      exact_market_scope_is_server_authority, signal_ref_only, global_and_market_action_centers_never_cross_scope, action_center_never_mutates_source_entities
  * @impact-areas  decision-signals, admin-dashboard, market-authorization, market-delegation
  * @version       2026-09
@@ -28,6 +28,7 @@ const {
   requireDecisionSignalGlobalAuthority,
 } = require('../middleware/require-decision-signal-global-authority');
 const workspace = require('../services/action-center-workspace');
+const signalAdminService = require('../services/signal-admin-service');
 const {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
@@ -55,6 +56,10 @@ function rejectBrowserAuthority(req, res, next) {
   next();
 }
 
+function routeError(status, message, code) {
+  return Object.assign(new Error(message), { status, code });
+}
+
 function sendAction(res, action, result) {
   return res.json({ ok: true, action, result });
 }
@@ -71,10 +76,7 @@ async function resolveMarketAuthority(req, requiredCapability) {
   if (req.user.role === 'admin') {
     const allowed = await hasDecisionSignalGlobalAuthority(req.user.id);
     if (!allowed) {
-      const error = new Error('Accès refusé — autorité globale Centre d’actions requise');
-      error.code = 'decision_signal_global_access_denied';
-      error.status = 403;
-      throw error;
+      throw routeError(403, 'Accès refusé — autorité globale Centre d’actions requise', 'decision_signal_global_access_denied');
     }
     return resolveActiveAssignmentByMarketCode(db, marketCode);
   }
@@ -95,8 +97,8 @@ function publicMarket(authz) {
   };
 }
 
-async function auditMarketLifecycle(req, authz, action, result) {
-  await audit(db, {
+async function auditMarketLifecycle(executor, req, authz, action, result) {
+  await audit(executor, {
     actorUserId: req.user.id,
     assignmentId: authz.assignment_id,
     membershipId: authz.membership_id || null,
@@ -105,6 +107,39 @@ async function auditMarketLifecycle(req, authz, action, result) {
     before: null,
     after: { signal_ref: result.signal_ref, status: result.status },
     correlationId: req.get('x-correlation-id') || null,
+  });
+}
+
+async function acknowledgeMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.acknowledgeByRef(ref, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou déjà acquitté', 'action_center_signal_not_open');
+    const result = { signal_ref: row.signal_ref, status: row.status };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_ACKNOWLEDGED', result);
+    return result;
+  });
+}
+
+async function snoozeMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.snoozeByRef(ref, req.body && req.body.hours, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
+    const result = { signal_ref: row.signal_ref, status: row.status, snoozed_until: row.snoozed_until };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_SNOOZED', result);
+    return result;
+  });
+}
+
+async function resolveMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
+    const result = { signal_ref: row.signal_ref, status: row.status, resolved_at: row.resolved_at };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_RESOLVED', result);
+    return result;
   });
 }
 
@@ -130,9 +165,7 @@ router.post(
   async (req, res, next) => {
     try {
       const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
-      const result = await workspace.acknowledge(req.params.signalRef, authz.market_id);
-      await auditMarketLifecycle(req, authz, 'DECISION_SIGNAL_ACKNOWLEDGED', result);
-      sendAction(res, 'acknowledge_signal', result);
+      sendAction(res, 'acknowledge_signal', await acknowledgeMarketSignal(req, authz));
     } catch (error) { handleError(error, res, next); }
   }
 );
@@ -143,9 +176,7 @@ router.post(
   async (req, res, next) => {
     try {
       const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
-      const result = await workspace.snooze(req.params.signalRef, req.body && req.body.hours, authz.market_id);
-      await auditMarketLifecycle(req, authz, 'DECISION_SIGNAL_SNOOZED', result);
-      sendAction(res, 'snooze_signal', result);
+      sendAction(res, 'snooze_signal', await snoozeMarketSignal(req, authz));
     } catch (error) { handleError(error, res, next); }
   }
 );
@@ -156,9 +187,7 @@ router.post(
   async (req, res, next) => {
     try {
       const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
-      const result = await workspace.resolve(req.params.signalRef, req.user, authz.market_id);
-      await auditMarketLifecycle(req, authz, 'DECISION_SIGNAL_RESOLVED', result);
-      sendAction(res, 'resolve_signal', result);
+      sendAction(res, 'resolve_signal', await resolveMarketSignal(req, authz));
     } catch (error) { handleError(error, res, next); }
   }
 );
@@ -200,4 +229,7 @@ module.exports._test = {
   rejectBrowserAuthority,
   resolveMarketAuthority,
   publicMarket,
+  acknowledgeMarketSignal,
+  snoozeMarketSignal,
+  resolveMarketSignal,
 };
