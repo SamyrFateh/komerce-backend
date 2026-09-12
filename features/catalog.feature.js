@@ -47,7 +47,7 @@ module.exports = {
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
-      'source AliExpress de stress-test Raffinerie : feed/detail Dropshipper officiel, normalisation V2 riche, aucune publication automatique et activation fail-closed sur credentials',
+      'source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
       'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
       'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
@@ -109,6 +109,8 @@ module.exports = {
       'services/suppliers/connectors/_connector-utils.js',
       'services/suppliers/connectors/noon-connector.js',
       'services/suppliers/connectors/cj-connector.js',
+      'services/suppliers/aliexpress-oauth.js',
+      'services/suppliers/connectors/aliexpress-connected-connector.js',
       'services/suppliers/connectors/aliexpress-connector.js',
       'services/suppliers/connectors/json-connector.js',
       'services/suppliers/cj-catalog-index.js',
@@ -150,6 +152,7 @@ module.exports = {
       'migrations/163_supplier_catalog_sync_checkpoints.sql',
       'migrations/202_catalog_product_market_exposure.sql',
       'migrations/206_catalog_product_market_exposure_snapshot.sql',
+      'migrations/218_supplier_oauth_connections.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -174,6 +177,7 @@ module.exports = {
       'routes/categories.js',
       'routes/admin/catalog-approval.js',
       'routes/admin-catalog-workspace.js',
+      'routes/integrations-aliexpress.js',
     ],
     boutique: [
       'js/b-catalog.js',
@@ -234,6 +238,7 @@ module.exports = {
       'tests/unit/noon-connector.test.js',
       'tests/unit/cj-connector.test.js',
       'tests/unit/aliexpress-connector.test.js',
+      'tests/unit/aliexpress-oauth.test.js',
       'tests/unit/cj-connector-doc-contract.test.js',
       'tests/unit/cj-real-showcase-seed.test.js',
       'tests/unit/cj-catalog-index.test.js',
@@ -326,14 +331,15 @@ module.exports = {
       'sourcing_candidates: R',
       'supplier_catalog_imports: W',
       'supplier_catalog_sync_checkpoints: RW',
+      'supplier_oauth_connections: RW',
     ],
   },
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 21,
-    totalRoutes: 27,
-    note: 'Catalogue public en lecture ; GET /api/products/:id/detail expose uniquement le contrat detail v1 valide. Les contrats source et normalized_source_contract restent internes ; mutations produit, SKU, overrides et approbation restent protegees admin.',
+    authedRoutesDetected: 24,
+    totalRoutes: 31,
+    note: 'Catalogue public en lecture ; OAuth AliExpress expose une callback publique protégée par state et trois routes admin protégées. Les tokens fournisseur sont chiffrés AES-256-GCM et ne sont jamais renvoyés au navigateur.',
   },
 
   contract: {
@@ -440,5 +446,6 @@ module.exports = {
     'aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux',
     'le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement',
     'la source AliExpress reste une entrée de Raffinerie : elle ne crée ni ne publie jamais directement un produit canonique',
+    'les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur',
   ],
 };

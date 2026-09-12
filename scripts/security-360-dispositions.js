@@ -157,6 +157,13 @@ const DISPOSITIONS = Object.freeze({
     rationale: 'Calculateur couture public ; pas de mutation d’autorité métier.',
   },
 
+  // ── Intégrations fournisseur / callbacks OAuth ────────────────────────────
+  'GET /api/integrations/aliexpress/oauth/callback': {
+    kind: 'CAPABILITY_TOKEN',
+    evidence: 'routes/integrations-aliexpress.js; tests/unit/aliexpress-oauth.test.js; features/catalog.feature.js',
+    rationale: 'Callback OAuth AliExpress sans session Express : le state CSPRNG est lié au navigateur par cookie HttpOnly/SameSite, comparé en temps constant puis effacé avant échange du code.',
+  },
+
   // ── Capabilities / partage ────────────────────────────────────────────────
   'GET /api/orders/retrait/{token}': {
     kind: 'CAPABILITY_TOKEN',
