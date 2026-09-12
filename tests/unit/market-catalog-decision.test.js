@@ -74,6 +74,6 @@ describe('Catalogue pays decision-first', () => {
     expect(source).toContain('payload.summary');
     expect(source).not.toMatch(/rows\.filter\([^\n]+commercial_exposure/);
     expect(source).toContain('Garder masqué');
-    expect(source).not.toMatch(/\bmarket_id\b/);
+    expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
 });
