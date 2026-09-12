@@ -19,6 +19,7 @@ describe('Catalogue pays decision-first', () => {
       exposed_products: 4,
       hidden_products: 6,
       undecided_products: 3,
+      decided_products: 7,
       explicit_hidden_products: 3,
       exposed_needs_review: 1,
       exposure_pct: 40,
@@ -68,10 +69,12 @@ describe('Catalogue pays decision-first', () => {
   test('la page charge les primitives partagées et ne recalcule plus le résumé à partir du tableau', () => {
     const html = read('public/dashboards/canonical/market-catalog.html');
     const source = read('public/dashboards/canonical/js/market-catalog.js');
+    const decisionSource = read('public/dashboards/canonical/js/market-catalog-decision.js');
     expect(html).toContain('/dashboards/canonical/js/primitives.js?v=1204');
     expect(html).toContain('/dashboards/canonical/js/decision-primitives.js?v=1601');
     expect(html).toContain('/dashboards/canonical/js/market-catalog-decision.js?v=1612');
-    expect(source).toContain('payload.summary');
+    expect(source).toContain('projection.metricItems(payload)');
+    expect(decisionSource).toContain('payload.summary || {}');
     expect(source).not.toMatch(/rows\.filter\([^\n]+commercial_exposure/);
     expect(source).toContain('Garder masqué');
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
