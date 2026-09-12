@@ -45,8 +45,15 @@ const {
 } = require('../../js/b-modal-product.js');
 
 function makeProduct(overrides) {
+  // image_url est le média canonique/curaté (celui de la carte) : par défaut
+  // il correspond au premier élément de `images` quand une galerie est
+  // fournie, comme en production, sauf si le test override explicitement
+  // image_url (ex. pour tester le fallback ou une désynchronisation).
+  const defaultImageUrl = overrides && Array.isArray(overrides.images) && overrides.images.length
+    ? overrides.images.find(Boolean) || 'img1.jpg'
+    : 'img1.jpg';
   return Object.assign({
-    id: 1, name: 'Riz basmati 5kg', price_kmf: 5000, image_url: 'img1.jpg',
+    id: 1, name: 'Riz basmati 5kg', price_kmf: 5000, image_url: defaultImageUrl,
   }, overrides);
 }
 
