@@ -19,6 +19,7 @@ jest.mock('../../services/suppliers/catalog-sync-checkpoint', () => ({
 }));
 
 const {
+  runtimeEnvironment,
   runtimeConfig,
   positiveStock,
   basicCleanProduct,
@@ -69,6 +70,31 @@ describe('aliexpress-500-catalog-sync', () => {
       ALIEXPRESS_SESSION: 'session',
       KOMERCE_ALIEXPRESS_MAX_CLEAN_PRODUCTS: '501',
     })).toThrow(/entre 1 et 500/);
+  });
+
+  test('KOMERCE_ENV est l’autorité runtime et staging prime NODE_ENV=production', () => {
+    expect(runtimeEnvironment({ KOMERCE_ENV: 'staging', NODE_ENV: 'production' })).toBe('staging');
+    expect(runtimeEnvironment({ NODE_ENV: 'production' })).toBe('production');
+
+    expect(runtimeConfig({
+      KOMERCE_ENV: 'staging',
+      NODE_ENV: 'production',
+      KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC: '1',
+      DATABASE_URL: 'postgres://db',
+      ALIEXPRESS_APP_KEY: 'app',
+      ALIEXPRESS_APP_SECRET: 'secret',
+      ALIEXPRESS_SESSION: 'session',
+    })).toMatchObject({ runtime: 'staging', maxCleanProducts: 500 });
+
+    expect(() => runtimeConfig({
+      KOMERCE_ENV: 'production',
+      NODE_ENV: 'development',
+      KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC: '1',
+      DATABASE_URL: 'postgres://db',
+      ALIEXPRESS_APP_KEY: 'app',
+      ALIEXPRESS_APP_SECRET: 'secret',
+      ALIEXPRESS_SESSION: 'session',
+    })).toThrow(/interdit en production/);
   });
 
   test('accepte une session statique ou une session OAuth chiffrée, jamais aucune session', () => {

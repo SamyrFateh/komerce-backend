@@ -14,7 +14,7 @@
  * @db-txn        canonical services own candidate writes
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -42,8 +42,13 @@ function intEnv(name, fallback, min, max, env = process.env) {
   return n;
 }
 
+function runtimeEnvironment(env = process.env) {
+  return String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
+}
+
 function runtimeConfig(env = process.env) {
-  if (env.NODE_ENV === 'production' || env.KOMERCE_ENV === 'production') {
+  const runtime = runtimeEnvironment(env);
+  if (runtime === 'production') {
     throw new Error('REFUS: pool AliExpress 500 interdit en production');
   }
   if (env.KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC !== '1') {
@@ -58,6 +63,7 @@ function runtimeConfig(env = process.env) {
   }
 
   return {
+    runtime,
     syncKey: String(env.KOMERCE_ALIEXPRESS_SYNC_KEY || DEFAULT_SYNC_KEY).trim() || DEFAULT_SYNC_KEY,
     feedName: String(env.KOMERCE_ALIEXPRESS_FEED_NAME || DEFAULT_FEED_NAME).trim() || DEFAULT_FEED_NAME,
     pageSize: intEnv('KOMERCE_ALIEXPRESS_PAGE_SIZE', DEFAULT_PAGE_SIZE, 1, 50, env),
@@ -168,6 +174,7 @@ async function runSync() {
   if (startingClean === config.maxCleanProducts) {
     const summary = await checkpoints.summarize(db, { supplierName: SUPPLIER_NAME, syncKey: config.syncKey });
     const output = {
+      runtime: config.runtime,
       sync_key: config.syncKey,
       feed_name: config.feedName,
       starting_clean: startingClean,
@@ -193,7 +200,7 @@ async function runSync() {
   let pages = 0;
   let pausedReason = null;
 
-  console.log(`[aliexpress-pool] feed=${config.feedName} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} maxPages=${config.maxFeedPages}`);
+  console.log(`[aliexpress-pool] runtime=${config.runtime || 'unknown'} feed=${config.feedName} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} maxPages=${config.maxFeedPages}`);
 
   while (page <= config.maxFeedPages && (totalPages == null || page <= totalPages)) {
     const beforeCount = await countCleanCandidates();
@@ -300,6 +307,7 @@ async function runSync() {
     syncKey: config.syncKey,
   });
   const output = {
+    runtime: config.runtime,
     sync_key: config.syncKey,
     feed_name: config.feedName,
     starting_clean: startingClean,
@@ -336,6 +344,7 @@ module.exports = {
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
   CHECKPOINT_CATEGORY_ID,
   intEnv,
+  runtimeEnvironment,
   runtimeConfig,
   positiveStock,
   basicCleanProduct,
