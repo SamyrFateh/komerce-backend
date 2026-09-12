@@ -43,6 +43,9 @@ function intEnv(name, fallback, min, max, env = process.env) {
 }
 
 function runtimeConfig(env = process.env) {
+  if (env.NODE_ENV === 'production' || env.KOMERCE_ENV === 'production') {
+    throw new Error('REFUS: pool AliExpress 500 interdit en production');
+  }
   if (env.KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC !== '1') {
     throw new Error('KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC=1 requis');
   }
@@ -102,7 +105,7 @@ function importSourceFilename(syncKey, page) {
 function stockSqlPredicate(alias = 'sc') {
   return `(
     ${alias}.normalized_source_contract ? 'stock_available'
-    AND (${alias}.normalized_source_contract->>'stock_available') ~ '^[0-9]+(?:\\.[0-9]+)?$'
+    AND (${alias}.normalized_source_contract->>'stock_available') ~ '^[0-9]+([.][0-9]+)?$'
     AND (${alias}.normalized_source_contract->>'stock_available')::numeric > 0
   )`;
 }
