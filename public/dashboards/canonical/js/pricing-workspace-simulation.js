@@ -29,11 +29,11 @@
   // services/pricing-workspace.js (SIMULATION_DECISION_FIELDS), eux-mêmes
   // alignés sur services/pricing-engine.js.
   const METRICS = Object.freeze([
-    ['landed_relay_cost_kmf', 'N1 · rendu relais', 'kmf'],
-    ['business_variable_cost_kmf', 'N2 · variable business', 'kmf'],
-    ['structure_allocation_reference_kmf', 'N3 · structure', 'kmf'],
+    ['landed_relay_cost_kmf', 'Charges variables · rendu relais', 'kmf'],
+    ['business_variable_cost_kmf', 'Charges variables · business', 'kmf'],
+    ['structure_allocation_reference_kmf', 'Référence d’allocation structurelle', 'kmf'],
     ['variable_cost_complete_kmf', 'Coût variable', 'kmf'],
-    ['fully_loaded_cost_reference_kmf', 'CDR complet', 'kmf'],
+    ['fully_loaded_cost_reference_kmf', 'Coût rendu complet (référence)', 'kmf'],
     ['contribution_kmf', 'Contribution', 'kmf'],
     ['minimum_safe_price_kmf', 'Plancher', 'kmf'],
     ['recommended_price_kmf', 'Prix conseillé', 'kmf'],
