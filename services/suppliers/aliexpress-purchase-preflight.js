@@ -67,7 +67,10 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
     );
   }
 
-  const rawSkuId = String(identity.payload.sku_id || resolved.supplier_unit_ref || '').trim() || null;
+  // `sku_id` est un identifiant natif AliExpress. `supplier_unit_ref` peut
+  // légitimement contenir un `sku_attr`; il ne doit donc jamais être promu
+  // silencieusement en `sku_id` pour les appels fournisseur.
+  const rawSkuId = String(identity.payload.sku_id || '').trim() || null;
   const skuAttr = String(identity.payload.sku_attr || '').trim() || null;
   if (!rawSkuId && !skuAttr) {
     throw supplierIdentity.blockedSupplierIdentity(
