@@ -22,12 +22,12 @@ const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
 const GAPS_FILE = path.join(MIGRATIONS_DIR, 'GAPS.md');
 
 describe('migration collision governance — immutable history', () => {
-  test('les 8 collisions historiques du dépôt correspondent exactement à GAPS.md', () => {
+  test('les 9 collisions historiques du dépôt correspondent exactement à GAPS.md', () => {
     const result = evaluateCollisionGovernance({ migrationsDir: MIGRATIONS_DIR });
 
     expect(result.violations).toEqual([]);
     expect(result.reviewedExact.map(entry => entry.token)).toEqual([
-      '014', '072', '073', '074', '119', '128', '147', '157',
+      '014', '072', '073', '074', '119', '128', '147', '157', '218',
     ]);
   });
 
@@ -36,7 +36,7 @@ describe('migration collision governance — immutable history', () => {
     const { reviewed, duplicateTokens } = parseReviewedCollisionSets(content);
 
     expect(duplicateTokens).toEqual([]);
-    expect(reviewed.size).toBe(8);
+    expect(reviewed.size).toBe(9);
     expect(content).toMatch(/fichiers SQL déjà versionnés sont \*\*immuables\*\*/i);
   });
 
@@ -117,7 +117,7 @@ describe('migration collision governance — immutable history', () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toContain('8 collision(s) historique(s) de migrations immuables');
+    expect(result.stdout).toContain('9 collision(s) historique(s) de migrations immuables');
     expect(result.stdout).not.toContain('── Collisions numéros migrations ──');
     expect(result.stdout).toContain('Aucune violation. Architecture conforme.');
   });

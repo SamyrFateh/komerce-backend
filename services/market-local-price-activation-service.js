@@ -126,7 +126,8 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
     currency: decision.currency,
     projected_price_kmf: projectedPriceKmf,
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf,
-    cdr_complete_kmf: pricing.cdr_complete_kmf,
+    // Contrat canonique (2026-09) : cdr_complete_kmf → fully_loaded_cost_reference_kmf
+    cdr_complete_kmf: pricing.fully_loaded_cost_reference_kmf,
     strategy_risk: pricing.strategy_risk,
     estimated_margin_pct: pricing.estimated_margin_pct,
     market_gate: compactMarketGate(marketEvaluation),
@@ -140,7 +141,7 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
     economics: {
       projected_price_kmf: projectedPriceKmf,
       variable_cost_complete_kmf: pricing.variable_cost_complete_kmf,
-      cdr_complete_kmf: pricing.cdr_complete_kmf,
+      cdr_complete_kmf: pricing.fully_loaded_cost_reference_kmf,
       strategy_risk: pricing.strategy_risk,
       estimated_margin_pct: pricing.estimated_margin_pct,
     },
