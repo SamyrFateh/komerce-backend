@@ -72,6 +72,9 @@ Un changement de prix ou de stock ne crée donc jamais une nouvelle identité SK
 8. `placeOrder()` n'est accessible qu'après un preflight qui a revalidé stock, prix, disponibilité et fret contre la même identité.
 9. Tout blocage lié à l'identité expose le code métier stable `BLOCKED_SUPPLIER_IDENTITY` ; le texte du message d'erreur n'est jamais le contrat d'intégration.
 10. `requireOrderIdentity: false` est réservé aux chemins historiques de refresh explicitement identifiés ; aucun chemin Purchasing ne peut rendre l'identité optionnelle par défaut ou par inférence.
+11. `supplier_sku` est l'identité de réconciliation catalogue ; il ne remplace jamais `supplier_unit_ref + supplier_order_identity` comme identité de commande.
+12. Une re-promotion peut compléter une identité de commande précédemment absente uniquement à partir d'une identité native fournie par le fournisseur.
+13. Une identité de commande déjà persistée ne peut jamais être remplacée silencieusement. Toute divergence de `supplier_unit_ref` ou de payload canonique bloque avec `BLOCKED_SUPPLIER_IDENTITY`.
 
 ## Adaptateurs
 
@@ -82,10 +85,19 @@ Chaque connecteur fournisseur est responsable de deux opérations :
 
 Le domaine Purchasing ne doit jamais parser directement un payload brut d'import pour deviner une variante.
 
-## Lots de persistance
+## Persistance canonique
 
-Le premier lot introduit l'identité dans le contrat `NormalizedSupplierProduct V2`. Elle est donc conservée dans `normalized_source_contract` et survit à la suppression volontaire de `raw_payload` dans ce snapshot.
+Le premier lot a introduit l'identité dans le contrat `NormalizedSupplierProduct V2`. Elle est conservée dans `normalized_source_contract` et survit à la suppression volontaire de `raw_payload` dans ce snapshot.
 
-La persistance directe de cette identité sur `product_skus` est un lot séparé et obligatoire avant de déclarer le catalogue **Supplier-Mapped / Fulfillment Ready**. Ce lot devra ajouter les colonnes canoniques et les alimenter pendant promotion/re-promotion, sans backfill heuristique des lignes historiques.
+Le lot de persistance canonique ajoute désormais directement sur `product_skus` :
 
-Les promotions historiques restent utilisables comme point de départ d'un refresh fournisseur, mais jamais comme autorité suffisante pour construire une commande fournisseur si l'identité canonique n'est pas présente.
+- `supplier_unit_ref` ;
+- `supplier_order_identity`.
+
+Ces colonnes sont nullables par doctrine : aucune identité historique n'est backfillée ou inventée. `NULL` signifie honnêtement que le SKU n'est pas encore **Supplier-Mapped**.
+
+Pendant promotion ou re-promotion, une identité native peut remplir une identité jusque-là absente. Si une identité est déjà persistée, le replay doit soit reproduire la même identité, soit ne pas la modifier ; toute tentative de remap implicite est bloquée.
+
+La présence d'une Supplier Order Identity canonique rend possible le gate **Supplier-Mapped**, mais elle ne suffit pas à elle seule à déclarer le SKU **Fulfillment Ready**. Le statut Fulfillment Ready exige encore les contrôles dynamiques applicables : disponibilité fournisseur, stock, prix dans les tolérances, destination/fret et preflight sur la même identité.
+
+Les promotions historiques sans identité restent utilisables comme point de départ d'un refresh fournisseur, mais jamais comme autorité suffisante pour construire une commande fournisseur.

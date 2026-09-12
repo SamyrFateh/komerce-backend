@@ -11,9 +11,9 @@
  * @db-read       product_skus
  * @db-write      catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants
  * @db-txn        caller_owned
- * @doctrine      PDC-8 (tous lots), DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md §5
- * @impact-areas  catalog
- * @version       2026-07 — fiche produit enrichie : promotion idempotente du contenu
+ * @doctrine      PDC-8 (tous lots), DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md §5, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @impact-areas  catalog,purchasing
+ * @version       2026-09 — persistance Supplier Order Identity
  */
 
 /**
@@ -181,6 +181,13 @@ async function promoteAxes(client, productId, optionAxes) {
   return rows;
 }
 
+function hasIncomingSupplierOrderIdentity(sellableUnits) {
+  return (sellableUnits || []).some((unit) => (
+    (unit?.supplier_unit_ref !== undefined && unit?.supplier_unit_ref !== null)
+    || (unit?.supplier_order_identity !== undefined && unit?.supplier_order_identity !== null)
+  ));
+}
+
 /**
  * Exécute le plan de réconciliation SKU (Lot 4) en DB.
  *
@@ -193,51 +200,131 @@ async function promoteAxes(client, productId, optionAxes) {
  * Doctrine prix (PDC-8 §MAPPING V2 → CANONIQUE §SKU) : price_kmf n'est
  * jamais fixé par ce plan, ni en création ni en mise à jour.
  *
+ * Supplier Order Identity : supplier_sku reste l'identité de réconciliation.
+ * Les colonnes de commande ne sont chargées/écrites que lorsqu'une identité
+ * native arrive dans le replay. Un replay historique sans identité ne peut
+ * donc jamais effacer une identité déjà persistée.
+ *
  * @returns {Promise<Map<string, string>>} supplier_sku -> sku_id (product_skus.id)
  */
 async function promoteSkus(client, productId, sellableUnits) {
-  const { rows: existingSkus } = await client.query(
+  const { rows: baseExistingSkus } = await client.query(
     `SELECT id, supplier_sku, source, variant_combo, stock, is_active
        FROM product_skus
       WHERE product_id = $1`,
     [productId]
   );
 
+  let existingSkus = baseExistingSkus;
+  const identityAwareReplay = hasIncomingSupplierOrderIdentity(sellableUnits);
+
+  if (identityAwareReplay && existingSkus.length > 0) {
+    const { rows: identityRows } = await client.query(
+      `SELECT id, supplier_unit_ref, supplier_order_identity
+         FROM product_skus
+        WHERE product_id = $1`,
+      [productId]
+    );
+    const identityById = new Map(identityRows.map((row) => [row.id, row]));
+    existingSkus = existingSkus.map((row) => ({ ...row, ...(identityById.get(row.id) || {}) }));
+  }
+
   const plan = planSkuReconciliation(existingSkus, sellableUnits || []);
   const skuIdBySupplierSku = new Map();
 
   for (const item of plan.toCreate) {
-    const { rows } = await client.query(
-      `INSERT INTO product_skus (product_id, supplier_sku, source, variant_combo, stock, is_active)
-       VALUES ($1, $2, 'SUPPLIER', $3, $4, true)
-       RETURNING id, supplier_sku`,
-      [productId, item.supplier_sku, item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stock]
-    );
+    let rows;
+    if (item.supplier_unit_ref || item.supplier_order_identity) {
+      ({ rows } = await client.query(
+        `INSERT INTO product_skus (
+           product_id, supplier_sku, source, supplier_unit_ref,
+           supplier_order_identity, variant_combo, stock, is_active
+         )
+         VALUES ($1, $2, 'SUPPLIER', $3, $4::jsonb, $5, $6, true)
+         RETURNING id, supplier_sku`,
+        [
+          productId,
+          item.supplier_sku,
+          item.supplier_unit_ref || null,
+          item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stock,
+        ]
+      ));
+    } else {
+      ({ rows } = await client.query(
+        `INSERT INTO product_skus (product_id, supplier_sku, source, variant_combo, stock, is_active)
+         VALUES ($1, $2, 'SUPPLIER', $3, $4, true)
+         RETURNING id, supplier_sku`,
+        [productId, item.supplier_sku, item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stock]
+      ));
+    }
     skuIdBySupplierSku.set(rows[0].supplier_sku, rows[0].id);
   }
 
   for (const item of plan.toUpdate) {
-    await client.query(
-      `UPDATE product_skus
-          SET variant_combo = $1,
-              stock = CASE WHEN $2::boolean THEN $3 ELSE stock END,
-              updated_at = now()
-        WHERE id = $4`,
-      [item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
-    );
+    if (item.supplier_unit_ref || item.supplier_order_identity) {
+      await client.query(
+        `UPDATE product_skus
+            SET supplier_unit_ref = $1,
+                supplier_order_identity = $2::jsonb,
+                variant_combo = $3,
+                stock = CASE WHEN $4::boolean THEN $5 ELSE stock END,
+                updated_at = now()
+          WHERE id = $6`,
+        [
+          item.supplier_unit_ref || null,
+          item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stockKnown,
+          item.stock,
+          item.id,
+        ]
+      );
+    } else {
+      await client.query(
+        `UPDATE product_skus
+            SET variant_combo = $1,
+                stock = CASE WHEN $2::boolean THEN $3 ELSE stock END,
+                updated_at = now()
+          WHERE id = $4`,
+        [item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
+      );
+    }
     skuIdBySupplierSku.set(item.supplier_sku, item.id);
   }
 
   for (const item of plan.toReactivate) {
-    await client.query(
-      `UPDATE product_skus
-          SET is_active = true,
-              variant_combo = $1,
-              stock = CASE WHEN $2::boolean THEN $3 ELSE stock END,
-              updated_at = now()
-        WHERE id = $4`,
-      [item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
-    );
+    if (item.supplier_unit_ref || item.supplier_order_identity) {
+      await client.query(
+        `UPDATE product_skus
+            SET is_active = true,
+                supplier_unit_ref = $1,
+                supplier_order_identity = $2::jsonb,
+                variant_combo = $3,
+                stock = CASE WHEN $4::boolean THEN $5 ELSE stock END,
+                updated_at = now()
+          WHERE id = $6`,
+        [
+          item.supplier_unit_ref || null,
+          item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stockKnown,
+          item.stock,
+          item.id,
+        ]
+      );
+    } else {
+      await client.query(
+        `UPDATE product_skus
+            SET is_active = true,
+                variant_combo = $1,
+                stock = CASE WHEN $2::boolean THEN $3 ELSE stock END,
+                updated_at = now()
+          WHERE id = $4`,
+        [item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
+      );
+    }
     skuIdBySupplierSku.set(item.supplier_sku, item.id);
   }
 
