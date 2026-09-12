@@ -7,7 +7,10 @@
  */
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
-jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({ fetchProducts: jest.fn() }));
+jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({
+  invokeTop: jest.fn(),
+  fetchProducts: jest.fn(),
+}));
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: jest.fn() }));
 jest.mock('../../services/suppliers/catalog-sync-checkpoint', () => ({
   getCheckpoint: jest.fn(),
@@ -21,12 +24,21 @@ jest.mock('../../services/suppliers/catalog-sync-checkpoint', () => ({
 const {
   runtimeEnvironment,
   runtimeConfig,
+  normalizeCountryCode,
   positiveStock,
   basicCleanProduct,
-  totalPagesFor,
+  searchPlanTotal,
+  logicalSearchPage,
+  flattenTextSearchProducts,
+  textSearchProductIds,
+  checkpointCategoryId,
   importSourceFilename,
   stockSqlPredicate,
+  withDiscoveryProvenance,
+  SEARCH_PLAN,
   DEFAULT_PAGE_SIZE,
+  DEFAULT_COUNTRY_CODE,
+  DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
 } = require('../../scripts/aliexpress-500-catalog-sync');
 
@@ -58,8 +70,10 @@ describe('aliexpress-500-catalog-sync', () => {
       ALIEXPRESS_TOKEN_ENCRYPTION_KEY: '01234567890123456789012345678901',
     })).toMatchObject({
       pageSize: DEFAULT_PAGE_SIZE,
+      maxSearchPagesPerQuery: DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
+      countryCode: DEFAULT_COUNTRY_CODE,
       maxCleanProducts: 500,
-      feedName: 'DS bestseller',
+      syncKey: 'aliexpress-instock-500-text-v1',
     });
 
     expect(() => runtimeConfig({
@@ -84,7 +98,7 @@ describe('aliexpress-500-catalog-sync', () => {
       ALIEXPRESS_APP_KEY: 'app',
       ALIEXPRESS_APP_SECRET: 'secret',
       ALIEXPRESS_SESSION: 'session',
-    })).toMatchObject({ runtime: 'staging', maxCleanProducts: 500 });
+    })).toMatchObject({ runtime: 'staging', countryCode: 'AE', maxCleanProducts: 500 });
 
     expect(() => runtimeConfig({
       KOMERCE_ENV: 'production',
@@ -112,6 +126,50 @@ describe('aliexpress-500-catalog-sync', () => {
       ALIEXPRESS_APP_SECRET: 'secret',
       ALIEXPRESS_SESSION: 'session',
     }).maxCleanProducts).toBe(500);
+  });
+
+  test('impose UAE comme destination fournisseur par défaut et valide les codes pays', () => {
+    expect(normalizeCountryCode()).toBe('AE');
+    expect(normalizeCountryCode('ae')).toBe('AE');
+    expect(normalizeCountryCode('KM')).toBe('KM');
+    expect(() => normalizeCountryCode('UAE')).toThrow(/ISO alpha-2/);
+  });
+
+  test('le plan de recherche couvre exactement 500 slots diversifiés', () => {
+    expect(searchPlanTotal()).toBe(500);
+    expect(SEARCH_PLAN.length).toBe(21);
+    expect(new Set(SEARCH_PLAN.map((segment) => segment.id)).size).toBe(SEARCH_PLAN.length);
+    expect(SEARCH_PLAN.every((segment) => segment.target > 0 && segment.queries.length >= 2)).toBe(true);
+    expect(new Set(SEARCH_PLAN.map((segment) => segment.category)).size).toBeGreaterThanOrEqual(6);
+  });
+
+  test('alterne les requêtes d’un segment tout en avançant leurs pages', () => {
+    const segment = { id: 'x', queries: ['smartwatch', 'wrist watch'] };
+    expect(logicalSearchPage(segment, 1)).toEqual({ keyword: 'smartwatch', queryIndex: 0, queryPage: 1 });
+    expect(logicalSearchPage(segment, 2)).toEqual({ keyword: 'wrist watch', queryIndex: 1, queryPage: 1 });
+    expect(logicalSearchPage(segment, 3)).toEqual({ keyword: 'smartwatch', queryIndex: 0, queryPage: 2 });
+    expect(logicalSearchPage(segment, 4)).toEqual({ keyword: 'wrist watch', queryIndex: 1, queryPage: 2 });
+  });
+
+  test('parse la forme live ds.text.search sans dépendre de totalCount', () => {
+    const payload = {
+      code: '00',
+      data: {
+        pageIndex: 1,
+        pageSize: 20,
+        totalCount: null,
+        products: {
+          selection_search_product: [
+            { itemId: '1005005902775553', title: 'Phone A' },
+            { itemId: '1005010643835400', title: 'Phone B' },
+            { itemId: '1005005902775553', title: 'Phone A duplicate' },
+          ],
+        },
+      },
+    };
+
+    expect(flattenTextSearchProducts(payload)).toHaveLength(3);
+    expect(textSearchProductIds(payload)).toEqual(['1005005902775553', '1005010643835400']);
   });
 
   test('ne compte comme propre qu’un produit réellement achetable et en stock', () => {
@@ -146,17 +204,36 @@ describe('aliexpress-500-catalog-sync', () => {
     expect(positiveStock('n/a')).toBe(false);
   });
 
-  test('respecte la pagination AliExpress et le budget de pages', () => {
-    expect(totalPagesFor(0, 50, 40)).toBe(0);
-    expect(totalPagesFor(1, 50, 40)).toBe(1);
-    expect(totalPagesFor(500, 50, 40)).toBe(10);
-    expect(totalPagesFor(5000, 50, 40)).toBe(40);
-  });
-
-  test('génère une référence de page déterministe et un prédicat stock borné', () => {
-    expect(importSourceFilename('epoch-1', 7))
-      .toBe('aliexpress-pool/epoch-1/page-0007.json');
+  test('génère des checkpoints et sources déterministes par segment', () => {
+    expect(checkpointCategoryId({ id: 'tech-audio' })).toBe('text:tech-audio');
+    expect(importSourceFilename('epoch-1', 'tech-audio', 7))
+      .toBe('aliexpress-pool/epoch-1/tech-audio/page-0007.json');
     expect(stockSqlPredicate('x')).toContain("x.normalized_source_contract ? 'stock_available'");
     expect(stockSqlPredicate('x')).toContain("::numeric > 0");
+  });
+
+  test('préserve la provenance de découverte sans remplacer l’autorité détail fournisseur', () => {
+    const product = {
+      supplier_product_id: '1005005902775553',
+      raw_payload: { source: 'aliexpress_ds_api', aliexpress: { detail: { result: true } } },
+    };
+    const segment = SEARCH_PLAN.find((row) => row.id === 'tech-phones');
+    const decorated = withDiscoveryProvenance(product, {
+      segment,
+      keyword: 'android smartphone',
+      queryPage: 2,
+    });
+
+    expect(decorated.raw_payload.source).toBe('aliexpress_ds_api');
+    expect(decorated.raw_payload.aliexpress).toEqual({ detail: { result: true } });
+    expect(decorated.raw_payload.discovery).toMatchObject({
+      source: 'aliexpress.ds.text.search',
+      segment_id: 'tech-phones',
+      target_category: 'Tech',
+      target_subcategory: 'Phones',
+      keyword: 'android smartphone',
+      query_page: 2,
+      supplier_destination_country: 'AE',
+    });
   });
 });
