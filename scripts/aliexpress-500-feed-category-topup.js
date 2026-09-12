@@ -24,12 +24,30 @@ const connected = require('../services/suppliers/connectors/aliexpress-connected
 const base = require('../services/suppliers/connectors/aliexpress-connector');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+
+async function invokeTopWithBackoff(method, params, env, attempts) {
+  const maxAttempts = Math.max(1, Number(attempts) || 1);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await base.invokeTop(method, params, { env });
+    } catch (error) {
+      const waitSeconds = primary.rateLimitWaitSeconds(error);
+      if (waitSeconds == null || attempt >= maxAttempts) throw error;
+      const delayMs = (waitSeconds + 2) * 1000;
+      console.warn(`[aliexpress-feed-topup] throttle method=${method} attempt=${attempt}/${maxAttempts} wait_ms=${delayMs}`);
+      await sleep(delayMs);
+    }
+  }
+  throw new Error(`AliExpress ${method} retry exhausted`);
+}
+
 async function runLocked(config, env) {
   const start = await runtime.countClean();
   if (start >= config.maxCleanProducts) return { starting_clean: start, final_clean: start, target: config.maxCleanProducts, paused_reason: 'target-already-reached' };
 
-  const feeds = proof.feedNames(await base.invokeTop('aliexpress.ds.feedname.get', {}, { env }));
-  const categories = proof.categories(await base.invokeTop('aliexpress.ds.category.get', {}, { env }));
+  const feeds = proof.feedNames(await invokeTopWithBackoff('aliexpress.ds.feedname.get', {}, env, config.detailRetryAttempts));
+  const categories = proof.categories(await invokeTopWithBackoff('aliexpress.ds.category.get', {}, env, config.detailRetryAttempts));
   const slots = runtime.plan(feeds, categories);
   if (!slots.length) throw new Error(`Aucune surface AliExpress: feeds=${feeds.length} categories=${categories.length}`);
 
@@ -44,7 +62,7 @@ async function runLocked(config, env) {
 
   while (n <= slots.length && await runtime.countClean() < config.maxCleanProducts) {
     const spec = slots[n - 1];
-    const payload = await base.invokeTop('aliexpress.ds.recommend.feed.get', {
+    const payload = await invokeTopWithBackoff('aliexpress.ds.recommend.feed.get', {
       country: config.countryCode,
       target_currency: 'USD',
       target_language: 'EN',
@@ -53,7 +71,7 @@ async function runLocked(config, env) {
       category_id: spec.categoryId,
       sort: 'volumeDesc',
       feed_name: spec.feed,
-    }, { env });
+    }, env, config.detailRetryAttempts);
     const ids = proof.productIds(payload).filter((id) => !seen.has(id));
     const fetched = ids.length ? await primary.fetchProductsRateLimited(ids.slice(0, config.pageSize), {
       countryCode: config.countryCode,
@@ -93,4 +111,4 @@ async function run() {
 }
 
 if (require.main === module) run().then(() => process.exit(0)).catch((e) => { console.error(`[aliexpress-feed-topup] FAILED: ${e.stack || e}`); process.exit(1); });
-module.exports = { run };
+module.exports = { invokeTopWithBackoff, run };
