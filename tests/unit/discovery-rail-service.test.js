@@ -87,16 +87,16 @@ describe('discovery-rail-service — politique éditoriale', () => {
     expect(parsed[1].categoryKeys).toEqual([]);
   });
 
-  it('borne le pool éditorial à 18 cartes même si la variable contient davantage de candidats valides', () => {
-    const raw = Array.from({ length: 20 }, (_, index) => {
+  it('borne le pool éditorial à 30 cartes même si la variable contient davantage de candidats valides', () => {
+    const raw = Array.from({ length: 32 }, (_, index) => {
       const id = `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
       return `product:${id}`;
     }).join(',');
 
     const parsed = parseEditorialCandidates(raw);
-    expect(MAX_EDITORIAL_CANDIDATES).toBe(18);
-    expect(parsed).toHaveLength(18);
-    expect(parsed[17].id).toBe('00000000-0000-4000-8000-000000000018');
+    expect(MAX_EDITORIAL_CANDIDATES).toBe(30);
+    expect(parsed).toHaveLength(30);
+    expect(parsed[29].id).toBe('00000000-0000-4000-8000-000000000030');
   });
 
   it('réapplique exactement l ordre éditorial et fusionne contexte source + contexte recommendations', async () => {
