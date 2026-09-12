@@ -36,6 +36,7 @@ module.exports = {
       'administration transverse des bons de commande, historiquement exposée depuis le dashboard ' +
         '(services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, ' +
         'écrit orders/product_suppliers/purchase_orders/suppliers)',
+      'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret et construction fail-closed du payload d\'achat sans exécution automatique',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -52,6 +53,7 @@ module.exports = {
   files: {
     services: [
       'services/purchasing-trigger-service.js',
+      'services/suppliers/aliexpress-purchase-preflight.js',
       'services/purchasing-receive-service.js',
       'services/purchasing-cancel-service.js',
       'services/receive-purchase-order.js',
@@ -72,6 +74,7 @@ module.exports = {
       'tests/unit/purchasing-cancel-service.test.js',
       'tests/unit/purchasing-route.test.js',                        // couche HTTP routes/purchasing.js
       'tests/unit/purchasing-trigger-service.test.js',
+      'tests/unit/aliexpress-purchase-preflight.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
       'tests/unit/repair-ordered-without-purchase-orders.test.js',
@@ -161,6 +164,7 @@ module.exports = {
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
     'aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d\'annulation passe par purchasing-cancel-service.js',
     "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut",
+    'un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé',
   ],
 
   // ── Classification (manifest créé au Lot O1.4) ──────────────────────────
