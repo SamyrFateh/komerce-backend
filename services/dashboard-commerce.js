@@ -5,14 +5,14 @@
  * @layer         service
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
- * @outputs       canonical_commerce_projection, market_product_viability, server_decision_signals
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor
+ * @outputs       canonical_commerce_projection, market_product_viability, market_product_availability, server_decision_signals
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-service
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations
  * @db-write      none
  * @db-txn        none
- * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine
- * @impact-areas  admin-dashboard, commerce, market-authorization, economic-engine
+ * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine, local_stock_service_is_availability_authority
+ * @impact-areas  admin-dashboard, commerce, market-authorization, economic-engine, local-stock, decision-signals
  * @version       2026-09
  */
 
@@ -21,6 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const pricingMarketCorridor = require('./pricing-market-corridor');
+const localStock = require('./local-stock-service');
 const {
   buildFiltersClause,
   makeKpi,
@@ -40,6 +41,12 @@ const VIABILITY_PRIORITY = Object.freeze({
   VIABLE_UNDER_CONDITIONS: 20,
   MARKET_EVIDENCE_INSUFFICIENT: 50,
   VIABLE: 90,
+});
+const LOCAL_AVAILABILITY_STATE = Object.freeze({
+  NO_LOCAL_STOCK: 'NO_LOCAL_STOCK',
+  LOCAL_NOT_EXPOSED: 'LOCAL_NOT_EXPOSED',
+  AVAILABLE_NOW: 'AVAILABLE_NOW',
+  LOCAL_EXPOSED_UNAVAILABLE: 'LOCAL_EXPOSED_UNAVAILABLE',
 });
 
 function normalizePeriod(value) {
@@ -87,6 +94,7 @@ async function getTopProducts(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
     SELECT
+      p.id AS product_id,
       p.product_ref,
       p.name,
       p.category,
@@ -104,12 +112,23 @@ async function getTopProducts(filters) {
   `, params);
 
   return rows.map(row => ({
+    product_id: row.product_id || null,
     product_ref: row.product_ref || null,
     name: row.name || 'Produit',
     category: row.category || '—',
     quantity: Number(row.quantity) || 0,
     revenue_kmf: Number(row.revenue_kmf) || 0,
   }));
+}
+
+function publicTopProduct(product = {}) {
+  return Object.freeze({
+    product_ref: product.product_ref || null,
+    name: product.name || 'Produit',
+    category: product.category || '—',
+    quantity: Number(product.quantity) || 0,
+    revenue_kmf: Number(product.revenue_kmf) || 0,
+  });
 }
 
 async function getProductProfitability(filters, options = {}) {
@@ -325,6 +344,78 @@ async function getTopProductViability(topProducts = [], market = null, options =
   });
 }
 
+async function getTopProductAvailability(topProducts = [], market = null, options = {}) {
+  if (!market || !market.id || !market.code) {
+    return Object.freeze({ items: Object.freeze([]), warnings: Object.freeze([]) });
+  }
+  const getLocalStock = options.getLocalStock || localStock.getLocalStock;
+  const isStockExposable = options.isStockExposable || localStock.isStockExposable;
+  const products = topProducts.filter(product => product && product.product_id && product.product_ref);
+  const projected = await Promise.all(products.map(async product => {
+    try {
+      const row = await getLocalStock(product.product_id, market.id);
+      let state = LOCAL_AVAILABILITY_STATE.NO_LOCAL_STOCK;
+      let exposure = null;
+      if (row) {
+        exposure = row.commercial_exposure || null;
+        if (exposure !== 'ENABLED') {
+          state = LOCAL_AVAILABILITY_STATE.LOCAL_NOT_EXPOSED;
+        } else {
+          const exposable = await isStockExposable(product.product_id, market.id);
+          state = exposable
+            ? LOCAL_AVAILABILITY_STATE.AVAILABLE_NOW
+            : LOCAL_AVAILABILITY_STATE.LOCAL_EXPOSED_UNAVAILABLE;
+        }
+      }
+      return {
+        item: Object.freeze({
+          product_ref: product.product_ref,
+          name: product.name,
+          category: product.category,
+          quantity: product.quantity,
+          revenue_kmf: product.revenue_kmf,
+          state,
+          commercial_exposure: exposure,
+          authority: 'LOCAL_STOCK_SERVICE',
+        }),
+        warning: null,
+      };
+    } catch (error) {
+      return {
+        item: null,
+        warning: Object.freeze({
+          code: 'commerce_product_availability_unavailable',
+          product_ref: product.product_ref,
+          message: error && error.message ? String(error.message) : 'Projection de disponibilité locale indisponible.',
+        }),
+      };
+    }
+  }));
+
+  return Object.freeze({
+    items: Object.freeze(projected.map(result => result.item).filter(Boolean)),
+    warnings: Object.freeze(projected.map(result => result.warning).filter(Boolean)),
+  });
+}
+
+function projectDecisionSignal(signal, market) {
+  const marketCode = market && market.code ? market.code : null;
+  return Object.freeze({
+    ...signal,
+    signal_type: signal.kind,
+    title: signal.label,
+    summary: signal.helper || null,
+    recommendation: signal.action || null,
+    confidence: signal.confidence || 'high',
+    owner_role: signal.owner_role || (marketCode ? 'market_operator' : 'admin'),
+    source_module: signal.source || 'dashboard-commerce',
+    scope: Object.freeze(marketCode
+      ? { mode: 'market', market_code: marketCode }
+      : { mode: 'global' }),
+    lifecycle: Object.freeze({ mode: 'projection_only', persisted: false }),
+  });
+}
+
 function viabilitySignal(row, market) {
   const status = row && row.status;
   if (!status || status === 'VIABLE') return null;
@@ -345,33 +436,61 @@ function viabilitySignal(row, market) {
       : null,
   };
   if (status === 'NON_VIABLE_STRUCTURAL') {
-    return Object.freeze({ ...base, kind: 'sku_non_viable', severity: 'critical', label: 'SKU non viable', action: 'AVOID_OR_RESOURCE' });
+    return projectDecisionSignal({ ...base, kind: 'sku_non_viable', severity: 'critical', label: 'SKU non viable', action: 'AVOID_OR_RESOURCE' }, market);
   }
   if (status === 'VIABLE_UNDER_CONDITIONS') {
-    return Object.freeze({ ...base, kind: 'sku_viable_under_conditions', severity: 'warning', label: 'SKU à renégocier / repositionner', action: row.sourcing_action || 'RENEGOTIATE_OR_REPOSITION' });
+    return projectDecisionSignal({ ...base, kind: 'sku_viable_under_conditions', severity: 'warning', label: 'SKU à renégocier / repositionner', action: row.sourcing_action || 'RENEGOTIATE_OR_REPOSITION' }, market);
   }
   if (status === 'MARKET_EVIDENCE_INSUFFICIENT') {
-    return Object.freeze({ ...base, kind: 'market_evidence_insufficient', severity: 'info', label: 'Preuve marché insuffisante', action: 'COLLECT_MARKET_EVIDENCE' });
+    return projectDecisionSignal({ ...base, kind: 'market_evidence_insufficient', severity: 'info', label: 'Preuve marché insuffisante', action: 'COLLECT_MARKET_EVIDENCE' }, market);
   }
   return null;
 }
 
-function buildDecisionSignals({ funnel, productProfitability, margin, productViability, market } = {}) {
+function availabilitySignal(row, market) {
+  if (!row || row.state !== LOCAL_AVAILABILITY_STATE.LOCAL_EXPOSED_UNAVAILABLE) return null;
+  return projectDecisionSignal({
+    key: `best-seller-local-unavailable:${row.product_ref}`,
+    kind: 'best_seller_local_unavailable',
+    severity: 'warning',
+    label: 'Best-seller sans disponibilité immédiate',
+    helper: `${row.name || row.product_ref} · stock local exposé sans unité immédiatement disponible ; l’import peut rester disponible.`,
+    value: row.name || row.product_ref,
+    product_ref: row.product_ref,
+    source: 'local_stock_service',
+    action: 'REVIEW_LOCAL_STOCK',
+    evidence: Object.freeze({
+      state: row.state,
+      revenue_kmf: row.revenue_kmf ?? null,
+      quantity: row.quantity ?? null,
+      commercial_exposure: row.commercial_exposure || null,
+    }),
+    destination: market && market.code
+      ? Object.freeze({ kind: 'market_catalog', market_code: market.code, product_ref: row.product_ref })
+      : null,
+  }, market);
+}
+
+function buildDecisionSignals({ funnel, productProfitability, margin, productViability, productAvailability, market } = {}) {
   const ranked = [];
   for (const row of Array.isArray(productViability) ? productViability : []) {
     const signal = viabilitySignal(row, market);
     if (signal) ranked.push({ rank: VIABILITY_PRIORITY[row.status] ?? 80, signal });
+  }
+  for (const row of Array.isArray(productAvailability) ? productAvailability : []) {
+    const signal = availabilitySignal(row, market);
+    if (signal) ranked.push({ rank: 18, signal });
   }
 
   const marginValue = Number(margin && margin.value);
   if (Number.isFinite(marginValue) && marginValue < 0) {
     ranked.push({
       rank: 15,
-      signal: Object.freeze({
+      signal: projectDecisionSignal({
         key: 'negative-margin', kind: 'negative_margin', severity: 'critical',
         label: 'Marge négative', helper: 'Marge consolidée de la période', value_kmf: marginValue,
         source: 'dashboard_metrics', destination: null,
-      }),
+      }, market),
     });
   }
 
@@ -379,11 +498,11 @@ function buildDecisionSignals({ funnel, productProfitability, margin, productVia
   if (Number.isFinite(lost) && lost > 0) {
     ranked.push({
       rank: 30,
-      signal: Object.freeze({
+      signal: projectDecisionSignal({
         key: 'orders-lost', kind: 'orders_lost', severity: 'critical',
         label: 'Commandes perdues', helper: 'Perte explicitement remontée par le funnel', value_count: lost,
         source: 'commerce_funnel', destination: Object.freeze({ kind: 'commerce_funnel' }),
-      }),
+      }, market),
     });
   }
 
@@ -396,11 +515,11 @@ function buildDecisionSignals({ funnel, productProfitability, margin, productVia
   if (incomplete.length) {
     ranked.push({
       rank: 40,
-      signal: Object.freeze({
+      signal: projectDecisionSignal({
         key: 'profitability-incomplete', kind: 'costing_incomplete', severity: 'warning',
         label: 'Costing incomplet', helper: 'Produits sans marge réelle complète', value_count: incomplete.length,
         source: 'commerce_product_profitability', destination: Object.freeze({ kind: 'commerce_profitability' }),
-      }),
+      }, market),
     });
   }
 
@@ -435,24 +554,34 @@ async function buildCommerce(query = {}, options = {}) {
     getCategoryPerformance(filters),
     getOrderFunnel(filters),
   ]);
-  const viability = await getTopProductViability(topProducts, market, {
-    buildMarketCorridor: options.buildMarketCorridor,
-  });
+  const [viability, availability] = await Promise.all([
+    getTopProductViability(topProducts, market, {
+      buildMarketCorridor: options.buildMarketCorridor,
+    }),
+    getTopProductAvailability(topProducts, market, {
+      getLocalStock: options.getLocalStock,
+      isStockExposable: options.isStockExposable,
+    }),
+  ]);
   const decisionSignals = buildDecisionSignals({
     funnel,
     productProfitability,
     margin: marge,
     productViability: viability.items,
+    productAvailability: availability.items,
     market,
   });
+  const publicTopProducts = Object.freeze(topProducts.map(publicTopProduct));
+  const warnings = Object.freeze([...viability.warnings, ...availability.warnings]);
 
   return Object.freeze({
     scope: publicScope(market),
     period,
     kpis: Object.freeze([ca, commandes, panier, marge]),
-    top_products: Object.freeze(topProducts),
+    top_products: publicTopProducts,
     product_profitability: Object.freeze(productProfitability),
     product_viability: viability.items,
+    product_availability: availability.items,
     decision_signals: decisionSignals,
     categories: Object.freeze(categories),
     funnel: Object.freeze(funnel),
@@ -462,8 +591,10 @@ async function buildCommerce(query = {}, options = {}) {
       scope_mode: market ? 'market' : 'global',
       product_real_margin_basis: 'actual_cost_orders_only',
       product_viability_basis: market ? 'market_price_corridor_local_evidence' : 'not_applicable_global',
+      product_availability_basis: market ? 'local_stock_exposure_and_active_allocations' : 'not_applicable_global',
       decision_authority: 'server',
-      warnings: viability.warnings,
+      decision_signal_contract: 'decision_signals_projection_only_v1',
+      warnings,
       source_tables: Object.freeze([
         'orders',
         'order_items',
@@ -471,6 +602,7 @@ async function buildCommerce(query = {}, options = {}) {
         'order_item_cost_imputations',
         'order_item_real_cost_allocations',
       ]),
+      source_features: Object.freeze(['economic-engine', 'local-stock']),
     }),
   });
 }
@@ -479,16 +611,21 @@ module.exports = {
   ALLOWED_PERIODS,
   EXPECTED_COST_TYPES,
   VIABILITY_PRIORITY,
+  LOCAL_AVAILABILITY_STATE,
   normalizePeriod,
   buildPeriodFilters,
   getPanierMoyen,
   getTopProducts,
+  publicTopProduct,
   getProductProfitability,
   getCategoryPerformance,
   getOrderFunnel,
   projectViability,
   getTopProductViability,
+  getTopProductAvailability,
+  projectDecisionSignal,
   viabilitySignal,
+  availabilitySignal,
   buildDecisionSignals,
   buildCommerce,
 };
