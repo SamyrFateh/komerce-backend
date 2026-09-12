@@ -11,8 +11,8 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      dashboard_no_business_recompute, decision_first_dashboard_visuals
- * @impact-areas  admin-dashboard, commerce
+ * @doctrine      dashboard_no_business_recompute, decision_first_dashboard_visuals, server_decision_signal_authority
+ * @impact-areas  admin-dashboard, commerce, economic-engine
  * @version       2026-09
  */
 'use strict';
@@ -63,12 +63,58 @@
       });
   }
 
+  function destinationForSignal(signal) {
+    const destination = signal && signal.destination;
+    if (!destination || !destination.kind) return {};
+    if (destination.kind === 'pricing_workspace') {
+      const suffix = destination.market_code ? `?market=${encodeURIComponent(destination.market_code)}` : '';
+      return { href: `/admin/workspaces/pricing${suffix}`, actionLabel: 'Ouvrir l’Atelier →' };
+    }
+    if (destination.kind === 'commerce_funnel') return { href: '#commerce-funnel', actionLabel: 'Voir le funnel →' };
+    if (destination.kind === 'commerce_profitability') return { href: '#commerce-profitability', actionLabel: 'Voir la rentabilité →' };
+    return {};
+  }
+
+  function serverDecisionItems(payload, base) {
+    return (Array.isArray(payload && payload.decision_signals) ? payload.decision_signals : []).map(signal => {
+      const severity = signal && signal.severity;
+      const tone = severity === 'critical' ? 'critical' : (severity === 'warning' ? 'warning' : 'info');
+      let value = signal && signal.value;
+      if (signal && signal.value_kmf != null) value = base.formatKmf(signal.value_kmf);
+      else if (signal && signal.value_count != null) value = base.formatNumber(signal.value_count, 0);
+      return {
+        key: signal && signal.key ? signal.key : signal && signal.kind,
+        label: signal && signal.label ? signal.label : 'Décision',
+        helper: signal && signal.helper ? signal.helper : '',
+        value: value == null ? '—' : value,
+        tone,
+        icon: tone === 'critical' ? '!' : (tone === 'warning' ? '△' : 'i'),
+        ...destinationForSignal(signal),
+      };
+    });
+  }
+
   function decisionItems(payload, base) {
+    const warnings = overallWarningCount(payload);
+    if (Array.isArray(payload && payload.decision_signals)) {
+      const items = serverDecisionItems(payload, base);
+      if (warnings > 0) {
+        items.push({
+          key: 'data-quality',
+          label: 'Qualité des données',
+          helper: 'Warnings pouvant affecter la lecture commerciale',
+          value: base.formatNumber(warnings, 0),
+          tone: 'warning',
+          icon: 'i',
+        });
+      }
+      return items.slice(0, 5);
+    }
+
     const items = [];
     const lost = payload && payload.funnel ? Number(payload.funnel.lost) : NaN;
     const incomplete = incompleteProfitability(payload);
     const margin = kpi(payload, 'marge_consolidee');
-    const warnings = overallWarningCount(payload);
 
     if (Number.isFinite(lost) && lost > 0) {
       items.push({
@@ -163,6 +209,26 @@
       value: base.formatKmf(row.revenue_kmf),
       tone: 'neutral',
     }));
+  }
+
+  function viabilityItems(payload, base) {
+    return (Array.isArray(payload && payload.product_viability) ? payload.product_viability : []).map(row => {
+      const status = row.status || 'MARKET_EVIDENCE_INSUFFICIENT';
+      const tone = status === 'NON_VIABLE_STRUCTURAL'
+        ? 'critical'
+        : (status === 'VIABLE_UNDER_CONDITIONS' ? 'warning' : (status === 'VIABLE' ? 'positive' : 'info'));
+      const gap = Number(row.purchase_cost_gap_to_safe_ceiling_kmf);
+      const gapLabel = row.purchase_cost_gap_to_safe_ceiling_kmf == null || !Number.isFinite(gap)
+        ? null
+        : `Écart sourcing ${gap >= 0 ? '+' : ''}${base.formatKmf(gap)}`;
+      const helperParts = [row.label, row.reason].filter(Boolean);
+      return {
+        title: row.name || row.product_ref || 'Produit',
+        helper: helperParts.join(' · '),
+        value: gapLabel || row.sourcing_action || '—',
+        tone,
+      };
+    });
   }
 
   function profitabilityItems(payload, base) {
@@ -293,6 +359,13 @@
     topGrid.appendChild(products.section);
     dashboard.appendChild(topGrid);
 
+    const viability = viabilityItems(payload, base);
+    if (viability.length) {
+      const section = cardSection(doc, 'Viabilité des meilleures ventes', 'Lecture market-scoped du corridor de prix et du moteur économique canonique.', 'commerce-viability');
+      decisionUi.RankedList.render(section.body, { items: viability });
+      dashboard.appendChild(section.section);
+    }
+
     const funnel = cardSection(doc, 'Funnel commandes', 'Progression réelle des commandes sans taux recalculé côté navigateur.', 'commerce-funnel');
     decisionUi.Funnel.render(funnel.body, { stages: funnelStages(payload, base) });
     dashboard.appendChild(funnel.section);
@@ -334,6 +407,7 @@
       projectMetricItems: payload => metricItems(payload, base),
       projectRankedCategories: payload => rankedCategories(payload, base),
       projectRankedProducts: payload => rankedProducts(payload, base),
+      projectViabilityItems: payload => viabilityItems(payload, base),
       projectProfitabilityItems: payload => profitabilityItems(payload, base),
       projectFunnelStages: payload => funnelStages(payload, base),
       projectTrust: payload => trust(payload, base),
@@ -346,10 +420,13 @@
     metricDisplay,
     overallWarningCount,
     incompleteProfitability,
+    destinationForSignal,
+    serverDecisionItems,
     decisionItems,
     metricItems,
     rankedCategories,
     rankedProducts,
+    viabilityItems,
     profitabilityItems,
     funnelStages,
     trust,
