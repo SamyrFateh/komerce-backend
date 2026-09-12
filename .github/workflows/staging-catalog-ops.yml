@@ -9,10 +9,12 @@ on:
         type: choice
         default: aliexpress-draft-audit
         options:
+          - aliexpress-refinery-rescan-dry-run
+          - aliexpress-refinery-rescan
           - aliexpress-draft-audit
           - aliexpress-promote-drafts
       limit:
-        description: 'Nombre maximum de promotions pour ce run'
+        description: 'Nombre maximum de candidats/promotions pour ce run'
         required: false
         default: '100'
   issues:
@@ -33,14 +35,15 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' &&
        github.actor == github.repository_owner &&
-       (github.event.issue.title == '[staging-op] aliexpress-draft-audit' ||
+       (github.event.issue.title == '[staging-op] aliexpress-refinery-rescan-dry-run' ||
+        github.event.issue.title == '[staging-op] aliexpress-refinery-rescan' ||
+        github.event.issue.title == '[staging-op] aliexpress-draft-audit' ||
         github.event.issue.title == '[staging-op] aliexpress-promote-drafts'))
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       KOMERCE_ENV: staging
       NODE_ENV: test
-      KOMERCE_ALLOW_ALIEXPRESS_DRAFT_PROMOTION: '1'
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
 
     steps:
@@ -60,6 +63,8 @@ jobs:
           else
             limit='100'
             case "$ISSUE_TITLE" in
+              '[staging-op] aliexpress-refinery-rescan-dry-run') operation='aliexpress-refinery-rescan-dry-run' ;;
+              '[staging-op] aliexpress-refinery-rescan') operation='aliexpress-refinery-rescan' ;;
               '[staging-op] aliexpress-draft-audit') operation='aliexpress-draft-audit' ;;
               '[staging-op] aliexpress-promote-drafts') operation='aliexpress-promote-drafts' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
@@ -67,7 +72,7 @@ jobs:
           fi
 
           case "$operation" in
-            aliexpress-draft-audit|aliexpress-promote-drafts) ;;
+            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
           if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 500 ]; then
@@ -102,6 +107,41 @@ jobs:
             exit 1
           fi
 
+      - name: Dry-run AliExpress refinery rescan
+        id: rescan_dry_run
+        if: steps.operation.outputs.operation == 'aliexpress-refinery-rescan-dry-run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 1200s node scripts/aliexpress-refinery-rescan-staging.js --dry-run --limit=${{ steps.operation.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Execute AliExpress refinery rescan
+        id: rescan
+        if: steps.operation.outputs.operation == 'aliexpress-refinery-rescan'
+        shell: bash
+        env:
+          KOMERCE_ALLOW_ALIEXPRESS_RESCAN: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 1500s node scripts/aliexpress-refinery-rescan-staging.js --execute --limit=${{ steps.operation.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Audit refinery after executed rescan
+        id: refinery_audit
+        if: steps.operation.outputs.operation == 'aliexpress-refinery-rescan'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 180s node scripts/aliexpress-refinery-audit-staging.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
       - name: Audit AliExpress draft promotion
         id: audit
         if: steps.operation.outputs.operation == 'aliexpress-draft-audit'
@@ -117,6 +157,8 @@ jobs:
         id: promote
         if: steps.operation.outputs.operation == 'aliexpress-promote-drafts'
         shell: bash
+        env:
+          KOMERCE_ALLOW_ALIEXPRESS_DRAFT_PROMOTION: '1'
         run: |
           set -euo pipefail
           output="$(timeout 1500s node scripts/aliexpress-promote-drafts-staging.js --execute --limit=${{ steps.operation.outputs.limit }})"
@@ -130,6 +172,9 @@ jobs:
         env:
           OPERATION: ${{ steps.operation.outputs.operation }}
           LIMIT: ${{ steps.operation.outputs.limit }}
+          RESCAN_DRY_RUN_SUMMARY: ${{ steps.rescan_dry_run.outputs.summary }}
+          RESCAN_SUMMARY: ${{ steps.rescan.outputs.summary }}
+          REFINERY_AUDIT_SUMMARY: ${{ steps.refinery_audit.outputs.summary }}
           AUDIT_SUMMARY: ${{ steps.audit.outputs.summary }}
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
         run: |
@@ -138,6 +183,15 @@ jobs:
             echo
             echo "- operation: ${OPERATION:-unknown}"
             echo "- limit: ${LIMIT:-unknown}"
+            if [ -n "${RESCAN_DRY_RUN_SUMMARY:-}" ]; then
+              echo "- refinery dry-run: \`${RESCAN_DRY_RUN_SUMMARY}\`"
+            fi
+            if [ -n "${RESCAN_SUMMARY:-}" ]; then
+              echo "- refinery rescan: \`${RESCAN_SUMMARY}\`"
+            fi
+            if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then
+              echo "- refinery audit: \`${REFINERY_AUDIT_SUMMARY}\`"
+            fi
             if [ -n "${AUDIT_SUMMARY:-}" ]; then
               echo "- audit: \`${AUDIT_SUMMARY}\`"
             fi
@@ -153,11 +207,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           OPERATION: ${{ steps.operation.outputs.operation }}
+          RESCAN_DRY_RUN_SUMMARY: ${{ steps.rescan_dry_run.outputs.summary }}
+          RESCAN_SUMMARY: ${{ steps.rescan.outputs.summary }}
+          REFINERY_AUDIT_SUMMARY: ${{ steps.refinery_audit.outputs.summary }}
           AUDIT_SUMMARY: ${{ steps.audit.outputs.summary }}
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
         run: |
           set -euo pipefail
           note="Staging catalog operation \`$OPERATION\` completed successfully."
+          if [ -n "${RESCAN_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$RESCAN_DRY_RUN_SUMMARY\`"; fi
+          if [ -n "${RESCAN_SUMMARY:-}" ]; then note="$note\n\n\`$RESCAN_SUMMARY\`"; fi
+          if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then note="$note\n\n\`$REFINERY_AUDIT_SUMMARY\`"; fi
           if [ -n "${AUDIT_SUMMARY:-}" ]; then note="$note\n\n\`$AUDIT_SUMMARY\`"; fi
           if [ -n "${PROMOTE_SUMMARY:-}" ]; then note="$note\n\n\`$PROMOTE_SUMMARY\`"; fi
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
