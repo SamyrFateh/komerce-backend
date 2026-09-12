@@ -75,6 +75,9 @@ Un changement de prix ou de stock ne crée donc jamais une nouvelle identité SK
 11. `supplier_sku` est l'identité de réconciliation catalogue ; il ne remplace jamais `supplier_unit_ref + supplier_order_identity` comme identité de commande.
 12. Une re-promotion peut compléter une identité de commande précédemment absente uniquement à partir d'une identité native fournie par le fournisseur.
 13. Une identité de commande déjà persistée ne peut jamais être remplacée silencieusement. Toute divergence de `supplier_unit_ref` ou de payload canonique bloque avec `BLOCKED_SUPPLIER_IDENTITY`.
+14. Le coeur Fulfillment ne parse jamais `supplier_order_identity.payload` : seul l'adapter dont `provider` correspond à l'identité peut interpréter ce payload.
+15. Un adapter fournisseur ne peut inventer aucun statut métier propre : il doit ramener son résultat vers le référentiel canonique Supplier Fulfillment Readiness.
+16. `ready=true` est réservé exclusivement au statut `FULFILLMENT_READY` ; tout verdict contradictoire est rejeté comme `PREFLIGHT_FAILED`.
 
 ## Adaptateurs
 
@@ -84,6 +87,33 @@ Chaque connecteur fournisseur est responsable de deux opérations :
 - **purchasing** : traduire cette identité opaque vers le payload de commande natif.
 
 Le domaine Purchasing ne doit jamais parser directement un payload brut d'import pour deviner une variante.
+
+### Supplier Fulfillment Adapter Contract
+
+L'interface fournisseur côté readiness est volontairement minimale et universelle :
+
+```text
+adapter.provider  -> identifie exactement le provider supporté
+adapter.evaluate() -> retourne un verdict canonique Purchasing
+```
+
+Le moteur générique lui fournit l'identité opaque, le SKU persisté, la quantité, la destination et le contexte technique. Il ne connaît ni `sku_id`, ni `sku_attr`, ni `variant_id`, ni `seller_sku`, ni aucun autre identifiant natif.
+
+Le résultat d'un adapter doit utiliser exclusivement l'un des statuts canoniques :
+
+- `FULFILLMENT_READY`
+- `BLOCKED_SUPPLIER_IDENTITY`
+- `SKU_INACTIVE`
+- `OUT_OF_STOCK`
+- `SUPPLIER_UNAVAILABLE`
+- `PRICE_DRIFT_BLOCKED`
+- `NOT_SHIPPABLE`
+- `FREIGHT_UNAVAILABLE`
+- `PREFLIGHT_FAILED`
+
+Une erreur technique inattendue qui échappe à l'adapter est normalisée par le coeur en `PREFLIGHT_FAILED`. Un adapter dont le provider déclaré ne correspond pas à `supplier_order_identity.provider` n'est jamais exécuté.
+
+L'universalité est considérée prouvée seulement si un second fournisseur peut utiliser un payload natif différent — par exemple `{ "variant_id": "VAR-42" }` — sans modification du moteur `supplier-fulfillment-readiness`.
 
 ## Persistance canonique
 
