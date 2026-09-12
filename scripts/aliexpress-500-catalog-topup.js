@@ -14,7 +14,7 @@
  * @db-txn        canonical services own candidate writes; shared advisory lock serializes AliExpress pool workers
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -25,35 +25,60 @@ const aliexpressBaseConnector = require('../services/suppliers/connectors/aliexp
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
 
-const TOPUP_ID = 'topup-diversified-v1';
+const TOPUP_ID = 'topup-diversified-v2';
 const SEARCH_SORT = 'salesDesc';
 const SEARCH_LOCALE = 'en_US';
 const SEARCH_CURRENCY = 'USD';
 
-// Deliberately broad fallbacks. The first entries target the structural shortfalls
-// observed by the live v1 campaign; the rest spread any remaining top-up across
-// productive families instead of filling the catalogue with a single category.
+// Wave 2 deliberately changes vocabulary after the v1 query set and its deeper
+// pages produced no additional clean IDs. Round-robin ordering front-loads the
+// live Auto/Créations shortfalls, then spreads discovery across Tech, Maison,
+// Mode, Bricolage and Enfants. Canonical classification still belongs to the
+// Raffinerie; these labels are discovery provenance only.
 const TOPUP_QUERIES = Object.freeze([
-  { keyword: 'gift', category: 'Créations personnelles', subcategory: 'Cadeau' },
-  { keyword: 'wedding dress', category: 'Créations personnelles', subcategory: 'Cérémonie' },
-  { keyword: 'mug', category: 'Créations personnelles', subcategory: 'Impression' },
-  { keyword: 'photo frame', category: 'Créations personnelles', subcategory: 'Impression' },
-  { keyword: 'car accessories', category: 'Auto', subcategory: 'Accessoires' },
-  { keyword: 'motorcycle', category: 'Auto', subcategory: 'Moto' },
-  { keyword: 'car light', category: 'Auto', subcategory: 'Éclairage' },
-  { keyword: 'brake', category: 'Auto', subcategory: 'Freinage' },
-  { keyword: 'oil filter', category: 'Auto', subcategory: 'Filtres' },
-  { keyword: 'phone accessories', category: 'Tech', subcategory: 'Phones' },
-  { keyword: 'wireless earbuds', category: 'Tech', subcategory: 'Audio' },
-  { keyword: 'smartwatch accessories', category: 'Tech', subcategory: 'Montres' },
-  { keyword: 'kitchen gadget', category: 'Maison', subcategory: 'Cuisine' },
-  { keyword: 'home storage', category: 'Maison', subcategory: 'Confort' },
-  { keyword: 'home decor', category: 'Maison', subcategory: 'Déco' },
-  { keyword: 'beauty tools', category: 'Mode & Beauté', subcategory: 'Beauté' },
-  { keyword: 'women accessories', category: 'Mode & Beauté', subcategory: 'Femme' },
-  { keyword: 'men accessories', category: 'Mode & Beauté', subcategory: 'Homme' },
-  { keyword: 'kids toys', category: 'Maison', subcategory: 'Enfants' },
-  { keyword: 'hand tools', category: 'Bricolage', subcategory: 'Outillage' },
+  { keyword: 'car charger', category: 'Auto', subcategory: 'Accessoires' },
+  { keyword: 'car phone holder', category: 'Auto', subcategory: 'Accessoires' },
+  { keyword: 'car vacuum', category: 'Auto', subcategory: 'Accessoires' },
+  { keyword: 'tire inflator', category: 'Auto', subcategory: 'Accessoires' },
+  { keyword: 'car seat cover', category: 'Auto', subcategory: 'Accessoires' },
+  { keyword: 'jewelry box', category: 'Créations personnelles', subcategory: 'Cadeau' },
+  { keyword: 'party decorations', category: 'Créations personnelles', subcategory: 'Cérémonie' },
+  { keyword: 'photo album', category: 'Créations personnelles', subcategory: 'Impression' },
+  { keyword: 'keychain', category: 'Créations personnelles', subcategory: 'Cadeau' },
+  { keyword: 'stickers', category: 'Créations personnelles', subcategory: 'Impression' },
+
+  { keyword: 'phone case', category: 'Tech', subcategory: 'Phones' },
+  { keyword: 'usb c cable', category: 'Tech', subcategory: 'Phones' },
+  { keyword: 'fast charger', category: 'Tech', subcategory: 'Phones' },
+  { keyword: 'power bank', category: 'Tech', subcategory: 'Phones' },
+  { keyword: 'laptop stand', category: 'Tech', subcategory: 'Accessoires' },
+  { keyword: 'wireless keyboard', category: 'Tech', subcategory: 'Accessoires' },
+  { keyword: 'gaming mouse', category: 'Tech', subcategory: 'Accessoires' },
+  { keyword: 'led strip light', category: 'Tech', subcategory: 'Accessoires' },
+
+  { keyword: 'storage box', category: 'Maison', subcategory: 'Confort' },
+  { keyword: 'water bottle', category: 'Maison', subcategory: 'Cuisine' },
+  { keyword: 'shower caddy', category: 'Maison', subcategory: 'Confort' },
+  { keyword: 'cleaning brush', category: 'Maison', subcategory: 'Confort' },
+  { keyword: 'kitchen scale', category: 'Maison', subcategory: 'Cuisine' },
+  { keyword: 'vegetable cutter', category: 'Maison', subcategory: 'Cuisine' },
+  { keyword: 'pet supplies', category: 'Maison', subcategory: 'Confort' },
+
+  { keyword: 'women handbag', category: 'Mode & Beauté', subcategory: 'Femme' },
+  { keyword: 'men wallet', category: 'Mode & Beauté', subcategory: 'Homme' },
+  { keyword: 'women sunglasses', category: 'Mode & Beauté', subcategory: 'Femme' },
+  { keyword: 'running shoes', category: 'Mode & Beauté', subcategory: 'Chaussures' },
+  { keyword: 'women sandals', category: 'Mode & Beauté', subcategory: 'Chaussures' },
+  { keyword: 'earrings', category: 'Mode & Beauté', subcategory: 'Accessoires' },
+  { keyword: 'hair accessories', category: 'Mode & Beauté', subcategory: 'Beauté' },
+  { keyword: 'makeup bag', category: 'Mode & Beauté', subcategory: 'Beauté' },
+
+  { keyword: 'drill bits', category: 'Bricolage', subcategory: 'Outillage' },
+  { keyword: 'screwdriver set', category: 'Bricolage', subcategory: 'Outillage' },
+  { keyword: 'measuring tape', category: 'Bricolage', subcategory: 'Outillage' },
+
+  { keyword: 'baby toys', category: 'Maison', subcategory: 'Enfants' },
+  { keyword: 'stationery set', category: 'Maison', subcategory: 'Enfants' },
 ]);
 
 function logicalTopupPage(logicalPage, queries = TOPUP_QUERIES) {
@@ -193,7 +218,7 @@ async function runTopupLocked(config, providerEnv) {
   let logicalPage = Math.max(1, Number(checkpoint?.next_page) || 1);
   let pages = 0;
 
-  console.log(`[aliexpress-topup] runtime=${config.runtime || 'unknown'} country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} queries=${TOPUP_QUERIES.length} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
+  console.log(`[aliexpress-topup] runtime=${config.runtime || 'unknown'} wave=${TOPUP_ID} country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} queries=${TOPUP_QUERIES.length} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
   if (resumeCompleted) {
     console.log(`[aliexpress-topup] extend checkpoint next=${logicalPage} max=${maxLogicalPages}`);
   }
@@ -287,6 +312,7 @@ async function runTopupLocked(config, providerEnv) {
   const output = {
     runtime: config.runtime,
     sync_key: config.syncKey,
+    wave: TOPUP_ID,
     discovery: 'aliexpress.ds.text.search',
     country_code: config.countryCode,
     starting_clean: startingClean,
@@ -307,6 +333,7 @@ async function runTopup() {
     const output = {
       runtime: config.runtime,
       sync_key: config.syncKey,
+      wave: TOPUP_ID,
       target: config.maxCleanProducts,
       paused_reason: 'another-run-active',
     };
