@@ -31,11 +31,20 @@ function positiveInt(value, name = 'quantity') {
 
 /**
  * Interprétation AliExpress d'une Supplier Order Identity déjà produite par
- * le connecteur. Le domaine Purchasing ne reparcourt jamais le raw_payload
- * d'import pour deviner une variante au moment de commander.
+ * le connecteur. Un snapshot historique sans raw_payload peut être résolu pour
+ * identifier le SKU à rafraîchir, mais aucune requête d'achat/fret ne peut être
+ * construite tant que l'identité canonique n'a pas été obtenue du live.
  */
 function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {}) {
-  const resolved = supplierIdentity.resolveSupplierUnit(contract, supplierSku, quantity, options);
+  const requireOrderIdentity = options.requireOrderIdentity !== undefined
+    ? options.requireOrderIdentity
+    : Boolean(contract?.raw_payload);
+  const resolved = supplierIdentity.resolveSupplierUnit(
+    contract,
+    supplierSku,
+    quantity,
+    { ...options, requireOrderIdentity }
+  );
   const identity = resolved.supplier_order_identity;
 
   if (!identity) {
@@ -73,8 +82,15 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
   };
 }
 
+function requireCanonicalIdentity(resolved) {
+  if (!resolved?.supplier_order_identity) {
+    throw new Error('BLOCKED_SUPPLIER_IDENTITY: Supplier Order Identity requise avant appel fournisseur');
+  }
+}
+
 function buildFreightBusinessParams(resolved, destination = {}) {
   if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
   const countryCode = String(destination.country_code || destination.countryCode || 'KM').trim().toUpperCase();
   if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode}`);
 
@@ -97,6 +113,7 @@ function buildFreightBusinessParams(resolved, destination = {}) {
 
 function buildPlaceOrderBusinessParams(resolved, logisticsAddress, options = {}) {
   if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
   const address = logisticsAddress && typeof logisticsAddress === 'object' ? { ...logisticsAddress } : null;
   if (!address || !String(address.address || '').trim()) {
     throw new Error('logistics_address.address requis pour préparer place-order');
