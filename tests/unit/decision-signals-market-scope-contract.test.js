@@ -63,7 +63,7 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     expect(route).toContain("'/market/:marketCode/signals/:signalRef/snooze'");
     expect(route).toContain("'/market/:marketCode/signals/:signalRef/resolve'");
     expect(route).not.toContain("'/market/:marketCode/generate'");
-    expect(route).toContain("requiredCapability: 'decision_signal.manage'").not;
+    expect(route).toContain("resolveMarketAuthority(req, 'decision_signal.manage')");
   });
 
   test('Canonical UI selects a country endpoint only from server AdminContext mode/allowedMarkets', async () => {
