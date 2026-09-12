@@ -90,11 +90,14 @@ async function computeDashboard() {
     } catch (_) { nbRecoFailed++; continue; }
 
     // Champs doctrinaux = source de vérité (mêmes chiffres que /recommend)
-    const cdr         = reco.cdr_complete_kmf;
+    // Contrat canonique (2026-09) : cdr_complete_kmf / n3_fixed_overhead_allocation_kmf
+    // ont été remplacés par fully_loaded_cost_reference_kmf / structure_allocation_reference_kmf
+    // dans pricing-engine.js. Voir services/pricing-contract-compat.js.
+    const cdr         = reco.fully_loaded_cost_reference_kmf;
     const prixCalcule = reco.recommended_price_kmf;
     const prixActuel  = reco.current_price_kmf || 0;
     const margeEff    = reco.estimated_margin_pct;   // (prix - CDR complet) / prix
-    if (n3Sample === null) n3Sample = reco.n3_fixed_overhead_allocation_kmf;
+    if (n3Sample === null) n3Sample = reco.structure_allocation_reference_kmf;
 
     // Classement par frontières (doctrine §7) : destructif < coût variable ≤ sous-couvert < CDR ≤ couvert
     const variableComplete = reco.variable_cost_complete_kmf;

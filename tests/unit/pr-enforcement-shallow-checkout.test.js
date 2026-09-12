@@ -20,13 +20,16 @@ describe('PR enforcement — shallow checkout ratchet', () => {
   });
 
   test('les gates hors migration qui comparent base/head fetchent uniquement le commit de base', () => {
+    // changes + boutique + governance (Debt Zero, commit 1a9a1ada0 — même
+    // patron shallow-checkout appliqué au nouveau gate).
     const targetedFetches = workflow.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) || [];
-    expect(targetedFetches).toHaveLength(2);
+    expect(targetedFetches).toHaveLength(3);
   });
 
-  test('les trois checkouts concernés restent explicitement shallow', () => {
+  test('les quatre checkouts concernés restent explicitement shallow', () => {
+    // changes, migrations, boutique, governance.
     const shallow = workflow.match(/fetch-depth: 1/g) || [];
-    expect(shallow).toHaveLength(3);
+    expect(shallow).toHaveLength(4);
   });
 
   test('migration/schema fait un seul fetch blobless head+base pour restaurer la baseline', () => {

@@ -4,7 +4,7 @@
  * Entrée canonique de `npm run backend:audit`.
  *
  * `audit-backend-arch.js` reste le détecteur historique. Ce wrapper ajoute la
- * doctrine Debt Zero 2026-08-29 pour I-BACK-10 : les huit ensembles exacts de
+ * doctrine Debt Zero 2026-08-29 pour I-BACK-10 : les neuf ensembles exacts de
  * migrations déjà publiées, documentés dans GAPS.md, sont de l'historique
  * immuable réaudité et non une dette à « corriger » par renommage.
  *

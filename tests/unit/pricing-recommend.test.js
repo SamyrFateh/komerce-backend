@@ -131,7 +131,10 @@ describe('computeRecommend', () => {
     });
     mockRecommend.mockResolvedValue({
       recommended_price_kmf: 99990,
-      cdr_complete_kmf: 50000,
+      // Contrat canonique du moteur (2026-09) : cdr_complete_kmf n'existe
+      // plus, remplacé par fully_loaded_cost_reference_kmf. Voir
+      // services/pricing-contract-compat.js pour les alias legacy.
+      fully_loaded_cost_reference_kmf: 50000,
       warnings: ['doctrine-warning'],
     });
 

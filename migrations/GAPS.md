@@ -32,7 +32,7 @@ Certains numéros ont des variantes avec suffixe lettre. Elles font partie de l'
 
 Le gate `I-BACK-10` groupe les migrations par token numérique + suffixe lettre optionnel (`014`, `072`, `072a`, `015b`, etc.).
 
-Les huit ensembles ci-dessous ont été réaudités le 2026-08-29. Ils sont désormais classés comme **historique immuable explicitement documenté**, et non comme dette à résoudre par renommage ou suppression.
+Les neuf ensembles ci-dessous ont été réaudités le 2026-08-29 (le neuvième, `218`, documenté le 2026-09-12). Ils sont désormais classés comme **historique immuable explicitement documenté**, et non comme dette à résoudre par renommage ou suppression.
 
 Cette classification ne relâche pas le garde-fou :
 
@@ -70,3 +70,4 @@ Le dépôt dispose encore de `migrations/AUD-10_rename_tracking_fix.sql`, qui do
 - COLLISION: `128` = 128_order_status_canonical_reclosure.sql, 128_shared_cart_items_sellable_unit.sql, 128_shared_list_pickup_code_recipient.sql
 - COLLISION: `147` = 147_catalog_global_access_grants.sql, 147_relais_visit_identity.sql
 - COLLISION: `157` = 157_local_stock_exposure_and_allocations.sql, 157_providers_services_media.sql
+- COLLISION: `218` = 218_pricing_partners_sourcing_kmf_numeric.sql, 218_supplier_oauth_connections.sql
