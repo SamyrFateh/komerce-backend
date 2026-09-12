@@ -8,8 +8,8 @@
  * @outputs       exact live unit observation + freight preflight verdict
  * @depends       services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/aliexpress-purchase-preflight.js, services/suppliers/supplier-order-identity.js
  * @used-by       services/suppliers/supplier-fulfillment-readiness.js callers
- * @db-read       supplier_oauth_connections (via connected connector)
- * @db-write      supplier_oauth_connections (token refresh only, via connected connector)
+ * @db-read       none
+ * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing,supplier-integration,catalog
