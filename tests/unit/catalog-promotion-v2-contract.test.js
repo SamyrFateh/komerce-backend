@@ -63,6 +63,25 @@ describe('catalog promotion — couture NormalizedSupplierProduct V2 canonique',
     expect(() => validateForPromotion(contract)).not.toThrow();
   });
 
+  it('validateForPromotion accepte des clés specification fournisseur répétées sans perdre de valeur', () => {
+    const duplicateKeyContract = {
+      schema_version: '2',
+      specifications: [
+        { group: 'general', key: '348', label: 'Compatibilité', value: 'Valeur A' },
+        { group: 'general', key: '348', label: 'Compatibilité', value: 'Valeur B' },
+      ],
+    };
+
+    expect(() => validateForPromotion(duplicateKeyContract)).not.toThrow();
+    expect(mapContentToAttributeRows(duplicateKeyContract).map((row) => ({
+      key: row.attribute_key,
+      value: row.value_text,
+    }))).toEqual([
+      { key: '348', value: 'Valeur A' },
+      { key: '348~2', value: 'Valeur B' },
+    ]);
+  });
+
   it('traduit highlights/specifications vers les clés DB sans imposer la forme DB au contrat', () => {
     expect(mapContentToAttributeRows(contract)).toEqual([
       {

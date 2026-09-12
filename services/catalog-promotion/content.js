@@ -21,6 +21,7 @@
 
 const RESERVED_SECTION_KEYS = new Set(['materials', 'care', 'warnings']);
 const ALLOWED_SECTION_TYPES = new Set(['TEXT', 'BULLETS', 'KEY_VALUE']);
+const MAX_ATTRIBUTE_KEY_LENGTH = 128;
 
 function invalid(message) {
   const e = new Error(message);
@@ -43,6 +44,23 @@ function nonEmptyTrimmedStringArrayOrNull(value, fieldName) {
     return item.trim();
   }).filter((item) => item.length > 0);
   return items.length > 0 ? items : null;
+}
+
+function projectedAttributeKey(kind, groupKey, baseKey, seenTriplets) {
+  const normalizedBase = String(baseKey || '').trim();
+  let occurrence = 1;
+
+  while (true) {
+    const suffix = occurrence === 1 ? '' : `~${occurrence}`;
+    const room = Math.max(1, MAX_ATTRIBUTE_KEY_LENGTH - suffix.length);
+    const candidate = `${normalizedBase.slice(0, room)}${suffix}`;
+    const triplet = `${kind}\u0000${groupKey}\u0000${candidate}`;
+    if (!seenTriplets.has(triplet)) {
+      seenTriplets.add(triplet);
+      return candidate;
+    }
+    occurrence += 1;
+  }
 }
 
 function mapContentToProfileRow(contract, options = {}) {
@@ -187,10 +205,8 @@ function mapContentToAttributeRows(contract, options = {}) {
       const canonicalKey = typeof raw === 'object' && raw !== null
         ? nonEmptyTrimmedStringOrNull(raw.key)
         : null;
-      const attributeKey = canonicalKey || `h${index + 1}`;
-      const triplet = `HIGHLIGHT\u0000\u0000${attributeKey}`;
-      if (seenTriplets.has(triplet)) throw invalid(`highlight key dupliquée : "${attributeKey}"`);
-      seenTriplets.add(triplet);
+      const baseAttributeKey = canonicalKey || `h${index + 1}`;
+      const attributeKey = projectedAttributeKey('HIGHLIGHT', '', baseAttributeKey, seenTriplets);
 
       rows.push({
         kind: 'HIGHLIGHT',
@@ -222,18 +238,20 @@ function mapContentToAttributeRows(contract, options = {}) {
 
       const rawGroup = spec.group ?? spec.group_key;
       const groupKey = nonEmptyTrimmedStringOrNull(rawGroup) || 'general';
-      const attributeKey = rawKey.trim();
-      const triplet = `SPECIFICATION\u0000${groupKey}\u0000${attributeKey}`;
-      if (seenTriplets.has(triplet)) {
-        throw invalid(`attribut dupliqué : (SPECIFICATION, "${groupKey}", "${attributeKey}")`);
-      }
-      seenTriplets.add(triplet);
+      const baseAttributeKey = rawKey.trim();
+
+      // Le contrat V2 n'impose pas l'unicité de specifications[].key, alors que
+      // product_attributes impose l'identité (kind, group_key, attribute_key).
+      // On ne fusionne et on ne jette donc aucune donnée fournisseur : les
+      // collisions sont projetées avec un suffixe ordinal déterministe (~2, ~3…).
+      // Le même snapshot rejoué produit exactement les mêmes clés DB.
+      const attributeKey = projectedAttributeKey('SPECIFICATION', groupKey, baseAttributeKey, seenTriplets);
 
       rows.push({
         kind: 'SPECIFICATION',
         group_key: groupKey,
         attribute_key: attributeKey,
-        label: nonEmptyTrimmedStringOrNull(spec.label) || attributeKey,
+        label: nonEmptyTrimmedStringOrNull(spec.label) || baseAttributeKey,
         value_text: String(spec.value).trim(),
         unit: nonEmptyTrimmedStringOrNull(spec.unit),
         display_order: typeof spec.display_order === 'number' ? spec.display_order : index,
