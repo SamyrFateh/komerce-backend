@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T21:24:32.909Z",
+  "generatedAt": "2026-09-12T21:55:10.273Z",
   "summary": {
     "navItems": 12,
     "navMatrixEntries": 35,
@@ -7,7 +7,7 @@
     "apiEdgesTraced": 58,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
-    "unprovenContracts": 30,
+    "unprovenContracts": 0,
     "notFoundContracts": 0,
     "notFoundDynamic": 8,
     "unresolvedFetches": 15,
@@ -432,7 +432,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/dashboard/context",
       "matchedRoute": "/api/admin/dashboard/context",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "action-center.js",
@@ -456,7 +456,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/dashboard/context",
       "matchedRoute": "/api/admin/dashboard/context",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "app.js",
@@ -464,7 +464,7 @@
       "httpMethod": "GET",
       "normalized": "/api/auth/me",
       "matchedRoute": "/api/auth/me",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "app.js",
@@ -472,7 +472,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/dashboard/context",
       "matchedRoute": "/api/admin/dashboard/context",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -480,7 +480,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/approval/{param}/approve",
       "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/approve",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -488,7 +488,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/approval/{param}/override",
       "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/override",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -496,7 +496,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/approval/{param}/reject",
       "matchedRoute": "/api/admin/workspaces/catalog/approval/{productRef}/reject",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -504,7 +504,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/products/{param}/deactivate",
       "matchedRoute": "/api/admin/workspaces/catalog/products/{productRef}/deactivate",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -512,7 +512,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/categories",
       "matchedRoute": "/api/admin/workspaces/catalog/categories",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -520,7 +520,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/categories/{param}/update",
       "matchedRoute": "/api/admin/workspaces/catalog/categories/{key}/update",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -528,7 +528,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/catalog/categories/{param}/subcategories",
       "matchedRoute": "/api/admin/workspaces/catalog/categories/{key}/subcategories",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "catalog-workspace.js",
@@ -536,7 +536,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/catalog",
       "matchedRoute": "/api/admin/workspaces/catalog",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "client-360.js",
@@ -544,7 +544,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/entities/clients/{param}",
       "matchedRoute": "/api/admin/entities/clients/{clientPhone}",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "demo-order-flow.js",
@@ -552,7 +552,7 @@
       "httpMethod": "PATCH",
       "normalized": "/api/orders/{param}/status",
       "matchedRoute": "/api/orders/{id}/status",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "demo-order-flow.js",
@@ -560,7 +560,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/demo/orders/{param}/timeline",
       "matchedRoute": "/api/admin/demo/orders/{orderId}/timeline",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "demo-order-flow.js",
@@ -568,7 +568,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/orders",
       "matchedRoute": "/api/admin/orders",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "finance-accounting-workspace.js",
@@ -632,7 +632,7 @@
       "httpMethod": "POST",
       "normalized": "/api/auth/logout",
       "matchedRoute": "/api/auth/logout",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "operations-workspace.js",
@@ -664,7 +664,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/entities/orders/{param}",
       "matchedRoute": "/api/admin/entities/orders/{orderReference}",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "pilotage.js",
@@ -704,7 +704,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/pricing/market/{param}/decision",
       "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}/decision",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "pricing-workspace.js",
@@ -712,7 +712,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/pricing/market/{param}/decision-policy/history",
       "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "pricing-workspace.js",
@@ -752,7 +752,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/pricing/market/{param}",
       "matchedRoute": "/api/admin/workspaces/pricing/market/{marketCode}",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "product-360.js",
@@ -760,7 +760,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/entities/products/{param}",
       "matchedRoute": "/api/admin/entities/products/{productRef}",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "settings-workspace.js",
@@ -792,7 +792,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/update",
       "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/update",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -800,7 +800,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/scan",
       "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -808,7 +808,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/watchlist",
       "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -816,7 +816,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/promote",
       "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -824,7 +824,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/candidates/{param}/reject",
       "matchedRoute": "/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -832,7 +832,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/imports",
       "matchedRoute": "/api/admin/workspaces/sourcing/imports",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -840,7 +840,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/products/{param}/update",
       "matchedRoute": "/api/admin/workspaces/sourcing/products/{productRef}/update",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -848,7 +848,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/suppliers",
       "matchedRoute": "/api/admin/workspaces/sourcing/suppliers",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -856,7 +856,7 @@
       "httpMethod": "POST",
       "normalized": "/api/admin/workspaces/sourcing/suppliers/{param}/update",
       "matchedRoute": "/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "sourcing-workspace.js",
@@ -872,7 +872,7 @@
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/sourcing",
       "matchedRoute": "/api/admin/workspaces/sourcing",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "module": "team-invite.js",
@@ -888,7 +888,7 @@
       "httpMethod": "GET",
       "normalized": "/api/auth/me",
       "matchedRoute": "/api/auth/me",
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     }
   ],
   "modules": [
@@ -1771,38 +1771,7 @@
   "diagnostics": {
     "surfaceWithoutModule": [],
     "navHrefUnresolved": [],
-    "unprovenContracts": [
-      "GET /api/admin/dashboard/context",
-      "GET /api/admin/demo/orders/{orderId}/timeline",
-      "GET /api/admin/entities/clients/{clientPhone}",
-      "GET /api/admin/entities/orders/{orderReference}",
-      "GET /api/admin/entities/products/{productRef}",
-      "GET /api/admin/orders",
-      "GET /api/admin/workspaces/catalog",
-      "GET /api/admin/workspaces/pricing/market/{marketCode}",
-      "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
-      "GET /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
-      "GET /api/admin/workspaces/sourcing",
-      "GET /api/auth/me",
-      "PATCH /api/orders/{id}/status",
-      "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",
-      "POST /api/admin/workspaces/catalog/approval/{productRef}/override",
-      "POST /api/admin/workspaces/catalog/approval/{productRef}/reject",
-      "POST /api/admin/workspaces/catalog/categories",
-      "POST /api/admin/workspaces/catalog/categories/{key}/subcategories",
-      "POST /api/admin/workspaces/catalog/categories/{key}/update",
-      "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
-      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
-      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
-      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/scan",
-      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/update",
-      "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
-      "POST /api/admin/workspaces/sourcing/imports",
-      "POST /api/admin/workspaces/sourcing/products/{productRef}/update",
-      "POST /api/admin/workspaces/sourcing/suppliers",
-      "POST /api/admin/workspaces/sourcing/suppliers/{partnerRef}/update",
-      "POST /api/auth/logout"
-    ],
+    "unprovenContracts": [],
     "notFoundContracts": [],
     "notFoundDynamic": [
       "GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",

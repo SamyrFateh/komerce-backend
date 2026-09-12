@@ -545,6 +545,53 @@ function resolveHrefToSurface(href, appRouting, navParsed) {
   return { surfaceId: 'pilotage', via: 'app-default-fallback' };
 }
 
+// Lit le statut de preuve d'une opération OpenAPI. `contract-generate.js`
+// n'écrit JAMAIS `x-contract-status` au niveau de l'opération elle-même : il
+// l'écrit dans le schéma de la réponse 2xx la plus significative
+// (`responses.<code>.content.<type>.schema['x-contract-status']`), ou dans
+// `requestBody['x-contract-status']` pour le statut "joi" (validation de la
+// requête, pas preuve de la réponse) — cf. l'en-tête documentaire de
+// docs/contract/openapi.json (info.description) qui énumère exactement ces
+// statuts : joi / test / route-read / service-read / scan-* / UNKNOWN.
+// Chercher la clé au niveau racine de l'opération (comme le faisait ce
+// générateur) ne la trouve donc jamais : `def['x-contract-status']` est
+// toujours `undefined` pour les 639 opérations actuelles du contrat, quel
+// que soit leur vrai statut. Résultat : la comparaison plus bas à la valeur
+// littérale `'PROVEN'` ne pouvait jamais matcher (`'PROVEN'` n'est d'ailleurs
+// jamais écrit nulle part dans le contrat), donc AUCUN endpoint, dans aucun
+// des deux systèmes nerveux (Legacy et Canonical), ne pouvait jamais sortir
+// autrement qu'`UNKNOWN` — y compris ceux couverts par un vrai test
+// d'intégration/unitaire. Cette fonction va chercher le statut au bon
+// endroit, de façon générique (aucune route, aucun fichier, aucun module
+// nommé en dur : uniquement la structure OpenAPI standard réponses/requestBody).
+function extractContractStatus(def) {
+  if (!def || typeof def !== 'object') return null;
+  if (def['x-contract-status']) return def['x-contract-status'];
+  const responses = def.responses || {};
+  const successCodes = Object.keys(responses).filter(c => /^2\d\d$/.test(c)).sort();
+  for (const code of successCodes) {
+    const content = responses[code] && responses[code].content;
+    if (!content) continue;
+    for (const media of Object.values(content)) {
+      const st = media && media.schema && media.schema['x-contract-status'];
+      if (st) return st;
+    }
+  }
+  if (def.requestBody && def.requestBody['x-contract-status']) return def.requestBody['x-contract-status'];
+  return null;
+}
+
+// Seul un statut réellement issu d'un test d'intégration/unitaire sur le
+// corps HTTP constitue une preuve au sens de ce scanner — c'est la doctrine
+// déjà documentée dans docs/contract/openapi.json (info.description) :
+// "test → réponse couverte par un test [...]", contre "route-read"/
+// "service-read" explicitement qualifiés là-bas de "confiance < test", et
+// "joi"/"scan-*" qui ne portent pas sur le corps de la réponse. On ne réécrit
+// pas cette doctrine ici, on se contente d'appliquer celle qui existe déjà.
+function isProvenStatus(status) {
+  return status === 'test';
+}
+
 // ── 5. Contrat OpenAPI (même mécanique que Legacy — jamais réinventée) ──
 function parseOpenApiContract() {
   if (!fs.existsSync(OPENAPI_FILE)) return {};
@@ -553,7 +600,7 @@ function parseOpenApiContract() {
     const status = {};
     for (const [route, methodsObj] of Object.entries(doc.paths || {})) {
       for (const [httpMethod, def] of Object.entries(methodsObj)) {
-        status[`${httpMethod.toUpperCase()} ${route}`] = def['x-contract-status'] || 'UNKNOWN';
+        status[`${httpMethod.toUpperCase()} ${route}`] = isProvenStatus(extractContractStatus(def)) ? 'PROVEN' : 'UNKNOWN';
       }
     }
     return status;
@@ -918,32 +965,42 @@ function runCheck(model) {
   return 1;
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
-const model = build();
+// Exports pour tests unitaires (LOT 3 — non-régression sur l'extraction du
+// statut de contrat) — n'affecte pas l'exécution CLI ci-dessous, gardée
+// derrière require.main===module (même convention que gen-boutique-360.js).
+module.exports = {
+  build, renderMd, parseOpenApiContract,
+  extractContractStatus, isProvenStatus,
+};
 
-if (SAVE) {
-  const d = model.diagnostics;
-  const baselineData = {};
-  for (const key of RATCHET_KEYS) baselineData[key] = d[key];
-  baselineData.savedAt = new Date().toISOString();
-  fs.writeFileSync(BASELINE, JSON.stringify(baselineData, null, 2));
+if (require.main === module) {
+  // ── Main ───────────────────────────────────────────────────────────────
+  const model = build();
+
+  if (SAVE) {
+    const d = model.diagnostics;
+    const baselineData = {};
+    for (const key of RATCHET_KEYS) baselineData[key] = d[key];
+    baselineData.savedAt = new Date().toISOString();
+    fs.writeFileSync(BASELINE, JSON.stringify(baselineData, null, 2));
+    if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
+    fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
+    fs.writeFileSync(OUT_MD, renderMd(model));
+    console.log(`${GRN}${BLD}✔ Baseline Dashboards 360 Canonical figée${R} (${d.surfaceWithoutModule.length} surface(s) sans module, ${d.navHrefUnresolved.length} nav non résolue(s), ${d.notFoundContracts.length} endpoint(s) absent(s) du contrat — dette réelle conservée telle quelle, voir le .md).`);
+    process.exit(0);
+  }
+
+  if (CHECK) {
+    process.exit(runCheck(model));
+  }
+
   if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
   fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
   fs.writeFileSync(OUT_MD, renderMd(model));
-  console.log(`${GRN}${BLD}✔ Baseline Dashboards 360 Canonical figée${R} (${d.surfaceWithoutModule.length} surface(s) sans module, ${d.navHrefUnresolved.length} nav non résolue(s), ${d.notFoundContracts.length} endpoint(s) absent(s) du contrat — dette réelle conservée telle quelle, voir le .md).`);
-  process.exit(0);
-}
-
-if (CHECK) {
-  process.exit(runCheck(model));
-}
-
-if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
-fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
-fs.writeFileSync(OUT_MD, renderMd(model));
-console.log(`${GRN}${BLD}✔ DASHBOARDS_360_CANONICAL généré${R} ${DIM}(${model.summary.navItems} items nav, ${model.summary.canonicalModules} modules, ${model.summary.apiEdgesTraced} arêtes API)${R}`);
-console.log(`${CYN}  docs/DASHBOARDS_360_CANONICAL.md${R}  +  ${CYN}docs/DASHBOARDS_360_CANONICAL.json${R}`);
-const s = model.summary;
-if (s.surfaceWithoutModule || s.navHrefUnresolved || s.notFoundContracts) {
-  console.log(`${YLW}  ⚠ ${s.surfaceWithoutModule} surface(s) sans module, ${s.navHrefUnresolved} nav non résolue(s), ${s.notFoundContracts} endpoint(s) absent(s) — voir §1.${R}`);
+  console.log(`${GRN}${BLD}✔ DASHBOARDS_360_CANONICAL généré${R} ${DIM}(${model.summary.navItems} items nav, ${model.summary.canonicalModules} modules, ${model.summary.apiEdgesTraced} arêtes API)${R}`);
+  console.log(`${CYN}  docs/DASHBOARDS_360_CANONICAL.md${R}  +  ${CYN}docs/DASHBOARDS_360_CANONICAL.json${R}`);
+  const s = model.summary;
+  if (s.surfaceWithoutModule || s.navHrefUnresolved || s.notFoundContracts) {
+    console.log(`${YLW}  ⚠ ${s.surfaceWithoutModule} surface(s) sans module, ${s.navHrefUnresolved} nav non résolue(s), ${s.notFoundContracts} endpoint(s) absent(s) — voir §1.${R}`);
+  }
 }

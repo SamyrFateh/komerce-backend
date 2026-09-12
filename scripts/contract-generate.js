@@ -307,11 +307,16 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
+  // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
+  // asserte le corps réel (`res.body.reason`, scope manager/viewer/global,
+  // 403 hors marché autorisé) → 'test', pas seulement une lecture statique.
   '/api/admin/workspaces/pricing/market/{marketCode}/decision': {
-    get: { fields: ['market_id','decision_status','authorization','reason','policy','canonical_period','coverage','evaluated_at'], source: 'service-read' }
+    get: { fields: ['market_id','decision_status','authorization','reason','policy','canonical_period','coverage','evaluated_at'], source: 'test' }
   },
+  // LOT 3 (2026-09) — même fichier de test, `expect(res.body.market_code)`
+  // et `expect(res.body.policies)` asserté explicitement → 'test'.
   '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history': {
-    get: { fields: ['market_code','policies'], source: 'route-read' }
+    get: { fields: ['market_code','policies'], source: 'test' }
   },
   '/api/admin/workspaces/pricing/market/{marketCode}/decision-policy': {
     post: { fields: ['ok','action','result'], source: 'route-read' }
@@ -547,12 +552,15 @@ const KNOWN_RESPONSES = {
   '/api/auth/login': {
     post: { fields: ['user'], source: 'route-read' }
   },
-  // GET /api/auth/me : CORRIGÉ — l'entrée précédente listait 'name' avec source
-  // 'test', mais la colonne réelle (SELECT u.full_name ...) est 'full_name'. 'name'
-  // n'existe pas dans la réponse. Aucun test jest sur ce corps → 'route-read'.
+  // GET/PUT /api/auth/me : LOT 3 (2026-09) — tests/unit/auth-route.test.js
+  // asserte désormais `expect(res.body).toEqual(row)` sur les deux routes
+  // (corps DB réel côté GET, ligne RETURNING côté PUT), pas seulement un
+  // champ isolé → 'test'. Le champ PUT documenté ('user') était déjà faux
+  // (la route renvoie l'utilisateur à plat, jamais enveloppé) ; corrigé au
+  // passage avec la vraie forme observée dans routes/auth.js.
   '/api/auth/me': {
-    get: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'route-read' },
-    put: { fields: ['user'], source: 'route-read' }
+    get: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'test' },
+    put: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'test' }
   },
   // POST /api/auth/register : `res.status(201).json({ user: userResponse(user) })`,
   // même forme que /login. Pas de test sur le corps de succès (tests/integration/
@@ -625,12 +633,14 @@ const KNOWN_RESPONSES = {
   '/api/payments/stripe/intent': {
     post: { fields: ['client_secret','amount_eur','amount_cents','order_reference','reused'], source: 'test' }
   },
-  // PATCH /api/orders/{id}/status : routes/orders/status.js → `res.json({ success: true, status })`
-  // sur le seul chemin de succès. Pas de test d'intégration sur le corps HTTP
-  // (order-status-machine.test.js couvre le service, pas la route) → lu directement
-  // dans le handler, pas dans un test : source 'route-read', pas 'test'.
+  // PATCH /api/orders/{id}/status : routes/orders/status.js → `res.json({ success: true, status })`.
+  // CORRIGÉ (LOT 3, 2026-09) — l'entrée précédente disait "pas de test d'intégration
+  // sur le corps HTTP", mais tests/unit/orders-status-route.test.js asserte
+  // `expect(res.body).toEqual({ success: true, status: 'shipped' })` explicitement,
+  // avec garde de rôle et garde de scope relais (403 hors relais) couvertes en plus
+  // → 'test'.
   '/api/orders/{id}/status': {
-    patch: { fields: ['success','status'], source: 'route-read' }
+    patch: { fields: ['success','status'], source: 'test' }
   },
   // POST /api/orders/{id}/cancel : routes/orders/cancel.js → objet de réponse final
   // construit explicitement avec ces clés. Pas de test d'intégration sur le corps
@@ -1359,8 +1369,11 @@ const KNOWN_RESPONSES = {
   '/api/auth/auto-register': {
     post: { fields: ['user','created'], source: 'route-read' }
   },
+  // POST /api/auth/logout : LOT 3 (2026-09) — tests/unit/auth-route.test.js
+  // asserte désormais `expect(res.body).toEqual({ message: '...' })` en plus
+  // des effets de bord déjà couverts (cookie, INSERT revoked_tokens) → 'test'.
   '/api/auth/logout': {
-    post: { fields: ['message'], source: 'route-read' }
+    post: { fields: ['message'], source: 'test' }
   },
   '/api/auth/admin-reset': {
     post: { fields: ['success','message'], source: 'route-read' }
@@ -1997,10 +2010,18 @@ const KNOWN_RESPONSES = {
   },
 
   // DEBT ZERO — réponses historiques prouvées par route/service/tests (2026-09-06)
-  '/api/admin/demo/orders/{orderId}/timeline': { get: { fields: ['order','history','notifications','invoices','documents'], source: 'route-read' } },
+  // LOT 3 (2026-09) — tests/unit/admin-demo-order-flow.test.js asserte le
+  // corps entier avec `expect(response.body).toEqual({ order, history,
+  // notifications, invoices, documents })`, plus garde de rôle (403 non-admin)
+  // et validation stricte de l'UUID → 'test'.
+  '/api/admin/demo/orders/{orderId}/timeline': { get: { fields: ['order','history','notifications','invoices','documents'], source: 'test' } },
   '/api/admin/entities/clients': { get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' } },
   '/api/admin/entities/clients/market/{marketCode}': { get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' } },
-  '/api/admin/workspaces/pricing/market/{marketCode}': { get: { fields: ['scope','summary','cost_components'], source: 'service-read' } },
+  // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
+  // asserte `res.body.access` et `res.body.capabilities` en toEqual complet,
+  // pour manager/viewer/global-admin → 'test'. Les champs réels observés
+  // incluent aussi `access`/`capabilities` en plus de scope/summary/cost_components.
+  '/api/admin/workspaces/pricing/market/{marketCode}': { get: { fields: ['scope','summary','cost_components','access','capabilities'], source: 'test' } },
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset': { post: { fields: ['ok','action','result'], source: 'route-read' } },
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'route-read' } },
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update': { post: { fields: ['ok','action','result'], source: 'route-read' } },

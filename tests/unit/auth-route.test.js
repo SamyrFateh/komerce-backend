@@ -200,10 +200,14 @@ describe('POST /api/auth/login', () => {
 // ═══════════════════════════════════════════════════════════════════════
 describe('GET /api/auth/me', () => {
   it('succès', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Ali' }] });
+    const row = { id: 'user-1', full_name: 'Ali', email: 'ali@example.test', role: 'client' };
+    db.query.mockResolvedValueOnce({ rows: [row] });
     const res = await request(app).get('/api/auth/me');
     expect(res.status).toBe(200);
     expect(res.body.id).toBe('user-1');
+    // LOT 3 — preuve que la route renvoie bien la ligne DB telle quelle
+    // (res.json(user)), pas seulement l'id : couvre le vrai corps du contrat.
+    expect(res.body).toEqual(row);
   });
 
   it('404 si introuvable', async () => {
@@ -222,10 +226,14 @@ describe('GET /api/auth/me', () => {
 // ═══════════════════════════════════════════════════════════════════════
 describe('PUT /api/auth/me', () => {
   it('succès', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Nouveau nom' }] });
+    const row = { id: 'user-1', full_name: 'Nouveau nom', email: 'ali@example.test', phone: '+269111', role: 'client', country: 'KM', currency_pref: 'KMF' };
+    db.query.mockResolvedValueOnce({ rows: [row] });
     const res = await request(app).put('/api/auth/me').send({ full_name: 'Nouveau nom' });
     expect(res.status).toBe(200);
     expect(res.body.full_name).toBe('Nouveau nom');
+    // LOT 3 — preuve que la route renvoie bien la ligne RETURNING telle
+    // quelle (res.json(user)), pas seulement full_name.
+    expect(res.body).toEqual(row);
   });
 });
 
@@ -399,6 +407,9 @@ describe('POST /api/auth/logout', () => {
     expect(res.status).toBe(200);
     expect(db.query).not.toHaveBeenCalled();
     expect(res.headers['set-cookie'][0]).toMatch(/kmrc_jwt=;/);
+    // LOT 3 — preuve du corps de réponse documenté (routes/auth.js:269),
+    // jusqu'ici seuls le statut et les effets de bord étaient couverts.
+    expect(res.body).toEqual({ message: 'Déconnexion réussie' });
   });
 
   it('avec cookie token décodable → INSERT revoked_tokens', async () => {
