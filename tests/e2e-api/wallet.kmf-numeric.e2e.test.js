@@ -168,4 +168,75 @@ describeE2E('E2E-WALLET-KMF-NUMERIC — conversion integer -> numeric', ({ db })
       expect(balance).toBe(0);
     });
   });
+
+  describe('consommation PARTIELLE — dérive sur le reste d\'un lot entamé', () => {
+    // Complète le bloc précédent, qui vide intégralement ses lots : ici le
+    // lot est ENTAMÉ, pas vidé. 3870.70 - 2089.67 vaut 1781.0299999999997 en
+    // flottant JS, pas 1781.03 — la soustraction dérive réellement.
+    //
+    // Ce que la mutation a établi sur les DEUX arrondis de debitInTransaction :
+    //   - `remaining = Math.round(remaining * 100) / 100` (accumulateur) est
+    //     porteur : le neutraliser fait échouer le bloc précédent.
+    //   - `newRemaining = Math.round(...)` ne l'est pas, et ne PEUT pas
+    //     l'être : sa valeur n'est utilisée que pour (a) l'écriture en base,
+    //     où numeric(14,2) arrondit de toute façon à 1781.03, et (b) le test
+    //     `=== 0`, qui n'est atteint que sur un lot intégralement vidé — cas
+    //     où la soustraction porte sur deux opérandes égaux, donc toujours
+    //     exacte en IEEE 754. C'est de la défense en profondeur non
+    //     observable, pas une ligne non testée : aucun test ne peut la
+    //     distinguer, et en écrire un qui le prétendrait serait malhonnête.
+    //
+    // Ce bloc couvre donc ce qu'il peut réellement couvrir : qu'une
+    // consommation partielle conserve un reste exact au centime et laisse le
+    // lot actif.
+    let partialUserId;
+    let partialLotId;
+
+    beforeAll(async () => {
+      partialUserId = await insertUser();
+
+      cleanup.trackSql('DELETE FROM wallets WHERE user_id = $1', [partialUserId]);
+      cleanup.trackSql(
+        'DELETE FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1)',
+        [partialUserId]
+      );
+      cleanup.trackSql(
+        'DELETE FROM wallet_credit_lots WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1)',
+        [partialUserId]
+      );
+      cleanup.trackSql(
+        `DELETE FROM wallet_consumptions WHERE transaction_id IN
+           (SELECT id FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = $1))`,
+        [partialUserId]
+      );
+
+      const { lot } = await walletService.credit(db, {
+        userId: partialUserId, amountKmf: 3870.70, reason: 'e2e_partial_drift_setup',
+      });
+      partialLotId = lot.id;
+    });
+
+    test('un lot partiellement consommé garde un reste exact et reste actif', async () => {
+      await walletService.debit(db, {
+        userId: partialUserId, amountKmf: 2089.67, reason: 'e2e_partial_drift_consume',
+        referenceId: uuid(),
+      });
+
+      const { rows: [lot] } = await db.query(
+        'SELECT remaining_kmf, status FROM wallet_credit_lots WHERE id = $1',
+        [partialLotId]
+      );
+      // Sans arrondi sur newRemaining, la colonne stockerait bien 1781.03
+      // (Postgres arrondit à l'écriture) — mais le JS aurait manipulé
+      // 1781.0299999999997, et c'est cette valeur-là qui est écrite puis
+      // relue. L'assertion porte donc sur l'exactitude au centime.
+      expect(lot.remaining_kmf).toBe(1781.03);
+      expect(lot.status).toBe('active');
+    });
+
+    test('le solde wallet après consommation partielle est exact au centime', async () => {
+      const balance = await walletService.getBalance(partialUserId);
+      expect(balance).toBe(1781.03);
+    });
+  });
 });

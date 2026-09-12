@@ -84,9 +84,29 @@ function migrationNumber(filename) {
   return match ? Number(match[1]) : null;
 }
 
+const DROP_COLUMN_RE = new RegExp(
+  String.raw`\bDROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?(${CURRENCY_GROUP})\b`,
+  'i'
+);
+
 function scanMigration(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const offenders = [];
+
+  // Une colonne DROP puis re-ADD dans la MEME migration n'est pas une
+  // nouvelle colonne : c'est la meme, restauree. Cas reel rencontre en
+  // migration 221 — customs_delta_kmf est une colonne GENEREE, et Postgres
+  // refuse d'alterer le type de ses sources tant qu'elle existe : la seule
+  // voie est DROP + recreation a l'identique. Compter cette recreation comme
+  // une violation forcerait soit a renommer la colonne (changement de
+  // contrat pour ses consommateurs), soit a contourner le gate — deux
+  // mauvaises reponses a une operation legitime.
+  const recreated = new Set();
+  for (const line of content.split('\n')) {
+    const withoutComment = line.split('--')[0];
+    const drop = withoutComment.match(DROP_COLUMN_RE);
+    if (drop) recreated.add(drop[1].toLowerCase());
+  }
 
   content.split('\n').forEach((line, index) => {
     // Ignore les commentaires : une explication qui mentionne price_kmf n'est
@@ -96,6 +116,7 @@ function scanMigration(filePath) {
 
     const match = withoutComment.match(ADD_COLUMN_RE) || withoutComment.match(CREATE_COLUMN_RE);
     if (match) {
+      if (recreated.has(match[1].toLowerCase())) return;
       offenders.push({ line: index + 1, column: match[1], raw: withoutComment.trim() });
     }
   });
