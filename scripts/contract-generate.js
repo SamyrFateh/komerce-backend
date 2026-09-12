@@ -237,6 +237,39 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset', method: 'post', schema: null },
+  // LOT 3 (2026-09) — CONTRACT_GAP découvert lors de l'audit Tableau B/C
+  // dashboards-360-canonical : ces routes sont réelles, montées (routes/admin-
+  // pricing-workspace.js) et appelées par le frontend Canonical (market-autonomy.js,
+  // pricing-economic-cockpit.js) mais étaient absentes du contrat depuis leur
+  // création — invisibles au scanner (ni PROVEN, ni UNKNOWN : elles n'existaient
+  // simplement pas dans openapi.json).
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/charges', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/structure-events', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/structure-events', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/structure-events', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/structure-events', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/corridor', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/price-observations', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activation-preview', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices', method: 'get', schema: null },
+  // LOT 3 (2026-09) — même CONTRACT_GAP, routes/market-delegation-team.js,
+  // routes/market-delegation-catalog.js, routes/market-delegation-cash-control.js
+  // (toutes montées dans bootstrap/api-routes.js), appelées par market-team.js,
+  // market-catalog.js, market-cash-control.js, team-invite.js côté Canonical.
+  { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
+  { prefix: '/api/market-delegation/team/invitations/{token}/accept', method: 'post', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/team/{membershipId}/capabilities', method: 'put', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/team/{membershipId}', method: 'delete', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations/{invitationId}', method: 'delete', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/cash-control-policy', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/cash-control-policy', method: 'put', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -326,6 +359,87 @@ const KNOWN_RESPONSES = {
   },
   '/api/admin/workspaces/pricing/simulate-impact': {
     post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  // LOT 3 (2026-09) — CONTRACT_GAP (cf. commentaire ROUTE_SCHEMA_MAP ci-dessus).
+  // charges : tests/unit/admin-pricing-workspace-structure-events-route.test.js
+  // asserte `expect(res.body.charges).toEqual([...])` → 'test'.
+  '/api/admin/workspaces/pricing/market/{marketCode}/charges': {
+    get: { fields: ['charges'], source: 'test' }
+  },
+  // structure-events GET (market + GROUP) : le même fichier de test vérifie le
+  // statut et l'appel du mock service, jamais le contenu de res.body → 'route-read'.
+  // POST market-scopé : `expect(res.body.ok).toBe(true)` asserté → 'test'.
+  // POST GROUP : seul le statut 201 est vérifié, pas res.body → 'route-read'.
+  '/api/admin/workspaces/pricing/market/{marketCode}/structure-events': {
+    get: { fields: ['events'], source: 'route-read' },
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/structure-events': {
+    get: { fields: ['events'], source: 'route-read' },
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  // corridor / price-observations : tests/unit/admin-pricing-workspace-market-route.test.js
+  // vérifie statut + appel du mock service, jamais res.body → 'route-read'.
+  '/api/admin/workspaces/pricing/market/{marketCode}/corridor': {
+    get: { fields: ['market','product','corridor'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/price-observations': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  // local-price / commercial-prices : aucun test HTTP (supertest) trouvé sur ces
+  // routes — seuls des tests de service unitaires existent (market-local-price-
+  // activation-service.test.js, market-commercial-price-service.test.js) →
+  // 'route-read', champs lus dans le code des services.
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activation-preview': {
+    get: { fields: ['decision','economics','market_gate','activation','authorization_snapshot'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activate': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices': {
+    get: { fields: ['market','authority','products'], source: 'route-read' }
+  },
+  // market-delegation team/catalog/cash-control : tests/unit/market-delegation-
+  // team-routes.test.js, -cash-control-routes.test.js, -catalog-routes.test.js
+  // existent mais sont structurels (auth middleware présent, market_id rejeté,
+  // montage unique) — aucun n'appelle la route via supertest/request(app) →
+  // 'route-read', champs lus directement dans les handlers routes/*.js.
+  '/api/market-delegation/markets/{marketCode}/catalog/exposure': {
+    get: { fields: ['market','assignment_id','actor_capabilities','summary','exposure'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}': {
+    put: { fields: ['success','exposure'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/team': {
+    get: { fields: ['market','assignment_id','actor_membership_id','actor_capabilities','actor_grantable_capabilities'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/team/invitations': {
+    post: { fields: ['success','kind','membership','user','capabilities','invitation','invitation_token','acceptance_path'], source: 'route-read' }
+  },
+  '/api/market-delegation/team/invitations/{token}/accept': {
+    post: { fields: ['success'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/team/{membershipId}/capabilities': {
+    put: { fields: ['success'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/team/{membershipId}': {
+    delete: { fields: ['success','revoked'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/team/invitations/{invitationId}': {
+    delete: { fields: ['success','revoked'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/cash-control-policy': {
+    get: { fields: ['market','policy','can_manage'], source: 'route-read' },
+    put: { fields: ['success','market','policy'], source: 'route-read' }
   },
   '/api/admin/workspaces/pricing': { get: { fields: ['scope','summary','products','recommendations','cost_components','cost_meta','rates'], source: 'test' } },
   '/api/admin/workspaces/pricing/simulate': { post: { fields: ['ok','action','result'], source: 'test' } },
