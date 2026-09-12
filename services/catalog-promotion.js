@@ -51,15 +51,38 @@ const {
 const { _validateRichStructureV2: validateRichStructureV2 } = require('./suppliers/normalized-product');
 const { blockedSupplierIdentity } = require('./suppliers/supplier-order-identity');
 
+/**
+ * Validation pré-promotion. Ne réutilise PAS validateNormalizedProduct (le
+ * schéma V2 exige raw_payload, intentionnellement absent du snapshot
+ * normalized_source_contract). Réutilise le validateur de structure riche
+ * (axes/media/sellable_units) et ajoute les vérifications propres à la
+ * promotion (PDC-8 §PROMOTION) :
+ *   - schema_version doit être exactement '2' (une promotion V1 n'existe
+ *     pas : l'appelant ne doit même pas invoquer promoteCatalog pour du V1) ;
+ *   - sellable_units fourni explicitement vide = intention SKU sans rien
+ *     d'exploitable → rejeté ; absent/null = produit V1 sans SKU, valide ;
+ *   - purchase_price, quand présent, doit être un nombre strictement positif
+ *     (les contraintes de type ont déjà été vérifiées à l'ingestion, mais la
+ *     promotion revalide explicitement par prudence contre un snapshot
+ *     corrompu ou modifié hors pipeline) ;
+ *   - stock_available, quand présent, doit être un entier >= 0.
+ *
+ * @param {object} contract normalized_source_contract snapshot
+ * @throws {Error} status 422 si invalide, message listant toutes les erreurs
+ */
 function validateForPromotion(contract) {
   const errors = [];
+
   if (String(contract.schema_version) !== '2') {
     errors.push(`schema_version doit être "2" pour la promotion (reçu: ${JSON.stringify(contract.schema_version)})`);
   }
+
   errors.push(...validateRichStructureV2(contract));
+
   if (Array.isArray(contract.sellable_units) && contract.sellable_units.length === 0) {
     errors.push('sellable_units fourni vide — aucune sellable_unit exploitable');
   }
+
   for (let i = 0; i < (contract.sellable_units || []).length; i++) {
     const unit = contract.sellable_units[i];
     if (unit.purchase_price !== undefined && unit.purchase_price !== null) {
@@ -73,9 +96,14 @@ function validateForPromotion(contract) {
       }
     }
   }
+
+  // Fiche produit enrichie : projection à blanc (aucune écriture) pour faire échouer tôt une
+  // incohérence de contenu (section_key dupliqué/réservé, type de section invalide, attribut
+  // dupliqué) — même invariant "valider avant d'écrire" que le reste de cette fonction.
   try { mapContentToProfileRow(contract); } catch (e) { errors.push(e.message); }
   try { mapContentToSectionRows(contract); } catch (e) { errors.push(e.message); }
   try { mapContentToAttributeRows(contract); } catch (e) { errors.push(e.message); }
+
   if (errors.length > 0) {
     const e = new Error(`normalized_source_contract invalide pour promotion : ${errors.join(' ; ')}`);
     e.status = 422;
@@ -83,8 +111,22 @@ function validateForPromotion(contract) {
   }
 }
 
+/**
+ * Upsert idempotent de contract.media[] vers catalog_media.
+ *
+ * Identité stable : (product_id, source_media_id) quand connu — une
+ * re-promotion met à jour LA MÊME ligne. Un média sans source_media_id
+ * (source pauvre) est simplement inséré à chaque appel : aucune contrainte
+ * d'unicité ne s'applique (index partiel), duplication honnête documentée
+ * en migration 106, pas un bug de ce module.
+ *
+ * @returns {Promise<Map<string, string>>} source_media_id -> media_id (les
+ *   médias sans source_media_id ne peuvent pas être référencés par
+ *   media_refs et n'apparaissent donc pas dans cette map).
+ */
 async function promoteMedia(client, productId, media) {
   const mediaBySourceId = new Map();
+
   for (const m of media || []) {
     const { rows } = await client.query(
       `INSERT INTO catalog_media (product_id, source_media_id, url, role, alt, option_values, display_order)
@@ -98,17 +140,35 @@ async function promoteMedia(client, productId, media) {
          display_order = EXCLUDED.display_order,
          updated_at = now()
        RETURNING id, source_media_id`,
-      [productId, m.supplier_media_id || null, m.url, m.role || 'PRODUCT', m.alt || null,
-        m.option_values ? JSON.stringify(m.option_values) : null, m.display_order ?? null]
+      [
+        productId,
+        m.supplier_media_id || null,
+        m.url,
+        m.role || 'PRODUCT',
+        m.alt || null,
+        m.option_values ? JSON.stringify(m.option_values) : null,
+        m.display_order ?? null,
+      ]
     );
     const row = rows[0];
-    if (row.source_media_id) mediaBySourceId.set(row.source_media_id, row.id);
+    if (row.source_media_id) {
+      mediaBySourceId.set(row.source_media_id, row.id);
+    }
   }
+
   return mediaBySourceId;
 }
 
+/**
+ * Upsert idempotent des lignes descriptives d'axes (Lot 3) vers
+ * product_variants. S'appuie sur la contrainte UNIQUE réelle
+ * (product_id, variant_type, variant_value) pour l'idempotence
+ * inter-appels (re-promotion) — mapOptionAxesToDescriptiveRows ne
+ * dédoublonne qu'au sein d'un même appel.
+ */
 async function promoteAxes(client, productId, optionAxes) {
   const rows = mapOptionAxesToDescriptiveRows(optionAxes);
+
   for (const row of rows) {
     await client.query(
       `INSERT INTO product_variants (product_id, variant_type, variant_value, display_name, display_order)
@@ -118,6 +178,7 @@ async function promoteAxes(client, productId, optionAxes) {
       [productId, row.variant_type, row.variant_value, row.display_name, row.display_order]
     );
   }
+
   return rows;
 }
 
@@ -136,9 +197,18 @@ function normalizeSupplierProductRef(value) {
   return value.trim();
 }
 
+/**
+ * Complète la référence produit fournisseur depuis la racine du contrat V2.
+ * Aucune jointure vers sourcing_candidates et aucun backfill heuristique : la
+ * valeur vient du même snapshot autoritatif que les sellable_units.
+ *
+ * Une valeur déjà persistée est immuable silencieusement : toute divergence
+ * fait échouer la transaction entière avec BLOCKED_SUPPLIER_IDENTITY.
+ */
 async function persistSupplierProductRef(client, productId, supplierProductRefRaw) {
   const supplierProductRef = normalizeSupplierProductRef(supplierProductRefRaw);
   if (!supplierProductRef) return { applied: false, reason: 'missing_in_contract' };
+
   const { rows } = await client.query(
     `SELECT id, supplier_product_ref
        FROM product_skus
@@ -146,6 +216,7 @@ async function persistSupplierProductRef(client, productId, supplierProductRefRa
         AND source = 'SUPPLIER'`,
     [productId]
   );
+
   const divergent = rows.filter((row) => (
     row.supplier_product_ref != null
     && String(row.supplier_product_ref).trim() !== supplierProductRef
@@ -160,6 +231,7 @@ async function persistSupplierProductRef(client, productId, supplierProductRefRa
       }
     );
   }
+
   const { rowCount } = await client.query(
     `UPDATE product_skus
         SET supplier_product_ref = $1,
@@ -169,9 +241,29 @@ async function persistSupplierProductRef(client, productId, supplierProductRefRa
         AND supplier_product_ref IS NULL`,
     [supplierProductRef, productId]
   );
+
   return { applied: true, supplier_product_ref: supplierProductRef, updated: rowCount };
 }
 
+/**
+ * Exécute le plan de réconciliation SKU (Lot 4) en DB.
+ *
+ * Doctrine stock (PDC-8 §STOCK) : quand stockKnown est faux (source ne
+ * rapporte pas stock_available pour ce SKU), on n'écrase JAMAIS un stock
+ * réel existant par 0 — la colonne reste intouchée pour un update/réactivation.
+ * Pour une création, il n'y a pas de valeur existante à préserver : 0 est le
+ * seul état sûr (non vendable tant que le stock n'est pas positivement connu).
+ *
+ * Doctrine prix (PDC-8 §MAPPING V2 → CANONIQUE §SKU) : price_kmf n'est
+ * jamais fixé par ce plan, ni en création ni en mise à jour.
+ *
+ * Supplier Order Identity : supplier_sku reste l'identité de réconciliation.
+ * Les colonnes de commande ne sont chargées/écrites que lorsqu'une identité
+ * native arrive dans le replay. Un replay historique sans identité ne peut
+ * donc jamais effacer une identité déjà persistée.
+ *
+ * @returns {Promise<Map<string, string>>} supplier_sku -> sku_id (product_skus.id)
+ */
 async function promoteSkus(client, productId, sellableUnits) {
   const { rows: baseExistingSkus } = await client.query(
     `SELECT id, supplier_sku, source, variant_combo, stock, is_active
@@ -179,8 +271,10 @@ async function promoteSkus(client, productId, sellableUnits) {
       WHERE product_id = $1`,
     [productId]
   );
+
   let existingSkus = baseExistingSkus;
   const identityAwareReplay = hasIncomingSupplierOrderIdentity(sellableUnits);
+
   if (identityAwareReplay && existingSkus.length > 0) {
     const { rows: identityRows } = await client.query(
       `SELECT id, supplier_unit_ref, supplier_order_identity
@@ -191,8 +285,10 @@ async function promoteSkus(client, productId, sellableUnits) {
     const identityById = new Map(identityRows.map((row) => [row.id, row]));
     existingSkus = existingSkus.map((row) => ({ ...row, ...(identityById.get(row.id) || {}) }));
   }
+
   const plan = planSkuReconciliation(existingSkus, sellableUnits || []);
   const skuIdBySupplierSku = new Map();
+
   for (const item of plan.toCreate) {
     let rows;
     if (item.supplier_unit_ref || item.supplier_order_identity) {
@@ -203,9 +299,14 @@ async function promoteSkus(client, productId, sellableUnits) {
          )
          VALUES ($1, $2, 'SUPPLIER', $3, $4::jsonb, $5, $6, true)
          RETURNING id, supplier_sku`,
-        [productId, item.supplier_sku, item.supplier_unit_ref || null,
+        [
+          productId,
+          item.supplier_sku,
+          item.supplier_unit_ref || null,
           item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
-          item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stock]
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stock,
+        ]
       ));
     } else {
       ({ rows } = await client.query(
@@ -217,6 +318,7 @@ async function promoteSkus(client, productId, sellableUnits) {
     }
     skuIdBySupplierSku.set(rows[0].supplier_sku, rows[0].id);
   }
+
   for (const item of plan.toUpdate) {
     if (item.supplier_unit_ref || item.supplier_order_identity) {
       await client.query(
@@ -227,9 +329,14 @@ async function promoteSkus(client, productId, sellableUnits) {
                 stock = CASE WHEN $4::boolean THEN $5 ELSE stock END,
                 updated_at = now()
           WHERE id = $6`,
-        [item.supplier_unit_ref || null,
+        [
+          item.supplier_unit_ref || null,
           item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
-          item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stockKnown,
+          item.stock,
+          item.id,
+        ]
       );
     } else {
       await client.query(
@@ -243,6 +350,7 @@ async function promoteSkus(client, productId, sellableUnits) {
     }
     skuIdBySupplierSku.set(item.supplier_sku, item.id);
   }
+
   for (const item of plan.toReactivate) {
     if (item.supplier_unit_ref || item.supplier_order_identity) {
       await client.query(
@@ -254,9 +362,14 @@ async function promoteSkus(client, productId, sellableUnits) {
                 stock = CASE WHEN $4::boolean THEN $5 ELSE stock END,
                 updated_at = now()
           WHERE id = $6`,
-        [item.supplier_unit_ref || null,
+        [
+          item.supplier_unit_ref || null,
           item.supplier_order_identity ? JSON.stringify(item.supplier_order_identity) : null,
-          item.variant_combo ? JSON.stringify(item.variant_combo) : null, item.stockKnown, item.stock, item.id]
+          item.variant_combo ? JSON.stringify(item.variant_combo) : null,
+          item.stockKnown,
+          item.stock,
+          item.id,
+        ]
       );
     } else {
       await client.query(
@@ -271,17 +384,28 @@ async function promoteSkus(client, productId, sellableUnits) {
     }
     skuIdBySupplierSku.set(item.supplier_sku, item.id);
   }
+
   for (const item of plan.toDeactivate) {
-    await client.query(`UPDATE product_skus SET is_active = false, updated_at = now() WHERE id = $1`, [item.id]);
+    await client.query(
+      `UPDATE product_skus SET is_active = false, updated_at = now() WHERE id = $1`,
+      [item.id]
+    );
   }
+
   return skuIdBySupplierSku;
 }
 
+/**
+ * Exécute le plan de couture SKU ↔ Media (Lot 5) en DB. Idempotent via la
+ * contrainte UNIQUE (sku_id, media_id) — ON CONFLICT DO NOTHING.
+ */
 async function promoteSkuMedia(client, sellableUnits, skuIdBySupplierSku, mediaBySourceId) {
   const sellableUnitsResolved = (sellableUnits || [])
     .filter((u) => skuIdBySupplierSku.has(u.supplier_sku))
     .map((u) => ({ sku_id: skuIdBySupplierSku.get(u.supplier_sku), media_refs: u.media_refs }));
+
   const links = resolveSkuMediaLinks(sellableUnitsResolved, mediaBySourceId);
+
   for (const link of links) {
     await client.query(
       `INSERT INTO product_sku_media (sku_id, media_id)
@@ -290,9 +414,21 @@ async function promoteSkuMedia(client, sellableUnits, skuIdBySupplierSku, mediaB
       [link.sku_id, link.media_id]
     );
   }
+
   return links;
 }
 
+/**
+ * Upsert idempotent du profil éditorial 1:1 (Lot Content — fiche produit enrichie).
+ *
+ * OVERRIDE MANUEL (DOCTRINE_CATALOGUE.md §5, "le pipeline est la source, jamais la fiche") : la
+ * clause `WHERE product_content_profile.source <> 'MANUAL'` fait qu'une ligne déjà retouchée à la
+ * main (source='MANUAL') n'est JAMAIS écrasée par une re-promotion fournisseur — ON CONFLICT DO
+ * UPDATE ne s'applique tout simplement pas, sans logique de lecture préalable en JS.
+ *
+ * @returns {Promise<boolean>} true si la ligne a été (créée ou) mise à jour, false si un override
+ *   manuel existant a été préservé (aucune écriture appliquée).
+ */
 async function promoteContentProfile(client, productId, profileRow) {
   const { rows } = await client.query(
     `INSERT INTO product_content_profile (product_id, brand, short_description, source, enrichment_version, reviewed)
@@ -311,6 +447,18 @@ async function promoteContentProfile(client, productId, profileRow) {
   return rows.length > 0;
 }
 
+/**
+ * Upsert idempotent des sections éditoriales + materials/care/warilings (section_key réservés)
+ * vers product_content_sections. Même principe de préservation d'override manuel que le profil
+ * (clause WHERE source <> 'MANUAL' sur le DO UPDATE).
+ *
+ * RÉJOUABILITÉ : une section absente de CE replay (et non MANUAL) est désactivée, jamais
+ * supprimée — même doctrine que la désactivation SKU (Lot 4). Une section qui réapparaît à un
+ * appel suivant est réactivée par le DO UPDATE (is_active = true), sans jamais dupliquer la ligne
+ * grâce à la contrainte UNIQUE(product_id, section_key).
+ *
+ * @returns {Promise<{upserted: number, deactivated: number}>}
+ */
 async function promoteContentSections(client, productId, sectionRows) {
   for (const row of sectionRows) {
     await client.query(
@@ -328,6 +476,7 @@ async function promoteContentSections(client, productId, sectionRows) {
       [productId, row.section_key, row.title, row.section_type, JSON.stringify(row.content_json), row.display_order, row.source]
     );
   }
+
   const keptKeys = sectionRows.map((r) => r.section_key);
   const { rowCount } = await client.query(
     `UPDATE product_content_sections
@@ -338,9 +487,18 @@ async function promoteContentSections(client, productId, sectionRows) {
         AND NOT (section_key = ANY($2::text[]))`,
     [productId, keptKeys]
   );
+
   return { upserted: sectionRows.length, deactivated: rowCount };
 }
 
+/**
+ * Upsert idempotent des attributs (highlights + specifications) vers product_attributes. Même
+ * doctrine d'override manuel et de réjouabilité que promoteContentSections ci-dessus, mais
+ * l'identité est un triplet (kind, group_key, attribute_key) : la désactivation des lignes
+ * disparues du replay s'appuie sur un anti-join via unnest() plutôt qu'une simple colonne.
+ *
+ * @returns {Promise<{upserted: number, deactivated: number}>}
+ */
 async function promoteContentAttributes(client, productId, attributeRows) {
   for (const row of attributeRows) {
     await client.query(
@@ -358,6 +516,7 @@ async function promoteContentAttributes(client, productId, attributeRows) {
       [productId, row.kind, row.group_key, row.attribute_key, row.label, row.value_text, row.unit, row.display_order, row.source]
     );
   }
+
   const kinds = attributeRows.map((r) => r.kind);
   const groups = attributeRows.map((r) => r.group_key);
   const keys = attributeRows.map((r) => r.attribute_key);
@@ -373,16 +532,27 @@ async function promoteContentAttributes(client, productId, attributeRows) {
         )`,
     [productId, kinds, groups, keys]
   );
+
   return { upserted: attributeRows.length, deactivated: rowCount };
 }
 
+/**
+ * Orchestration Lot Content : profil + sections + attributs, dans cet ordre. Toujours appelée
+ * pour un contrat V2 (même sans aucun champ éditorial) afin que la provenance ('SUPPLIER' par
+ * défaut) reste tracée sur product_content_profile — un produit pauvre reste honnête, jamais
+ * absent de la trace de promotion.
+ *
+ * @param {{source?: string, enrichmentVersion?: string|null, reviewed?: boolean}} [options]
+ */
 async function promoteContent(client, productId, contract, options = {}) {
   const profileRow = mapContentToProfileRow(contract, options);
   const sectionRows = mapContentToSectionRows(contract, options);
   const attributeRows = mapContentToAttributeRows(contract, options);
+
   const profileUpdated = await promoteContentProfile(client, productId, profileRow);
   const sections = await promoteContentSections(client, productId, sectionRows);
   const attributes = await promoteContentAttributes(client, productId, attributeRows);
+
   return {
     profile: profileUpdated ? 'upserted' : 'preserved_manual_override',
     sections,
@@ -390,21 +560,44 @@ async function promoteContent(client, productId, contract, options = {}) {
   };
 }
 
+/**
+ * Point d'entrée Lot 6. Promeut un normalized_source_contract V2 validé
+ * vers le catalogue canonique (catalog_media, product_variants,
+ * product_skus, product_sku_media), dans la transaction déjà ouverte par
+ * l'appelant sur `client`.
+ *
+ * @param {import('pg').PoolClient} client client déjà en transaction (BEGIN
+ *   exécuté par l'appelant)
+ * @param {{ productId: string, normalizedSourceContract: object|null }} params
+ * @returns {Promise<{ promoted: boolean, reason?: string, media?: number, variants?: number, skus?: object, skuMediaLinks?: number }>}
+ */
 async function promoteCatalog(client, { productId, normalizedSourceContract }) {
   if (!productId) {
     const e = new Error('productId requis'); e.status = 422; throw e;
   }
-  if (!normalizedSourceContract) return { promoted: false, reason: 'v1_legacy' };
+
+  if (!normalizedSourceContract) {
+    // Produit V1 legacy — aucune structure riche à promouvoir. Pas une erreur.
+    return { promoted: false, reason: 'v1_legacy' };
+  }
+
   validateForPromotion(normalizedSourceContract);
+
   const mediaBySourceId = await promoteMedia(client, productId, normalizedSourceContract.media);
   const variantRows = await promoteAxes(client, productId, normalizedSourceContract.option_axes);
   const skuIdBySupplierSku = await promoteSkus(client, productId, normalizedSourceContract.sellable_units);
   await persistSupplierProductRef(client, productId, normalizedSourceContract.supplier_product_id);
-  const skuMediaLinks = await promoteSkuMedia(client, normalizedSourceContract.sellable_units, skuIdBySupplierSku, mediaBySourceId);
+  const skuMediaLinks = await promoteSkuMedia(
+    client,
+    normalizedSourceContract.sellable_units,
+    skuIdBySupplierSku,
+    mediaBySourceId
+  );
   const content = await promoteContent(client, productId, normalizedSourceContract, {
     source: 'SUPPLIER',
     enrichmentVersion: normalizedSourceContract._enrichmentVersion || 'promoted',
   });
+
   return {
     promoted: true,
     media: mediaBySourceId.size,
