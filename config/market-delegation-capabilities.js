@@ -11,6 +11,7 @@ const CAPABILITIES = Object.freeze([
   ['market.observation.record','DELEGATION','pricing','MARKET','DELEGABLE',true,'LIVE'],
   ['structure.event.record','DELEGATION','structure','MARKET','DELEGABLE',true,'LIVE'],
   ['dashboard.market.read','DELEGATION','pilotage','MARKET','DELEGABLE',false,'LIVE'],
+  ['decision_signal.manage','DELEGATION','pilotage','MARKET','DELEGABLE',true,'LIVE'],
   ['operations.read','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['hub.supervise','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['client.read','DELEGATION','client','MARKET','DELEGABLE',false,'LIVE'],
