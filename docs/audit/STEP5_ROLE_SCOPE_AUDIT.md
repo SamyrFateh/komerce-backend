@@ -10,7 +10,21 @@ Sources normatives lues intégralement avant l'audit :
 `middleware/require-market-scope.js`, `middleware/require-dashboard-global-authority.js`,
 `services/market-delegation-service.js` + les routeurs de chaque surface.
 
-## 0. Écart majeur trouvé — à traiter en priorité
+## 0. Écart majeur trouvé — CORRIGÉ
+
+**Statut : corrigé** (branche `audit/step5-role-scope-market-id`, commit suivant celui de
+ce rapport). `requireDashboardGlobalAuthority` est désormais appliqué après `requireAdmin`
+sur les 5 routes de `routes/admin-dashboard.js` (`/control-tower`, `/costing`, `/logistics`,
+`/unified`, `POST /cache/clear`). Deux tests ajoutés dans `tests/unit/admin-dashboard.test.js`
+(describe `admin-dashboard — autorité globale explicite`) prouvent : un `admin` sans grant
+actif dans `dashboard_global_access_grants` reçoit désormais 403
+`dashboard_global_access_denied` sur les 5 routes ; un `admin` avec grant actif continue de
+recevoir 200. Les tests existants restaient verts avant correctif uniquement parce que leur
+mock générique de `db.query` renvoie des lignes non vides pour toute requête, y compris
+celle du grant — un `AUDIT_GAP` en soi, maintenant fermé par les deux nouveaux tests qui
+distinguent explicitement la requête `dashboard_global_access_grants` du reste.
+
+Le texte ci-dessous décrit le constat original (avant correctif), conservé pour traçabilité.
 
 **CROSS_MARKET_BUG confirmé et prouvé statiquement + par lecture des tests existants.**
 

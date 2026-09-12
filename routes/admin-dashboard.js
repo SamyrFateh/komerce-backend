@@ -44,6 +44,7 @@ const db = require('../db');
 const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const log = require('../utils/logger').child({ module: 'admin-dashboard' });
 
 const router = express.Router();
@@ -81,7 +82,7 @@ function makeDataQuality(filters, sourceTables, options = {}) {
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
   '/control-tower',
-  authenticate, requireAdmin,
+  authenticate, requireAdmin, requireDashboardGlobalAuthority,
   cache.cacheMiddleware('control-tower'),
   async (req, res, next) => {
     try {
@@ -154,7 +155,7 @@ router.get(
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
   '/costing',
-  authenticate, requireAdmin,
+  authenticate, requireAdmin, requireDashboardGlobalAuthority,
   cache.cacheMiddleware('costing'),
   async (req, res, next) => {
     try {
@@ -229,7 +230,7 @@ router.get(
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
   '/logistics',
-  authenticate, requireAdmin,
+  authenticate, requireAdmin, requireDashboardGlobalAuthority,
   cache.cacheMiddleware('logistics'),
   async (req, res, next) => {
     try {
@@ -284,7 +285,7 @@ router.get(
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
   '/unified',
-  authenticate, requireAdmin,
+  authenticate, requireAdmin, requireDashboardGlobalAuthority,
   cache.cacheMiddleware('unified'),
   async (req, res, next) => {
     try {
@@ -378,7 +379,7 @@ router.get(
 // ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/dashboard/cache/clear
 // ═══════════════════════════════════════════════════════════════════════
-router.post('/cache/clear', authenticate, requireAdmin, (req, res) => {
+router.post('/cache/clear', authenticate, requireAdmin, requireDashboardGlobalAuthority, (req, res) => {
   const prefix = req.body && req.body.prefix ? String(req.body.prefix) : null;
   const cleared = cache.clear(prefix);
   res.json({ ok: true, cleared, prefix: prefix || 'all' });
