@@ -47,6 +47,7 @@ function summarizeExposure(rows) {
   const exposedProducts = exposure.filter(row => row && row.commercial_exposure === exposureService.EXPOSURE.ENABLED).length;
   const hiddenProducts = Math.max(0, catalogProducts - exposedProducts);
   const undecidedProducts = exposure.filter(row => row && row.decision_recorded !== true).length;
+  const decidedProducts = Math.max(0, catalogProducts - undecidedProducts);
   const explicitHiddenProducts = exposure.filter(row => row
     && row.decision_recorded === true
     && row.commercial_exposure === exposureService.EXPOSURE.DISABLED).length;
@@ -58,6 +59,7 @@ function summarizeExposure(rows) {
     catalog_products: catalogProducts,
     exposed_products: exposedProducts,
     hidden_products: hiddenProducts,
+    decided_products: decidedProducts,
     undecided_products: undecidedProducts,
     explicit_hidden_products: explicitHiddenProducts,
     exposed_needs_review: exposedNeedsReview,
