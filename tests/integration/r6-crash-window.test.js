@@ -55,6 +55,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // UUIDs v5 déterministes pour les fixtures R6
 const R6_USER    = '69859cd3-43e1-5816-83d6-656b259fb0bf';
+const R6_MARKET  = 'a6a1a6a1-1a1a-5a1a-8a1a-a1a1a1a1a1a1';
 const R6_RELAIS  = 'e3cb3621-14a1-5f85-a6e4-b9fab941f8f7';
 const R6_PRODUCT = 'e43c4bda-7240-5d89-826f-a3503c2d28d6';
 const R6_ORDER1  = '5e236ec3-345d-56f2-9be6-17fdd7180ddf';
@@ -68,9 +69,16 @@ beforeAll(async () => {
     VALUES ('${R6_USER}', 'R6 Test', 'r6-crash@komerce.test', 'client')
     ON CONFLICT (id) DO NOTHING
   `);
+  // market_id est désormais NOT NULL sur relais (doctrine market-scoping) —
+  // fixture dédiée R6 pour ne pas dépendre d'un marché de seed externe.
   await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address)
-    VALUES ('${R6_RELAIS}', 'R6 Relais', 'Agent R6', '+269990001', 'R6 Addr')
+    INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
+    VALUES ('${R6_MARKET}', 'R6', 'R6 Test Market', 'KMF', 0, TRUE)
+    ON CONFLICT (id) DO NOTHING
+  `);
+  await pool.query(`
+    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+    VALUES ('${R6_RELAIS}', 'R6 Relais', 'Agent R6', '+269990001', 'R6 Addr', '${R6_MARKET}')
     ON CONFLICT (id) DO NOTHING
   `);
   await pool.query(`
@@ -97,6 +105,7 @@ afterAll(async () => {
   await pool.query(`DELETE FROM orders WHERE id IN ('${R6_ORDER1}', '${R6_ORDER2}')`);
   await pool.query(`DELETE FROM products WHERE id = '${R6_PRODUCT}'`);
   await pool.query(`DELETE FROM relais WHERE id = '${R6_RELAIS}'`);
+  await pool.query(`DELETE FROM markets WHERE id = '${R6_MARKET}'`);
   await pool.query(`DELETE FROM users WHERE id = '${R6_USER}'`);
   await pool.end();
 });
@@ -112,8 +121,8 @@ describe('[R6] Crash-window post-COMMIT — preuve et outbox', () => {
     try {
       await client.query('BEGIN');
       await client.query(`
-        INSERT INTO orders (id, reference, relais_id, total_kmf, payment_mode, status)
-        VALUES ('${R6_ORDER1}', 'KOM-R6-CRASH', '${R6_RELAIS}', 5000, 'cash_relais', 'preparation')
+        INSERT INTO orders (id, reference, market_id, relais_id, total_kmf, payment_mode, status)
+        VALUES ('${R6_ORDER1}', 'KOM-R6-CRASH', '${R6_MARKET}', '${R6_RELAIS}', 5000, 'cash_relais', 'preparation')
         ON CONFLICT (id) DO UPDATE SET reference = EXCLUDED.reference
       `);
       await client.query('COMMIT');
@@ -143,8 +152,8 @@ describe('[R6] Crash-window post-COMMIT — preuve et outbox', () => {
       await client.query('BEGIN');
 
       await client.query(`
-        INSERT INTO orders (id, reference, relais_id, total_kmf, payment_mode, status)
-        VALUES ('${R6_ORDER2}', 'KOM-R6-OUTBOX', '${R6_RELAIS}', 5000, 'cash_relais', 'preparation')
+        INSERT INTO orders (id, reference, market_id, relais_id, total_kmf, payment_mode, status)
+        VALUES ('${R6_ORDER2}', 'KOM-R6-OUTBOX', '${R6_MARKET}', '${R6_RELAIS}', 5000, 'cash_relais', 'preparation')
         ON CONFLICT (id) DO UPDATE SET reference = EXCLUDED.reference
       `);
 
