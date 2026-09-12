@@ -258,8 +258,14 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
   function buildCarouselSlides(product) {
     let track = dom.modalCarouselTrack;
     let dots = dom.modalDots;
-    let images = product.images || [product.image_url];
-    images = images.filter(Boolean);
+    // La carte (product-card-view-model.js) affiche product.image_url en
+    // priorité absolue : c'est le média curaté, canonique. La modale doit
+    // rester cohérente avec la carte — jamais faire apparaître en premier
+    // une photo lifestyle/mannequin de la galerie brute fournisseur avant
+    // le visuel réellement représentatif du produit.
+    let images = [product.image_url, ...(Array.isArray(product.images) ? product.images : [])]
+      .filter(Boolean)
+      .filter((url, i, arr) => arr.indexOf(url) === i);
     if (!images.length) images = [product.image_url || ''];
 
     // ── Slides principales ─────────────────────────────────────
