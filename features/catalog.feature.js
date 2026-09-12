@@ -48,6 +48,7 @@ module.exports = {
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
       'source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique',
+      'pool AliExpress staging borné à 500 références réellement en stock, dédupliqué et reprenable, alimenté exclusivement via la Raffinerie et sans publication automatique',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
       'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
       'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
@@ -80,6 +81,7 @@ module.exports = {
     scripts: [
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
+      'scripts/aliexpress-500-catalog-sync.js',
     ],
     services: [
       'services/product-publication-guard.js',
@@ -239,6 +241,7 @@ module.exports = {
       'tests/unit/cj-connector.test.js',
       'tests/unit/aliexpress-connector.test.js',
       'tests/unit/aliexpress-oauth.test.js',
+      'tests/unit/aliexpress-500-catalog-sync.test.js',
       'tests/unit/cj-connector-doc-contract.test.js',
       'tests/unit/cj-real-showcase-seed.test.js',
       'tests/unit/cj-catalog-index.test.js',
@@ -446,6 +449,7 @@ module.exports = {
     'aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux',
     'le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement',
     'la source AliExpress reste une entrée de Raffinerie : elle ne crée ni ne publie jamais directement un produit canonique',
+    'le pool AliExpress staging ne dépasse jamais 500 références propres en stock et ne peut pas s exécuter en production',
     'les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur',
   ],
 };
