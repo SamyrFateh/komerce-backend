@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_commerce_projection, market_product_viability, market_product_availability, server_decision_signals
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-service
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-decision-projection
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations
  * @db-write      none
  * @db-txn        none
- * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine, local_stock_service_is_availability_authority
+ * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine, local_stock_projection_is_availability_authority
  * @impact-areas  admin-dashboard, commerce, market-authorization, economic-engine, local-stock, decision-signals
  * @version       2026-09
  */
@@ -21,7 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const pricingMarketCorridor = require('./pricing-market-corridor');
-const localStock = require('./local-stock-service');
+const localStockDecision = require('./local-stock-decision-projection');
 const {
   buildFiltersClause,
   makeKpi,
@@ -348,21 +348,19 @@ async function getTopProductAvailability(topProducts = [], market = null, option
   if (!market || !market.id || !market.code) {
     return Object.freeze({ items: Object.freeze([]), warnings: Object.freeze([]) });
   }
-  const getLocalStock = options.getLocalStock || localStock.getLocalStock;
-  const isStockExposable = options.isStockExposable || localStock.isStockExposable;
+  const getAvailabilityEvidence = options.getAvailabilityEvidence
+    || localStockDecision.getDecisionAvailabilityEvidence;
   const products = topProducts.filter(product => product && product.product_id && product.product_ref);
   const projected = await Promise.all(products.map(async product => {
     try {
-      const row = await getLocalStock(product.product_id, market.id);
+      const evidence = await getAvailabilityEvidence(product.product_id, market.id);
       let state = LOCAL_AVAILABILITY_STATE.NO_LOCAL_STOCK;
-      let exposure = null;
-      if (row) {
-        exposure = row.commercial_exposure || null;
+      const exposure = evidence && evidence.commercial_exposure ? evidence.commercial_exposure : null;
+      if (evidence && evidence.tracked) {
         if (exposure !== 'ENABLED') {
           state = LOCAL_AVAILABILITY_STATE.LOCAL_NOT_EXPOSED;
         } else {
-          const exposable = await isStockExposable(product.product_id, market.id);
-          state = exposable
+          state = evidence.exposable
             ? LOCAL_AVAILABILITY_STATE.AVAILABLE_NOW
             : LOCAL_AVAILABILITY_STATE.LOCAL_EXPOSED_UNAVAILABLE;
         }
@@ -376,7 +374,7 @@ async function getTopProductAvailability(topProducts = [], market = null, option
           revenue_kmf: product.revenue_kmf,
           state,
           commercial_exposure: exposure,
-          authority: 'LOCAL_STOCK_SERVICE',
+          authority: evidence && evidence.authority ? evidence.authority : 'LOCAL_STOCK',
         }),
         warning: null,
       };
@@ -559,8 +557,7 @@ async function buildCommerce(query = {}, options = {}) {
       buildMarketCorridor: options.buildMarketCorridor,
     }),
     getTopProductAvailability(topProducts, market, {
-      getLocalStock: options.getLocalStock,
-      isStockExposable: options.isStockExposable,
+      getAvailabilityEvidence: options.getAvailabilityEvidence,
     }),
   ]);
   const decisionSignals = buildDecisionSignals({
