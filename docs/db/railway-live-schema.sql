@@ -4879,7 +4879,11 @@ CREATE TABLE public.product_skus (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
+    supplier_unit_ref text,
+    supplier_order_identity jsonb,
     CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
+    CONSTRAINT chk_product_skus_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
+    CONSTRAINT chk_product_skus_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text))),
     CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= (0)::numeric))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
@@ -4911,6 +4915,20 @@ COMMENT ON COLUMN public.product_skus.supplier_sku IS 'Identité source stable (
 --
 
 COMMENT ON COLUMN public.product_skus.source IS 'MANUAL = créé par un admin via routes/products.js (upsertProductSku). SUPPLIER = promu depuis normalized_source_contract.sellable_units[] (PDC-8 Lot 6). Distinction honnête, jamais déduite après coup.';
+
+
+--
+-- Name: COLUMN product_skus.supplier_unit_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_skus.supplier_unit_ref IS 'Référence technique stable de l''unité commandable fournisseur. NULL pour les SKU historiques/manuels non encore résolus. Ne jamais reconstruire par heuristique depuis variant_combo ou un libellé humain.';
+
+
+--
+-- Name: COLUMN product_skus.supplier_order_identity; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_skus.supplier_order_identity IS 'Supplier Order Identity canonique et versionnée {provider,version,payload}. Le payload est opaque au coeur Komerce et ne contient ni prix, ni stock, ni fret. NULL signifie non Supplier-Mapped / non Fulfillment Ready.';
 
 
 --
@@ -5841,10 +5859,18 @@ CREATE TABLE public.signals (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     signal_ref text DEFAULT ('KSG-'::text || lpad((nextval('public.decision_signal_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
+    market_id uuid,
     CONSTRAINT signals_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
     CONSTRAINT signals_severity_check CHECK ((severity = ANY (ARRAY['info'::text, 'warning'::text, 'critical'::text, 'urgent'::text]))),
     CONSTRAINT signals_status_check CHECK ((status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text, 'resolved'::text, 'expired'::text])))
 );
+
+
+--
+-- Name: COLUMN signals.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.signals.market_id IS 'Canonical Market ID scope for a derived signal. NULL = global fact; non-NULL = exact server-resolved market fact. Browser input is never authoritative.';
 
 
 --
@@ -10741,7 +10767,7 @@ CREATE INDEX idx_shipments_reference ON public.shipments USING btree (reference)
 -- Name: idx_signals_active_fact_unique; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_signals_active_fact_unique ON public.signals USING btree (signal_type, entity_type, entity_id) NULLS NOT DISTINCT WHERE (status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text]));
+CREATE UNIQUE INDEX idx_signals_active_fact_unique ON public.signals USING btree (signal_type, market_id, entity_type, entity_id) NULLS NOT DISTINCT WHERE (status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text]));
 
 
 --
@@ -10756,6 +10782,20 @@ CREATE UNIQUE INDEX idx_signals_dedup ON public.signals USING btree (signal_type
 --
 
 CREATE INDEX idx_signals_entity ON public.signals USING btree (entity_type, entity_id);
+
+
+--
+-- Name: idx_signals_market_active_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_signals_market_active_created ON public.signals USING btree (market_id, status, created_at DESC) WHERE (status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'snoozed'::text]));
+
+
+--
+-- Name: idx_signals_market_severity_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_signals_market_severity_created ON public.signals USING btree (market_id, severity, created_at DESC);
 
 
 --
@@ -11253,6 +11293,13 @@ CREATE UNIQUE INDEX ux_product_skus_default ON public.product_skus USING btree (
 --
 
 CREATE UNIQUE INDEX ux_product_skus_supplier_identity ON public.product_skus USING btree (product_id, supplier_sku) WHERE (supplier_sku IS NOT NULL);
+
+
+--
+-- Name: ux_product_skus_supplier_unit_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_skus_supplier_unit_ref ON public.product_skus USING btree (product_id, supplier_unit_ref) WHERE (supplier_unit_ref IS NOT NULL);
 
 
 --
@@ -13537,6 +13584,14 @@ ALTER TABLE ONLY public.shared_carts
 
 ALTER TABLE ONLY public.shared_carts
     ADD CONSTRAINT shared_carts_source_order_id_fkey FOREIGN KEY (source_order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
+
+
+--
+-- Name: signals signals_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.signals
+    ADD CONSTRAINT signals_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
 
 
 --
