@@ -13,12 +13,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1333
-- Edges: 6639
+- Graph nodes: 1334
+- Edges: 6658
 - DB tables: 155
-- Doctrines: 437
+- Doctrines: 438
 - Impact areas: 182
-- Unresolved code edges: 626
+- Unresolved code edges: 628
 - Tables multi-écrivains directs (>=2): 70
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -692,6 +692,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
 - WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
 - WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
+- WRITE routes/admin-action-center.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-cash-control.js -> market_delegation_audit (via market-cash-control-policy-service)
 - WRITE routes/market-delegation-catalog.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/market-delegation-client-case.js -> market_delegation_audit (via market-delegation-service)
@@ -784,7 +785,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> parcels (via scan-engine)
 - WRITE services/shipping-customs-workspace.js -> parcels (via customs-shipment-service)
 - WRITE services/simulator/state-advancer.js -> parcels (via parcel-operations)
-- WRITE services/sourcing-workspace.js -> partners (via partner-admin-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
