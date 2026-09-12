@@ -36,6 +36,7 @@ module.exports = {
       'table local_stock : quantité physique, marché, lieu et commercial_exposure',
       'table local_stock_allocations : engagement anti-survente avant paiement',
       'projection availability calculée AVAILABLE_NOW | UNAVAILABLE, jamais persistée',
+      'projection décisionnelle interne minimale : tracked / commercial_exposure / availability / exposable, sans quantité brute ni identifiant interne',
       'projection checkout read-only LOCAL_STOCK | IMPORT | REVIEW_REQUIRED, quantité-aware et relay-scoped, jamais persistée',
       'isStockExposable() : exposure ENABLED et disponibilité nette positive',
       'cycle allocate -> consume | release, atomique avec la transaction orders',
@@ -57,6 +58,7 @@ module.exports = {
   files: {
     services: [
       'services/local-stock-service.js',
+      'services/local-stock-decision-projection.js',
       'services/local-stock-checkout-preview.js',
     ],
     routes: [
@@ -64,6 +66,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/local-stock-service.test.js',
+      'tests/unit/local-stock-decision-projection.test.js',
       'tests/unit/local-stock-routes.test.js',
       'tests/unit/local-stock-checkout-preview.test.js',
       'tests/unit/local-stock-fulfillment-resolver.test.js',
@@ -93,6 +96,7 @@ module.exports = {
       'GET /api/local-stock/checkout-preview?relais_id=R&product_id=P&quantity=Q — projection checkout read-only, relais -> market_id résolu serveur, jamais une réservation',
     ],
     internalApi: [
+      { fn: 'getDecisionAvailabilityEvidence', file: 'services/local-stock-decision-projection.js' },
       { fn: 'resolveCheckoutFulfillmentSources', file: 'services/local-stock-service.js' },
       { fn: 'allocateForOrderItem', file: 'services/local-stock-service.js' },
       { fn: 'consumeAllocationsForOrder', file: 'services/local-stock-service.js' },
@@ -119,6 +123,10 @@ module.exports = {
     {
       statement: 'la disponibilité locale n’est jamais lue depuis products.stock ou product_skus.stock',
       test: 'tests/unit/local-stock-service.test.js',
+    },
+    {
+      statement: 'la projection décisionnelle interne calcule la disponibilité nette dans local-stock et ne divulgue ni quantité brute ni identifiant interne',
+      test: 'tests/unit/local-stock-decision-projection.test.js',
     },
     {
       statement: 'availability, preview et allocation déduisent les allocations actives ; jamais qty_physical brut seul',
