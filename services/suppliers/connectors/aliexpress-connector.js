@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -21,7 +21,7 @@ const crypto = require('crypto');
 const { partitionValid } = require('../normalized-product');
 
 const SUPPLIER_NAME = 'AliExpress';
-const BASE_URL = 'https://eco.taobao.com/router/rest';
+const BASE_URL = 'https://api-sg.aliexpress.com/sync';
 const APP_KEY_ENV = 'ALIEXPRESS_APP_KEY';
 const APP_SECRET_ENV = 'ALIEXPRESS_APP_SECRET';
 const SESSION_ENV = 'ALIEXPRESS_SESSION';
@@ -85,17 +85,22 @@ function normalizeHttpUrl(value) {
 }
 
 function formatTopTimestamp(date = new Date()) {
-  const gmt8 = new Date(date.getTime() + (8 * 60 * 60 * 1000));
-  return gmt8.toISOString().slice(0, 19).replace('T', ' ');
+  return String(date.getTime());
+}
+
+function stringifyParam(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return JSON.stringify(value);
 }
 
 function signTopParams(params, secret) {
   const canonical = Object.keys(params)
     .filter((key) => key !== 'sign' && params[key] !== undefined && params[key] !== null)
     .sort()
-    .map((key) => `${key}${params[key]}`)
+    .map((key) => `${key}${stringifyParam(params[key])}`)
     .join('');
-  return crypto.createHmac('md5', secret).update(canonical, 'utf8').digest('hex').toUpperCase();
+  return crypto.createHmac('sha256', secret).update(canonical, 'utf8').digest('hex').toUpperCase();
 }
 
 function buildTopRequest(method, businessParams = {}, { env = process.env, now = new Date() } = {}) {
@@ -104,13 +109,12 @@ function buildTopRequest(method, businessParams = {}, { env = process.env, now =
     method,
     app_key: env[APP_KEY_ENV],
     session: env[SESSION_ENV],
+    simplify: 'true',
+    sign_method: 'sha256',
     timestamp: formatTopTimestamp(now),
-    format: 'json',
-    v: '2.0',
-    sign_method: 'hmac',
   };
   for (const [key, value] of Object.entries(businessParams || {})) {
-    if (value !== undefined && value !== null && value !== '') params[key] = String(value);
+    if (value !== undefined && value !== null && value !== '') params[key] = stringifyParam(value);
   }
   params.sign = signTopParams(params, env[APP_SECRET_ENV]);
   return new URLSearchParams(params);
@@ -121,22 +125,18 @@ function responseKeyFor(method) {
 }
 
 async function invokeTop(method, businessParams, { fetchImpl = fetch, env = process.env, now = new Date() } = {}) {
-  const form = buildTopRequest(method, businessParams, { env, now });
-  const response = await fetchImpl(BASE_URL, {
+  const query = buildTopRequest(method, businessParams, { env, now });
+  const response = await fetchImpl(`${BASE_URL}?${query.toString()}`, {
     method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-    },
-    body: form.toString(),
+    headers: { Accept: 'application/json' },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.error_response) {
-    const err = body.error_response || {};
-    throw new Error(`[${SUPPLIER_NAME}] ${method} échoué (${response.status}): ${err.sub_msg || err.msg || 'erreur inconnue'}`);
+    const err = body.error_response || body || {};
+    throw new Error(`[${SUPPLIER_NAME}] ${method} échoué (${response.status}): ${err.sub_msg || err.msg || err.message || 'erreur inconnue'}`);
   }
-  const payload = body[responseKeyFor(method)];
-  if (!payload) throw new Error(`[${SUPPLIER_NAME}] réponse ${method} absente`);
+  const payload = body[responseKeyFor(method)] || body;
+  if (!payload || typeof payload !== 'object') throw new Error(`[${SUPPLIER_NAME}] réponse ${method} absente`);
   if (payload.rsp_code && String(payload.rsp_code) !== '200' && !payload.result) {
     throw new Error(`[${SUPPLIER_NAME}] ${method}: ${payload.rsp_msg || `rsp_code=${payload.rsp_code}`}`);
   }
