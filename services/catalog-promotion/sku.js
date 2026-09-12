@@ -11,28 +11,41 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      PDC-8 §SKU — IDENTITÉ SOURCE STABLE, §STOCK, §DOCTRINE ZÉRO HEURISTIQUE, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @doctrine      PDC-8 §SKU — IDENTITÉ SOURCE STABLE, §STOCK, §DOCTRINE ZÉRO HEURISTIQUE
  * @impact-areas  catalog
- * @version       2026-09
+ * @version       2026-07
  */
 
 /**
- * KOMERCE — plan de réconciliation SKU par identité source stable.
+ * KOMERCE — PDC-8 Lot 4 : plan de réconciliation SKU par identité source stable
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * `supplier_sku` reste la clé de re-promotion historique. La Supplier Order
- * Identity est un fait supplémentaire : elle décrit comment commander
- * exactement cette même unité chez le fournisseur et n'influence jamais la
- * décision prix/stock.
+ * Fonction pure : ne touche jamais la DB. Produit un PLAN que le Lot 6
+ * (services/catalog-promotion.js) exécutera dans une transaction réelle.
+ *
+ * Règle centrale (PDC-8 §SKU) : l'identité de re-promotion est
+ * `supplier_sku`, jamais `variant_combo`. Un supplier_sku rejoué doit
+ * conserver le même `product_skus.id` même si son variant_combo est corrigé
+ * par la source (ex. "Rouge/M" → "Rouge foncé/M").
+ *
+ * Les SKU manuels (source = 'MANUAL', supplier_sku NULL) ne sont JAMAIS
+ * touchés par ce plan — ils n'existent pas du point de vue d'une
+ * re-promotion fournisseur.
+ *
+ * Prix (PDC-8 §MAPPING V2 → CANONIQUE §SKU) : ne copie jamais
+ * sellable_unit.purchase_price dans price_kmf. Le plan ne fixe jamais
+ * price_kmf — la colonne reste intouchée (create : null ; update : absent
+ * du patch) tant qu'aucun moteur pricing commercial explicite n'est
+ * branché (hors scope Lot 4/6).
+ *
+ * Stock (PDC-8 §STOCK) : stock_available absent ne fabrique jamais une
+ * quantité. Le plan reporte stockKnown=false et stock=0 dans ce cas —
+ * 0 est ici une PROJECTION TECHNIQUE d'absence non vendable, jamais un
+ * stock fournisseur connu. Charge à l'appelant (Lot 6 / audit) de ne
+ * jamais présenter ce 0 comme une donnée fournisseur.
  */
 
 'use strict';
-
-function identityFields(unit) {
-  return {
-    supplier_unit_ref: unit.supplier_unit_ref || null,
-    supplier_order_identity: unit.supplier_order_identity || null,
-  };
-}
 
 function planSkuReconciliation(existingSkus, sellableUnits) {
   if (!Array.isArray(existingSkus)) {
@@ -63,13 +76,11 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
 
     const stockKnown = typeof unit.stock_available === 'number' && Number.isInteger(unit.stock_available);
     const stock = stockKnown ? unit.stock_available : 0;
-    const orderIdentity = identityFields(unit);
     const existing = bySupplierSku.get(supplierSku);
 
     if (!existing) {
       toCreate.push({
         supplier_sku: supplierSku,
-        ...orderIdentity,
         variant_combo: unit.option_values || null,
         stock,
         stockKnown,
@@ -83,7 +94,6 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     target.push({
       id: existing.id,
       supplier_sku: supplierSku,
-      ...orderIdentity,
       variant_combo: unit.option_values || null,
       stock,
       stockKnown,
