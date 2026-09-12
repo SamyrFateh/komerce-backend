@@ -194,7 +194,11 @@ router.get('/stripe-proofs', ...adminOnly, async (req, res, next) => {
         komerce_reference:  order.reference,
         stripe_payment_id:  order.stripe_payment_id,
         amount_eur:         parseFloat(order.total_eur),
-        amount_kmf:         parseInt(order.total_kmf),
+        // parseFloat, pas parseInt : orders.total_kmf est numeric(14,2)
+        // depuis la migration 213 (chantier currency debt). parseInt
+        // tronquait les centimes dans cet export de rapprochement comptable
+        // Stripe — séquelle de l'époque où la colonne était integer.
+        amount_kmf:         parseFloat(order.total_kmf),
         created_at:         order.created_at,
         client_name:        order.client_name,
         client_email:       order.client_email,

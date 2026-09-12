@@ -67,6 +67,11 @@ module.exports = {
       // E2E fonctionnel Feature First — refunds est PROPRIETAIRE du scenario ;
       // orders, payments, wallet, catalog et logistics sont traversees.
       'tests/e2e-api/refunds.no-double-application.e2e.test.js',
+      // E2E fonctionnel — chantier currency debt, LOT 7. Les 4 colonnes de
+      // flux financier (refunds/store_credits/cash_collections/cash_deposits),
+      // 43 fichiers chacune. Montants réellement remis à une personne :
+      // les arrondir à l'unité lui faisait perdre des centimes.
+      'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
       'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
