@@ -71,6 +71,7 @@ Un changement de prix ou de stock ne crée donc jamais une nouvelle identité SK
 7. Le payload opaque ne doit contenir ni prix, ni stock, ni fret.
 8. `placeOrder()` n'est accessible qu'après un preflight qui a revalidé stock, prix, disponibilité et fret contre la même identité.
 9. Tout blocage lié à l'identité expose le code métier stable `BLOCKED_SUPPLIER_IDENTITY` ; le texte du message d'erreur n'est jamais le contrat d'intégration.
+10. `requireOrderIdentity: false` est réservé aux chemins historiques de refresh explicitement identifiés ; aucun chemin Purchasing ne peut rendre l'identité optionnelle par défaut ou par inférence.
 
 ## Adaptateurs
 
