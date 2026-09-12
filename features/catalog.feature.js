@@ -33,7 +33,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping)',
+      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
@@ -47,6 +47,7 @@ module.exports = {
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
+      'source AliExpress de stress-test Raffinerie : feed/detail Dropshipper officiel, normalisation V2 riche, aucune publication automatique et activation fail-closed sur credentials',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
       'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
       'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
@@ -108,6 +109,7 @@ module.exports = {
       'services/suppliers/connectors/_connector-utils.js',
       'services/suppliers/connectors/noon-connector.js',
       'services/suppliers/connectors/cj-connector.js',
+      'services/suppliers/connectors/aliexpress-connector.js',
       'services/suppliers/connectors/json-connector.js',
       'services/suppliers/cj-catalog-index.js',
       'services/suppliers/catalog-sync-checkpoint.js',
@@ -231,6 +233,7 @@ module.exports = {
       'tests/unit/manual-connector-source-v2.test.js',
       'tests/unit/noon-connector.test.js',
       'tests/unit/cj-connector.test.js',
+      'tests/unit/aliexpress-connector.test.js',
       'tests/unit/cj-connector-doc-contract.test.js',
       'tests/unit/cj-real-showcase-seed.test.js',
       'tests/unit/cj-catalog-index.test.js',
@@ -436,5 +439,6 @@ module.exports = {
     'le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css',
     'aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux',
     'le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement',
+    'la source AliExpress reste une entrée de Raffinerie : elle ne crée ni ne publie jamais directement un produit canonique',
   ],
 };
