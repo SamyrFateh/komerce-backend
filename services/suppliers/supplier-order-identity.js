@@ -1,13 +1,13 @@
 /**
  * @komerce-arch
  * @role          supplier-order-identity
- * @domain        catalog
+ * @domain        purchasing
  * @layer         service
  * @criticality   high
  * @inputs        NormalizedSupplierProduct V2 sellable_unit
  * @outputs       canonical_supplier_unit_resolution
  * @depends       none
- * @used-by       supplier adapters, purchasing preflight
+ * @used-by       supplier purchasing adapters, purchasing preflight
  * @db-read       none
  * @db-write      none
  * @db-txn        none
