@@ -125,6 +125,14 @@ function reconcileOrderIdentity(existing, incoming, supplierSku) {
   };
 }
 
+function identityPlanFields(identity) {
+  if (!identity.supplier_unit_ref && !identity.supplier_order_identity) return {};
+  return {
+    supplier_unit_ref: identity.supplier_unit_ref,
+    supplier_order_identity: identity.supplier_order_identity,
+  };
+}
+
 function planSkuReconciliation(existingSkus, sellableUnits) {
   if (!Array.isArray(existingSkus)) {
     const e = new Error('existingSkus doit être un tableau'); e.status = 422; throw e;
@@ -182,8 +190,7 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     if (!existing) {
       toCreate.push({
         supplier_sku: supplierSku,
-        supplier_unit_ref: orderIdentity.supplier_unit_ref,
-        supplier_order_identity: orderIdentity.supplier_order_identity,
+        ...identityPlanFields(orderIdentity),
         variant_combo: unit.option_values || null,
         stock,
         stockKnown,
@@ -197,8 +204,7 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     target.push({
       id: existing.id,
       supplier_sku: supplierSku,
-      supplier_unit_ref: orderIdentity.supplier_unit_ref,
-      supplier_order_identity: orderIdentity.supplier_order_identity,
+      ...identityPlanFields(orderIdentity),
       variant_combo: unit.option_values || null,
       stock,
       stockKnown,
