@@ -82,6 +82,27 @@ describe('catalog promotion — couture NormalizedSupplierProduct V2 canonique',
     ]);
   });
 
+  it('accepte une specification V2 à key nullable et fabrique une identité DB stable depuis le label', () => {
+    const nullableKeyContract = {
+      schema_version: '2',
+      specifications: [
+        { group: null, key: null, label: 'Bluetooth Version', value: '5.3' },
+        { group: null, key: null, label: 'Bluetooth Version', value: '5.4' },
+      ],
+    };
+
+    expect(() => validateForPromotion(nullableKeyContract)).not.toThrow();
+    const first = mapContentToAttributeRows(nullableKeyContract);
+    const replay = mapContentToAttributeRows(nullableKeyContract);
+
+    expect(first.map((row) => row.attribute_key)).toEqual([
+      'label_bluetooth_version',
+      'label_bluetooth_version~2',
+    ]);
+    expect(first.map((row) => row.value_text)).toEqual(['5.3', '5.4']);
+    expect(replay).toEqual(first);
+  });
+
   it('traduit highlights/specifications vers les clés DB sans imposer la forme DB au contrat', () => {
     expect(mapContentToAttributeRows(contract)).toEqual([
       {
@@ -146,9 +167,9 @@ describe('catalog promotion — couture NormalizedSupplierProduct V2 canonique',
     ]);
   });
 
-  it('refuse explicitement une specification sans key, car la DB exige une identité stable', () => {
+  it('continue de refuser une specification sans key et sans label exploitable', () => {
     expect(() => mapContentToAttributeRows({
-      specifications: [{ group: 'general', key: null, label: 'Poids', value: '320' }],
-    })).toThrow(/specifications\[\]\.key requis/);
+      specifications: [{ group: 'general', key: null, label: null, value: '320' }],
+    })).toThrow(/key\/attribute_key ou un label non vide/);
   });
 });
