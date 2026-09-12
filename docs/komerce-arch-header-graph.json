@@ -13,28 +13,28 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 556,
-    "filesWithFullHeaders": 511,
+    "scannedCodeFiles": 559,
+    "filesWithFullHeaders": 514,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 556,
+    "filesWithAnyHeaders": 559,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1327,
-    "edges": 6610,
-    "dbTables": 153,
+    "graphNodes": 1333,
+    "edges": 6639,
+    "dbTables": 155,
     "doctrines": 437,
-    "impactAreas": 181,
-    "unresolvedCodeEdges": 624,
+    "impactAreas": 182,
+    "unresolvedCodeEdges": 626,
     "dbWriteViaOverlapWarnings": 7,
-    "multiWriterTables": 69
+    "multiWriterTables": 70
   },
   "byDomain": {
     "infrastructure": 20,
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 97,
+    "catalog": 100,
     "admin-dashboard": 21,
     "decision-signals": 12,
     "market-delegation": 25,
@@ -103,9 +103,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 126,
+    "route": 127,
     "entrypoint": 1,
-    "service": 255,
+    "service": 257,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -115,8 +115,8 @@
   },
   "byCriticality": {
     "critical": 85,
-    "medium": 124,
-    "high": 294,
+    "medium": 125,
+    "high": 296,
     "low": 53
   },
   "nodes": [
@@ -147,6 +147,7 @@
         "routes/boutique-suggestions.js",
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
+        "routes/integrations-aliexpress.js",
         "routes/market-delegation-team.js",
         "routes/market-delegation-cash-control.js",
         "routes/market-delegation-network.js",
@@ -8773,6 +8774,50 @@
         "market"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "routes/integrations-aliexpress.js",
+      "file": "routes/integrations-aliexpress.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "aliexpress-oauth-integration-route",
+      "domain": "catalog",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "admin OAuth start/status requests",
+        "AliExpress OAuth callback"
+      ],
+      "outputs": [
+        "provider redirect",
+        "encrypted OAuth connection status"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/suppliers/aliexpress-oauth.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "auth"
+      ],
+      "version": "2026-09-v1"
     },
     {
       "id": "routes/inventory-api.js",
@@ -23856,7 +23901,7 @@
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
-        "services/suppliers/connectors/aliexpress-connector.js"
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js",
@@ -24060,6 +24105,51 @@
         "product-discovery"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/suppliers/aliexpress-oauth.js",
+      "file": "services/suppliers/aliexpress-oauth.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "aliexpress-oauth-session-manager",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "AliExpress OAuth code/refresh token",
+        "provider app credentials"
+      ],
+      "outputs": [
+        "valid AliExpress access token/session key",
+        "safe connection status"
+      ],
+      "depends": [
+        "db.js",
+        "node:crypto"
+      ],
+      "usedBy": [
+        "routes/integrations-aliexpress.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
+      ],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "secrets"
+      ],
+      "version": "2026-09-v2"
     },
     {
       "id": "services/suppliers/catalog-import-json.js",
@@ -24273,6 +24363,48 @@
       "version": "2026-07"
     },
     {
+      "id": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "file": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "aliexpress-connected-source-connector",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "AliExpress sourcing filters + managed OAuth session"
+      ],
+      "outputs": [
+        "normalized_supplier_product_v2"
+      ],
+      "depends": [
+        "services/suppliers/connectors/aliexpress-connector.js",
+        "services/suppliers/aliexpress-oauth.js"
+      ],
+      "usedBy": [
+        "services/sourcing-import-dispatch.js"
+      ],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections (token refresh only)"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
       "id": "services/suppliers/connectors/aliexpress-connector.js",
       "file": "services/suppliers/connectors/aliexpress-connector.js",
       "type": "file",
@@ -24311,7 +24443,7 @@
         "sourcing",
         "supplier-import"
       ],
-      "version": "2026-09-v1"
+      "version": "2026-09-v2"
     },
     {
       "id": "services/suppliers/connectors/api-connector.base.js",
@@ -26953,6 +27085,11 @@
       "table": "order_incidents"
     },
     {
+      "id": "db:supplier_oauth_connections",
+      "type": "db-table",
+      "table": "supplier_oauth_connections"
+    },
+    {
       "id": "db:shipments",
       "type": "db-table",
       "table": "shipments"
@@ -27341,6 +27478,11 @@
       "id": "db:supplier_catalog_sync_checkpoints",
       "type": "db-table",
       "table": "supplier_catalog_sync_checkpoints"
+    },
+    {
+      "id": "db:supplier_oauth_connections (token refresh only)",
+      "type": "db-table",
+      "table": "supplier_oauth_connections (token refresh only)"
     },
     {
       "id": "db:webauthn_challenges",
@@ -28241,6 +28383,11 @@
       "id": "doctrine:market_operator_scoping (GAP-1)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-1)"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
     },
     {
       "id": "doctrine:facture_apres_paiement_confirme",
@@ -29403,11 +29550,6 @@
       "doctrine": "explicit_human_price_required_before_promotion"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
-    },
-    {
       "id": "doctrine:single_connector_dispatch_authority",
       "type": "doctrine",
       "doctrine": "single_connector_dispatch_authority"
@@ -30228,6 +30370,11 @@
       "area": "snapshots"
     },
     {
+      "id": "impact:supplier-import",
+      "type": "impact-area",
+      "area": "supplier-import"
+    },
+    {
       "id": "impact:local-stock",
       "type": "impact-area",
       "area": "local-stock"
@@ -30403,9 +30550,9 @@
       "area": "admin-debug"
     },
     {
-      "id": "impact:supplier-import",
+      "id": "impact:secrets",
       "type": "impact-area",
-      "area": "supplier-import"
+      "area": "secrets"
     },
     {
       "id": "impact:session",
@@ -30492,6 +30639,12 @@
       "to": "routes/shared-cart-saved.js",
       "type": "depends",
       "label": "routes/shared-cart-saved.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/integrations-aliexpress.js",
+      "type": "depends",
+      "label": "routes/integrations-aliexpress.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -42924,6 +43077,60 @@
       "to": "impact:market",
       "type": "impact",
       "label": "market"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "services/suppliers/aliexpress-oauth.js",
+      "type": "depends",
+      "label": "services/suppliers/aliexpress-oauth.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/integrations-aliexpress.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-read",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-write",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "impact:auth",
+      "type": "impact",
+      "label": "auth"
     },
     {
       "from": "routes/inventory-api.js",
@@ -66159,9 +66366,9 @@
     },
     {
       "from": "services/sourcing-import-dispatch.js",
-      "to": "services/suppliers/connectors/aliexpress-connector.js",
+      "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
       "type": "depends",
-      "label": "services/suppliers/connectors/aliexpress-connector.js"
+      "label": "services/suppliers/connectors/aliexpress-connected-connector.js"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -66513,6 +66720,66 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "services/suppliers/aliexpress-oauth.js",
+      "type": "uses",
+      "label": "routes/integrations-aliexpress.js"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "services/suppliers/aliexpress-oauth.js",
+      "type": "uses",
+      "label": "services/suppliers/connectors/aliexpress-connected-connector.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-read",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-write",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "impact:secrets",
+      "type": "impact",
+      "label": "secrets"
+    },
+    {
       "from": "services/suppliers/catalog-import-json.js",
       "to": "db.js",
       "type": "depends",
@@ -66745,6 +67012,60 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "services/suppliers/connectors/aliexpress-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/aliexpress-connector.js"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "services/suppliers/aliexpress-oauth.js",
+      "type": "depends",
+      "label": "services/suppliers/aliexpress-oauth.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "type": "uses",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-read",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "db:supplier_oauth_connections (token refresh only)",
+      "type": "db-write",
+      "label": "supplier_oauth_connections (token refresh only)"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
     },
     {
       "from": "services/suppliers/connectors/aliexpress-connector.js",
@@ -70339,6 +70660,7 @@
         "routes/boutique-suggestions.js",
         "routes/catalog-product-detail.js",
         "routes/shared-cart-saved.js",
+        "routes/integrations-aliexpress.js",
         "routes/market-delegation-team.js",
         "routes/market-delegation-cash-control.js",
         "routes/market-delegation-network.js",
@@ -70459,6 +70781,7 @@
         "routes/hub-dashboard.js",
         "routes/hub-mark-ordered.js",
         "routes/hub.js",
+        "routes/integrations-aliexpress.js",
         "routes/inventory-api.js",
         "routes/invoices.js",
         "routes/local-stock.js",
@@ -71068,6 +71391,7 @@
         "routes/hub-dashboard.js",
         "routes/hub-mark-ordered.js",
         "routes/hub.js",
+        "routes/integrations-aliexpress.js",
         "routes/inventory-api.js",
         "routes/invoices.js",
         "routes/logistics.js",
@@ -79143,6 +79467,47 @@
         "middleware/require-market-scope.js",
         "middleware/validate.js",
         "services/hub-operations.js"
+      ]
+    },
+    "routes/integrations-aliexpress.js": {
+      "role": "aliexpress-oauth-integration-route",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/suppliers/aliexpress-oauth.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "auth"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:supplier_oauth_connections",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:auth",
+        "impact:catalog",
+        "impact:supplier-import",
+        "middleware/auth.js",
+        "services/suppliers/aliexpress-oauth.js"
       ]
     },
     "routes/inventory-api.js": {
@@ -93959,7 +94324,7 @@
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
-        "services/suppliers/connectors/aliexpress-connector.js"
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js",
@@ -93982,6 +94347,7 @@
         "impact:supplier-import",
         "routes/sourcing-scanner.js",
         "services/sourcing-workspace.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
         "services/suppliers/connectors/aliexpress-connector.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
@@ -94178,6 +94544,47 @@
         "utils/rates.js"
       ]
     },
+    "services/suppliers/aliexpress-oauth.js": {
+      "role": "aliexpress-oauth-session-manager",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "node:crypto"
+      ],
+      "directUsedBy": [
+        "routes/integrations-aliexpress.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "secrets"
+      ],
+      "mustCheck": [
+        "db:supplier_oauth_connections",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:secrets",
+        "impact:supplier-import",
+        "routes/integrations-aliexpress.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
+      ]
+    },
     "services/suppliers/catalog-import-json.js": {
       "role": "catalog-import-json",
       "domain": "catalog",
@@ -94363,6 +94770,48 @@
         "services/suppliers/connectors/manual-connector.js"
       ]
     },
+    "services/suppliers/connectors/aliexpress-connected-connector.js": {
+      "role": "aliexpress-connected-source-connector",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/connectors/aliexpress-connector.js",
+        "services/suppliers/aliexpress-oauth.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-import-dispatch.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections (token refresh only)"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "db:supplier_oauth_connections",
+        "db:supplier_oauth_connections (token refresh only)",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "impact:supplier-import",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/aliexpress-oauth.js",
+        "services/suppliers/connectors/aliexpress-connector.js"
+      ]
+    },
     "services/suppliers/connectors/aliexpress-connector.js": {
       "role": "aliexpress-dropshipper-source-connector",
       "domain": "catalog",
@@ -94398,6 +94847,7 @@
         "impact:sourcing",
         "impact:supplier-import",
         "services/sourcing-import-dispatch.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
         "services/suppliers/normalized-product.js"
       ]
     },
@@ -97388,6 +97838,14 @@
       "writers": [
         "services/suppliers/catalog-import-json.js",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    {
+      "table": "supplier_oauth_connections",
+      "writerCount": 2,
+      "writers": [
+        "routes/integrations-aliexpress.js",
+        "services/suppliers/aliexpress-oauth.js"
       ]
     },
     {
@@ -100785,6 +101243,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-oauth.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
     },
     {
       "from": "services/suppliers/catalog-import-json.js",

@@ -931,7 +931,7 @@ CREATE TABLE public.basket_items (
     product_id uuid NOT NULL,
     added_by uuid,
     quantity integer DEFAULT 1 NOT NULL,
-    price_kmf integer NOT NULL,
+    price_kmf numeric(12,2) NOT NULL,
     note text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -3378,7 +3378,7 @@ CREATE TABLE public.order_items (
     order_id uuid NOT NULL,
     product_id uuid NOT NULL,
     quantity integer DEFAULT 1 NOT NULL,
-    price_kmf integer NOT NULL,
+    price_kmf numeric(12,2) NOT NULL,
     scan_code text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     module_type public.ceremony_order_type,
@@ -3409,7 +3409,7 @@ CREATE TABLE public.order_items (
     requested_transport_rail text,
     shared_cart_item_id uuid,
     fulfillment_source text,
-    CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
+    CONSTRAINT chk_order_items_price CHECK ((price_kmf > (0)::numeric)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
     CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
     CONSTRAINT order_items_fulfillment_source_valid CHECK (((fulfillment_source IS NULL) OR (fulfillment_source = ANY (ARRAY['LOCAL_STOCK'::text, 'IMPORT'::text])))),
@@ -4887,14 +4887,14 @@ CREATE TABLE public.product_skus (
     sku text,
     variant_combo jsonb,
     stock integer DEFAULT 0 NOT NULL,
-    price_kmf integer,
+    price_kmf numeric(12,2),
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
     CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
-    CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
+    CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= (0)::numeric))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
 
@@ -4982,14 +4982,14 @@ CREATE TABLE public.product_variants (
     variant_value text NOT NULL,
     sku text,
     stock integer DEFAULT 0 NOT NULL,
-    price_kmf integer,
+    price_kmf numeric(12,2),
     image_url text,
     display_order integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     images jsonb DEFAULT '[]'::jsonb NOT NULL,
     display_name text,
-    CONSTRAINT product_variants_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
+    CONSTRAINT product_variants_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= (0)::numeric))),
     CONSTRAINT product_variants_stock_non_negatif CHECK (((stock IS NULL) OR (stock >= 0)))
 );
 
@@ -5020,13 +5020,6 @@ CREATE VIEW public.product_variants_ordered AS
     images
    FROM public.product_variants
   ORDER BY product_id, variant_type, display_order, created_at;
-
-
---
--- Name: VIEW product_variants_ordered; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON VIEW public.product_variants_ordered IS 'Variantes triées display_order ASC — inclut images[] (Lot 2)';
 
 
 --
@@ -6155,6 +6148,59 @@ CREATE TABLE public.supplier_catalog_sync_checkpoints (
 
 
 --
+-- Name: supplier_oauth_connections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_oauth_connections (
+    supplier_key text NOT NULL,
+    access_token_ciphertext text NOT NULL,
+    access_token_iv text NOT NULL,
+    access_token_tag text NOT NULL,
+    refresh_token_ciphertext text,
+    refresh_token_iv text,
+    refresh_token_tag text,
+    access_expires_at timestamp with time zone NOT NULL,
+    refresh_expires_at timestamp with time zone,
+    provider_user_id text,
+    provider_user_nick text,
+    token_type text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_refreshed_at timestamp with time zone,
+    CONSTRAINT supplier_oauth_connections_refresh_triplet_chk CHECK ((((refresh_token_ciphertext IS NULL) AND (refresh_token_iv IS NULL) AND (refresh_token_tag IS NULL)) OR ((refresh_token_ciphertext IS NOT NULL) AND (refresh_token_iv IS NOT NULL) AND (refresh_token_tag IS NOT NULL)))),
+    CONSTRAINT supplier_oauth_connections_supplier_key_chk CHECK ((supplier_key ~ '^[a-z0-9_-]{2,64}$'::text))
+);
+
+
+--
+-- Name: TABLE supplier_oauth_connections; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_oauth_connections IS 'Catalog-owned encrypted OAuth session storage for supplier connectors. Secrets are AES-256-GCM ciphertext; provider app secrets remain environment-only.';
+
+
+--
+-- Name: COLUMN supplier_oauth_connections.supplier_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_oauth_connections.supplier_key IS 'Stable connector identifier, e.g. aliexpress.';
+
+
+--
+-- Name: COLUMN supplier_oauth_connections.access_expires_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_oauth_connections.access_expires_at IS 'Provider-declared access-token expiry used to refresh proactively.';
+
+
+--
+-- Name: COLUMN supplier_oauth_connections.refresh_expires_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_oauth_connections.refresh_expires_at IS 'Provider-declared or app-policy refresh-token expiry; NULL only when provider does not issue a refresh token.';
+
+
+--
 -- Name: suppliers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6402,7 +6448,7 @@ CREATE VIEW public.v_ceremony_orders AS
     COALESCE(oi.module_accessories, o.module_accessories) AS accessories,
     oi.price_kmf AS unit_price_kmf,
     oi.quantity,
-    (oi.price_kmf * oi.quantity) AS total_item_kmf,
+    (oi.price_kmf * (oi.quantity)::numeric) AS total_item_kmf,
     u.full_name AS client_name,
     u.phone AS client_phone,
     r.name AS relais_name,
@@ -6691,7 +6737,7 @@ CREATE VIEW public.v_shipment_density AS
              LEFT JOIN public.parcels p ON ((p.id = csp.parcel_id)))
         ), margin_embarked AS (
          SELECT pv_1.shipment_id,
-            sum((((COALESCE(oi.price_kmf, 0) * COALESCE(pi.quantity, 1)))::numeric - (COALESCE(pr.cost_kmf, (oi.price_kmf)::numeric, (0)::numeric) * (COALESCE(pi.quantity, 1))::numeric))) AS margin_kmf
+            sum(((COALESCE(oi.price_kmf, (0)::numeric) * (COALESCE(pi.quantity, 1))::numeric) - (COALESCE(pr.cost_kmf, (oi.price_kmf)::numeric, (0)::numeric) * (COALESCE(pi.quantity, 1))::numeric))) AS margin_kmf
            FROM (((parcel_vol pv_1
              JOIN public.parcel_items pi ON ((pi.parcel_id = pv_1.parcel_id)))
              JOIN public.order_items oi ON ((oi.id = pi.order_item_id)))
@@ -8421,6 +8467,14 @@ ALTER TABLE public.supplier_catalog_imports
 
 ALTER TABLE ONLY public.supplier_catalog_sync_checkpoints
     ADD CONSTRAINT supplier_catalog_sync_checkpoints_pkey PRIMARY KEY (supplier_name, sync_key, category_id);
+
+
+--
+-- Name: supplier_oauth_connections supplier_oauth_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_oauth_connections
+    ADD CONSTRAINT supplier_oauth_connections_pkey PRIMARY KEY (supplier_key);
 
 
 --
