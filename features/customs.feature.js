@@ -88,6 +88,13 @@ module.exports = {
       'tests/unit/customs-analytics.test.js',
       'tests/unit/customs-classification.test.js',
       'tests/unit/customs-shipment-service.test.js',
+      // E2E fonctionnel — chantier currency debt, LOT 8 (clôture). Vérifie
+      // que les DEUX colonnes générées de customs_history (customs_delta_kmf,
+      // customs_delta_pct) recalculent juste après la conversion numeric de
+      // leurs sources : la migration doit les supprimer puis les recréer,
+      // Postgres refusant d'altérer le type d'une colonne dont dépend une
+      // generated column.
+      'tests/e2e-api/customs.unsold-fabrics-numeric.e2e.test.js',
     ],
   },
 

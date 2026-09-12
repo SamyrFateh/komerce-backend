@@ -80,6 +80,36 @@ describe('check-currency-format — gate anti-dette devise', () => {
     }
   });
 
+  test('tolère une colonne DROP puis re-ADD dans la MÊME migration — recréation, pas création', () => {
+    // Cas réel (migration 221) : customs_delta_kmf est une colonne GÉNÉRÉE,
+    // et Postgres refuse d'altérer le type de ses sources tant qu'elle
+    // existe. La seule voie est DROP + recréation à l'identique. La compter
+    // comme violation forcerait à renommer la colonne (changement de contrat)
+    // ou à contourner le gate.
+    const root = makeRepo({
+      '211_ok.sql': [
+        'ALTER TABLE t DROP COLUMN calc_kmf;',
+        'ALTER TABLE t ADD COLUMN calc_kmf NUMERIC(14,2);',
+      ].join('\n'),
+    });
+    expect(runCheck({ root, print: false }).ok).toBe(true);
+  });
+
+  test('mais une VRAIE nouvelle colonne reste refusée, même dans une migration qui fait des DROP', () => {
+    // L'exception ne doit pas devenir une échappatoire : dropper une colonne
+    // ne doit pas autoriser à en ajouter une autre au mauvais format.
+    const root = makeRepo({
+      '211_ko.sql': [
+        'ALTER TABLE t DROP COLUMN calc_kmf;',
+        'ALTER TABLE t ADD COLUMN calc_kmf NUMERIC(14,2);',
+        'ALTER TABLE t ADD COLUMN nouveau_total_kmf INTEGER;',
+      ].join('\n'),
+    });
+    const result = runCheck({ root, print: false });
+    expect(result.ok).toBe(false);
+    expect(result.violations.map(v => v.column)).toEqual(['nouveau_total_kmf']);
+  });
+
   test('scanMigration remonte la ligne exacte, pour un message actionnable', () => {
     const root = makeRepo({ '211_ko.sql': 'CREATE TABLE t (\n  id UUID,\n  fee_eur NUMERIC(12,2)\n);' });
     const offenders = scanMigration(path.join(root, 'migrations', '211_ko.sql'));
