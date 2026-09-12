@@ -120,6 +120,13 @@ module.exports = {
       // bloque un ALTER TYPE sur une colonne référencée par la DÉFINITION
       // d'un trigger, pas seulement son corps — trouvé par exécution réelle.
       'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js',
+      // E2E fonctionnel — chantier currency debt, LOT 6. Les 4 colonnes de
+      // PRIX LIGNE (order_items/basket_items/product_skus/product_variants),
+      // les plus exposées du chantier (86 fichiers chacune). Comble une
+      // incohérence des lots précédents : orders.total_kmf était numeric
+      // mais ses propres lignes ne l'étaient pas — un total à centimes était
+      // structurellement impossible.
+      'tests/e2e-api/orders.line-prices-numeric.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
@@ -317,6 +324,8 @@ module.exports = {
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
     { statement: 'orders.total_kmf (numeric depuis la migration 213) reste décodée en number côté JS, jamais en string — sans quoi toute arithmétique bare sur ce champ deviendrait une concaténation de chaînes',
       test: 'tests/e2e-api/orders.total-kmf-numeric.e2e.test.js' },
+    { statement: 'les prix LIGNE (order_items/basket_items/product_skus/product_variants) sont numeric depuis la migration 219 : la somme des lignes à centimes égale exactement orders.total_kmf, ce qui était structurellement impossible tant que les lignes restaient integer',
+      test: 'tests/e2e-api/orders.line-prices-numeric.e2e.test.js' },
     { statement: 'les 10 colonnes monétaires restantes d\'orders (migration 214) conservent leurs centimes après conversion, et trg_compute_real_margin reste strictement column-specific (BEFORE UPDATE OF cost_real_kmf), vérifié par inspection directe de la définition en base, pas par inférence comportementale',
       test: 'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js' },
     { statement: 'tout remboursement retourne au payeur, jamais au destinataire',
