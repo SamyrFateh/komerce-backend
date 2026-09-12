@@ -176,6 +176,48 @@ Tout connecteur expose une fonction ou méthode `fetchProducts(input)` qui retou
 
 ---
 
+### 2.5 `aliexpress-connector.js` — Source AliExpress pour la Raffinerie
+
+| Champ | Valeur |
+|---|---|
+| Fichier | `services/suppliers/connectors/aliexpress-connector.js` |
+| Type | Connecteur TOP / AE-Dropshipper dédié |
+| État | **🟡 Implémenté, fail-closed sans autorisation AliExpress** |
+| Contrat de sortie | `NormalizedSupplierProduct V2` |
+| Publication directe | **Interdite** |
+
+**Rôle** : utiliser une vraie source marketplace pour alimenter et éprouver la Raffinerie. Le connecteur ne crée jamais de produit canonique. Il fournit uniquement des faits source normalisés au pipeline catalogue existant.
+
+Deux modes d'entrée sont prévus :
+
+1. **Feed Dropshipper** via `aliexpress.ds.recommend.feed.get` pour obtenir un lot de candidats.
+2. **Produit ciblé** via `product_id` ou URL AliExpress, hydraté avec `aliexpress.ds.product.get`.
+
+Le mapping V2 conserve notamment, lorsqu'AliExpress les fournit :
+- le `raw_payload` intégral feed + détail ;
+- les médias produit et médias liés aux options ;
+- les axes d'options (couleur, taille, etc.) ;
+- les SKU/unités vendables ;
+- le stock numérique par SKU ;
+- le prix fournisseur/discount par SKU ;
+- le poids, les dimensions, le délai et les propriétés produit.
+
+**Activation live** : le connecteur exige les trois variables d'environnement suivantes et reste inactif si l'une manque :
+
+```text
+ALIEXPRESS_APP_KEY
+ALIEXPRESS_APP_SECRET
+ALIEXPRESS_SESSION
+```
+
+Les credentials ne sont jamais acceptés depuis le payload HTTP admin et ne sont jamais hardcodés. Les requêtes TOP sont signées côté serveur. L'`APP_SECRET` n'est jamais envoyé dans la requête.
+
+**Important** : le connecteur est volontairement isolé du fournisseur. Si AliExpress remplace ou retire ce canal, seule la couche d'acquisition change ; le contrat `NormalizedSupplierProduct V2`, le scanner, l'éligibilité et le workflow de validation humaine restent inchangés.
+
+**Stress-test** : `tests/unit/aliexpress-connector.test.js` injecte des réponses AliExpress réalistes avec médias, variantes et stock dans le vrai `supplier-catalog-scanner.normalizeCandidate()`. Le même lot contient aussi une entrée malade pour vérifier son rejet explicite.
+
+---
+
 ## 3. Intégration avec `supplier-catalog-scanner.js`
 
 Le scanner (`services/supplier-catalog-scanner.js`, 295 lignes) est appelé **après** que le connecteur a produit les `NormalizedSupplierProduct[]`. Il ne sait pas quel connecteur a été utilisé.
@@ -202,20 +244,21 @@ Pipeline complet :
 | Fournisseur | État | Priorité |
 |---|---|---|
 | **Noon** | Placeholder créé, API non obtenue | Basse (accès partenaire requis) |
-| **Aliexpress** | Non planifié | Non défini |
+| **AliExpress** | Connecteur Raffinerie implémenté ; live désactivé sans credentials/autorisation DS | Haute — source réaliste de stress-test |
 | **Amazon** | Non planifié | Non défini |
 | **Fournisseurs locaux Comores** | Via saisie manuelle ou CSV | Couvert par connecteurs existants |
 
-Pour ajouter un fournisseur API : créer une sous-classe de `ApiConnectorBase`, câbler dans les routes, mettre à jour ce document.
+Pour ajouter un fournisseur API : créer un connecteur qui respecte le contrat commun, câbler le dispatch sourcing, mettre à jour ce document et déclarer le fichier dans le slice feature propriétaire.
 
 ---
 
 ## 5. Ajout d'un nouveau connecteur — checklist
 
 - [ ] Créer `services/suppliers/connectors/<nom>-connector.js`
-- [ ] Hériter de `ApiConnectorBase` (si API) ou exporter `fetchProducts(input)` directement (si format custom)
+- [ ] Hériter de `ApiConnectorBase` si le protocole s'y prête, ou exposer `fetchProducts(input)` directement pour un protocole spécifique
 - [ ] Ajouter un header `@komerce-arch` complet
-- [ ] Exposer `IS_ACTIVE: false` tant que non prêt en production
-- [ ] Câbler dans la route scanner (source_type correspondant)
+- [ ] Exposer `IS_ACTIVE: false` tant que les prérequis live ne sont pas présents
+- [ ] Câbler le dispatch sourcing (`services/sourcing-import-dispatch.js`)
 - [ ] Ajouter une section dans ce document
+- [ ] Déclarer le connecteur et son test dans le manifeste feature propriétaire
 - [ ] Ajouter une entrée dans `docs/README.md` si le document devient opérationnel

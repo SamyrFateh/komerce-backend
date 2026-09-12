@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        supplier_import_payload
  * @outputs       normalized_supplier_products, connector_catalog
- * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js
+ * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connector.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
  * @db-read       none
  * @db-write      none
@@ -22,6 +22,7 @@ const csvConnector = require('./suppliers/connectors/csv-connector');
 const manualConnector = require('./suppliers/connectors/manual-connector');
 const noonModule = require('./suppliers/connectors/noon-connector');
 const cjModule = require('./suppliers/connectors/cj-connector');
+const aliexpressModule = require('./suppliers/connectors/aliexpress-connector');
 
 const CONNECTORS = Object.freeze({
   csv: { module: csvConnector, active: true, label: 'CSV import' },
@@ -29,6 +30,12 @@ const CONNECTORS = Object.freeze({
   api: {
     noon: { module: noonModule, active: noonModule.IS_ACTIVE, label: 'Noon API', reason: noonModule.INACTIVE_REASON },
     cj: { module: cjModule, active: cjModule.IS_ACTIVE, label: 'CJdropshipping API', reason: cjModule.INACTIVE_REASON },
+    aliexpress: {
+      module: aliexpressModule,
+      active: aliexpressModule.IS_ACTIVE,
+      label: 'AliExpress Dropshipper API',
+      reason: aliexpressModule.INACTIVE_REASON,
+    },
   },
 });
 
@@ -70,6 +77,20 @@ async function dispatchToConnector(body = {}) {
     if (!entry.module || typeof entry.module.fetchProducts !== 'function') {
       throw new Error(`API "${supplier}" déclarée mais non câblée. Voir api-connector.base.js.`);
     }
+
+    if (supplier === 'aliexpress') {
+      return entry.module.fetchProducts({
+        productIds: body.product_ids,
+        productUrl: body.product_url,
+        feedName: body.feed_name,
+        page: body.page,
+        size: body.size ?? body.page_size,
+        categoryId: body.category_id,
+        countryCode: body.country_code,
+        sort: body.sort,
+      });
+    }
+
     return entry.module.fetchProducts({
       keyword: body.keyword ?? body.query,
       page: body.page,

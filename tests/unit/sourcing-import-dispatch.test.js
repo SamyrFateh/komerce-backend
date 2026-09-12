@@ -9,6 +9,7 @@
 const mockCsvFetch = jest.fn();
 const mockManualFetch = jest.fn();
 const mockCjFetch = jest.fn();
+const mockAliExpressFetch = jest.fn();
 
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({
   fetchProducts: (...args) => mockCsvFetch(...args),
@@ -27,6 +28,12 @@ jest.mock('../../services/suppliers/connectors/cj-connector', () => ({
   IS_ACTIVE: true,
   INACTIVE_REASON: null,
   fetchProducts: (...args) => mockCjFetch(...args),
+}));
+
+jest.mock('../../services/suppliers/connectors/aliexpress-connector', () => ({
+  IS_ACTIVE: true,
+  INACTIVE_REASON: null,
+  fetchProducts: (...args) => mockAliExpressFetch(...args),
 }));
 
 const { connectorCatalog, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
@@ -71,6 +78,7 @@ describe('sourcing-import-dispatch', () => {
     expect(connectorCatalog().api_suppliers).toEqual(expect.arrayContaining([
       expect.objectContaining({ supplier: 'noon', active: false, reason: 'Noon disabled in test' }),
       expect.objectContaining({ supplier: 'cj', active: true, label: 'CJdropshipping API' }),
+      expect.objectContaining({ supplier: 'aliexpress', active: true, label: 'AliExpress Dropshipper API' }),
     ]));
   });
 
@@ -98,6 +106,37 @@ describe('sourcing-import-dispatch', () => {
       countryCode: 'cn',
       startWarehouseInventory: 1,
       verifiedWarehouse: 1,
+    });
+  });
+
+  it('délègue AliExpress avec whitelist stricte sans credential venant de la requête', async () => {
+    const expected = { products: [{ supplier_product_id: 'AE-1' }], invalid: [], total: 1 };
+    mockAliExpressFetch.mockResolvedValue(expected);
+
+    await expect(dispatchToConnector({
+      source_type: 'api',
+      supplier_id: 'ALIEXPRESS',
+      product_ids: ['4000102715995'],
+      product_url: 'https://www.aliexpress.com/item/4000102715995.html',
+      feed_name: 'DS bestseller',
+      page: 2,
+      page_size: 20,
+      category_id: '200003482',
+      country_code: 'KM',
+      sort: 'SALE_PRICE_ASC',
+      app_secret: 'never-forward-secret',
+      session: 'never-forward-session',
+    })).resolves.toBe(expected);
+
+    expect(mockAliExpressFetch).toHaveBeenCalledWith({
+      productIds: ['4000102715995'],
+      productUrl: 'https://www.aliexpress.com/item/4000102715995.html',
+      feedName: 'DS bestseller',
+      page: 2,
+      size: 20,
+      categoryId: '200003482',
+      countryCode: 'KM',
+      sort: 'SALE_PRICE_ASC',
     });
   });
 });
