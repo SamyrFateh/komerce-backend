@@ -5041,8 +5041,8 @@ CREATE TABLE public.products (
     description text,
     category text,
     emoji text,
-    price_kmf integer NOT NULL,
-    cost_kmf integer,
+    price_kmf numeric(12,2) NOT NULL,
+    cost_kmf numeric(12,2),
     promo_pct integer,
     promo_until date,
     stock integer DEFAULT 100 NOT NULL,
@@ -5067,7 +5067,7 @@ CREATE TABLE public.products (
     has_couture boolean DEFAULT false NOT NULL,
     sourcing_source text,
     sort_order integer DEFAULT 0 NOT NULL,
-    unsold_price_kmf integer,
+    unsold_price_kmf numeric(12,2),
     unsold_channel character varying(20) DEFAULT 'both'::character varying,
     requires_secure_transport boolean DEFAULT false NOT NULL,
     volume_cm3 numeric(10,2),
@@ -5104,7 +5104,7 @@ CREATE TABLE public.products (
     air_eligibility_status public.air_eligibility_status DEFAULT 'PENDING_REVIEW'::public.air_eligibility_status NOT NULL,
     air_exclusion_reason text,
     CONSTRAINT chk_products_inventory_model CHECK ((inventory_model = ANY (ARRAY['LEGACY_VARIANTS'::text, 'SKU'::text]))),
-    CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
+    CONSTRAINT chk_products_price CHECK ((price_kmf > (0)::numeric)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
@@ -6692,7 +6692,7 @@ CREATE VIEW public.v_shipment_density AS
              LEFT JOIN public.parcels p ON ((p.id = csp.parcel_id)))
         ), margin_embarked AS (
          SELECT pv_1.shipment_id,
-            sum(((COALESCE(oi.price_kmf, 0) * COALESCE(pi.quantity, 1)) - (COALESCE(pr.cost_kmf, oi.price_kmf, 0) * COALESCE(pi.quantity, 1)))) AS margin_kmf
+            sum((((COALESCE(oi.price_kmf, 0) * COALESCE(pi.quantity, 1)))::numeric - (COALESCE(pr.cost_kmf, (oi.price_kmf)::numeric, (0)::numeric) * (COALESCE(pi.quantity, 1))::numeric))) AS margin_kmf
            FROM (((parcel_vol pv_1
              JOIN public.parcel_items pi ON ((pi.parcel_id = pv_1.parcel_id)))
              JOIN public.order_items oi ON ((oi.id = pi.order_item_id)))
@@ -6713,7 +6713,7 @@ CREATE VIEW public.v_shipment_density AS
         END AS fill_rate_pct,
     me.margin_kmf AS margin_embarked_kmf,
         CASE
-            WHEN (cs.total_volume_m3 > (0)::numeric) THEN round(((me.margin_kmf)::numeric / cs.total_volume_m3), 0)
+            WHEN (cs.total_volume_m3 > (0)::numeric) THEN round((me.margin_kmf / cs.total_volume_m3), 0)
             ELSE NULL::numeric
         END AS margin_kmf_per_m3,
     cs.freight_kmf,

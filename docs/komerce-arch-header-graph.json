@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1321,
-    "edges": 6583,
+    "graphNodes": 1322,
+    "edges": 6586,
     "dbTables": 153,
-    "doctrines": 433,
+    "doctrines": 434,
     "impactAreas": 181,
-    "unresolvedCodeEdges": 620,
+    "unresolvedCodeEdges": 621,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 69
   },
@@ -14323,12 +14323,15 @@
         "server_resolved_market"
       ],
       "outputs": [
-        "canonical_commerce_projection"
+        "canonical_commerce_projection",
+        "market_product_viability",
+        "server_decision_signals"
       ],
       "depends": [
         "db",
         "dashboard-metrics",
-        "dashboard-metrics/_helpers"
+        "dashboard-metrics/_helpers",
+        "pricing-market-corridor"
       ],
       "usedBy": [
         "routes/admin-dashboard-market.js"
@@ -14345,12 +14348,14 @@
       "dbTxn": [],
       "doctrine": [
         "dashboard_no_business_recompute",
-        "server_market_scope_is_authority"
+        "server_market_scope_is_authority",
+        "decision_support_reuses_canonical_economic_engine"
       ],
       "impactAreas": [
         "admin-dashboard",
         "commerce",
-        "market-authorization"
+        "market-authorization",
+        "economic-engine"
       ],
       "version": "2026-09"
     },
@@ -28615,6 +28620,11 @@
       "id": "doctrine:trusted_market_scope_options_never_request_body",
       "type": "doctrine",
       "doctrine": "trusted_market_scope_options_never_request_body"
+    },
+    {
+      "id": "doctrine:decision_support_reuses_canonical_economic_engine",
+      "type": "doctrine",
+      "doctrine": "decision_support_reuses_canonical_economic_engine"
     },
     {
       "id": "doctrine:finance_event_date_is_authoritative",
@@ -51015,6 +51025,12 @@
       "label": "dashboard-metrics/_helpers"
     },
     {
+      "from": "services/dashboard-commerce.js",
+      "to": "pricing-market-corridor",
+      "type": "depends",
+      "label": "pricing-market-corridor"
+    },
+    {
       "from": "routes/admin-dashboard-market.js",
       "to": "services/dashboard-commerce.js",
       "type": "uses",
@@ -51064,6 +51080,12 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "doctrine:decision_support_reuses_canonical_economic_engine",
+      "type": "doctrine",
+      "label": "decision_support_reuses_canonical_economic_engine"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -51079,6 +51101,12 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
     },
     {
       "from": "services/dashboard-finance-canonical.js",
@@ -84272,7 +84300,8 @@
       "directDependsOn": [
         "db",
         "dashboard-metrics",
-        "dashboard-metrics/_helpers"
+        "dashboard-metrics/_helpers",
+        "pricing-market-corridor"
       ],
       "directUsedBy": [
         "routes/admin-dashboard-market.js"
@@ -84289,12 +84318,14 @@
       "dbWriteVia": [],
       "doctrines": [
         "dashboard_no_business_recompute",
-        "server_market_scope_is_authority"
+        "server_market_scope_is_authority",
+        "decision_support_reuses_canonical_economic_engine"
       ],
       "impactAreas": [
         "admin-dashboard",
         "commerce",
-        "market-authorization"
+        "market-authorization",
+        "economic-engine"
       ],
       "mustCheck": [
         "db:order_item_cost_imputations",
@@ -84303,9 +84334,11 @@
         "db:orders",
         "db:products",
         "doctrine:dashboard_no_business_recompute",
+        "doctrine:decision_support_reuses_canonical_economic_engine",
         "doctrine:server_market_scope_is_authority",
         "impact:admin-dashboard",
         "impact:commerce",
+        "impact:economic-engine",
         "impact:market-authorization",
         "routes/admin-dashboard-market.js"
       ]
@@ -99235,6 +99268,12 @@
       "to": "dashboard-metrics/_helpers",
       "type": "depends",
       "label": "dashboard-metrics/_helpers"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "pricing-market-corridor",
+      "type": "depends",
+      "label": "pricing-market-corridor"
     },
     {
       "from": "services/dashboard-finance-canonical.js",
