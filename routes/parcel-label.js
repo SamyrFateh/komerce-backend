@@ -126,7 +126,10 @@ router.get('/:ref/label', ...labelAuth, async (req, res, next) => {
     // 4. Compute totals
     const totalOrders = orders.length;
     const totalItems = orders.reduce((s, o) => s + (o.items || []).length, 0);
-    const totalKmf = orders.reduce((s, o) => s + (parseInt(o.total_kmf) || 0), 0);
+    // parseFloat, pas parseInt : orders.total_kmf est numeric(14,2) depuis
+    // la migration 213 (chantier currency debt) — parseInt tronquait les
+    // centimes du total imprimé sur l'étiquette.
+    const totalKmf = orders.reduce((s, o) => s + (parseFloat(o.total_kmf) || 0), 0);
     const clientName = orders[0]?.client_name || p.recipient_name || 'Client';
     const clientPhone = orders[0]?.client_phone || p.recipient_phone || '';
 

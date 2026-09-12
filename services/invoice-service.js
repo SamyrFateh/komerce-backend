@@ -125,8 +125,11 @@ class InvoiceService {
     const items = itemsRes.rows.map(i => ({
       name: i.product_name || 'Article',
       qty: i.quantity,
-      unit_price: Math.round(i.price_kmf),
-      total: Math.round(i.price_kmf * i.quantity)
+      // Pas de Math.round : order_items.price_kmf est numeric(12,2) depuis
+      // la migration 219 (chantier currency debt). Arrondir ici falsifiait
+      // les lignes d'une FACTURE CLIENT — séquelle de l'époque integer.
+      unit_price: Number(i.price_kmf),
+      total: Number(i.price_kmf) * i.quantity
     }));
 
     // Get parcel reference if exists

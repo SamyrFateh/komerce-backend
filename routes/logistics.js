@@ -317,7 +317,8 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
       [o.reference, o.external_code||'-', o.full_name, o.destination_island||'-', o.relais_name||'-', o.nb_articles, (o.total_kmf||0).toLocaleString('fr')].forEach((v,i) => {
         doc.text(String(v||'-'), x, y, { width: colW[i] }); x += colW[i];
       });
-      y += 14; total += parseInt(o.total_kmf||0);
+      // parseFloat : total_kmf est numeric depuis la migration 213.
+      y += 14; total += parseFloat(o.total_kmf||0);
       if (y > 760) { doc.addPage(); y = 40; }
     }
     doc.moveTo(40, y).lineTo(560, y).stroke(); y += 6;
