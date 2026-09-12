@@ -7,18 +7,19 @@
  * @criticality   high
  * @inputs        promoted AliExpress candidate, live DS API, optional staging logistics address
  * @outputs       product/SKU resolution, live stock/price, freight proof, place-order payload readiness
- * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/aliexpress-purchase-preflight.js
+ * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-form-body-fetch.js, services/suppliers/aliexpress-purchase-preflight.js
  * @db-read       sourcing_candidates, products, product_skus
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v2
+ * @version       2026-09-ae-prepayment-v3
  */
 'use strict';
 
 const db = require('../db');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
+const { formBodyFetch } = require('../services/suppliers/connectors/aliexpress-form-body-fetch');
 const preflight = require('../services/suppliers/aliexpress-purchase-preflight');
 
 const PROOF_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_PREPAYMENT_PROOF';
@@ -134,7 +135,10 @@ async function run(env = process.env) {
 
   let freight;
   try {
-    const freightPayload = await connected.invokeTop(preflight.METHODS.FREIGHT, freightParams, { env: providerEnv });
+    const freightPayload = await connected.invokeTop(preflight.METHODS.FREIGHT, freightParams, {
+      env: providerEnv,
+      fetchImpl: formBodyFetch(fetch),
+    });
     freight = {
       method: preflight.METHODS.FREIGHT,
       invoked: true,
