@@ -396,6 +396,7 @@ module.exports = {
       'economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)',
       'market-autonomy (résolution buyer du prix LOCAL_ACTIVE par marché ; le catalogue reste propriétaire du produit global)',
       'sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)',
+      'purchasing (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)',
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
