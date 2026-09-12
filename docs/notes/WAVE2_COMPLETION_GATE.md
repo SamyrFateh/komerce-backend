@@ -1,0 +1,1 @@
+Exit gate: Wave 2 clean count reaches 500, missing_after is zero, and the completion worker itself has promoted zero products.
