@@ -610,9 +610,29 @@ function parseOpenApiContract() {
 // Normalise une URL fetch() Canonical (template literal ou concat) en
 // template comparable au contrat OpenAPI (`{param}` à la place des segments
 // dynamiques : ${marketCode}, ${orderReference}, ${encodeURIComponent(x)}…).
+
+// Le split naïf sur le premier `?` cassait les template literals dont un
+// segment dynamique interpolé contient un opérateur ternaire, ex.
+// `${row.is_active ? 'deactivate' : 'activate'}` : ce `?` n'est pas un
+// début de query string, mais `rawUrl.split('?')[0]` le prenait pour tel
+// et tronquait le reste de l'expression — produisant un `normalized`
+// invalide en plein milieu du ternaire (jamais un vrai NOT_FOUND_DYNAMIC,
+// juste un artefact de troncature). On ne coupe donc que sur un `?` qui
+// n'est PAS à l'intérieur d'une interpolation `${...}` (profondeur suivie
+// génériquement, aucune expression particulière codée en dur).
+function splitOffQueryString(url) {
+  let depth = 0;
+  for (let i = 0; i < url.length; i++) {
+    if (url[i] === '$' && url[i + 1] === '{') { depth++; i++; continue; }
+    if (depth > 0 && url[i] === '}') { depth--; continue; }
+    if (depth === 0 && url[i] === '?') return url.slice(0, i);
+  }
+  return url;
+}
+
 function normalizeFetchUrl(rawUrl) {
   let dynamic = false;
-  const withoutQuery = rawUrl.split('?')[0]; // la query string n'est jamais un segment de chemin comparable au contrat
+  const withoutQuery = splitOffQueryString(rawUrl); // la query string (hors ${...}) n'est jamais un segment de chemin comparable au contrat
   const normalized = withoutQuery.replace(/\$\{[^}]*\}/g, () => { dynamic = true; return '{param}'; });
   // Toute URL qui ne commence pas littéralement par /api/ après normalisation
   // (ex: entièrement construite par variable) n'est pas comparable statiquement.
