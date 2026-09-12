@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 149 | Vérifié sur le dump live Railway. |
+| Tables | 150 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 16 | Types métier présents dans le dump live Railway. |
 | Index | 377 | Performance + contraintes uniques |
@@ -254,14 +254,8 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
+| `supplier_oauth_connections` | Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur. **Migration 218 — promue le 2026-09-12 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: supplier_oauth_connections
-kind: table
-migration: 218
-section: ### 4.10 Sourcing et fournisseurs (11 tables live + 1 visée)
-role: Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur.
--->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 

@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 556
-- Files with full headers: 511
+- Scanned code files: 559
+- Files with full headers: 514
 - Files with lite headers: 45
-- Files with any headers: 556
+- Files with any headers: 559
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1327
-- Edges: 6610
-- DB tables: 153
+- Graph nodes: 1333
+- Edges: 6639
+- DB tables: 155
 - Doctrines: 437
-- Impact areas: 181
-- Unresolved code edges: 624
-- Tables multi-écrivains directs (>=2): 69
+- Impact areas: 182
+- Unresolved code edges: 626
+- Tables multi-écrivains directs (>=2): 70
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 97
+- catalog: 100
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -82,10 +82,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 22
 - presenter: 1
-- route: 126
+- route: 127
 - route-manifest: 1
 - schema: 1
-- service: 255
+- service: 257
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -299,6 +299,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/economic.js — economic-router (economic-engine, high, full)
 - routes/finance.js — economic-engine-finance (economic-engine, high, full)
 - routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
+- routes/integrations-aliexpress.js — aliexpress-oauth-integration-route (catalog, high, full)
 - routes/market-delegation-catalog.js — market-delegation-catalog-api (market-delegation, high, full)
 - routes/market-delegation-client-case.js — market-delegation-client-case-api (market-delegation, high, full)
 - routes/market-delegation-local-offer.js — market-delegation-local-offer-api (market-delegation, high, full)
@@ -464,6 +465,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/sourcing-candidate-import-service.js — sourcing-candidate-import-owner (sourcing, high, full)
 - services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
+- services/suppliers/aliexpress-oauth.js — aliexpress-oauth-session-manager (catalog, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
