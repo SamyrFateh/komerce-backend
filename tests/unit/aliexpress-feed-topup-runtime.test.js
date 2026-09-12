@@ -4,7 +4,7 @@ jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../scripts/aliexpress-500-catalog-sync', () => ({ SUPPLIER_NAME: 'AliExpress', stockSqlPredicate: jest.fn(() => 'TRUE') }));
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: jest.fn() }));
 
-const { SURFACE_ID, plan } = require('../../services/suppliers/aliexpress-feed-topup-runtime');
+const { SURFACE_ID, plan } = require('../../scripts/aliexpress-feed-topup-runtime');
 
 describe('aliexpress-feed-topup-runtime', () => {
   test('construit un plan feed puis feed x catégorie borné', () => {
