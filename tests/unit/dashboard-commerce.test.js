@@ -20,11 +20,10 @@ const mockPricingMarketCorridor = {
 };
 jest.mock('../../services/pricing-market-corridor', () => mockPricingMarketCorridor);
 
-const mockLocalStock = {
-  getLocalStock: jest.fn(),
-  isStockExposable: jest.fn(),
+const mockLocalStockDecision = {
+  getDecisionAvailabilityEvidence: jest.fn(),
 };
-jest.mock('../../services/local-stock-service', () => mockLocalStock);
+jest.mock('../../services/local-stock-decision-projection', () => mockLocalStockDecision);
 
 const db = require('../../db');
 const commerce = require('../../services/dashboard-commerce');
@@ -63,14 +62,14 @@ beforeEach(() => {
       },
     },
   });
-  mockLocalStock.getLocalStock.mockResolvedValue({
-    id: 'local-stock-cm-1',
-    product_id: 'product-cm-1',
-    market_id: 'market-cm-id',
+  mockLocalStockDecision.getDecisionAvailabilityEvidence.mockResolvedValue({
+    tracked: true,
     commercial_exposure: 'ENABLED',
-    qty_physical: 1,
+    availability: 'UNAVAILABLE',
+    exposable: false,
+    authority: 'LOCAL_STOCK',
+    basis: 'physical_minus_active_allocations',
   });
-  mockLocalStock.isStockExposable.mockResolvedValue(false);
 
   db.query
     .mockResolvedValueOnce({ rows: [{ value: '10000', items_total: '12' }] })
@@ -138,8 +137,7 @@ describe('dashboard-commerce', () => {
       expect(params).toContain('market-cm-id');
     });
     expect(mockPricingMarketCorridor.buildMarketCorridor).toHaveBeenCalledWith({ market, productRef: 'PRD-1' });
-    expect(mockLocalStock.getLocalStock).toHaveBeenCalledWith('product-cm-1', 'market-cm-id');
-    expect(mockLocalStock.isStockExposable).toHaveBeenCalledWith('product-cm-1', 'market-cm-id');
+    expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).toHaveBeenCalledWith('product-cm-1', 'market-cm-id');
 
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee',
@@ -167,7 +165,7 @@ describe('dashboard-commerce', () => {
       product_ref: 'PRD-1',
       state: 'LOCAL_EXPOSED_UNAVAILABLE',
       commercial_exposure: 'ENABLED',
-      authority: 'LOCAL_STOCK_SERVICE',
+      authority: 'LOCAL_STOCK',
     }));
     expect(result.decision_signals.map(signal => signal.kind)).toEqual([
       'best_seller_local_unavailable',
@@ -232,15 +230,17 @@ describe('dashboard-commerce', () => {
     const products = [{ product_id: 'product-x', product_ref: 'PRD-X', name: 'Produit X', quantity: 4, revenue_kmf: 50000 }];
 
     const noRow = await commerce.getTopProductAvailability(products, market, {
-      getLocalStock: jest.fn().mockResolvedValue(null),
-      isStockExposable: jest.fn(),
+      getAvailabilityEvidence: jest.fn().mockResolvedValue({
+        tracked: false, commercial_exposure: null, availability: 'UNAVAILABLE', exposable: false, authority: 'LOCAL_STOCK',
+      }),
     });
     expect(noRow.items[0].state).toBe('NO_LOCAL_STOCK');
     expect(commerce.availabilitySignal(noRow.items[0], market)).toBeNull();
 
     const disabled = await commerce.getTopProductAvailability(products, market, {
-      getLocalStock: jest.fn().mockResolvedValue({ commercial_exposure: 'DISABLED' }),
-      isStockExposable: jest.fn(),
+      getAvailabilityEvidence: jest.fn().mockResolvedValue({
+        tracked: true, commercial_exposure: 'DISABLED', availability: 'AVAILABLE_NOW', exposable: false, authority: 'LOCAL_STOCK',
+      }),
     });
     expect(disabled.items[0].state).toBe('LOCAL_NOT_EXPOSED');
     expect(commerce.availabilitySignal(disabled.items[0], market)).toBeNull();
@@ -250,8 +250,9 @@ describe('dashboard-commerce', () => {
     const market = { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' };
     const products = [{ product_id: 'product-x', product_ref: 'PRD-X', name: 'Produit X', quantity: 4, revenue_kmf: 50000 }];
     const projection = await commerce.getTopProductAvailability(products, market, {
-      getLocalStock: jest.fn().mockResolvedValue({ commercial_exposure: 'ENABLED' }),
-      isStockExposable: jest.fn().mockResolvedValue(false),
+      getAvailabilityEvidence: jest.fn().mockResolvedValue({
+        tracked: true, commercial_exposure: 'ENABLED', availability: 'UNAVAILABLE', exposable: false, authority: 'LOCAL_STOCK',
+      }),
     });
     const signal = commerce.availabilitySignal(projection.items[0], market);
     expect(projection.items[0].state).toBe('LOCAL_EXPOSED_UNAVAILABLE');
@@ -269,7 +270,7 @@ describe('dashboard-commerce', () => {
     const projection = await commerce.getTopProductAvailability([
       { product_id: 'product-x', product_ref: 'PRD-X', name: 'Produit X', quantity: 1, revenue_kmf: 10000 },
     ], market, {
-      getLocalStock: jest.fn().mockRejectedValue(new Error('local stock unavailable')),
+      getAvailabilityEvidence: jest.fn().mockRejectedValue(new Error('local stock unavailable')),
     });
     expect(projection.items).toEqual([]);
     expect(projection.warnings).toEqual([
@@ -317,8 +318,7 @@ describe('dashboard-commerce', () => {
       decision_authority: 'server',
     });
     expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
-    expect(mockLocalStock.getLocalStock).not.toHaveBeenCalled();
-    expect(mockLocalStock.isStockExposable).not.toHaveBeenCalled();
+    expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
     expect(mockMetrics.getCAEncaisse.mock.calls[0][0]).not.toHaveProperty('market_id');
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).not.toContain('o.market_id =');
