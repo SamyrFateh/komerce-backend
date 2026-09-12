@@ -145,7 +145,7 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
       let totalKmf = 0;
       for (const it of items) {
         const unitPrice = await effectiveUnitPriceForMarket(client, marketId, it.product_id, it.price_kmf);
-        const lineTotal = r(unitPrice) * r(it.quantity);
+        const lineTotal = unitPrice * r(it.quantity);
         totalKmf += lineTotal;
         const { rows: itemRows } = await client.query(
           `INSERT INTO shared_cart_items (
@@ -157,7 +157,7 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
           [
             sharedCart.id, it.product_id,
             it.name, it.image_url, it.category,
-            r(it.quantity), r(unitPrice), lineTotal,
+            r(it.quantity), unitPrice, lineTotal,
           ]
         );
         insertedItems.push(itemRows[0]);

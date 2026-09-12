@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 555
-- Files with full headers: 510
+- Scanned code files: 556
+- Files with full headers: 511
 - Files with lite headers: 45
-- Files with any headers: 555
+- Files with any headers: 556
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1323
-- Edges: 6596
+- Graph nodes: 1327
+- Edges: 6610
 - DB tables: 153
-- Doctrines: 434
+- Doctrines: 437
 - Impact areas: 181
-- Unresolved code edges: 623
+- Unresolved code edges: 624
 - Tables multi-écrivains directs (>=2): 69
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -42,7 +42,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incident-management: 2
 - infrastructure: 20
 - inventory: 2
-- local-stock: 3
+- local-stock: 4
 - logistics: 46
 - loyalty: 3
 - market: 3
@@ -85,7 +85,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 126
 - route-manifest: 1
 - schema: 1
-- service: 254
+- service: 255
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -382,6 +382,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
+- services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
 - services/market-delegation-catalog-service.js — market-delegation-catalog-service (market-delegation, high, full)

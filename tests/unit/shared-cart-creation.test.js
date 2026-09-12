@@ -556,6 +556,39 @@ describe('shared-cart-creation', () => {
       expectTransactionCommitted(client);
     });
 
+    // LOT 5 (chantier "currency debt") — régression : createSharedCartFromBasket
+    // arrondissait le prix unitaire via r() avant insertion, écrasant les
+    // centimes même après migration des colonnes en NUMERIC. Corrigé pour
+    // aligner sur createSharedCartFromCartItems, qui n'arrondit pas le prix.
+    it('conserve les centimes du prix unitaire (pas d\'arrondi avant insertion)', async () => {
+      const items = [
+        { product_id: 'p1', quantity: 2, name: 'Riz', image_url: 'riz.jpg', category: 'maison', price_kmf: 1499.5 },
+      ];
+      const sharedCart = { id: 'cart-basket-decimal', status: 'open' };
+
+      const client = makeClient([
+        { rows: [] },                                          // assertLimit
+        { rows: [{ id: 'user-001' }] },                        // SELECT users
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] }, // SELECT baskets
+        { rows: items },                                       // SELECT basket_items JOIN products
+        { rows: [] },                                          // token collision check
+        { rows: [sharedCart] },                                // INSERT shared_carts
+        { rows: [{ id: 'sci-1' }] },                           // INSERT item 1
+        { rows: [], rowCount: 1 },                             // addEvent
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await createSharedCartFromBasket('user-001', 'basket-001');
+
+      const itemInsert = client.calls.find(c => String(c.sql).includes('INSERT INTO shared_cart_items'));
+      // params : [..., quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot]
+      const [, , , , , quantity, unitPriceSnapshot, lineTotalSnapshot] = itemInsert.params;
+      expect(quantity).toBe(2);
+      expect(unitPriceSnapshot).toBe(1499.5); // pas 1500 : le prix brut n'est plus arrondi
+      expect(lineTotalSnapshot).toBe(2999);   // 1499.5 * 2, pas 1500 * 2 = 3000
+      expectTransactionCommitted(client);
+    });
+
     it('leve si total panier invalide (prix tous nuls)', async () => {
       const items = [{ product_id: 'p1', quantity: 1, name: 'Gratuit', image_url: null, category: 'x', price_kmf: 0 }];
       const sharedCart = { id: 'cart-invalid', status: 'open' };
