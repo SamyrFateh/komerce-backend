@@ -125,18 +125,18 @@ function mapContentToSectionRows(contract, options = {}) {
     customSections.forEach((section, index) => {
       const rawKey = section?.key ?? section?.section_key;
       if (typeof rawKey !== 'string' || rawKey.trim().length === 0) {
-        throw invalid('sections[].key requis et non vide');
+        throw invalid('sections[].key requis et non vide (section_key requis pour compatibilité)');
       }
       const sectionKey = rawKey.trim();
       if (RESERVED_SECTION_KEYS.has(sectionKey)) {
         throw invalid(`sections[].key "${sectionKey}" est réservé (materials/care/warnings ont leur propre champ contrat)`);
       }
-      if (seenKeys.has(sectionKey)) throw invalid(`section key dupliquée : "${sectionKey}"`);
+      if (seenKeys.has(sectionKey)) throw invalid(`section_key dupliqué : "${sectionKey}"`);
       seenKeys.add(sectionKey);
 
       const sectionType = section.type ?? section.section_type ?? 'TEXT';
       if (!ALLOWED_SECTION_TYPES.has(sectionType)) {
-        throw invalid(`sections["${sectionKey}"].type invalide : "${sectionType}" (attendu : ${[...ALLOWED_SECTION_TYPES].join(', ')})`);
+        throw invalid(`sections["${sectionKey}"].type invalide (section_type invalide) : "${sectionType}" (attendu : ${[...ALLOWED_SECTION_TYPES].join(', ')})`);
       }
 
       rows.push({
@@ -214,7 +214,7 @@ function mapContentToAttributeRows(contract, options = {}) {
       // alias de compatibilité pour d'anciens contrats internes déjà persistés.
       const rawKey = spec?.key ?? spec?.attribute_key;
       if (typeof rawKey !== 'string' || rawKey.trim().length === 0) {
-        throw invalid('specifications[].key requis et non vide pour promotion');
+        throw invalid('specifications[].key requis et non vide pour promotion (attribute_key requis pour compatibilité)');
       }
       if (spec.value === null || spec.value === undefined || String(spec.value).trim().length === 0) {
         throw invalid(`specifications["${rawKey}"].value requis et non vide`);
