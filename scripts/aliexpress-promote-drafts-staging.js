@@ -14,7 +14,7 @@
  * @db-txn        one canonical promotion transaction per candidate; advisory lock serializes batch runs
  * @doctrine      refinery_filters_before_catalog, inactive_drafts_only, economic_reference_is_not_market_truth, no_auto_publish
  * @impact-areas  sourcing, catalog, staging
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -115,7 +115,8 @@ function testPriceOf(candidate) {
 }
 
 function priceAuthorityOf(candidate) {
-  return String(candidate?.scan_result?.price_authority || '').trim() || null;
+  const scan = candidate?.scan_result || {};
+  return String(scan.recommended_price_authority || scan.price_authority || '').trim() || null;
 }
 
 function contractVersionOf(candidate) {
