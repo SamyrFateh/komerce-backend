@@ -184,7 +184,22 @@ function requireExplicitPromotionPrice(body = {}) {
   return explicitPrice;
 }
 
+function resolveEnrichmentMode(body = {}) {
+  const mode = body.enrichment_mode == null
+    ? 'auto'
+    : String(body.enrichment_mode).trim().toLowerCase();
+  if (!['auto', 'source_only'].includes(mode)) {
+    throw new SourcingCandidateActionError(
+      400,
+      'enrichment_mode doit être auto ou source_only',
+      'candidate_enrichment_mode_invalid'
+    );
+  }
+  return mode;
+}
+
 async function promoteCandidate(id, body = {}, actorId = null) {
+  const enrichmentMode = resolveEnrichmentMode(body);
   const client = await db.getClient();
   let productId = null;
   let candidate = null;
@@ -244,6 +259,7 @@ async function promoteCandidate(id, body = {}, actorId = null) {
         product_id: productId,
         price_kmf: initialPrice,
         price_decision: 'EXPLICIT_HUMAN_INPUT',
+        enrichment_mode: enrichmentMode,
       }), actorId || null]
     );
     await client.query('COMMIT');
@@ -254,16 +270,26 @@ async function promoteCandidate(id, body = {}, actorId = null) {
     client.release();
   }
 
-  const enrichment = await catalogEnrichment.enrichAndApply(productId);
+  const enrichment = enrichmentMode === 'source_only'
+    ? {
+        status: 'source_only',
+        mode: 'source_only',
+        reason: 'explicit_source_only',
+      }
+    : await catalogEnrichment.enrichAndApply(productId);
+
   return {
     product_id: productId,
     candidate_id: id,
     promotion,
     enrichment,
+    enrichment_mode: enrichmentMode,
     price_decision: 'EXPLICIT_HUMAN_INPUT',
     message: enrichment.status === 'ok'
       ? 'Produit créé en mode inactif, fiche FR générée. Approuvez-la quand prête.'
-      : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
+      : enrichment.status === 'source_only'
+        ? 'Produit créé en mode inactif — donnée source conservée, préparation éditoriale à faire avant publication.'
+        : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
   };
 }
 
@@ -276,4 +302,5 @@ module.exports = {
   rejectCandidate,
   promoteCandidate,
   _requireExplicitPromotionPrice: requireExplicitPromotionPrice,
+  _resolveEnrichmentMode: resolveEnrichmentMode,
 };

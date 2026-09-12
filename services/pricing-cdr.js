@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
- * @version       2026-06
+ * @version       2026-09
  */
 
 /**
@@ -227,6 +227,17 @@ function computeCDR(product, ctx = {}) {
     const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
     let amount = 0, engagedAmount = 0, allocationLevel = 'article', allocationDivisor = 1;
 
+    // Les unités monétaires (EUR/AED/USD) décrivent la devise de la valeur,
+    // pas sa base d'allocation. Quand allocation_method=by_volume/by_weight,
+    // la quantité physique doit être appliquée APRES conversion en KMF.
+    // Avant ce correctif, `180 EUR / m³` devenait `180 EUR / article`, soit
+    // ~89 kKMF de faux fret sur chaque SKU léger.
+    const applyPhysicalBasis = (baseKmf) => {
+      if (c.allocation_method === 'by_volume') return baseKmf * volM3;
+      if (c.allocation_method === 'by_weight') return baseKmf * weightKg;
+      return baseKmf;
+    };
+
     switch (c.unit) {
       case 'pct':           amount = runningSubtotal * (v / 100); engagedAmount = amount; break;
       case 'kmf':           amount = v; engagedAmount = amount; break;
@@ -241,15 +252,19 @@ function computeCDR(product, ctx = {}) {
       case 'kmf_per_shipment':
         engagedAmount = v; allocationDivisor = avgArticlesPerShipment;
         amount = v / allocationDivisor; allocationLevel = 'shipment'; break;
-      case 'aed': amount = v * taxAED; engagedAmount = amount; break;
-      case 'eur': amount = v * taxEUR; engagedAmount = amount; break;
-      case 'usd': amount = v * taxUSD; engagedAmount = amount; break;
+      case 'aed': amount = applyPhysicalBasis(v * taxAED); engagedAmount = amount; break;
+      case 'eur': amount = applyPhysicalBasis(v * taxEUR); engagedAmount = amount; break;
+      case 'usd': amount = applyPhysicalBasis(v * taxUSD); engagedAmount = amount; break;
     }
 
     if (!details._allocations) details._allocations = [];
     if (amount > 0) {
       // base de répartition (doctrine §5)
-      const basis = ({ kmf_per_kg: 'weight', kmf_per_m3: 'volume', pct: 'value' })[c.unit] || 'quantity';
+      const basis = c.allocation_method === 'by_volume'
+        ? 'volume'
+        : c.allocation_method === 'by_weight'
+          ? 'weight'
+          : ({ kmf_per_kg: 'weight', kmf_per_m3: 'volume', pct: 'value' })[c.unit] || 'quantity';
       const lineConfidence = allocationLevel === 'article' ? 'high' : (fc.allocation_confidence || 'low');
       details._allocations.push({
         component_key: c.key || null, component_label: c.label || c.key || '',
