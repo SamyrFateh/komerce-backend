@@ -30,6 +30,12 @@ describe('market-delegation catalog routes', () => {
     expect(routeSource).not.toMatch(/req\.user\.role\s*===\s*['"]market_operator/);
   });
 
+  test('GET renvoie le résumé d’exposition calculé côté service', () => {
+    expect(routeSource).toContain('summarizeExposure');
+    expect(routeSource).toMatch(/summary:\s*result\.summary/);
+    expect(routeSource).toMatch(/summary:\s*summarizeExposure\(exposure\)/);
+  });
+
   test('no DELETE endpoint — exposure toggles, never removes a decision', () => {
     expect(routeSource).not.toMatch(/router\.delete/);
   });

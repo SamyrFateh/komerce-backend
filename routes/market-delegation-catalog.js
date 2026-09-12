@@ -13,7 +13,7 @@
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        explicit
- * @doctrine      capabilities_authorize_catalog_exposure, client_market_id_never_authority
+ * @doctrine      capabilities_authorize_catalog_exposure, client_market_id_never_authority, market_catalog_summary_is_server_truth
  * @impact-areas  market, delegation, catalog
  * @version       2026-09
  */
@@ -26,6 +26,7 @@ const { authenticate } = require('../middleware/auth');
 const {
   resolveAuthorization,
   listExposure,
+  summarizeExposure,
   setExposure,
 } = require('../services/market-delegation-catalog-service');
 
@@ -73,12 +74,13 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
         requiredCapability: 'catalog.expose',
       });
       const exposure = await listExposure(client, { marketId: authz.market_id });
-      return { authz, exposure };
+      return { authz, exposure, summary: summarizeExposure(exposure) };
     });
     res.json({
       market: { code: result.authz.market_code, name: result.authz.market_name, currency: result.authz.currency },
       assignment_id: result.authz.assignment_id,
       actor_capabilities: result.authz.capabilities,
+      summary: result.summary,
       exposure: result.exposure,
     });
   } catch (error) {
