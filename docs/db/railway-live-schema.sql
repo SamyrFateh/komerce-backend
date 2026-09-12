@@ -1228,9 +1228,9 @@ CREATE TABLE public.cash_reconciliation (
     agent_id uuid NOT NULL,
     period_start date NOT NULL,
     period_end date NOT NULL,
-    expected_kmf integer DEFAULT 0 NOT NULL,
-    declared_kmf integer DEFAULT 0 NOT NULL,
-    deposited_kmf integer DEFAULT 0 NOT NULL,
+    expected_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    declared_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    deposited_kmf numeric(14,2) DEFAULT 0 NOT NULL,
     gap_collection integer DEFAULT 0 NOT NULL,
     gap_deposit integer DEFAULT 0 NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -6786,11 +6786,11 @@ CREATE TABLE public.wallet_consumptions (
     order_id uuid NOT NULL,
     credit_lot_id uuid NOT NULL,
     transaction_id uuid NOT NULL,
-    amount_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     reversed_at timestamp with time zone,
     reversal_reason character varying(50),
-    CONSTRAINT wallet_consumptions_amount_kmf_check CHECK ((amount_kmf > 0))
+    CONSTRAINT wallet_consumptions_amount_kmf_check CHECK ((amount_kmf > (0)::numeric))
 );
 
 
@@ -6816,14 +6816,14 @@ CREATE TABLE public.wallet_credit_lots (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     wallet_id uuid NOT NULL,
     transaction_id uuid NOT NULL,
-    original_amount_kmf integer NOT NULL,
-    remaining_kmf integer NOT NULL,
+    original_amount_kmf numeric(14,2) NOT NULL,
+    remaining_kmf numeric(14,2) NOT NULL,
     reason character varying(50) NOT NULL,
     source_order_id uuid,
     expires_at timestamp with time zone,
     status character varying(20) DEFAULT 'active'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
+    CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= (0)::numeric)),
     CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
 );
 
@@ -6848,8 +6848,8 @@ CREATE TABLE public.wallet_transactions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     wallet_id uuid NOT NULL,
     type character varying(20) NOT NULL,
-    amount_kmf integer NOT NULL,
-    balance_after_kmf integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    balance_after_kmf numeric(14,2) NOT NULL,
     reason character varying(50) NOT NULL,
     reference_id uuid,
     idempotency_key character varying(100),
@@ -6857,7 +6857,7 @@ CREATE TABLE public.wallet_transactions (
     metadata jsonb DEFAULT '{}'::jsonb,
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > 0)),
+    CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
     CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['credit'::character varying, 'debit'::character varying, 'reversal'::character varying, 'expiration'::character varying])::text[])))
 );
 
@@ -6869,10 +6869,10 @@ CREATE TABLE public.wallet_transactions (
 CREATE TABLE public.wallets (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
-    balance_kmf integer DEFAULT 0 NOT NULL,
+    balance_kmf numeric(14,2) DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT chk_balance_non_negative CHECK ((balance_kmf >= 0))
+    CONSTRAINT chk_balance_non_negative CHECK ((balance_kmf >= (0)::numeric))
 );
 
 
