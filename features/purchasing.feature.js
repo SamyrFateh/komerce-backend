@@ -36,6 +36,7 @@ module.exports = {
       'Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement',
       'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret et construction fail-closed du payload d\'achat sans exécution automatique',
       'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × destination à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
+      'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -55,6 +56,7 @@ module.exports = {
       'services/purchasing-trigger-service.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
+      'services/suppliers/supplier-fulfillment-adapter-contract.js',
       'services/suppliers/supplier-fulfillment-readiness.js',
       'services/suppliers/aliexpress-fulfillment-adapter.js',
       'services/purchasing-receive-service.js',
@@ -77,6 +79,7 @@ module.exports = {
       'tests/unit/purchasing-trigger-service.test.js',
       'tests/unit/supplier-order-identity.test.js',
       'tests/unit/aliexpress-purchase-preflight.test.js',
+      'tests/unit/supplier-fulfillment-adapter-contract.test.js',
       'tests/unit/supplier-fulfillment-readiness.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
@@ -119,6 +122,7 @@ module.exports = {
     internalApi: [
       { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
       { fn: 'resolveSupplierUnit', file: 'services/suppliers/supplier-order-identity.js' },
+      { fn: 'validateAdapter', file: 'services/suppliers/supplier-fulfillment-adapter-contract.js' },
       { fn: 'evaluateSupplierFulfillmentReadiness', file: 'services/suppliers/supplier-fulfillment-readiness.js' },
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
@@ -146,13 +150,15 @@ module.exports = {
     ],
   },
 
-  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (identité commandable, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
+  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (identité commandable, contrat d\'adapter, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
 
   invariants: [
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
     { statement: 'une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage',
       test: 'tests/unit/supplier-order-identity.test.js' },
+    { statement: 'tout adapter fulfillment est provider-scopé, traite un payload d\'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent',
+      test: 'tests/unit/supplier-fulfillment-adapter-contract.test.js' },
     { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × destination ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
