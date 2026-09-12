@@ -253,6 +253,13 @@ module.exports = {
       'tests/unit/product-price-audit.test.js',
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
+      // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 2.
+      // products.price_kmf/cost_kmf/unsold_price_kmf (migration 215,
+      // integer -> numeric). v_shipment_density dépend de cost_kmf (trouvé
+      // par exécution réelle) et agrège une marge à travers 5 tables : le
+      // test construit la chaîne complète pour vérifier l'exactitude au
+      // centime, pas seulement que la vue reste interrogeable.
+      'tests/e2e-api/products.kmf-numeric.e2e.test.js',
       'tests/unit/catalog-product-detail.test.js',
       'tests/unit/catalog-test-placeholder-migration.test.js',
       'tests/unit/modal-mobile-canonical.test.js',
@@ -409,6 +416,8 @@ module.exports = {
 
   invariants: [
     'un produit publie a toujours passe product-publication-guard.js',
+    { statement: 'products.price_kmf/cost_kmf/unsold_price_kmf (numeric depuis la migration 215) conservent leurs centimes et v_shipment_density calcule une marge exacte au centime à travers sa chaîne à 5 tables',
+      test: 'tests/e2e-api/products.kmf-numeric.e2e.test.js' },
     'jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)',
     'la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide',
     'une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique ; une source pauvre reste pauvre honnêtement',
