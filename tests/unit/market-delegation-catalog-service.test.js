@@ -96,3 +96,36 @@ describe('market-delegation catalog service — capabilities et audit', () => {
     expect(source).not.toMatch(/users\.role/);
   });
 });
+
+describe('market-delegation catalog service — résumé pays', () => {
+  test('résume exposition, décisions explicites et relectures sans inventer de seuil', () => {
+    const rows = [
+      { product_id: 'p1', commercial_exposure: 'ENABLED', decision_recorded: true, needs_review: false },
+      { product_id: 'p2', commercial_exposure: 'ENABLED', decision_recorded: true, needs_review: true },
+      { product_id: 'p3', commercial_exposure: 'DISABLED', decision_recorded: true, needs_review: false },
+      { product_id: 'p4', commercial_exposure: 'DISABLED', decision_recorded: false, needs_review: false },
+    ];
+
+    expect(catalog.summarizeExposure(rows)).toEqual({
+      catalog_products: 4,
+      exposed_products: 2,
+      hidden_products: 2,
+      undecided_products: 1,
+      explicit_hidden_products: 1,
+      exposed_needs_review: 1,
+      exposure_pct: 50,
+    });
+  });
+
+  test('catalogue vide garde le taux inconnu au lieu de fabriquer 0 %', () => {
+    expect(catalog.summarizeExposure([])).toEqual({
+      catalog_products: 0,
+      exposed_products: 0,
+      hidden_products: 0,
+      undecided_products: 0,
+      explicit_hidden_products: 0,
+      exposed_needs_review: 0,
+      exposure_pct: null,
+    });
+  });
+});
