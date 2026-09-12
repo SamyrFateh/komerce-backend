@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1333,
-    "edges": 6639,
+    "graphNodes": 1334,
+    "edges": 6658,
     "dbTables": 155,
-    "doctrines": 437,
+    "doctrines": 438,
     "impactAreas": 182,
-    "unresolvedCodeEdges": 626,
+    "unresolvedCodeEdges": 628,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 70
   },
@@ -5575,8 +5575,8 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "authenticated_admin",
-        "decision_signal_global_grant",
+        "authenticated_actor",
+        "server_route_market_code",
         "signal_ref",
         "action_payload"
       ],
@@ -5585,28 +5585,55 @@
         "signal_lifecycle_action_results"
       ],
       "depends": [
+        "db.js",
         "middleware/auth.js",
         "middleware/require-decision-signal-global-authority.js",
-        "services/action-center-workspace.js"
+        "services/action-center-workspace.js",
+        "services/signal-admin-service.js",
+        "services/market-delegation-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "decision_signal_global_access_grants",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
       "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
+      "dbWriteVia": [
+        {
+          "via": "signal-admin-service",
+          "tables": [
+            "signals"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "market_signal_lifecycle_plus_delegation_audit_atomic"
+      ],
       "doctrine": [
-        "global_action_center_authority",
+        "exact_market_scope_is_server_authority",
         "signal_ref_only",
-        "no_market_authority",
+        "global_and_market_action_centers_never_cross_scope",
         "action_center_never_mutates_source_entities"
       ],
       "impactAreas": [
         "decision-signals",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization",
+        "market-delegation"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin-boutique-categories.js",
@@ -12032,7 +12059,8 @@
       "inputs": [
         "signal_ref",
         "signal_filters",
-        "authenticated_actor"
+        "authenticated_actor",
+        "server_resolved_market"
       ],
       "outputs": [
         "canonical_action_center_projection",
@@ -12058,16 +12086,17 @@
       "doctrine": [
         "action_center_manages_derived_signals_only",
         "browser_business_refs_only",
-        "global_until_signals_have_market_authority"
+        "exact_market_scope_or_global_null"
       ],
       "impactAreas": [
         "decision-signals",
         "admin-dashboard",
         "orders",
         "catalog",
-        "logistics"
+        "logistics",
+        "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/admin-order-refund.js",
@@ -13265,9 +13294,7 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "normalized_source_contract (brand",
-        "short_description",
-        "highlights[]"
+        "normalized_source_contract V2"
       ],
       "outputs": [
         "product_content_profile_row",
@@ -13290,7 +13317,7 @@
       "impactAreas": [
         "catalog"
       ],
-      "version": "2026-07"
+      "version": "2026-09-v2"
     },
     {
       "id": "services/catalog-promotion/sku-media.js",
@@ -20401,7 +20428,7 @@
       "impactAreas": [
         "economic-engine"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/pricing-cost-explainability.js",
@@ -23378,7 +23405,9 @@
       "inputs": [
         "signal_filters",
         "signal_internal_id_or_ref",
-        "authenticated_actor"
+        "authenticated_actor",
+        "server_resolved_market_id",
+        "optional_transaction_executor"
       ],
       "outputs": [
         "signal_projection_rows",
@@ -23399,17 +23428,21 @@
         "signals"
       ],
       "dbWriteVia": [],
-      "dbTxn": [],
+      "dbTxn": [
+        "caller_owned_for_market_lifecycle"
+      ],
       "doctrine": [
         "signal_is_derived_fact",
         "active_signal_states_are_open_acknowledged_snoozed",
-        "browser_uses_signal_ref_only"
+        "browser_uses_signal_ref_only",
+        "exact_market_scope_or_global_null"
       ],
       "impactAreas": [
         "decision-signals",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/signal-service.js",
@@ -23424,7 +23457,8 @@
       "purpose": null,
       "inputs": [
         "runtime_context",
-        "request_or_service_payload"
+        "request_or_service_payload",
+        "optional_server_resolved_market_id"
       ],
       "outputs": [
         "response_or_domain_result",
@@ -23453,15 +23487,17 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scope_is_server_authority"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
-        "logistics"
+        "logistics",
+        "market-authorization"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/simulator/cleanup.js",
@@ -24104,7 +24140,7 @@
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/suppliers/aliexpress-oauth.js",
@@ -24149,7 +24185,7 @@
         "supplier-import",
         "secrets"
       ],
-      "version": "2026-09-v2"
+      "version": "2026-09-v3"
     },
     {
       "id": "services/suppliers/catalog-import-json.js",
@@ -24377,14 +24413,16 @@
         "AliExpress sourcing filters + managed OAuth session"
       ],
       "outputs": [
-        "normalized_supplier_product_v2"
+        "normalized_supplier_product_v2",
+        "authenticated AliExpress DS calls"
       ],
       "depends": [
         "services/suppliers/connectors/aliexpress-connector.js",
         "services/suppliers/aliexpress-oauth.js"
       ],
       "usedBy": [
-        "services/sourcing-import-dispatch.js"
+        "services/sourcing-import-dispatch.js",
+        "scripts/aliexpress-500-catalog-sync.js"
       ],
       "dbRead": [
         "supplier_oauth_connections"
@@ -24402,7 +24440,7 @@
         "sourcing",
         "supplier-import"
       ],
-      "version": "2026-09-v1"
+      "version": "2026-09-v3"
     },
     {
       "id": "services/suppliers/connectors/aliexpress-connector.js",
@@ -26830,6 +26868,11 @@
       "table": "sourcing_global_access_grants"
     },
     {
+      "id": "db:signals",
+      "type": "db-table",
+      "table": "signals"
+    },
+    {
       "id": "db:orders",
       "type": "db-table",
       "table": "orders"
@@ -26888,11 +26931,6 @@
       "id": "db:transaction_documents",
       "type": "db-table",
       "table": "transaction_documents"
-    },
-    {
-      "id": "db:signals",
-      "type": "db-table",
-      "table": "signals"
     },
     {
       "id": "db:exchange_rates",
@@ -28125,9 +28163,9 @@
       "doctrine": "legacy_entry_redirect_only"
     },
     {
-      "id": "doctrine:global_action_center_authority",
+      "id": "doctrine:exact_market_scope_is_server_authority",
       "type": "doctrine",
-      "doctrine": "global_action_center_authority"
+      "doctrine": "exact_market_scope_is_server_authority"
     },
     {
       "id": "doctrine:signal_ref_only",
@@ -28135,9 +28173,9 @@
       "doctrine": "signal_ref_only"
     },
     {
-      "id": "doctrine:no_market_authority",
+      "id": "doctrine:global_and_market_action_centers_never_cross_scope",
       "type": "doctrine",
-      "doctrine": "no_market_authority"
+      "doctrine": "global_and_market_action_centers_never_cross_scope"
     },
     {
       "id": "doctrine:action_center_never_mutates_source_entities",
@@ -28645,9 +28683,9 @@
       "doctrine": "action_center_manages_derived_signals_only"
     },
     {
-      "id": "doctrine:global_until_signals_have_market_authority",
+      "id": "doctrine:exact_market_scope_or_global_null",
       "type": "doctrine",
-      "doctrine": "global_until_signals_have_market_authority"
+      "doctrine": "exact_market_scope_or_global_null"
     },
     {
       "id": "doctrine:writer_not_owner_campaign_2026_08",
@@ -29533,6 +29571,11 @@
       "id": "doctrine:browser_uses_signal_ref_only",
       "type": "doctrine",
       "doctrine": "browser_uses_signal_ref_only"
+    },
+    {
+      "id": "doctrine:market_scope_is_server_authority",
+      "type": "doctrine",
+      "doctrine": "market_scope_is_server_authority"
     },
     {
       "id": "doctrine:catalog_promotion_owner_respected",
@@ -38238,6 +38281,12 @@
     },
     {
       "from": "routes/admin-action-center.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
@@ -38255,6 +38304,18 @@
       "label": "services/action-center-workspace.js"
     },
     {
+      "from": "routes/admin-action-center.js",
+      "to": "services/signal-admin-service.js",
+      "type": "depends",
+      "label": "services/signal-admin-service.js"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-action-center.js",
       "type": "uses",
@@ -38262,9 +38323,59 @@
     },
     {
       "from": "routes/admin-action-center.js",
-      "to": "doctrine:global_action_center_authority",
+      "to": "db:decision_signal_global_access_grants",
+      "type": "db-read",
+      "label": "decision_signal_global_access_grants"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:signals",
+      "type": "db-write-via",
+      "label": "signals",
+      "via": "signal-admin-service"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "doctrine:exact_market_scope_is_server_authority",
       "type": "doctrine",
-      "label": "global_action_center_authority"
+      "label": "exact_market_scope_is_server_authority"
     },
     {
       "from": "routes/admin-action-center.js",
@@ -38274,9 +38385,9 @@
     },
     {
       "from": "routes/admin-action-center.js",
-      "to": "doctrine:no_market_authority",
+      "to": "doctrine:global_and_market_action_centers_never_cross_scope",
       "type": "doctrine",
-      "label": "no_market_authority"
+      "label": "global_and_market_action_centers_never_cross_scope"
     },
     {
       "from": "routes/admin-action-center.js",
@@ -38295,6 +38406,18 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
+      "from": "routes/admin-action-center.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
     },
     {
       "from": "routes/admin-boutique-categories.js",
@@ -47925,9 +48048,9 @@
     },
     {
       "from": "services/action-center-workspace.js",
-      "to": "doctrine:global_until_signals_have_market_authority",
+      "to": "doctrine:exact_market_scope_or_global_null",
       "type": "doctrine",
-      "label": "global_until_signals_have_market_authority"
+      "label": "exact_market_scope_or_global_null"
     },
     {
       "from": "services/action-center-workspace.js",
@@ -47958,6 +48081,12 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/action-center-workspace.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/admin-order-refund.js",
@@ -65665,6 +65794,12 @@
     },
     {
       "from": "services/signal-admin-service.js",
+      "to": "doctrine:exact_market_scope_or_global_null",
+      "type": "doctrine",
+      "label": "exact_market_scope_or_global_null"
+    },
+    {
+      "from": "services/signal-admin-service.js",
       "to": "impact:decision-signals",
       "type": "impact",
       "label": "decision-signals"
@@ -65674,6 +65809,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/signal-service.js",
@@ -65743,6 +65884,12 @@
     },
     {
       "from": "services/signal-service.js",
+      "to": "doctrine:market_scope_is_server_authority",
+      "type": "doctrine",
+      "label": "market_scope_is_server_authority"
+    },
+    {
+      "from": "services/signal-service.js",
       "to": "impact:decision-signals",
       "type": "impact",
       "label": "decision-signals"
@@ -65764,6 +65911,12 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/simulator/cleanup.js",
@@ -67030,6 +67183,12 @@
       "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
       "type": "uses",
       "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "scripts/aliexpress-500-catalog-sync.js",
+      "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "type": "uses",
+      "label": "scripts/aliexpress-500-catalog-sync.js"
     },
     {
       "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
@@ -76385,38 +76544,75 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "db.js",
         "middleware/auth.js",
         "middleware/require-decision-signal-global-authority.js",
-        "services/action-center-workspace.js"
+        "services/action-center-workspace.js",
+        "services/signal-admin-service.js",
+        "services/market-delegation-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "decision_signal_global_access_grants",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
       "dbWrite": [],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "signal-admin-service",
+          "tables": [
+            "signals"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
       "doctrines": [
-        "global_action_center_authority",
+        "exact_market_scope_is_server_authority",
         "signal_ref_only",
-        "no_market_authority",
+        "global_and_market_action_centers_never_cross_scope",
         "action_center_never_mutates_source_entities"
       ],
       "impactAreas": [
         "decision-signals",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization",
+        "market-delegation"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:decision_signal_global_access_grants",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "db:signals",
         "doctrine:action_center_never_mutates_source_entities",
-        "doctrine:global_action_center_authority",
-        "doctrine:no_market_authority",
+        "doctrine:exact_market_scope_is_server_authority",
+        "doctrine:global_and_market_action_centers_never_cross_scope",
         "doctrine:signal_ref_only",
         "impact:admin-dashboard",
         "impact:decision-signals",
+        "impact:market-authorization",
+        "impact:market-delegation",
         "middleware/auth.js",
         "middleware/require-decision-signal-global-authority.js",
-        "services/action-center-workspace.js"
+        "services/action-center-workspace.js",
+        "services/market-delegation-service.js",
+        "services/signal-admin-service.js"
       ]
     },
     "routes/admin-boutique-categories.js": {
@@ -82689,14 +82885,15 @@
       "doctrines": [
         "action_center_manages_derived_signals_only",
         "browser_business_refs_only",
-        "global_until_signals_have_market_authority"
+        "exact_market_scope_or_global_null"
       ],
       "impactAreas": [
         "decision-signals",
         "admin-dashboard",
         "orders",
         "catalog",
-        "logistics"
+        "logistics",
+        "market-authorization"
       ],
       "mustCheck": [
         "db:cash_collections",
@@ -82705,11 +82902,12 @@
         "db:products",
         "doctrine:action_center_manages_derived_signals_only",
         "doctrine:browser_business_refs_only",
-        "doctrine:global_until_signals_have_market_authority",
+        "doctrine:exact_market_scope_or_global_null",
         "impact:admin-dashboard",
         "impact:catalog",
         "impact:decision-signals",
         "impact:logistics",
+        "impact:market-authorization",
         "impact:orders",
         "routes/admin-action-center.js",
         "services/signal-admin-service.js",
@@ -87354,6 +87552,7 @@
         "impact:delegation",
         "impact:market",
         "middleware/require-market-execution-capability.js",
+        "routes/admin-action-center.js",
         "routes/admin-market-settlement.js",
         "services/capability-registry.js",
         "services/market-cash-control-policy-service.js",
@@ -93851,19 +94050,24 @@
       "doctrines": [
         "signal_is_derived_fact",
         "active_signal_states_are_open_acknowledged_snoozed",
-        "browser_uses_signal_ref_only"
+        "browser_uses_signal_ref_only",
+        "exact_market_scope_or_global_null"
       ],
       "impactAreas": [
         "decision-signals",
-        "admin-dashboard"
+        "admin-dashboard",
+        "market-authorization"
       ],
       "mustCheck": [
         "db:signals",
         "doctrine:active_signal_states_are_open_acknowledged_snoozed",
         "doctrine:browser_uses_signal_ref_only",
+        "doctrine:exact_market_scope_or_global_null",
         "doctrine:signal_is_derived_fact",
         "impact:admin-dashboard",
         "impact:decision-signals",
+        "impact:market-authorization",
+        "routes/admin-action-center.js",
         "routes/signals.js",
         "services/action-center-workspace.js",
         "services/signal-service.js"
@@ -93897,13 +94101,15 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "market_scope_is_server_authority"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
-        "logistics"
+        "logistics",
+        "market-authorization"
       ],
       "mustCheck": [
         "bootstrap/feature-wiring.js",
@@ -93912,9 +94118,11 @@
         "db:parcels",
         "db:purchase_orders",
         "db:signals",
+        "doctrine:market_scope_is_server_authority",
         "doctrine:resolve_before_behavior_change",
         "impact:decision-signals",
         "impact:logistics",
+        "impact:market-authorization",
         "impact:orders",
         "impact:purchasing",
         "routes/signals.js",
@@ -94782,7 +94990,8 @@
         "services/suppliers/aliexpress-oauth.js"
       ],
       "directUsedBy": [
-        "services/sourcing-import-dispatch.js"
+        "services/sourcing-import-dispatch.js",
+        "scripts/aliexpress-500-catalog-sync.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -98281,6 +98490,12 @@
       "label": "future b-modal-desktop-enhancers.js"
     },
     {
+      "from": "routes/admin-action-center.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "admin-dashboard",
       "to": "routes/admin-boutique-categories.js",
       "type": "uses",
@@ -101303,6 +101518,12 @@
       "to": "@none",
       "type": "depends",
       "label": "@none"
+    },
+    {
+      "from": "scripts/aliexpress-500-catalog-sync.js",
+      "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "type": "uses",
+      "label": "scripts/aliexpress-500-catalog-sync.js"
     },
     {
       "from": "services/suppliers/connectors/aliexpress-connector.js",
