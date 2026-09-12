@@ -16,8 +16,8 @@ function read(relative) {
 }
 
 describe('CAP-003 — decision-signals Market ID contract', () => {
-  test('migration 218 adds nullable canonical market authority without inventing historical scope', () => {
-    const sql = read('migrations/218_decision_signals_market_scope.sql');
+  test('migration 222 adds nullable canonical market authority without inventing historical scope', () => {
+    const sql = read('migrations/222_decision_signals_market_scope.sql');
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS market_id UUID NULL REFERENCES markets\(id\)/i);
     expect(sql).toMatch(/NULL = global fact/i);
     expect(sql).not.toMatch(/UPDATE\s+signals\s+SET\s+market_id/i);
@@ -25,7 +25,7 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
   });
 
   test('active fact uniqueness includes market_id and therefore allows the same product fact in different markets', () => {
-    const sql = read('migrations/218_decision_signals_market_scope.sql');
+    const sql = read('migrations/222_decision_signals_market_scope.sql');
     expect(sql).toMatch(/DROP INDEX IF EXISTS idx_signals_active_fact_unique/i);
     expect(sql).toMatch(/ON signals\(signal_type, market_id, entity_type, entity_id\) NULLS NOT DISTINCT/i);
     expect(sql).toMatch(/status IN \('open','acknowledged','snoozed'\)/i);
@@ -44,8 +44,8 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     }));
   });
 
-  test('migration 219 promotes manager-shaped memberships only and audits the promotion', () => {
-    const sql = read('migrations/219_market_delegation_decision_signal_manage_live.sql');
+  test('migration 223 promotes manager-shaped memberships only and audits the promotion', () => {
+    const sql = read('migrations/223_market_delegation_decision_signal_manage_live.sql');
     expect(sql).toContain("'decision_signal.manage'");
     expect(sql).toContain("mc.capability = 'team.grant'");
     expect(sql).toContain("mc.capability = 'team.revoke'");
@@ -53,7 +53,7 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     expect(sql).toContain('ceiling_template_capabilities');
     expect(sql).toContain('assignment_capability_ceiling');
     expect(sql).toContain('CAPABILITY_GRANTED_BY_PROMOTION');
-    expect(sql).toContain('migration-219');
+    expect(sql).toContain('migration-223');
   });
 
   test('market Action Center has no market generate route: lifecycle only', () => {
@@ -64,6 +64,15 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     expect(route).toContain("'/market/:marketCode/signals/:signalRef/resolve'");
     expect(route).not.toContain("'/market/:marketCode/generate'");
     expect(route).toContain("resolveMarketAuthority(req, 'decision_signal.manage')");
+  });
+
+  test('market lifecycle mutation and delegation audit are inside one db.withTransaction boundary', () => {
+    const route = read('routes/admin-action-center.js');
+    expect(route).toContain('db.withTransaction(async client =>');
+    expect(route).toContain('signalAdminService.acknowledgeByRef(ref, authz.market_id, client)');
+    expect(route).toContain('signalAdminService.snoozeByRef(ref, req.body && req.body.hours, authz.market_id, client)');
+    expect(route).toContain('signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client)');
+    expect(route).toContain('auditMarketLifecycle(client, req, authz');
   });
 
   test('Canonical UI selects a country endpoint only from server AdminContext mode/allowedMarkets', async () => {
