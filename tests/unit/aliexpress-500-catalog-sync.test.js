@@ -40,6 +40,15 @@ describe('aliexpress-500-catalog-sync', () => {
       ALIEXPRESS_SESSION: 'session',
     })).toThrow(/KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC=1/);
 
+    expect(() => runtimeConfig({
+      NODE_ENV: 'production',
+      KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC: '1',
+      DATABASE_URL: 'postgres://db',
+      ALIEXPRESS_APP_KEY: 'app',
+      ALIEXPRESS_APP_SECRET: 'secret',
+      ALIEXPRESS_SESSION: 'session',
+    })).toThrow(/interdit en production/);
+
     expect(runtimeConfig({
       KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC: '1',
       DATABASE_URL: 'postgres://db',
