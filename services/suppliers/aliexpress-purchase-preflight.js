@@ -57,21 +57,33 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
   }
 
   if (identity.provider !== 'aliexpress') {
-    throw new Error(`Supplier Order Identity incompatible avec AliExpress: ${identity.provider}`);
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity incompatible avec AliExpress: ${identity.provider}`,
+      { expected_provider: 'aliexpress', actual_provider: identity.provider }
+    );
   }
   if (identity.version !== 1) {
-    throw new Error(`Supplier Order Identity AliExpress version non supportée: ${identity.version}`);
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity AliExpress version non supportée: ${identity.version}`,
+      { provider: 'aliexpress', version: identity.version }
+    );
   }
 
   const rawSkuId = String(identity.payload.sku_id || resolved.supplier_unit_ref || '').trim() || null;
   const skuAttr = String(identity.payload.sku_attr || '').trim() || null;
   if (!rawSkuId && !skuAttr) {
-    throw new Error(`Supplier Order Identity AliExpress inexploitable pour ${supplierSku}`);
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity AliExpress inexploitable pour ${supplierSku}`,
+      { supplier_sku: supplierSku }
+    );
   }
 
   const supplierProductId = String(resolved.supplier_product_ref || '').trim();
   if (!/^\d{5,20}$/.test(supplierProductId)) {
-    throw new Error('supplier_product_id AliExpress absent ou invalide');
+    throw supplierIdentity.blockedSupplierIdentity(
+      'supplier_product_id AliExpress absent ou invalide',
+      { supplier_product_ref: resolved.supplier_product_ref || null }
+    );
   }
 
   return {
@@ -84,7 +96,9 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
 
 function requireCanonicalIdentity(resolved) {
   if (!resolved?.supplier_order_identity) {
-    throw new Error('BLOCKED_SUPPLIER_IDENTITY: Supplier Order Identity requise avant appel fournisseur');
+    throw supplierIdentity.blockedSupplierIdentity(
+      'Supplier Order Identity requise avant appel fournisseur'
+    );
   }
 }
 
