@@ -70,10 +70,6 @@
 
   function metricItems(payload = {}) {
     const summary = payload.summary || {};
-    const decided = Number.isFinite(Number(summary.catalog_products)) && Number.isFinite(Number(summary.undecided_products))
-      ? Math.max(0, Number(summary.catalog_products) - Number(summary.undecided_products))
-      : null;
-
     return [
       {
         key: 'catalog',
@@ -106,7 +102,7 @@
       {
         key: 'decided',
         label: 'Décisions enregistrées',
-        value: decided == null ? '—' : formatNumber(decided),
+        value: formatNumber(summary.decided_products),
         tone: Number(summary.undecided_products) > 0 ? 'warning' : 'positive',
       },
     ];
