@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          aliexpress-purchase-preflight
@@ -16,6 +14,7 @@
  * @impact-areas  purchasing, supplier-integration, catalog
  * @version       2026-09-ae-prepayment-v1
  */
+'use strict';
 
 const METHODS = Object.freeze({
   FREIGHT: 'aliexpress.logistics.buyer.freight.calculate',
