@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T21:55:10.273Z",
+  "generatedAt": "2026-09-12T22:43:27.731Z",
   "summary": {
     "navItems": 12,
     "navMatrixEntries": 35,
@@ -862,7 +862,7 @@
       "module": "sourcing-workspace.js",
       "rawUrl": "/api/admin/workspaces/sourcing/suppliers/${encodeURIComponent(row.partner_ref)}/${row.is_active ? 'deactivate' : 'activate'}",
       "httpMethod": "POST",
-      "normalized": "/api/admin/workspaces/sourcing/suppliers/{param}/${row.is_active ",
+      "normalized": "/api/admin/workspaces/sourcing/suppliers/{param}/{param}",
       "matchedRoute": null,
       "contractStatus": "NOT_FOUND_DYNAMIC"
     },
@@ -1781,7 +1781,7 @@
       "POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
       "POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)",
       "POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
-      "POST /api/admin/workspaces/sourcing/suppliers/{param}/${row.is_active  (sourcing-workspace.js)"
+      "POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)"
     ],
     "unresolvedFetches": [
       "config.chargesEndpoint (pricing-structure-event-panel.js)",
