@@ -51,13 +51,23 @@ describe('catalog-market-exposure-service (catalog write boundary)', () => {
     expect(result.commercial_exposure).toBe('ENABLED');
   });
 
-  test('listExposureForMarket scope au marché et joint le nom produit', async () => {
+  test('listExposureForMarket projette tous les produits actifs, y compris sans décision explicite', async () => {
     const db = executor();
-    db.query.mockResolvedValueOnce({ rows: [{ product_id: 'p1', commercial_exposure: 'ENABLED', product_name: 'Samsung A16' }] });
+    db.query.mockResolvedValueOnce({
+      rows: [
+        { product_id: 'p1', commercial_exposure: 'ENABLED', decision_recorded: true, product_name: 'Samsung A16' },
+        { product_id: 'p2', commercial_exposure: 'DISABLED', decision_recorded: false, product_name: 'Bouilloire' },
+      ],
+    });
     const rows = await exposureService.listExposureForMarket('mkt-cm', db);
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(2);
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).toMatch(/WHERE pme\.market_id = \$1/);
+    expect(sql).toMatch(/FROM products p/i);
+    expect(sql).toMatch(/LEFT JOIN product_market_exposure pme/i);
+    expect(sql).toMatch(/pme\.market_id = \$1/);
+    expect(sql).toMatch(/WHERE p\.is_active = TRUE/i);
+    expect(sql).toMatch(/COALESCE\(pme\.commercial_exposure, 'DISABLED'\)/i);
+    expect(sql).toMatch(/pme\.product_id IS NOT NULL\) AS decision_recorded/i);
     expect(params).toEqual(['mkt-cm']);
   });
 
