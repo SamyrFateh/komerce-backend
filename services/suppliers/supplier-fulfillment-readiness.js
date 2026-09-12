@@ -1,3 +1,19 @@
+/**
+ * @komerce-arch
+ * @role          supplier-fulfillment-readiness
+ * @domain        purchasing
+ * @layer         service
+ * @criticality   high
+ * @inputs        product_sku.id, quantity, destination
+ * @outputs       supplier_fulfillment_verdict
+ * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/aliexpress-fulfillment-adapter.js
+ * @used-by       internal purchasing callers
+ * @db-read       product_skus
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @impact-areas  purchasing, supplier-integration, catalog
+ */
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
@@ -69,11 +85,7 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
 
   const adapter = adapters[identity.provider];
   if (!adapter || typeof adapter.evaluate !== 'function') {
-    return result(
-      VERDICT.SUPPLIER_UNAVAILABLE,
-      { product_sku_id: row.id, provider: identity.provider },
-      `Aucun adapter fulfillment pour ${identity.provider}`
-    );
+    return result(VERDICT.SUPPLIER_UNAVAILABLE, { product_sku_id: row.id, provider: identity.provider }, `Aucun adapter fulfillment pour ${identity.provider}`);
   }
 
   const verdict = await adapter.evaluate({ db, row, identity, quantity, destination, context, VERDICT, result });
