@@ -1119,7 +1119,6 @@ CREATE TABLE public.cart_shares (
     type character varying(20) DEFAULT 'simple'::character varying NOT NULL,
     event_label character varying(100),
     status character varying(30) DEFAULT 'active'::character varying NOT NULL,
-    contributed_kmf integer DEFAULT 0 NOT NULL,
     expires_at timestamp with time zone
 );
 
@@ -1510,7 +1509,7 @@ CREATE TABLE public.competitor_prices (
     product_id uuid,
     category text,
     competitor_name text NOT NULL,
-    price_kmf integer NOT NULL,
+    price_kmf numeric(14,2) NOT NULL,
     observed_at timestamp with time zone DEFAULT now() NOT NULL,
     source text DEFAULT 'manual'::text,
     notes text,
@@ -4147,7 +4146,7 @@ CREATE TABLE public.partners (
     phone text,
     email text,
     contact_name text,
-    commission_kmf integer,
+    commission_kmf numeric(14,2),
     commission_pct numeric(5,2),
     commission_type text DEFAULT 'fixed'::text NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
@@ -4624,7 +4623,7 @@ CREATE TABLE public.pricing_strategies (
     category text,
     strategy_type text NOT NULL,
     strategy_value numeric,
-    applied_price_kmf integer,
+    applied_price_kmf numeric(14,2),
     notes text,
     is_active boolean DEFAULT true NOT NULL,
     applied_by uuid,
@@ -4645,8 +4644,8 @@ CREATE TABLE public.pricing_strategy_history (
     old_strategy_type text,
     new_strategy_type text NOT NULL,
     strategy_value numeric,
-    old_price_kmf integer,
-    new_price_kmf integer NOT NULL,
+    old_price_kmf numeric(14,2),
+    new_price_kmf numeric(14,2) NOT NULL,
     reason text,
     applied_by uuid,
     applied_at timestamp with time zone DEFAULT now() NOT NULL
@@ -5696,15 +5695,15 @@ CREATE TABLE public.shared_cart_items (
     product_image_snapshot text,
     product_category_snapshot text,
     quantity integer NOT NULL,
-    unit_price_kmf_snapshot integer NOT NULL,
-    line_total_kmf_snapshot integer NOT NULL,
+    unit_price_kmf_snapshot numeric(14,2) NOT NULL,
+    line_total_kmf_snapshot numeric(14,2) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb,
     sku_id uuid,
     variant_combo_snapshot jsonb,
-    CONSTRAINT shared_cart_items_line_total_kmf_snapshot_check CHECK ((line_total_kmf_snapshot >= 0)),
+    CONSTRAINT shared_cart_items_line_total_kmf_snapshot_check CHECK ((line_total_kmf_snapshot >= (0)::numeric)),
     CONSTRAINT shared_cart_items_quantity_check CHECK ((quantity > 0)),
-    CONSTRAINT shared_cart_items_unit_price_kmf_snapshot_check CHECK ((unit_price_kmf_snapshot >= 0))
+    CONSTRAINT shared_cart_items_unit_price_kmf_snapshot_check CHECK ((unit_price_kmf_snapshot >= (0)::numeric))
 );
 
 
@@ -5976,7 +5975,7 @@ CREATE TABLE public.sourcing_candidates (
     komerce_category text,
     estimated_weight_kg numeric(8,3),
     estimated_volume_m3 numeric(8,5),
-    purchase_price_kmf integer,
+    purchase_price_kmf numeric(14,2),
     target_margin_pct numeric(5,2),
     data_sources jsonb DEFAULT '{}'::jsonb,
     scan_result jsonb,
