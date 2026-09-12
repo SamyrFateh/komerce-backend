@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        supplier_import_payload
  * @outputs       normalized_supplier_products, connector_catalog
- * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connector.js
+ * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
  * @db-read       none
  * @db-write      none
@@ -22,7 +22,7 @@ const csvConnector = require('./suppliers/connectors/csv-connector');
 const manualConnector = require('./suppliers/connectors/manual-connector');
 const noonModule = require('./suppliers/connectors/noon-connector');
 const cjModule = require('./suppliers/connectors/cj-connector');
-const aliexpressModule = require('./suppliers/connectors/aliexpress-connector');
+const aliexpressModule = require('./suppliers/connectors/aliexpress-connected-connector');
 
 const CONNECTORS = Object.freeze({
   csv: { module: csvConnector, active: true, label: 'CSV import' },

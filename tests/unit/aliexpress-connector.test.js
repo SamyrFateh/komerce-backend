@@ -9,6 +9,7 @@
 const { validateNormalizedProduct } = require('../../services/suppliers/normalized-product');
 const scanner = require('../../services/supplier-catalog-scanner');
 const {
+  BASE_URL,
   isConfigured,
   inactiveReason,
   formatTopTimestamp,
@@ -147,21 +148,23 @@ describe('aliexpress-connector', () => {
     expect(inactiveReason({})).toMatch(/ALIEXPRESS_APP_KEY/);
   });
 
-  test('signe une requête TOP sans exposer le secret', () => {
+  test('signe une requête Open Platform /sync en SHA-256 sans exposer le secret', () => {
     const now = new Date('2026-09-12T00:00:00.000Z');
-    expect(formatTopTimestamp(now)).toBe('2026-09-12 08:00:00');
+    expect(BASE_URL).toBe('https://api-sg.aliexpress.com/sync');
+    expect(formatTopTimestamp(now)).toBe(String(now.getTime()));
 
-    const form = buildTopRequest('aliexpress.ds.product.get', {
+    const query = buildTopRequest('aliexpress.ds.product.get', {
       product_id: '4000102715995',
       target_currency: 'USD',
     }, { env: credentials, now });
 
-    expect(form.get('method')).toBe('aliexpress.ds.product.get');
-    expect(form.get('app_key')).toBe('app-key');
-    expect(form.get('session')).toBe('session-token');
-    expect(form.get('sign_method')).toBe('hmac');
-    expect(form.get('sign')).toMatch(/^[A-F0-9]{32}$/);
-    expect(form.toString()).not.toContain('app-secret');
+    expect(query.get('method')).toBe('aliexpress.ds.product.get');
+    expect(query.get('app_key')).toBe('app-key');
+    expect(query.get('session')).toBe('session-token');
+    expect(query.get('simplify')).toBe('true');
+    expect(query.get('sign_method')).toBe('sha256');
+    expect(query.get('sign')).toMatch(/^[A-F0-9]{64}$/);
+    expect(query.toString()).not.toContain('app-secret');
   });
 
   test('extrait un product id depuis un id brut ou une URL AliExpress', () => {
@@ -261,7 +264,7 @@ describe('aliexpress-connector', () => {
     })).toEqual([{ product_id: 1 }, { product_id: 2 }]);
   });
 
-  test('fetchProducts partitionne proprement un lot réel-shaped entre accepté et rejeté', async () => {
+  test('fetchProducts utilise /sync puis partitionne un lot real-shaped entre accepté et rejeté', async () => {
     const badDetail = JSON.parse(JSON.stringify(detailResult));
     badDetail.result.ae_item_base_info_dto.product_id = '4000102715996';
     badDetail.result.ae_item_base_info_dto.subject = '';
@@ -291,7 +294,7 @@ describe('aliexpress-connector', () => {
     const result = await fetchProducts({
       fetchImpl,
       env: credentials,
-      countryCode: 'KM',
+      countryCode: 'AE',
       page: 1,
       size: 2,
     });
@@ -302,5 +305,17 @@ describe('aliexpress-connector', () => {
     expect(result.products[0].supplier_product_id).toBe('4000102715995');
     expect(result.invalid[0].errors.join(' ')).toMatch(/product_name/);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+
+    for (const [rawUrl, init] of fetchImpl.mock.calls) {
+      const url = new URL(rawUrl);
+      expect(url.origin + url.pathname).toBe('https://api-sg.aliexpress.com/sync');
+      expect(url.searchParams.get('sign_method')).toBe('sha256');
+      expect(url.searchParams.get('sign')).toMatch(/^[A-F0-9]{64}$/);
+      expect(url.toString()).not.toContain('app-secret');
+      expect(init.method).toBe('POST');
+      expect(init.body).toBeUndefined();
+    }
+    const detailUrls = fetchImpl.mock.calls.slice(1).map(([rawUrl]) => new URL(rawUrl));
+    expect(detailUrls.every((url) => url.searchParams.get('ship_to_country') === 'AE')).toBe(true);
   });
 });

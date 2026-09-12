@@ -239,7 +239,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
-### 4.10 Sourcing et fournisseurs (10 tables)
+### 4.10 Sourcing et fournisseurs (11 tables live + 1 visée)
 
 | Table | Rôle |
 |---|---|
@@ -254,6 +254,14 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
+
+<!-- schema-pending
+object: supplier_oauth_connections
+kind: table
+migration: 218
+section: ### 4.10 Sourcing et fournisseurs (11 tables live + 1 visée)
+role: Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur.
+-->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 
