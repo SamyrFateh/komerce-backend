@@ -20,6 +20,9 @@
 const runtime = require('./aliexpress-feed-topup-runtime');
 const base = require('../services/suppliers/connectors/aliexpress-connector');
 const originalInvokeTop = base.invokeTop.bind(base);
+const STARTUP_DELAY_MS = 8000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
 
 base.invokeTop = async function invokeTopEmptyTolerant(method, params, options) {
   try {
@@ -35,8 +38,16 @@ base.invokeTop = async function invokeTopEmptyTolerant(method, params, options) 
 
 const worker = require('./aliexpress-500-feed-category-topup');
 
+async function runOneShot() {
+  console.log(`[aliexpress-feed-topup] rollout_delay_ms=${STARTUP_DELAY_MS}`);
+  await sleep(STARTUP_DELAY_MS);
+  const result = await worker.run();
+  console.log(`[aliexpress-feed-topup] one_shot_result=${JSON.stringify(result)}`);
+  return result;
+}
+
 if (require.main === module) {
-  worker.run()
+  runOneShot()
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(`[aliexpress-feed-topup] FAILED: ${error.stack || error.message || error}`);
@@ -44,4 +55,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { run: worker.run };
+module.exports = { STARTUP_DELAY_MS, run: runOneShot };
