@@ -4,8 +4,7 @@
  * @domain        catalog
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Rendre la projection Discovery locale sans posséder sa vérité métier.
- *                Mobile conserve sa géométrie 2×2 ; Product réutilise le contrôle panier canonique sur tous les viewports.
+ * @purpose       Rendre la projection Discovery locale dans le shell de carte Komerce canonique sur tous les viewports.
  * @impact-areas  home, product-discovery, discovery-rail, category-navigation, mobile, desktop
  * @version       2026-09
  */
@@ -68,23 +67,10 @@ function formatPrice(price) {
   return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(price) + ' KMF';
 }
 
-function renderPrimarySlot(card) {
-  if (card.kind === 'product' && card.price != null) {
-    return `<span class="k-discovery-price">${formatPrice(card.price)}</span>`;
-  }
-  return '';
-}
-
-function renderContextSlot(card) {
-  if (!card.providerName) return '';
-  return `<span class="k-discovery-provider">${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}</span>`;
-}
-
 /**
- * Point A fulfillment mixte : un Product local n'a pas un CTA Discovery.
- * Il expose exactement le même shell transactionnel `.k-card-add` que le
- * catalogue. `markAllCartButtons()` remplacera ce contenu initial par le
- * stepper canonique dès que le panier contient la ligne.
+ * Product local : même contrôle panier transactionnel que le catalogue.
+ * `markAllCartButtons()` remplacera ce contenu initial par le stepper canonique
+ * dès que le panier contient la ligne.
  */
 function renderProductCartControl(card, safeTitle) {
   const ref = sanitize(card.actionRef);
@@ -96,37 +82,7 @@ function renderProductCartControl(card, safeTitle) {
     </div>`;
 }
 
-/**
- * Renderer mobile 2×2. La géométrie Discovery reste inchangée, mais un Product
- * `Disponible maintenant` est désormais transactionnel comme n'importe quelle
- * carte Product : `+` canonique puis stepper vivant. Les kinds provider gardent
- * leur CTA verbal.
- */
-function renderCard(card) {
-  const safeTitle = sanitize(card.title);
-  const image = card.imageRef
-    ? `<img class="k-discovery-img" src="${sanitize(card.imageRef)}" alt="${safeTitle}" loading="lazy" decoding="async">`
-    : `<div class="k-discovery-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
-  const action = card.kind === 'product'
-    ? `<div class="k-discovery-product-action-row">${renderProductCartControl(card, safeTitle)}</div>`
-    : `<button class="k-discovery-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>`;
-
-  return `
-    <article class="k-discovery-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
-      <div class="k-discovery-media">
-        ${image}
-        ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
-      </div>
-      <div class="k-discovery-info">
-        <div class="k-discovery-name">${safeTitle}</div>
-        <div class="k-discovery-primary-slot">${renderPrimarySlot(card)}</div>
-        <div class="k-discovery-context-slot">${renderContextSlot(card)}</div>
-        ${action}
-      </div>
-    </article>`;
-}
-
-function renderDesktopActionSlot(card, safeTitle) {
+function renderCanonicalActionSlot(card, safeTitle) {
   if (card.kind === 'product') {
     return renderProductCartControl(card, safeTitle);
   }
@@ -138,20 +94,17 @@ function renderDesktopActionSlot(card, safeTitle) {
 }
 
 /**
- * Desktop One Card Contract.
+ * One Card Contract Discovery.
  *
- * Le cadre est celui du Product Display Contract (`k-card`, `k-card-img-wrap`,
- * `k-card-info`, `k-card-name`, `k-card-bottom`, `k-card-add`). Discovery ne
- * possède que des hooks de capacité. Le CSS Discovery n'a donc jamais besoin
- * de redéfinir le shell canonique `.k-card`.
- *
- * Un Product `Disponible maintenant` conserve le contrôle panier canonique `+`.
- * Les kinds provider gardent leur CTA d'ouverture de détail.
+ * Mobile et desktop partagent strictement le même shell DOM : `k-card`,
+ * `k-card-img-wrap`, `k-card-info`, `k-card-name`, `k-card-bottom`, `k-card-add`.
+ * Discovery ne possède plus de seconde famille de cartes. Ses seules extensions
+ * sont des hooks de capacité (`k-discovery-*`) pour statut, contexte et CTA.
  */
-function renderDesktopCard(card) {
+function renderCanonicalCard(card) {
   const safeTitle = sanitize(card.title);
   const image = card.imageRef
-    ? `<img class="k-discovery-canonical-img" src="${sanitize(card.imageRef)}" alt="${safeTitle}" loading="lazy" decoding="async">`
+    ? `<img class="k-card-img k-discovery-canonical-img" src="${sanitize(card.imageRef)}" alt="${safeTitle}" loading="lazy" decoding="async">`
     : `<div class="k-discovery-fallback k-discovery-canonical-fallback" aria-hidden="true">${fallbackIcon(card.kind)}</div>`;
   const context = card.providerName
     ? `${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}`
@@ -171,7 +124,7 @@ function renderDesktopCard(card) {
         <div class="k-card-desc k-discovery-canonical-context">${context}</div>
         <div class="k-card-bottom k-card-prices-row">
           <div class="k-card-price-col k-discovery-canonical-price-col">${price}</div>
-          ${renderDesktopActionSlot(card, safeTitle)}
+          ${renderCanonicalActionSlot(card, safeTitle)}
         </div>
       </div>
     </article>`;
@@ -210,7 +163,6 @@ function isMobileViewport() {
 function renderRail(selected, marketLabel, options = {}) {
   const titleId = options.titleId || 'k-discovery-local-title';
   const title = options.title || 'Disponible ici';
-  const renderSelectedCard = isMobileViewport() ? renderCard : renderDesktopCard;
   return `
     <div class="k-discovery-header">
       <div class="k-discovery-heading">
@@ -219,7 +171,7 @@ function renderRail(selected, marketLabel, options = {}) {
       </div>
     </div>
     <div class="k-discovery-rail" role="list" aria-label="Offres disponibles ici">
-      ${selected.map(renderSelectedCard).join('')}
+      ${selected.map(renderCanonicalCard).join('')}
     </div>`;
 }
 
@@ -246,8 +198,7 @@ export function renderDiscoveryRail(container, cards, options = {}) {
 export {
   normalizeCard,
   normalizeCategoryKeys,
-  renderCard,
-  renderDesktopCard,
+  renderCanonicalCard,
   formatPrice,
   selectMobile,
   selectDesktop,
