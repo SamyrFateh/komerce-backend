@@ -88,7 +88,7 @@ test('staging reste sans écriture tant que le flag seed est absent', async () =
   expect(db.query).not.toHaveBeenCalled();
 });
 
-test('résout 12 produits CJ réels par slots déterministes et conserve leur ordre éditorial', async () => {
+test('résout 24 produits CJ réels par slots déterministes et conserve leur ordre éditorial', async () => {
   db.query.mockResolvedValueOnce({ rows: [...CJ_ROWS].reverse() });
 
   const products = await resolveCjLocalProducts();
@@ -105,11 +105,11 @@ test('résout 12 produits CJ réels par slots déterministes et conserve leur or
 });
 
 test('un représentant CJ absent fait échouer le seed au lieu de dégrader silencieusement le rail', async () => {
-  db.query.mockResolvedValueOnce({ rows: CJ_ROWS.slice(0, 11) });
+  db.query.mockResolvedValueOnce({ rows: CJ_ROWS.slice(0, CJ_ROWS.length - 1) });
   await expect(resolveCjLocalProducts()).rejects.toThrow(/Représentant CJ local introuvable/);
 });
 
-test('staging opt-in seeds 13 produits locaux dont 12 CJ + providers in transaction', async () => {
+test('staging opt-in seeds Golden + 24 produits CJ + providers in transaction', async () => {
   process.env.KOMERCE_ENV = 'staging';
   process.env.DISCOVERY_STAGING_SEED_ENABLED = 'yes';
   db.query
@@ -123,17 +123,17 @@ test('staging opt-in seeds 13 produits locaux dont 12 CJ + providers in transact
   expect(result.seeded).toBe(true);
   expect(result.market).toBe('KM');
   expect(result.product).toBe(goldenFixture.productRow().id);
-  expect(result.products).toBe(13);
-  expect(result.cjProducts).toBe(12);
+  expect(result.products).toBe(1 + CJ_LOCAL_PRODUCTS.length);
+  expect(result.cjProducts).toBe(CJ_LOCAL_PRODUCTS.length);
   expect(result.providers).toBe(5);
   expect(result.physicalOffers).toBe(4);
   expect(result.services).toBe(7);
-  expect(result.candidates.split(',')).toHaveLength(18);
+  expect(result.candidates.split(',')).toHaveLength(1 + CJ_LOCAL_PRODUCTS.length + 2 + 3);
 
   expect(seedGoldenProduct).toHaveBeenCalledTimes(1);
 
-  expect(setLocalStock).toHaveBeenCalledTimes(13);
-  expect(setLocalStockExposure).toHaveBeenCalledTimes(13);
+  expect(setLocalStock).toHaveBeenCalledTimes(1 + CJ_LOCAL_PRODUCTS.length);
+  expect(setLocalStockExposure).toHaveBeenCalledTimes(1 + CJ_LOCAL_PRODUCTS.length);
   expect(setLocalStock).toHaveBeenCalledWith(expect.objectContaining({
     productId: goldenFixture.productRow().id,
     qtyPhysical: 25,
@@ -188,29 +188,29 @@ test('le dataset staging éprouve réellement les combinaisons cumulatives', () 
   expect(PROVIDERS.some(provider => !provider.publicPhone && !provider.publicWhatsapp)).toBe(true);
 });
 
-test('le plan CJ local couvre les six univers avec exactement deux produits par catégorie', () => {
-  expect(CJ_LOCAL_PRODUCTS).toHaveLength(12);
+test('le plan CJ local couvre les six univers avec quatre produits par catégorie', () => {
+  expect(CJ_LOCAL_PRODUCTS).toHaveLength(24);
   const counts = CJ_LOCAL_PRODUCTS.reduce((acc, product) => {
     const category = CATEGORY_BY_FAMILY[product.family];
     acc[category] = (acc[category] || 0) + 1;
     return acc;
   }, {});
   expect(counts).toEqual({
-    'Mode & Beauté': 2,
-    Maison: 2,
-    Tech: 2,
-    Bricolage: 2,
-    'Créations personnelles': 2,
-    Auto: 2,
+    'Mode & Beauté': 4,
+    Maison: 4,
+    Tech: 4,
+    Bricolage: 4,
+    'Créations personnelles': 4,
+    Auto: 4,
   });
 });
 
-test('l’ordre Discovery donne Golden + 12 CJ, 2 offres et 3 services avec scopes locaux', () => {
+test('l’ordre Discovery donne Golden + 24 CJ, 2 offres et 3 services avec scopes locaux', () => {
   const productIds = [GOLDEN_PRODUCT.id, ...CJ_ROWS.map(row => row.id)];
   const candidates = buildDiscoveryCandidates(productIds);
 
-  expect(candidates).toHaveLength(18);
-  expect(candidates.filter(candidate => candidate.startsWith('product:'))).toHaveLength(13);
+  expect(candidates).toHaveLength(1 + CJ_LOCAL_PRODUCTS.length + 2 + 3);
+  expect(candidates.filter(candidate => candidate.startsWith('product:'))).toHaveLength(1 + CJ_LOCAL_PRODUCTS.length);
   expect(candidates.filter(candidate => candidate.startsWith('physical_offer:'))).toHaveLength(2);
   expect(candidates.filter(candidate => candidate.startsWith('service:'))).toHaveLength(3);
   expect(candidates[0]).toBe(`product:${goldenFixture.productRow().id}`);
