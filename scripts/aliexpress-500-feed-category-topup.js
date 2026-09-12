@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        AliExpress DS feeds/categories, existing sourcing pool, DATABASE_URL
  * @outputs       clean AliExpress sourcing candidates capped at 500
- * @depends       scripts/aliexpress-500-catalog-sync.js, scripts/aliexpress-feed-surface-proof.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-connector.js, services/suppliers/catalog-sync-checkpoint.js, services/suppliers/aliexpress-feed-topup-runtime.js
+ * @depends       scripts/aliexpress-500-catalog-sync.js, scripts/aliexpress-feed-surface-proof.js, scripts/aliexpress-feed-topup-runtime.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-connector.js, services/suppliers/catalog-sync-checkpoint.js
  * @used-by       Railway staging one-shot worker
  * @db-read       supplier_catalog_sync_checkpoints, sourcing_candidates, supplier_oauth_connections
  * @db-write      supplier_catalog_sync_checkpoints, supplier_catalog_imports, sourcing_candidates, sourcing_candidate_events, supplier_oauth_connections
@@ -19,10 +19,10 @@
 const db = require('../db');
 const primary = require('./aliexpress-500-catalog-sync');
 const proof = require('./aliexpress-feed-surface-proof');
+const runtime = require('./aliexpress-feed-topup-runtime');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
 const base = require('../services/suppliers/connectors/aliexpress-connector');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
-const runtime = require('../services/suppliers/aliexpress-feed-topup-runtime');
 
 async function runLocked(config, env) {
   const start = await runtime.countClean();
