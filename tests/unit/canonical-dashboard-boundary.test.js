@@ -142,7 +142,20 @@ describe('LOT 2-CUTOVER — frontière Legacy / Canonical', () => {
   test('l’entrypoint canonical ne charge que la session puis l’autorité serveur', () => {
     const appSource = fs.readFileSync(path.join(CANONICAL_ROOT, 'js', 'app.js'), 'utf8');
     const apiPaths = [...appSource.matchAll(/['"](\/api\/[^'"]+)['"]/g)].map(match => match[1]);
-    expect(apiPaths).toEqual(['/api/auth/me', '/api/admin/dashboard/context']);
+    // /api/admin/dashboard/context apparaît deux fois dans le source, pour deux
+    // usages distincts (ordre = ordre d'apparition textuelle dans app.js, pas
+    // l'ordre d'exécution runtime) :
+    // - 1er appel (dans resolveDelegatedPortalUser, défini avant loadSession) :
+    //   résout une délégation market_operator projetée pour un rôle hors
+    //   ALLOWED_ROLES (memberships projetées, cf. 349eb34ad).
+    // - 2e appel (/api/auth/me) : chargement de la session.
+    // - 3e appel : requireAdminContext, l'autorité serveur canonique proprement dite.
+    expect(apiPaths).toEqual([
+      '/api/admin/dashboard/context',
+      '/api/auth/me',
+      '/api/admin/dashboard/context',
+    ]);
+    expect(appSource).toContain('resolveDelegatedPortalUser');
     expect(appSource).toContain('validateAdminContext');
     expect(appSource).not.toMatch(/market_id|localStorage|sessionStorage/);
   });

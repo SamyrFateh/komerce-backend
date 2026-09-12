@@ -31,6 +31,9 @@ function makeOrder(overrides = {}) {
     payment_status: 'pending',
     status: 'confirmed',
     relais_id: 'relais-001',
+    // market_id fait partie de la vérité commande exigée par
+    // cash-confirmation-control-service.validateContext.
+    market_id: 'market-001',
     ...overrides,
   };
 }
@@ -52,12 +55,16 @@ describe('cash-operations', () => {
       const client = makeClient([
         { rows: [makeOrder()] },
         { rows: [{ relais_id: 'relais-001' }] },
-        { rows: [] },
+        { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy (aucune assignment -> policy par défaut)
+        { rows: [] }, // prepareCashConfirmation: getControlForUpdate (pas de contrôle existant)
+        { rows: [{ id: 'control-1', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
+        { rows: [] }, // SELECT cash_collections (doublon check)
         { rows: [{ id: 'collection-001', order_id: 'order-001', amount_kmf: 12000 }] },
       
         { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
         { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
         { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
+        { rows: [{ id: 'control-final' }] }, // finalizeCashConfirmation: UPDATE cash_confirmation_controls
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: true, noop: false });
 
@@ -69,6 +76,7 @@ describe('cash-operations', () => {
         noop: false,
         amount_kmf: 12000,
         pickupCodeToCache: expect.any(String),
+        cash_control: { required_approvals: 1, second_approval: false },
       });
       expect(confirmPaymentCycle).toHaveBeenCalledWith({
         orderId: 'order-001',
@@ -76,8 +84,8 @@ describe('cash-operations', () => {
         source: 'cash_confirm',
         dbClient: client,
       });
-      expect(client.calls[3].sql).toContain('INSERT INTO cash_collections');
-      expect(client.calls[3].params).toEqual(['order-001', 12000, 'agent-001', 'relais-001']);
+      expect(client.calls[6].sql).toContain('INSERT INTO cash_collections');
+      expect(client.calls[6].params).toEqual(['order-001', 12000, 'agent-001', 'relais-001']);
     });
 
     it('refuse une commande deja payee', async () => {
@@ -102,6 +110,9 @@ describe('cash-operations', () => {
       const client = makeClient([
         { rows: [makeOrder()] },
         { rows: [{ relais_id: 'relais-001' }] },
+        { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy
+        { rows: [] }, // prepareCashConfirmation: getControlForUpdate
+        { rows: [{ id: 'control-2', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
         { rows: [{ id: 'collection-existing' }] },
       ]);
 
@@ -132,7 +143,10 @@ describe('cash-operations', () => {
       const client = makeClient([
         { rows: [makeOrder()] },
         { rows: [{ relais_id: 'relais-001' }] },
-        { rows: [] },
+        { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy
+        { rows: [] }, // prepareCashConfirmation: getControlForUpdate
+        { rows: [{ id: 'control-3', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
+        { rows: [] }, // SELECT cash_collections (doublon check)
         { rows: [{ id: 'collection-001', order_id: 'order-001' }] },
       ]);
       confirmPaymentCycle.mockResolvedValue({ stockBlocked: true, insufficientItems: [{ product_id: 'p1', available: 0 }] });
@@ -215,12 +229,16 @@ describe('cash-operations — Lot A, branches manquantes', () => {
     it('un admin peut collecter sans vérification cross-relais', async () => {
       const client = makeClient([
         { rows: [makeOrder({ relais_id: 'relais-999' })] },
+        { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy
+        { rows: [] }, // prepareCashConfirmation: getControlForUpdate
+        { rows: [{ id: 'control-4', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
         { rows: [] }, // SELECT cash_collections (doublon check)
         { rows: [{ id: 'collection-002', order_id: 'order-001', amount_kmf: 12000 }] },
       
         { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
         { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
         { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
+        { rows: [{ id: 'control-final' }] }, // finalizeCashConfirmation: UPDATE cash_confirmation_controls
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: true, noop: false });
 
@@ -242,12 +260,16 @@ describe('cash-operations — Lot A, branches manquantes', () => {
       const client = makeClient([
         { rows: [makeOrder()] },
         { rows: [{ relais_id: 'relais-001' }] },
-        { rows: [] },
+        { rows: [] }, // prepareCashConfirmation: resolveCurrentPolicy
+        { rows: [] }, // prepareCashConfirmation: getControlForUpdate
+        { rows: [{ id: 'control-5', required_approvals: 1, state: 'APPROVED' }] }, // INSERT cash_confirmation_controls
+        { rows: [] }, // SELECT cash_collections (doublon check)
         { rows: [{ id: 'collection-003', order_id: 'order-001', amount_kmf: 12000 }] },
       
         { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
         { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
         { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
+        { rows: [{ id: 'control-final' }] }, // finalizeCashConfirmation: UPDATE cash_confirmation_controls
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: false, noop: true, stockBlocked: false });
 
