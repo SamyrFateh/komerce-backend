@@ -32,6 +32,7 @@ const {
   logicalTopupPage,
   topupCheckpointCategoryId,
   topupSourceFilename,
+  canResumeCompletedCheckpoint,
   discoverySegment,
 } = require('../../scripts/aliexpress-500-catalog-topup');
 
@@ -62,6 +63,19 @@ describe('aliexpress-500-catalog-topup', () => {
     expect(topupCheckpointCategoryId()).toBe('text:topup-diversified-v1');
     expect(topupSourceFilename('sync-v1', 7))
       .toBe('aliexpress-pool/sync-v1/topup-diversified-v1/page-0007.json');
+  });
+
+  test('un checkpoint completed peut reprendre uniquement si la profondeur a été augmentée', () => {
+    expect(canResumeCompletedCheckpoint({ completed: true, next_page: 101 }, 200)).toBe(true);
+    expect(canResumeCompletedCheckpoint({ completed: true, next_page: 101 }, 100)).toBe(false);
+    expect(canResumeCompletedCheckpoint({ completed: false, next_page: 101 }, 200)).toBe(false);
+  });
+
+  test('la page logique 101 reprend exactement sur la page fournisseur 6 avec 20 requêtes', () => {
+    expect(TOPUP_QUERIES).toHaveLength(20);
+    expect(logicalTopupPage(101)).toMatchObject({ queryIndex: 0, queryPage: 6 });
+    expect(logicalTopupPage(120)).toMatchObject({ queryIndex: 19, queryPage: 6 });
+    expect(logicalTopupPage(121)).toMatchObject({ queryIndex: 0, queryPage: 7 });
   });
 
   test('la provenance du top-up conserve la famille commerciale de la requête', () => {

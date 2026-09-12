@@ -14,7 +14,7 @@
  * @db-txn        canonical services own candidate writes; shared advisory lock serializes AliExpress pool workers
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -74,6 +74,12 @@ function topupCheckpointCategoryId() {
 
 function topupSourceFilename(syncKey, logicalPage) {
   return `aliexpress-pool/${syncKey}/${TOPUP_ID}/page-${String(logicalPage).padStart(4, '0')}.json`;
+}
+
+function canResumeCompletedCheckpoint(checkpoint, maxLogicalPages) {
+  if (!checkpoint?.completed) return false;
+  const nextPage = Math.max(1, Number(checkpoint?.next_page) || 1);
+  return nextPage <= Number(maxLogicalPages || 0);
 }
 
 async function countCleanCandidates() {
@@ -166,7 +172,8 @@ async function runTopupLocked(config, providerEnv) {
     });
   }
 
-  if (checkpoint?.completed) {
+  const resumeCompleted = canResumeCompletedCheckpoint(checkpoint, maxLogicalPages);
+  if (checkpoint?.completed && !resumeCompleted) {
     const finalClean = await countCleanCandidates();
     const output = {
       runtime: config.runtime,
@@ -187,6 +194,9 @@ async function runTopupLocked(config, providerEnv) {
   let pages = 0;
 
   console.log(`[aliexpress-topup] runtime=${config.runtime || 'unknown'} country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} queries=${TOPUP_QUERIES.length} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
+  if (resumeCompleted) {
+    console.log(`[aliexpress-topup] extend checkpoint next=${logicalPage} max=${maxLogicalPages}`);
+  }
 
   while (logicalPage <= maxLogicalPages) {
     const before = await countCleanCandidates();
@@ -327,6 +337,7 @@ module.exports = {
   logicalTopupPage,
   topupCheckpointCategoryId,
   topupSourceFilename,
+  canResumeCompletedCheckpoint,
   discoverySegment,
   runTopup,
 };
