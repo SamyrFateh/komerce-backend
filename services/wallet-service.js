@@ -302,8 +302,18 @@ async function debitInTransaction(client, opts) {
 
   for (const lot of lots.rows) {
     if (remaining <= 0) break;
-    const consume      = Math.min(remaining, lot.remaining_kmf);
-    const newRemaining = lot.remaining_kmf - consume;
+    const consume = Math.min(remaining, lot.remaining_kmf);
+    // Arrondi explicite à l'échelle de la colonne (numeric(14,2), migration
+    // 215 — chantier currency debt). Avec des integer, cette dérive
+    // n'existait pas structurellement. Avec des décimales réelles, une
+    // soustraction JS répétée sur plusieurs lots peut laisser un résidu de
+    // l'ordre de 1e-13 au lieu d'exactement zéro (ex. lots [4612.43,
+    // 4609.96, 2975.5] — reproduit et vérifié avant ce correctif). Sans cet
+    // arrondi, la colonne stocke bien 0.00 (Postgres arrondit à l'écriture),
+    // mais la comparaison === 0 ci-dessous s'exécute AVANT cet arrondi et
+    // reste fausse : le lot totalement consommé resterait 'active' avec un
+    // remaining_kmf affiché à zéro — un lot fantôme.
+    const newRemaining = Math.round((lot.remaining_kmf - consume) * 100) / 100;
     const newStatus    = newRemaining === 0 ? 'used' : 'active';
 
     await client.query(
@@ -320,6 +330,7 @@ async function debitInTransaction(client, opts) {
       consumptions.push(cRes.rows[0]);
     }
     remaining -= consume;
+    remaining = Math.round(remaining * 100) / 100;
   }
 
   return { transaction: tx, consumptions, duplicate: false };
