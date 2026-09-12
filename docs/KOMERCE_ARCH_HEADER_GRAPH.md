@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 559
-- Files with full headers: 514
+- Scanned code files: 561
+- Files with full headers: 516
 - Files with lite headers: 45
-- Files with any headers: 559
+- Files with any headers: 561
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1334
-- Edges: 6658
+- Graph nodes: 1340
+- Edges: 6674
 - DB tables: 155
-- Doctrines: 438
-- Impact areas: 182
-- Unresolved code edges: 628
+- Doctrines: 441
+- Impact areas: 183
+- Unresolved code edges: 629
 - Tables multi-écrivains directs (>=2): 70
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -53,7 +53,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - orders: 30
 - payment: 26
 - providers-services: 7
-- purchasing: 8
+- purchasing: 10
 - recommendations: 6
 - refunds: 2
 - settlement: 2
@@ -85,7 +85,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 127
 - route-manifest: 1
 - schema: 1
-- service: 257
+- service: 259
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -466,12 +466,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/aliexpress-oauth.js — aliexpress-oauth-session-manager (catalog, high, full)
+- services/suppliers/aliexpress-purchase-preflight.js — aliexpress-purchase-preflight (purchasing, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
 - services/suppliers/pipeline-constants.js — catalog-pipeline-constants (catalog, high, full)
 - services/suppliers/promotion-classifier.js — catalog-promotion-classifier (catalog, high, full)
 - services/suppliers/source-product-normalizer.js — catalog-source-product-normalizer (catalog, high, full)
+- services/suppliers/supplier-order-identity.js — supplier-order-identity (purchasing, high, full)
 - services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
 - services/transport-pricing.js — transport-pricing-quote (economic-engine, high, full)
 - services/transport-rails.js — transport-rail-registry (logistics, high, full)
@@ -976,11 +978,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
 - uses: public/boutique/test-modal-view-model.html -> public/boutique/js/test-modal-view-model-redirect.js (public/boutique/test-modal-view-model.html)
+- uses: purchasing preflight -> services/suppliers/supplier-order-identity.js (purchasing preflight)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: release à -> services/local-stock-service.js (release à)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
-- uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 
 ## Files Still Without Headers Or Aggregation
 

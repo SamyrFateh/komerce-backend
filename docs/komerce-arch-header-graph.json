@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 559,
-    "filesWithFullHeaders": 514,
+    "scannedCodeFiles": 561,
+    "filesWithFullHeaders": 516,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 559,
+    "filesWithAnyHeaders": 561,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1334,
-    "edges": 6658,
+    "graphNodes": 1340,
+    "edges": 6674,
     "dbTables": 155,
-    "doctrines": 438,
-    "impactAreas": 182,
-    "unresolvedCodeEdges": 628,
+    "doctrines": 441,
+    "impactAreas": 183,
+    "unresolvedCodeEdges": 629,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 70
   },
@@ -64,7 +64,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 8,
+    "purchasing": 10,
     "unsold-resolution": 1,
     "incident-management": 2,
     "market-autonomy": 4,
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 127,
     "entrypoint": 1,
-    "service": 257,
+    "service": 259,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +116,7 @@
   "byCriticality": {
     "critical": 85,
     "medium": 125,
-    "high": 296,
+    "high": 298,
     "low": 53
   },
   "nodes": [
@@ -13239,12 +13239,14 @@
       "doctrine": [
         "PDC-8 (tous lots)",
         "DOCTRINE_INGESTION_CATALOGUE.md",
-        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "purchasing"
       ],
-      "version": "2026-07 — fiche produit enrichie : promotion idempotente du contenu"
+      "version": "2026-09 — persistance Supplier Order Identity"
     },
     {
       "id": "services/catalog-promotion/axes.js",
@@ -13375,7 +13377,7 @@
         "sku_reconciliation_plan (toCreate/toUpdate/toReactivate/toDeactivate)"
       ],
       "depends": [
-        "@none"
+        "services/suppliers/supplier-order-identity.js"
       ],
       "usedBy": [
         "services/catalog-promotion.js (Lot 6)"
@@ -13387,12 +13389,13 @@
       "doctrine": [
         "PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
         "§STOCK",
-        "§DOCTRINE ZÉRO HEURISTIQUE"
+        "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "purchasing"
       ],
-      "version": "2026-07"
+      "version": "2026-09 — persistance Supplier Order Identity fail-closed"
     },
     {
       "id": "services/catalog-public-view.js",
@@ -24188,6 +24191,44 @@
       "version": "2026-09-v3"
     },
     {
+      "id": "services/suppliers/aliexpress-purchase-preflight.js",
+      "file": "services/suppliers/aliexpress-purchase-preflight.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "aliexpress-purchase-preflight",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "NormalizedSupplierProduct V2",
+        "selected Supplier Order Identity",
+        "destination"
+      ],
+      "outputs": [
+        "live-checkable freight request + place-order payload (never executed here)"
+      ],
+      "depends": [
+        "services/suppliers/supplier-order-identity.js"
+      ],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/ALIEXPRESS_BUSINESS_READINESS.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "version": "2026-09-ae-prepayment-v2"
+    },
+    {
       "id": "services/suppliers/catalog-import-json.js",
       "file": "services/suppliers/catalog-import-json.js",
       "type": "file",
@@ -24474,14 +24515,15 @@
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
-        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
         "catalog",
         "sourcing",
         "supplier-import"
       ],
-      "version": "2026-09-v2"
+      "version": "2026-09-v3"
     },
     {
       "id": "services/suppliers/connectors/api-connector.base.js",
@@ -24976,6 +25018,42 @@
         "product-discovery"
       ],
       "version": "2026-08 (nettoyage architectural post-ING-6 — extrait de promotion-classifier.js, domaine 2/5)"
+    },
+    {
+      "id": "services/suppliers/supplier-order-identity.js",
+      "file": "services/suppliers/supplier-order-identity.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-order-identity",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "NormalizedSupplierProduct V2 sellable_unit"
+      ],
+      "outputs": [
+        "canonical_supplier_unit_resolution"
+      ],
+      "depends": [],
+      "usedBy": [
+        "supplier purchasing adapters",
+        "purchasing preflight"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": "2026-09-v1"
     },
     {
       "id": "services/transport-cost-allocation.js",
@@ -28803,6 +28881,11 @@
       "doctrine": "PDC-8 (tous lots)"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
       "id": "doctrine:PDC-8 §OPTION AXES",
       "type": "doctrine",
       "doctrine": "PDC-8 §OPTION AXES"
@@ -28831,6 +28914,11 @@
       "id": "doctrine:§STOCK",
       "type": "doctrine",
       "doctrine": "§STOCK"
+    },
+    {
+      "id": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "doctrine": "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
     },
     {
       "id": "doctrine:reuse_domain_mutation_authorities",
@@ -29606,6 +29694,11 @@
       "id": "doctrine:workspace_orchestrates_not_reimplements",
       "type": "doctrine",
       "doctrine": "workspace_orchestrates_not_reimplements"
+    },
+    {
+      "id": "doctrine:docs/ALIEXPRESS_BUSINESS_READINESS.md",
+      "type": "doctrine",
+      "doctrine": "docs/ALIEXPRESS_BUSINESS_READINESS.md"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -30596,6 +30689,11 @@
       "id": "impact:secrets",
       "type": "impact-area",
       "area": "secrets"
+    },
+    {
+      "id": "impact:supplier-integration",
+      "type": "impact-area",
+      "area": "supplier-integration"
     },
     {
       "id": "impact:session",
@@ -49751,9 +49849,21 @@
     },
     {
       "from": "services/catalog-promotion.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/catalog-promotion.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/catalog-promotion/axes.js",
@@ -49847,9 +49957,9 @@
     },
     {
       "from": "services/catalog-promotion/sku.js",
-      "to": "@none",
+      "to": "services/suppliers/supplier-order-identity.js",
       "type": "depends",
-      "label": "@none"
+      "label": "services/suppliers/supplier-order-identity.js"
     },
     {
       "from": "services/catalog-promotion.js (Lot 6)",
@@ -49871,15 +49981,21 @@
     },
     {
       "from": "services/catalog-promotion/sku.js",
-      "to": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+      "to": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
       "type": "doctrine",
-      "label": "§DOCTRINE ZÉRO HEURISTIQUE"
+      "label": "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
     },
     {
       "from": "services/catalog-promotion/sku.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "routes/products.js",
@@ -66933,6 +67049,42 @@
       "label": "secrets"
     },
     {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-order-identity.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "doctrine:docs/ALIEXPRESS_BUSINESS_READINESS.md",
+      "type": "doctrine",
+      "label": "docs/ALIEXPRESS_BUSINESS_READINESS.md"
+    },
+    {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/aliexpress-purchase-preflight.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
       "from": "services/suppliers/catalog-import-json.js",
       "to": "db.js",
       "type": "depends",
@@ -67261,6 +67413,12 @@
       "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/aliexpress-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
     },
     {
       "from": "services/suppliers/connectors/aliexpress-connector.js",
@@ -67867,6 +68025,42 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "supplier purchasing adapters",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "uses",
+      "label": "supplier purchasing adapters"
+    },
+    {
+      "from": "purchasing preflight",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "uses",
+      "label": "purchasing preflight"
+    },
+    {
+      "from": "services/suppliers/supplier-order-identity.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/supplier-order-identity.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/supplier-order-identity.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/supplier-order-identity.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
     },
     {
       "from": "services/transport-cost-allocation.js",
@@ -83985,10 +84179,12 @@
       "doctrines": [
         "PDC-8 (tous lots)",
         "DOCTRINE_INGESTION_CATALOGUE.md",
-        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "purchasing"
       ],
       "mustCheck": [
         "db:catalog_media",
@@ -84001,7 +84197,9 @@
         "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
         "doctrine:PDC-8 (tous lots)",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "impact:catalog",
+        "impact:purchasing",
         "services/catalog-promotion/axes.js",
         "services/catalog-promotion/content.js",
         "services/catalog-promotion/sku-media.js",
@@ -84111,7 +84309,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "@none"
+        "services/suppliers/supplier-order-identity.js"
       ],
       "directUsedBy": [
         "services/catalog-promotion.js (Lot 6)"
@@ -84123,17 +84321,20 @@
       "doctrines": [
         "PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
         "§STOCK",
-        "§DOCTRINE ZÉRO HEURISTIQUE"
+        "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "purchasing"
       ],
       "mustCheck": [
         "doctrine:PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
-        "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+        "doctrine:§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "doctrine:§STOCK",
         "impact:catalog",
-        "services/catalog-promotion.js"
+        "impact:purchasing",
+        "services/catalog-promotion.js",
+        "services/suppliers/supplier-order-identity.js"
       ]
     },
     "services/catalog-public-view.js": {
@@ -94793,6 +94994,39 @@
         "services/suppliers/connectors/aliexpress-connected-connector.js"
       ]
     },
+    "services/suppliers/aliexpress-purchase-preflight.js": {
+      "role": "aliexpress-purchase-preflight",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/supplier-order-identity.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/ALIEXPRESS_BUSINESS_READINESS.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "mustCheck": [
+        "doctrine:docs/ALIEXPRESS_BUSINESS_READINESS.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/supplier-order-identity.js"
+      ]
+    },
     "services/suppliers/catalog-import-json.js": {
       "role": "catalog-import-json",
       "domain": "catalog",
@@ -95042,7 +95276,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
-        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
       ],
       "impactAreas": [
         "catalog",
@@ -95052,6 +95287,7 @@
       "mustCheck": [
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "impact:catalog",
         "impact:sourcing",
         "impact:supplier-import",
@@ -95524,6 +95760,39 @@
         "services/suppliers/normalized-product.js",
         "services/suppliers/pipeline-constants.js",
         "services/suppliers/promotion-classifier.js"
+      ]
+    },
+    "services/suppliers/supplier-order-identity.js": {
+      "role": "supplier-order-identity",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "supplier purchasing adapters",
+        "purchasing preflight"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/catalog-promotion/sku.js",
+        "services/suppliers/aliexpress-purchase-preflight.js"
       ]
     },
     "services/transport-cost-allocation.js": {
@@ -100116,12 +100385,6 @@
       "label": "services/catalog-promotion.js (Lot 6)"
     },
     {
-      "from": "services/catalog-promotion/sku.js",
-      "to": "@none",
-      "type": "depends",
-      "label": "@none"
-    },
-    {
       "from": "services/catalog-promotion.js (Lot 6)",
       "to": "services/catalog-promotion/sku.js",
       "type": "uses",
@@ -101578,6 +101841,18 @@
       "to": "schemas/catalog/normalized-supplier-product.v2.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v2.schema.json"
+    },
+    {
+      "from": "supplier purchasing adapters",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "uses",
+      "label": "supplier purchasing adapters"
+    },
+    {
+      "from": "purchasing preflight",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "uses",
+      "label": "purchasing preflight"
     },
     {
       "from": "services/transport-cost-allocation.js",
