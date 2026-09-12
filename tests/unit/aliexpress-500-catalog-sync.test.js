@@ -6,8 +6,9 @@
  * @test-requires none
  */
 
-jest.mock('../../db', () => ({ query: jest.fn() }));
+jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({
+  managedRuntimeEnv: jest.fn(),
   invokeTop: jest.fn(),
   fetchProducts: jest.fn(),
 }));
@@ -34,11 +35,16 @@ const {
   checkpointCategoryId,
   importSourceFilename,
   stockSqlPredicate,
+  rateLimitWaitSeconds,
   withDiscoveryProvenance,
   SEARCH_PLAN,
   DEFAULT_PAGE_SIZE,
   DEFAULT_COUNTRY_CODE,
   DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
+  DEFAULT_DETAIL_DELAY_MS,
+  DEFAULT_DETAIL_RETRY_ATTEMPTS,
+  RUN_LOCK_NAMESPACE,
+  RUN_LOCK_KEY,
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
 } = require('../../scripts/aliexpress-500-catalog-sync');
 
@@ -71,6 +77,8 @@ describe('aliexpress-500-catalog-sync', () => {
     })).toMatchObject({
       pageSize: DEFAULT_PAGE_SIZE,
       maxSearchPagesPerQuery: DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
+      detailDelayMs: DEFAULT_DETAIL_DELAY_MS,
+      detailRetryAttempts: DEFAULT_DETAIL_RETRY_ATTEMPTS,
       countryCode: DEFAULT_COUNTRY_CODE,
       maxCleanProducts: 500,
       syncKey: 'aliexpress-instock-500-text-v1',
@@ -172,6 +180,19 @@ describe('aliexpress-500-catalog-sync', () => {
     expect(textSearchProductIds(payload)).toEqual(['1005005902775553', '1005010643835400']);
   });
 
+  test('détecte le ban fournisseur et en extrait la durée', () => {
+    expect(rateLimitWaitSeconds(new Error(
+      'The frequency of app access to the api exceeds the limit. This ban will last 33 seconds'
+    ))).toBe(33);
+    expect(rateLimitWaitSeconds(new Error('rate limit exceeded'))).toBe(30);
+    expect(rateLimitWaitSeconds(new Error('Invalid session'))).toBeNull();
+  });
+
+  test('le verrou worker a une identité stable distincte des données métier', () => {
+    expect(RUN_LOCK_NAMESPACE).toBe('komerce');
+    expect(RUN_LOCK_KEY).toBe('aliexpress-500-catalog-sync');
+  });
+
   test('ne compte comme propre qu’un produit réellement achetable et en stock', () => {
     const base = {
       supplier_product_id: '4000102715995',
@@ -222,6 +243,7 @@ describe('aliexpress-500-catalog-sync', () => {
       segment,
       keyword: 'android smartphone',
       queryPage: 2,
+      countryCode: 'AE',
     });
 
     expect(decorated.raw_payload.source).toBe('aliexpress_ds_api');
