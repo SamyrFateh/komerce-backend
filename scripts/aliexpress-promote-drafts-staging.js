@@ -12,9 +12,9 @@
  * @db-read       sourcing_candidates, products, product_market_exposure
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog promotion tables
  * @db-txn        one canonical promotion transaction per candidate; advisory lock serializes batch runs
- * @doctrine      refinery_filters_before_catalog, inactive_drafts_only, economic_reference_is_not_market_truth, no_auto_publish
+ * @doctrine      refinery_filters_before_catalog, inactive_drafts_only, economic_reference_is_not_market_truth, no_auto_publish, ai_enrichment_optional
  * @impact-areas  sourcing, catalog, staging
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -30,6 +30,7 @@ const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 const ALLOWED_DECISIONS = new Set(['TEST', 'PRIORITY']);
 const EXPECTED_PRICE_AUTHORITY = 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION';
+const ENRICHMENT_MODE = 'source_only';
 
 function isTruthy(value) {
   return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
@@ -266,9 +267,12 @@ async function executeBatch(before, limit) {
     // The owner-triggered staging operator explicitly chooses the canonical
     // test_price_kmf as the temporary inactive-draft price. It is NOT market
     // truth and creates no exposure; local-market pricing remains a later gate.
+    // Editorial AI is deliberately disabled here: the Refinery/promotion path
+    // remains source-only and human preparation stays a separate optional step.
     // eslint-disable-next-line no-await-in-loop
     const result = await promoteCandidate(candidate.id, {
       price_kmf: classification.price_kmf,
+      enrichment_mode: ENRICHMENT_MODE,
     }, null);
 
     promoted.push({
@@ -293,6 +297,7 @@ async function main() {
     mode: args.mode,
     limit: args.limit,
     runtime: runtimeEnvironment(),
+    enrichment_mode: ENRICHMENT_MODE,
     ...before.summary,
     drafts: before.drafts,
   }, null, 2)}`);
@@ -346,6 +351,7 @@ module.exports = {
   MAX_LIMIT,
   ALLOWED_DECISIONS,
   EXPECTED_PRICE_AUTHORITY,
+  ENRICHMENT_MODE,
   isTruthy,
   runtimeEnvironment,
   parseArgs,
