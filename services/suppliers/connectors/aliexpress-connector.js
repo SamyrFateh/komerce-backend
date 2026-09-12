@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -199,6 +199,23 @@ function extractSkuProperties(sku = {}) {
     .filter((prop) => prop.value);
 }
 
+function buildSkuAttr(sku = {}) {
+  const pairs = [];
+  for (const prop of toArray(sku?.ae_sku_property_dtos?.ae_sku_property_d_t_o)) {
+    const propertyId = String(prop?.sku_property_id ?? '').trim();
+    const valueId = String(prop?.sku_property_value ?? '').trim();
+    if (!propertyId || propertyId === '0' || !valueId || valueId === '0') continue;
+    pairs.push(`${propertyId}:${valueId}`);
+  }
+  return pairs.length ? pairs.join(';') : null;
+}
+
+function rawSupplierUnitRef(sku = {}) {
+  const value = sku.id ?? sku.sku_id ?? sku.skuId;
+  if (value == null || String(value).trim() === '') return null;
+  return String(value).trim().slice(0, 256);
+}
+
 function splitImageUrls(value) {
   return String(value || '')
     .split(';')
@@ -262,8 +279,20 @@ function buildRichStructure(productId, detail = {}, feed = {}) {
   const sellableUnits = parsedSkus.length ? parsedSkus.map(({ sku, optionValues, mediaRefs }, index) => {
     const stock = nonNegativeIntegerOrNull(sku.sku_available_stock ?? sku.ipm_sku_stock);
     const price = positiveNumberOrNull(sku.offer_sale_price ?? sku.sku_price);
+    const supplierSku = String(sku.sku_code || sku.id || `${productId}:sku:${index + 1}`).slice(0, 128);
+    const skuAttr = buildSkuAttr(sku);
+    const nativeUnitRef = rawSupplierUnitRef(sku);
+    const supplierUnitRef = nativeUnitRef || skuAttr || null;
+    const identityPayload = {};
+    if (nativeUnitRef) identityPayload.sku_id = nativeUnitRef;
+    if (skuAttr) identityPayload.sku_attr = skuAttr;
+    const supplierOrderIdentity = supplierUnitRef && Object.keys(identityPayload).length
+      ? { provider: 'aliexpress', version: 1, payload: identityPayload }
+      : null;
     return {
-      supplier_sku: String(sku.sku_code || sku.id || `${productId}:sku:${index + 1}`).slice(0, 128),
+      supplier_sku: supplierSku,
+      supplier_unit_ref: supplierUnitRef,
+      supplier_order_identity: supplierOrderIdentity,
       option_values: optionValues,
       stock_available: stock,
       purchase_price: price,
@@ -458,6 +487,8 @@ module.exports = {
   buildTopRequest,
   invokeTop,
   extractProductId,
+  buildSkuAttr,
+  rawSupplierUnitRef,
   normalizeDsProduct,
   flattenFeedProducts,
   fetchFeed,
