@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1316,
-    "edges": 6573,
+    "graphNodes": 1319,
+    "edges": 6581,
     "dbTables": 153,
-    "doctrines": 428,
+    "doctrines": 431,
     "impactAreas": 181,
     "unresolvedCodeEdges": 620,
     "dbWriteViaOverlapWarnings": 7,
@@ -12743,10 +12743,12 @@
         "db.js",
         "services/catalog-overrides.js",
         "services/product-publication-guard.js",
-        "utils/alerts.js"
+        "utils/alerts.js",
+        "utils/rules.js"
       ],
       "usedBy": [
-        "routes/admin/catalog-approval.js"
+        "routes/admin/catalog-approval.js",
+        "services/catalog-workspace.js"
       ],
       "dbRead": [
         "products"
@@ -12762,16 +12764,20 @@
           ]
         }
       ],
-      "dbTxn": [],
+      "dbTxn": [
+        "first_publication_serialized_by_catalog_cap_lock"
+      ],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
-        "§6"
+        "§6",
+        "§7",
+        "§9"
       ],
       "impactAreas": [
         "catalog",
         "admin-dashboard"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "services/catalog-candidate-product-service.js",
@@ -13375,6 +13381,7 @@
       ],
       "depends": [
         "db",
+        "utils/rules.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
         "services/boutique-taxonomy-admin.js"
@@ -13396,14 +13403,15 @@
         "workspace_acts_dashboard_observes",
         "global_catalog_not_market_scoped",
         "reuse_domain_mutation_authorities",
-        "product_ref_is_public_identity"
+        "product_ref_is_public_identity",
+        "curated_catalog_cap_from_business_rules"
       ],
       "impactAreas": [
         "admin-dashboard",
         "catalog",
         "boutique"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/client-360.js",
@@ -20521,13 +20529,15 @@
         "market_bounds_possible_human_decides",
         "local_evidence_never_falls_back_silently",
         "browser_never_supplies_market_id",
-        "corridor_is_observation_not_gate"
+        "corridor_is_observation_not_gate",
+        "viability_is_decision_support_not_price_gate"
       ],
       "impactAreas": [
         "pricing",
         "economic-engine",
         "market-autonomy",
-        "admin-dashboard"
+        "admin-dashboard",
+        "sourcing"
       ],
       "version": "2026-09"
     },
@@ -28450,6 +28460,16 @@
       "doctrine": "§6"
     },
     {
+      "id": "doctrine:§7",
+      "type": "doctrine",
+      "doctrine": "§7"
+    },
+    {
+      "id": "doctrine:§9",
+      "type": "doctrine",
+      "doctrine": "§9"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §7",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md §7"
@@ -28528,6 +28548,11 @@
       "id": "doctrine:product_ref_is_public_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_public_identity"
+    },
+    {
+      "id": "doctrine:curated_catalog_cap_from_business_rules",
+      "type": "doctrine",
+      "doctrine": "curated_catalog_cap_from_business_rules"
     },
     {
       "id": "doctrine:client_account_facets_global_only",
@@ -29050,6 +29075,11 @@
       "doctrine": "corridor_is_observation_not_gate"
     },
     {
+      "id": "doctrine:viability_is_decision_support_not_price_gate",
+      "type": "doctrine",
+      "doctrine": "viability_is_decision_support_not_price_gate"
+    },
+    {
       "id": "doctrine:pricing_market_viability_coverage",
       "type": "doctrine",
       "doctrine": "pricing_market_viability_coverage"
@@ -29143,11 +29173,6 @@
       "id": "doctrine:sourcing_and_audit_global_only",
       "type": "doctrine",
       "doctrine": "sourcing_and_audit_global_only"
-    },
-    {
-      "id": "doctrine:§7",
-      "type": "doctrine",
-      "doctrine": "§7"
     },
     {
       "id": "doctrine:GAP-07",
@@ -48576,10 +48601,22 @@
       "label": "utils/alerts.js"
     },
     {
+      "from": "services/catalog-approval.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
       "from": "routes/admin/catalog-approval.js",
       "to": "services/catalog-approval.js",
       "type": "uses",
       "label": "routes/admin/catalog-approval.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "services/catalog-approval.js",
+      "type": "uses",
+      "label": "services/catalog-workspace.js"
     },
     {
       "from": "services/catalog-approval.js",
@@ -48611,6 +48648,18 @@
       "to": "doctrine:§6",
       "type": "doctrine",
       "label": "§6"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "doctrine:§7",
+      "type": "doctrine",
+      "label": "§7"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "doctrine:§9",
+      "type": "doctrine",
+      "label": "§9"
     },
     {
       "from": "services/catalog-approval.js",
@@ -49406,6 +49455,12 @@
     },
     {
       "from": "services/catalog-workspace.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
       "to": "services/product-admin-service.js",
       "type": "depends",
       "label": "services/product-admin-service.js"
@@ -49469,6 +49524,12 @@
       "to": "doctrine:product_ref_is_public_identity",
       "type": "doctrine",
       "label": "product_ref_is_public_identity"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "doctrine:curated_catalog_cap_from_business_rules",
+      "type": "doctrine",
+      "label": "curated_catalog_cap_from_business_rules"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -60927,6 +60988,12 @@
     },
     {
       "from": "services/pricing-market-corridor.js",
+      "to": "doctrine:viability_is_decision_support_not_price_gate",
+      "type": "doctrine",
+      "label": "viability_is_decision_support_not_price_gate"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
@@ -60948,6 +61015,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/pricing-market-corridor.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
     },
     {
       "from": "services/pricing-market-coverage.js",
@@ -82638,10 +82711,12 @@
         "db.js",
         "services/catalog-overrides.js",
         "services/product-publication-guard.js",
-        "utils/alerts.js"
+        "utils/alerts.js",
+        "utils/rules.js"
       ],
       "directUsedBy": [
-        "routes/admin/catalog-approval.js"
+        "routes/admin/catalog-approval.js",
+        "services/catalog-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -82660,7 +82735,9 @@
       ],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
-        "§6"
+        "§6",
+        "§7",
+        "§9"
       ],
       "impactAreas": [
         "catalog",
@@ -82671,6 +82748,8 @@
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "doctrine:§6",
+        "doctrine:§7",
+        "doctrine:§9",
         "impact:admin-dashboard",
         "impact:catalog",
         "routes/admin/catalog-approval.js",
@@ -82678,7 +82757,8 @@
         "services/catalog-workspace.js",
         "services/product-publication-guard.js",
         "utils/alerts.js",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/rules.js"
       ]
     },
     "services/catalog-candidate-product-service.js": {
@@ -83235,6 +83315,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "utils/rules.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
         "services/boutique-taxonomy-admin.js"
@@ -83254,7 +83335,8 @@
         "workspace_acts_dashboard_observes",
         "global_catalog_not_market_scoped",
         "reuse_domain_mutation_authorities",
-        "product_ref_is_public_identity"
+        "product_ref_is_public_identity",
+        "curated_catalog_cap_from_business_rules"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -83265,6 +83347,7 @@
         "db:boutique_categories",
         "db:boutique_subcategories",
         "db:products",
+        "doctrine:curated_catalog_cap_from_business_rules",
         "doctrine:global_catalog_not_market_scoped",
         "doctrine:product_ref_is_public_identity",
         "doctrine:reuse_domain_mutation_authorities",
@@ -83275,7 +83358,8 @@
         "routes/admin-catalog-workspace.js",
         "services/boutique-taxonomy-admin.js",
         "services/catalog-approval.js",
-        "services/product-admin-service.js"
+        "services/product-admin-service.js",
+        "utils/rules.js"
       ]
     },
     "services/client-360.js": {
@@ -90349,13 +90433,15 @@
         "market_bounds_possible_human_decides",
         "local_evidence_never_falls_back_silently",
         "browser_never_supplies_market_id",
-        "corridor_is_observation_not_gate"
+        "corridor_is_observation_not_gate",
+        "viability_is_decision_support_not_price_gate"
       ],
       "impactAreas": [
         "pricing",
         "economic-engine",
         "market-autonomy",
-        "admin-dashboard"
+        "admin-dashboard",
+        "sourcing"
       ],
       "mustCheck": [
         "db:competitor_prices",
@@ -90367,10 +90453,12 @@
         "doctrine:corridor_is_observation_not_gate",
         "doctrine:local_evidence_never_falls_back_silently",
         "doctrine:market_bounds_possible_human_decides",
+        "doctrine:viability_is_decision_support_not_price_gate",
         "impact:admin-dashboard",
         "impact:economic-engine",
         "impact:market-autonomy",
         "impact:pricing",
+        "impact:sourcing",
         "routes/admin-pricing-workspace.js",
         "services/market-local-price-resolution-service.js",
         "services/pricing-cdr.js",
@@ -96115,8 +96203,10 @@
         "routes/orders/list.js",
         "routes/orders/qr.js",
         "services/cash-reminder-service.js",
+        "services/catalog-approval.js",
         "services/catalog-enrichment.js",
         "services/catalog-product-detail.js",
+        "services/catalog-workspace.js",
         "services/parcel-operations.js",
         "services/radar-queries.js",
         "services/suppliers/catalog-import-orchestrator.js",
