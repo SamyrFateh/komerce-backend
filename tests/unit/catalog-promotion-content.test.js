@@ -185,13 +185,34 @@ describe('catalog-promotion/content — mapContentToAttributeRows', () => {
     expect(() => mapContentToAttributeRows({ specifications: [{ attribute_key: 'poids' }] })).toThrow(/value requis/);
   });
 
-  it('rejette un attribut dupliqué (même triplet kind/group_key/attribute_key)', () => {
-    expect(() => mapContentToAttributeRows({
+  it('préserve les attributs dupliqués avec une clé DB déterministe au lieu de perdre une valeur', () => {
+    const contract = {
       specifications: [
-        { group_key: 'dimensions', attribute_key: 'poids', value: 500 },
-        { group_key: 'dimensions', attribute_key: 'poids', value: 600 },
+        { group_key: 'general', attribute_key: '348', label: 'Compatibilité', value: 'Valeur A' },
+        { group_key: 'general', attribute_key: '348', label: 'Compatibilité', value: 'Valeur B' },
+        { group_key: 'general', attribute_key: '348', label: 'Compatibilité', value: 'Valeur C' },
       ],
-    })).toThrow(/attribut dupliqué/);
+    };
+
+    const first = mapContentToAttributeRows(contract);
+    const replay = mapContentToAttributeRows(contract);
+
+    expect(first.map((row) => row.attribute_key)).toEqual(['348', '348~2', '348~3']);
+    expect(first.map((row) => row.value_text)).toEqual(['Valeur A', 'Valeur B', 'Valeur C']);
+    expect(replay).toEqual(first);
+  });
+
+  it('désambiguïse aussi une collision avec une clé fournisseur déjà suffixée', () => {
+    const rows = mapContentToAttributeRows({
+      specifications: [
+        { group_key: 'general', attribute_key: '348', value: 'A' },
+        { group_key: 'general', attribute_key: '348', value: 'B' },
+        { group_key: 'general', attribute_key: '348~2', value: 'C' },
+      ],
+    });
+
+    expect(rows.map((row) => row.attribute_key)).toEqual(['348', '348~2', '348~2~2']);
+    expect(new Set(rows.map((row) => `${row.group_key}:${row.attribute_key}`)).size).toBe(3);
   });
 
   it('deux groupes différents peuvent partager le même attribute_key sans collision', () => {
