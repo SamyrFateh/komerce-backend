@@ -3569,7 +3569,7 @@ CREATE TABLE public.orders (
     recipient_id uuid,
     relais_id uuid NOT NULL,
     shipment_id uuid,
-    total_kmf integer NOT NULL,
+    total_kmf numeric(14,2) NOT NULL,
     total_eur numeric(10,2),
     total_aed numeric(10,2),
     payment_mode public.payment_mode NOT NULL,
@@ -3686,7 +3686,7 @@ CREATE TABLE public.orders (
     display_currency text,
     display_parity_snapshot jsonb,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
-    CONSTRAINT chk_orders_total CHECK ((total_kmf >= 0)),
+    CONSTRAINT chk_orders_total CHECK ((total_kmf >= (0)::numeric)),
     CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[])))
 );
 
@@ -6227,7 +6227,7 @@ CREATE VIEW public.suppliers_stats AS
           WHERE ((o.supplier_id = p.id) AND (o.status <> ALL (ARRAY['cancelled'::public.order_status, 'refunded'::public.order_status])))), (0)::bigint) AS orders_count_30d,
     COALESCE(( SELECT sum(o.total_kmf) AS sum
            FROM public.orders o
-          WHERE ((o.supplier_id = p.id) AND (o.status <> ALL (ARRAY['cancelled'::public.order_status, 'refunded'::public.order_status])) AND (o.created_at >= (now() - '30 days'::interval)))), (0)::bigint) AS orders_revenue_30d_kmf,
+          WHERE ((o.supplier_id = p.id) AND (o.status <> ALL (ARRAY['cancelled'::public.order_status, 'refunded'::public.order_status])) AND (o.created_at >= (now() - '30 days'::interval)))), (0)::numeric) AS orders_revenue_30d_kmf,
     COALESCE(( SELECT avg(o.margin_real_pct) AS avg
            FROM public.orders o
           WHERE ((o.supplier_id = p.id) AND (o.margin_real_pct IS NOT NULL) AND (o.created_at >= (now() - '90 days'::interval)))), (0)::numeric) AS avg_margin_pct_90d,

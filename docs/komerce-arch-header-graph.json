@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1319,
-    "edges": 6581,
+    "graphNodes": 1321,
+    "edges": 6583,
     "dbTables": 153,
-    "doctrines": 431,
+    "doctrines": 433,
     "impactAreas": 181,
     "unresolvedCodeEdges": 620,
     "dbWriteViaOverlapWarnings": 7,
@@ -9118,7 +9118,8 @@
       ],
       "doctrine": [
         "capabilities_authorize_catalog_exposure",
-        "client_market_id_never_authority"
+        "client_market_id_never_authority",
+        "market_catalog_summary_is_server_truth"
       ],
       "impactAreas": [
         "market",
@@ -12948,7 +12949,8 @@
       ],
       "doctrine": [
         "writer_not_owner_boundary",
-        "catalog_stays_unique_exposure_is_projection"
+        "catalog_stays_unique_exposure_is_projection",
+        "missing_exposure_is_disabled"
       ],
       "impactAreas": [
         "catalog",
@@ -28185,6 +28187,11 @@
       "doctrine": "client_market_id_never_authority"
     },
     {
+      "id": "doctrine:market_catalog_summary_is_server_truth",
+      "type": "doctrine",
+      "doctrine": "market_catalog_summary_is_server_truth"
+    },
+    {
       "id": "doctrine:capabilities_authorize_client_case_workflow",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_client_case_workflow"
@@ -28488,6 +28495,11 @@
       "id": "doctrine:catalog_stays_unique_exposure_is_projection",
       "type": "doctrine",
       "doctrine": "catalog_stays_unique_exposure_is_projection"
+    },
+    {
+      "id": "doctrine:missing_exposure_is_disabled",
+      "type": "doctrine",
+      "doctrine": "missing_exposure_is_disabled"
     },
     {
       "id": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
@@ -43242,6 +43254,12 @@
     },
     {
       "from": "routes/market-delegation-catalog.js",
+      "to": "doctrine:market_catalog_summary_is_server_truth",
+      "type": "doctrine",
+      "label": "market_catalog_summary_is_server_truth"
+    },
+    {
+      "from": "routes/market-delegation-catalog.js",
       "to": "impact:market",
       "type": "impact",
       "label": "market"
@@ -48882,6 +48900,12 @@
       "to": "doctrine:catalog_stays_unique_exposure_is_projection",
       "type": "doctrine",
       "label": "catalog_stays_unique_exposure_is_projection"
+    },
+    {
+      "from": "services/catalog-market-exposure-service.js",
+      "to": "doctrine:missing_exposure_is_disabled",
+      "type": "doctrine",
+      "label": "missing_exposure_is_disabled"
     },
     {
       "from": "services/catalog-market-exposure-service.js",
@@ -79156,7 +79180,8 @@
       ],
       "doctrines": [
         "capabilities_authorize_catalog_exposure",
-        "client_market_id_never_authority"
+        "client_market_id_never_authority",
+        "market_catalog_summary_is_server_truth"
       ],
       "impactAreas": [
         "market",
@@ -79169,6 +79194,7 @@
         "db:product_market_exposure",
         "doctrine:capabilities_authorize_catalog_exposure",
         "doctrine:client_market_id_never_authority",
+        "doctrine:market_catalog_summary_is_server_truth",
         "impact:catalog",
         "impact:delegation",
         "impact:market",
@@ -82907,7 +82933,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "writer_not_owner_boundary",
-        "catalog_stays_unique_exposure_is_projection"
+        "catalog_stays_unique_exposure_is_projection",
+        "missing_exposure_is_disabled"
       ],
       "impactAreas": [
         "catalog",
@@ -82918,6 +82945,7 @@
         "db:product_market_exposure",
         "db:products",
         "doctrine:catalog_stays_unique_exposure_is_projection",
+        "doctrine:missing_exposure_is_disabled",
         "doctrine:writer_not_owner_boundary",
         "impact:catalog",
         "impact:market-delegation",
