@@ -6,7 +6,7 @@
  * @layer         script
  * @criticality   high
  * @inputs        AliExpress Open Platform credentials/session, DATABASE_URL, KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC
- * @outputs       resumable clean AliExpress sourcing pool capped at 500 in-stock products
+ * @outputs       resumable diversified AliExpress sourcing pool capped at 500 in-stock products
  * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/catalog-sync-checkpoint.js
  * @used-by       Railway staging one-shot/scheduled worker
  * @db-read       supplier_catalog_sync_checkpoints, sourcing_candidates, supplier_oauth_connections
@@ -14,7 +14,7 @@
  * @db-txn        canonical services own candidate writes
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -24,13 +24,46 @@ const catalogImportOrchestrator = require('../services/suppliers/catalog-import-
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
 
 const SUPPLIER_NAME = 'AliExpress';
-const DEFAULT_SYNC_KEY = 'aliexpress-instock-500-v1';
-const DEFAULT_FEED_NAME = 'DS bestseller';
-const DEFAULT_PAGE_SIZE = 50;
-const DEFAULT_MAX_FEED_PAGES = 40;
+const DEFAULT_SYNC_KEY = 'aliexpress-instock-500-text-v1';
+const DEFAULT_COUNTRY_CODE = 'AE';
+const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_MAX_SEARCH_PAGES_PER_QUERY = 5;
 const DEFAULT_MAX_CLEAN_PRODUCTS = 500;
 const ABSOLUTE_MAX_CLEAN_PRODUCTS = 500;
-const CHECKPOINT_CATEGORY_ID = 'feed:ds-bestseller';
+const SEARCH_SORT = 'salesDesc';
+const SEARCH_LOCALE = 'en_US';
+const SEARCH_CURRENCY = 'USD';
+
+// 500 slots, aligned with the current Komerce showcase taxonomy. Search terms are
+// intentionally commercial/plain-English rather than fixture/image-search wording.
+const SEARCH_PLAN = Object.freeze([
+  { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', target: 35, queries: ['women dress', 'women clothing'] },
+  { id: 'mode-homme', category: 'Mode & Beauté', subcategory: 'Homme', target: 25, queries: ['men shirt', 'men clothing'] },
+  { id: 'mode-enfant', category: 'Mode & Beauté', subcategory: 'Enfant', target: 25, queries: ['kids clothing', 'kids shoes'] },
+  { id: 'beaute', category: 'Mode & Beauté', subcategory: 'Beauté', target: 45, queries: ['cosmetics makeup', 'skin care', 'beauty tools'] },
+
+  { id: 'maison-confort', category: 'Maison', subcategory: 'Confort', target: 25, queries: ['home appliance', 'household appliance'] },
+  { id: 'maison-cuisine', category: 'Maison', subcategory: 'Cuisine', target: 25, queries: ['kitchenware', 'kitchen utensil'] },
+  { id: 'maison-deco', category: 'Maison', subcategory: 'Déco', target: 20, queries: ['home decor', 'table lamp'] },
+  { id: 'maison-enfants', category: 'Maison', subcategory: 'Enfants', target: 20, queries: ['school supplies', 'school bag'] },
+
+  { id: 'tech-phones', category: 'Tech', subcategory: 'Phones', target: 30, queries: ['android smartphone', 'mobile phone'] },
+  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', target: 30, queries: ['wireless headphones', 'bluetooth speaker'] },
+  { id: 'tech-montres', category: 'Tech', subcategory: 'Montres', target: 30, queries: ['smartwatch', 'wrist watch'] },
+
+  { id: 'bricolage-outillage', category: 'Bricolage', subcategory: 'Outillage', target: 25, queries: ['power tools', 'hand tools'] },
+  { id: 'bricolage-electricite', category: 'Bricolage', subcategory: 'Electricité', target: 25, queries: ['electrical connectors', 'extension cable'] },
+  { id: 'bricolage-securite', category: 'Bricolage', subcategory: 'Sécurité', target: 20, queries: ['padlock', 'door lock'] },
+
+  { id: 'creation-ceremonie', category: 'Créations personnelles', subcategory: 'Cérémonie', target: 20, queries: ['evening dress', 'formal suit'] },
+  { id: 'creation-cadeau', category: 'Créations personnelles', subcategory: 'Cadeau', target: 20, queries: ['gift box', 'personalized gift'] },
+  { id: 'creation-impression', category: 'Créations personnelles', subcategory: 'Impression', target: 15, queries: ['printed mug', 'custom stationery'] },
+
+  { id: 'auto-filtres', category: 'Auto', subcategory: 'Filtres', target: 20, queries: ['car oil filter', 'car air filter'] },
+  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', target: 15, queries: ['brake pads', 'brake disc'] },
+  { id: 'auto-eclairage', category: 'Auto', subcategory: 'Éclairage', target: 15, queries: ['car led headlight', 'car tail light'] },
+  { id: 'auto-moto', category: 'Auto', subcategory: 'Moto', target: 15, queries: ['motorcycle accessories', 'motorcycle phone holder'] },
+]);
 
 function intEnv(name, fallback, min, max, env = process.env) {
   const raw = env[name];
@@ -44,6 +77,12 @@ function intEnv(name, fallback, min, max, env = process.env) {
 
 function runtimeEnvironment(env = process.env) {
   return String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
+}
+
+function normalizeCountryCode(value) {
+  const code = String(value || DEFAULT_COUNTRY_CODE).trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) throw new Error('KOMERCE_ALIEXPRESS_COUNTRY_CODE doit être un code ISO alpha-2');
+  return code;
 }
 
 function runtimeConfig(env = process.env) {
@@ -65,9 +104,15 @@ function runtimeConfig(env = process.env) {
   return {
     runtime,
     syncKey: String(env.KOMERCE_ALIEXPRESS_SYNC_KEY || DEFAULT_SYNC_KEY).trim() || DEFAULT_SYNC_KEY,
-    feedName: String(env.KOMERCE_ALIEXPRESS_FEED_NAME || DEFAULT_FEED_NAME).trim() || DEFAULT_FEED_NAME,
+    countryCode: normalizeCountryCode(env.KOMERCE_ALIEXPRESS_COUNTRY_CODE),
     pageSize: intEnv('KOMERCE_ALIEXPRESS_PAGE_SIZE', DEFAULT_PAGE_SIZE, 1, 50, env),
-    maxFeedPages: intEnv('KOMERCE_ALIEXPRESS_MAX_FEED_PAGES', DEFAULT_MAX_FEED_PAGES, 1, 1000, env),
+    maxSearchPagesPerQuery: intEnv(
+      'KOMERCE_ALIEXPRESS_SEARCH_PAGES_PER_QUERY',
+      DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
+      1,
+      20,
+      env
+    ),
     maxCleanProducts: intEnv(
       'KOMERCE_ALIEXPRESS_MAX_CLEAN_PRODUCTS',
       DEFAULT_MAX_CLEAN_PRODUCTS,
@@ -98,14 +143,47 @@ function basicCleanProduct(product) {
   return true;
 }
 
-function totalPagesFor(totalRecords, pageSize, maxFeedPages = DEFAULT_MAX_FEED_PAGES) {
-  const total = Math.max(0, Number(totalRecords) || 0);
-  if (total === 0) return 0;
-  return Math.min(Math.ceil(total / pageSize), maxFeedPages);
+function searchPlanTotal(plan = SEARCH_PLAN) {
+  return plan.reduce((sum, segment) => sum + Number(segment.target || 0), 0);
 }
 
-function importSourceFilename(syncKey, page) {
-  return `aliexpress-pool/${syncKey}/page-${String(page).padStart(4, '0')}.json`;
+function logicalSearchPage(segment, logicalPage) {
+  const queries = Array.isArray(segment?.queries) ? segment.queries : [];
+  if (!queries.length) throw new Error(`Segment ${segment?.id || 'unknown'} sans requête`);
+  const n = Number.parseInt(logicalPage, 10);
+  if (!Number.isInteger(n) || n < 1) throw new Error('logicalPage doit être >= 1');
+  const queryIndex = (n - 1) % queries.length;
+  return {
+    keyword: queries[queryIndex],
+    queryIndex,
+    queryPage: Math.floor((n - 1) / queries.length) + 1,
+  };
+}
+
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  return [value];
+}
+
+function flattenTextSearchProducts(payload = {}) {
+  const data = payload?.data || payload?.result?.data || payload?.result || payload || {};
+  const products = data?.products || {};
+  return toArray(products.selection_search_product || products.product || products.products);
+}
+
+function textSearchProductIds(payload = {}) {
+  return [...new Set(flattenTextSearchProducts(payload)
+    .map((item) => String(item?.itemId || item?.product_id || '').trim())
+    .filter((id) => /^\d{5,20}$/.test(id)))];
+}
+
+function checkpointCategoryId(segment) {
+  return `text:${segment.id}`;
+}
+
+function importSourceFilename(syncKey, segmentId, logicalPage) {
+  return `aliexpress-pool/${syncKey}/${segmentId}/page-${String(logicalPage).padStart(4, '0')}.json`;
 }
 
 function stockSqlPredicate(alias = 'sc') {
@@ -144,13 +222,31 @@ async function loadSeenSupplierIds() {
   return new Set(rows.map((row) => row.supplier_product_id).filter(Boolean));
 }
 
-async function importFetchedSubset({ syncKey, page, subset }) {
+function withDiscoveryProvenance(product, { segment, keyword, queryPage }) {
+  return {
+    ...product,
+    raw_payload: {
+      ...(product.raw_payload || {}),
+      discovery: {
+        source: 'aliexpress.ds.text.search',
+        segment_id: segment.id,
+        target_category: segment.category,
+        target_subcategory: segment.subcategory,
+        keyword,
+        query_page: queryPage,
+        supplier_destination_country: DEFAULT_COUNTRY_CODE,
+      },
+    },
+  };
+}
+
+async function importFetchedSubset({ syncKey, segment, logicalPage, subset }) {
   if (!subset.length) return { accepted: 0, rejected: 0, import_id: null };
   const body = {
     supplier_name: SUPPLIER_NAME,
     source_type: 'api',
-    source_filename: importSourceFilename(syncKey, page),
-    notes: `AliExpress in-stock pool ${syncKey} — page ${page}`,
+    source_filename: importSourceFilename(syncKey, segment.id, logicalPage),
+    notes: `AliExpress text-search pool ${syncKey} — ${segment.category}/${segment.subcategory} — page ${logicalPage}`,
   };
   const dispatchSubset = async () => ({
     products: subset,
@@ -159,13 +255,142 @@ async function importFetchedSubset({ syncKey, page, subset }) {
   });
   const result = await catalogImportOrchestrator.importCatalog(body, null, dispatchSubset);
   if (result.status !== 200) {
-    throw new Error(`AliExpress import p${page} refusé (${result.status}): ${JSON.stringify(result.body).slice(0, 1000)}`);
+    throw new Error(`AliExpress import ${segment.id} p${logicalPage} refusé (${result.status}): ${JSON.stringify(result.body).slice(0, 1000)}`);
   }
   return result.body;
 }
 
+async function runSegment({ config, segment, seenIds }) {
+  const categoryId = checkpointCategoryId(segment);
+  const maxLogicalPages = segment.queries.length * config.maxSearchPagesPerQuery;
+  let checkpoint = await checkpoints.getCheckpoint(db, {
+    supplierName: SUPPLIER_NAME,
+    syncKey: config.syncKey,
+    categoryId,
+  });
+
+  if (!checkpoint) {
+    checkpoint = await checkpoints.ensureCheckpoint(db, {
+      supplierName: SUPPLIER_NAME,
+      syncKey: config.syncKey,
+      categoryId,
+      categoryPath: `${segment.category} / ${segment.subcategory}`,
+      totalPages: maxLogicalPages,
+      totalRecords: segment.target,
+      cappedBySupplier: false,
+    });
+  }
+
+  if (checkpoint?.completed || Number(checkpoint?.accepted_items || 0) >= segment.target) {
+    return { pages: 0, accepted: Number(checkpoint?.accepted_items || 0), completed: true };
+  }
+
+  let logicalPage = Math.max(1, Number(checkpoint?.next_page) || 1);
+  let pages = 0;
+
+  while (logicalPage <= maxLogicalPages) {
+    const globalBefore = await countCleanCandidates();
+    const globalRemaining = config.maxCleanProducts - globalBefore;
+    const segmentAccepted = Number(checkpoint?.accepted_items || 0);
+    const segmentRemaining = segment.target - segmentAccepted;
+    if (globalRemaining <= 0 || segmentRemaining <= 0) break;
+
+    const { keyword, queryPage } = logicalSearchPage(segment, logicalPage);
+    let searchPayload;
+    try {
+      searchPayload = await aliexpressConnector.invokeTop('aliexpress.ds.text.search', {
+        keyword,
+        countryCode: config.countryCode,
+        currency: SEARCH_CURRENCY,
+        local: SEARCH_LOCALE,
+        page_size: config.pageSize,
+        page_index: queryPage,
+        sort: SEARCH_SORT,
+      });
+    } catch (error) {
+      await checkpoints.recordError(db, {
+        supplierName: SUPPLIER_NAME,
+        syncKey: config.syncKey,
+        categoryId,
+        error,
+      });
+      throw error;
+    }
+
+    const productIds = textSearchProductIds(searchPayload);
+    let fetched = { products: [], invalid: [], total: 0 };
+    if (productIds.length) {
+      fetched = await aliexpressConnector.fetchProducts({
+        productIds,
+        countryCode: config.countryCode,
+      });
+    }
+
+    const fetchedProducts = (Array.isArray(fetched.products) ? fetched.products : [])
+      .map((product) => withDiscoveryProvenance(product, { segment, keyword, queryPage }));
+    const cleanNew = fetchedProducts
+      .filter(basicCleanProduct)
+      .filter((product) => !seenIds.has(product.supplier_product_id));
+    const subset = cleanNew.slice(0, Math.min(globalRemaining, segmentRemaining));
+    const imported = await importFetchedSubset({
+      syncKey: config.syncKey,
+      segment,
+      logicalPage,
+      subset,
+    });
+    for (const product of subset) seenIds.add(product.supplier_product_id);
+
+    const connectorInvalid = Array.isArray(fetched.invalid) ? fetched.invalid.length : 0;
+    const filteredOut = Math.max(0, fetchedProducts.length - cleanNew.length);
+    pages += 1;
+
+    const globalAfter = await countCleanCandidates();
+    if (globalAfter > config.maxCleanProducts) {
+      throw new Error(`Cap AliExpress dépassé: ${globalAfter}/${config.maxCleanProducts}`);
+    }
+
+    checkpoint = await checkpoints.recordPageSuccess(db, {
+      supplierName: SUPPLIER_NAME,
+      syncKey: config.syncKey,
+      categoryId,
+      page: logicalPage,
+      totalPages: maxLogicalPages,
+      totalRecords: segment.target,
+      accepted: imported.accepted || 0,
+      rejected: (imported.rejected || 0) + connectorInvalid + filteredOut,
+      requestId: searchPayload?.request_id || null,
+      cappedBySupplier: false,
+    });
+
+    if (globalAfter >= config.maxCleanProducts) break;
+    if (Number(checkpoint?.accepted_items || 0) >= segment.target) {
+      checkpoint = await checkpoints.markComplete(db, {
+        supplierName: SUPPLIER_NAME,
+        syncKey: config.syncKey,
+        categoryId,
+        totalPages: maxLogicalPages,
+        totalRecords: segment.target,
+        cappedBySupplier: false,
+      }) || checkpoint;
+      break;
+    }
+    logicalPage += 1;
+  }
+
+  const accepted = Number(checkpoint?.accepted_items || 0);
+  return {
+    pages,
+    accepted,
+    completed: Boolean(checkpoint?.completed) || accepted >= segment.target,
+  };
+}
+
 async function runSync() {
   const config = runtimeConfig();
+  if (searchPlanTotal() !== ABSOLUTE_MAX_CLEAN_PRODUCTS) {
+    throw new Error(`Plan AliExpress invalide: ${searchPlanTotal()}/${ABSOLUTE_MAX_CLEAN_PRODUCTS}`);
+  }
+
   const startingClean = await countCleanCandidates();
   if (startingClean > config.maxCleanProducts) {
     throw new Error(`Pool AliExpress déjà au-dessus du cap: ${startingClean}/${config.maxCleanProducts}`);
@@ -176,11 +401,12 @@ async function runSync() {
     const output = {
       runtime: config.runtime,
       sync_key: config.syncKey,
-      feed_name: config.feedName,
+      discovery: 'aliexpress.ds.text.search',
+      country_code: config.countryCode,
       starting_clean: startingClean,
       final_clean: startingClean,
       target: config.maxCleanProducts,
-      feed_pages_this_run: 0,
+      search_pages_this_run: 0,
       paused_reason: 'target-already-reached',
       checkpoint_summary: summary,
     };
@@ -188,134 +414,46 @@ async function runSync() {
     return output;
   }
 
-  let checkpoint = await checkpoints.getCheckpoint(db, {
-    supplierName: SUPPLIER_NAME,
-    syncKey: config.syncKey,
-    categoryId: CHECKPOINT_CATEGORY_ID,
-  });
-  let page = Math.max(1, Number(checkpoint?.next_page) || 1);
-  let totalPages = checkpoint?.total_pages == null ? null : Number(checkpoint.total_pages);
-  let totalRecords = checkpoint?.total_records == null ? null : Number(checkpoint.total_records);
   const seenIds = await loadSeenSupplierIds();
   let pages = 0;
-  let pausedReason = null;
+  let completedSegments = 0;
+  const segmentResults = [];
 
-  console.log(`[aliexpress-pool] runtime=${config.runtime || 'unknown'} feed=${config.feedName} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} maxPages=${config.maxFeedPages}`);
+  console.log(`[aliexpress-pool] runtime=${config.runtime || 'unknown'} discovery=ds.text.search country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
 
-  while (page <= config.maxFeedPages && (totalPages == null || page <= totalPages)) {
-    const beforeCount = await countCleanCandidates();
-    const remaining = config.maxCleanProducts - beforeCount;
-    if (remaining <= 0) {
-      pausedReason = 'target-reached';
-      break;
-    }
+  for (const segment of SEARCH_PLAN) {
+    const before = await countCleanCandidates();
+    if (before >= config.maxCleanProducts) break;
 
-    let fetched;
-    try {
-      fetched = await aliexpressConnector.fetchProducts({
-        feed_name: config.feedName,
-        page,
-        page_size: config.pageSize,
-      });
-    } catch (error) {
-      if (checkpoint) {
-        await checkpoints.recordError(db, {
-          supplierName: SUPPLIER_NAME,
-          syncKey: config.syncKey,
-          categoryId: CHECKPOINT_CATEGORY_ID,
-          error,
-        });
-      }
-      throw error;
-    }
-
-    if (totalPages == null) {
-      totalRecords = Math.max(0, Number(fetched.total_records) || 0);
-      totalPages = totalPagesFor(totalRecords, config.pageSize, config.maxFeedPages);
-      checkpoint = await checkpoints.ensureCheckpoint(db, {
-        supplierName: SUPPLIER_NAME,
-        syncKey: config.syncKey,
-        categoryId: CHECKPOINT_CATEGORY_ID,
-        categoryPath: config.feedName,
-        totalPages,
-        totalRecords,
-        cappedBySupplier: totalPages * config.pageSize < totalRecords,
-      });
-      if (totalPages === 0) {
-        await checkpoints.markComplete(db, {
-          supplierName: SUPPLIER_NAME,
-          syncKey: config.syncKey,
-          categoryId: CHECKPOINT_CATEGORY_ID,
-          totalPages: 0,
-          totalRecords: 0,
-          cappedBySupplier: false,
-        });
-        pausedReason = 'feed-empty';
-        break;
-      }
-    }
-
-    const fetchedProducts = Array.isArray(fetched.products) ? fetched.products : [];
-    const cleanNew = fetchedProducts
-      .filter(basicCleanProduct)
-      .filter((product) => !seenIds.has(product.supplier_product_id));
-    const subset = cleanNew.slice(0, remaining);
-    const imported = await importFetchedSubset({
-      syncKey: config.syncKey,
-      page,
-      subset,
-    });
-    for (const product of subset) seenIds.add(product.supplier_product_id);
-
-    const connectorInvalid = Array.isArray(fetched.invalid) ? fetched.invalid.length : 0;
-    const filteredOut = Math.max(0, fetchedProducts.length - cleanNew.length);
-    pages += 1;
-
-    const afterCount = await countCleanCandidates();
-    if (afterCount > config.maxCleanProducts) {
-      throw new Error(`Cap AliExpress dépassé: ${afterCount}/${config.maxCleanProducts}`);
-    }
-
-    await checkpoints.recordPageSuccess(db, {
-      supplierName: SUPPLIER_NAME,
-      syncKey: config.syncKey,
-      categoryId: CHECKPOINT_CATEGORY_ID,
-      page,
-      totalPages,
-      totalRecords,
-      accepted: imported.accepted || 0,
-      rejected: (imported.rejected || 0) + connectorInvalid + filteredOut,
-      requestId: fetched.request_id || null,
-      cappedBySupplier: totalPages * config.pageSize < totalRecords,
-    });
-
-    if (afterCount >= config.maxCleanProducts) {
-      pausedReason = 'target-reached';
-      break;
-    }
-    page += 1;
+    const result = await runSegment({ config, segment, seenIds });
+    pages += result.pages;
+    if (result.completed) completedSegments += 1;
+    segmentResults.push({ id: segment.id, target: segment.target, accepted: result.accepted, completed: result.completed });
+    console.log(`[aliexpress-pool] segment=${segment.id} accepted=${result.accepted}/${segment.target} pages=${result.pages}`);
   }
 
   const finalClean = await countCleanCandidates();
-  if (!pausedReason) {
-    pausedReason = finalClean >= config.maxCleanProducts
-      ? 'target-reached'
-      : (page > config.maxFeedPages ? 'page-budget-reached' : 'feed-exhausted');
-  }
   const summary = await checkpoints.summarize(db, {
     supplierName: SUPPLIER_NAME,
     syncKey: config.syncKey,
   });
+  const shortfalls = segmentResults
+    .filter((row) => row.accepted < row.target)
+    .map((row) => ({ id: row.id, missing: row.target - row.accepted }));
   const output = {
     runtime: config.runtime,
     sync_key: config.syncKey,
-    feed_name: config.feedName,
+    discovery: 'aliexpress.ds.text.search',
+    country_code: config.countryCode,
     starting_clean: startingClean,
     final_clean: finalClean,
     target: config.maxCleanProducts,
-    announced_records: totalRecords,
-    feed_pages_this_run: pages,
-    paused_reason: pausedReason,
+    plan_target: searchPlanTotal(),
+    segments_seen: segmentResults.length,
+    segments_completed: completedSegments,
+    search_pages_this_run: pages,
+    paused_reason: finalClean >= config.maxCleanProducts ? 'target-reached' : 'search-plan-exhausted',
+    shortfalls,
     checkpoint_summary: summary,
   };
   if (finalClean > config.maxCleanProducts) {
@@ -337,19 +475,25 @@ if (require.main === module) {
 module.exports = {
   SUPPLIER_NAME,
   DEFAULT_SYNC_KEY,
-  DEFAULT_FEED_NAME,
+  DEFAULT_COUNTRY_CODE,
   DEFAULT_PAGE_SIZE,
-  DEFAULT_MAX_FEED_PAGES,
+  DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
   DEFAULT_MAX_CLEAN_PRODUCTS,
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
-  CHECKPOINT_CATEGORY_ID,
+  SEARCH_PLAN,
   intEnv,
   runtimeEnvironment,
+  normalizeCountryCode,
   runtimeConfig,
   positiveStock,
   basicCleanProduct,
-  totalPagesFor,
+  searchPlanTotal,
+  logicalSearchPage,
+  flattenTextSearchProducts,
+  textSearchProductIds,
+  checkpointCategoryId,
   importSourceFilename,
   stockSqlPredicate,
+  withDiscoveryProvenance,
   runSync,
 };
