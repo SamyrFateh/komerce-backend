@@ -223,8 +223,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "id": {
@@ -274,11 +274,35 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
-                    "user": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "full_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "phone": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "role": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "currency_pref": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -483,8 +507,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "message": {
@@ -2470,8 +2494,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "success": {
@@ -7990,8 +8014,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "scope": {
@@ -8003,6 +8027,14 @@
                       "x-observed": true
                     },
                     "cost_components": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "access": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "capabilities": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -8037,8 +8069,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "market_id": {
@@ -8104,8 +8136,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "market_code": {
@@ -11392,8 +11424,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "order": {
