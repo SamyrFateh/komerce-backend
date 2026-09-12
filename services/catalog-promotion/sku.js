@@ -6,46 +6,124 @@
  * @criticality   high
  * @inputs        product_skus_existing_rows, normalized_source_contract.sellable_units[]
  * @outputs       sku_reconciliation_plan (toCreate/toUpdate/toReactivate/toDeactivate)
- * @depends       @none
+ * @depends       services/suppliers/supplier-order-identity.js
  * @used-by       services/catalog-promotion.js (Lot 6)
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      PDC-8 §SKU — IDENTITÉ SOURCE STABLE, §STOCK, §DOCTRINE ZÉRO HEURISTIQUE
- * @impact-areas  catalog
- * @version       2026-07
+ * @doctrine      PDC-8 §SKU — IDENTITÉ SOURCE STABLE, §STOCK, §DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @impact-areas  catalog,purchasing
+ * @version       2026-09 — persistance Supplier Order Identity fail-closed
  */
 
 /**
- * KOMERCE — PDC-8 Lot 4 : plan de réconciliation SKU par identité source stable
+ * KOMERCE — plan de réconciliation SKU par identité source stable
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Fonction pure : ne touche jamais la DB. Produit un PLAN que le Lot 6
- * (services/catalog-promotion.js) exécutera dans une transaction réelle.
+ * Fonction pure : ne touche jamais la DB. Produit un PLAN que
+ * services/catalog-promotion.js exécute dans une transaction réelle.
  *
- * Règle centrale (PDC-8 §SKU) : l'identité de re-promotion est
- * `supplier_sku`, jamais `variant_combo`. Un supplier_sku rejoué doit
- * conserver le même `product_skus.id` même si son variant_combo est corrigé
- * par la source (ex. "Rouge/M" → "Rouge foncé/M").
+ * Deux identités restent volontairement distinctes :
+ *   - supplier_sku : identité de RECONCILIATION catalogue ;
+ *   - supplier_unit_ref + supplier_order_identity : identité de COMMANDE.
+ *
+ * Un supplier_sku rejoué conserve le même product_skus.id. Une identité de
+ * commande native absente peut être complétée par une re-promotion ultérieure,
+ * mais une identité déjà persistée ne peut jamais être remplacée silencieusement.
+ * Toute divergence bloque avec BLOCKED_SUPPLIER_IDENTITY.
  *
  * Les SKU manuels (source = 'MANUAL', supplier_sku NULL) ne sont JAMAIS
- * touchés par ce plan — ils n'existent pas du point de vue d'une
- * re-promotion fournisseur.
+ * touchés par ce plan.
  *
- * Prix (PDC-8 §MAPPING V2 → CANONIQUE §SKU) : ne copie jamais
- * sellable_unit.purchase_price dans price_kmf. Le plan ne fixe jamais
- * price_kmf — la colonne reste intouchée (create : null ; update : absent
- * du patch) tant qu'aucun moteur pricing commercial explicite n'est
- * branché (hors scope Lot 4/6).
+ * Prix : ne copie jamais sellable_unit.purchase_price dans price_kmf.
  *
- * Stock (PDC-8 §STOCK) : stock_available absent ne fabrique jamais une
- * quantité. Le plan reporte stockKnown=false et stock=0 dans ce cas —
- * 0 est ici une PROJECTION TECHNIQUE d'absence non vendable, jamais un
- * stock fournisseur connu. Charge à l'appelant (Lot 6 / audit) de ne
- * jamais présenter ce 0 comme une donnée fournisseur.
+ * Stock : stock_available absent ne fabrique jamais une quantité. Le plan
+ * reporte stockKnown=false et stock=0 ; sur update l'appelant préserve la
+ * valeur existante.
  */
 
 'use strict';
+
+const { isDeepStrictEqual } = require('node:util');
+const {
+  blockedSupplierIdentity,
+  normalizeIdentity,
+} = require('../suppliers/supplier-order-identity');
+
+function normalizeSupplierUnitRef(value, supplierSku) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw blockedSupplierIdentity(
+      `supplier_unit_ref invalide pour ${supplierSku}`,
+      { supplier_sku: supplierSku }
+    );
+  }
+  return value.trim();
+}
+
+function canonicalIdentityFromUnit(unit, supplierSku) {
+  const supplierUnitRef = normalizeSupplierUnitRef(unit.supplier_unit_ref, supplierSku);
+  const supplierOrderIdentity = unit.supplier_order_identity == null
+    ? null
+    : normalizeIdentity(unit.supplier_order_identity, supplierUnitRef);
+
+  return {
+    supplier_unit_ref: supplierUnitRef,
+    supplier_order_identity: supplierOrderIdentity,
+  };
+}
+
+function canonicalIdentityFromExisting(row, supplierSku) {
+  const supplierUnitRef = normalizeSupplierUnitRef(row.supplier_unit_ref, supplierSku);
+  const supplierOrderIdentity = row.supplier_order_identity == null
+    ? null
+    : normalizeIdentity(row.supplier_order_identity, supplierUnitRef);
+
+  return {
+    supplier_unit_ref: supplierUnitRef,
+    supplier_order_identity: supplierOrderIdentity,
+  };
+}
+
+function reconcileOrderIdentity(existing, incoming, supplierSku) {
+  if (!existing) return incoming;
+
+  const persisted = canonicalIdentityFromExisting(existing, supplierSku);
+
+  if (
+    persisted.supplier_unit_ref
+    && incoming.supplier_unit_ref
+    && persisted.supplier_unit_ref !== incoming.supplier_unit_ref
+  ) {
+    throw blockedSupplierIdentity(
+      `supplier_unit_ref divergent pour ${supplierSku}`,
+      {
+        supplier_sku: supplierSku,
+        persisted_supplier_unit_ref: persisted.supplier_unit_ref,
+        incoming_supplier_unit_ref: incoming.supplier_unit_ref,
+      }
+    );
+  }
+
+  if (
+    persisted.supplier_order_identity
+    && incoming.supplier_order_identity
+    && !isDeepStrictEqual(persisted.supplier_order_identity, incoming.supplier_order_identity)
+  ) {
+    throw blockedSupplierIdentity(
+      `supplier_order_identity divergente pour ${supplierSku}`,
+      {
+        supplier_sku: supplierSku,
+        supplier_unit_ref: persisted.supplier_unit_ref || incoming.supplier_unit_ref,
+      }
+    );
+  }
+
+  return {
+    supplier_unit_ref: persisted.supplier_unit_ref || incoming.supplier_unit_ref || null,
+    supplier_order_identity: persisted.supplier_order_identity || incoming.supplier_order_identity || null,
+  };
+}
 
 function planSkuReconciliation(existingSkus, sellableUnits) {
   if (!Array.isArray(existingSkus)) {
@@ -58,6 +136,12 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
   const bySupplierSku = new Map();
   for (const row of existingSkus) {
     if (row.source === 'SUPPLIER' && row.supplier_sku) {
+      if (bySupplierSku.has(row.supplier_sku)) {
+        throw blockedSupplierIdentity(
+          `plusieurs product_skus portent le même supplier_sku: ${row.supplier_sku}`,
+          { supplier_sku: row.supplier_sku }
+        );
+      }
       bySupplierSku.set(row.supplier_sku, row);
     }
   }
@@ -66,6 +150,7 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
   const toUpdate = [];
   const toReactivate = [];
   const seenSupplierSkus = new Set();
+  const seenSupplierUnitRefs = new Map();
 
   for (const unit of sellableUnits) {
     if (!unit || typeof unit.supplier_sku !== 'string' || unit.supplier_sku.trim().length === 0) {
@@ -74,13 +159,31 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     const supplierSku = unit.supplier_sku.trim();
     seenSupplierSkus.add(supplierSku);
 
+    const incomingIdentity = canonicalIdentityFromUnit(unit, supplierSku);
+    if (incomingIdentity.supplier_unit_ref) {
+      const previousSku = seenSupplierUnitRefs.get(incomingIdentity.supplier_unit_ref);
+      if (previousSku && previousSku !== supplierSku) {
+        throw blockedSupplierIdentity(
+          `supplier_unit_ref résout plusieurs supplier_sku: ${incomingIdentity.supplier_unit_ref}`,
+          {
+            supplier_unit_ref: incomingIdentity.supplier_unit_ref,
+            supplier_skus: [previousSku, supplierSku],
+          }
+        );
+      }
+      seenSupplierUnitRefs.set(incomingIdentity.supplier_unit_ref, supplierSku);
+    }
+
     const stockKnown = typeof unit.stock_available === 'number' && Number.isInteger(unit.stock_available);
     const stock = stockKnown ? unit.stock_available : 0;
     const existing = bySupplierSku.get(supplierSku);
+    const orderIdentity = reconcileOrderIdentity(existing, incomingIdentity, supplierSku);
 
     if (!existing) {
       toCreate.push({
         supplier_sku: supplierSku,
+        supplier_unit_ref: orderIdentity.supplier_unit_ref,
+        supplier_order_identity: orderIdentity.supplier_order_identity,
         variant_combo: unit.option_values || null,
         stock,
         stockKnown,
@@ -94,6 +197,8 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     target.push({
       id: existing.id,
       supplier_sku: supplierSku,
+      supplier_unit_ref: orderIdentity.supplier_unit_ref,
+      supplier_order_identity: orderIdentity.supplier_order_identity,
       variant_combo: unit.option_values || null,
       stock,
       stockKnown,
