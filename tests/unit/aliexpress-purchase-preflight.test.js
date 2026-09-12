@@ -60,6 +60,31 @@ describe('AliExpress purchase preflight', () => {
     });
   });
 
+  test('une identité sku_attr-only ne promeut jamais supplier_unit_ref en sku_id freight', () => {
+    const c = contract();
+    c.sellable_units[0].supplier_unit_ref = '14:Field Green';
+    delete c.sellable_units[0].supplier_order_identity.payload.sku_id;
+    c.sellable_units[0].supplier_order_identity.payload.sku_attr = '14:Field Green';
+
+    const resolved = preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1);
+    expect(resolved.raw_sku_id).toBeNull();
+    expect(resolved.sku_attr).toBe('14:Field Green');
+
+    const params = preflight.buildFreightBusinessParams(resolved, {
+      country_code: 'KM',
+      send_goods_country_code: 'CN',
+    });
+    const dto = JSON.parse(params.param_aeop_freight_calculate_for_buyer_d_t_o);
+    expect(dto).toEqual({
+      product_id: 10000012345,
+      product_num: 1,
+      country_code: 'KM',
+      price: '3.21',
+      price_currency: 'USD',
+      send_goods_country_code: 'CN',
+    });
+  });
+
   test('prépare le payload place-order officiel sans l’exécuter', () => {
     const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
     const params = preflight.buildPlaceOrderBusinessParams(resolved, {
