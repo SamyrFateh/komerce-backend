@@ -114,8 +114,8 @@ router.post('/', sharedCartLimiter, async (req, res, next) => {
 
     await db.query(
       `INSERT INTO cart_shares
-         (share_token, cart_items, type, event_label, sharer_name, status, contributed_kmf, expires_at)
-       VALUES ($1, $2, 'simple', NULL, $3, 'active', 0, $4)`,
+         (share_token, cart_items, type, event_label, sharer_name, status, expires_at)
+       VALUES ($1, $2, 'simple', NULL, $3, 'active', $4)`,
       [token, JSON.stringify(cart_items), sharer_name, expiresAt]
     );
 

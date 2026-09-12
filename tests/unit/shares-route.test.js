@@ -7,15 +7,11 @@
 /**
  * KOMERCE — Tests Unitaires : routes/shares (P0 shared-cart)
  *
- * Couvre le système "cart_shares" v2 (event shares + contributions) :
- * - POST / : création de lien (simple/event), calcul du total, retry sur
- *   collision de token
+ * Couvre routes/shares.js (partage "simple", cart_shares) :
+ * - POST / : création de lien, calcul du total, retry sur collision de
+ *   token
  * - GET /:token : lecture, expiration, enrichissement produits (promo),
- *   contributions si type=event
- * - POST /:token/contributions : validations, calcul de prix mode item,
- *   garde-fous statut/type/expiration
- * - PATCH /:token/contributions/:id : confirmation/annulation, recalcul
- *   contributed_kmf
+ *   rejet si le partage n'est pas de type 'simple'
  *
  * Run : npx jest tests/unit/shares-route.test.js
  */
@@ -144,7 +140,6 @@ describe('routes/shares', () => {
             status: 'active',
             expires_at: new Date(Date.now() + 1000000),
             cart_items: JSON.stringify([{ product_id: 'p1', qty: 2 }]),
-            contributed_kmf: 0,
           }],
         })
         .mockResolvedValueOnce({
@@ -167,7 +162,6 @@ describe('routes/shares', () => {
             status: 'active',
             expires_at: null,
             cart_items: JSON.stringify([{ product_id: 'p1', qty: 1 }]),
-            contributed_kmf: 0,
           }],
         })
         .mockResolvedValueOnce({
@@ -191,7 +185,6 @@ describe('routes/shares', () => {
             status: 'active',
             expires_at: null,
             cart_items: JSON.stringify([{ product_id: 'p1', qty: 1 }]),
-            contributed_kmf: 0,
           }],
         })
         .mockResolvedValueOnce({
@@ -214,7 +207,6 @@ describe('routes/shares', () => {
           status: 'active',
           expires_at: null,
           cart_items: JSON.stringify([]),
-          contributed_kmf: 0,
         }],
       });
 

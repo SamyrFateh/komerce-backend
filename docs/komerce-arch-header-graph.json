@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 555,
-    "filesWithFullHeaders": 510,
+    "scannedCodeFiles": 556,
+    "filesWithFullHeaders": 511,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 555,
+    "filesWithAnyHeaders": 556,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1323,
-    "edges": 6596,
+    "graphNodes": 1327,
+    "edges": 6610,
     "dbTables": 153,
-    "doctrines": 434,
+    "doctrines": 437,
     "impactAreas": 181,
-    "unresolvedCodeEdges": 623,
+    "unresolvedCodeEdges": 624,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 69
   },
@@ -63,7 +63,7 @@
     "auth-identity": 6,
     "operations": 11,
     "inventory": 2,
-    "local-stock": 3,
+    "local-stock": 4,
     "purchasing": 8,
     "unsold-resolution": 1,
     "incident-management": 2,
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 126,
     "entrypoint": 1,
-    "service": 254,
+    "service": 255,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +116,7 @@
   "byCriticality": {
     "critical": 85,
     "medium": 124,
-    "high": 293,
+    "high": 294,
     "low": 53
   },
   "nodes": [
@@ -14325,13 +14325,15 @@
       "outputs": [
         "canonical_commerce_projection",
         "market_product_viability",
+        "market_product_availability",
         "server_decision_signals"
       ],
       "depends": [
         "db",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
-        "pricing-market-corridor"
+        "pricing-market-corridor",
+        "local-stock-decision-projection"
       ],
       "usedBy": [
         "routes/admin-dashboard-market.js"
@@ -14349,13 +14351,16 @@
       "doctrine": [
         "dashboard_no_business_recompute",
         "server_market_scope_is_authority",
-        "decision_support_reuses_canonical_economic_engine"
+        "decision_support_reuses_canonical_economic_engine",
+        "local_stock_projection_is_availability_authority"
       ],
       "impactAreas": [
         "admin-dashboard",
         "commerce",
         "market-authorization",
-        "economic-engine"
+        "economic-engine",
+        "local-stock",
+        "decision-signals"
       ],
       "version": "2026-09"
     },
@@ -16083,6 +16088,50 @@
       "impactAreas": [
         "local-stock",
         "checkout"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/local-stock-decision-projection.js",
+      "file": "services/local-stock-decision-projection.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "local-stock-decision-projection",
+      "domain": "local-stock",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "market_id",
+        "location"
+      ],
+      "outputs": [
+        "market_local_availability_evidence"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "services/dashboard-commerce.js"
+      ],
+      "dbRead": [
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "local_stock_is_physical_availability_authority",
+        "decision_projection_never_reads_products_stock"
+      ],
+      "impactAreas": [
+        "local-stock",
+        "admin-dashboard",
+        "commerce",
+        "decision-signals"
       ],
       "version": "2026-09"
     },
@@ -28669,6 +28718,11 @@
       "doctrine": "decision_support_reuses_canonical_economic_engine"
     },
     {
+      "id": "doctrine:local_stock_projection_is_availability_authority",
+      "type": "doctrine",
+      "doctrine": "local_stock_projection_is_availability_authority"
+    },
+    {
       "id": "doctrine:finance_event_date_is_authoritative",
       "type": "doctrine",
       "doctrine": "finance_event_date_is_authoritative"
@@ -28737,6 +28791,16 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "id": "doctrine:local_stock_is_physical_availability_authority",
+      "type": "doctrine",
+      "doctrine": "local_stock_is_physical_availability_authority"
+    },
+    {
+      "id": "doctrine:decision_projection_never_reads_products_stock",
+      "type": "doctrine",
+      "doctrine": "decision_projection_never_reads_products_stock"
     },
     {
       "id": "doctrine:partner_controls_local_cash_policy",
@@ -51073,6 +51137,12 @@
       "label": "pricing-market-corridor"
     },
     {
+      "from": "services/dashboard-commerce.js",
+      "to": "services/local-stock-decision-projection.js",
+      "type": "depends",
+      "label": "local-stock-decision-projection"
+    },
+    {
       "from": "routes/admin-dashboard-market.js",
       "to": "services/dashboard-commerce.js",
       "type": "uses",
@@ -51128,6 +51198,12 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "doctrine:local_stock_projection_is_availability_authority",
+      "type": "doctrine",
+      "label": "local_stock_projection_is_availability_authority"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -51149,6 +51225,18 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
     },
     {
       "from": "services/dashboard-finance-canonical.js",
@@ -53971,6 +54059,66 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "services/local-stock-decision-projection.js",
+      "type": "uses",
+      "label": "services/dashboard-commerce.js"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-read",
+      "label": "local_stock_allocations"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "doctrine:local_stock_is_physical_availability_authority",
+      "type": "doctrine",
+      "label": "local_stock_is_physical_availability_authority"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "doctrine:decision_projection_never_reads_products_stock",
+      "type": "doctrine",
+      "label": "decision_projection_never_reads_products_stock"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "impact:commerce",
+      "type": "impact",
+      "label": "commerce"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
     },
     {
       "from": "services/local-stock-service.js",
@@ -84403,7 +84551,8 @@
         "db",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
-        "pricing-market-corridor"
+        "pricing-market-corridor",
+        "services/local-stock-decision-projection.js"
       ],
       "directUsedBy": [
         "routes/admin-dashboard-market.js"
@@ -84421,13 +84570,16 @@
       "doctrines": [
         "dashboard_no_business_recompute",
         "server_market_scope_is_authority",
-        "decision_support_reuses_canonical_economic_engine"
+        "decision_support_reuses_canonical_economic_engine",
+        "local_stock_projection_is_availability_authority"
       ],
       "impactAreas": [
         "admin-dashboard",
         "commerce",
         "market-authorization",
-        "economic-engine"
+        "economic-engine",
+        "local-stock",
+        "decision-signals"
       ],
       "mustCheck": [
         "db:order_item_cost_imputations",
@@ -84437,12 +84589,16 @@
         "db:products",
         "doctrine:dashboard_no_business_recompute",
         "doctrine:decision_support_reuses_canonical_economic_engine",
+        "doctrine:local_stock_projection_is_availability_authority",
         "doctrine:server_market_scope_is_authority",
         "impact:admin-dashboard",
         "impact:commerce",
+        "impact:decision-signals",
         "impact:economic-engine",
+        "impact:local-stock",
         "impact:market-authorization",
-        "routes/admin-dashboard-market.js"
+        "routes/admin-dashboard-market.js",
+        "services/local-stock-decision-projection.js"
       ]
     },
     "services/dashboard-finance-canonical.js": {
@@ -86170,6 +86326,48 @@
         "impact:local-stock",
         "routes/local-stock.js",
         "services/local-stock-service.js"
+      ]
+    },
+    "services/local-stock-decision-projection.js": {
+      "role": "local-stock-decision-projection",
+      "domain": "local-stock",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "services/dashboard-commerce.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "local_stock_is_physical_availability_authority",
+        "decision_projection_never_reads_products_stock"
+      ],
+      "impactAreas": [
+        "local-stock",
+        "admin-dashboard",
+        "commerce",
+        "decision-signals"
+      ],
+      "mustCheck": [
+        "db:local_stock",
+        "db:local_stock_allocations",
+        "doctrine:decision_projection_never_reads_products_stock",
+        "doctrine:local_stock_is_physical_availability_authority",
+        "impact:admin-dashboard",
+        "impact:commerce",
+        "impact:decision-signals",
+        "impact:local-stock",
+        "services/dashboard-commerce.js"
       ]
     },
     "services/local-stock-service.js": {
@@ -99783,6 +99981,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/local-stock-decision-projection.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/local-stock-service.js",
