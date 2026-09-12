@@ -30,7 +30,7 @@ jest.mock('../../services/suppliers/connectors/cj-connector', () => ({
   fetchProducts: (...args) => mockCjFetch(...args),
 }));
 
-jest.mock('../../services/suppliers/connectors/aliexpress-connector', () => ({
+jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({
   IS_ACTIVE: true,
   INACTIVE_REASON: null,
   fetchProducts: (...args) => mockAliExpressFetch(...args),
