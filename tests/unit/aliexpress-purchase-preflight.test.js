@@ -32,7 +32,7 @@ function contract(overrides = {}) {
 
 describe('AliExpress purchase preflight', () => {
   test('résout le SKU V2 depuis la Supplier Order Identity sans raw_payload', () => {
-    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 2, { requireOrderIdentity: true });
+    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 2);
     expect(resolved).toEqual(expect.objectContaining({
       supplier_product_id: '10000012345',
       supplier_sku: 'AE-SKU-RED-M',
@@ -47,7 +47,7 @@ describe('AliExpress purchase preflight', () => {
   });
 
   test('construit le freight DTO sans conversion monétaire silencieuse', () => {
-    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1, { requireOrderIdentity: true });
+    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
     const params = preflight.buildFreightBusinessParams(resolved, { country_code: 'KM' });
     const dto = JSON.parse(params.param_aeop_freight_calculate_for_buyer_d_t_o);
     expect(dto).toEqual({
@@ -61,7 +61,7 @@ describe('AliExpress purchase preflight', () => {
   });
 
   test('prépare le payload place-order officiel sans l’exécuter', () => {
-    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1, { requireOrderIdentity: true });
+    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
     const params = preflight.buildPlaceOrderBusinessParams(resolved, {
       address: 'Hub staging',
       city: 'Dubai',
@@ -81,19 +81,19 @@ describe('AliExpress purchase preflight', () => {
   test('fail-closed si le stock exact du SKU est inconnu', () => {
     const c = contract();
     c.sellable_units[0].stock_available = null;
-    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1, { requireOrderIdentity: true }))
+    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1))
       .toThrow(/stock fournisseur inconnu/i);
   });
 
-  test('fail-closed si l’identité commandable manque', () => {
+  test('fail-closed par défaut si l’identité commandable manque', () => {
     const c = contract();
     delete c.sellable_units[0].supplier_order_identity;
     delete c.sellable_units[0].supplier_unit_ref;
-    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1, { requireOrderIdentity: true }))
-      .toThrow(/supplier_order_identity requis/i);
+    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1))
+      .toThrow(/BLOCKED_SUPPLIER_IDENTITY.*supplier_order_identity requis/i);
   });
 
-  test('un snapshot historique peut être identifié pour refresh mais ne peut pas construire du fret', () => {
+  test('un snapshot historique peut être identifié explicitement pour refresh mais ne peut pas construire du fret', () => {
     const c = contract();
     delete c.sellable_units[0].supplier_order_identity;
     delete c.sellable_units[0].supplier_unit_ref;
@@ -106,7 +106,7 @@ describe('AliExpress purchase preflight', () => {
   test('refuse une identité d’un autre fournisseur', () => {
     const c = contract();
     c.sellable_units[0].supplier_order_identity.provider = 'cj';
-    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1, { requireOrderIdentity: true }))
-      .toThrow(/incompatible avec AliExpress/i);
+    expect(() => preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1))
+      .toThrow(/BLOCKED_SUPPLIER_IDENTITY.*incompatible avec AliExpress/i);
   });
 });

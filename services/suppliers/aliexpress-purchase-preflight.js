@@ -31,14 +31,12 @@ function positiveInt(value, name = 'quantity') {
 
 /**
  * Interprétation AliExpress d'une Supplier Order Identity déjà produite par
- * le connecteur. Un snapshot historique sans raw_payload peut être résolu pour
- * identifier le SKU à rafraîchir, mais aucune requête d'achat/fret ne peut être
- * construite tant que l'identité canonique n'a pas été obtenue du live.
+ * le connecteur. Un snapshot historique sans identité peut être résolu pour
+ * identifier le SKU à rafraîchir uniquement si l'appelant le demande
+ * explicitement avec requireOrderIdentity:false.
  */
 function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {}) {
-  const requireOrderIdentity = options.requireOrderIdentity !== undefined
-    ? options.requireOrderIdentity
-    : Boolean(contract?.raw_payload);
+  const requireOrderIdentity = options.requireOrderIdentity !== false;
   const resolved = supplierIdentity.resolveSupplierUnit(
     contract,
     supplierSku,
