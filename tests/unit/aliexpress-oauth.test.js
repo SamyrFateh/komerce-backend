@@ -57,16 +57,21 @@ describe('AliExpress OAuth session manager', () => {
     expect(url.searchParams.get('state')).toBe(state);
   });
 
-  test('requête système GOP signe en SHA-256 sans transmettre le secret', () => {
+  test('requête système GOP trim les secrets, omet simplify et signe le contrat exact', () => {
     const now = new Date('2026-09-12T02:00:00Z');
-    const url = new URL(oauth.buildSystemRequest('/auth/token/create', { code: 'code-123' }, { env: ENV, now }));
+    const dirtyEnv = {
+      ...ENV,
+      ALIEXPRESS_APP_KEY: '  app-key-test\n',
+      ALIEXPRESS_APP_SECRET: 'secret-test\r\n',
+    };
+    const url = new URL(oauth.buildSystemRequest('/auth/token/create', { code: 'code-123' }, { env: dirtyEnv, now }));
     expect(url.origin + url.pathname).toBe('https://api-sg.aliexpress.com/rest/auth/token/create');
     expect(url.searchParams.get('app_key')).toBe('app-key-test');
     expect(url.searchParams.get('code')).toBe('code-123');
-    expect(url.searchParams.get('simplify')).toBe('true');
+    expect(url.searchParams.get('simplify')).toBeNull();
     expect(url.searchParams.get('sign_method')).toBe('sha256');
     expect(url.searchParams.get('timestamp')).toBe(String(now.getTime()));
-    expect(url.searchParams.get('sign')).toMatch(/^[A-F0-9]{64}$/);
+    expect(url.searchParams.get('sign')).toBe('ED07F2BC2444DFF0341D10C7458ED7AEF78FAFB3C41C751774F6DA424D0FA67F');
     expect(url.toString()).not.toContain('secret-test');
   });
 
@@ -79,6 +84,7 @@ describe('AliExpress OAuth session manager', () => {
       const url = new URL(rawUrl);
       expect(url.pathname).toBe('/rest/auth/token/create');
       expect(url.searchParams.get('code')).toBe('code-123');
+      expect(url.searchParams.get('simplify')).toBeNull();
       expect(url.searchParams.get('sign')).toMatch(/^[A-F0-9]{64}$/);
       expect(init).toMatchObject({ method: 'POST' });
       expect(init.body).toBeUndefined();
@@ -112,6 +118,23 @@ describe('AliExpress OAuth session manager', () => {
     expect(loaded.refreshExpiresAt.toISOString()).toBe('2026-09-14T01:00:00.000Z');
   });
 
+  test('erreur fournisseur sans access_token remonte le vrai code/message sans payload sensible', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        code: 'IncompleteSignature',
+        message: 'The request signature does not conform to platform standards',
+      }),
+    }));
+
+    await expect(oauth.requestSystemToken('/auth/token/create', { code: 'code-123' }, {
+      env: ENV,
+      fetchImpl,
+      now: new Date('2026-09-12T02:00:00Z'),
+    })).rejects.toThrow(/request signature does not conform to platform standards/);
+  });
+
   test('refresh appelle /auth/token/refresh et remplace aussi le refresh token', async () => {
     const dbImpl = memoryDb();
     const now = new Date('2026-09-12T02:00:00Z');
@@ -124,6 +147,7 @@ describe('AliExpress OAuth session manager', () => {
       const url = new URL(rawUrl);
       expect(url.pathname).toBe('/rest/auth/token/refresh');
       expect(url.searchParams.get('refresh_token')).toBe('r1');
+      expect(url.searchParams.get('simplify')).toBeNull();
       expect(url.searchParams.get('sign_method')).toBe('sha256');
       return {
         ok: true,

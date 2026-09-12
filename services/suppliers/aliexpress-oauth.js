@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, supplier-import, secrets
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -34,14 +34,18 @@ function positiveInt(value, fallback) {
   return Number.isInteger(n) && n > 0 ? n : fallback;
 }
 
+function cleanEnvValue(value) {
+  return String(value || '').trim();
+}
+
 function config(env = process.env) {
   return {
-    appKey: env.ALIEXPRESS_APP_KEY || '',
-    appSecret: env.ALIEXPRESS_APP_SECRET || '',
+    appKey: cleanEnvValue(env.ALIEXPRESS_APP_KEY),
+    appSecret: cleanEnvValue(env.ALIEXPRESS_APP_SECRET),
     encryptionKeyRaw: env.ALIEXPRESS_TOKEN_ENCRYPTION_KEY || '',
-    redirectUri: env.ALIEXPRESS_OAUTH_REDIRECT_URI || DEFAULT_REDIRECT_URI,
-    authorizeUrl: env.ALIEXPRESS_OAUTH_AUTHORIZE_URL || AUTHORIZE_URL,
-    openApiBaseUrl: env.ALIEXPRESS_OPEN_API_BASE_URL || OPEN_API_BASE_URL,
+    redirectUri: cleanEnvValue(env.ALIEXPRESS_OAUTH_REDIRECT_URI) || DEFAULT_REDIRECT_URI,
+    authorizeUrl: cleanEnvValue(env.ALIEXPRESS_OAUTH_AUTHORIZE_URL) || AUTHORIZE_URL,
+    openApiBaseUrl: cleanEnvValue(env.ALIEXPRESS_OPEN_API_BASE_URL) || OPEN_API_BASE_URL,
     refreshSkewSeconds: positiveInt(env.ALIEXPRESS_ACCESS_REFRESH_SKEW_SECONDS, DEFAULT_ACCESS_REFRESH_SKEW_SECONDS),
     refreshTokenTtlSeconds: positiveInt(env.ALIEXPRESS_REFRESH_TOKEN_TTL_SECONDS, DEFAULT_REFRESH_TOKEN_TTL_SECONDS),
   };
@@ -130,7 +134,7 @@ function signGopParams(path, params, secret) {
     .sort()
     .map((key) => `${key}${stringifyParam(params[key])}`)
     .join('');
-  return crypto.createHmac('sha256', secret).update(canonical, 'utf8').digest('hex').toUpperCase();
+  return crypto.createHmac('sha256', cleanEnvValue(secret)).update(canonical, 'utf8').digest('hex').toUpperCase();
 }
 
 function buildSystemRequest(path, businessParams = {}, { env = process.env, now = new Date() } = {}) {
@@ -139,7 +143,6 @@ function buildSystemRequest(path, businessParams = {}, { env = process.env, now 
 
   const params = {
     app_key: c.appKey,
-    simplify: 'true',
     sign_method: 'sha256',
     timestamp: String(now.getTime()),
   };
@@ -182,7 +185,7 @@ function unwrapProviderPayload(value) {
 
 function providerError(payload, status) {
   const err = payload?.error_response || payload || {};
-  return err.sub_msg || err.error_description || err.error_msg || err.msg || err.message || err.error || err.error_code || `HTTP ${status}`;
+  return err.sub_msg || err.error_description || err.error_msg || err.msg || err.message || err.error || err.error_code || err.code || `HTTP ${status}`;
 }
 
 async function requestSystemToken(path, businessParams, { env = process.env, fetchImpl = fetch, now = new Date() } = {}) {
@@ -197,7 +200,9 @@ async function requestSystemToken(path, businessParams, { env = process.env, fet
   if (!response.ok || payload.error_response || payload.error || payload.error_code) {
     throw new Error(`[AliExpress OAuth] échange token refusé: ${String(providerError(payload, response.status)).slice(0, 300)}`);
   }
-  if (!payload.access_token) throw new Error('[AliExpress OAuth] access_token absent de la réponse fournisseur');
+  if (!payload.access_token) {
+    throw new Error(`[AliExpress OAuth] réponse token invalide: ${String(providerError(payload, response.status)).slice(0, 300)}`);
+  }
   return payload;
 }
 
