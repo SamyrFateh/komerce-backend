@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-11T13:05:18.646Z",
+  "generatedAt": "2026-09-12T08:17:14.826Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 629,
-    "protected": 575,
-    "public": 54,
+    "total": 633,
+    "protected": 578,
+    "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -76,6 +76,12 @@
       "kind": "EXPECTED_PUBLIC",
       "evidence": "routes/client-auth.js; features/auth-identity.feature.js",
       "rationale": "Alias public du bootstrap magic-link."
+    },
+    {
+      "key": "GET /api/integrations/aliexpress/oauth/callback",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/integrations-aliexpress.js; tests/unit/aliexpress-oauth.test.js; features/catalog.feature.js",
+      "rationale": "Callback OAuth AliExpress sans session Express : le state CSPRNG est lié au navigateur par cookie HttpOnly/SameSite, comparé en temps constant puis effacé avant échange du code."
     },
     {
       "key": "GET /api/local-stock/availability",
@@ -2968,6 +2974,32 @@
       "roles": [
         "admin",
         "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/integrations/aliexpress/oauth/callback",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/integrations/aliexpress/oauth/refresh",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/integrations/aliexpress/oauth/start",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/integrations/aliexpress/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
       ]
     },
     {
