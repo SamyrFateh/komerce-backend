@@ -144,12 +144,12 @@
     COVERED: {
       tone: 'positive',
       label: 'Marché couvert',
-      summary: 'La contribution reconnue couvre le N3 de la fenêtre selon la politique active.',
+      summary: 'La contribution reconnue couvre les charges fixes de la fenêtre selon la politique active.',
     },
     UNCOVERED: {
       tone: 'warning',
       label: 'Couverture insuffisante',
-      summary: 'La contribution reconnue ne couvre pas encore le N3 au seuil de la politique active.',
+      summary: 'La contribution reconnue ne couvre pas encore les charges fixes au seuil de la politique active.',
     },
     NOT_DECISIONAL: {
       tone: 'critical',
@@ -162,11 +162,11 @@
     MARKET_DECISION_POLICY_REQUIRED: 'Aucune politique de décision active pour ce marché.',
     MATURITY_WATERMARK_NOT_READY: 'La maturité des commandes n’autorise pas encore la décision.',
     MATURITY_THRESHOLD_NOT_MET: 'Le seuil de maturité défini par la politique n’est pas atteint.',
-    MARKET_N3_NOT_DECISIONAL: 'Le N3 de période n’est pas encore décisionnel.',
+    MARKET_N3_NOT_DECISIONAL: 'La couverture des charges de la période n’est pas encore décisionnelle.',
     MATURE_ORDER_SET_MISMATCH: 'Le jeu de commandes matures n’est pas cohérent entre les vérités serveur.',
     UNKNOWN_ACTUAL_VARIABLE_COST_TYPE: 'Un coût variable réel non reconnu empêche la décision.',
     RISK_PERIOD_NOT_DECISIONAL: 'La vérité de risque de la période n’est pas encore décisionnelle.',
-    NON_POSITIVE_MARKET_N3: 'Le N3 du marché n’est pas positif sur la période.',
+    NON_POSITIVE_MARKET_N3: 'La couverture des charges du marché n’est pas positive sur la période.',
     COVERAGE_THRESHOLD_MET: 'Le seuil de couverture de la politique est atteint.',
     COVERAGE_THRESHOLD_NOT_MET: 'Le seuil de couverture de la politique n’est pas atteint.',
   });
@@ -349,10 +349,10 @@
     const policy = decision.policy || null;
     const metrics = doc.createElement('div');
     metrics.className = 'kmc-market-decision-metrics';
-    appendDecisionMetric(doc, metrics, 'Couverture réelle', formatRatio(coverage.coverage_ratio), 'Contribution reconnue ÷ N3 de période');
+    appendDecisionMetric(doc, metrics, 'Couverture réelle', formatRatio(coverage.coverage_ratio), 'Contribution reconnue ÷ charges fixes de période');
     appendDecisionMetric(doc, metrics, 'Seuil de couverture', formatRatio(policy?.coverage_threshold), 'Politique active');
     appendDecisionMetric(doc, metrics, 'Contribution reconnue', formatKmf(coverage.numerator_contribution_kmf), 'Numérateur serveur');
-    appendDecisionMetric(doc, metrics, 'N3 de période', formatKmf(coverage.denominator_n3_kmf), 'Dénominateur serveur');
+    appendDecisionMetric(doc, metrics, 'Charges fixes de période', formatKmf(coverage.denominator_n3_kmf), 'Dénominateur serveur');
     appendDecisionMetric(doc, metrics, 'Maturité constatée', formatPercentRatio(coverage.maturity?.maturity_ratio), `${formatNumber(coverage.contribution?.mature_order_count)} commandes matures`);
     appendDecisionMetric(doc, metrics, 'Seuil de maturité', formatPercentRatio(policy?.maturity_threshold), 'Politique active');
     slot.appendChild(metrics);
