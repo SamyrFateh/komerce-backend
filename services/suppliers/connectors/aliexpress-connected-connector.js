@@ -5,15 +5,15 @@
  * @layer         service
  * @criticality   medium
  * @inputs        AliExpress sourcing filters + managed OAuth session
- * @outputs       normalized_supplier_product_v2
+ * @outputs       normalized_supplier_product_v2, authenticated AliExpress DS calls
  * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js
- * @used-by       services/sourcing-import-dispatch.js
+ * @used-by       services/sourcing-import-dispatch.js, scripts/aliexpress-500-catalog-sync.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections (token refresh only)
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -51,7 +51,7 @@ function inactiveReason(env = process.env) {
   return null;
 }
 
-async function fetchProducts(options = {}) {
+async function managedRuntimeEnv(options = {}) {
   const env = options.env || process.env;
   if (!isRuntimeConfigured(env)) throw new Error(`[AliExpress] ${inactiveReason(env)}`);
 
@@ -62,10 +62,22 @@ async function fetchProducts(options = {}) {
     fetchImpl: options.oauthFetchImpl,
     now: options.now,
   });
+  return normalizedRuntimeEnv(env, session);
+}
 
+async function invokeTop(method, businessParams = {}, options = {}) {
+  const env = await managedRuntimeEnv(options);
+  return baseConnector.invokeTop(method, businessParams, {
+    ...options,
+    env,
+  });
+}
+
+async function fetchProducts(options = {}) {
+  const env = await managedRuntimeEnv(options);
   return baseConnector.fetchProducts({
     ...options,
-    env: normalizedRuntimeEnv(env, session),
+    env,
   });
 }
 
@@ -80,5 +92,7 @@ module.exports = {
   normalizedRuntimeEnv,
   isRuntimeConfigured,
   inactiveReason,
+  managedRuntimeEnv,
+  invokeTop,
   fetchProducts,
 };
