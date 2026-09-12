@@ -12,19 +12,16 @@
 
 module.exports = {
 
-  // ── Identite ─────────────────────────────────────────────────────────────
   name:     'purchasing',
-  type:     'feature',   // feature | transversal
+  type:     'feature',
   domain:   'purchasing',
-  status:   'production',   // draft | staging | production | deprecated
+  status:   'production',
   owner:    'backend-core',
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Transformer un besoin d\'approvisionnement issu d\'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'déclenchement automatique d\'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur',
@@ -36,6 +33,7 @@ module.exports = {
       'administration transverse des bons de commande, historiquement exposée depuis le dashboard ' +
         '(services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, ' +
         'écrit orders/product_suppliers/purchase_orders/suppliers)',
+      'Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement',
       'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret et construction fail-closed du payload d\'achat sans exécution automatique',
     ],
     out: [
@@ -47,12 +45,14 @@ module.exports = {
     ],
   },
 
-  // ── Perimetre fichiers ───────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
+  ],
 
   files: {
     services: [
       'services/purchasing-trigger-service.js',
+      'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
       'services/purchasing-receive-service.js',
       'services/purchasing-cancel-service.js',
@@ -66,14 +66,13 @@ module.exports = {
     ],
     migrations: [],
     tests: [
-      // E2E fonctionnel Feature First — purchasing est PROPRIETAIRE ;
-      // orders, catalog et logistics sont traversees.
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
-      'tests/unit/purchasing.test.js',                              // triggerPurchasing (purchasing-trigger-service)
+      'tests/unit/purchasing.test.js',
       'tests/unit/purchasing-receive-service.test.js',
       'tests/unit/purchasing-cancel-service.test.js',
-      'tests/unit/purchasing-route.test.js',                        // couche HTTP routes/purchasing.js
+      'tests/unit/purchasing-route.test.js',
       'tests/unit/purchasing-trigger-service.test.js',
+      'tests/unit/supplier-order-identity.test.js',
       'tests/unit/aliexpress-purchase-preflight.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
@@ -82,21 +81,13 @@ module.exports = {
     ],
   },
 
-  // ── Tables DB (vérifiées par grep .query() réel + headers @komerce-arch, ─
-  // Lot O1.4 2026-07-12 ; revérifié campagne WNO 2026-08). purchase_orders est
-  // la table propre à la feature : création, statut, réception ET synchronisation
-  // d'annulation sont désormais toutes portées par purchasing.
-  // suppliers et product_suppliers sont écrites par routes/purchasing.js
-  // mais restent lues par catalog et logistics — lecture cross-feature normale.
-  // orders passe R → RW au Lot O2 : services/purchasing-admin-service.js
-  // y écrit également (outils admin de correction).
   db: {
     tables: [
       'order_items: R',
-      'orders: R',  // W-via orders/order-mutation-service ? LOT11
+      'orders: R',
       'product_suppliers: RW',
       'products: R',
-      'purchase_orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'purchase_orders: RW!',
       'relais: R',
       'suppliers: RW',
     ],
@@ -121,15 +112,14 @@ module.exports = {
       'POST /api/purchasing/:id/receive',
       'DELETE /api/purchasing/po/:po_id',
     ],
-    // Frontières service-à-service : purchasing reste l'autorité et les
-    // consommateurs déclenchent une capacité, jamais un SQL dans ses tables.
     internalApi: [
       { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
+      { fn: 'resolveSupplierUnit', file: 'services/suppliers/supplier-order-identity.js' },
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
     ],
     consumes: [
-      'catalog (dépendance data cross-feature observée et gouvernée par O5)',
+      'catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (lecture : order_items, orders — le besoin d\'achat et l\'intention d\'annulation naissent d\'une commande client)',
       'auth (garde admin)',
@@ -138,7 +128,6 @@ module.exports = {
     ],
   },
 
-  // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
     knownGaps: [
       { gap: 'services/purchasing-admin-service.js écrit purchase_orders, product_suppliers, suppliers ' +
@@ -147,19 +136,18 @@ module.exports = {
              'réel est un service d\'achat (purchasing), pas une projection dashboard.',
         risk: 'multi-writer réel non résolu sur purchase_orders/suppliers/product_suppliers entre ' +
               'purchasing (ce manifest) et dashboard (via purchasing-admin-service.js) — documenté en ' +
-              'ONTOLOGY_GAP plutôt que déplacé sans audit de flux (hors périmètre O1.4, qui liste ' +
-              'explicitement les 5 services + routes/purchasing.js comme seul ownership candidat vérifié).',
+              'ONTOLOGY_GAP plutôt que déplacé sans audit de flux.',
       },
     ],
   },
 
-  // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
+  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (identité commandable, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
 
-  // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
+    { statement: 'une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage',
+      test: 'tests/unit/supplier-order-identity.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
     'aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d\'annulation passe par purchasing-cancel-service.js',
@@ -167,14 +155,13 @@ module.exports = {
     'un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé',
   ],
 
-  // ── Classification (manifest créé au Lot O1.4) ──────────────────────────
   classification: {
     kind:     'business-feature',
     decision: 'feature-autonome',
     signals: {
-      ownsTables:          true,   // purchase_orders + écriture suppliers/product_suppliers
-      ownsLifecycle:       true,   // statut du bon de commande (créé → confirmé → reçu/annulé), idempotence anti-replay
-      activeService:       true,   // "transformer", "déclencher", "constater" — verbes actifs
+      ownsTables:          true,
+      ownsLifecycle:       true,
+      activeService:       true,
       multiConsumer:       false,
       ownsMigrations:      false,
       externalSideEffect:  'outbound-message',
@@ -182,9 +169,7 @@ module.exports = {
     },
     rationale: [
       'possède sa propre table (purchase_orders) avec un cycle de statut et un invariant d\'idempotence anti-replay propres',
-      'scindé de orders (Lot O1.4, 2026-07-12) : orders fait exister la commande cliente et garantit son cycle d\'état ' +
-        '(order-status-machine.js) ; purchasing transforme un besoin d\'approvisionnement en engagement fournisseur — ' +
-        'deux services métier distincts, orders consomme purchasing sans jamais lui déléguer son propre cycle de vie',
+      'scindé de orders : purchasing transforme un besoin d\'approvisionnement en engagement fournisseur sans jamais posséder le cycle de vie de la commande cliente',
     ],
   },
 

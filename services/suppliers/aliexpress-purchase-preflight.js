@@ -4,17 +4,19 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        NormalizedSupplierProduct V2, selected supplier SKU, destination
+ * @inputs        NormalizedSupplierProduct V2, selected Supplier Order Identity, destination
  * @outputs       live-checkable freight request + place-order payload (never executed here)
- * @depends       none
+ * @depends       services/suppliers/supplier-order-identity.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md
+ * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v1
+ * @version       2026-09-ae-prepayment-v2
  */
 'use strict';
+
+const supplierIdentity = require('./supplier-order-identity');
 
 const METHODS = Object.freeze({
   FREIGHT: 'aliexpress.logistics.buyer.freight.calculate',
@@ -23,91 +25,84 @@ const METHODS = Object.freeze({
   TRACKING: 'aliexpress.logistics.ds.trackinginfo.query',
 });
 
-function asArray(value) {
-  if (Array.isArray(value)) return value;
-  if (value == null) return [];
-  return [value];
-}
-
 function positiveInt(value, name = 'quantity') {
-  const n = Number.parseInt(value, 10);
-  if (!Number.isInteger(n) || n < 1) throw new Error(`${name} doit être un entier >= 1`);
-  return n;
+  return supplierIdentity.positiveInt(value, name);
 }
 
-function sourceDetail(contract = {}) {
-  const detail = contract?.raw_payload?.aliexpress?.detail || {};
-  return detail?.result || detail || {};
-}
+/**
+ * Interprétation AliExpress d'une Supplier Order Identity déjà produite par
+ * le connecteur. Un snapshot historique sans identité peut être résolu pour
+ * identifier le SKU à rafraîchir uniquement si l'appelant le demande
+ * explicitement avec requireOrderIdentity:false.
+ */
+function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {}) {
+  const requireOrderIdentity = options.requireOrderIdentity !== false;
+  const resolved = supplierIdentity.resolveSupplierUnit(
+    contract,
+    supplierSku,
+    quantity,
+    { ...options, requireOrderIdentity }
+  );
+  const identity = resolved.supplier_order_identity;
 
-function rawSkus(contract = {}) {
-  return asArray(sourceDetail(contract)?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o);
-}
-
-function rawSkuIdentity(rawSku = {}, productId = '', index = 0) {
-  return String(rawSku.sku_code || rawSku.id || `${productId}:sku:${index + 1}`).slice(0, 128);
-}
-
-function rawSkuId(rawSku = {}) {
-  const value = rawSku.id ?? rawSku.sku_id ?? rawSku.skuId;
-  if (value == null || String(value).trim() === '') return null;
-  return String(value).trim().slice(0, 128);
-}
-
-function buildSkuAttr(rawSku = {}) {
-  const props = asArray(rawSku?.ae_sku_property_dtos?.ae_sku_property_d_t_o);
-  const pairs = [];
-  for (const prop of props) {
-    const propertyId = String(prop?.sku_property_id ?? '').trim();
-    const valueId = String(prop?.sku_property_value ?? '').trim();
-    if (!propertyId || propertyId === '0' || !valueId || valueId === '0') continue;
-    pairs.push(`${propertyId}:${valueId}`);
+  if (!identity) {
+    return {
+      ...resolved,
+      supplier_product_id: resolved.supplier_product_ref,
+      raw_sku_id: null,
+      sku_attr: null,
+    };
   }
-  return pairs.length ? pairs.join(';') : null;
-}
 
-function resolveOrderableUnit(contract, supplierSku, quantity = 1) {
-  const qty = positiveInt(quantity);
-  const supplierProductId = String(contract?.supplier_product_id || '').trim();
+  if (identity.provider !== 'aliexpress') {
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity incompatible avec AliExpress: ${identity.provider}`,
+      { expected_provider: 'aliexpress', actual_provider: identity.provider }
+    );
+  }
+  if (identity.version !== 1) {
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity AliExpress version non supportée: ${identity.version}`,
+      { provider: 'aliexpress', version: identity.version }
+    );
+  }
+
+  const rawSkuId = String(identity.payload.sku_id || resolved.supplier_unit_ref || '').trim() || null;
+  const skuAttr = String(identity.payload.sku_attr || '').trim() || null;
+  if (!rawSkuId && !skuAttr) {
+    throw supplierIdentity.blockedSupplierIdentity(
+      `Supplier Order Identity AliExpress inexploitable pour ${supplierSku}`,
+      { supplier_sku: supplierSku }
+    );
+  }
+
+  const supplierProductId = String(resolved.supplier_product_ref || '').trim();
   if (!/^\d{5,20}$/.test(supplierProductId)) {
-    throw new Error('supplier_product_id AliExpress absent ou invalide');
+    throw supplierIdentity.blockedSupplierIdentity(
+      'supplier_product_id AliExpress absent ou invalide',
+      { supplier_product_ref: resolved.supplier_product_ref || null }
+    );
   }
-
-  const sku = String(supplierSku || '').trim();
-  if (!sku) throw new Error('supplier_sku requis');
-
-  const unit = asArray(contract?.sellable_units).find((candidate) => String(candidate?.supplier_sku || '') === sku);
-  if (!unit) throw new Error(`supplier_sku introuvable dans le contrat V2: ${sku}`);
-  if (unit.is_active === false) throw new Error(`supplier_sku inactif: ${sku}`);
-  if (unit.stock_available == null) throw new Error(`stock fournisseur inconnu pour ${sku}`);
-  if (Number(unit.stock_available) < qty) {
-    throw new Error(`stock fournisseur insuffisant pour ${sku}: ${unit.stock_available} < ${qty}`);
-  }
-  if (!(Number(unit.purchase_price) > 0)) throw new Error(`prix fournisseur invalide pour ${sku}`);
-  const currency = String(unit.currency || contract.currency || '').toUpperCase();
-  if (!['AED', 'EUR', 'USD', 'KMF'].includes(currency)) throw new Error(`devise fournisseur invalide: ${currency || 'absente'}`);
-
-  const skus = rawSkus(contract);
-  const rawIndex = skus.findIndex((candidate, index) => rawSkuIdentity(candidate, supplierProductId, index) === sku);
-  if (rawIndex < 0) {
-    throw new Error(`SKU ${sku} présent dans V2 mais introuvable dans le payload AliExpress brut`);
-  }
-  const rawSku = skus[rawIndex];
 
   return {
+    ...resolved,
     supplier_product_id: supplierProductId,
-    supplier_sku: sku,
-    raw_sku_id: rawSkuId(rawSku),
-    sku_attr: buildSkuAttr(rawSku),
-    quantity: qty,
-    stock_available: Number(unit.stock_available),
-    unit_price: Number(unit.purchase_price),
-    currency,
+    raw_sku_id: rawSkuId,
+    sku_attr: skuAttr,
   };
+}
+
+function requireCanonicalIdentity(resolved) {
+  if (!resolved?.supplier_order_identity) {
+    throw supplierIdentity.blockedSupplierIdentity(
+      'Supplier Order Identity requise avant appel fournisseur'
+    );
+  }
 }
 
 function buildFreightBusinessParams(resolved, destination = {}) {
   if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
   const countryCode = String(destination.country_code || destination.countryCode || 'KM').trim().toUpperCase();
   if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode}`);
 
@@ -130,6 +125,7 @@ function buildFreightBusinessParams(resolved, destination = {}) {
 
 function buildPlaceOrderBusinessParams(resolved, logisticsAddress, options = {}) {
   if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
   const address = logisticsAddress && typeof logisticsAddress === 'object' ? { ...logisticsAddress } : null;
   if (!address || !String(address.address || '').trim()) {
     throw new Error('logistics_address.address requis pour préparer place-order');
@@ -176,13 +172,7 @@ function classifyApiError(error) {
 
 module.exports = {
   METHODS,
-  asArray,
   positiveInt,
-  sourceDetail,
-  rawSkus,
-  rawSkuIdentity,
-  rawSkuId,
-  buildSkuAttr,
   resolveOrderableUnit,
   buildFreightBusinessParams,
   buildPlaceOrderBusinessParams,

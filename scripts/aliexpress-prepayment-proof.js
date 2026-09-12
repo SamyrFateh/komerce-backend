@@ -11,9 +11,9 @@
  * @db-read       sourcing_candidates, products, product_skus
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md
+ * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v1
+ * @version       2026-09-ae-prepayment-v2
  */
 'use strict';
 
@@ -82,7 +82,12 @@ function selectSnapshot(rows) {
   const failures = [];
   for (const row of rows) {
     try {
-      const resolved = preflight.resolveOrderableUnit(row.normalized_source_contract, row.supplier_sku, 1);
+      const resolved = preflight.resolveOrderableUnit(
+        row.normalized_source_contract,
+        row.supplier_sku,
+        1,
+        { requireOrderIdentity: false }
+      );
       return { row, resolved };
     } catch (error) {
       failures.push({ candidate_id: row.candidate_id, supplier_sku: row.supplier_sku, error: error.message });
@@ -113,7 +118,12 @@ async function run(env = process.env) {
   });
   const liveContract = liveFetch.products?.[0];
   if (!liveContract) throw new Error(`AliExpress live n'a pas renvoyé le produit ${row.supplier_product_id}`);
-  const liveResolved = preflight.resolveOrderableUnit(liveContract, row.supplier_sku, 1);
+  const liveResolved = preflight.resolveOrderableUnit(
+    liveContract,
+    row.supplier_sku,
+    1,
+    { requireOrderIdentity: true }
+  );
 
   const freightParams = preflight.buildFreightBusinessParams(liveResolved, {
     country_code: countryCode,
