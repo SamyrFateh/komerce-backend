@@ -4,13 +4,13 @@
  * @domain        decision-signals
  * @layer         service
  * @criticality   high
- * @inputs        signal_filters, signal_internal_id_or_ref, authenticated_actor, server_resolved_market_id
+ * @inputs        signal_filters, signal_internal_id_or_ref, authenticated_actor, server_resolved_market_id, optional_transaction_executor
  * @outputs       signal_projection_rows, lifecycle_transition_results
  * @depends       db.js
  * @used-by       routes/signals.js, services/action-center-workspace.js, services/signal-service.js
  * @db-read       signals
  * @db-write      signals
- * @db-txn        none
+ * @db-txn        caller_owned_for_market_lifecycle
  * @doctrine      signal_is_derived_fact, active_signal_states_are_open_acknowledged_snoozed, browser_uses_signal_ref_only, exact_market_scope_or_global_null
  * @impact-areas  decision-signals, admin-dashboard, market-authorization
  * @version       2026-09
@@ -48,6 +48,10 @@ function normalizeOffset(raw) {
 
 function exactMarketId(value) {
   return value || null;
+}
+
+function executorOrDefault(executor) {
+  return executor && typeof executor.query === 'function' ? executor : db;
 }
 
 async function listSignals(filters = {}) {
@@ -146,8 +150,9 @@ async function getStats(options = {}) {
   };
 }
 
-async function acknowledgeById(id, marketId = null) {
-  const result = await db.query(
+async function acknowledgeById(id, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
+  const result = await q.query(
     `UPDATE signals
         SET status = 'acknowledged', updated_at = NOW()
       WHERE id = $1
@@ -159,8 +164,9 @@ async function acknowledgeById(id, marketId = null) {
   return result.rows[0] || null;
 }
 
-async function acknowledgeByRef(signalRef, marketId = null) {
-  const result = await db.query(
+async function acknowledgeByRef(signalRef, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
+  const result = await q.query(
     `UPDATE signals
         SET status = 'acknowledged', updated_at = NOW()
       WHERE signal_ref = $1
@@ -177,9 +183,10 @@ function normalizeSnoozeHours(rawHours) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 24 * 30) : 24;
 }
 
-async function snoozeById(id, rawHours, marketId = null) {
+async function snoozeById(id, rawHours, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
   const hours = normalizeSnoozeHours(rawHours);
-  const result = await db.query(
+  const result = await q.query(
     `UPDATE signals
         SET status = 'snoozed',
             snoozed_until = NOW() + ($2 || ' hours')::interval,
@@ -193,9 +200,10 @@ async function snoozeById(id, rawHours, marketId = null) {
   return result.rows[0] || null;
 }
 
-async function snoozeByRef(signalRef, rawHours, marketId = null) {
+async function snoozeByRef(signalRef, rawHours, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
   const hours = normalizeSnoozeHours(rawHours);
-  const result = await db.query(
+  const result = await q.query(
     `UPDATE signals
         SET status = 'snoozed',
             snoozed_until = NOW() + ($2 || ' hours')::interval,
@@ -209,8 +217,9 @@ async function snoozeByRef(signalRef, rawHours, marketId = null) {
   return result.rows[0] || null;
 }
 
-async function resolveById(id, userId, marketId = null) {
-  const result = await db.query(
+async function resolveById(id, userId, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
+  const result = await q.query(
     `UPDATE signals
         SET status = 'resolved',
             resolved_at = NOW(),
@@ -226,8 +235,9 @@ async function resolveById(id, userId, marketId = null) {
   return result.rows[0] || null;
 }
 
-async function resolveByRef(signalRef, userId, marketId = null) {
-  const result = await db.query(
+async function resolveByRef(signalRef, userId, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
+  const result = await q.query(
     `UPDATE signals
         SET status = 'resolved',
             resolved_at = NOW(),
@@ -243,8 +253,9 @@ async function resolveByRef(signalRef, userId, marketId = null) {
   return result.rows[0] || null;
 }
 
-async function hardDeleteById(id, marketId = null) {
-  const result = await db.query(
+async function hardDeleteById(id, marketId = null, executor = db) {
+  const q = executorOrDefault(executor);
+  const result = await q.query(
     'DELETE FROM signals WHERE id = $1 AND market_id IS NOT DISTINCT FROM $2::uuid RETURNING id',
     [id, exactMarketId(marketId)]
   );
