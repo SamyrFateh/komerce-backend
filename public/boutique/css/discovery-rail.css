@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — discovery-rail.css
-   Rail « Près de vous » natif Boutique.
+   Rail « Disponible ici » natif Boutique.
 
-   Doctrine : une seule expérience Komerce. Aucun shell marketplace,
-   aucune taxonomie parallèle. Le kind métier n'est visible qu'à travers
-   le sous-titre et le verbe d'action.
+   Doctrine : une seule expérience Komerce et un seul shell de carte.
+   Discovery réutilise .k-card / .k-card-* sur mobile et desktop ; ce fichier
+   ne possède que la géométrie du rail et les capacités locales (statut,
+   contexte, CTA provider).
    Mobile-first, zéro !important, tokens uniquement.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -54,10 +55,9 @@
   margin-right: 4px;
 }
 
-/* Mobile V2.9.7 — Disponible ici appartient au scroll vertical de la page
-   catégorie. Le pager #k-grid reste l'unique propriétaire du geste horizontal :
-   aucun overflow-x ni scroll-snap imbriqué ne doit concurrencer le swipe entre
-   univers. Les offres locales, produits et services s'empilent donc 2 par 2. */
+/* Mobile — le pager #k-grid reste l'unique propriétaire du geste horizontal.
+   Discovery reste dans le scroll vertical, en 2 colonnes, mais les cartes sont
+   désormais les cartes Komerce canoniques et non une seconde famille DOM. */
 .k-discovery-rail {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -66,33 +66,16 @@
   padding: 1px 0 5px;
 }
 
-.k-discovery-card {
+.k-discovery-canonical-card {
   min-width: 0;
   max-width: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--sand);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  overflow: hidden;
-  box-shadow: var(--elev-1);
-  cursor: pointer;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
 
-.k-discovery-media {
-  position: relative;
-  aspect-ratio: 3 / 2;
-  overflow: hidden;
-  flex: 0 0 auto;
-  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
+.k-discovery-canonical-media {
+  aspect-ratio: 1 / 1;
 }
 
-.k-discovery-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.k-discovery-canonical-img {
   object-fit: cover;
 }
 
@@ -102,6 +85,7 @@
   display: grid;
   place-items: center;
   color: var(--ocean-dark);
+  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
 }
 
 .k-discovery-fallback svg {
@@ -114,6 +98,7 @@
   position: absolute;
   top: 6px;
   left: 6px;
+  z-index: 2;
   max-width: calc(100% - 12px);
   min-height: 20px;
   display: inline-flex;
@@ -129,103 +114,79 @@
   font-weight: 700;
 }
 
-/* Géométrie canonique Discovery : les trois kinds possèdent les mêmes
-   rangs structurels. Une donnée optionnelle peut être vide ; elle ne peut
-   jamais déplacer l'action ni modifier l'empreinte de la carte. */
-.k-discovery-info {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 88px;
-  padding: 7px;
+.k-discovery-canonical-context {
+  min-height: 1.28em;
 }
 
-.k-discovery-name {
-  min-height: 28px;
-  max-height: 28px;
-  color: var(--ocean-dark);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.k-discovery-primary-slot {
-  min-height: 15px;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-}
-
-.k-discovery-context-slot {
-  min-height: 14px;
-  margin-top: 1px;
-  display: flex;
-  align-items: center;
+.k-discovery-canonical-price-col {
   min-width: 0;
 }
 
-.k-discovery-price {
-  color: var(--ocean-dark);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.15;
+.k-discovery-canonical-price-placeholder {
+  display: block;
+  min-height: 18px;
 }
 
-.k-discovery-provider {
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
+/* Product garde exactement .k-card-add de products.css. Seuls Service et
+   Physical Offer transforment ce slot canonique en CTA verbal. */
+[data-discovery-kind="physical_offer"] .k-card-bottom,
+[data-discovery-kind="service"] .k-card-bottom {
+  padding-right: 104px;
+}
+
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot,
+[data-discovery-kind="service"] .k-discovery-canonical-action-slot {
+  width: auto;
+  min-width: 76px;
+  max-width: 96px;
+  height: 32px;
+  padding: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  border: 1px solid var(--action-commerce-border);
+  border-radius: 999px;
+  background: var(--action-commerce);
+  box-shadow: var(--action-commerce-shadow);
 }
 
-/* Point A — Product local : Discovery ne touche jamais au sélecteur critique
-   du contrôle panier. Le wrapper fournit uniquement le containing block mobile ;
-   products.css/cart.css restent propriétaires de la forme et du stepper. */
-.k-discovery-product-action-row {
-  position: relative;
-  min-height: 42px;
-  margin-top: auto;
-}
-
-.k-discovery-cta {
+.k-discovery-canonical-cta {
   width: 100%;
-  min-height: 28px;
-  margin-top: auto;
-  padding: 5px 7px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--sand-warm);
-  color: var(--ocean-dark);
-  font-size: 10px;
+  height: 100%;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  background: transparent;
+  color: var(--action-commerce-text);
+  font: inherit;
+  font-size: 9px;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease);
 }
 
-.k-discovery-cta:active {
-  transform: scale(.98);
-}
-
-/* ── CTA differentiation by kind ──────────────────────────────────── */
-
-.k-discovery-card[data-discovery-kind="physical_offer"] .k-discovery-cta {
-  background: var(--terracotta-bg);
-  color: var(--terracotta-dark);
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot {
   border-color: var(--border-terra-22);
+  background: var(--terracotta-bg);
+  box-shadow: none;
 }
 
-.k-discovery-card[data-discovery-kind="service"] .k-discovery-cta {
-  background: var(--cta-green-10);
-  color: var(--cta-green);
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-cta {
+  color: var(--terracotta-dark);
+}
+
+[data-discovery-kind="service"] .k-discovery-canonical-action-slot {
   border-color: var(--border-sage-22);
+  background: var(--cta-green-10);
+  box-shadow: none;
+}
+
+[data-discovery-kind="service"] .k-discovery-canonical-cta {
+  color: var(--cta-green);
+}
+
+.k-discovery-canonical-cta:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: -3px;
 }
 
 /* ── U3 — facultative timing inside Discovery detail ────────────────
@@ -272,13 +233,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .k-discovery-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--elev-2);
-  }
-
-  .k-discovery-cta:hover {
-    box-shadow: var(--elev-1);
+  .k-discovery-canonical-cta:hover {
+    filter: brightness(.98);
   }
 }
 
@@ -299,8 +255,8 @@
     font-size: 12px;
   }
 
-  /* Desktop conserve le rail horizontal éditorial : le conflit de gestes
-     n'existe que dans le pager tactile mobile. */
+  /* Desktop conserve le rail horizontal éditorial. La géométrie précise des
+     cartes (4 colonnes catalogue) reste portée par discovery-desktop-v2.css. */
   .k-discovery-rail {
     display: flex;
     align-items: stretch;
@@ -318,51 +274,8 @@
     display: none;
   }
 
-  .k-discovery-card {
-    flex: 0 0 calc((100% - 60px) / 6);
-    min-width: 190px;
-    max-width: 220px;
-    scroll-snap-align: start;
-  }
-
-  .k-discovery-media {
-    height: 130px;
-    aspect-ratio: auto;
-  }
-
-  .k-discovery-info {
-    min-height: 104px;
-    padding: 8px 9px;
-  }
-
-  .k-discovery-name {
-    min-height: 30px;
-    max-height: 30px;
-    font-size: 12px;
-  }
-
-  .k-discovery-primary-slot {
-    min-height: 17px;
-    margin-top: 3px;
-  }
-
-  .k-discovery-context-slot {
-    min-height: 16px;
-    margin-top: 2px;
-  }
-
-  .k-discovery-price {
-    font-size: 12px;
-  }
-
-  .k-discovery-provider,
   .k-discovery-status,
-  .k-discovery-cta {
+  .k-discovery-canonical-cta {
     font-size: 10px;
-  }
-
-  .k-discovery-cta {
-    min-height: 32px;
-    padding: 7px 9px;
   }
 }
