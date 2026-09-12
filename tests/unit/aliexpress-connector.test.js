@@ -319,3 +319,23 @@ describe('aliexpress-connector', () => {
     expect(detailUrls.every((url) => url.searchParams.get('ship_to_country') === 'AE')).toBe(true);
   });
 });
+
+describe('aliexpress-connected-connector credential hygiene', () => {
+  test('normalise les credentials Railway avant toute signature TOP', () => {
+    const connected = require('../../services/suppliers/connectors/aliexpress-connected-connector');
+    const normalized = connected.normalizedRuntimeEnv({
+      ALIEXPRESS_APP_KEY: '  app-key\n',
+      ALIEXPRESS_APP_SECRET: 'app-secret\r\n',
+      ALIEXPRESS_SESSION: '  session-token\n',
+      ALIEXPRESS_TOKEN_ENCRYPTION_KEY: 'keep-as-is',
+    });
+
+    expect(normalized).toMatchObject({
+      ALIEXPRESS_APP_KEY: 'app-key',
+      ALIEXPRESS_APP_SECRET: 'app-secret',
+      ALIEXPRESS_SESSION: 'session-token',
+      ALIEXPRESS_TOKEN_ENCRYPTION_KEY: 'keep-as-is',
+    });
+    expect(connected.isRuntimeConfigured(normalized)).toBe(true);
+  });
+});
