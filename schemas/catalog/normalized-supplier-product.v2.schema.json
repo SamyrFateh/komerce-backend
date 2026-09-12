@@ -78,7 +78,18 @@
         "additionalProperties": false,
         "required": ["supplier_sku", "option_values"],
         "properties": {
-          "supplier_sku":   { "type": "string", "minLength": 1, "maxLength": 128 },
+          "supplier_sku":      { "type": "string", "minLength": 1, "maxLength": 128 },
+          "supplier_unit_ref": { "type": ["string", "null"], "minLength": 1, "maxLength": 256 },
+          "supplier_order_identity": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["provider", "version", "payload"],
+            "properties": {
+              "provider": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+              "version":  { "type": "integer", "minimum": 1, "maximum": 1000 },
+              "payload":  { "type": "object", "minProperties": 1, "maxProperties": 50 }
+            }
+          },
           "option_values": {
             "type": "object",
             "maxProperties": 20,

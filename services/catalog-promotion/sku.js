@@ -47,23 +47,6 @@
 
 'use strict';
 
-/**
- * @param {Array<{id: string, supplier_sku: string|null, source: string,
- *   variant_combo: object|null, stock: number, is_active: boolean}>} existingSkus
- *   Lignes product_skus déjà déclarées pour ce produit (lecture seule, tel
- *   que renvoyées par la DB — colonnes source/supplier_sku du Lot 4).
- * @param {Array<{supplier_sku: string, option_values: object,
- *   stock_available?: number|null, media_refs?: string[]}>} sellableUnits
- *   normalized_source_contract.sellable_units[] déjà validé (unicité
- *   supplier_sku/combinaison déjà garantie par normalized-product.js).
- *
- * @returns {{
- *   toCreate: Array<{supplier_sku, variant_combo, stock, stockKnown, source, media_refs}>,
- *   toUpdate: Array<{id, supplier_sku, variant_combo, stock, stockKnown, media_refs}>,
- *   toReactivate: Array<{id, supplier_sku, variant_combo, stock, stockKnown, media_refs}>,
- *   toDeactivate: Array<{id, supplier_sku}>,
- * }}
- */
 function planSkuReconciliation(existingSkus, sellableUnits) {
   if (!Array.isArray(existingSkus)) {
     const e = new Error('existingSkus doit être un tableau'); e.status = 422; throw e;
@@ -72,8 +55,6 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     const e = new Error('sellableUnits doit être un tableau'); e.status = 422; throw e;
   }
 
-  // Seules les lignes SUPPLIER avec supplier_sku connu participent à la
-  // réconciliation — les SKU MANUAL restent hors de portée de ce plan.
   const bySupplierSku = new Map();
   for (const row of existingSkus) {
     if (row.source === 'SUPPLIER' && row.supplier_sku) {
@@ -94,12 +75,10 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     seenSupplierSkus.add(supplierSku);
 
     const stockKnown = typeof unit.stock_available === 'number' && Number.isInteger(unit.stock_available);
-    const stock = stockKnown ? unit.stock_available : 0; // 0 = projection technique d'absence, jamais un fait fournisseur
-
+    const stock = stockKnown ? unit.stock_available : 0;
     const existing = bySupplierSku.get(supplierSku);
 
     if (!existing) {
-      // Nouveau SKU jamais vu — création.
       toCreate.push({
         supplier_sku: supplierSku,
         variant_combo: unit.option_values || null,
@@ -111,8 +90,6 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
       continue;
     }
 
-    // Identité stable retrouvée : MÊME id conservé, même si variant_combo
-    // a changé (correction fournisseur) — jamais un nouveau SKU.
     const target = existing.is_active ? toUpdate : toReactivate;
     target.push({
       id: existing.id,
@@ -124,9 +101,6 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     });
   }
 
-  // SKU SUPPLIER actifs absents de ce replay → désactivés, jamais supprimés.
-  // Une réapparition future du même supplier_sku réactivera cette même ligne
-  // (toReactivate ci-dessus, au prochain appel).
   const toDeactivate = [];
   for (const row of existingSkus) {
     if (row.source === 'SUPPLIER' && row.supplier_sku && row.is_active && !seenSupplierSkus.has(row.supplier_sku)) {
