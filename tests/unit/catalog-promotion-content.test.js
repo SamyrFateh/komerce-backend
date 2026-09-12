@@ -180,9 +180,17 @@ describe('catalog-promotion/content — mapContentToAttributeRows', () => {
     ]);
   });
 
-  it('rejette une specification sans attribute_key ou sans value', () => {
-    expect(() => mapContentToAttributeRows({ specifications: [{ value: '500' }] })).toThrow(/attribute_key requis/);
-    expect(() => mapContentToAttributeRows({ specifications: [{ attribute_key: 'poids' }] })).toThrow(/value requis/);
+  it('dérive une clé DB stable depuis label quand key est nullable, et rejette seulement une identité inexploitable ou une value absente', () => {
+    expect(mapContentToAttributeRows({
+      specifications: [{ key: null, label: 'Poids net', value: '500', unit: 'g' }],
+    })).toEqual([
+      { kind: 'SPECIFICATION', group_key: 'general', attribute_key: 'label_poids_net', label: 'Poids net', value_text: '500', unit: 'g', display_order: 0, source: 'SUPPLIER' },
+    ]);
+
+    expect(() => mapContentToAttributeRows({ specifications: [{ value: '500' }] }))
+      .toThrow(/key\/attribute_key ou un label non vide/);
+    expect(() => mapContentToAttributeRows({ specifications: [{ attribute_key: 'poids' }] }))
+      .toThrow(/value requis/);
   });
 
   it('préserve les attributs dupliqués avec une clé DB déterministe au lieu de perdre une valeur', () => {

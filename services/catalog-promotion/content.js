@@ -63,6 +63,24 @@ function projectedAttributeKey(kind, groupKey, baseKey, seenTriplets) {
   }
 }
 
+function attributeKeyFromLabel(label) {
+  const normalizedLabel = nonEmptyTrimmedStringOrNull(label);
+  if (!normalizedLabel) return null;
+
+  const folded = normalizedLabel
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '_')
+    .replace(/^_+|_+$/g, '');
+
+  const token = folded || Array.from(normalizedLabel)
+    .map((char) => char.codePointAt(0).toString(16))
+    .join('_');
+
+  return `label_${token}`.slice(0, MAX_ATTRIBUTE_KEY_LENGTH);
+}
+
 function mapContentToProfileRow(contract, options = {}) {
   if (!contract || typeof contract !== 'object') {
     throw invalid('contract requis pour la projection du profil éditorial');
@@ -226,32 +244,38 @@ function mapContentToAttributeRows(contract, options = {}) {
     if (!Array.isArray(specifications)) throw invalid('specifications doit être un tableau ou null');
 
     specifications.forEach((spec, index) => {
-      // V2 canonique : group/key. group_key/attribute_key ne sont que des
-      // alias de compatibilité pour d'anciens contrats internes déjà persistés.
+      // V2 canonique : `key` est nullable. La table cible exige néanmoins une
+      // identité stable : une clé fournisseur présente est conservée, sinon on
+      // dérive une clé déterministe depuis le label canonique du contrat.
       const rawKey = spec?.key ?? spec?.attribute_key;
-      if (typeof rawKey !== 'string' || rawKey.trim().length === 0) {
-        throw invalid('specifications[].key requis et non vide pour promotion (attribute_key requis pour compatibilité)');
+      const canonicalKey = typeof rawKey === 'string' && rawKey.trim().length > 0
+        ? rawKey.trim()
+        : null;
+      const specLabel = nonEmptyTrimmedStringOrNull(spec.label);
+      const baseAttributeKey = canonicalKey || attributeKeyFromLabel(specLabel);
+      if (!baseAttributeKey) {
+        throw invalid('specifications[] exige une key/attribute_key ou un label non vide pour fabriquer une identité DB stable');
       }
       if (spec.value === null || spec.value === undefined || String(spec.value).trim().length === 0) {
-        throw invalid(`specifications["${rawKey}"].value requis et non vide`);
+        throw invalid(`specifications["${baseAttributeKey}"].value requis et non vide`);
       }
 
       const rawGroup = spec.group ?? spec.group_key;
       const groupKey = nonEmptyTrimmedStringOrNull(rawGroup) || 'general';
-      const baseAttributeKey = rawKey.trim();
 
-      // Le contrat V2 n'impose pas l'unicité de specifications[].key, alors que
-      // product_attributes impose l'identité (kind, group_key, attribute_key).
-      // On ne fusionne et on ne jette donc aucune donnée fournisseur : les
-      // collisions sont projetées avec un suffixe ordinal déterministe (~2, ~3…).
-      // Le même snapshot rejoué produit exactement les mêmes clés DB.
+      // Le contrat V2 n'impose ni présence ni unicité de specifications[].key,
+      // alors que product_attributes impose l'identité
+      // (kind, group_key, attribute_key). On ne fusionne et on ne jette donc
+      // aucune donnée fournisseur : les collisions sont projetées avec un
+      // suffixe ordinal déterministe (~2, ~3…). Le même snapshot rejoué produit
+      // exactement les mêmes clés DB.
       const attributeKey = projectedAttributeKey('SPECIFICATION', groupKey, baseAttributeKey, seenTriplets);
 
       rows.push({
         kind: 'SPECIFICATION',
         group_key: groupKey,
         attribute_key: attributeKey,
-        label: nonEmptyTrimmedStringOrNull(spec.label) || baseAttributeKey,
+        label: specLabel || baseAttributeKey,
         value_text: String(spec.value).trim(),
         unit: nonEmptyTrimmedStringOrNull(spec.unit),
         display_order: typeof spec.display_order === 'number' ? spec.display_order : index,
