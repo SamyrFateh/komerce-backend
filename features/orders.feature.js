@@ -113,6 +113,13 @@ module.exports = {
       // v_order_margins) et deux fonctions PL/pgSQL (compute_real_margin,
       // auto_unsold) inchangées en valeur.
       'tests/e2e-api/orders.total-kmf-numeric.e2e.test.js',
+      // E2E fonctionnel — chantier currency debt, LOT 1b. Les 10 colonnes
+      // monétaires restantes d'orders (migration 214, integer -> numeric),
+      // suite de la 213. Couvre spécifiquement le trigger column-specific
+      // trg_compute_real_margin (BEFORE UPDATE OF cost_real_kmf) : Postgres
+      // bloque un ALTER TYPE sur une colonne référencée par la DÉFINITION
+      // d'un trigger, pas seulement son corps — trouvé par exécution réelle.
+      'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
@@ -310,6 +317,8 @@ module.exports = {
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
     { statement: 'orders.total_kmf (numeric depuis la migration 213) reste décodée en number côté JS, jamais en string — sans quoi toute arithmétique bare sur ce champ deviendrait une concaténation de chaînes',
       test: 'tests/e2e-api/orders.total-kmf-numeric.e2e.test.js' },
+    { statement: 'les 10 colonnes monétaires restantes d\'orders (migration 214) conservent leurs centimes après conversion, et trg_compute_real_margin reste strictement column-specific (BEFORE UPDATE OF cost_real_kmf), vérifié par inspection directe de la définition en base, pas par inférence comportementale',
+      test: 'tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js' },
     { statement: 'tout remboursement retourne au payeur, jamais au destinataire',
       test: 'tests/invariants/orders.refund-to-payer.test.js' },
     { statement: 'le workflow de statut d\'un litige (dispute-mutation-service.js) n\'écrit jamais refund_kmf ni refund_eur, quel que soit le statut atteint — le montant reste une décision distincte, jamais un effet de bord d\'un changement de statut',
