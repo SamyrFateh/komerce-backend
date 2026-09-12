@@ -89,9 +89,33 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     'bootstrap/api-routes.js',
   ];
 
+  // Vague 3 (2026-09-04 → 2026-09-10) : exposition commerciale market-delegation
+  // (local-offer / provider) et checkout fulfillment preview — décisions
+  // délibérées et revues, committées sur main (05f93a34b add read-only
+  // checkout fulfillment preview, bbcd0dac2 provider socle, 89cc09989 LOT 4
+  // local-offer exposition commerciale services/offres physiques).
+  // commercial_exposure reste DISABLED par défaut (migrations 155/156,
+  // tests dédiés plus bas) : ces consommateurs ne rendent rien visible par
+  // eux-mêmes, ils ajoutent des points d'intégration gouvernés de plus.
+  const ALLOWED_WAVE3_ROUTE_CONSUMERS = [
+    'routes/market-delegation-local-offer.js',
+    'routes/market-delegation-provider.js',
+  ];
+  const ALLOWED_WAVE3_SERVICE_CONSUMERS = [
+    'services/local-stock-checkout-preview.js',
+    'services/market-delegation-local-offer-service.js',
+    'services/market-delegation-provider-service.js',
+    'services/order-checkout-service.js',
+    'services/providers-inquiry-service.js',
+  ];
+  const ALLOWED_WAVE3_FRONTEND_URL_CONSUMERS = [
+    'public/boutique/js/b-checkout.js',
+  ];
+
   const ALLOWED_LOCAL_STOCK_CONSUMERS = [
     ...ALLOWED_WRITE_CONSUMERS, ...ALLOWED_ROUTE_FILE_CONSUMERS,
     ...ALLOWED_COMPOSITION_CONSUMERS, ...ALLOWED_BOOTSTRAP_CONSUMERS,
+    ...ALLOWED_WAVE3_ROUTE_CONSUMERS, ...ALLOWED_WAVE3_SERVICE_CONSUMERS,
   ];
 
   test('aucune route (routes/) ne require() les services shadow, sauf les points d\'intégration D2/D4 revus', () => {
@@ -143,6 +167,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     const ALLOWED_FRONTEND_URL_CONSUMERS = [
       'public/boutique/js/discovery-api.js',
       'public/boutique/js/providers-services-api.js',
+      ...ALLOWED_WAVE3_FRONTEND_URL_CONSUMERS,
     ];
     const boutiqueFiles = walk(path.join(ROOT, 'public', 'boutique', 'js'), ['.js']);
     const offenders = [];

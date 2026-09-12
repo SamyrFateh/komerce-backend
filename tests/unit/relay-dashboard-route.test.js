@@ -42,6 +42,13 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+// Hors périmètre de ce test suite (couvert par ses propres tests dédiés) —
+// la projection de rôle délégué marché ne doit pas interférer avec la
+// vérification requireRole testée ici.
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
 jest.mock('../../services/relay-dashboard-queries', () => ({
   getDashboardKPIs: jest.fn(),
   getOrders: jest.fn(),
