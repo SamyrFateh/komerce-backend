@@ -41,12 +41,12 @@ const goldenFixture = require('../../tests/fixtures/catalog/golden-elite-pro');
 const ORIGINAL_ENV = { ...process.env };
 const MARKET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const CATEGORY_BY_FAMILY = Object.freeze({
-  women: 'Mode & Beauté', beauty: 'Mode & Beauté',
-  comfort: 'Maison', kitchen: 'Maison',
-  phones: 'Tech', audio: 'Tech',
-  tools: 'Bricolage', electric: 'Bricolage',
-  ceremony: 'Créations personnelles', gift: 'Créations personnelles',
-  filters: 'Auto', 'car-light': 'Auto',
+  women: 'Mode & Beauté', beauty: 'Mode & Beauté', men: 'Mode & Beauté', kids: 'Mode & Beauté',
+  comfort: 'Maison', kitchen: 'Maison', decor: 'Maison', 'kids-home': 'Maison',
+  phones: 'Tech', audio: 'Tech', watches: 'Tech',
+  tools: 'Bricolage', electric: 'Bricolage', security: 'Bricolage',
+  ceremony: 'Créations personnelles', gift: 'Créations personnelles', printing: 'Créations personnelles',
+  filters: 'Auto', 'car-light': 'Auto', brakes: 'Auto', moto: 'Auto',
 });
 const CJ_ROWS = CJ_LOCAL_PRODUCTS.map((product, index) => ({
   id: `bbbb${String(index + 1).padStart(4, '0')}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
