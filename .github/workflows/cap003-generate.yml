@@ -1,0 +1,35 @@
+name: CAP003 generated artifacts
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    if: github.head_ref == 'feat/cap003-market-signals-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Generate contract
+        run: node scripts/contract-generate.js
+      - name: Generate Security 360
+        run: npm run security:360
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cap003-generated
+          path: |
+            docs/contract/openapi.json
+            docs/SECURITY_360.json
+            docs/SECURITY_360.md
+          if-no-files-found: error
