@@ -27,6 +27,15 @@ function contract(overrides = {}) {
   };
 }
 
+function captureError(fn) {
+  try {
+    fn();
+  } catch (error) {
+    return error;
+  }
+  throw new Error('Une erreur était attendue');
+}
+
 describe('Supplier Order Identity', () => {
   test('résout une unité sans connaître le fournisseur', () => {
     expect(identity.resolveSupplierUnit(contract(), 'SKU-1', 2)).toEqual({
@@ -49,7 +58,31 @@ describe('Supplier Order Identity', () => {
   test('fail-closed sans identité de commande', () => {
     const c = contract();
     delete c.sellable_units[0].supplier_order_identity;
-    expect(() => identity.resolveSupplierUnit(c, 'SKU-1', 1)).toThrow(/supplier_order_identity requis/i);
+    const error = captureError(() => identity.resolveSupplierUnit(c, 'SKU-1', 1));
+    expect(error.code).toBe(identity.BLOCKED_SUPPLIER_IDENTITY);
+    expect(error.message).toMatch(/supplier_order_identity requis/i);
+  });
+
+  test('0 résolution est BLOCKED_SUPPLIER_IDENTITY', () => {
+    const error = captureError(() => identity.resolveSupplierUnit(contract(), 'SKU-ABSENT', 1));
+    expect(error.code).toBe(identity.BLOCKED_SUPPLIER_IDENTITY);
+    expect(error.details).toEqual({ supplier_sku: 'SKU-ABSENT', matches: 0 });
+  });
+
+  test('plusieurs résolutions sont BLOCKED_SUPPLIER_IDENTITY', () => {
+    const c = contract();
+    c.sellable_units.push({
+      ...c.sellable_units[0],
+      supplier_unit_ref: 'UNIT-10',
+      supplier_order_identity: {
+        provider: 'supplier-x',
+        version: 1,
+        payload: { variant_id: 'UNIT-10' },
+      },
+    });
+    const error = captureError(() => identity.resolveSupplierUnit(c, 'SKU-1', 1));
+    expect(error.code).toBe(identity.BLOCKED_SUPPLIER_IDENTITY);
+    expect(error.details).toEqual({ supplier_sku: 'SKU-1', matches: 2 });
   });
 
   test('autorise explicitement un snapshot legacy pour refresh, jamais pour commander', () => {
@@ -64,6 +97,8 @@ describe('Supplier Order Identity', () => {
   test('refuse une identité ambiguë ou vide', () => {
     const c = contract();
     c.sellable_units[0].supplier_order_identity.payload = {};
-    expect(() => identity.resolveSupplierUnit(c, 'SKU-1', 1)).toThrow(/payload doit être un objet non vide/i);
+    const error = captureError(() => identity.resolveSupplierUnit(c, 'SKU-1', 1));
+    expect(error.code).toBe(identity.BLOCKED_SUPPLIER_IDENTITY);
+    expect(error.message).toMatch(/payload doit être un objet non vide/i);
   });
 });
