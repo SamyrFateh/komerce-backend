@@ -46,17 +46,17 @@ const adminOnly = [authenticate, requireAdmin];
 // Chaque champ a : type, validation, label, group, unit
 const FIELD_SCHEMA = {
   // — Coûts fixes par commande —
-  cost_fixed_sourcing_kmf:     { type: 'int',     group: 'costs',    label: 'Coût fixe sourcing',        unit: 'KMF', min: 0 },
-  cost_fixed_transit_kmf:      { type: 'int',     group: 'costs',    label: 'Coût fixe transit',         unit: 'KMF', min: 0 },
-  cost_fixed_hub_kmf:          { type: 'int',     group: 'costs',    label: 'Coût fixe hub',             unit: 'KMF', min: 0 },
-  cost_fixed_relais_kmf:       { type: 'int',     group: 'costs',    label: 'Coût fixe relais',          unit: 'KMF', min: 0 },
-  cost_fixed_support_kmf:      { type: 'int',     group: 'costs',    label: 'Coût fixe support',         unit: 'KMF', min: 0 },
+  cost_fixed_sourcing_kmf:     { type: 'decimal', group: 'costs',    label: 'Coût fixe sourcing',        unit: 'KMF', min: 0 },
+  cost_fixed_transit_kmf:      { type: 'decimal', group: 'costs',    label: 'Coût fixe transit',         unit: 'KMF', min: 0 },
+  cost_fixed_hub_kmf:          { type: 'decimal', group: 'costs',    label: 'Coût fixe hub',             unit: 'KMF', min: 0 },
+  cost_fixed_relais_kmf:       { type: 'decimal', group: 'costs',    label: 'Coût fixe relais',          unit: 'KMF', min: 0 },
+  cost_fixed_support_kmf:      { type: 'decimal', group: 'costs',    label: 'Coût fixe support',         unit: 'KMF', min: 0 },
 
   // — Objectifs & pilotage —
   target_marge_brute_pct:      { type: 'decimal', group: 'targets',  label: 'Marge brute cible',         unit: '%',   min: 0, max: 100 },
-  target_panier_moyen_kmf:     { type: 'int',     group: 'targets',  label: 'Panier moyen cible',        unit: 'KMF', min: 0 },
+  target_panier_moyen_kmf:     { type: 'decimal', group: 'targets',  label: 'Panier moyen cible',        unit: 'KMF', min: 0 },
   objectif_commandes_mois:     { type: 'int',     group: 'targets',  label: 'Objectif commandes/mois',   unit: '',    min: 0 },
-  objectif_ca_mensuel_kmf:     { type: 'int',     group: 'targets',  label: 'Objectif CA mensuel',       unit: 'KMF', min: 0 },
+  objectif_ca_mensuel_kmf:     { type: 'decimal', group: 'targets',  label: 'Objectif CA mensuel',       unit: 'KMF', min: 0 },
 
   // — Modèle économique canonique (LOT 1A-4) —
   hub_monthly_cost_aed:           { type: 'int',     group: 'model',    label: 'Coût Hub mensuel',          unit: 'AED', min: 0 },
@@ -77,14 +77,14 @@ const FIELD_SCHEMA = {
   delai_transit_jours:         { type: 'int',     group: 'sourcing', label: 'Délai transit moyen',       unit: 'jours', min: 0 },
 
   // — Paramètres opérationnels —
-  frais_livraison_defaut_kmf:  { type: 'int',     group: 'ops',      label: 'Frais livraison défaut',    unit: 'KMF', min: 0 },
-  seuil_livraison_gratuite_kmf:{ type: 'int',     group: 'ops',      label: 'Seuil livraison gratuite',  unit: 'KMF', min: 0 },
+  frais_livraison_defaut_kmf:  { type: 'decimal', group: 'ops',      label: 'Frais livraison défaut',    unit: 'KMF', min: 0 },
+  seuil_livraison_gratuite_kmf:{ type: 'decimal', group: 'ops',      label: 'Seuil livraison gratuite',  unit: 'KMF', min: 0 },
   taux_conversion_pct:         { type: 'decimal', group: 'ops',      label: 'Taux de conversion',        unit: '%',   min: 0, max: 100 },
   taux_retour_pct:             { type: 'decimal', group: 'ops',      label: 'Taux de retour',            unit: '%',   min: 0, max: 100 },
 
   // — Fidélité —
   loyalty_active:              { type: 'bool',    group: 'loyalty',  label: 'Fidélité activée',          unit: '' },
-  loyalty_threshold_kmf:       { type: 'int',     group: 'loyalty',  label: 'Seuil gros panier',         unit: 'KMF', min: 0 },
+  loyalty_threshold_kmf:       { type: 'decimal', group: 'loyalty',  label: 'Seuil gros panier',         unit: 'KMF', min: 0 },
   loyalty_trigger_count:       { type: 'int',     group: 'loyalty',  label: 'Paniers pour cadeau',       unit: '',    min: 1, max: 100 },
 };
 
