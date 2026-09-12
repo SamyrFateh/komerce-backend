@@ -18,6 +18,7 @@
 'use strict';
 
 const ALLOWED_CURRENCIES = new Set(['AED', 'EUR', 'USD', 'KMF']);
+const BLOCKED_SUPPLIER_IDENTITY = 'BLOCKED_SUPPLIER_IDENTITY';
 
 function positiveInt(value, name = 'quantity') {
   const n = Number.parseInt(value, 10);
@@ -29,24 +30,31 @@ function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
+function blockedSupplierIdentity(message, details = {}) {
+  const error = new Error(`${BLOCKED_SUPPLIER_IDENTITY}: ${message}`);
+  error.code = BLOCKED_SUPPLIER_IDENTITY;
+  error.details = clone(details) || {};
+  return error;
+}
+
 function normalizeIdentity(identity, supplierUnitRef) {
   if (!identity || typeof identity !== 'object' || Array.isArray(identity)) {
-    throw new Error('supplier_order_identity requis pour une unité commandable');
+    throw blockedSupplierIdentity('supplier_order_identity requis pour une unité commandable');
   }
   const provider = String(identity.provider || '').trim().toLowerCase();
   if (!/^[a-z0-9][a-z0-9._-]{0,99}$/.test(provider)) {
-    throw new Error(`supplier_order_identity.provider invalide: ${provider || 'absent'}`);
+    throw blockedSupplierIdentity(`supplier_order_identity.provider invalide: ${provider || 'absent'}`);
   }
   const version = Number(identity.version);
   if (!Number.isInteger(version) || version < 1) {
-    throw new Error('supplier_order_identity.version doit être un entier >= 1');
+    throw blockedSupplierIdentity('supplier_order_identity.version doit être un entier >= 1');
   }
   if (!supplierUnitRef) {
-    throw new Error('supplier_unit_ref requis quand supplier_order_identity est présent');
+    throw blockedSupplierIdentity('supplier_unit_ref requis quand supplier_order_identity est présent');
   }
   const payload = identity.payload;
   if (!payload || typeof payload !== 'object' || Array.isArray(payload) || Object.keys(payload).length === 0) {
-    throw new Error('supplier_order_identity.payload doit être un objet non vide');
+    throw blockedSupplierIdentity('supplier_order_identity.payload doit être un objet non vide');
   }
   return { provider, version, payload: clone(payload) };
 }
@@ -71,7 +79,10 @@ function resolveSupplierUnit(contract, supplierSku, quantity = 1, options = {}) 
   const matches = (contract.sellable_units || [])
     .filter((candidate) => String(candidate?.supplier_sku || '').trim() === sku);
   if (matches.length !== 1) {
-    throw new Error(`supplier_sku doit résoudre exactement une unité fournisseur: ${sku} (${matches.length} trouvée(s))`);
+    throw blockedSupplierIdentity(
+      `supplier_sku doit résoudre exactement une unité fournisseur: ${sku} (${matches.length} trouvée(s))`,
+      { supplier_sku: sku, matches: matches.length }
+    );
   }
 
   const unit = matches[0];
@@ -107,7 +118,9 @@ function resolveSupplierUnit(contract, supplierSku, quantity = 1, options = {}) 
 }
 
 module.exports = {
+  BLOCKED_SUPPLIER_IDENTITY,
   positiveInt,
+  blockedSupplierIdentity,
   normalizeIdentity,
   resolveSupplierUnit,
 };
