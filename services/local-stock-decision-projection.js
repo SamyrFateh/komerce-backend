@@ -19,7 +19,14 @@
 'use strict';
 
 const db = require('../db');
-const { AVAILABILITY, DEFAULT_LOCATION } = require('./local-stock-service');
+
+// Contrat local-stock V1. Ces littéraux restent volontairement dans la même
+// feature propriétaire : le consommateur dashboard ne les recalcule jamais.
+const DEFAULT_LOCATION = 'KM_MAIN';
+const AVAILABILITY = Object.freeze({
+  AVAILABLE_NOW: 'AVAILABLE_NOW',
+  UNAVAILABLE: 'UNAVAILABLE',
+});
 
 /**
  * Projection read-only volontairement minimale pour les consommateurs de
@@ -85,5 +92,7 @@ async function getDecisionAvailabilityEvidence(productId, marketId, location = D
 }
 
 module.exports = {
+  AVAILABILITY,
+  DEFAULT_LOCATION,
   getDecisionAvailabilityEvidence,
 };
