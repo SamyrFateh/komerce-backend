@@ -1,6 +1,7 @@
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
+const aliexpressAdapter = require('./aliexpress-fulfillment-adapter');
 
 const VERDICT = Object.freeze({
   READY: 'FULFILLMENT_READY',
@@ -13,6 +14,8 @@ const VERDICT = Object.freeze({
   FREIGHT_UNAVAILABLE: 'FREIGHT_UNAVAILABLE',
   PREFLIGHT_FAILED: 'PREFLIGHT_FAILED',
 });
+
+const DEFAULT_ADAPTERS = Object.freeze({ aliexpress: aliexpressAdapter });
 
 function result(status, evidence = {}, reason = null) {
   return { ready: status === VERDICT.READY, status, reason, evidence };
@@ -45,7 +48,8 @@ function canonicalIdentity(row) {
 }
 
 async function evaluateSupplierFulfillmentReadiness(options = {}) {
-  const { db, productSkuId, destination = {}, adapters = {}, context = {} } = options;
+  const { db, productSkuId, destination = {}, context = {} } = options;
+  const adapters = { ...DEFAULT_ADAPTERS, ...(options.adapters || {}) };
   if (!db || typeof db.query !== 'function') throw new Error('db.query requis');
   if (!productSkuId) throw new Error('productSkuId requis');
   const quantity = supplierIdentity.positiveInt(options.quantity ?? 1, 'quantity');
@@ -81,6 +85,7 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
 
 module.exports = {
   VERDICT,
+  DEFAULT_ADAPTERS,
   result,
   loadPersistedSku,
   canonicalIdentity,
