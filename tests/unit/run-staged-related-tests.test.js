@@ -14,6 +14,8 @@ const {
   isBoutiqueSource,
   isRootUnitTest,
   isBoutiqueUnitTest,
+  isSchemaOrMigrationChange,
+  contentReferencesSource,
 } = require('../../scripts/run-staged-related-tests');
 
 describe('run-staged-related-tests — resolution ciblee', () => {
@@ -52,5 +54,35 @@ describe('run-staged-related-tests — resolution ciblee', () => {
     expect(isRootUnitTest('tests/integration/orders.test.js')).toBe(false);
     expect(isBoutiqueUnitTest('public/boutique/tests/unit/b-cart.test.js')).toBe(true);
     expect(isBoutiqueUnitTest('public/boutique/tests/e2e/cart.spec.js')).toBe(false);
+  });
+
+  test('reconnait une migration ou le dump schema comme changement structurel non traçable finement', () => {
+    expect(isSchemaOrMigrationChange('migrations/221_customs_fabrics_unsold_kmf_numeric.sql')).toBe(true);
+    expect(isSchemaOrMigrationChange('docs/db/railway-live-schema.sql')).toBe(true);
+    expect(isSchemaOrMigrationChange('services/orders.js')).toBe(false);
+    expect(isSchemaOrMigrationChange('docs/db/notes.md')).toBe(false);
+  });
+
+  test('detecte un couplage par lecture textuelle (fs.readFileSync) invisible au graphe require()', () => {
+    const testContent = `
+      const loginSource = fs.readFileSync(
+        path.join(__dirname, '../../public/js/login.js'),
+        'utf8'
+      );
+    `;
+    expect(contentReferencesSource(testContent, 'public/js/login.js')).toBe(true);
+    expect(contentReferencesSource(testContent, 'public/js/checkout.js')).toBe(false);
+  });
+
+  test('detecte un chemin construit en segments separes (path.join multi-args) via nom de fichier + tous les dossiers significatifs', () => {
+    const testContent = `
+      const CANONICAL_ROOT = path.join(ROOT, 'public', 'dashboards', 'canonical');
+      const appSource = fs.readFileSync(path.join(CANONICAL_ROOT, 'js', 'app.js'), 'utf8');
+    `;
+    // 'js' est un segment generique ignore ; 'public'/'dashboards'/'canonical'
+    // sont tous presents dans le fichier -> lien retenu.
+    expect(contentReferencesSource(testContent, 'public/dashboards/canonical/js/app.js')).toBe(true);
+    // 'legacy' n'apparait nulle part dans le fichier -> pas de lien.
+    expect(contentReferencesSource(testContent, 'public/dashboards/legacy/js/app.js')).toBe(false);
   });
 });
