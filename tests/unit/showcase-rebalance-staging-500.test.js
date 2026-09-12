@@ -9,6 +9,9 @@
 const {
   FLOOR,
   NUCLEUS,
+  reusableLicense,
+  sportCategoryPage,
+  fetchSportCategory,
   counts,
   donorIndex,
   applyFloor,
@@ -41,6 +44,26 @@ function candidate(index, category) {
     image_url: `https://candidate.test/${index}.jpg`,
     images: [`https://candidate.test/${index}.jpg`],
     source: `candidate:${index}`,
+  };
+}
+
+function commonsPage(overrides = {}) {
+  return {
+    pageid: 42,
+    title: 'File:Dumbbell product photo.jpg',
+    imageinfo: [{
+      mime: 'image/jpeg',
+      width: 1200,
+      height: 1000,
+      url: 'https://upload.wikimedia.org/dumbbell.jpg',
+      descriptionurl: 'https://commons.wikimedia.org/wiki/File:Dumbbell_product_photo.jpg',
+      extmetadata: {
+        LicenseShortName: { value: 'CC BY-SA 4.0' },
+        Artist: { value: 'Example' },
+        ImageDescription: { value: 'Dumbbell on a neutral background.' },
+      },
+    }],
+    ...overrides,
   };
 }
 
@@ -79,5 +102,34 @@ describe('showcase-rebalance-staging-500', () => {
     expect(result.products.slice(0, 40).map((row) => row.source)).toEqual(products.slice(0, 40).map((row) => row.source));
     expect(new Set(result.products.map((row) => row.image_url)).size).toBe(500);
     expect(result.products.every((row) => Number(row.stock) > 0)).toBe(true);
+  });
+
+  test('accepte les licences réutilisables et rejette NC/ND', () => {
+    expect(reusableLicense('CC BY-SA 4.0')).toBe(true);
+    expect(reusableLicense('Public domain')).toBe(true);
+    expect(reusableLicense('CC BY-NC 4.0')).toBe(false);
+    expect(reusableLicense('CC BY-ND 4.0')).toBe(false);
+  });
+
+  test('mappe uniquement une photo équipement sport exploitable', () => {
+    expect(sportCategoryPage(commonsPage(), 'Sports gear with transparent background', 'Fitness')).toMatchObject({
+      category: 'Sport',
+      subcategory: 'Fitness',
+      source: 'commons:42',
+      image_url: 'https://upload.wikimedia.org/dumbbell.jpg',
+    });
+    expect(sportCategoryPage(commonsPage({ title: 'File:Football team players.jpg' }), 'Sports gear with transparent background', 'Fitness')).toBeNull();
+  });
+
+  test('lit une catégorie Commons comme fallback sans inventer de produit', async () => {
+    const fetchFn = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ query: { pages: [commonsPage()] } }),
+    }));
+    const rows = await fetchSportCategory('Sports gear with transparent background', 'Fitness', 50, fetchFn);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].source).toBe('commons:42');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 });
