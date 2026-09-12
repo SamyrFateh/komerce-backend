@@ -375,10 +375,6 @@ module.exports = {
       'DELETE /api/products/:id/skus/:skuId',
       'GET /api/products/categories',
       'GET /api/products/subcategories',
-      'GET /api/integrations/aliexpress/oauth/start',
-      'GET /api/integrations/aliexpress/oauth/callback',
-      'GET /api/integrations/aliexpress/status',
-      'POST /api/integrations/aliexpress/oauth/refresh',
     ],
     internalApi: [
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
