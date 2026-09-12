@@ -4,25 +4,36 @@
  * @domain        decision-signals
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_admin, decision_signal_global_grant, signal_ref, action_payload
+ * @inputs        authenticated_actor, server_route_market_code, signal_ref, action_payload
  * @outputs       canonical_action_center_projection, signal_lifecycle_action_results
- * @depends       middleware/auth.js, middleware/require-decision-signal-global-authority.js, services/action-center-workspace.js
+ * @depends       db.js, middleware/auth.js, middleware/require-decision-signal-global-authority.js, services/action-center-workspace.js, services/signal-admin-service.js, services/market-delegation-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       none
- * @db-write      none
- * @db-txn        none
- * @doctrine      global_action_center_authority, signal_ref_only, no_market_authority, action_center_never_mutates_source_entities
- * @impact-areas  decision-signals, admin-dashboard
- * @version       2026-08
+ * @db-read       decision_signal_global_access_grants, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
+ * @db-write-via:signal-admin-service signals
+ * @db-write-via:market-delegation-service market_delegation_audit
+ * @db-txn        market_signal_lifecycle_plus_delegation_audit_atomic
+ * @doctrine      exact_market_scope_is_server_authority, signal_ref_only, global_and_market_action_centers_never_cross_scope, action_center_never_mutates_source_entities
+ * @impact-areas  decision-signals, admin-dashboard, market-authorization, market-delegation
+ * @version       2026-09
  */
 
 'use strict';
 
 const express = require('express');
+const db = require('../db');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requireDecisionSignalGlobalAuthority } = require('../middleware/require-decision-signal-global-authority');
+const {
+  hasDecisionSignalGlobalAuthority,
+  requireDecisionSignalGlobalAuthority,
+} = require('../middleware/require-decision-signal-global-authority');
 const workspace = require('../services/action-center-workspace');
+const signalAdminService = require('../services/signal-admin-service');
+const {
+  resolveActiveAssignmentByMarketCode,
+  resolveAuthorization,
+  audit,
+} = require('../services/market-delegation-service');
 
 const FORBIDDEN_KEYS = new Set([
   'id', 'ids', 'signal_id', 'signalId', 'entity_id', 'entityId',
@@ -45,7 +56,9 @@ function rejectBrowserAuthority(req, res, next) {
   next();
 }
 
-router.use(authenticate, requireRole(['admin']), requireDecisionSignalGlobalAuthority, rejectBrowserAuthority);
+function routeError(status, message, code) {
+  return Object.assign(new Error(message), { status, code });
+}
 
 function sendAction(res, action, result) {
   return res.json({ ok: true, action, result });
@@ -57,6 +70,131 @@ function handleError(error, res, next) {
   }
   return next(error);
 }
+
+async function resolveMarketAuthority(req, requiredCapability) {
+  const marketCode = req.params.marketCode;
+  if (req.user.role === 'admin') {
+    const allowed = await hasDecisionSignalGlobalAuthority(req.user.id);
+    if (!allowed) {
+      throw routeError(403, 'Accès refusé — autorité globale Centre d’actions requise', 'decision_signal_global_access_denied');
+    }
+    return resolveActiveAssignmentByMarketCode(db, marketCode);
+  }
+
+  return resolveAuthorization(db, {
+    userId: req.user.id,
+    marketCode,
+    requiredCapability,
+  });
+}
+
+function publicMarket(authz) {
+  return {
+    id: authz.market_id,
+    code: authz.market_code,
+    name: authz.market_name,
+    currency: authz.currency,
+  };
+}
+
+async function auditMarketLifecycle(executor, req, authz, action, result) {
+  await audit(executor, {
+    actorUserId: req.user.id,
+    assignmentId: authz.assignment_id,
+    membershipId: authz.membership_id || null,
+    capability: req.user.role === 'market_operator' ? 'decision_signal.manage' : null,
+    action,
+    before: null,
+    after: { signal_ref: result.signal_ref, status: result.status },
+    correlationId: req.get('x-correlation-id') || null,
+  });
+}
+
+async function acknowledgeMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.acknowledgeByRef(ref, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou déjà acquitté', 'action_center_signal_not_open');
+    const result = { signal_ref: row.signal_ref, status: row.status };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_ACKNOWLEDGED', result);
+    return result;
+  });
+}
+
+async function snoozeMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.snoozeByRef(ref, req.body && req.body.hours, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
+    const result = { signal_ref: row.signal_ref, status: row.status, snoozed_until: row.snoozed_until };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_SNOOZED', result);
+    return result;
+  });
+}
+
+async function resolveMarketSignal(req, authz) {
+  return db.withTransaction(async client => {
+    const ref = workspace.requireSignalRef(req.params.signalRef);
+    const row = await signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client);
+    if (!row) throw routeError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
+    const result = { signal_ref: row.signal_ref, status: row.status, resolved_at: row.resolved_at };
+    await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_RESOLVED', result);
+    return result;
+  });
+}
+
+router.use(authenticate, rejectBrowserAuthority);
+
+// Market Action Center — same decision-signals owner, exact server-resolved
+// market scope. No market_id is ever accepted from the browser.
+router.get(
+  '/market/:marketCode',
+  requireRole(['admin', 'market_operator']),
+  async (req, res, next) => {
+    try {
+      const authz = await resolveMarketAuthority(req, 'dashboard.market.read');
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await workspace.buildMarketWorkspace(publicMarket(authz), req.query || {}));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/signals/:signalRef/acknowledge',
+  requireRole(['admin', 'market_operator']),
+  async (req, res, next) => {
+    try {
+      const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
+      sendAction(res, 'acknowledge_signal', await acknowledgeMarketSignal(req, authz));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/signals/:signalRef/snooze',
+  requireRole(['admin', 'market_operator']),
+  async (req, res, next) => {
+    try {
+      const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
+      sendAction(res, 'snooze_signal', await snoozeMarketSignal(req, authz));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/signals/:signalRef/resolve',
+  requireRole(['admin', 'market_operator']),
+  async (req, res, next) => {
+    try {
+      const authz = await resolveMarketAuthority(req, 'decision_signal.manage');
+      sendAction(res, 'resolve_signal', await resolveMarketSignal(req, authz));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
+// Global Action Center remains explicitly central-only and can never see or
+// mutate rows carrying a market_id because the services default to NULL scope.
+router.use(requireRole(['admin']), requireDecisionSignalGlobalAuthority);
 
 router.get('/', async (req, res, next) => {
   try {
@@ -86,3 +224,12 @@ router.post('/signals/:signalRef/resolve', async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports._test = {
+  hasForbiddenAuthority,
+  rejectBrowserAuthority,
+  resolveMarketAuthority,
+  publicMarket,
+  acknowledgeMarketSignal,
+  snoozeMarketSignal,
+  resolveMarketSignal,
+};

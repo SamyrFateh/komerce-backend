@@ -4,16 +4,16 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   high
- * @inputs        authenticated_action_center_operator, canonical_action_center_projection
+ * @inputs        authenticated_action_center_operator, server_admin_context, canonical_action_center_projection
  * @outputs       canonical_action_center_dom, authorized_signal_lifecycle_requests
- * @depends       canonical primitives
+ * @depends       canonical primitives, /api/admin/dashboard/context
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      action_center_handles_derived_signals_only, global_until_signal_market_authority_exists, browser_signal_ref_only, canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard, decision-signals
- * @version       2026-08
+ * @doctrine      action_center_handles_derived_signals_only, server_admin_context_selects_market_endpoint, browser_signal_ref_only, canonical_admin_no_legacy_imports
+ * @impact-areas  admin-dashboard, decision-signals, market-authorization
+ * @version       2026-09
  */
 
 'use strict';
@@ -24,6 +24,7 @@
   if (root) root.KomerceCanonicalActionCenter = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createActionCenter() {
   const ENDPOINT = '/api/admin/action-center';
+  const CONTEXT_ENDPOINT = '/api/admin/dashboard/context';
 
   const FAMILY_LABELS = Object.freeze({
     ops: 'Opérations',
@@ -60,6 +61,41 @@
     return body;
   }
 
+  function selectedMarketCode(adminContext, locationLike) {
+    const access = adminContext && adminContext.access ? adminContext.access : {};
+    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets.map(code => String(code).toUpperCase()) : [];
+    if (!allowed.length || access.mode !== 'market') return null;
+
+    let requested = null;
+    try {
+      if (locationLike && locationLike.href) requested = new URL(locationLike.href).searchParams.get('market');
+    } catch (_) {}
+    if (requested && allowed.includes(String(requested).toUpperCase())) return String(requested).toUpperCase();
+
+    const preferred = access.defaultMarket ? String(access.defaultMarket).toUpperCase() : null;
+    if (preferred && allowed.includes(preferred)) return preferred;
+    return allowed[0] || null;
+  }
+
+  async function resolveRuntimeScope(options) {
+    const adminContext = options.adminContext || await jsonRequest(options.fetch, CONTEXT_ENDPOINT);
+    const marketCode = selectedMarketCode(adminContext, options.location || (typeof globalThis !== 'undefined' ? globalThis.location : null));
+    if (adminContext && adminContext.access && adminContext.access.mode === 'market') {
+      if (!marketCode) {
+        const error = new Error('Aucun Market ID autorisé pour le Centre d’actions');
+        error.code = 'action_center_market_context_missing';
+        throw error;
+      }
+      return {
+        mode: 'market',
+        marketCode,
+        endpoint: `${ENDPOINT}/market/${encodeURIComponent(marketCode)}`,
+        adminContext,
+      };
+    }
+    return { mode: 'global', marketCode: null, endpoint: ENDPOINT, adminContext };
+  }
+
   function setFeedback(rootNode, message, tone = 'neutral') {
     const target = rootNode.querySelector('[data-action-center-feedback]');
     if (!target) return;
@@ -67,14 +103,17 @@
     target.textContent = message || '';
   }
 
-  function header(doc) {
+  function header(doc, payload) {
     const node = doc.createElement('header');
     node.className = 'kmc-workspace-header';
+    const market = payload && payload.scope && payload.scope.market;
 
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACTION CENTER · CANONICAL'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Décider sur les signaux, pas sur des écrans'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Surface centrale · signaux dérivés · acquitter, reporter ou résoudre sans modifier la donnée métier source'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', market ? `ACTION CENTER · ${market.code}` : 'ACTION CENTER · CANONICAL'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', market ? `Décisions · ${market.name || market.code}` : 'Décider sur les signaux, pas sur des écrans'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
+      ? 'Signaux dérivés de ce marché uniquement · acquitter, reporter ou résoudre sans modifier la donnée métier source'
+      : 'Surface centrale globale · signaux dérivés · acquitter, reporter ou résoudre sans modifier la donnée métier source'));
     node.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -204,45 +243,55 @@
       const signalRef = button.dataset.signalRef;
 
       if (action === 'generate') {
+        if (context.scopeMode !== 'global') return;
         await runAction(context, button, `${ENDPOINT}/generate`, {}, 'Signaux régénérés.');
         return;
       }
       if (!signalRef) return;
+      const signalPath = `${context.endpoint}/signals/${encodeURIComponent(signalRef)}`;
       if (action === 'acknowledge') {
-        await runAction(context, button, `${ENDPOINT}/signals/${encodeURIComponent(signalRef)}/acknowledge`, {}, 'Signal acquitté.');
+        await runAction(context, button, `${signalPath}/acknowledge`, {}, 'Signal acquitté.');
       }
       if (action === 'snooze') {
-        await runAction(context, button, `${ENDPOINT}/signals/${encodeURIComponent(signalRef)}/snooze`, { hours: 24 }, 'Signal reporté de 24 h.');
+        await runAction(context, button, `${signalPath}/snooze`, { hours: 24 }, 'Signal reporté de 24 h.');
       }
       if (action === 'resolve') {
-        await runAction(context, button, `${ENDPOINT}/signals/${encodeURIComponent(signalRef)}/resolve`, {}, 'Signal résolu.');
+        await runAction(context, button, `${signalPath}/resolve`, {}, 'Signal résolu.');
       }
     });
   }
 
   async function mount(options) {
+    const runtime = await resolveRuntimeScope(options);
     const context = {
       root: options.root,
       user: options.user,
       document: options.document,
       fetch: options.fetch,
       ui: options.ui,
+      endpoint: runtime.endpoint,
+      scopeMode: runtime.mode,
+      marketCode: runtime.marketCode,
       reload: null,
     };
 
     async function load() {
-      const payload = await jsonRequest(context.fetch, ENDPOINT);
+      const payload = await jsonRequest(context.fetch, context.endpoint);
       const rootNode = context.root;
       rootNode.replaceChildren();
-      rootNode.appendChild(header(context.document));
+      rootNode.appendChild(header(context.document, payload));
       rootNode.appendChild(context.ui.KpiStrip.create(metricItems(payload.summary)).element);
 
       const controls = context.ui.Section.create({
-        title: 'Actualiser le constat',
+        title: context.scopeMode === 'market' ? 'Périmètre de décision' : 'Actualiser le constat',
         description: payload.scope && payload.scope.market_note ? payload.scope.market_note : 'Les signaux sont calculés côté serveur.',
       });
-      const generate = actionButton(context.document, 'Régénérer les signaux', 'generate', '', false);
-      controls.slot.appendChild(generate);
+      if (context.scopeMode === 'global') {
+        const generate = actionButton(context.document, 'Régénérer les signaux', 'generate', '', false);
+        controls.slot.appendChild(generate);
+      } else {
+        controls.slot.appendChild(text(context.document, 'div', 'kmc-workspace-note', `Marché autorisé · ${context.marketCode}`));
+      }
       rootNode.appendChild(controls.element);
 
       renderFamilies(rootNode, context.ui, context.document, payload);
@@ -254,5 +303,14 @@
     return load();
   }
 
-  return { ENDPOINT, mount, jsonRequest, metricItems, severityLabel };
+  return {
+    ENDPOINT,
+    CONTEXT_ENDPOINT,
+    mount,
+    jsonRequest,
+    metricItems,
+    severityLabel,
+    selectedMarketCode,
+    resolveRuntimeScope,
+  };
 });

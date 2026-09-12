@@ -1106,7 +1106,7 @@ CREATE TABLE public.cart_shares (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     share_token character varying(16) NOT NULL,
     cart_items jsonb NOT NULL,
-    cart_total_kmf bigint NOT NULL,
+    cart_total_kmf numeric(14,2) NOT NULL,
     items_count smallint NOT NULL,
     sharer_name character varying(50),
     sharer_ip_hash character varying(64),
@@ -1847,14 +1847,8 @@ CREATE TABLE public.customs_history (
     shipment_id uuid,
     sh_category text NOT NULL,
     product_category text,
-    customs_estimated_kmf integer NOT NULL,
-    customs_real_kmf integer,
-    customs_delta_kmf integer GENERATED ALWAYS AS ((customs_real_kmf - customs_estimated_kmf)) STORED,
-    customs_delta_pct numeric(8,4) GENERATED ALWAYS AS (
-CASE
-    WHEN (customs_estimated_kmf > 0) THEN round(((((customs_real_kmf)::numeric / (customs_estimated_kmf)::numeric) - (1)::numeric) * (100)::numeric), 4)
-    ELSE NULL::numeric
-END) STORED,
+    customs_estimated_kmf numeric(14,2) NOT NULL,
+    customs_real_kmf numeric(14,2),
     customs_date date DEFAULT CURRENT_DATE NOT NULL,
     customs_agent_id text,
     customs_notes text,
@@ -1875,6 +1869,12 @@ END) STORED,
     droits_payes_kmf numeric(14,2),
     taux_effectif_pct numeric(6,2),
     notes text,
+    customs_delta_kmf numeric(14,2) GENERATED ALWAYS AS ((customs_real_kmf - customs_estimated_kmf)) STORED,
+    customs_delta_pct numeric GENERATED ALWAYS AS (
+CASE
+    WHEN (customs_estimated_kmf > (0)::numeric) THEN round(((((customs_real_kmf)::numeric / (customs_estimated_kmf)::numeric) - (1)::numeric) * (100)::numeric), 4)
+    ELSE NULL::numeric
+END) STORED,
     CONSTRAINT customs_history_statut_check CHECK ((statut = ANY (ARRAY['validated'::text, 'contested'::text, 'pending'::text, 'anomaly'::text])))
 );
 
@@ -1884,20 +1884,6 @@ END) STORED,
 --
 
 COMMENT ON TABLE public.customs_history IS 'Historique de chaque passage douanier â€” source de vÃ©ritÃ© pour le coefficient de risque';
-
-
---
--- Name: COLUMN customs_history.customs_delta_kmf; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.customs_history.customs_delta_kmf IS 'Colonne calculÃ©e : customs_real_kmf - customs_estimated_kmf';
-
-
---
--- Name: COLUMN customs_history.customs_delta_pct; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.customs_history.customs_delta_pct IS 'Colonne calculÃ©e : Ã©cart en % â€” alimentation coefficient de risque mensuel';
 
 
 --
@@ -1977,7 +1963,7 @@ CREATE VIEW public.customs_taux_mensuel AS
  SELECT to_char(created_at, 'YYYY-MM'::text) AS mois,
     round(avg(customs_delta_pct), 2) AS taux_effectif_pct
    FROM public.customs_history
-  WHERE (customs_real_kmf > 0)
+  WHERE (customs_real_kmf > (0)::numeric)
   GROUP BY (to_char(created_at, 'YYYY-MM'::text));
 
 
@@ -2048,7 +2034,7 @@ CREATE TABLE public.disputes (
     description text,
     photo_urls text[] DEFAULT '{}'::text[],
     resolution text,
-    refund_kmf integer DEFAULT 0,
+    refund_kmf numeric(14,2) DEFAULT 0,
     refund_eur numeric(10,2) DEFAULT 0,
     created_by uuid,
     resolved_by uuid,
@@ -2302,8 +2288,8 @@ CREATE TABLE public.fabrics (
     active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     fabric_type text,
-    price_per_meter_kmf integer,
-    price_per_yard_kmf integer,
+    price_per_meter_kmf numeric(14,2),
+    price_per_yard_kmf numeric(14,2),
     min_order_meters numeric(4,1) DEFAULT 1.0 NOT NULL,
     stock_meters numeric(8,2),
     is_available boolean DEFAULT true NOT NULL,
@@ -2400,7 +2386,7 @@ CREATE TABLE public.finance_config (
     transitaire_fixed_kmf numeric(14,2) DEFAULT 450 NOT NULL,
     portuaires_kmf numeric(14,2) DEFAULT 1200 NOT NULL,
     commission_agent_pct numeric(5,2) DEFAULT 5.0 NOT NULL,
-    hub_monthly_cost_aed integer DEFAULT 7000 NOT NULL,
+    hub_monthly_cost_aed numeric(14,2) DEFAULT 7000 NOT NULL,
     sante_seuil_cash_retard_pct numeric(5,2) DEFAULT 15.00 NOT NULL,
     sante_seuil_pipeline_block_pct numeric(5,2) DEFAULT 15.00 NOT NULL,
     sante_seuil_vip_kmf numeric(14,2) DEFAULT 200000 NOT NULL,
@@ -5799,8 +5785,8 @@ CREATE TABLE public.shipments (
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    customs_total_estimated_kmf integer,
-    customs_total_real_kmf integer,
+    customs_total_estimated_kmf numeric(14,2),
+    customs_total_real_kmf numeric(14,2),
     customs_notes text
 );
 
@@ -6326,14 +6312,14 @@ CREATE TABLE public.unsold_items (
     order_id uuid NOT NULL,
     product_id uuid,
     product_name character varying(200) NOT NULL,
-    original_price_kmf integer NOT NULL,
-    unsold_price_kmf integer NOT NULL,
+    original_price_kmf numeric(14,2) NOT NULL,
+    unsold_price_kmf numeric(14,2) NOT NULL,
     channel character varying(20) DEFAULT 'both'::character varying NOT NULL,
     status character varying(20) DEFAULT 'available'::character varying NOT NULL,
     reseller_id uuid,
     unsold_at timestamp with time zone DEFAULT now() NOT NULL,
     resolved_at timestamp with time zone,
-    resolved_price_kmf integer,
+    resolved_price_kmf numeric(14,2),
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -6480,13 +6466,6 @@ CREATE VIEW public.v_customs_analysis AS
   WHERE (customs_real_kmf IS NOT NULL)
   GROUP BY sh_category, product_category
   ORDER BY ((avg(customs_delta_pct))::numeric(6,2)) DESC NULLS LAST;
-
-
---
--- Name: VIEW v_customs_analysis; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON VIEW public.v_customs_analysis IS 'Analyse douane par catÃ©gorie SH â€” calcul du coefficient de risque recommandÃ©';
 
 
 --
@@ -6807,7 +6786,7 @@ CREATE VIEW public.v_unsold_pipeline AS
     ui.product_name,
     ui.original_price_kmf,
     ui.unsold_price_kmf,
-    round((((1)::numeric - ((ui.unsold_price_kmf)::numeric / (NULLIF(ui.original_price_kmf, 0))::numeric)) * (100)::numeric)) AS remise_pct,
+    round((((1)::numeric - ((ui.unsold_price_kmf)::numeric / (NULLIF(ui.original_price_kmf, (0)::numeric))::numeric)) * (100)::numeric)) AS remise_pct,
     ui.channel,
     ui.status,
     ui.unsold_at,

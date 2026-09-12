@@ -311,7 +311,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `notification_log` | Log notifications (email, push). |
 | `client_notifications` | Notifications in-app essentielles rattachées à une commande, acquittables, sans canal externe ni contenu sensible. Unicité `(user_id, event_key, entity_type, entity_id)` ; statuts `open` / `acknowledged` / `resolved`. Migration 132, vérifiée live sur Railway le 2026-08-16. |
 | `sms_log` | Log SMS. |
-| `signals` | Signaux opérationnels. |
+| `signals` | Signaux opérationnels et décisionnels. **Migration 222 (2026-09-12, `intended_migration_schema`)** : + `market_id` UUID nullable, FK `markets(id)` ; `NULL` signifie explicitement signal global, une valeur non NULL borne le lifecycle au Market ID canonique résolu côté serveur. L’identité active devient `(signal_type, market_id, entity_type, entity_id)` pour éviter tout écrasement cross-market. |
 | `alerts` | Alertes. |
 | `incidents` | Incidents. |
 | `unsold_items` | Items invendus. |
