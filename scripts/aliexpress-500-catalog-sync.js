@@ -7,19 +7,20 @@
  * @criticality   high
  * @inputs        AliExpress Open Platform credentials/session, DATABASE_URL, KOMERCE_ALLOW_ALIEXPRESS_POOL_SYNC
  * @outputs       resumable diversified AliExpress sourcing pool capped at 500 in-stock products
- * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/catalog-sync-checkpoint.js
+ * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-connector.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/catalog-sync-checkpoint.js
  * @used-by       Railway staging one-shot/scheduled worker
  * @db-read       supplier_catalog_sync_checkpoints, sourcing_candidates, supplier_oauth_connections
  * @db-write      supplier_catalog_sync_checkpoints, supplier_catalog_imports, sourcing_candidates, sourcing_candidate_events, supplier_oauth_connections (token refresh only)
- * @db-txn        canonical services own candidate writes
+ * @db-txn        canonical services own candidate writes; session advisory lock serializes worker runs
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v3
+ * @version       2026-09-v4
  */
 'use strict';
 
 const db = require('../db');
 const aliexpressConnector = require('../services/suppliers/connectors/aliexpress-connected-connector');
+const aliexpressBaseConnector = require('../services/suppliers/connectors/aliexpress-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
 
@@ -28,11 +29,15 @@ const DEFAULT_SYNC_KEY = 'aliexpress-instock-500-text-v1';
 const DEFAULT_COUNTRY_CODE = 'AE';
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_MAX_SEARCH_PAGES_PER_QUERY = 5;
+const DEFAULT_DETAIL_DELAY_MS = 600;
+const DEFAULT_DETAIL_RETRY_ATTEMPTS = 4;
 const DEFAULT_MAX_CLEAN_PRODUCTS = 500;
 const ABSOLUTE_MAX_CLEAN_PRODUCTS = 500;
 const SEARCH_SORT = 'salesDesc';
 const SEARCH_LOCALE = 'en_US';
 const SEARCH_CURRENCY = 'USD';
+const RUN_LOCK_NAMESPACE = 'komerce';
+const RUN_LOCK_KEY = 'aliexpress-500-catalog-sync';
 
 // 500 slots, aligned with the current Komerce showcase taxonomy. Search terms are
 // intentionally commercial/plain-English rather than fixture/image-search wording.
@@ -111,6 +116,14 @@ function runtimeConfig(env = process.env) {
       DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
       1,
       20,
+      env
+    ),
+    detailDelayMs: intEnv('KOMERCE_ALIEXPRESS_DETAIL_DELAY_MS', DEFAULT_DETAIL_DELAY_MS, 0, 5000, env),
+    detailRetryAttempts: intEnv(
+      'KOMERCE_ALIEXPRESS_DETAIL_RETRY_ATTEMPTS',
+      DEFAULT_DETAIL_RETRY_ATTEMPTS,
+      1,
+      10,
       env
     ),
     maxCleanProducts: intEnv(
@@ -194,6 +207,48 @@ function stockSqlPredicate(alias = 'sc') {
   )`;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
+function rateLimitWaitSeconds(error) {
+  const message = String(error?.message || error || '');
+  if (!/frequency of app access|exceeds the limit|rate.?limit/i.test(message)) return null;
+  const match = message.match(/(?:last|for)\s+(\d+)\s+seconds?/i) || message.match(/(\d+)\s+seconds?/i);
+  const seconds = match ? Number.parseInt(match[1], 10) : 30;
+  return Number.isInteger(seconds) && seconds >= 0 ? seconds : 30;
+}
+
+async function acquireRunLock() {
+  const client = await db.getClient();
+  try {
+    const { rows: [row] } = await client.query(
+      'SELECT pg_try_advisory_lock(hashtext($1), hashtext($2)) AS locked',
+      [RUN_LOCK_NAMESPACE, RUN_LOCK_KEY]
+    );
+    if (!row?.locked) {
+      client.release();
+      return null;
+    }
+    return client;
+  } catch (error) {
+    client.release();
+    throw error;
+  }
+}
+
+async function releaseRunLock(client) {
+  if (!client) return;
+  try {
+    await client.query(
+      'SELECT pg_advisory_unlock(hashtext($1), hashtext($2))',
+      [RUN_LOCK_NAMESPACE, RUN_LOCK_KEY]
+    );
+  } finally {
+    client.release();
+  }
+}
+
 async function countCleanCandidates() {
   const { rows: [row] } = await db.query(
     `SELECT COUNT(*)::int AS count
@@ -222,7 +277,7 @@ async function loadSeenSupplierIds() {
   return new Set(rows.map((row) => row.supplier_product_id).filter(Boolean));
 }
 
-function withDiscoveryProvenance(product, { segment, keyword, queryPage }) {
+function withDiscoveryProvenance(product, { segment, keyword, queryPage, countryCode = DEFAULT_COUNTRY_CODE }) {
   return {
     ...product,
     raw_payload: {
@@ -234,10 +289,49 @@ function withDiscoveryProvenance(product, { segment, keyword, queryPage }) {
         target_subcategory: segment.subcategory,
         keyword,
         query_page: queryPage,
-        supplier_destination_country: DEFAULT_COUNTRY_CODE,
+        supplier_destination_country: countryCode,
       },
     },
   };
+}
+
+async function fetchProductsRateLimited(productIds, {
+  countryCode,
+  providerEnv,
+  detailDelayMs = DEFAULT_DETAIL_DELAY_MS,
+  detailRetryAttempts = DEFAULT_DETAIL_RETRY_ATTEMPTS,
+  sleepFn = sleep,
+} = {}) {
+  const products = [];
+  const invalid = [];
+  const ids = [...new Set(toArray(productIds).map((id) => String(id || '').trim()).filter(Boolean))];
+
+  for (let index = 0; index < ids.length; index += 1) {
+    const productId = ids[index];
+    let fetched = null;
+    for (let attempt = 1; attempt <= detailRetryAttempts; attempt += 1) {
+      try {
+        fetched = await aliexpressBaseConnector.fetchProducts({
+          productIds: [productId],
+          countryCode,
+          env: providerEnv,
+        });
+        break;
+      } catch (error) {
+        const waitSeconds = rateLimitWaitSeconds(error);
+        if (waitSeconds == null || attempt >= detailRetryAttempts) throw error;
+        const waitMs = (waitSeconds + 2) * 1000;
+        console.warn(`[aliexpress-pool] throttle product=${productId} attempt=${attempt}/${detailRetryAttempts} wait=${waitSeconds + 2}s`);
+        await sleepFn(waitMs);
+      }
+    }
+
+    products.push(...(Array.isArray(fetched?.products) ? fetched.products : []));
+    invalid.push(...(Array.isArray(fetched?.invalid) ? fetched.invalid : []));
+    if (detailDelayMs > 0 && index < ids.length - 1) await sleepFn(detailDelayMs);
+  }
+
+  return { products, invalid, total: products.length + invalid.length };
 }
 
 async function importFetchedSubset({ syncKey, segment, logicalPage, subset }) {
@@ -260,7 +354,7 @@ async function importFetchedSubset({ syncKey, segment, logicalPage, subset }) {
   return result.body;
 }
 
-async function runSegment({ config, segment, seenIds }) {
+async function runSegment({ config, segment, seenIds, providerEnv }) {
   const categoryId = checkpointCategoryId(segment);
   const maxLogicalPages = segment.queries.length * config.maxSearchPagesPerQuery;
   let checkpoint = await checkpoints.getCheckpoint(db, {
@@ -281,8 +375,22 @@ async function runSegment({ config, segment, seenIds }) {
     });
   }
 
-  if (checkpoint?.completed || Number(checkpoint?.accepted_items || 0) >= segment.target) {
-    return { pages: 0, accepted: Number(checkpoint?.accepted_items || 0), completed: true };
+  const existingAccepted = Number(checkpoint?.accepted_items || 0);
+  if (existingAccepted >= segment.target) {
+    if (!checkpoint?.completed) {
+      checkpoint = await checkpoints.markComplete(db, {
+        supplierName: SUPPLIER_NAME,
+        syncKey: config.syncKey,
+        categoryId,
+        totalPages: maxLogicalPages,
+        totalRecords: segment.target,
+        cappedBySupplier: false,
+      }) || checkpoint;
+    }
+    return { pages: 0, accepted: existingAccepted, completed: true };
+  }
+  if (checkpoint?.completed) {
+    return { pages: 0, accepted: existingAccepted, completed: true };
   }
 
   let logicalPage = Math.max(1, Number(checkpoint?.next_page) || 1);
@@ -298,7 +406,7 @@ async function runSegment({ config, segment, seenIds }) {
     const { keyword, queryPage } = logicalSearchPage(segment, logicalPage);
     let searchPayload;
     try {
-      searchPayload = await aliexpressConnector.invokeTop('aliexpress.ds.text.search', {
+      searchPayload = await aliexpressBaseConnector.invokeTop('aliexpress.ds.text.search', {
         keyword,
         countryCode: config.countryCode,
         currency: SEARCH_CURRENCY,
@@ -306,7 +414,7 @@ async function runSegment({ config, segment, seenIds }) {
         page_size: config.pageSize,
         page_index: queryPage,
         sort: SEARCH_SORT,
-      });
+      }, { env: providerEnv });
     } catch (error) {
       await checkpoints.recordError(db, {
         supplierName: SUPPLIER_NAME,
@@ -317,17 +425,24 @@ async function runSegment({ config, segment, seenIds }) {
       throw error;
     }
 
-    const productIds = textSearchProductIds(searchPayload);
+    const productIds = textSearchProductIds(searchPayload).filter((id) => !seenIds.has(id));
     let fetched = { products: [], invalid: [], total: 0 };
     if (productIds.length) {
-      fetched = await aliexpressConnector.fetchProducts({
-        productIds,
+      fetched = await fetchProductsRateLimited(productIds, {
         countryCode: config.countryCode,
+        providerEnv,
+        detailDelayMs: config.detailDelayMs,
+        detailRetryAttempts: config.detailRetryAttempts,
       });
     }
 
     const fetchedProducts = (Array.isArray(fetched.products) ? fetched.products : [])
-      .map((product) => withDiscoveryProvenance(product, { segment, keyword, queryPage }));
+      .map((product) => withDiscoveryProvenance(product, {
+        segment,
+        keyword,
+        queryPage,
+        countryCode: config.countryCode,
+      }));
     const cleanNew = fetchedProducts
       .filter(basicCleanProduct)
       .filter((product) => !seenIds.has(product.supplier_product_id));
@@ -385,8 +500,7 @@ async function runSegment({ config, segment, seenIds }) {
   };
 }
 
-async function runSync() {
-  const config = runtimeConfig();
+async function runSyncLocked(config, providerEnv) {
   if (searchPlanTotal() !== ABSOLUTE_MAX_CLEAN_PRODUCTS) {
     throw new Error(`Plan AliExpress invalide: ${searchPlanTotal()}/${ABSOLUTE_MAX_CLEAN_PRODUCTS}`);
   }
@@ -419,13 +533,13 @@ async function runSync() {
   let completedSegments = 0;
   const segmentResults = [];
 
-  console.log(`[aliexpress-pool] runtime=${config.runtime || 'unknown'} discovery=ds.text.search country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
+  console.log(`[aliexpress-pool] runtime=${config.runtime || 'unknown'} discovery=ds.text.search country=${config.countryCode} start=${startingClean} target=${config.maxCleanProducts} pageSize=${config.pageSize} pagesPerQuery=${config.maxSearchPagesPerQuery} detailDelayMs=${config.detailDelayMs}`);
 
   for (const segment of SEARCH_PLAN) {
     const before = await countCleanCandidates();
     if (before >= config.maxCleanProducts) break;
 
-    const result = await runSegment({ config, segment, seenIds });
+    const result = await runSegment({ config, segment, seenIds, providerEnv });
     pages += result.pages;
     if (result.completed) completedSegments += 1;
     segmentResults.push({ id: segment.id, target: segment.target, accepted: result.accepted, completed: result.completed });
@@ -463,6 +577,28 @@ async function runSync() {
   return output;
 }
 
+async function runSync() {
+  const config = runtimeConfig();
+  const lockClient = await acquireRunLock();
+  if (!lockClient) {
+    const output = {
+      runtime: config.runtime,
+      sync_key: config.syncKey,
+      target: config.maxCleanProducts,
+      paused_reason: 'another-run-active',
+    };
+    console.log(`[aliexpress-pool] ${JSON.stringify(output)}`);
+    return output;
+  }
+
+  try {
+    const providerEnv = await aliexpressConnector.managedRuntimeEnv();
+    return await runSyncLocked(config, providerEnv);
+  } finally {
+    await releaseRunLock(lockClient);
+  }
+}
+
 if (require.main === module) {
   runSync()
     .then(() => process.exit(0))
@@ -478,8 +614,12 @@ module.exports = {
   DEFAULT_COUNTRY_CODE,
   DEFAULT_PAGE_SIZE,
   DEFAULT_MAX_SEARCH_PAGES_PER_QUERY,
+  DEFAULT_DETAIL_DELAY_MS,
+  DEFAULT_DETAIL_RETRY_ATTEMPTS,
   DEFAULT_MAX_CLEAN_PRODUCTS,
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
+  RUN_LOCK_NAMESPACE,
+  RUN_LOCK_KEY,
   SEARCH_PLAN,
   intEnv,
   runtimeEnvironment,
@@ -494,6 +634,10 @@ module.exports = {
   checkpointCategoryId,
   importSourceFilename,
   stockSqlPredicate,
+  rateLimitWaitSeconds,
+  acquireRunLock,
+  releaseRunLock,
   withDiscoveryProvenance,
+  fetchProductsRateLimited,
   runSync,
 };
