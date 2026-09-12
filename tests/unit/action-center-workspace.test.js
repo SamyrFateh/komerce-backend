@@ -13,7 +13,7 @@ const mockAdmin = {
   reactivateExpiredSnoozes: jest.fn(),
   listSignals: jest.fn(),
   getStats: jest.fn(),
-  familyForType: jest.fn(type => type === 'stock_rupture' ? 'sourcing' : 'ops'),
+  familyForType: jest.fn(type => type === 'stock_rupture' || type === 'best_seller_local_unavailable' ? 'sourcing' : 'ops'),
   acknowledgeByRef: jest.fn(),
   snoozeByRef: jest.fn(),
   resolveByRef: jest.fn(),
@@ -36,7 +36,7 @@ beforeEach(() => {
   });
 });
 
-test('projection exposes signal_ref and server-resolved Product 360, never internal UUID', async () => {
+test('global projection is explicitly global-only and never exposes internal UUIDs', async () => {
   mockAdmin.listSignals.mockResolvedValue({
     signals: [{
       id: '11111111-1111-1111-1111-111111111111',
@@ -53,12 +53,11 @@ test('projection exposes signal_ref and server-resolved Product 360, never inter
       entity_id: '22222222-2222-2222-2222-222222222222',
       resolved_by: '33333333-3333-3333-3333-333333333333',
       target_filters: { product_id: '22222222-2222-2222-2222-222222222222' },
+      market_id: null,
       created_at: '2026-08-27T08:00:00Z',
       updated_at: '2026-08-27T08:00:00Z',
     }],
-    total: 1,
-    limit: 100,
-    offset: 0,
+    total: 1, limit: 100, offset: 0,
   });
   mockDbQuery.mockResolvedValueOnce({ rows: [{
     internal_id: '22222222-2222-2222-2222-222222222222',
@@ -68,16 +67,14 @@ test('projection exposes signal_ref and server-resolved Product 360, never inter
 
   const result = await workspace.buildWorkspace();
 
-  expect(result.scope.mode).toBe('global_decision_signals');
-  expect(result.scope.market_dimension).toBe('unavailable');
+  expect(mockAdmin.reactivateExpiredSnoozes).toHaveBeenCalledWith(null);
+  expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: null }));
+  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null });
+  expect(result.scope).toMatchObject({ mode: 'global_decision_signals', market_dimension: 'canonical', market: null });
   expect(result.signals[0]).toMatchObject({
     signal_ref: 'KSG-000001',
     family: 'sourcing',
-    entity: {
-      type: 'product',
-      ref: 'KPR-000123',
-      href: '/admin/products/KPR-000123',
-    },
+    entity: { type: 'product', ref: 'KPR-000123', href: '/admin/products/KPR-000123' },
   });
   const serialized = JSON.stringify(result);
   expect(serialized).not.toContain('11111111-1111-1111-1111-111111111111');
@@ -86,7 +83,30 @@ test('projection exposes signal_ref and server-resolved Product 360, never inter
   expect(serialized).not.toContain('target_filters');
 });
 
-test('Order signal drill-down is resolved by business order reference', async () => {
+test('market projection passes exact server market id but publishes only market business context', async () => {
+  const market = { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', code: 'CM', name: 'Cameroun', currency: 'XAF' };
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{
+      signal_ref: 'KSG-000010', signal_type: 'best_seller_local_unavailable', severity: 'warning',
+      title: 'Best-seller sans disponibilité immédiate', status: 'open', entity_type: null, entity_id: null,
+      market_id: market.id,
+    }],
+    total: 1, limit: 100, offset: 0,
+  });
+
+  const result = await workspace.buildMarketWorkspace(market);
+
+  expect(mockAdmin.reactivateExpiredSnoozes).toHaveBeenCalledWith(market.id);
+  expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: market.id }));
+  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: market.id });
+  expect(result.scope).toMatchObject({
+    mode: 'market_decision_signals', market_dimension: 'canonical',
+    market: { code: 'CM', name: 'Cameroun', currency: 'XAF' },
+  });
+  expect(JSON.stringify(result)).not.toContain(market.id);
+});
+
+test('Order signal drill-down is resolved by business order reference inside scope', async () => {
   mockAdmin.familyForType.mockReturnValue('ops');
   mockAdmin.listSignals.mockResolvedValue({
     signals: [{ signal_ref: 'KSG-000002', signal_type: 'margin_drift', severity: 'warning', title: 'Marge', status: 'acknowledged', entity_type: 'order', entity_id: 'order-uuid' }],
@@ -95,31 +115,31 @@ test('Order signal drill-down is resolved by business order reference', async ()
   mockDbQuery.mockResolvedValueOnce({ rows: [{ internal_id: 'order-uuid', reference: 'KOM-2026-42' }] });
 
   const result = await workspace.buildWorkspace();
-
   expect(result.signals[0].entity.href).toBe('/admin/orders/KOM-2026-42');
   expect(result.signals[0].actions).toEqual(['snooze', 'resolve']);
+  expect(mockDbQuery.mock.calls[0][1]).toEqual([['order-uuid'], null]);
 });
 
-test('Canonical lifecycle actions always delegate by signal_ref', async () => {
+test('Canonical lifecycle delegates by signal_ref and exact market scope', async () => {
   mockAdmin.acknowledgeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'acknowledged' });
   mockAdmin.snoozeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'snoozed', snoozed_until: 'later' });
   mockAdmin.resolveByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'resolved', resolved_at: 'now' });
 
-  await workspace.acknowledge('KSG-000003');
-  await workspace.snooze('KSG-000003', 24);
-  await workspace.resolve('KSG-000003', { id: 'admin-1' });
+  await workspace.acknowledge('KSG-000003', 'market-cm');
+  await workspace.snooze('KSG-000003', 24, 'market-cm');
+  await workspace.resolve('KSG-000003', { id: 'admin-1' }, 'market-cm');
 
-  expect(mockAdmin.acknowledgeByRef).toHaveBeenCalledWith('KSG-000003');
-  expect(mockAdmin.snoozeByRef).toHaveBeenCalledWith('KSG-000003', 24);
-  expect(mockAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000003', 'admin-1');
+  expect(mockAdmin.acknowledgeByRef).toHaveBeenCalledWith('KSG-000003', 'market-cm');
+  expect(mockAdmin.snoozeByRef).toHaveBeenCalledWith('KSG-000003', 24, 'market-cm');
+  expect(mockAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000003', 'admin-1', 'market-cm');
 });
 
 test('invalid browser signal reference is rejected before DB mutation', async () => {
-  await expect(workspace.acknowledge('uuid-raw')).rejects.toMatchObject({ status: 400, code: 'action_center_signal_ref_invalid' });
+  await expect(workspace.acknowledge('uuid-raw', 'market-cm')).rejects.toMatchObject({ status: 400, code: 'action_center_signal_ref_invalid' });
   expect(mockAdmin.acknowledgeByRef).not.toHaveBeenCalled();
 });
 
-test('generate delegates to the existing signal generator authority', async () => {
+test('generate delegates only to the existing global signal generator authority', async () => {
   mockGenerateSignals.mockResolvedValue({ expired: 0, generators: {} });
   await workspace.generateSignals(['parcel_blocked']);
   expect(mockGenerateSignals).toHaveBeenCalledWith(['parcel_blocked']);
