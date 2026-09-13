@@ -1,0 +1,88 @@
+name: Staging AliExpress pool integrity
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-aliexpress-pool-integrity
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: AliExpress pool — read-only integrity audit
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] aliexpress-pool-integrity-audit')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Require staging database secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo '::error::RAILWAY_DATABASE_URL manque dans les secrets GitHub'
+            exit 1
+          fi
+
+      - name: Audit AliExpress clean-pool integrity
+        id: audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 180s node scripts/aliexpress-pool-integrity-audit.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Write summary
+        if: always()
+        shell: bash
+        env:
+          SUMMARY: ${{ steps.audit.outputs.summary }}
+        run: |
+          {
+            echo '## AliExpress pool integrity — staging'
+            echo
+            if [ -n "${SUMMARY:-}" ]; then echo "\`${SUMMARY}\`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          SUMMARY: ${{ steps.audit.outputs.summary }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Pool integrity audit completed successfully.\n\n\`$SUMMARY\`"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

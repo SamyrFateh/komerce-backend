@@ -13,6 +13,8 @@ on:
           - aliexpress-refinery-rescan
           - aliexpress-draft-audit
           - aliexpress-promote-drafts
+          - aliexpress-soi-replay-dry-run
+          - aliexpress-enrich-fr-dry-run
       limit:
         description: 'Nombre maximum de candidats/promotions pour ce run'
         required: false
@@ -38,7 +40,9 @@ jobs:
        (github.event.issue.title == '[staging-op] aliexpress-refinery-rescan-dry-run' ||
         github.event.issue.title == '[staging-op] aliexpress-refinery-rescan' ||
         github.event.issue.title == '[staging-op] aliexpress-draft-audit' ||
-        github.event.issue.title == '[staging-op] aliexpress-promote-drafts'))
+        github.event.issue.title == '[staging-op] aliexpress-promote-drafts' ||
+        github.event.issue.title == '[staging-op] aliexpress-soi-replay-dry-run' ||
+        github.event.issue.title == '[staging-op] aliexpress-enrich-fr-dry-run'))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -67,12 +71,14 @@ jobs:
               '[staging-op] aliexpress-refinery-rescan') operation='aliexpress-refinery-rescan' ;;
               '[staging-op] aliexpress-draft-audit') operation='aliexpress-draft-audit' ;;
               '[staging-op] aliexpress-promote-drafts') operation='aliexpress-promote-drafts' ;;
+              '[staging-op] aliexpress-soi-replay-dry-run') operation='aliexpress-soi-replay-dry-run'; limit='500' ;;
+              '[staging-op] aliexpress-enrich-fr-dry-run') operation='aliexpress-enrich-fr-dry-run'; limit='500' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
             esac
           fi
 
           case "$operation" in
-            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts) ;;
+            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts|aliexpress-soi-replay-dry-run|aliexpress-enrich-fr-dry-run) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
           if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 500 ]; then
@@ -166,6 +172,28 @@ jobs:
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-3500)"
           echo "summary=$compact" >> "$GITHUB_OUTPUT"
 
+      - name: Dry-run AliExpress Supplier Order Identity replay
+        id: soi_replay_dry_run
+        if: steps.operation.outputs.operation == 'aliexpress-soi-replay-dry-run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 300s node scripts/replay-soi.js --dry-run --limit=${{ steps.operation.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Dry-run AliExpress French enrichment batch
+        id: enrich_fr_dry_run
+        if: steps.operation.outputs.operation == 'aliexpress-enrich-fr-dry-run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 300s node scripts/batch-enrich-fr.js --dry-run --limit=${{ steps.operation.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
       - name: Write operation summary
         if: always()
         shell: bash
@@ -177,27 +205,21 @@ jobs:
           REFINERY_AUDIT_SUMMARY: ${{ steps.refinery_audit.outputs.summary }}
           AUDIT_SUMMARY: ${{ steps.audit.outputs.summary }}
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
+          SOI_REPLAY_DRY_RUN_SUMMARY: ${{ steps.soi_replay_dry_run.outputs.summary }}
+          ENRICH_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
         run: |
           {
             echo '## Komerce staging catalog operation'
             echo
             echo "- operation: ${OPERATION:-unknown}"
             echo "- limit: ${LIMIT:-unknown}"
-            if [ -n "${RESCAN_DRY_RUN_SUMMARY:-}" ]; then
-              echo "- refinery dry-run: \`${RESCAN_DRY_RUN_SUMMARY}\`"
-            fi
-            if [ -n "${RESCAN_SUMMARY:-}" ]; then
-              echo "- refinery rescan: \`${RESCAN_SUMMARY}\`"
-            fi
-            if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then
-              echo "- refinery audit: \`${REFINERY_AUDIT_SUMMARY}\`"
-            fi
-            if [ -n "${AUDIT_SUMMARY:-}" ]; then
-              echo "- audit: \`${AUDIT_SUMMARY}\`"
-            fi
-            if [ -n "${PROMOTE_SUMMARY:-}" ]; then
-              echo "- promotion: \`${PROMOTE_SUMMARY}\`"
-            fi
+            if [ -n "${RESCAN_DRY_RUN_SUMMARY:-}" ]; then echo "- refinery dry-run: \`${RESCAN_DRY_RUN_SUMMARY}\`"; fi
+            if [ -n "${RESCAN_SUMMARY:-}" ]; then echo "- refinery rescan: \`${RESCAN_SUMMARY}\`"; fi
+            if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then echo "- refinery audit: \`${REFINERY_AUDIT_SUMMARY}\`"; fi
+            if [ -n "${AUDIT_SUMMARY:-}" ]; then echo "- audit: \`${AUDIT_SUMMARY}\`"; fi
+            if [ -n "${PROMOTE_SUMMARY:-}" ]; then echo "- promotion: \`${PROMOTE_SUMMARY}\`"; fi
+            if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then echo "- SOI replay dry-run: \`${SOI_REPLAY_DRY_RUN_SUMMARY}\`"; fi
+            if [ -n "${ENRICH_FR_DRY_RUN_SUMMARY:-}" ]; then echo "- FR enrichment dry-run: \`${ENRICH_FR_DRY_RUN_SUMMARY}\`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
@@ -212,6 +234,8 @@ jobs:
           REFINERY_AUDIT_SUMMARY: ${{ steps.refinery_audit.outputs.summary }}
           AUDIT_SUMMARY: ${{ steps.audit.outputs.summary }}
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
+          SOI_REPLAY_DRY_RUN_SUMMARY: ${{ steps.soi_replay_dry_run.outputs.summary }}
+          ENRICH_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
         run: |
           set -euo pipefail
           note="Staging catalog operation \`$OPERATION\` completed successfully."
@@ -220,5 +244,7 @@ jobs:
           if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then note="$note\n\n\`$REFINERY_AUDIT_SUMMARY\`"; fi
           if [ -n "${AUDIT_SUMMARY:-}" ]; then note="$note\n\n\`$AUDIT_SUMMARY\`"; fi
           if [ -n "${PROMOTE_SUMMARY:-}" ]; then note="$note\n\n\`$PROMOTE_SUMMARY\`"; fi
+          if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$SOI_REPLAY_DRY_RUN_SUMMARY\`"; fi
+          if [ -n "${ENRICH_FR_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$ENRICH_FR_DRY_RUN_SUMMARY\`"; fi
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
