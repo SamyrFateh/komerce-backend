@@ -15,16 +15,32 @@ const earbuds = {
   description: 'Wireless earbuds with microphone.',
 };
 
+const chargingCable = {
+  product_name: '120W USB To Type-C Cable 90 Degree Elbow Mobile Phone Fast Charging Cord',
+  supplier_category: 'Consumer Electronics > Cables',
+  description: 'USB power charging cable for mobile phones.',
+};
+
 describe('AliExpress Golden semantic relevance', () => {
   test('accepts a source result aligned with a specific search query', () => {
     const result = semantic.audit(usbMeter, 'usb c digital power meter tester');
     expect(result.relevant).toBe(true);
     expect(result.matched_tokens).toEqual(expect.arrayContaining(['usb', 'digital', 'power', 'meter', 'tester']));
+    expect(result.required_matches).toBe(3);
+    expect(result.coverage_ratio).toBe(1);
   });
 
   test('rejects a rich but off-query AliExpress result', () => {
     const result = semantic.audit(earbuds, 'usb c digital power meter tester');
     expect(result.relevant).toBe(false);
     expect(result.matched_tokens).toHaveLength(0);
+  });
+
+  test('rejects a generic USB power cable that only matches two generic tokens', () => {
+    const result = semantic.audit(chargingCable, 'usb c digital power meter tester');
+    expect(result.matched_tokens).toEqual(expect.arrayContaining(['usb', 'power']));
+    expect(result.matched_tokens).toHaveLength(2);
+    expect(result.required_matches).toBe(3);
+    expect(result.relevant).toBe(false);
   });
 });
