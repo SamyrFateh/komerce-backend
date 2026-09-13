@@ -1,0 +1,170 @@
+name: Staging AliExpress public hero pilot
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-aliexpress-public-hero-pilot
+  cancel-in-progress: false
+
+jobs:
+  project-public-hero:
+    name: AliExpress pilot — project public hero
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] aliexpress-public-hero-pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Preflight exact five supplier heroes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          node <<'NODE'
+          const db = require('./db');
+          const refs = ['KPR-131413','KPR-131414','KPR-131415','KPR-131416','KPR-131417'];
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT p.id, p.product_ref, p.lifecycle_status, p.is_active, p.quality_validated,
+                     p.image_url, p.is_available, p.sourcing_source,
+                     COUNT(sc.id)::int AS candidate_count,
+                     MAX(sc.image_url) AS supplier_image_url
+                FROM products p
+                JOIN sourcing_candidates sc ON sc.product_id = p.id
+                 AND sc.supplier_name = 'AliExpress'
+                 AND sc.state = 'imported_to_catalog'
+               WHERE p.product_ref = ANY($1::text[])
+               GROUP BY p.id
+               ORDER BY p.product_ref`, [refs]);
+            console.log(JSON.stringify(rows, null, 2));
+            const failures = [];
+            if (rows.length !== refs.length) failures.push(`products=${rows.length}/${refs.length}`);
+            for (const row of rows) {
+              if (row.lifecycle_status !== 'active' || row.is_active !== true || row.quality_validated !== true) failures.push(`${row.product_ref}: not active/validated`);
+              if (Number(row.candidate_count) !== 1) failures.push(`${row.product_ref}: candidate_count=${row.candidate_count}`);
+              if (!/^https:\/\//i.test(String(row.supplier_image_url || ''))) failures.push(`${row.product_ref}: invalid supplier image`);
+            }
+            if (failures.length) {
+              console.error(failures.join('\n'));
+              process.exitCode = 1;
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Project public heroes through canonical product admin service
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          const productAdmin = require('./services/product-admin-service');
+          const refs = ['KPR-131413','KPR-131414','KPR-131415','KPR-131416','KPR-131417'];
+          const actor = { id: 'staging-aliexpress-public-hero-pilot' };
+          (async () => {
+            for (const ref of refs) {
+              const { rows: [row] } = await db.query(`
+                SELECT p.id, sc.image_url AS supplier_image_url
+                  FROM products p
+                  JOIN sourcing_candidates sc ON sc.product_id = p.id
+                   AND sc.supplier_name = 'AliExpress'
+                   AND sc.state = 'imported_to_catalog'
+                 WHERE p.product_ref = $1`, [ref]);
+              if (!row) throw new Error(`${ref}: product/candidate missing`);
+              const image = await productAdmin.setMainImage(db, row.id, row.supplier_image_url);
+              if (image.status !== 200) throw new Error(`${ref}: setMainImage failed ${image.status} ${JSON.stringify(image.body)}`);
+              const update = await productAdmin.updateProduct(db, row.id, {
+                is_available: true,
+                badge: 'Nouveau',
+                sourcing_source: 'AliExpress',
+              }, actor);
+              if (update.status !== 200) throw new Error(`${ref}: exposure update failed ${update.status} ${JSON.stringify(update.body)}`);
+              console.log(`${ref}: hero=${update.body.image_url} available=${update.body.is_available}`);
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Audit exact five against public visibility predicate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          const { isPublicCatalogProduct } = require('./services/catalog-public-view');
+          const refs = ['KPR-131413','KPR-131414','KPR-131415','KPR-131416','KPR-131417'];
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT product_ref, is_active, image_url, is_available, sourcing_source
+                FROM products
+               WHERE product_ref = ANY($1::text[])
+               ORDER BY product_ref`, [refs]);
+            console.log(JSON.stringify(rows, null, 2));
+            const failures = [];
+            if (rows.length !== refs.length) failures.push(`rows=${rows.length}/${refs.length}`);
+            for (const row of rows) {
+              if (!isPublicCatalogProduct(row)) failures.push(`${row.product_ref}: public predicate false`);
+              if (row.is_available !== true) failures.push(`${row.product_ref}: is_available=false`);
+              if (row.sourcing_source !== 'AliExpress') failures.push(`${row.product_ref}: sourcing_source=${row.sourcing_source}`);
+            }
+            if (failures.length) {
+              console.error(failures.join('\n'));
+              process.exitCode = 1;
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Verify exact five on public API
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/products.json"
+          code="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --header 'User-Agent: KomerceAliExpressPublicHeroPilot/1.0' \
+            --output "$body" --write-out '%{http_code}' \
+            'https://komerce.co/api/products?limit=100')"
+          echo "HTTP $code"
+          test "$code" = '200' || { head -c 1000 "$body" || true; exit 1; }
+          refs='["KPR-131413","KPR-131414","KPR-131415","KPR-131416","KPR-131417"]'
+          jq -e --argjson refs "$refs" '
+            ([.products[].product_ref] as $actual |
+             ($refs - $actual) as $missing |
+             if ($missing|length)==0 then true else error("missing refs: " + ($missing|join(","))) end)
+          ' "$body" >/dev/null
+          jq -r '.products[] | select(.product_ref|IN("KPR-131413","KPR-131414","KPR-131415","KPR-131416","KPR-131417")) | [.product_ref,.name,.category,.price_kmf,.stock,.is_available,.image_url] | @tsv' "$body"
+
+      - name: Close successful command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Projected supplier heroes for KPR-131413 → KPR-131417 through product-admin-service. All five satisfy the public catalog predicate and are present in GET /api/products.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
