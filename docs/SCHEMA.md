@@ -245,7 +245,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 |---|---|
 | `suppliers` | Fournisseurs. |
 | `partners` | Partenaires (élargi vs suppliers, voir ADR-005). |
-| `purchase_orders` | Bons de commande fournisseur. |
+| `purchase_orders` | Bons de commande fournisseur. **Migration 225 (2026-09-13, `intended_migration_schema`)** : + `order_item_id` UUID nullable (FK `order_items(id)` ON DELETE SET NULL), + `product_sku_id` UUID nullable (FK `product_skus(id)` ON DELETE SET NULL), + `supplier_unit_ref` TEXT nullable et + `supplier_order_identity` JSONB nullable. Ces colonnes snapshotent l’unité fournisseur exacte décidée au moment de créer la PO ; aucun backfill historique heuristique. Pour une ligne SKU, `product_suppliers` choisit le fournisseur mais ne peut pas remplacer la Supplier Order Identity du SKU vendu. Index partiel unique `(order_item_id, product_supplier_id)` pour les PO actives. Doctrine : `docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md` et `docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md`. |
 | `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |
 | `supplier_catalog_imports` | Imports catalogues et audit de batch JSON : profil, hash source, version connecteur, statut, compteurs et findings. Migration 110, vérifiée lors du pilote production ING-6 du 2026-07-16. |
@@ -302,7 +302,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
-
 
 ### 4.13 Monitoring et alertes (10 tables)
 
@@ -432,7 +431,7 @@ Le dump Railway n'est plus jamais généré à la main. Le pipeline est entière
 
 À chaque merge d'une migration sur `main`, GitHub Actions lance `schema-refresh.yml` :
 
-1. `node scripts/db-snapshot.js` — se connecte à Railway via `RAILWAY_DATABASE_URL` (secret GitHub), exécute `pg_dump --schema-only`, neutralise les artefacts PG18 (`\restrict`, `transaction_timeout`), écrit atomiquement dans `docs/db/railway-live-schema.sql`.
+1. `node scripts/db-snapshot.js` — se connecte à Railway via `RAILWAY_DATABASE_URL` (secret GitHub), exécute `pg_dump --schema-only`, neutralise les artefacts PG18 (`\\restrict`, `transaction_timeout`), écrit atomiquement dans `docs/db/railway-live-schema.sql`.
 2. `node scripts/check-schema-freshness.js` — vérifie que toutes les colonnes, tables et vues déclarées dans `migrations/*.sql` sont présentes dans le dump lorsqu'elles doivent déjà être live. Bloque si le dump est partiel.
 3. PR automatique `chore/schema-refresh-auto` créée si le dump a changé — à merger sans délai.
 
