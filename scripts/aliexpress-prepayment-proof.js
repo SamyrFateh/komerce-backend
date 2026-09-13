@@ -5,15 +5,15 @@
  * @domain        purchasing
  * @layer         script
  * @criticality   high
- * @inputs        promoted AliExpress candidate, live DS API, optional staging logistics address
- * @outputs       product/SKU resolution, live stock/price, freight proof, place-order payload readiness
+ * @inputs        promoted AliExpress candidate, live DS API, procurement hub destination, optional staging hub address
+ * @outputs       product/SKU resolution, live stock/price, supplier-to-hub freight proof, place-order payload readiness
  * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/aliexpress-purchase-preflight.js
  * @db-read       sourcing_candidates, products, product_skus
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v4
+ * @version       2026-09-ae-prepayment-v6
  */
 'use strict';
 
@@ -22,6 +22,8 @@ const connected = require('../services/suppliers/connectors/aliexpress-connected
 const preflight = require('../services/suppliers/aliexpress-purchase-preflight');
 
 const PROOF_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_PREPAYMENT_PROOF';
+const DEFAULT_PROCUREMENT_HUB_COUNTRY_CODE = 'AE';
+const DEFAULT_PROCUREMENT_HUB_CODE = 'DXB';
 
 function truthy(value) {
   return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
@@ -39,13 +41,27 @@ function guard(env = process.env) {
   return rt;
 }
 
+function procurementHub(env = process.env) {
+  const countryCode = String(
+    env.KOMERCE_ALIEXPRESS_PROCUREMENT_HUB_COUNTRY_CODE || DEFAULT_PROCUREMENT_HUB_COUNTRY_CODE
+  ).trim().toUpperCase();
+  if (!/^[A-Z]{2,3}$/.test(countryCode)) {
+    throw new Error(`KOMERCE_ALIEXPRESS_PROCUREMENT_HUB_COUNTRY_CODE invalide: ${countryCode}`);
+  }
+  return {
+    mode: 'PROCUREMENT_HUB',
+    code: String(env.KOMERCE_ALIEXPRESS_PROCUREMENT_HUB_CODE || DEFAULT_PROCUREMENT_HUB_CODE).trim() || DEFAULT_PROCUREMENT_HUB_CODE,
+    country_code: countryCode,
+  };
+}
+
 function parseAddress(env = process.env) {
   const raw = String(env.KOMERCE_ALIEXPRESS_PREPAYMENT_ADDRESS_JSON || '').trim();
   if (!raw) return null;
   let parsed;
   try { parsed = JSON.parse(raw); } catch (_) { throw new Error('KOMERCE_ALIEXPRESS_PREPAYMENT_ADDRESS_JSON doit être un JSON valide'); }
   if (!parsed || typeof parsed !== 'object' || !String(parsed.address || '').trim()) {
-    throw new Error('Adresse staging AliExpress invalide: address requis');
+    throw new Error('Adresse staging du Procurement Hub AliExpress invalide: address requis');
   }
   return parsed;
 }
@@ -88,20 +104,12 @@ function selectSnapshot(rows) {
         1,
         { requireOrderIdentity: false }
       );
-      if (!resolved.raw_sku_id) {
-        failures.push({
-          candidate_id: row.candidate_id,
-          supplier_sku: row.supplier_sku,
-          error: 'sku_id natif AliExpress absent pour freight.get',
-        });
-        continue;
-      }
       return { row, resolved };
     } catch (error) {
       failures.push({ candidate_id: row.candidate_id, supplier_sku: row.supplier_sku, error: error.message });
     }
   }
-  const err = new Error(`Aucun SKU AliExpress promu avec sku_id natif pour la preuve freight.get (${failures.length} essais)`);
+  const err = new Error(`Aucun SKU AliExpress promu résoluble pour la preuve pré-paiement (${failures.length} essais)`);
   err.failures = failures.slice(0, 8);
   throw err;
 }
@@ -116,13 +124,13 @@ async function run(env = process.env) {
   const rows = await candidateRows();
   const selected = selectSnapshot(rows);
   const { row, resolved: snapshotResolved } = selected;
-  const countryCode = String(env.KOMERCE_ALIEXPRESS_COUNTRY_CODE || 'KM').toUpperCase();
+  const hub = procurementHub(env);
 
   const providerEnv = await connected.managedRuntimeEnv({ env });
   const liveFetch = await connected.fetchProducts({
     env: providerEnv,
     productIds: [row.supplier_product_id],
-    countryCode,
+    countryCode: hub.country_code,
   });
   const liveContract = liveFetch.products?.[0];
   if (!liveContract) throw new Error(`AliExpress live n'a pas renvoyé le produit ${row.supplier_product_id}`);
@@ -136,7 +144,7 @@ async function run(env = process.env) {
   let freight;
   try {
     const freightParams = preflight.buildFreightBusinessParams(liveResolved, {
-      country_code: countryCode,
+      country_code: hub.country_code,
       province_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_PROVINCE_CODE || null,
       city_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_CITY_CODE || null,
       send_goods_country_code: env.KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE || null,
@@ -146,6 +154,7 @@ async function run(env = process.env) {
     });
     freight = {
       method: preflight.METHODS.FREIGHT,
+      leg: 'SUPPLIER_TO_PROCUREMENT_HUB',
       invoked: true,
       permission: 'call-succeeded',
       summary: preflight.summarizeFreightResponse(freightPayload),
@@ -153,6 +162,7 @@ async function run(env = process.env) {
   } catch (error) {
     freight = {
       method: preflight.METHODS.FREIGHT,
+      leg: 'SUPPLIER_TO_PROCUREMENT_HUB',
       invoked: false,
       permission: 'call-failed',
       error_class: preflight.classifyApiError(error),
@@ -160,19 +170,27 @@ async function run(env = process.env) {
     };
   }
 
-  const address = parseAddress(env);
+  const hubAddress = parseAddress(env);
   let placeOrderPayloadReady = false;
-  if (address) {
-    preflight.buildPlaceOrderBusinessParams(liveResolved, address, {
+  if (hubAddress) {
+    preflight.buildPlaceOrderBusinessParams(liveResolved, hubAddress, {
       logistics_service_name: env.KOMERCE_ALIEXPRESS_PREPAYMENT_LOGISTICS_SERVICE || null,
-      order_memo: `Komerce staging prepayment proof ${row.product_id}`,
+      order_memo: `Komerce staging procurement-hub proof ${row.product_id}`,
     });
     placeOrderPayloadReady = true;
   }
 
   const out = {
     runtime: rt,
-    proof: 'aliexpress-prepayment-v2',
+    proof: 'aliexpress-prepayment-v4',
+    procurement_route: {
+      mode: hub.mode,
+      hub_code: hub.code,
+      hub_country_code: hub.country_code,
+      market_country_code: String(env.KOMERCE_ALIEXPRESS_COUNTRY_CODE || 'KM').toUpperCase(),
+      supplier_leg: 'SUPPLIER_TO_PROCUREMENT_HUB',
+      market_leg: 'PROCUREMENT_HUB_TO_MARKET',
+    },
     candidate: {
       candidate_id: row.candidate_id,
       product_id: row.product_id,
@@ -193,13 +211,14 @@ async function run(env = process.env) {
       currency: liveResolved.currency,
       price_delta_pct: priceDeltaPct(snapshotResolved.unit_price, liveResolved.unit_price),
       exact_sku_resolved: true,
+      evaluated_for_procurement_hub_country: hub.country_code,
     },
     freight,
     place_order: {
       method: preflight.METHODS.PLACE_ORDER,
       invoked: false,
       payload_ready: placeOrderPayloadReady,
-      address_configured: Boolean(address),
+      procurement_hub_address_configured: Boolean(hubAddress),
       gate: 'HARD_STOP_BEFORE_SUPPLIER_ORDER',
     },
     order_detail: { method: preflight.METHODS.ORDER_DETAIL, invoked: false },
@@ -227,9 +246,12 @@ if (require.main === module) {
 
 module.exports = {
   PROOF_FLAG,
+  DEFAULT_PROCUREMENT_HUB_COUNTRY_CODE,
+  DEFAULT_PROCUREMENT_HUB_CODE,
   truthy,
   runtime,
   guard,
+  procurementHub,
   parseAddress,
   selectSnapshot,
   priceDeltaPct,

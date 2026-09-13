@@ -27,12 +27,19 @@ function supplierSku(provider, payload, overrides = {}) {
   };
 }
 
+function hubRoute() {
+  return {
+    mode: 'PROCUREMENT_HUB',
+    hub: { code: 'DXB', name: 'Hub Dubai', country_code: 'AE' },
+  };
+}
+
 async function evaluateWith({ provider = 'variant-provider', payload = { variant_id: 'VAR-42' }, adapter }) {
   return readiness.evaluateSupplierFulfillmentReadiness({
     db: dbWith(supplierSku(provider, payload)),
     productSkuId: 'sku-universal-1',
     quantity: 2,
-    destination: { country_code: 'KM' },
+    procurementRoute: hubRoute(),
     adapters: { [provider]: adapter },
   });
 }
@@ -47,10 +54,12 @@ describe('Supplier Fulfillment Adapter Contract', () => {
   });
 
   test('un fournisseur à variant_id devient FULFILLMENT_READY sans concept AliExpress dans le moteur', async () => {
-    const evaluate = jest.fn(async ({ identity, quantity, destination, VERDICT, result }) => {
+    const evaluate = jest.fn(async ({ identity, quantity, destination, procurementRoute, VERDICT, result }) => {
       expect(identity.payload).toEqual({ variant_id: 'VAR-42' });
       expect(identity.payload.sku_id).toBeUndefined();
       expect(identity.payload.sku_attr).toBeUndefined();
+      expect(procurementRoute.mode).toBe('PROCUREMENT_HUB');
+      expect(destination.country_code).toBe('AE');
       return result(VERDICT.READY, {
         provider: 'variant-provider',
         native_variant_id: identity.payload.variant_id,
@@ -67,6 +76,8 @@ describe('Supplier Fulfillment Adapter Contract', () => {
     expect(out.status).toBe('FULFILLMENT_READY');
     expect(out.ready).toBe(true);
     expect(out.evidence.native_variant_id).toBe('VAR-42');
+    expect(out.evidence.procurement_route_mode).toBe('PROCUREMENT_HUB');
+    expect(out.evidence.procurement_hub_country_code).toBe('AE');
     expect(out.evidence.place_order_invoked).toBe(false);
     expect(out.evidence.payment_invoked).toBe(false);
     expect(evaluate).toHaveBeenCalledTimes(1);
