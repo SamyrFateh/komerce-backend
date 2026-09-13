@@ -1,15 +1,27 @@
 #!/usr/bin/env node
 /**
- * Guarded AliExpress Golden E2E facade.
- * The legacy mechanics live in aliexpress-golden-e2e-core.js; this owner adds
- * the fail-closed semantic relevance gate before any Golden selection/import.
+ * @komerce-arch
+ * @role          aliexpress-golden-e2e-semantic-owner
+ * @domain        catalog
+ * @layer         tooling
+ * @criticality   high
+ * @inputs        AliExpress live search/detail, staging DB, Golden query
+ * @outputs       relevant unseen Golden candidate or guarded exact import
+ * @depends       db.js, scripts/aliexpress-golden-e2e-core.js, scripts/aliexpress-golden-semantic.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-connector.js
+ * @used-by       scripts/aliexpress-prepayment-proof.js Railway one-shot router
+ * @db-read       sourcing_candidates
+ * @db-write-via:aliexpress-golden-e2e-core catalog import owners only
+ * @db-txn        delegated canonical owner
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @impact-areas  catalog, sourcing, supplier-integration, staging
+ * @version       2026-09-golden-e2e-v2
  */
 'use strict';
 
 const db = require('../db');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
 const baseConnector = require('../services/suppliers/connectors/aliexpress-connector');
-const semantic = require('../services/aliexpress-golden-semantic');
+const semantic = require('./aliexpress-golden-semantic');
 const pool = require('./aliexpress-500-catalog-sync');
 const core = require('./aliexpress-golden-e2e-core');
 
