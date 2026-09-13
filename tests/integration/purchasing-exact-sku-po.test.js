@@ -27,19 +27,37 @@ if (!hasIntegrationEnv) {
   const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
 
   const TAG = `itest-exact-po-${Date.now()}`;
-  const created = { orderIds: [], productIds: [], supplierIds: [], relaisIds: [] };
+  const created = { orderIds: [], productIds: [], supplierIds: [], relaisIds: [], marketIds: [] };
+
+  async function resolveKmMarket() {
+    let { rows: [market] } = await db.query(
+      `SELECT id FROM markets WHERE code = 'KM' LIMIT 1`
+    );
+    if (market) return market;
+
+    const inserted = await db.query(
+      `INSERT INTO markets (code, name, currency, minor_unit, is_active)
+       VALUES ('KM','Comores','KMF',0,true)
+       ON CONFLICT (code) DO NOTHING
+       RETURNING id`
+    );
+    market = inserted.rows[0];
+    if (market) created.marketIds.push(market.id);
+
+    if (!market) {
+      ({ rows: [market] } = await db.query(`SELECT id FROM markets WHERE code = 'KM' LIMIT 1`));
+    }
+    if (!market) throw new Error('Impossible de résoudre le marché KM pour la fixture REAL_DB');
+    return market;
+  }
 
   async function seedFixture() {
-    const { rows: [market] } = await db.query(
-      `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
-    );
-    if (!market) throw new Error('Marché KM actif absent du schéma canonique de test');
+    const market = await resolveKmMarket();
 
     const { rows: [relais] } = await db.query(
-      `INSERT INTO relais
-         (name, agent_name, phone, address, island_code, market_id, is_active)
-       VALUES ($1,$2,$3,$4,'KM',$5,true) RETURNING id`,
-      [`${TAG} relais`, `${TAG} agent`, '+2693999999', 'ITest Moroni', market.id]
+      `INSERT INTO relais (name, agent_name, phone, address, island, market_id, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING id`,
+      [`${TAG} relais`, `${TAG} agent`, '+2693999999', 'ITest Moroni', 'Ngazidja', market.id]
     );
     created.relaisIds.push(relais.id);
 
@@ -131,10 +149,14 @@ if (!hasIntegrationEnv) {
     for (const id of created.relaisIds) {
       await db.query('DELETE FROM relais WHERE id = $1', [id]).catch(() => {});
     }
+    for (const id of created.marketIds) {
+      await db.query('DELETE FROM markets WHERE id = $1', [id]).catch(() => {});
+    }
     created.orderIds = [];
     created.productIds = [];
     created.supplierIds = [];
     created.relaisIds = [];
+    created.marketIds = [];
   }
 
   describe('Purchasing — exact sold SKU → exact supplier PO (REAL_DB)', () => {
