@@ -1,6 +1,11 @@
 name: Staging PDP AliExpress live audit
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/boutique/tests/e2e/pdp-aliexpress-live-audit.spec.js'
+      - '.github/workflows/staging-pdp-aliexpress-live-audit.yml'
   issues:
     types: [opened]
 
@@ -16,8 +21,9 @@ jobs:
   audit:
     name: Playwright PDP forensic audit
     if: >-
-      github.actor == github.repository_owner &&
-      github.event.issue.title == '[staging-op] pdp-aliexpress-live-audit'
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] pdp-aliexpress-live-audit')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -134,7 +140,7 @@ jobs:
           retention-days: 14
 
       - name: Comment command issue
-        if: always()
+        if: always() && github.event_name == 'issues'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
