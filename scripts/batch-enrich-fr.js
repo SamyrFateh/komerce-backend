@@ -26,6 +26,7 @@ const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 2000;
 const CONCURRENCY = 5;
 const DELAY_BETWEEN_BATCHES_MS = 1000;
+const SUCCESS_STATUSES = new Set(['ok', 'low_confidence']);
 
 function parseArgs(argv = process.argv.slice(2)) {
   let mode = 'dry-run';
@@ -98,10 +99,10 @@ async function enrichOne(productId, productRef) {
     return {
       productRef,
       productId,
-      status: result.status || 'ok',
+      status: result.status || 'failed',
       confidence: result.confidence ?? null,
-      needsReview: result.needs_review ?? null,
-      error: null,
+      needsReview: result.needsReview ?? result.needs_review ?? null,
+      error: result.error || null,
     };
   } catch (err) {
     return {
@@ -161,9 +162,9 @@ async function main() {
     const results = await Promise.all(batch.map(d => enrichOne(d.id, d.product_ref)));
 
     for (const r of results) {
-      if (r.status === 'error') {
+      if (!SUCCESS_STATUSES.has(r.status)) {
         errorCount += 1;
-        errors.push({ ref: r.productRef, error: r.error });
+        errors.push({ ref: r.productRef, status: r.status, error: r.error || 'échec sans détail' });
         process.stdout.write(' ✗');
       } else {
         okCount += 1;
@@ -184,7 +185,7 @@ async function main() {
   if (errors.length > 0) {
     console.log('\nErreurs :');
     for (const e of errors.slice(0, 20)) {
-      console.log(`  ${e.ref} — ${e.error}`);
+      console.log(`  ${e.ref} — status=${e.status} — ${e.error}`);
     }
     if (errors.length > 20) console.log(`  ... et ${errors.length - 20} autres`);
   }
@@ -196,6 +197,9 @@ async function main() {
   }
 
   console.log('');
+  if (errorCount > 0) {
+    throw new Error(`Batch enrichissement incomplet: ${errorCount}/${drafts.length} échec(s)`);
+  }
 }
 
 main()
