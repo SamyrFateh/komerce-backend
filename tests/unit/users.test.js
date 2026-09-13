@@ -50,6 +50,20 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+// Les routes de scope marché exigent désormais le grant dashboard_global_access_grants
+// au même titre que les agrégats dashboard legacy (cf. PR #1452, CROSS_MARKET_BUG) :
+// l'admin seul ne suffit plus. Le comportement du middleware lui-même est couvert
+// par require-dashboard-global-authority.test.js ; ici on le mock (même convention
+// que admin-dashboard-commerce-route.test.js etc.) pour ne tester que le câblage
+// propre à routes/admin/users.js.
+let mockGlobalAllowed = true;
+jest.mock('../../middleware/require-dashboard-global-authority', () => ({
+  requireDashboardGlobalAuthority: (req, res, next) => {
+    if (!mockGlobalAllowed) return res.status(403).json({ code: 'dashboard_global_access_denied' });
+    next();
+  },
+}));
+
 const bcrypt = require('bcryptjs');
 jest.mock('bcryptjs', () => ({
   hash: jest.fn(async () => 'hashed-pw'),
@@ -78,6 +92,7 @@ function makeClient() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGlobalAllowed = true;
   bcrypt.hash.mockResolvedValue('hashed-pw');
   bcrypt.compare.mockResolvedValue(true);
   marketScopes.listActiveMarkets.mockResolvedValue([]);
@@ -150,6 +165,13 @@ describe('GET /api/admin/users', () => {
 });
 
 describe('GET /api/admin/users/markets', () => {
+  it('refuse un admin sans grant dashboard global', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).get('/api/admin/users/markets');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
   it('retourne le référentiel actif utilisable par le provisioning', async () => {
     marketScopes.listActiveMarkets.mockResolvedValueOnce([
       { id: 'm-cm', code: 'CM', name: 'Cameroun', currency: 'XAF' },
@@ -161,6 +183,13 @@ describe('GET /api/admin/users/markets', () => {
 });
 
 describe('GET /api/admin/users/:id/market-scopes', () => {
+  it('refuse un admin sans grant dashboard global', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).get('/api/admin/users/u1/market-scopes');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
   it('retourne scopes actifs et historique', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Ibrahim', email: 'i@x.km', role: 'market_operator' }] });
     marketScopes.listUserMarketScopeHistory.mockResolvedValueOnce([
@@ -348,6 +377,19 @@ describe('PUT /api/admin/users/:id/role', () => {
 });
 
 describe('POST /api/admin/users/:id/market-scopes', () => {
+  // Régression : un admin sans grant dashboard_global_access_grants ne doit
+  // plus pouvoir réassigner les scopes marché d'un market_operator (même
+  // type de gap que le CROSS_MARKET_BUG corrigé en PR #1452, mais ici sur
+  // l'attribution d'autorité elle-même plutôt que sur la lecture d'agrégats).
+  it('refuse un admin sans grant dashboard global', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).post('/api/admin/users/u1/market-scopes').send({
+      market_code: 'CM', scope_role: 'viewer',
+    });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
   it('refuse un utilisateur qui n’est pas market_operator', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'client' }] });
     const res = await request(app).post('/api/admin/users/u1/market-scopes').send({
@@ -372,6 +414,13 @@ describe('POST /api/admin/users/:id/market-scopes', () => {
 });
 
 describe('DELETE /api/admin/users/:id/market-scopes/:marketCode', () => {
+  it('refuse un admin sans grant dashboard global', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).delete('/api/admin/users/u1/market-scopes/cm');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
   it('révoque le scope sans supprimer son historique', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'market_operator' }] });
     marketScopes.revokeMarketScope.mockResolvedValueOnce({

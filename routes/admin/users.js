@@ -26,6 +26,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
+const { requireDashboardGlobalAuthority } = require('../../middleware/require-dashboard-global-authority');
 const { detachUserFromScans } = require('../../services/scan-write-service');
 const { detachUserFromIncidents } = require('../../services/incident-write-service');
 const { deleteUserBasketData } = require('../../services/shared-cart-user-cleanup');
@@ -50,6 +51,10 @@ const {
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
+// Les scopes marché sont une autorité globale au même titre que les agrégats
+// dashboard legacy (cf. PR #1452, CROSS_MARKET_BUG) : le rôle admin seul ne
+// suffit pas, il faut le grant dashboard_global_access_grants.
+const marketAuthorityGuard = [authenticate, requireRole(['admin']), requireDashboardGlobalAuthority];
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin', 'market_operator'];
 const PASSWORD_HASH_ROUNDS = 12;
 
@@ -156,7 +161,7 @@ router.get('/users', ...guard, async (req, res, next) => {
 });
 
 // ─── GET /api/admin/users/markets ──────────────────────────────────
-router.get('/users/markets', ...guard, async (_req, res, next) => {
+router.get('/users/markets', ...marketAuthorityGuard, async (_req, res, next) => {
   try {
     const markets = await listActiveMarkets(db);
     res.json({ markets });
@@ -164,7 +169,7 @@ router.get('/users/markets', ...guard, async (_req, res, next) => {
 });
 
 // ─── GET /api/admin/users/:id/market-scopes ────────────────────────
-router.get('/users/:id/market-scopes', ...guard, async (req, res, next) => {
+router.get('/users/:id/market-scopes', ...marketAuthorityGuard, async (req, res, next) => {
   try {
     const { rows: [user] } = await db.query(
       'SELECT id, full_name, email, role FROM users WHERE id = $1::uuid',
@@ -315,7 +320,7 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
 });
 
 // ─── POST /api/admin/users/:id/market-scopes ───────────────────────
-router.post('/users/:id/market-scopes', ...guard, async (req, res, next) => {
+router.post('/users/:id/market-scopes', ...marketAuthorityGuard, async (req, res, next) => {
   try {
     const marketScope = parseMarketScope({ market_scope: req.body });
     if (!marketScope) throw new ProvisioningError(400, 'MARKET_SCOPE_REQUIRED', 'market_code et scope_role sont requis.');
@@ -350,7 +355,7 @@ router.post('/users/:id/market-scopes', ...guard, async (req, res, next) => {
 });
 
 // ─── DELETE /api/admin/users/:id/market-scopes/:marketCode ────────
-router.delete('/users/:id/market-scopes/:marketCode', ...guard, async (req, res, next) => {
+router.delete('/users/:id/market-scopes/:marketCode', ...marketAuthorityGuard, async (req, res, next) => {
   try {
     const code = normalizeMarketCode(req.params.marketCode);
     if (!code) return res.status(400).json({ error: 'Code marché invalide', code: 'INVALID_MARKET_CODE' });

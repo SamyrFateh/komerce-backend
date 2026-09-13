@@ -29,10 +29,17 @@ const catalogImportOrchestrator = require('../services/suppliers/catalog-import-
 const importDispatch = require('../services/sourcing-import-dispatch');
 const candidateActions = require('../services/sourcing-candidate-actions');
 const { authenticate } = require('../middleware/auth');
+const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 
+// Cette route legacy lit/écrit sourcing_candidates via le même service
+// (sourcing-candidate-actions) que le workspace canonical
+// (routes/admin-sourcing-workspace.js), qui exige déjà l'autorité globale
+// sourcing_global_access_grants. Le rôle admin seul ne doit pas permettre de
+// contourner ce grant par cette façade legacy (cf. doctrine
+// admin_role_never_implies_sourcing_write, middleware/require-sourcing-global-authority.js).
 function requireAdminOrFounder(req, res, next) {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Accès admin requis' });
-  next();
+  return requireSourcingGlobalAuthority(req, res, next);
 }
 
 function legacyCandidateError(err, res, next) {
