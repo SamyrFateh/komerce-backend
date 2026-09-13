@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  catalog, sourcing, supplier-import
- * @version       2026-09-v3
+ * @version       2026-09-v4
  */
 'use strict';
 
@@ -211,7 +211,10 @@ function buildSkuAttr(sku = {}) {
 }
 
 function rawSupplierUnitRef(sku = {}) {
-  const value = sku.id ?? sku.sku_id ?? sku.skuId;
+  // AliExpress DS exposes both `id` (often a composite property label) and
+  // `sku_id` (the native order/logistics identifier). Supplier Order Identity
+  // must retain the native sku_id when both are present.
+  const value = sku.sku_id ?? sku.skuId ?? sku.id;
   if (value == null || String(value).trim() === '') return null;
   return String(value).trim().slice(0, 256);
 }

@@ -1,15 +1,11 @@
 'use strict';
 
 const readiness = require('../../services/suppliers/supplier-fulfillment-readiness');
-const ali = require('../../services/suppliers/aliexpress-fulfillment-adapter');
 
-function dbWith(row, candidateRefs = ['100500123']) {
+function dbWith(row) {
   return {
     query: jest.fn(async (sql) => {
       if (sql.includes('FROM product_skus')) return { rows: row ? [row] : [] };
-      if (sql.includes('FROM sourcing_candidates')) {
-        return { rows: candidateRefs.map(supplier_product_id => ({ supplier_product_id })) };
-      }
       throw new Error(`Unexpected SQL: ${sql}`);
     }),
   };
@@ -17,10 +13,18 @@ function dbWith(row, candidateRefs = ['100500123']) {
 
 function sku(overrides = {}) {
   return {
-    id: 'sku-1', product_id: 'product-1', supplier_sku: 'AE-SKU-1',
-    supplier_unit_ref: '2000001',
-    supplier_order_identity: { provider: 'aliexpress', version: 1, payload: { sku_id: '2000001' } },
-    stock: 8, is_active: true, source: 'SUPPLIER',
+    id: 'sku-1',
+    product_id: 'product-1',
+    supplier_sku: 'BUSINESS-SKU-1',
+    supplier_unit_ref: 'UNIT-42',
+    supplier_order_identity: {
+      provider: 'generic-supplier',
+      version: 1,
+      payload: { variant_ref: 'VAR-42' },
+    },
+    stock: 8,
+    is_active: true,
+    source: 'SUPPLIER',
     ...overrides,
   };
 }
@@ -32,6 +36,19 @@ function hubRoute(overrides = {}) {
   };
 }
 
+function adapterReturning(status, evidence = {}, reason = null) {
+  return {
+    provider: 'generic-supplier',
+    evaluate: jest.fn(async ({ identity, quantity, destination, procurementRoute, VERDICT, result }) => {
+      expect(identity.payload).toEqual({ variant_ref: 'VAR-42' });
+      expect(quantity).toBeGreaterThan(0);
+      expect(destination.country_code).toBe('AE');
+      expect(procurementRoute.mode).toBe('PROCUREMENT_HUB');
+      return result(VERDICT[status], evidence, reason);
+    }),
+  };
+}
+
 describe('supplier fulfillment readiness', () => {
   it('refuse une destination brute sans Procurement Route explicite', async () => {
     const db = dbWith(sku());
@@ -39,7 +56,7 @@ describe('supplier fulfillment readiness', () => {
       db,
       productSkuId: 'sku-1',
       destination: { country_code: 'KM' },
-      adapters: { aliexpress: ali },
+      adapters: { 'generic-supplier': adapterReturning('READY') },
     });
     expect(out.status).toBe('PROCUREMENT_ROUTE_UNRESOLVED');
     expect(out.reason).toMatch(/procurementRoute explicite requis|destination brute interdite/i);
@@ -52,7 +69,7 @@ describe('supplier fulfillment readiness', () => {
       db,
       productSkuId: 'sku-1',
       procurementRoute: { mode: 'DIRECT_TO_CUSTOMER' },
-      adapters: { aliexpress: ali },
+      adapters: { 'generic-supplier': adapterReturning('READY') },
     });
     expect(out.status).toBe('PROCUREMENT_ROUTE_UNRESOLVED');
     expect(out.reason).toMatch(/seul PROCUREMENT_HUB est ouvert/i);
@@ -81,82 +98,80 @@ describe('supplier fulfillment readiness', () => {
   it('bloque une identité persistée absente', async () => {
     const db = dbWith(sku({ supplier_unit_ref: null, supplier_order_identity: null }));
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
-      adapters: { aliexpress: ali },
+      db,
+      productSkuId: 'sku-1',
+      procurementRoute: hubRoute(),
+      adapters: { 'generic-supplier': adapterReturning('READY') },
     });
     expect(out.status).toBe('BLOCKED_SUPPLIER_IDENTITY');
     expect(out.ready).toBe(false);
   });
 
-  it('bloque si le supplier_product_id n’est pas univoque', async () => {
-    const db = dbWith(sku(), ['100', '200']);
-    const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
-      adapters: { aliexpress: ali },
-    });
-    expect(out.status).toBe('BLOCKED_SUPPLIER_IDENTITY');
-  });
-
-  it('retourne OUT_OF_STOCK si le refresh exact échoue sur le stock', async () => {
+  it('reste supplier-agnostic et échoue proprement sans adapter enregistré', async () => {
     const db = dbWith(sku());
-    const context = {
-      aliexpressConnected: { fetchProducts: jest.fn(async () => ({ products: [{}] })) },
-      aliexpressPreflight: {
-        resolveOrderableUnit: jest.fn(() => { throw new Error('stock insuffisant'); }),
-        classifyApiError: jest.fn(() => 'inventory'),
-      },
-    };
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', quantity: 2, procurementRoute: hubRoute(),
-      adapters: { aliexpress: ali }, context,
+      db,
+      productSkuId: 'sku-1',
+      procurementRoute: hubRoute(),
     });
-    expect(out.status).toBe('OUT_OF_STOCK');
+    expect(out.status).toBe('SUPPLIER_UNAVAILABLE');
     expect(out.ready).toBe(false);
+    expect(out.evidence.provider).toBe('generic-supplier');
+    expect(out.reason).toMatch(/adapter fulfillment absent/i);
   });
 
-  it('retourne NOT_SHIPPABLE sans option de fret vers le hub', async () => {
+  it('normalise les clés provider injectées', async () => {
     const db = dbWith(sku());
-    const context = {
-      aliexpressConnected: {
-        fetchProducts: jest.fn(async () => ({ products: [{}] })),
-        invokeTop: jest.fn(async () => ({ result: { success: false } })),
-      },
-      aliexpressPreflight: {
-        METHODS: { FREIGHT: 'freight' },
-        resolveOrderableUnit: jest.fn(() => ({ stock_available: 9, unit_price: 4.2, currency: 'USD' })),
-        buildFreightBusinessParams: jest.fn(() => ({ p: 'x' })),
-        summarizeFreightResponse: jest.fn(() => ({ success: false, has_options: false, error: null })),
-        classifyApiError: jest.fn(() => 'other'),
-      },
-    };
+    const adapter = adapterReturning('READY', { exact_unit_resolved: true });
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
-      adapters: { aliexpress: ali }, context,
+      db,
+      productSkuId: 'sku-1',
+      procurementRoute: hubRoute(),
+      adapters: { ' GENERIC-SUPPLIER ': adapter },
     });
-    expect(out.status).toBe('NOT_SHIPPABLE');
+    expect(out.status).toBe('FULFILLMENT_READY');
+    expect(out.ready).toBe(true);
+    expect(adapter.evaluate).toHaveBeenCalledTimes(1);
   });
 
-  it('devient FULFILLMENT_READY vers le hub sans jamais appeler placeOrder', async () => {
+  it.each([
+    ['OUT_OF_STOCK', 'OUT_OF_STOCK'],
+    ['NOT_SHIPPABLE', 'NOT_SHIPPABLE'],
+    ['FREIGHT_UNAVAILABLE', 'FREIGHT_UNAVAILABLE'],
+    ['PRICE_DRIFT_BLOCKED', 'PRICE_DRIFT_BLOCKED'],
+    ['SUPPLIER_UNAVAILABLE', 'SUPPLIER_UNAVAILABLE'],
+  ])('accepte le verdict canonique %s de n’importe quel adapter', async (key, expected) => {
     const db = dbWith(sku());
-    const invokeTop = jest.fn(async () => ({ ok: true }));
-    const buildFreightBusinessParams = jest.fn(() => ({ p: 'x' }));
-    const context = {
-      aliexpressConnected: {
-        fetchProducts: jest.fn(async () => ({ products: [{}] })),
-        invokeTop,
-      },
-      aliexpressPreflight: {
-        METHODS: { FREIGHT: 'freight' },
-        resolveOrderableUnit: jest.fn(() => ({ stock_available: 9, unit_price: 4.2, currency: 'USD' })),
-        buildFreightBusinessParams,
-        summarizeFreightResponse: jest.fn(() => ({ success: true, has_options: true, error: null })),
-        classifyApiError: jest.fn(() => 'other'),
-      },
-    };
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', quantity: 1, procurementRoute: hubRoute(),
-      adapters: { aliexpress: ali }, context,
+      db,
+      productSkuId: 'sku-1',
+      procurementRoute: hubRoute(),
+      adapters: { 'generic-supplier': adapterReturning(key, { provider_fact: true }) },
     });
+    expect(out.status).toBe(expected);
+    expect(out.ready).toBe(false);
+    expect(out.evidence.provider_fact).toBe(true);
+  });
+
+  it('devient FULFILLMENT_READY via le contrat générique sans connaître le fournisseur', async () => {
+    const db = dbWith(sku());
+    const adapter = adapterReturning('READY', {
+      provider: 'generic-supplier',
+      exact_unit_resolved: true,
+      live_stock_checked: true,
+      live_price_checked: true,
+      supplier_leg_checked: true,
+      place_order_invoked: false,
+      payment_invoked: false,
+    });
+    const out = await readiness.evaluateSupplierFulfillmentReadiness({
+      db,
+      productSkuId: 'sku-1',
+      quantity: 1,
+      procurementRoute: hubRoute(),
+      adapters: { 'generic-supplier': adapter },
+    });
+
     expect(out.status).toBe('FULFILLMENT_READY');
     expect(out.ready).toBe(true);
     expect(out.evidence.procurement_route_mode).toBe('PROCUREMENT_HUB');
@@ -164,11 +179,6 @@ describe('supplier fulfillment readiness', () => {
     expect(out.evidence.procurement_hub_country_code).toBe('AE');
     expect(out.evidence.place_order_invoked).toBe(false);
     expect(out.evidence.payment_invoked).toBe(false);
-    expect(buildFreightBusinessParams).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ country_code: 'AE' })
-    );
-    expect(invokeTop).toHaveBeenCalledTimes(1);
-    expect(invokeTop.mock.calls[0][0]).toBe('freight');
+    expect(adapter.evaluate).toHaveBeenCalledTimes(1);
   });
 });

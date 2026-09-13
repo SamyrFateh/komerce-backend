@@ -5,21 +5,24 @@
  * @layer         service
  * @criticality   high
  * @inputs        NormalizedSupplierProduct V2, selected Supplier Order Identity, destination
- * @outputs       live-checkable freight request + place-order payload (never executed here)
+ * @outputs       live-checkable supplier-leg quote request + place-order payload (never executed here)
  * @depends       services/suppliers/supplier-order-identity.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v4
+ * @version       2026-09-ae-prepayment-v5
  */
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
 
 const METHODS = Object.freeze({
-  FREIGHT: 'aliexpress.logistics.buyer.freight.calculate',
+  // Canonical supplier-leg quote for a specific AliExpress orderable SKU.
+  FREIGHT: 'aliexpress.logistics.buyer.freight.get',
+  // Kept only for compatibility/diagnostics: product-level calculator.
+  FREIGHT_CALCULATE: 'aliexpress.logistics.buyer.freight.calculate',
   PLACE_ORDER: 'aliexpress.trade.buy.placeorder',
   ORDER_DETAIL: 'aliexpress.trade.ds.order.get',
   TRACKING: 'aliexpress.logistics.ds.trackinginfo.query',
@@ -30,10 +33,8 @@ function positiveInt(value, name = 'quantity') {
 }
 
 /**
- * Interprétation AliExpress d'une Supplier Order Identity déjà produite par
- * le connecteur. Un snapshot historique sans identité peut être résolu pour
- * identifier le SKU à rafraîchir uniquement si l'appelant le demande
- * explicitement avec requireOrderIdentity:false.
+ * AliExpress-specific interpretation of the opaque Supplier Order Identity.
+ * The Komerce core never interprets sku_id or sku_attr itself.
  */
 function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {}) {
   const requireOrderIdentity = options.requireOrderIdentity !== false;
@@ -67,9 +68,6 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
     );
   }
 
-  // `sku_id` et `sku_attr` restent des faits d'identité AliExpress. Le fret
-  // n'en invente aucun : freight.calculate opère sur produit + quantité +
-  // destination, tandis que placeOrder conserve `sku_attr` pour l'unité exacte.
   const rawSkuId = String(identity.payload.sku_id || '').trim() || null;
   const skuAttr = String(identity.payload.sku_attr || '').trim() || null;
   if (!rawSkuId && !skuAttr) {
@@ -103,19 +101,55 @@ function requireCanonicalIdentity(resolved) {
   }
 }
 
-function buildFreightBusinessParams(resolved, destination = {}) {
-  if (!resolved) throw new Error('resolved unit requis');
-  requireCanonicalIdentity(resolved);
-
-  const countryCode = String(destination.country_code || destination.countryCode || 'KM').trim().toUpperCase();
-  if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode}`);
+function normalizeSupplierLegDestination(destination = {}) {
+  const countryCode = String(destination.country_code || destination.countryCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode || 'absent'}`);
 
   const sendGoodsCountryCode = String(
     destination.send_goods_country_code || destination.sendGoodsCountryCode || ''
   ).trim().toUpperCase();
   if (!/^[A-Z]{2,3}$/.test(sendGoodsCountryCode)) {
-    throw new Error('send_goods_country_code requis pour le calcul de fret AliExpress');
+    throw new Error('send_goods_country_code requis pour le fret AliExpress');
   }
+
+  return { countryCode, sendGoodsCountryCode };
+}
+
+/**
+ * SKU-aware supplier-leg quote. Live proof on 2026-09-13 established that
+ * freight.get requires the native numeric AliExpress sku_id. The descriptive
+ * composite `id` is not accepted as sku_id.
+ */
+function buildFreightQuoteParams(resolved, destination = {}) {
+  if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
+
+  const { countryCode, sendGoodsCountryCode } = normalizeSupplierLegDestination(destination);
+  const nativeSkuId = String(resolved.raw_sku_id || '').trim();
+  if (!/^\d{5,30}$/.test(nativeSkuId)) {
+    throw supplierIdentity.blockedSupplierIdentity(
+      'sku_id natif AliExpress numérique requis pour le quote de fret',
+      { sku_id: nativeSkuId || null, supplier_sku: resolved.supplier_sku || null }
+    );
+  }
+
+  return {
+    country_code: countryCode,
+    send_goods_country_code: sendGoodsCountryCode,
+    product_id: Number(resolved.supplier_product_id),
+    product_num: positiveInt(resolved.quantity),
+    sku_id: nativeSkuId,
+  };
+}
+
+/**
+ * Legacy product-level calculator retained for diagnostics and compatibility.
+ * It is not the canonical exact-SKU readiness path.
+ */
+function buildFreightBusinessParams(resolved, destination = {}) {
+  if (!resolved) throw new Error('resolved unit requis');
+  requireCanonicalIdentity(resolved);
+  const { countryCode, sendGoodsCountryCode } = normalizeSupplierLegDestination(destination);
 
   const dto = {
     product_id: Number(resolved.supplier_product_id),
@@ -128,9 +162,6 @@ function buildFreightBusinessParams(resolved, destination = {}) {
   if (destination.province_code) dto.province_code = String(destination.province_code);
   if (destination.city_code) dto.city_code = String(destination.city_code);
 
-  // Contrat officiel freight.calculate : le DTO complexe est sérialisé sous
-  // un unique paramètre TOP. Les champs ne doivent jamais être aplatis à la
-  // racine de la requête, ce qui provoque `argument type mismatch`.
   return {
     param_aeop_freight_calculate_for_buyer_d_t_o: JSON.stringify(dto),
   };
@@ -187,6 +218,8 @@ module.exports = {
   METHODS,
   positiveInt,
   resolveOrderableUnit,
+  normalizeSupplierLegDestination,
+  buildFreightQuoteParams,
   buildFreightBusinessParams,
   buildPlaceOrderBusinessParams,
   summarizeFreightResponse,
