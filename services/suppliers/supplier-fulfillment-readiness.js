@@ -4,14 +4,14 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        product_sku.id, quantity, destination
+ * @inputs        product_sku.id, quantity, procurementRoute
  * @outputs       supplier_fulfillment_verdict
  * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/aliexpress-fulfillment-adapter.js
  * @used-by       internal purchasing callers
  * @db-read       product_skus
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
+ * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration, catalog
  */
 'use strict';
@@ -20,9 +20,12 @@ const supplierIdentity = require('./supplier-order-identity');
 const adapterContract = require('./supplier-fulfillment-adapter-contract');
 const aliexpressAdapter = require('./aliexpress-fulfillment-adapter');
 
+const ROUTE_MODE = Object.freeze({ PROCUREMENT_HUB: 'PROCUREMENT_HUB' });
+
 const VERDICT = Object.freeze({
   READY: 'FULFILLMENT_READY',
   BLOCKED_IDENTITY: 'BLOCKED_SUPPLIER_IDENTITY',
+  PROCUREMENT_ROUTE_UNRESOLVED: 'PROCUREMENT_ROUTE_UNRESOLVED',
   SKU_INACTIVE: 'SKU_INACTIVE',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   SUPPLIER_UNAVAILABLE: 'SUPPLIER_UNAVAILABLE',
@@ -36,6 +39,36 @@ const DEFAULT_ADAPTERS = Object.freeze({ aliexpress: aliexpressAdapter });
 
 function result(status, evidence = {}, reason = null) {
   return { ready: status === VERDICT.READY, status, reason, evidence };
+}
+
+function normalizeProcurementRoute(route) {
+  if (!route || typeof route !== 'object') {
+    throw new Error('procurementRoute explicite requis; destination brute interdite');
+  }
+  if (String(route.mode || '').trim().toUpperCase() !== ROUTE_MODE.PROCUREMENT_HUB) {
+    throw new Error('seul PROCUREMENT_HUB est ouvert dans le moteur Purchasing actuel');
+  }
+  const hub = route.hub && typeof route.hub === 'object' ? route.hub : null;
+  if (!hub) throw new Error('procurementRoute.hub requis');
+  const hubRef = String(hub.id || hub.code || hub.name || '').trim();
+  if (!hubRef) throw new Error('procurementRoute.hub doit avoir id, code ou name');
+  const countryCode = String(hub.country_code || hub.countryCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error('procurementRoute.hub.country_code requis');
+  const supplierDestination = {
+    country_code: countryCode,
+    province_code: hub.province_code || hub.provinceCode || null,
+    city_code: hub.city_code || hub.cityCode || null,
+  };
+  return {
+    mode: ROUTE_MODE.PROCUREMENT_HUB,
+    hub: {
+      id: hub.id || null,
+      code: hub.code || null,
+      name: hub.name || null,
+      ...supplierDestination,
+    },
+    supplier_destination: supplierDestination,
+  };
 }
 
 async function loadPersistedSku(db, productSkuId) {
@@ -65,11 +98,23 @@ function canonicalIdentity(row) {
 }
 
 async function evaluateSupplierFulfillmentReadiness(options = {}) {
-  const { db, productSkuId, destination = {}, context = {} } = options;
+  const { db, productSkuId, procurementRoute, context = {} } = options;
   const adapters = { ...DEFAULT_ADAPTERS, ...(options.adapters || {}) };
   if (!db || typeof db.query !== 'function') throw new Error('db.query requis');
   if (!productSkuId) throw new Error('productSkuId requis');
   const quantity = supplierIdentity.positiveInt(options.quantity ?? 1, 'quantity');
+
+  let route;
+  try {
+    route = normalizeProcurementRoute(procurementRoute);
+  } catch (error) {
+    return result(
+      VERDICT.PROCUREMENT_ROUTE_UNRESOLVED,
+      { product_sku_id: productSkuId },
+      String(error.message || error)
+    );
+  }
+
   const row = await loadPersistedSku(db, productSkuId);
 
   if (!row.is_active) return result(VERDICT.SKU_INACTIVE, { product_sku_id: row.id });
@@ -100,7 +145,8 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
       row,
       identity,
       quantity,
-      destination,
+      destination: route.supplier_destination,
+      procurementRoute: route,
       context,
       VERDICT,
       result,
@@ -121,13 +167,24 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
       verdictCheck.reason
     );
   }
-  return verdict;
+
+  return {
+    ...verdict,
+    evidence: {
+      procurement_route_mode: route.mode,
+      procurement_hub_code: route.hub.code || null,
+      procurement_hub_country_code: route.hub.country_code,
+      ...verdict.evidence,
+    },
+  };
 }
 
 module.exports = {
+  ROUTE_MODE,
   VERDICT,
   DEFAULT_ADAPTERS,
   result,
+  normalizeProcurementRoute,
   loadPersistedSku,
   canonicalIdentity,
   evaluateSupplierFulfillmentReadiness,
