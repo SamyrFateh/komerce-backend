@@ -161,7 +161,7 @@ module.exports = {
       test: 'tests/unit/supplier-fulfillment-adapter-contract.test.js' },
     { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × destination ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
-    { statement: 'pour AliExpress freight.get, le sku_id natif est obligatoire ; supplier_unit_ref et sku_attr ne peuvent jamais être promus en sku_id de fret',
+    { statement: 'pour AliExpress freight.calculate, l\'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n\'est inventé',
       test: 'tests/unit/aliexpress-purchase-preflight.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
