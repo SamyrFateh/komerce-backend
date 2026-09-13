@@ -67,17 +67,26 @@ jobs:
           local_geometry_rc=0
           local_gallery_rc=0
 
+          # Playwright clears its outputDir at the beginning of each invocation.
+          # Keep runner artifacts away from test-results/pdp-live-audit, which is
+          # the persistent forensic evidence accumulated by the first two runs.
+          rm -rf .playwright-output test-results/pdp-live-audit
+          mkdir -p test-results/pdp-live-audit
+
           echo '=== 1/6 AliExpress forensic — Mobile Chrome, 4 viewports x 5 products ==='
           npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
-            --project='Mobile Chrome' --grep='@ m' --workers=1 --retries=0 || forensic_mobile_rc=$?
+            --project='Mobile Chrome' --grep='@ m' --workers=1 --retries=0 \
+            --output=.playwright-output/forensic-mobile || forensic_mobile_rc=$?
 
           echo '=== 2/6 AliExpress forensic — Desktop Chrome, 1 viewport x 5 products ==='
           npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
-            --project='Desktop Chrome' --grep='@ d' --workers=1 --retries=0 || forensic_desktop_rc=$?
+            --project='Desktop Chrome' --grep='@ d' --workers=1 --retries=0 \
+            --output=.playwright-output/forensic-desktop || forensic_desktop_rc=$?
 
           echo '=== 3/6 Every sellable unit — all five AliExpress pilots ==='
           npx playwright test tests/e2e/pdp-aliexpress-all-units.spec.js \
-            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 || all_units_rc=$?
+            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 \
+            --output=.playwright-output/all-units || all_units_rc=$?
 
           echo '=== 4/6 Existing live PDP regressions ==='
           npx playwright test \
@@ -88,19 +97,22 @@ jobs:
             tests/e2e/modal-v3-mobile-finition.spec.js \
             tests/e2e/accessibility.spec.js \
             tests/e2e/cart.spec.js \
-            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 || live_core_rc=$?
+            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 \
+            --output=.playwright-output/live-core || live_core_rc=$?
 
           echo '=== 5/6 Deterministic modal geometry + visual regression ==='
           env -u BASE_URL npx playwright test \
             tests/e2e/modal-geometry.spec.js \
             tests/e2e/modal-backtop-zindex.spec.js \
             tests/e2e/modal-visual-regression.spec.js \
-            --project='Chromium Local-Only' --workers=1 --retries=0 || local_geometry_rc=$?
+            --project='Chromium Local-Only' --workers=1 --retries=0 \
+            --output=.playwright-output/local-geometry || local_geometry_rc=$?
 
           echo '=== 6/6 Dedicated gallery layout matrix ==='
           env -u BASE_URL npx playwright test \
             tests/e2e/modal-mdm9-gallery-layout.spec.js \
-            --project='Chromium MDM-9' --workers=1 --retries=0 || local_gallery_rc=$?
+            --project='Chromium MDM-9' --workers=1 --retries=0 \
+            --output=.playwright-output/local-gallery || local_gallery_rc=$?
 
           for pair in \
             "forensic_mobile_rc=$forensic_mobile_rc" \
@@ -112,7 +124,6 @@ jobs:
             echo "$pair" | tee -a "$GITHUB_OUTPUT"
           done
 
-          mkdir -p test-results/pdp-live-audit
           cat > test-results/pdp-live-audit/BATTERY_STATUS.json <<JSON
           {
             "forensic_mobile": $forensic_mobile_rc,
@@ -160,6 +171,7 @@ jobs:
           for (const f of findings) byCode[f.code] = (byCode[f.code] || 0) + 1;
           const summary = {
             reports: reports.length,
+            expected_reports: 25,
             findings: findings.length,
             p0: count('P0'),
             p1: count('P1'),
@@ -170,7 +182,7 @@ jobs:
           fs.writeFileSync(path.join(root, 'SUMMARY.json'), JSON.stringify(summary, null, 2));
           const md = [
             '# PDP AliExpress live audit', '',
-            `- forensic reports: ${summary.reports}/25`,
+            `- forensic reports: ${summary.reports}/${summary.expected_reports}`,
             `- P0: ${summary.p0}`,
             `- P1: ${summary.p1}`,
             '', '## Findings by code', '',
@@ -178,6 +190,15 @@ jobs:
           ].join('\n');
           fs.writeFileSync(path.join(root, 'SUMMARY.md'), md + '\n');
           console.log(JSON.stringify(summary, null, 2));
+
+          if (summary.reports !== summary.expected_reports) {
+            console.error(`HARD GATE: expected ${summary.expected_reports} forensic reports, got ${summary.reports}`);
+            process.exitCode = 1;
+          }
+          if (summary.p0 !== 0) {
+            console.error(`HARD GATE: ${summary.p0} P0 finding(s)`);
+            process.exitCode = 1;
+          }
           NODE
 
       - name: Upload PDP battery artifacts
@@ -186,7 +207,9 @@ jobs:
         with:
           name: pdp-playwright-full-battery
           path: |
-            public/boutique/test-results/
+            public/boutique/test-results/pdp-live-audit/
+            public/boutique/.playwright-output/
+            public/boutique/test-results/results.xml
             public/boutique/playwright-report/
           if-no-files-found: warn
           retention-days: 14
