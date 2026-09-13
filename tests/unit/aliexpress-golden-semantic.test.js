@@ -21,6 +21,12 @@ const chargingCable = {
   description: 'USB power charging cable for mobile phones.',
 };
 
+const displayCable = {
+  product_name: 'Toocki 100W Type C to Type C Cable PD Fast Charging USB C Display Cable',
+  supplier_category: 'Consumer Electronics > Cables',
+  description: 'Digital power display charging cable for Macbook and iPad.',
+};
+
 describe('AliExpress Golden semantic relevance', () => {
   test('accepts a source result aligned with a specific search query', () => {
     const result = semantic.audit(usbMeter, 'usb c digital power meter tester');
@@ -28,6 +34,8 @@ describe('AliExpress Golden semantic relevance', () => {
     expect(result.matched_tokens).toEqual(expect.arrayContaining(['usb', 'digital', 'power', 'meter', 'tester']));
     expect(result.required_matches).toBe(3);
     expect(result.coverage_ratio).toBe(1);
+    expect(result.intent_anchors).toEqual(['meter', 'tester']);
+    expect(result.matched_intent_anchors).toEqual(expect.arrayContaining(['meter', 'tester']));
   });
 
   test('rejects a rich but off-query AliExpress result', () => {
@@ -41,6 +49,15 @@ describe('AliExpress Golden semantic relevance', () => {
     expect(result.matched_tokens).toEqual(expect.arrayContaining(['usb', 'power']));
     expect(result.matched_tokens).toHaveLength(2);
     expect(result.required_matches).toBe(3);
+    expect(result.relevant).toBe(false);
+  });
+
+  test('rejects a digital power display cable when no meter/tester intent anchor matches', () => {
+    const result = semantic.audit(displayCable, 'usb c digital power meter tester');
+    expect(result.matched_tokens).toEqual(expect.arrayContaining(['usb', 'digital', 'power']));
+    expect(result.matched_tokens).toHaveLength(3);
+    expect(result.required_matches).toBe(3);
+    expect(result.matched_intent_anchors).toEqual([]);
     expect(result.relevant).toBe(false);
   });
 });

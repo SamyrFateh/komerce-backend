@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  sourcing, catalog, supplier-integration, staging
- * @version       2026-09-golden-semantic-v2
+ * @version       2026-09-golden-semantic-v3
  */
 'use strict';
 
@@ -47,19 +47,30 @@ function requiredMatchCount(queryTokenCount) {
   return Math.max(2, Math.ceil(queryTokenCount * 0.6));
 }
 
+function intentAnchors(queryTokens) {
+  if (!queryTokens.length) return [];
+  return queryTokens.length >= 4 ? queryTokens.slice(-2) : queryTokens.slice(-1);
+}
+
 function audit(product, query) {
   const queryTokens = [...new Set(tokens(query))];
   const sourceTokens = new Set(tokens(productText(product)));
   const matchedTokens = queryTokens.filter((token) => sourceTokens.has(token));
+  const anchors = intentAnchors(queryTokens);
+  const matchedAnchors = anchors.filter((token) => sourceTokens.has(token));
   const requiredMatches = requiredMatchCount(queryTokens.length);
   const coverageRatio = queryTokens.length ? matchedTokens.length / queryTokens.length : 0;
   return {
-    relevant: requiredMatches > 0 && matchedTokens.length >= requiredMatches,
+    relevant: requiredMatches > 0
+      && matchedTokens.length >= requiredMatches
+      && matchedAnchors.length >= 1,
     query_tokens: queryTokens,
     matched_tokens: matchedTokens,
     required_matches: requiredMatches,
     coverage_ratio: Number(coverageRatio.toFixed(3)),
+    intent_anchors: anchors,
+    matched_intent_anchors: matchedAnchors,
   };
 }
 
-module.exports = { tokens, requiredMatchCount, audit };
+module.exports = { tokens, requiredMatchCount, intentAnchors, audit };
