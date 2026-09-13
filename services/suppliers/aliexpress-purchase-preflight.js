@@ -12,14 +12,14 @@
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v3
+ * @version       2026-09-ae-prepayment-v4
  */
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
 
 const METHODS = Object.freeze({
-  FREIGHT: 'aliexpress.logistics.buyer.freight.get',
+  FREIGHT: 'aliexpress.logistics.buyer.freight.calculate',
   PLACE_ORDER: 'aliexpress.trade.buy.placeorder',
   ORDER_DETAIL: 'aliexpress.trade.ds.order.get',
   TRACKING: 'aliexpress.logistics.ds.trackinginfo.query',
@@ -67,9 +67,9 @@ function resolveOrderableUnit(contract, supplierSku, quantity = 1, options = {})
     );
   }
 
-  // `sku_id` est un identifiant natif AliExpress. `supplier_unit_ref` peut
-  // légitimement contenir un `sku_attr`; il ne doit donc jamais être promu
-  // silencieusement en `sku_id` pour les appels fournisseur.
+  // `sku_id` et `sku_attr` restent des faits d'identité AliExpress. Le fret
+  // n'en invente aucun : freight.calculate opère sur produit + quantité +
+  // destination, tandis que placeOrder conserve `sku_attr` pour l'unité exacte.
   const rawSkuId = String(identity.payload.sku_id || '').trim() || null;
   const skuAttr = String(identity.payload.sku_attr || '').trim() || null;
   if (!rawSkuId && !skuAttr) {
@@ -106,35 +106,33 @@ function requireCanonicalIdentity(resolved) {
 function buildFreightBusinessParams(resolved, destination = {}) {
   if (!resolved) throw new Error('resolved unit requis');
   requireCanonicalIdentity(resolved);
+
   const countryCode = String(destination.country_code || destination.countryCode || 'KM').trim().toUpperCase();
   if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode}`);
 
-  // L'API Dropshipper actuelle `aliexpress.logistics.buyer.freight.get`
-  // requiert le sku_id natif. Ne jamais substituer supplier_unit_ref ou sku_attr.
-  if (!resolved.raw_sku_id) {
-    throw supplierIdentity.blockedSupplierIdentity(
-      'sku_id natif AliExpress requis pour le calcul de fret',
-      {
-        supplier_sku: resolved.supplier_sku || null,
-        supplier_unit_ref: resolved.supplier_unit_ref || null,
-      }
-    );
+  const sendGoodsCountryCode = String(
+    destination.send_goods_country_code || destination.sendGoodsCountryCode || ''
+  ).trim().toUpperCase();
+  if (!/^[A-Z]{2,3}$/.test(sendGoodsCountryCode)) {
+    throw new Error('send_goods_country_code requis pour le calcul de fret AliExpress');
   }
 
   const dto = {
     product_id: Number(resolved.supplier_product_id),
     product_num: positiveInt(resolved.quantity),
-    sku_id: String(resolved.raw_sku_id),
     country_code: countryCode,
+    send_goods_country_code: sendGoodsCountryCode,
     price: String(resolved.unit_price),
     price_currency: resolved.currency,
   };
   if (destination.province_code) dto.province_code = String(destination.province_code);
   if (destination.city_code) dto.city_code = String(destination.city_code);
-  if (destination.send_goods_country_code) dto.send_goods_country_code = String(destination.send_goods_country_code).toUpperCase();
 
+  // Contrat officiel freight.calculate : le DTO complexe est sérialisé sous
+  // un unique paramètre TOP. Les champs ne doivent jamais être aplatis à la
+  // racine de la requête, ce qui provoque `argument type mismatch`.
   return {
-    aeopFreightCalculateForBuyerDTO: JSON.stringify(dto),
+    param_aeop_freight_calculate_for_buyer_d_t_o: JSON.stringify(dto),
   };
 }
 
