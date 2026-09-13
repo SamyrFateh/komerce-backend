@@ -58,7 +58,7 @@ Aucun adapter fournisseur ne doit fusionner ces deux transactions.
 SUPPLIER → PROCUREMENT_HUB
 ```
 
-Cette jambe appartient au preflight fournisseur : disponibilité, coût fournisseur, quantité, possibilité d'expédier vers le hub et fret entrant au hub.
+Cette jambe appartient au procurement fournisseur. Selon les capacités réelles du fournisseur, son coût et son expédiabilité peuvent être vérifiés par API, vérifiés manuellement ou simulés dans staging à partir d'une hypothèse explicite.
 
 ### Market Leg
 
@@ -135,9 +135,9 @@ refresh exact stock / prix
   ↓
 Procurement Route résolue
   ↓
-freight Supplier → Hub
+Supplier Leg vérifié selon capacité réelle
   ↓
-place-order payload exact
+achat manuel ou payload place-order exact
 ```
 
 ## 7. Contrat des adapters fournisseurs
@@ -160,7 +160,82 @@ L'adapter ne peut pas :
 - modifier le prix Market ;
 - créer une commande fournisseur pendant un preflight.
 
-## 8. Gates canoniques avant achat fournisseur
+## 8. Capacité Komerce et capacité fournisseur sont deux axes différents
+
+Une API fournisseur absente, limitée ou inaccessible ne change pas le modèle Komerce. Elle change seulement **le niveau d'automatisation disponible**.
+
+### 8.1 `MODEL_SIMULATION_READY`
+
+Komerce peut démontrer en staging que :
+
+```text
+vente client simulée
+→ commande / paiement de test
+→ order = ordered
+→ Purchase Order
+→ Supplier Order Identity exacte
+→ Procurement Route Hub
+→ coût fournisseur + hypothèses logistiques explicites
+→ réception Hub simulée
+→ Market Leg simulée
+→ livraison / relais simulé
+```
+
+Aucune API d'achat fournisseur réelle n'est requise à ce niveau.
+
+Une valeur simulée doit être marquée comme telle ; elle ne peut jamais être présentée comme un fait fournisseur live.
+
+### 8.2 `MANUAL_PROCUREMENT_READY`
+
+Un opérateur peut acheter réellement sans ambiguïté :
+
+- produit fournisseur exact ;
+- unité/variante exacte ;
+- quantité ;
+- coût source et devise ;
+- fournisseur / URL ou canal d'achat ;
+- destination Procurement Hub ;
+- toute information nécessaire au passage manuel de commande.
+
+Le fournisseur n'a pas besoin d'exposer une API `placeOrder` ou une API de fret live.
+
+Si le fret n'est disponible que dans l'interface fournisseur au moment de l'achat, il est vérifié manuellement et enregistré comme tel.
+
+### 8.3 `SUPPLIER_API_PREFLIGHT_READY`
+
+Les capacités API réellement disponibles ont été prouvées : stock/prix live, quote de fret si l'API le permet, shippability, etc.
+
+L'absence d'une capacité API produit un verdict de capacité (`FREIGHT_UNAVAILABLE`, `SUPPLIER_UNAVAILABLE`, etc.) mais **ne réfute pas** `MODEL_SIMULATION_READY` ou `MANUAL_PROCUREMENT_READY`.
+
+### 8.4 `AUTO_ORDER_READY`
+
+Komerce sait réellement créer la commande fournisseur via une API autorisée, stocker l'identifiant fournisseur, reprendre un timeout sans double achat, suivre statut et tracking, avec kill switch et idempotence.
+
+Ce niveau est séparé du business model et reste fermé tant qu'il n'est pas explicitement prouvé.
+
+## 9. Gates canoniques
+
+### 9.1 Gate de simulation business
+
+```text
+CUSTOMER FLOW SIMULABLE
+        ↓
+SUPPLIER ORDER IDENTITY RESOLVED
+        ↓
+PROCUREMENT ROUTE RESOLVED
+        ↓
+PURCHASE ORDER EXPLOITABLE
+        ↓
+SUPPLIER LEG SIMULÉ / MANUEL EXPLICITE
+        ↓
+HUB RECEIPT SIMULABLE
+        ↓
+MARKET LEG SIMULABLE
+        ↓
+MODEL_SIMULATION_READY
+```
+
+### 9.2 Gate d'achat fournisseur réel manuel
 
 ```text
 CUSTOMER COMMITMENT / order=ordered
@@ -169,20 +244,32 @@ SUPPLIER ORDER IDENTITY RESOLVED
         ↓
 PROCUREMENT ROUTE RESOLVED
         ↓
-LIVE STOCK / PRICE REFRESH
+LIVE STOCK / PRICE quand disponible
         ↓
-SUPPLIER → HUB FREIGHT VERIFIED
+ACHAT MANUEL NON AMBIGU
         ↓
-PLACE-ORDER PAYLOAD READY
-        ↓
-HARD STOP
-        ↓
-SUPPLIER ORDER EXECUTION  ← gate séparé, fermé tant que non ouvert
+MANUAL_PROCUREMENT_READY
 ```
 
-`FULFILLMENT_READY` signifie que l'approvisionnement fournisseur est faisable pour la route résolue. Cela ne signifie jamais qu'une commande fournisseur a été passée.
+### 9.3 Gate d'auto-order
 
-## 9. Coût logistique : pas de double comptage
+```text
+MANUAL_PROCUREMENT_READY
+        ↓
+CAPACITÉS API FOURNISSEUR PROUVÉES
+        ↓
+FREIGHT API si réellement disponible
+        ↓
+PLACE-ORDER API PROUVÉE
+        ↓
+IDEMPOTENCE / TRACKING / KILL SWITCH
+        ↓
+AUTO_ORDER_READY
+```
+
+Un fournisseur n'est jamais déclaré `AUTO_ORDER_READY` sur la base d'une API supposée.
+
+## 10. Coût logistique : pas de double comptage
 
 Le coût réel doit rester décomposable :
 
@@ -198,21 +285,34 @@ achat fournisseur
 
 Le moteur économique peut agréger ces composantes, mais une même charge ne doit jamais être imputée dans deux jambes différentes.
 
-## 10. Règles AliExpress
+En simulation, chaque composante doit porter une provenance explicite : `live`, `manual`, `estimated`, `simulated` ou équivalent canonique. Un coût simulé ne devient jamais silencieusement un coût fournisseur réel.
+
+## 11. Règles AliExpress
 
 Le nom « AliExpress Dropshipper » décrit la famille d'API du fournisseur, **pas** le modèle Komerce.
 
 Pour Komerce :
 
-- `ds.product.get` sert à la vérité produit/SKU ;
+- `ds.product.get` sert à la vérité produit/SKU lorsqu'il est disponible ;
 - Supplier Order Identity identifie l'unité exacte ;
-- le freight fournisseur doit être calculé vers le Procurement Hub résolu ;
-- le futur `placeOrder` doit utiliser l'unité exacte et l'adresse du hub ;
+- le Procurement Hub reste la destination métier Komerce ;
+- une API AliExpress de fret n'est utilisée que si elle permet réellement de vérifier la Supplier Leg souhaitée ;
+- si AliExpress ne propose pas cette capacité par API, la Supplier Leg reste manuelle/simulée sans falsifier un succès API ;
+- le futur `placeOrder` n'est ouvert que si l'API et le compte le permettent réellement ;
 - le client final n'est pas la destination AliExpress tant que `DIRECT_TO_CUSTOMER` n'est pas explicitement ouvert.
 
-Pour la route V1 actuelle, le proof AliExpress doit donc tester la destination hub `AE`, et non `KM` simplement parce que le Market initial est Comores.
+Le proof AliExpress ne doit donc plus chercher à démontrer « tout AliExpress par API ». Il doit démontrer séparément :
 
-## 11. Invariants non négociables
+```text
+Komerce sait vendre correctement          ← modèle Komerce
+Komerce sait produire la PO exacte        ← modèle Komerce
+Komerce sait router vers le Hub           ← modèle Komerce
+AliExpress expose stock/prix live          ← capacité fournisseur observée
+AliExpress expose freight API exploitable  ← capacité fournisseur à prouver
+AliExpress expose placeOrder exploitable   ← capacité fournisseur à prouver
+```
+
+## 12. Invariants non négociables
 
 1. **Vente client et achat fournisseur sont deux transactions distinctes.**
 2. **Aucune intention d'achat fournisseur par inférence.**
@@ -224,3 +324,5 @@ Pour la route V1 actuelle, le proof AliExpress doit donc tester la destination h
 8. **Un preflight ne passe jamais de commande et ne déclenche jamais de paiement fournisseur.**
 9. **Toute future auto-order conserve une Purchase Order Komerce idempotente comme autorité d'orchestration.**
 10. **Le Hub est une capacité/rôle résolu ; Dubai est la route V1 actuelle, pas une hypothèse universelle du moteur.**
+11. **Une capacité API fournisseur absente ne peut jamais être simulée comme disponible.**
+12. **Une incapacité API fournisseur n'empêche pas de prouver séparément la cohérence du modèle Komerce en staging.**
