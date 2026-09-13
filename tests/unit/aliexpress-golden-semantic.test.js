@@ -1,7 +1,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
-const semantic = require('../../services/aliexpress-golden-semantic');
+const semantic = require('../../scripts/aliexpress-golden-semantic');
 
 const usbMeter = {
   product_name: 'USB C Digital Power Meter Tester 100W Voltage Current Monitor',
