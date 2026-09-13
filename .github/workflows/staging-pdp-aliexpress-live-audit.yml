@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'public/boutique/tests/e2e/pdp-aliexpress-live-audit.spec.js'
+      - 'public/boutique/tests/e2e/pdp-aliexpress-all-units.spec.js'
       - '.github/workflows/staging-pdp-aliexpress-live-audit.yml'
   issues:
     types: [opened]
@@ -15,11 +16,11 @@ permissions:
 
 concurrency:
   group: komerce-staging-pdp-aliexpress-live-audit
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   audit:
-    name: Playwright PDP forensic audit
+    name: Playwright PDP full battery
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'issues' && github.actor == github.repository_owner &&
@@ -53,28 +54,79 @@ jobs:
         working-directory: public/boutique
         run: npx playwright install --with-deps chromium
 
-      - name: Run exhaustive mobile + desktop audit
+      - name: Run full PDP battery
         id: audit
         working-directory: public/boutique
         shell: bash
         run: |
           set +e
-          mobile_rc=0
-          desktop_rc=0
+          forensic_mobile_rc=0
+          forensic_desktop_rc=0
+          all_units_rc=0
+          live_core_rc=0
+          local_geometry_rc=0
+          local_gallery_rc=0
 
-          echo '=== Mobile Chrome: 4 real mobile viewports x 5 products ==='
+          echo '=== 1/6 AliExpress forensic — Mobile Chrome, 4 viewports x 5 products ==='
           npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
-            --project='Mobile Chrome' --grep='@ m' --workers=1 || mobile_rc=$?
+            --project='Mobile Chrome' --grep='@ m' --workers=1 --retries=0 || forensic_mobile_rc=$?
 
-          echo '=== Desktop Chrome: 1 desktop viewport x 5 products ==='
+          echo '=== 2/6 AliExpress forensic — Desktop Chrome, 1 viewport x 5 products ==='
           npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
-            --project='Desktop Chrome' --grep='@ d' --workers=1 || desktop_rc=$?
+            --project='Desktop Chrome' --grep='@ d' --workers=1 --retries=0 || forensic_desktop_rc=$?
 
-          echo "mobile_rc=$mobile_rc" >> "$GITHUB_OUTPUT"
-          echo "desktop_rc=$desktop_rc" >> "$GITHUB_OUTPUT"
-          echo "Mobile exit: $mobile_rc | Desktop exit: $desktop_rc"
+          echo '=== 3/6 Every sellable unit — all five AliExpress pilots ==='
+          npx playwright test tests/e2e/pdp-aliexpress-all-units.spec.js \
+            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 || all_units_rc=$?
 
-          if [ "$mobile_rc" -ne 0 ] || [ "$desktop_rc" -ne 0 ]; then
+          echo '=== 4/6 Existing live PDP regressions ==='
+          npx playwright test \
+            tests/e2e/modal.spec.js \
+            tests/e2e/product-detail-pdc.spec.js \
+            tests/e2e/golden-product-content-live.spec.js \
+            tests/e2e/golden-product-gpm.spec.js \
+            tests/e2e/modal-v3-mobile-finition.spec.js \
+            tests/e2e/accessibility.spec.js \
+            tests/e2e/cart.spec.js \
+            --project='Mobile Chrome' --project='Desktop Chrome' --workers=1 --retries=0 || live_core_rc=$?
+
+          echo '=== 5/6 Deterministic modal geometry + visual regression ==='
+          env -u BASE_URL npx playwright test \
+            tests/e2e/modal-geometry.spec.js \
+            tests/e2e/modal-backtop-zindex.spec.js \
+            tests/e2e/modal-visual-regression.spec.js \
+            --project='Chromium Local-Only' --workers=1 --retries=0 || local_geometry_rc=$?
+
+          echo '=== 6/6 Dedicated gallery layout matrix ==='
+          env -u BASE_URL npx playwright test \
+            tests/e2e/modal-mdm9-gallery-layout.spec.js \
+            --project='Chromium MDM-9' --workers=1 --retries=0 || local_gallery_rc=$?
+
+          for pair in \
+            "forensic_mobile_rc=$forensic_mobile_rc" \
+            "forensic_desktop_rc=$forensic_desktop_rc" \
+            "all_units_rc=$all_units_rc" \
+            "live_core_rc=$live_core_rc" \
+            "local_geometry_rc=$local_geometry_rc" \
+            "local_gallery_rc=$local_gallery_rc"; do
+            echo "$pair" | tee -a "$GITHUB_OUTPUT"
+          done
+
+          mkdir -p test-results/pdp-live-audit
+          cat > test-results/pdp-live-audit/BATTERY_STATUS.json <<JSON
+          {
+            "forensic_mobile": $forensic_mobile_rc,
+            "forensic_desktop": $forensic_desktop_rc,
+            "all_units": $all_units_rc,
+            "live_core": $live_core_rc,
+            "local_geometry": $local_geometry_rc,
+            "local_gallery": $local_gallery_rc
+          }
+          JSON
+
+          if [ "$forensic_mobile_rc" -ne 0 ] || [ "$forensic_desktop_rc" -ne 0 ] || \
+             [ "$all_units_rc" -ne 0 ] || [ "$live_core_rc" -ne 0 ] || \
+             [ "$local_geometry_rc" -ne 0 ] || [ "$local_gallery_rc" -ne 0 ]; then
             exit 1
           fi
 
@@ -118,7 +170,7 @@ jobs:
           fs.writeFileSync(path.join(root, 'SUMMARY.json'), JSON.stringify(summary, null, 2));
           const md = [
             '# PDP AliExpress live audit', '',
-            `- reports: ${summary.reports}/25`,
+            `- forensic reports: ${summary.reports}/25`,
             `- P0: ${summary.p0}`,
             `- P1: ${summary.p1}`,
             '', '## Findings by code', '',
@@ -128,14 +180,14 @@ jobs:
           console.log(JSON.stringify(summary, null, 2));
           NODE
 
-      - name: Upload PDP audit artifacts
+      - name: Upload PDP battery artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pdp-aliexpress-live-audit
+          name: pdp-playwright-full-battery
           path: |
-            public/boutique/test-results/pdp-live-audit/
-            public/boutique/test-results/results.xml
+            public/boutique/test-results/
+            public/boutique/playwright-report/
           if-no-files-found: warn
           retention-days: 14
 
@@ -145,13 +197,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          MOBILE_RC: ${{ steps.audit.outputs.mobile_rc }}
-          DESKTOP_RC: ${{ steps.audit.outputs.desktop_rc }}
         run: |
-          if [ "${MOBILE_RC:-1}" = '0' ] && [ "${DESKTOP_RC:-1}" = '0' ]; then
-            verdict='GREEN — no P0 found by Playwright forensic audit.'
-          else
-            verdict="RED — defects found. mobile_rc=${MOBILE_RC:-n/a}, desktop_rc=${DESKTOP_RC:-n/a}. Review artifact pdp-aliexpress-live-audit."
-          fi
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$verdict"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'PDP Playwright full battery completed. Review artifact pdp-playwright-full-battery.'
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
