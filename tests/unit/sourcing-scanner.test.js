@@ -28,6 +28,23 @@ jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
 }));
 
+// Cette route legacy délègue désormais l'autorité sourcing globale à
+// requireSourcingGlobalAuthority (même middleware que le workspace canonical,
+// cf. routes/admin-sourcing-workspace.js et son test dédié
+// admin-sourcing-workspace-route.test.js). Le comportement du middleware
+// lui-même (grant actif requis, admin sans grant refusé, etc.) est couvert
+// par require-sourcing-global-authority.test.js ; ici on le mock pour ne
+// tester que le câblage propre à sourcing-scanner.js, en simulant un grant
+// actif par défaut.
+let mockSourcingAllowed = true;
+jest.mock('../../middleware/require-sourcing-global-authority', () => ({
+  requireSourcingGlobalAuthority: (req, res, next) => {
+    if (!mockSourcingAllowed) return res.status(403).json({ code: 'sourcing_global_access_denied' });
+    req.sourcingGlobalAuthority = true;
+    next();
+  },
+}));
+
 const { makeClient } = require('../integration/test-harness/mock-db');
 
 const mockQuery = jest.fn();
@@ -83,6 +100,7 @@ let currentUser;
 beforeEach(() => {
   jest.clearAllMocks();
   currentUser = { id: 'admin-1', role: 'admin' };
+  mockSourcingAllowed = true;
   mockLoadGlobalConfig.mockResolvedValue({ finance: {} });
 
   app = express();
@@ -100,6 +118,18 @@ describe('sourcing-scanner — accès', () => {
     currentUser = { id: 'u1', role: 'agent_hub' };
     const res = await request(app).get('/api/admin/sourcing/connectors');
     expect(res.status).toBe(403);
+  });
+
+  // Cette façade legacy lit/écrit sourcing_candidates via le même service
+  // (sourcing-candidate-actions) que le workspace canonical
+  // (routes/admin-sourcing-workspace.js), qui exige déjà le grant
+  // sourcing_global_access_grants. Un admin sans ce grant ne doit pas
+  // pouvoir contourner l'exigence en passant par cette route legacy.
+  it('refuse un admin sans grant sourcing global', async () => {
+    mockSourcingAllowed = false;
+    const res = await request(app).get('/api/admin/sourcing/connectors');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('sourcing_global_access_denied');
   });
 });
 
