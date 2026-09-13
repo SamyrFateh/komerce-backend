@@ -1,0 +1,151 @@
+name: Staging PDP AliExpress live audit
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-pdp-aliexpress-live-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Playwright PDP forensic audit
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] pdp-aliexpress-live-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: https://komerce.co/boutique/
+      PDP_LIVE_AUDIT: '1'
+      CI: '1'
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Run exhaustive mobile + desktop audit
+        id: audit
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          set +e
+          mobile_rc=0
+          desktop_rc=0
+
+          echo '=== Mobile Chrome: 4 real mobile viewports x 5 products ==='
+          npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
+            --project='Mobile Chrome' --grep='@ m' --workers=1 || mobile_rc=$?
+
+          echo '=== Desktop Chrome: 1 desktop viewport x 5 products ==='
+          npx playwright test tests/e2e/pdp-aliexpress-live-audit.spec.js \
+            --project='Desktop Chrome' --grep='@ d' --workers=1 || desktop_rc=$?
+
+          echo "mobile_rc=$mobile_rc" >> "$GITHUB_OUTPUT"
+          echo "desktop_rc=$desktop_rc" >> "$GITHUB_OUTPUT"
+          echo "Mobile exit: $mobile_rc | Desktop exit: $desktop_rc"
+
+          if [ "$mobile_rc" -ne 0 ] || [ "$desktop_rc" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Aggregate forensic findings
+        if: always()
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = path.join(process.cwd(), 'test-results', 'pdp-live-audit');
+          const reports = [];
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const name of fs.readdirSync(dir)) {
+              const p = path.join(dir, name);
+              const st = fs.statSync(p);
+              if (st.isDirectory()) walk(p);
+              else if (name === 'report.json') {
+                try { reports.push(JSON.parse(fs.readFileSync(p, 'utf8'))); } catch (_) {}
+              }
+            }
+          }
+          walk(root);
+          const findings = reports.flatMap(r => (r.findings || []).map(f => ({
+            ref: r.ref || 'unknown', viewport: r.viewport?.[0] || 'unknown', ...f
+          })));
+          const count = s => findings.filter(f => f.severity === s).length;
+          const byCode = {};
+          for (const f of findings) byCode[f.code] = (byCode[f.code] || 0) + 1;
+          const summary = {
+            reports: reports.length,
+            findings: findings.length,
+            p0: count('P0'),
+            p1: count('P1'),
+            by_code: Object.fromEntries(Object.entries(byCode).sort((a,b) => b[1]-a[1])),
+            details: findings,
+          };
+          fs.mkdirSync(root, { recursive: true });
+          fs.writeFileSync(path.join(root, 'SUMMARY.json'), JSON.stringify(summary, null, 2));
+          const md = [
+            '# PDP AliExpress live audit', '',
+            `- reports: ${summary.reports}/25`,
+            `- P0: ${summary.p0}`,
+            `- P1: ${summary.p1}`,
+            '', '## Findings by code', '',
+            ...Object.entries(summary.by_code).map(([k,v]) => `- ${k}: ${v}`),
+          ].join('\n');
+          fs.writeFileSync(path.join(root, 'SUMMARY.md'), md + '\n');
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+
+      - name: Upload PDP audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdp-aliexpress-live-audit
+          path: |
+            public/boutique/test-results/pdp-live-audit/
+            public/boutique/test-results/results.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Comment command issue
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          MOBILE_RC: ${{ steps.audit.outputs.mobile_rc }}
+          DESKTOP_RC: ${{ steps.audit.outputs.desktop_rc }}
+        run: |
+          if [ "${MOBILE_RC:-1}" = '0' ] && [ "${DESKTOP_RC:-1}" = '0' ]; then
+            verdict='GREEN — no P0 found by Playwright forensic audit.'
+          else
+            verdict="RED — defects found. mobile_rc=${MOBILE_RC:-n/a}, desktop_rc=${DESKTOP_RC:-n/a}. Review artifact pdp-aliexpress-live-audit."
+          fi
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$verdict"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
