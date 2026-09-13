@@ -46,27 +46,31 @@ describe('AliExpress purchase preflight', () => {
     }));
   });
 
-  test('utilise le endpoint Dropshipper freight.get et son paramètre canonique', () => {
-    expect(preflight.METHODS.FREIGHT).toBe('aliexpress.logistics.buyer.freight.get');
+  test('utilise freight.calculate avec le DTO complexe encapsulé, jamais aplati', () => {
+    expect(preflight.METHODS.FREIGHT).toBe('aliexpress.logistics.buyer.freight.calculate');
     const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
     const params = preflight.buildFreightBusinessParams(resolved, {
       country_code: 'KM',
       send_goods_country_code: 'CN',
     });
-    expect(Object.keys(params)).toEqual(['aeopFreightCalculateForBuyerDTO']);
-    const dto = JSON.parse(params.aeopFreightCalculateForBuyerDTO);
+
+    expect(Object.keys(params)).toEqual(['param_aeop_freight_calculate_for_buyer_d_t_o']);
+    expect(params).not.toHaveProperty('product_id');
+    expect(params).not.toHaveProperty('sku_id');
+
+    const dto = JSON.parse(params.param_aeop_freight_calculate_for_buyer_d_t_o);
     expect(dto).toEqual({
       product_id: 10000012345,
       product_num: 1,
-      sku_id: '20000098765',
       country_code: 'KM',
+      send_goods_country_code: 'CN',
       price: '3.21',
       price_currency: 'USD',
-      send_goods_country_code: 'CN',
     });
+    expect(dto).not.toHaveProperty('sku_id');
   });
 
-  test('une identité sku_attr-only reste valide pour place-order mais bloque freight.get sans inventer sku_id', () => {
+  test('une identité sku_attr-only reste valide pour freight.calculate et place-order sans inventer sku_id', () => {
     const c = contract();
     c.sellable_units[0].supplier_unit_ref = '14:Field Green';
     delete c.sellable_units[0].supplier_order_identity.payload.sku_id;
@@ -75,10 +79,14 @@ describe('AliExpress purchase preflight', () => {
     const resolved = preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1);
     expect(resolved.raw_sku_id).toBeNull();
     expect(resolved.sku_attr).toBe('14:Field Green');
-    expect(() => preflight.buildFreightBusinessParams(resolved, {
+
+    const freight = preflight.buildFreightBusinessParams(resolved, {
       country_code: 'KM',
       send_goods_country_code: 'CN',
-    })).toThrow(/BLOCKED_SUPPLIER_IDENTITY.*sku_id natif AliExpress requis/i);
+    });
+    const freightDto = JSON.parse(freight.param_aeop_freight_calculate_for_buyer_d_t_o);
+    expect(freightDto.product_id).toBe(10000012345);
+    expect(freightDto).not.toHaveProperty('sku_id');
 
     const placeOrder = preflight.buildPlaceOrderBusinessParams(resolved, {
       address: 'Hub staging',
@@ -88,6 +96,12 @@ describe('AliExpress purchase preflight', () => {
     });
     const placeOrderDto = JSON.parse(placeOrder.param_place_order_request4_open_api_d_t_o);
     expect(placeOrderDto.product_items[0].sku_attr).toBe('14:Field Green');
+  });
+
+  test('refuse le fret si send_goods_country_code manque', () => {
+    const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
+    expect(() => preflight.buildFreightBusinessParams(resolved, { country_code: 'KM' }))
+      .toThrow(/send_goods_country_code requis/i);
   });
 
   test('prépare le payload place-order officiel sans l’exécuter', () => {
@@ -129,8 +143,10 @@ describe('AliExpress purchase preflight', () => {
     delete c.sellable_units[0].supplier_unit_ref;
     const legacy = preflight.resolveOrderableUnit(c, 'AE-SKU-RED-M', 1, { requireOrderIdentity: false });
     expect(legacy.supplier_order_identity).toBeNull();
-    expect(() => preflight.buildFreightBusinessParams(legacy, { country_code: 'KM' }))
-      .toThrow(/BLOCKED_SUPPLIER_IDENTITY/i);
+    expect(() => preflight.buildFreightBusinessParams(legacy, {
+      country_code: 'KM',
+      send_goods_country_code: 'CN',
+    })).toThrow(/BLOCKED_SUPPLIER_IDENTITY/i);
   });
 
   test('refuse une identité d’un autre fournisseur', () => {
