@@ -8,8 +8,8 @@
  * @inputs        DATABASE_URL, ANTHROPIC_API_KEY or OPENAI_API_KEY (selon CATALOG_ENRICH_PROVIDER)
  * @outputs       products.name (FR), products.description (FR), content_source → ai_enriched
  * @depends       db.js, services/catalog-enrichment.js
- * @used-by       one-shot rattrapage Lot 1 (484 drafts AliExpress connector_raw source_locale=en)
- * @db-read       products, catalog_glossary, boutique_categories, catalog_field_overrides
+ * @used-by       one-shot rattrapage Lot 1 (drafts AliExpress connector_raw source_locale=en)
+ * @db-read       products, sourcing_candidates, catalog_glossary, boutique_categories, catalog_field_overrides
  * @db-write-via:catalog-enrichment products, catalog_enrichment_runs
  * @db-txn        none (enrichAndApply gère ses propres écritures)
  * @doctrine      DOCTRINE_CATALOGUE.md §4 (langue), §8 (prompt versionné)
@@ -21,8 +21,7 @@
 const db = require('../db');
 const catalogEnrichment = require('../services/catalog-enrichment');
 
-// ── Configuration ───────────────────────────────────────────────────────────
-
+const SUPPLIER_NAME = 'AliExpress';
 const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 2000;
 const CONCURRENCY = 5;
@@ -53,34 +52,41 @@ function parseArgs(argv = process.argv.slice(2)) {
   return { mode, limit, concurrency };
 }
 
-// ── Requêtes ────────────────────────────────────────────────────────────────
-
 const SELECT_DRAFTS = `
-  SELECT id, product_ref, name, category, source_locale, content_source
-  FROM products
-  WHERE content_source = 'connector_raw'
-    AND lifecycle_status = 'candidate'
-    AND is_active = FALSE
-    AND source_locale IS NOT NULL
-    AND source_locale NOT LIKE 'fr%'
-  ORDER BY product_ref
-  LIMIT $1
+  SELECT DISTINCT
+    p.id, p.product_ref, p.name, p.category, p.source_locale, p.content_source
+  FROM products p
+  JOIN sourcing_candidates sc ON sc.product_id = p.id
+  WHERE sc.supplier_name = $1
+    AND sc.state = 'imported_to_catalog'
+    AND p.content_source = 'connector_raw'
+    AND p.lifecycle_status = 'candidate'
+    AND p.is_active = FALSE
+    AND p.source_locale IS NOT NULL
+    AND lower(p.source_locale) NOT LIKE 'fr%'
+  ORDER BY p.product_ref
+  LIMIT $2
 `;
 
 const COUNT_STATUS = `
   SELECT
-    content_source,
-    needs_review,
+    p.content_source,
+    p.needs_review,
     COUNT(*)::int AS n
-  FROM products
-  WHERE lifecycle_status = 'candidate'
-    AND is_active = FALSE
-    AND content_source IN ('connector_raw', 'ai_enriched')
-  GROUP BY content_source, needs_review
+  FROM products p
+  WHERE p.lifecycle_status = 'candidate'
+    AND p.is_active = FALSE
+    AND p.content_source IN ('connector_raw', 'ai_enriched')
+    AND EXISTS (
+      SELECT 1
+      FROM sourcing_candidates sc
+      WHERE sc.product_id = p.id
+        AND sc.supplier_name = $1
+        AND sc.state = 'imported_to_catalog'
+    )
+  GROUP BY p.content_source, p.needs_review
   ORDER BY 1, 2
 `;
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -109,29 +115,25 @@ async function enrichOne(productId, productRef) {
   }
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────
-
 async function main() {
   const { mode, limit, concurrency } = parseArgs();
   const isDryRun = mode === 'dry-run';
 
-  console.log(`\n═══ batch-enrich-fr.js ═══`);
+  console.log(`\n═══ batch-enrich-fr.js — ${SUPPLIER_NAME} ═══`);
   console.log(`mode: ${mode}  limit: ${limit}  concurrency: ${concurrency}\n`);
 
-  // Baseline
-  const { rows: beforeRows } = await db.query(COUNT_STATUS);
-  console.log('Baseline :');
+  const { rows: beforeRows } = await db.query(COUNT_STATUS, [SUPPLIER_NAME]);
+  console.log(`Baseline ${SUPPLIER_NAME} :`);
   for (const r of beforeRows) {
     console.log(`  content_source=${r.content_source}  needs_review=${r.needs_review}  n=${r.n}`);
   }
   console.log('');
 
-  // Sélection
-  const { rows: drafts } = await db.query(SELECT_DRAFTS, [limit]);
-  console.log(`Drafts connector_raw à enrichir : ${drafts.length}\n`);
+  const { rows: drafts } = await db.query(SELECT_DRAFTS, [SUPPLIER_NAME, limit]);
+  console.log(`Drafts ${SUPPLIER_NAME} connector_raw à enrichir : ${drafts.length}\n`);
 
   if (drafts.length === 0) {
-    console.log('✅ Aucun draft connector_raw éligible — rien à faire.');
+    console.log('✅ Aucun draft AliExpress connector_raw éligible — rien à faire.');
     return;
   }
 
@@ -141,11 +143,10 @@ async function main() {
       console.log(`  ${d.product_ref}  ${d.source_locale}  ${d.name.slice(0, 50)}`);
     }
     if (drafts.length > 10) console.log(`  ... et ${drafts.length - 10} autres`);
-    console.log(`\nRelancer avec --execute pour enrichir les ${drafts.length} drafts.`);
+    console.log(`\nRelancer avec --execute pour enrichir ces ${drafts.length} drafts AliExpress.`);
     return;
   }
 
-  // Exécution par lots
   let okCount = 0;
   let errorCount = 0;
   let reviewCount = 0;
@@ -157,10 +158,7 @@ async function main() {
     const totalBatches = Math.ceil(drafts.length / concurrency);
 
     process.stdout.write(`Lot ${batchNum}/${totalBatches} (${batch.length} produits)...`);
-
-    const results = await Promise.all(
-      batch.map(d => enrichOne(d.id, d.product_ref))
-    );
+    const results = await Promise.all(batch.map(d => enrichOne(d.id, d.product_ref)));
 
     for (const r of results) {
       if (r.status === 'error') {
@@ -175,27 +173,24 @@ async function main() {
     }
     console.log('');
 
-    // Rate limit entre les lots
     if (i + concurrency < drafts.length) {
       await sleep(DELAY_BETWEEN_BATCHES_MS);
     }
   }
 
-  // Résumé
-  console.log(`\n─── Résumé ───`);
+  console.log(`\n─── Résumé ${SUPPLIER_NAME} ───`);
   console.log(`ok: ${okCount}  needs_review: ${reviewCount}  errors: ${errorCount}  total: ${drafts.length}`);
 
   if (errors.length > 0) {
-    console.log(`\nErreurs :`);
+    console.log('\nErreurs :');
     for (const e of errors.slice(0, 20)) {
       console.log(`  ${e.ref} — ${e.error}`);
     }
     if (errors.length > 20) console.log(`  ... et ${errors.length - 20} autres`);
   }
 
-  // Post-mesure
-  const { rows: afterRows } = await db.query(COUNT_STATUS);
-  console.log('\nAprès enrichissement :');
+  const { rows: afterRows } = await db.query(COUNT_STATUS, [SUPPLIER_NAME]);
+  console.log(`\nAprès enrichissement ${SUPPLIER_NAME} :`);
   for (const r of afterRows) {
     console.log(`  content_source=${r.content_source}  needs_review=${r.needs_review}  n=${r.n}`);
   }
