@@ -34,8 +34,9 @@ module.exports = {
         '(services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, ' +
         'écrit orders/product_suppliers/purchase_orders/suppliers)',
       'Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement',
-      'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret et construction fail-closed du payload d\'achat sans exécution automatique',
-      'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × destination à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
+      'Procurement Route canonique : l\'achat fournisseur est routé vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut être assimilée à la destination fournisseur',
+      'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d\'achat sans exécution automatique',
+      'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
     ],
     out: [
@@ -49,6 +50,7 @@ module.exports = {
 
   docs: [
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
+    'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
   ],
 
   files: {
@@ -150,7 +152,7 @@ module.exports = {
     ],
   },
 
-  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (identité commandable, contrat d\'adapter, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
+  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (identité commandable, Procurement Route, contrat d\'adapter, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
 
   invariants: [
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
@@ -159,9 +161,11 @@ module.exports = {
       test: 'tests/unit/supplier-order-identity.test.js' },
     { statement: 'tout adapter fulfillment est provider-scopé, traite un payload d\'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent',
       test: 'tests/unit/supplier-fulfillment-adapter-contract.test.js' },
-    { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × destination ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
+    { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
-    { statement: 'pour AliExpress freight.calculate, l\'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n\'est inventé',
+    { statement: 'la destination fournisseur est dérivée d\'une Procurement Route explicite ; le moteur actuel n\'ouvre que PROCUREMENT_HUB et refuse une destination Market/client brute ainsi que tout mode direct fournisseur-client implicite',
+      test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
+    { statement: 'pour AliExpress freight.calculate, l\'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination hub encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n\'est inventé',
       test: 'tests/unit/aliexpress-purchase-preflight.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
