@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 561
-- Files with full headers: 516
+- Scanned code files: 564
+- Files with full headers: 519
 - Files with lite headers: 45
-- Files with any headers: 561
+- Files with any headers: 564
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1340
-- Edges: 6674
+- Graph nodes: 1344
+- Edges: 6701
 - DB tables: 155
-- Doctrines: 441
+- Doctrines: 442
 - Impact areas: 183
-- Unresolved code edges: 629
+- Unresolved code edges: 630
 - Tables multi-écrivains directs (>=2): 70
 - Avertissements db-write / db-write-via en chevauchement: 7
 
@@ -53,7 +53,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - orders: 30
 - payment: 26
 - providers-services: 7
-- purchasing: 10
+- purchasing: 13
 - recommendations: 6
 - refunds: 2
 - settlement: 2
@@ -85,7 +85,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 127
 - route-manifest: 1
 - schema: 1
-- service: 259
+- service: 262
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -465,6 +465,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/sourcing-candidate-import-service.js — sourcing-candidate-import-owner (sourcing, high, full)
 - services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
+- services/suppliers/aliexpress-fulfillment-adapter.js — aliexpress-fulfillment-adapter (purchasing, high, full)
 - services/suppliers/aliexpress-oauth.js — aliexpress-oauth-session-manager (catalog, high, full)
 - services/suppliers/aliexpress-purchase-preflight.js — aliexpress-purchase-preflight (purchasing, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
@@ -473,6 +474,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/pipeline-constants.js — catalog-pipeline-constants (catalog, high, full)
 - services/suppliers/promotion-classifier.js — catalog-promotion-classifier (catalog, high, full)
 - services/suppliers/source-product-normalizer.js — catalog-source-product-normalizer (catalog, high, full)
+- services/suppliers/supplier-fulfillment-adapter-contract.js — supplier-fulfillment-adapter-contract (purchasing, high, full)
+- services/suppliers/supplier-fulfillment-readiness.js — supplier-fulfillment-readiness (purchasing, high, full)
 - services/suppliers/supplier-order-identity.js — supplier-order-identity (purchasing, high, full)
 - services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
 - services/transport-pricing.js — transport-pricing-quote (economic-engine, high, full)
@@ -904,6 +907,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
+- uses: internal purchasing callers -> services/suppliers/supplier-fulfillment-readiness.js (internal purchasing callers)
 - uses: inventory -> services/order-mutation-service.js (inventory)
 - uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
 - uses: logistics -> services/order-mutation-service.js (logistics)
@@ -982,7 +986,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: release à -> services/local-stock-service.js (release à)
-- uses: reminders -> services/notifications/notification-service.js (reminders)
 
 ## Files Still Without Headers Or Aggregation
 
