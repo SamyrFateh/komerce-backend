@@ -5,16 +5,16 @@
  * @domain        purchasing
  * @layer         tooling
  * @criticality   high
- * @inputs        staging runtime, optional contract-refresh or SOI-replay operation flags
+ * @inputs        staging runtime, optional contract-refresh, SOI-replay or market-exposure operation flags
  * @outputs       historical prepayment proof or delegated catalog maintenance operation
- * @depends       db.js, scripts/aliexpress-prepayment-proof-core.js, scripts/aliexpress-refresh-imported-contracts.js, scripts/replay-soi.js
+ * @depends       db.js, scripts/aliexpress-prepayment-proof-core.js, scripts/aliexpress-refresh-imported-contracts.js, scripts/replay-soi.js, scripts/aliexpress-market-exposure-pilot.js
  * @used-by       Railway aliexpress-pool-once
  * @db-read       delegated operation only
  * @db-write      delegated operation only; execute routes require independent explicit guards
  * @db-txn        delegated operation owns transactions
  * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration, catalog, staging
- * @version       2026-09-one-shot-router-v2
+ * @version       2026-09-one-shot-router-v3
  */
 'use strict';
 
@@ -25,8 +25,11 @@ const core = require('./aliexpress-prepayment-proof-core');
 const CONTRACT_REFRESH_RUN_FLAG = 'KOMERCE_ALIEXPRESS_CONTRACT_REFRESH_RUN';
 const SOI_REPLAY_RUN_FLAG = 'KOMERCE_ALIEXPRESS_SOI_REPLAY_RUN';
 const SOI_REPLAY_ALLOW_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_SOI_REPLAY';
+const MARKET_EXPOSURE_RUN_FLAG = 'KOMERCE_ALIEXPRESS_MARKET_EXPOSURE_RUN';
+const MARKET_EXPOSURE_ALLOW_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_MARKET_EXPOSURE';
 const MAX_REFRESH_LIMIT = 500;
 const MAX_REPLAY_LIMIT = 500;
+const MAX_MARKET_EXPOSURE_LIMIT = 5;
 
 function parseOperationFlag(flagName, maxLimit, env = process.env) {
   const raw = String(env[flagName] || '').trim();
@@ -46,6 +49,14 @@ function parseContractRefreshRun(env = process.env) {
 
 function parseSoiReplayRun(env = process.env) {
   return parseOperationFlag(SOI_REPLAY_RUN_FLAG, MAX_REPLAY_LIMIT, env);
+}
+
+function parseMarketExposureRun(env = process.env) {
+  const operation = parseOperationFlag(MARKET_EXPOSURE_RUN_FLAG, MAX_MARKET_EXPOSURE_LIMIT, env);
+  if (operation && operation.limit !== 5) {
+    throw new Error(`${MARKET_EXPOSURE_RUN_FLAG}: le pilote est figé à 5 références exactes`);
+  }
+  return operation;
 }
 
 function assertStaging(env = process.env) {
@@ -79,14 +90,25 @@ function runSoiReplay(operation, env = process.env) {
   return runChild('soi-replay', './scripts/replay-soi.js', operation, env);
 }
 
+function runMarketExposure(operation, env = process.env) {
+  assertStaging(env);
+  if (operation.mode === 'execute' && env[MARKET_EXPOSURE_ALLOW_FLAG] !== '1') {
+    throw new Error(`${MARKET_EXPOSURE_ALLOW_FLAG}=1 requis pour execute`);
+  }
+  return runChild('market-exposure', './scripts/aliexpress-market-exposure-pilot.js', operation, env);
+}
+
 async function main(env = process.env) {
   const contractRefresh = parseContractRefreshRun(env);
   const soiReplay = parseSoiReplayRun(env);
-  if (contractRefresh && soiReplay) {
-    throw new Error(`REFUS: ${CONTRACT_REFRESH_RUN_FLAG} et ${SOI_REPLAY_RUN_FLAG} sont mutuellement exclusifs`);
+  const marketExposure = parseMarketExposureRun(env);
+  const selected = [contractRefresh, soiReplay, marketExposure].filter(Boolean);
+  if (selected.length > 1) {
+    throw new Error(`REFUS: ${CONTRACT_REFRESH_RUN_FLAG}, ${SOI_REPLAY_RUN_FLAG} et ${MARKET_EXPOSURE_RUN_FLAG} sont mutuellement exclusifs`);
   }
   if (contractRefresh) return runContractRefresh(contractRefresh, env);
   if (soiReplay) return runSoiReplay(soiReplay, env);
+  if (marketExposure) return runMarketExposure(marketExposure, env);
   return core.run(env);
 }
 
@@ -104,13 +126,18 @@ module.exports = {
   CONTRACT_REFRESH_RUN_FLAG,
   SOI_REPLAY_RUN_FLAG,
   SOI_REPLAY_ALLOW_FLAG,
+  MARKET_EXPOSURE_RUN_FLAG,
+  MARKET_EXPOSURE_ALLOW_FLAG,
   MAX_REFRESH_LIMIT,
   MAX_REPLAY_LIMIT,
+  MAX_MARKET_EXPOSURE_LIMIT,
   parseOperationFlag,
   parseContractRefreshRun,
   parseSoiReplayRun,
+  parseMarketExposureRun,
   assertStaging,
   runContractRefresh,
   runSoiReplay,
+  runMarketExposure,
   main,
 };
