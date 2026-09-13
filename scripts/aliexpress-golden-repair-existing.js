@@ -7,18 +7,19 @@
  * @criticality   high
  * @inputs        exact existing Golden supplier_product_id, live AliExpress source, staging DB
  * @outputs       canonical candidate re-import plus semantic stop/pass evidence
- * @depends       db.js, aliexpress-golden-e2e-core.js, aliexpress-golden-semantic.js, catalog-import-orchestrator.js
+ * @depends       db.js, scripts/aliexpress-golden-e2e-core.js, scripts/aliexpress-golden-semantic.js, services/suppliers/catalog-import-orchestrator.js
  * @used-by       staging one-shot only
  * @db-read       sourcing_candidates
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_candidate_events
  * @db-txn        canonical import owner
  * @impact-areas  sourcing, catalog, supplier-integration, staging
+ * @version       2026-09-golden-repair-v1
  */
 'use strict';
 
 const db = require('../db');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
-const semantic = require('../services/aliexpress-golden-semantic');
+const semantic = require('./aliexpress-golden-semantic');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const pool = require('./aliexpress-500-catalog-sync');
 const golden = require('./aliexpress-golden-e2e-core');
