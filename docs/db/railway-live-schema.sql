@@ -5309,7 +5309,13 @@ CREATE TABLE public.purchase_orders (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     received_qty integer DEFAULT 0 NOT NULL,
+    order_item_id uuid,
+    product_sku_id uuid,
+    supplier_unit_ref text,
+    supplier_order_identity jsonb,
     CONSTRAINT chk_purchase_orders_qty CHECK ((qty > 0)),
+    CONSTRAINT chk_purchase_orders_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((product_sku_id IS NOT NULL) AND (supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
+    CONSTRAINT chk_purchase_orders_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text))),
     CONSTRAINT purchase_orders_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'notified'::text, 'confirmed'::text, 'shipped'::text, 'hub_received'::text, 'cancelled'::text]))),
     CONSTRAINT purchase_orders_trigger_mode_check CHECK ((trigger_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'whatsapp'::text])))
 );
@@ -5341,6 +5347,34 @@ COMMENT ON COLUMN public.purchase_orders.hub_received_at IS 'Date de rÃ©ceptio
 --
 
 COMMENT ON COLUMN public.purchase_orders.received_qty IS 'QuantitÃ© physiquement reÃ§ue au hub. ComplÃ¨te quand received_qty >= qty.';
+
+
+--
+-- Name: COLUMN purchase_orders.order_item_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.order_item_id IS 'Ligne de commande cliente ayant déclenché cette PO. NULL uniquement pour les PO historiques/manuelles antérieures au snapshot exact.';
+
+
+--
+-- Name: COLUMN purchase_orders.product_sku_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.product_sku_id IS 'SKU Komerce exact vendu lorsque la ligne est en mode SKU. Snapshot de traçabilité vers product_skus ; aucune résolution par libellé.';
+
+
+--
+-- Name: COLUMN purchase_orders.supplier_unit_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.supplier_unit_ref IS 'Référence stable de l''unité fournisseur commandable snapshotée au moment de créer la PO.';
+
+
+--
+-- Name: COLUMN purchase_orders.supplier_order_identity; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.supplier_order_identity IS 'Supplier Order Identity canonique {provider,version,payload} snapshotée depuis product_skus. Ne contient ni prix, ni stock, ni fret.';
 
 
 --
@@ -10386,6 +10420,20 @@ CREATE INDEX idx_purchase_orders_order_id ON public.purchase_orders USING btree 
 
 
 --
+-- Name: idx_purchase_orders_order_item_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_purchase_orders_order_item_id ON public.purchase_orders USING btree (order_item_id) WHERE (order_item_id IS NOT NULL);
+
+
+--
+-- Name: idx_purchase_orders_product_sku_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_purchase_orders_product_sku_id ON public.purchase_orders USING btree (product_sku_id) WHERE (product_sku_id IS NOT NULL);
+
+
+--
 -- Name: idx_purchase_orders_received_qty; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11300,6 +11348,13 @@ CREATE UNIQUE INDEX ux_product_skus_supplier_identity ON public.product_skus USI
 --
 
 CREATE UNIQUE INDEX ux_product_skus_supplier_unit_ref ON public.product_skus USING btree (product_id, supplier_unit_ref) WHERE (supplier_unit_ref IS NOT NULL);
+
+
+--
+-- Name: ux_purchase_orders_order_item_supplier_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purchase_orders USING btree (order_item_id, product_supplier_id) WHERE ((order_item_id IS NOT NULL) AND (product_supplier_id IS NOT NULL) AND (status <> 'cancelled'::text));
 
 
 --
@@ -13360,6 +13415,22 @@ ALTER TABLE ONLY public.providers
 
 ALTER TABLE ONLY public.purchase_orders
     ADD CONSTRAINT purchase_orders_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: purchase_orders purchase_orders_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_orders
+    ADD CONSTRAINT purchase_orders_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchase_orders purchase_orders_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_orders
+    ADD CONSTRAINT purchase_orders_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id) ON DELETE SET NULL;
 
 
 --

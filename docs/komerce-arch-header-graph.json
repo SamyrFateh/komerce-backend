@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 561,
-    "filesWithFullHeaders": 516,
+    "scannedCodeFiles": 564,
+    "filesWithFullHeaders": 519,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 561,
+    "filesWithAnyHeaders": 564,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1340,
-    "edges": 6674,
+    "graphNodes": 1344,
+    "edges": 6701,
     "dbTables": 155,
-    "doctrines": 441,
+    "doctrines": 442,
     "impactAreas": 183,
-    "unresolvedCodeEdges": 629,
+    "unresolvedCodeEdges": 630,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 70
   },
@@ -64,7 +64,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 10,
+    "purchasing": 13,
     "unsold-resolution": 1,
     "incident-management": 2,
     "market-autonomy": 4,
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 127,
     "entrypoint": 1,
-    "service": 259,
+    "service": 262,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +116,7 @@
   "byCriticality": {
     "critical": 85,
     "medium": 125,
-    "high": 298,
+    "high": 301,
     "low": 53
   },
   "nodes": [
@@ -22001,6 +22001,7 @@
       "depends": [
         "db",
         "services/notification-service.js",
+        "services/suppliers/supplier-order-identity.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -22010,6 +22011,7 @@
       "dbRead": [
         "order_items",
         "orders",
+        "product_skus",
         "product_suppliers",
         "products",
         "purchase_orders",
@@ -22025,12 +22027,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
       ],
       "impactAreas": [
-        "unknown"
+        "purchasing",
+        "supplier-integration"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/qr-collection-core.js",
@@ -24146,6 +24151,48 @@
       "version": "2026-09"
     },
     {
+      "id": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "file": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "aliexpress-fulfillment-adapter",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "persisted Supplier Order Identity",
+        "destination",
+        "quantity"
+      ],
+      "outputs": [
+        "live AliExpress fulfillment evidence"
+      ],
+      "depends": [
+        "services/suppliers/aliexpress-purchase-preflight.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
+      ],
+      "usedBy": [
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "dbRead": [
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "version": null
+    },
+    {
       "id": "services/suppliers/aliexpress-oauth.js",
       "file": "services/suppliers/aliexpress-oauth.js",
       "type": "file",
@@ -24226,7 +24273,7 @@
         "supplier-integration",
         "catalog"
       ],
-      "version": "2026-09-ae-prepayment-v2"
+      "version": "2026-09-ae-prepayment-v4"
     },
     {
       "id": "services/suppliers/catalog-import-json.js",
@@ -25018,6 +25065,86 @@
         "product-discovery"
       ],
       "version": "2026-08 (nettoyage architectural post-ING-6 — extrait de promotion-classifier.js, domaine 2/5)"
+    },
+    {
+      "id": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-fulfillment-adapter-contract",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "provider",
+        "supplier fulfillment adapter",
+        "supplier fulfillment verdict"
+      ],
+      "outputs": [
+        "validated adapter shape and canonical verdict contract"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/suppliers/supplier-fulfillment-readiness.js",
+      "file": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-fulfillment-readiness",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_sku.id",
+        "quantity",
+        "procurementRoute"
+      ],
+      "outputs": [
+        "supplier_fulfillment_verdict"
+      ],
+      "depends": [
+        "services/suppliers/supplier-order-identity.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js"
+      ],
+      "usedBy": [
+        "internal purchasing callers"
+      ],
+      "dbRead": [
+        "product_skus"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "version": null
     },
     {
       "id": "services/suppliers/supplier-order-identity.js",
@@ -29606,6 +29733,11 @@
       "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
       "id": "doctrine:qr_pickup_single_validation (P5-L5)",
       "type": "doctrine",
       "doctrine": "qr_pickup_single_validation (P5-L5)"
@@ -30681,6 +30813,11 @@
       "area": "discovery-modal"
     },
     {
+      "id": "impact:supplier-integration",
+      "type": "impact-area",
+      "area": "supplier-integration"
+    },
+    {
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
@@ -30689,11 +30826,6 @@
       "id": "impact:secrets",
       "type": "impact-area",
       "area": "secrets"
-    },
-    {
-      "id": "impact:supplier-integration",
-      "type": "impact-area",
-      "area": "supplier-integration"
     },
     {
       "id": "impact:session",
@@ -63684,6 +63816,12 @@
     },
     {
       "from": "services/purchasing-trigger-service.js",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-order-identity.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -63711,6 +63849,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "services/purchasing-trigger-service.js",
@@ -63762,9 +63906,27 @@
     },
     {
       "from": "services/purchasing-trigger-service.js",
-      "to": "impact:unknown",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "impact:purchasing",
       "type": "impact",
-      "label": "unknown"
+      "label": "purchasing"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
     },
     {
       "from": "services/qr-collection-core.js",
@@ -66989,6 +67151,54 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "services/suppliers/aliexpress-purchase-preflight.js",
+      "type": "depends",
+      "label": "services/suppliers/aliexpress-purchase-preflight.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "services/suppliers/connectors/aliexpress-connected-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/aliexpress-connected-connector.js"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "services/suppliers/supplier-fulfillment-readiness.js"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
       "from": "services/suppliers/aliexpress-oauth.js",
       "to": "db.js",
       "type": "depends",
@@ -68025,6 +68235,90 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/supplier-fulfillment-readiness.js"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-order-identity.js"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "type": "depends",
+      "label": "services/suppliers/aliexpress-fulfillment-adapter.js"
+    },
+    {
+      "from": "internal purchasing callers",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "internal purchasing callers"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/supplier-fulfillment-readiness.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "supplier purchasing adapters",
@@ -92857,6 +93151,7 @@
       "directDependsOn": [
         "db",
         "services/notification-service.js",
+        "services/suppliers/supplier-order-identity.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -92867,6 +93162,7 @@
       "dbRead": [
         "order_items",
         "orders",
+        "product_skus",
         "product_suppliers",
         "products",
         "purchase_orders",
@@ -92879,25 +93175,33 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
       ],
       "impactAreas": [
-        "unknown"
+        "purchasing",
+        "supplier-integration"
       ],
       "mustCheck": [
         "db:alerts",
         "db:order_items",
         "db:orders",
+        "db:product_skus",
         "db:product_suppliers",
         "db:products",
         "db:purchase_orders",
         "db:relais",
         "db:suppliers",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "impact:purchasing",
+        "impact:supplier-integration",
         "routes/cash.js",
         "routes/purchasing.js",
         "services/notification-service.js",
+        "services/suppliers/supplier-order-identity.js",
         "utils/logger.js"
       ]
     },
@@ -94953,6 +95257,45 @@
         "utils/rates.js"
       ]
     },
+    "services/suppliers/aliexpress-fulfillment-adapter.js": {
+      "role": "aliexpress-fulfillment-adapter",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/aliexpress-purchase-preflight.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js"
+      ],
+      "directUsedBy": [
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:sourcing_candidates",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/aliexpress-purchase-preflight.js",
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ]
+    },
     "services/suppliers/aliexpress-oauth.js": {
       "role": "aliexpress-oauth-session-manager",
       "domain": "catalog",
@@ -95024,6 +95367,7 @@
         "impact:catalog",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/suppliers/aliexpress-fulfillment-adapter.js",
         "services/suppliers/supplier-order-identity.js"
       ]
     },
@@ -95251,6 +95595,7 @@
         "impact:sourcing",
         "impact:supplier-import",
         "services/sourcing-import-dispatch.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js",
         "services/suppliers/aliexpress-oauth.js",
         "services/suppliers/connectors/aliexpress-connector.js"
       ]
@@ -95762,6 +96107,77 @@
         "services/suppliers/promotion-classifier.js"
       ]
     },
+    "services/suppliers/supplier-fulfillment-adapter-contract.js": {
+      "role": "supplier-fulfillment-adapter-contract",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ]
+    },
+    "services/suppliers/supplier-fulfillment-readiness.js": {
+      "role": "supplier-fulfillment-readiness",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/supplier-order-identity.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js"
+      ],
+      "directUsedBy": [
+        "internal purchasing callers"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration",
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:product_skus",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/aliexpress-fulfillment-adapter.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "services/suppliers/supplier-order-identity.js"
+      ]
+    },
     "services/suppliers/supplier-order-identity.js": {
       "role": "supplier-order-identity",
       "domain": "purchasing",
@@ -95792,7 +96208,9 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "services/catalog-promotion/sku.js",
-        "services/suppliers/aliexpress-purchase-preflight.js"
+        "services/purchasing-trigger-service.js",
+        "services/suppliers/aliexpress-purchase-preflight.js",
+        "services/suppliers/supplier-fulfillment-readiness.js"
       ]
     },
     "services/transport-cost-allocation.js": {
@@ -101841,6 +102259,12 @@
       "to": "schemas/catalog/normalized-supplier-product.v2.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v2.schema.json"
+    },
+    {
+      "from": "internal purchasing callers",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "internal purchasing callers"
     },
     {
       "from": "supplier purchasing adapters",
