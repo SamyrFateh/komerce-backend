@@ -36,7 +36,7 @@ jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', 
   fetchProducts: (...args) => mockAliExpressFetch(...args),
 }));
 
-const { connectorCatalog, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
+const { connectorCatalog, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
 
 describe('sourcing-import-dispatch', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -82,13 +82,49 @@ describe('sourcing-import-dispatch', () => {
     ]));
   });
 
-  it('délègue CJ au connecteur API avec uniquement les filtres autorisés', async () => {
+  it('construit une whitelist commune sans jamais transférer les secrets de requête', () => {
+    const options = apiConnectorOptions({
+      product_ids: ['P-1'],
+      product_url: 'https://supplier.example/item/P-1',
+      keyword: 'headphones',
+      page: 2,
+      page_size: 30,
+      category_id: 'audio',
+      country_code: 'cn',
+      sort: 'PRICE_ASC',
+      start_warehouse_inventory: 1,
+      verified_warehouse: 1,
+      include_commandable_units: true,
+      api_key: 'never-forward',
+      app_secret: 'never-forward',
+      session: 'never-forward',
+    });
+
+    expect(options).toEqual({
+      productIds: ['P-1'],
+      productUrl: 'https://supplier.example/item/P-1',
+      feedName: undefined,
+      keyword: 'headphones',
+      page: 2,
+      size: 30,
+      categoryId: 'audio',
+      countryCode: 'cn',
+      sort: 'PRICE_ASC',
+      startWarehouseInventory: 1,
+      verifiedWarehouse: 1,
+      includeCommandableUnits: true,
+    });
+    expect(JSON.stringify(options)).not.toMatch(/never-forward/);
+  });
+
+  it('délègue CJ avec les mêmes capacités communes, y compris product_ids ciblés', async () => {
     const expected = { products: [{ supplier_product_id: 'CJ-1' }], invalid: [], total: 1 };
     mockCjFetch.mockResolvedValue(expected);
 
     await expect(dispatchToConnector({
       source_type: 'api',
       supplier_id: 'CJ',
+      product_ids: ['CJ-1'],
       keyword: 'wireless headphones',
       page: 2,
       page_size: 30,
@@ -98,18 +134,19 @@ describe('sourcing-import-dispatch', () => {
       ignored_secret: 'never-forward-me',
     })).resolves.toBe(expected);
 
-    expect(mockCjFetch).toHaveBeenCalledWith({
+    expect(mockCjFetch).toHaveBeenCalledWith(expect.objectContaining({
+      productIds: ['CJ-1'],
       keyword: 'wireless headphones',
       page: 2,
       size: 30,
-      categoryId: undefined,
       countryCode: 'cn',
       startWarehouseInventory: 1,
       verifiedWarehouse: 1,
-    });
+    }));
+    expect(JSON.stringify(mockCjFetch.mock.calls[0][0])).not.toContain('never-forward-me');
   });
 
-  it('délègue AliExpress avec whitelist stricte sans credential venant de la requête', async () => {
+  it('délègue AliExpress par le même contrat commun sans credential venant de la requête', async () => {
     const expected = { products: [{ supplier_product_id: 'AE-1' }], invalid: [], total: 1 };
     mockAliExpressFetch.mockResolvedValue(expected);
 
@@ -128,7 +165,7 @@ describe('sourcing-import-dispatch', () => {
       session: 'never-forward-session',
     })).resolves.toBe(expected);
 
-    expect(mockAliExpressFetch).toHaveBeenCalledWith({
+    expect(mockAliExpressFetch).toHaveBeenCalledWith(expect.objectContaining({
       productIds: ['4000102715995'],
       productUrl: 'https://www.aliexpress.com/item/4000102715995.html',
       feedName: 'DS bestseller',
@@ -137,6 +174,7 @@ describe('sourcing-import-dispatch', () => {
       categoryId: '200003482',
       countryCode: 'KM',
       sort: 'SALE_PRICE_ASC',
-    });
+    }));
+    expect(JSON.stringify(mockAliExpressFetch.mock.calls[0][0])).not.toMatch(/never-forward-secret|never-forward-session/);
   });
 });

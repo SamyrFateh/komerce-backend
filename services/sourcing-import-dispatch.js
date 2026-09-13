@@ -54,6 +54,23 @@ function connectorCatalog() {
   };
 }
 
+function apiConnectorOptions(body = {}) {
+  return {
+    productIds: body.product_ids,
+    productUrl: body.product_url,
+    feedName: body.feed_name,
+    keyword: body.keyword ?? body.query,
+    page: body.page,
+    size: body.size ?? body.page_size,
+    categoryId: body.category_id,
+    countryCode: body.country_code,
+    sort: body.sort,
+    startWarehouseInventory: body.start_warehouse_inventory,
+    verifiedWarehouse: body.verified_warehouse,
+    includeCommandableUnits: body.include_commandable_units === true,
+  };
+}
+
 async function dispatchToConnector(body = {}) {
   const sourceType = body.source_type || 'manual';
   if (sourceType === 'csv') {
@@ -78,28 +95,10 @@ async function dispatchToConnector(body = {}) {
       throw new Error(`API "${supplier}" déclarée mais non câblée. Voir api-connector.base.js.`);
     }
 
-    if (supplier === 'aliexpress') {
-      return entry.module.fetchProducts({
-        productIds: body.product_ids,
-        productUrl: body.product_url,
-        feedName: body.feed_name,
-        page: body.page,
-        size: body.size ?? body.page_size,
-        categoryId: body.category_id,
-        countryCode: body.country_code,
-        sort: body.sort,
-      });
-    }
-
-    return entry.module.fetchProducts({
-      keyword: body.keyword ?? body.query,
-      page: body.page,
-      size: body.size ?? body.page_size,
-      categoryId: body.category_id,
-      countryCode: body.country_code,
-      startWarehouseInventory: body.start_warehouse_inventory,
-      verifiedWarehouse: body.verified_warehouse,
-    });
+    // Le dispatch ne connaît pas la sémantique du fournisseur. Il transmet
+    // uniquement une whitelist de capacités communes ; chaque connecteur décide
+    // lesquelles il sait réellement interpréter.
+    return entry.module.fetchProducts(apiConnectorOptions(body));
   }
   throw new Error(`source_type inconnu : "${sourceType}". Valeurs supportées : csv, manual, api.`);
 }
@@ -107,5 +106,6 @@ async function dispatchToConnector(body = {}) {
 module.exports = {
   CONNECTORS,
   connectorCatalog,
+  apiConnectorOptions,
   dispatchToConnector,
 };
