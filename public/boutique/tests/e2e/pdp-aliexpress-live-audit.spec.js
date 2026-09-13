@@ -15,6 +15,16 @@ const ENGLISH = /\b(color|size|length|choose|add to cart|buy now|standard shippi
 function push(a,severity,code,message,evidence=null){ a.push({severity,code,message,evidence}); }
 function outDir(ref,v){ const d=path.join(OUT,ref,v); fs.mkdirSync(d,{recursive:true}); return d; }
 function write(d,n,v){ fs.writeFileSync(path.join(d,n),JSON.stringify(v,null,2)); }
+function esc(value){ return String(value).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
+function optionSelector(axis,value){ return `[data-axis-key="${esc(axis)}"] button[data-option-value="${esc(value)}"]`; }
+function mediaIdentity(url){ return String(url||'').replace(/,w_\d+(?=\/|,)/g,',w_*'); }
+function expectedAnonymous401(response){
+  if(response.status()!==401)return false;
+  try{
+    const pathname=new URL(response.url()).pathname;
+    return pathname==='/api/auth/me'||pathname==='/api/shared-carts/mine';
+  }catch(_){return false;}
+}
 
 async function catalog(request){
   const r=await request.get(new URL('/api/products?market=KM&limit=1000',BASE_URL).toString());
@@ -30,7 +40,7 @@ async function openPdp(page,p){
   await input.fill(p.name);
   const dd=page.locator('#k-search-dropdown');
   await expect(dd).toHaveClass(/open/,{timeout:8000});
-  const item=dd.locator('.k-search-item').filter({hasText:p.name}).first();
+  const item=dd.locator(`.k-search-item[data-id="${esc(p.id)}"]`).first();
   await expect(item).toBeVisible({timeout:8000});
   await item.click();
   await waitForModalOpen(page);
@@ -44,7 +54,8 @@ async function dom(page){
       viewport:{width:innerWidth,height:innerHeight},
       width:{scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth},
       modal:rect(q('#k-modal')), scroll:rect(q('.k-modal-scroll')), actions:rect(q('.k-modal-actions')),
-      identity:{name:q('#k-modal-name')?.textContent?.trim()||'',ref:q('#k-modal-ref')?.textContent?.trim()||'',price:q('#k-modal-price')?.textContent?.trim()||''},
+      overlayClass:overlay?.className||'',
+      identity:{name:q('#k-modal-name')?.textContent?.trim()||'',ref:q('#k-modal-sku')?.textContent?.trim()||'',price:q('#k-modal-price')?.textContent?.trim()||''},
       add:{disabled:!!add?.disabled,text:add?.textContent?.trim()||'',rect:rect(add)},
       buy:{disabled:!!buy?.disabled,text:buy?.textContent?.trim()||'',rect:rect(buy)},
       message:{hidden:!!msg?.hidden,text:msg?.textContent?.trim()||''},
@@ -54,13 +65,81 @@ async function dom(page){
     };
   });
 }
-async function selectUnit(page,u){
-  for(const [axis,value] of Object.entries(u.option_values||{})){
-    const b=page.locator(`[data-axis-key="${axis}"] button[data-option-value="${value}"]`).first();
-    if(await b.count()===0) return {ok:false,missing:`${axis}=${value}`};
+async function selectUnit(page,detail,u){
+  for(const axis of detail.option_axes||[]){
+    const value=u.option_values?.[axis.key];
+    if(value==null)return {ok:false,missing:`${axis.key}=<missing>`};
+    const selector=optionSelector(axis.key,value);
+    const b=page.locator(selector).first();
+    if(await b.count()===0)return {ok:false,missing:`${axis.key}=${value}`};
     await b.click();
+    try{await expect(page.locator(selector).first()).toHaveAttribute('aria-pressed','true',{timeout:2500});}
+    catch(_){return {ok:false,missing:`${axis.key}=${value}`,reason:'not-selected'};}
   }
-  return {ok:true,add:await page.locator('#k-add-cart-btn').isEnabled().catch(()=>false),buy:await page.locator('#k-buy-now-btn').isEnabled().catch(()=>false),price:(await page.locator('#k-modal-price').textContent().catch(()=>''))?.trim()||'',message:(await page.locator('#k-modal-selection-message').textContent().catch(()=>''))?.trim()||''};
+
+  const available=u.stock_status==='AVAILABLE'&&Number(u.available_quantity)>0;
+  const add=page.locator('#k-add-cart-btn'),buy=page.locator('#k-buy-now-btn');
+  if(available){
+    await expect.poll(async()=>({add:await add.isEnabled().catch(()=>false),buy:await buy.isEnabled().catch(()=>false)}),{timeout:3000}).toEqual({add:true,buy:true}).catch(()=>{});
+  }
+  return {
+    ok:true,
+    add:await add.isEnabled().catch(()=>false),
+    buy:await buy.isEnabled().catch(()=>false),
+    price:(await page.locator('#k-modal-price').textContent().catch(()=>''))?.trim()||'',
+    ref:(await page.locator('#k-modal-sku').textContent().catch(()=>''))?.trim()||'',
+    selected:await page.locator('#k-modal-overlay [data-axis-key] button[aria-pressed="true"]').evaluateAll(nodes=>nodes.map(n=>({axis:n.closest('[data-axis-key]')?.dataset.axisKey,value:n.dataset.optionValue}))).catch(()=>[]),
+    message:(await page.locator('#k-modal-selection-message').textContent().catch(()=>''))?.trim()||''
+  };
+}
+
+async function assertFullscreenMediaIdentity(page){
+  const slides=page.locator('.k-modal-carousel-track .k-modal-slide');
+  const count=await slides.count();
+  if(count<2)return {skipped:true,count};
+
+  const mobile=await page.evaluate(()=>innerWidth<900);
+  if(mobile){
+    await page.locator('.k-modal-img-wrap').evaluate((wrap)=>{
+      const fire=(type,x,y)=>{
+        const e=new Event(type,{bubbles:true,cancelable:true});
+        Object.defineProperty(e,'touches',{configurable:true,value:type==='touchend'?[]:[{clientX:x,clientY:y}]});
+        Object.defineProperty(e,'changedTouches',{configurable:true,value:[{clientX:x,clientY:y}]});
+        wrap.dispatchEvent(e);
+      };
+      fire('touchstart',300,180); fire('touchmove',120,180); fire('touchend',120,180);
+    });
+    await expect.poll(async()=>page.locator('.k-modal-counter').textContent(),{timeout:2500}).toMatch(/2\s*[/／]\s*\d+/);
+    const expected=mediaIdentity(await slides.nth(1).getAttribute('src'));
+    await page.locator('.k-modal-carousel').evaluate((carousel)=>{
+      const fire=(type,x,y)=>{
+        const e=new Event(type,{bubbles:true,cancelable:true});
+        Object.defineProperty(e,'touches',{configurable:true,value:type==='touchend'?[]:[{clientX:x,clientY:y}]});
+        Object.defineProperty(e,'changedTouches',{configurable:true,value:[{clientX:x,clientY:y}]});
+        carousel.dispatchEvent(e);
+      };
+      fire('touchstart',180,180); fire('touchend',181,181);
+    });
+    const fs=page.locator('.k-modal-fullscreen.is-open');
+    await expect(fs).toBeVisible({timeout:2500});
+    const actual=mediaIdentity(await fs.locator('.k-modal-fullscreen-slide img').nth(1).getAttribute('src'));
+    const transform=await fs.locator('.k-modal-fullscreen-track').evaluate(el=>el.style.transform);
+    await fs.locator('.k-modal-fullscreen-close').click();
+    return {skipped:false,index:1,expected,actual,transform,ok:expected===actual&&transform.includes('-100%')};
+  }
+
+  const next=page.locator('.k-modal-carousel-handle--next');
+  await expect(next).toBeVisible({timeout:2500});
+  await next.click();
+  await expect(page.locator('.k-modal-thumb').nth(1)).toHaveClass(/is-active/,{timeout:2500});
+  const expected=mediaIdentity(await slides.nth(1).getAttribute('src'));
+  await page.locator('.k-modal-view-full').click();
+  const fs=page.locator('.k-modal-fullscreen.is-open');
+  await expect(fs).toBeVisible({timeout:2500});
+  const actual=mediaIdentity(await fs.locator('.k-modal-fullscreen-slide img').nth(1).getAttribute('src'));
+  const transform=await fs.locator('.k-modal-fullscreen-track').evaluate(el=>el.style.transform);
+  await fs.locator('.k-modal-fullscreen-close').click();
+  return {skipped:false,index:1,expected,actual,transform,ok:expected===actual&&transform.includes('-100%')};
 }
 
 async function audit(page,request,ref,vp){
@@ -68,11 +147,11 @@ async function audit(page,request,ref,vp){
   page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});
   page.on('pageerror',e=>pageErrors.push(e.message));
   page.on('requestfailed',r=>failed.push({url:r.url(),error:r.failure()?.errorText||''}));
-  page.on('response',r=>{if(r.status()>=400&&new URL(r.url()).origin===new URL(BASE_URL).origin)http.push({status:r.status(),url:r.url()});});
+  page.on('response',r=>{if(r.status()>=400&&new URL(r.url()).origin===new URL(BASE_URL).origin&&!expectedAnonymous401(r))http.push({status:r.status(),url:r.url()});});
 
   const c=await catalog(request); if(c.status!==200)push(findings,'P0','CATALOG_HTTP',`HTTP ${c.status}`);
   const p=(c.body.products||[]).find(x=>x.product_ref===ref);
-  if(!p){push(findings,'P0','CATALOG_MISSING',`${ref} absent du catalogue KM`);write(dir,'report.json',{findings});return findings;}
+  if(!p){push(findings,'P0','CATALOG_MISSING',`${ref} absent du catalogue KM`);write(dir,'report.json',{ref,viewport:vp,findings});return findings;}
   const d=await detail(request,p.id); if(d.status!==200)push(findings,'P0','DETAIL_HTTP',`HTTP ${d.status}`);
   const x=d.body||{}; write(dir,'api-product.json',p); write(dir,'api-detail.json',x);
 
@@ -84,7 +163,13 @@ async function audit(page,request,ref,vp){
   if(x.inventory_model==='SKU'&&(!Array.isArray(x.sellable_units)||!x.sellable_units.length))push(findings,'P0','NO_SELLABLE_UNITS','SKU sans unité vendable');
 
   await page.setViewportSize({width:vp[1],height:vp[2]});
-  try{await openPdp(page,p);}catch(e){push(findings,'P0','OPEN_FAILED',e.message);write(dir,'report.json',{findings});return findings;}
+  try{await openPdp(page,p);}catch(e){
+    const evidence=await page.evaluate(()=>({overlay:document.querySelector('#k-modal-overlay')?.className||null,search:document.querySelector('#k-search-dropdown')?.className||null,url:location.href})).catch(()=>null);
+    push(findings,'P0','OPEN_FAILED',e.message,evidence);
+    await page.screenshot({path:path.join(dir,'00-open-failed.png'),fullPage:true}).catch(()=>{});
+    write(dir,'report.json',{ref,viewport:vp,inventory_model:x.inventory_model,sellable_units:(x.sellable_units||[]).length,findings});
+    return findings;
+  }
   await page.screenshot({path:path.join(dir,'01-top.png'),fullPage:false});
   let s=await dom(page); write(dir,'dom-initial.json',s);
 
@@ -99,17 +184,23 @@ async function audit(page,request,ref,vp){
   if(!s.message.hidden&&/achat désactivé/i.test(s.message.text)&&(!s.add.disabled||!s.buy.disabled))push(findings,'P0','CTA_CONTRADICTION','message bloqué mais CTA actifs',{message:s.message,add:s.add,buy:s.buy});
   if(!s.message.hidden&&/achat désactivé/i.test(s.message.text))push(findings,'P1','DISABLED_VISUAL','CTA disabled à valider visuellement',{add:s.add,buy:s.buy});
 
+  try{
+    const mediaIdentityResult=await assertFullscreenMediaIdentity(page);
+    write(dir,'fullscreen-media-identity.json',mediaIdentityResult);
+    if(!mediaIdentityResult.skipped&&!mediaIdentityResult.ok)push(findings,'P0','FULLSCREEN_MEDIA_MISMATCH','le fullscreen ne conserve pas le média courant',mediaIdentityResult);
+  }catch(e){push(findings,'P0','FULLSCREEN_MEDIA_MISMATCH',e.message);}
+
   const units=Array.isArray(x.sellable_units)?x.sellable_units:[];
-  const available=units.filter(u=>u.stock_status!=='OUT_OF_STOCK'&&Number(u.available_quantity)>0);
+  const available=units.filter(u=>u.stock_status==='AVAILABLE'&&Number(u.available_quantity)>0);
   const out=units.filter(u=>u.stock_status==='OUT_OF_STOCK'||Number(u.available_quantity)===0);
   for(const u of available.slice(0,12)){
-    const st=await selectUnit(page,u);
-    if(!st.ok)push(findings,'P0','OPTION_MISSING',`option DOM absente pour ${u.sku}`,st);
-    else if(!st.add||!st.buy)push(findings,'P0','AVAILABLE_NOT_BUYABLE',`SKU disponible mais bloqué ${u.sku}`,st);
+    const st=await selectUnit(page,x,u);
+    if(!st.ok)push(findings,'P0','OPTION_MISSING',`option DOM absente pour ${u.sku||u.sku_id}`,st);
+    else if(!st.add||!st.buy)push(findings,'P0','AVAILABLE_NOT_BUYABLE',`SKU disponible mais bloqué ${u.sku||u.sku_id}`,st);
   }
   for(const u of out.slice(0,8)){
-    const st=await selectUnit(page,u);
-    if(st.ok&&(st.add||st.buy))push(findings,'P0','OUT_OF_STOCK_BUYABLE',`SKU rupture achetable ${u.sku}`,st);
+    const st=await selectUnit(page,x,u);
+    if(st.ok&&(st.add||st.buy))push(findings,'P0','OUT_OF_STOCK_BUYABLE',`SKU rupture achetable ${u.sku||u.sku_id}`,st);
   }
 
   const scroll=page.locator('.k-modal-scroll'); if(await scroll.count())await scroll.evaluate(e=>{e.scrollTop=e.scrollHeight;});
