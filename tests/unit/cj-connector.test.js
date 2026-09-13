@@ -10,6 +10,7 @@ const {
   isConfigured,
   inactiveReason,
   normalizeCjProduct,
+  buildCommandableStructure,
   flattenProductList,
   getAccessToken,
   buildProductListUrl,
@@ -41,6 +42,46 @@ const rawProduct = {
   directMinOrderNum: '1',
 };
 
+const rawDetail = {
+  pid: '1369601676230660096',
+  productNameEn: 'Motorcycle Riding Gloves',
+  productSku: 'CJNS1037469',
+  bigImage: 'https://cf.cjdropshipping.com/product/gloves.jpg',
+  productImageSet: ['https://cf.cjdropshipping.com/product/gloves-2.jpg'],
+  sellPrice: '6.60-8.10',
+  categoryName: 'Sports > Motorcycle > Gloves',
+  productKeyEn: 'Color-Size',
+  productWeight: 170,
+  description: '<p>Outdoor riding gloves</p>',
+  variants: [
+    {
+      vid: '1369601677723832320',
+      pid: '1369601676230660096',
+      variantNameEn: 'Camouflage S',
+      variantImage: 'https://cf.cjdropshipping.com/product/gloves-camo.jpg',
+      variantSku: 'CJNS103746901AZ',
+      variantKey: 'Camouflage-S',
+      variantSellPrice: 6.6,
+      variantWeight: 170,
+      inventories: [
+        { countryCode: 'CN', totalInventory: 40000, cjInventory: 0, factoryInventory: 40000 },
+      ],
+    },
+    {
+      vid: '1369601677795135488',
+      pid: '1369601676230660096',
+      variantNameEn: 'Camouflage M',
+      variantSku: 'CJNS103746902BY',
+      variantKey: 'Camouflage-M',
+      variantSellPrice: 6.6,
+      inventories: [
+        { countryCode: 'CN', totalInventory: 25, cjInventory: 25, factoryInventory: 0 },
+        { countryCode: 'US', totalInventory: 5, cjInventory: 5, factoryInventory: 0 },
+      ],
+    },
+  ],
+};
+
 describe('cj-connector', () => {
   beforeEach(() => resetTokenCacheForTests());
 
@@ -51,7 +92,7 @@ describe('cj-connector', () => {
     expect(isConfigured({ CJ_ACCESS_TOKEN: 'token' })).toBe(true);
   });
 
-  test('normalise un produit CJ en contrat fournisseur V2 traçable', () => {
+  test('normalise un produit CJ de discovery en contrat fournisseur V2 traçable', () => {
     const product = normalizeCjProduct(rawProduct);
     expect(product).toMatchObject({
       schema_version: '2',
@@ -66,6 +107,7 @@ describe('cj-connector', () => {
       min_order_qty: 1,
       supplier_delay_days: 5,
       source_locale: 'en',
+      sellable_units: null,
     });
     expect(product.description).toBe('Comfortable wireless headset.');
     expect(product.media).toEqual([
@@ -73,6 +115,44 @@ describe('cj-connector', () => {
     ]);
     expect(product.raw_payload.cj).toEqual(rawProduct);
     expect(product.raw_payload.source_title).toBe(rawProduct.nameEn);
+  });
+
+  test('produit une unité commandable déterministe par VID sans heuristique', () => {
+    const structure = buildCommandableStructure(rawDetail);
+    expect(structure.sellable_units).toHaveLength(2);
+    expect(structure.option_axes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ display_name: 'Color', values: ['Camouflage'] }),
+      expect.objectContaining({ display_name: 'Size', values: ['S', 'M'] }),
+    ]));
+    expect(structure.sellable_units[0]).toMatchObject({
+      supplier_sku: 'CJNS103746901AZ',
+      supplier_unit_ref: '1369601677723832320',
+      supplier_order_identity: {
+        provider: 'cj',
+        version: 1,
+        payload: {
+          pid: '1369601676230660096',
+          vid: '1369601677723832320',
+          variant_sku: 'CJNS103746901AZ',
+        },
+      },
+      stock_available: 40000,
+      purchase_price: 6.6,
+      currency: 'USD',
+      is_active: true,
+    });
+    expect(structure.sellable_units[1].stock_available).toBe(30);
+  });
+
+  test('normalise le détail CJ en V2 commandable avec prix et stock agrégés depuis les variantes', () => {
+    const product = normalizeCjProduct(rawDetail);
+    expect(product.supplier_product_id).toBe(rawDetail.pid);
+    expect(product.purchase_price).toBe(6.6);
+    expect(product.stock_available).toBe(40030);
+    expect(product.weight_kg).toBeCloseTo(0.17);
+    expect(product.sellable_units).toHaveLength(2);
+    expect(product.sellable_units.every((unit) => unit.supplier_order_identity?.provider === 'cj')).toBe(true);
+    expect(product.media.length).toBeGreaterThanOrEqual(2);
   });
 
   test('aplatit le format content/productList de listV2', () => {
@@ -116,7 +196,7 @@ describe('cj-connector', () => {
     expect(url.searchParams.getAll('features')).toEqual(['enable_description', 'enable_category']);
   });
 
-  test('fetchProducts retourne uniquement les produits qui passent le schéma canonique', async () => {
+  test('fetchProducts discovery reste léger et ne demande pas les détails variante par défaut', async () => {
     const fetchImpl = jest.fn().mockResolvedValue(response({
       code: 200,
       result: true,
@@ -141,9 +221,36 @@ describe('cj-connector', () => {
     expect(result.invalid).toHaveLength(0);
     expect(result.total).toBe(1);
     expect(result.total_records).toBe(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, options] = fetchImpl.mock.calls[0];
     expect(String(url)).toContain('keyWord=headphones');
     expect(options.headers['CJ-Access-Token']).toBe('token');
+  });
+
+  test('fetchProducts ciblé résout directement PID → variantes commandables + SOI', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(response({
+      code: 200,
+      result: true,
+      success: true,
+      data: rawDetail,
+      requestId: 'req-detail-1',
+    }));
+
+    const result = await fetchProducts({
+      fetchImpl,
+      env: { CJ_ACCESS_TOKEN: 'token' },
+      productIds: [rawDetail.pid],
+    });
+
+    expect(result.products).toHaveLength(1);
+    expect(result.invalid).toHaveLength(0);
+    expect(result.source).toBe('cj_api_v2_product_query');
+    expect(result.products[0].sellable_units).toHaveLength(2);
+    expect(result.products[0].sellable_units[0].supplier_unit_ref).toBe('1369601677723832320');
+    expect(result.products[0].sellable_units[0].supplier_order_identity.payload.vid).toBe('1369601677723832320');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url] = fetchImpl.mock.calls[0];
+    expect(String(url)).toContain('/product/query?pid=1369601676230660096');
   });
 
   test('propage une erreur CJ avec requestId sans secret', async () => {
