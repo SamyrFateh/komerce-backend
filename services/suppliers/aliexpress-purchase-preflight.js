@@ -12,14 +12,14 @@
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v2
+ * @version       2026-09-ae-prepayment-v3
  */
 'use strict';
 
 const supplierIdentity = require('./supplier-order-identity');
 
 const METHODS = Object.freeze({
-  FREIGHT: 'aliexpress.logistics.buyer.freight.calculate',
+  FREIGHT: 'aliexpress.logistics.buyer.freight.get',
   PLACE_ORDER: 'aliexpress.trade.buy.placeorder',
   ORDER_DETAIL: 'aliexpress.trade.ds.order.get',
   TRACKING: 'aliexpress.logistics.ds.trackinginfo.query',
@@ -109,20 +109,32 @@ function buildFreightBusinessParams(resolved, destination = {}) {
   const countryCode = String(destination.country_code || destination.countryCode || 'KM').trim().toUpperCase();
   if (!/^[A-Z]{2,3}$/.test(countryCode)) throw new Error(`country_code invalide: ${countryCode}`);
 
+  // L'API Dropshipper actuelle `aliexpress.logistics.buyer.freight.get`
+  // requiert le sku_id natif. Ne jamais substituer supplier_unit_ref ou sku_attr.
+  if (!resolved.raw_sku_id) {
+    throw supplierIdentity.blockedSupplierIdentity(
+      'sku_id natif AliExpress requis pour le calcul de fret',
+      {
+        supplier_sku: resolved.supplier_sku || null,
+        supplier_unit_ref: resolved.supplier_unit_ref || null,
+      }
+    );
+  }
+
   const dto = {
     product_id: Number(resolved.supplier_product_id),
     product_num: positiveInt(resolved.quantity),
+    sku_id: String(resolved.raw_sku_id),
     country_code: countryCode,
     price: String(resolved.unit_price),
     price_currency: resolved.currency,
   };
-  if (resolved.raw_sku_id) dto.sku_id = resolved.raw_sku_id;
   if (destination.province_code) dto.province_code = String(destination.province_code);
   if (destination.city_code) dto.city_code = String(destination.city_code);
   if (destination.send_goods_country_code) dto.send_goods_country_code = String(destination.send_goods_country_code).toUpperCase();
 
   return {
-    param_aeop_freight_calculate_for_buyer_d_t_o: JSON.stringify(dto),
+    aeopFreightCalculateForBuyerDTO: JSON.stringify(dto),
   };
 }
 
@@ -168,7 +180,7 @@ function classifyApiError(error) {
   const message = String(error?.message || error || '');
   if (/access|permission|authorize|unauthor|forbidden|isv\.access/i.test(message)) return 'permission';
   if (/token|session|signature|sign/i.test(message)) return 'auth';
-  if (/parameter|param|invalid|illegal/i.test(message)) return 'parameter';
+  if (/parameter|param|invalid|illegal|argument type mismatch/i.test(message)) return 'parameter';
   if (/stock|inventory/i.test(message)) return 'inventory';
   return 'other';
 }
