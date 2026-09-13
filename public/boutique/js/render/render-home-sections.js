@@ -74,17 +74,24 @@ export function renderHomeSections({
   const parts = [];
 
   if (isMobile) {
+    // Le mobile est une vue catalogue exhaustive. `items` peut avoir été réduit
+    // par _balancedPick() pour des raisons de géométrie de vitrine (sections
+    // paires / catégories maigres). Cette sélection visuelle ne doit jamais
+    // supprimer une unité publiable : la vérité de rendu mobile est donc la
+    // liste filtrée complète fournie par l'appelant dans `allProducts`.
+    const mobileItems = Array.isArray(allProducts) ? allProducts : items;
+
     // Partitionner UNE FOIS avant la boucle (pas à chaque itération)
-    const byCategoryMobile = partitionProductsByCategory(items);
+    const byCategoryMobile = partitionProductsByCategory(mobileItems);
 
     // ── PAGE "TOUT" — mélange aléatoire, toujours en premier ──
-    const allShuffled = shuffle(items.slice()).slice(0, 40);
+    const allShuffled = shuffle(mobileItems.slice()).slice(0, 40);
     parts.push('<div class="k-cat-section" data-cat="all">');
     parts.push(
       '<div class="k-sec-header" data-cat="all">' +
       renderSectionVisual('all', '🔥') +
       '<span class="k-sec-header-name">Tout</span>' +
-      '<span class="k-sec-header-count">' + items.length + '</span>' +
+      '<span class="k-sec-header-count">' + mobileItems.length + '</span>' +
       '</div>'
     );
     parts.push('<div class="k-sec-grid">');
