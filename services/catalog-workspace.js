@@ -167,7 +167,10 @@ async function buildWorkspace(query = {}) {
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
-    queryProducts(query),
+    // "Sélection publiée" est une projection dédiée du catalogue actif.
+    // Ne jamais paginer tous les candidats puis filtrer côté client : avec un
+    // gros backlog de curation, des produits publiés disparaîtraient du top 200.
+    queryProducts({ ...query, status: 'active' }),
     queryApprovalQueue(query.approval_limit),
   ]);
   return {
