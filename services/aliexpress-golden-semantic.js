@@ -1,3 +1,20 @@
+/**
+ * @komerce-arch
+ * @role          aliexpress-golden-semantic-gate
+ * @domain        catalog
+ * @layer         service
+ * @criticality   high
+ * @inputs        AliExpress normalized product, Golden discovery query
+ * @outputs       deterministic semantic relevance audit
+ * @depends       none
+ * @used-by       scripts/aliexpress-golden-e2e.js, scripts/aliexpress-golden-repair-existing.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
+ * @impact-areas  sourcing, catalog, supplier-integration, staging
+ * @version       2026-09-golden-semantic-v1
+ */
 'use strict';
 
 /**
