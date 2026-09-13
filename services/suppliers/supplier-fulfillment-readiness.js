@@ -4,9 +4,9 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        product_sku.id, quantity, procurementRoute
+ * @inputs        product_sku.id, quantity, procurementRoute, provider adapters
  * @outputs       supplier_fulfillment_verdict
- * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/aliexpress-fulfillment-adapter.js
+ * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js
  * @used-by       internal purchasing callers
  * @db-read       product_skus
  * @db-write      none
@@ -18,7 +18,6 @@
 
 const supplierIdentity = require('./supplier-order-identity');
 const adapterContract = require('./supplier-fulfillment-adapter-contract');
-const aliexpressAdapter = require('./aliexpress-fulfillment-adapter');
 
 const ROUTE_MODE = Object.freeze({ PROCUREMENT_HUB: 'PROCUREMENT_HUB' });
 
@@ -34,8 +33,6 @@ const VERDICT = Object.freeze({
   FREIGHT_UNAVAILABLE: 'FREIGHT_UNAVAILABLE',
   PREFLIGHT_FAILED: 'PREFLIGHT_FAILED',
 });
-
-const DEFAULT_ADAPTERS = Object.freeze({ aliexpress: aliexpressAdapter });
 
 function result(status, evidence = {}, reason = null) {
   return { ready: status === VERDICT.READY, status, reason, evidence };
@@ -97,9 +94,18 @@ function canonicalIdentity(row) {
   return supplierIdentity.normalizeIdentity(row.supplier_order_identity, row.supplier_unit_ref);
 }
 
+function normalizeAdapters(adapters = {}) {
+  if (!adapters || typeof adapters !== 'object' || Array.isArray(adapters)) return {};
+  return Object.fromEntries(
+    Object.entries(adapters)
+      .map(([provider, adapter]) => [adapterContract.normalizeProvider(provider), adapter])
+      .filter(([provider]) => provider)
+  );
+}
+
 async function evaluateSupplierFulfillmentReadiness(options = {}) {
   const { db, productSkuId, procurementRoute, context = {} } = options;
-  const adapters = { ...DEFAULT_ADAPTERS, ...(options.adapters || {}) };
+  const adapters = normalizeAdapters(options.adapters);
   if (!db || typeof db.query !== 'function') throw new Error('db.query requis');
   if (!productSkuId) throw new Error('productSkuId requis');
   const quantity = supplierIdentity.positiveInt(options.quantity ?? 1, 'quantity');
@@ -182,9 +188,9 @@ async function evaluateSupplierFulfillmentReadiness(options = {}) {
 module.exports = {
   ROUTE_MODE,
   VERDICT,
-  DEFAULT_ADAPTERS,
   result,
   normalizeProcurementRoute,
+  normalizeAdapters,
   loadPersistedSku,
   canonicalIdentity,
   evaluateSupplierFulfillmentReadiness,
