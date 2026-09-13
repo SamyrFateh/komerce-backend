@@ -14,7 +14,7 @@
  * @db-txn        canonical import services own writes; advisory lock serializes refresh runs
  * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, purchasing, staging
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 'use strict';
 
@@ -28,6 +28,8 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 500;
 const BATCH_SIZE = 50;
 const DEFAULT_COUNTRY_CODE = 'AE';
+const DEFAULT_DETAIL_DELAY_MS = 600;
+const DEFAULT_DETAIL_RETRY_ATTEMPTS = 4;
 const LOCK_NAMESPACE = 'komerce';
 const LOCK_KEY = 'aliexpress-authoritative-contract-refresh';
 
@@ -80,6 +82,45 @@ function preserveDiscovery(product, existingRawPayload) {
   };
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
+function rateLimitWaitSeconds(error) {
+  const message = String(error?.message || error || '');
+  if (!/frequency of app access|exceeds the limit|rate.?limit|too many requests/i.test(message)) return null;
+  const match = message.match(/(?:last|for)\s+(\d+)\s+seconds?/i) || message.match(/(\d+)\s+seconds?/i);
+  const seconds = match ? Number.parseInt(match[1], 10) : 30;
+  return Number.isInteger(seconds) && seconds >= 0 ? seconds : 30;
+}
+
+async function fetchOneAuthoritative(productId, {
+  providerEnv,
+  destinationCountry,
+  delayMs = DEFAULT_DETAIL_DELAY_MS,
+  retryAttempts = DEFAULT_DETAIL_RETRY_ATTEMPTS,
+  sleepFn = sleep,
+} = {}) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
+    try {
+      const fetched = await baseConnector.fetchProducts({
+        productIds: [productId],
+        countryCode: destinationCountry,
+        env: providerEnv,
+      });
+      if (delayMs > 0) await sleepFn(delayMs);
+      return fetched;
+    } catch (error) {
+      lastError = error;
+      const waitSeconds = rateLimitWaitSeconds(error);
+      if (waitSeconds == null || attempt >= retryAttempts) throw error;
+      await sleepFn((waitSeconds + 2) * 1000);
+    }
+  }
+  throw lastError || new Error(`Fetch AliExpress impossible pour ${productId}`);
+}
+
 async function loadTargets(limit, queryable = db) {
   const { rows } = await queryable.query(
     `SELECT sc.id,
@@ -127,22 +168,49 @@ async function releaseLock(client) {
   }
 }
 
-async function refreshBatch(batch, { execute, providerEnv, destinationCountry }) {
-  const ids = batch.map((row) => row.supplier_product_id);
+async function refreshBatch(batch, {
+  execute,
+  providerEnv,
+  destinationCountry,
+  delayMs = DEFAULT_DETAIL_DELAY_MS,
+  retryAttempts = DEFAULT_DETAIL_RETRY_ATTEMPTS,
+  sleepFn = sleep,
+}) {
   const existingById = new Map(batch.map((row) => [String(row.supplier_product_id), row]));
-  const fetched = await baseConnector.fetchProducts({
-    productIds: ids,
-    countryCode: destinationCountry,
-    env: providerEnv,
-  });
+  const received = [];
+  const connectorInvalid = [];
+  const fetchErrors = [];
 
-  const received = Array.isArray(fetched.products) ? fetched.products : [];
+  // Important: one exact supplier product per request. A provider throttle or a bad
+  // product cannot make another product's identity ambiguous or silently disappear.
+  for (const row of batch) {
+    try {
+      const fetched = await fetchOneAuthoritative(row.supplier_product_id, {
+        providerEnv,
+        destinationCountry,
+        delayMs,
+        retryAttempts,
+        sleepFn,
+      });
+      received.push(...(Array.isArray(fetched.products) ? fetched.products : []));
+      connectorInvalid.push(...(Array.isArray(fetched.invalid) ? fetched.invalid : []));
+    } catch (error) {
+      fetchErrors.push({ supplier_product_id: row.supplier_product_id, error: error.message });
+    }
+  }
+
+  // Execute is fail-closed per batch: no source-contract write if any exact supplier
+  // product could not be refreshed authoritatively. Dry-run reports the failures.
+  if (execute && fetchErrors.length) {
+    throw new Error(`REFUS: ${fetchErrors.length} produit(s) fournisseur non rafraîchis: ${JSON.stringify(fetchErrors.slice(0, 5))}`);
+  }
+
   const valid = received
     .map((product) => preserveDiscovery(product, existingById.get(String(product.supplier_product_id))?.raw_payload))
     .filter((product) => identityUnits(product).length > 0);
   const blocked = received.filter((product) => identityUnits(product).length === 0);
   const returnedIds = new Set(received.map((product) => String(product.supplier_product_id)));
-  const notReturned = ids.filter((id) => !returnedIds.has(String(id)));
+  const notReturned = batch.filter((row) => !returnedIds.has(String(row.supplier_product_id))).length;
 
   let importResult = null;
   if (execute && valid.length) {
@@ -159,12 +227,13 @@ async function refreshBatch(batch, { execute, providerEnv, destinationCountry })
   }
 
   return {
-    requested: ids.length,
+    requested: batch.length,
     returned: received.length,
     refreshable: valid.length,
     blocked_without_identity: blocked.length,
-    invalid: Array.isArray(fetched.invalid) ? fetched.invalid.length : 0,
-    not_returned: notReturned.length,
+    invalid: connectorInvalid.length,
+    fetch_errors: fetchErrors.length,
+    not_returned: notReturned,
     sellable_units: valid.reduce((sum, product) => sum + (product.sellable_units?.length || 0), 0),
     identity_units: valid.reduce((sum, product) => sum + identityUnits(product).length, 0),
     imported: Number(importResult?.body?.accepted || 0),
@@ -190,6 +259,7 @@ async function main() {
     refreshable: 0,
     blocked_without_identity: 0,
     invalid: 0,
+    fetch_errors: 0,
     not_returned: 0,
     sellable_units: 0,
     identity_units: 0,
@@ -239,12 +309,16 @@ module.exports = {
   MAX_LIMIT,
   BATCH_SIZE,
   DEFAULT_COUNTRY_CODE,
+  DEFAULT_DETAIL_DELAY_MS,
+  DEFAULT_DETAIL_RETRY_ATTEMPTS,
   parseArgs,
   assertRuntime,
   countryCode,
   chunks,
   identityUnits,
   preserveDiscovery,
+  rateLimitWaitSeconds,
+  fetchOneAuthoritative,
   loadTargets,
   refreshBatch,
   main,
