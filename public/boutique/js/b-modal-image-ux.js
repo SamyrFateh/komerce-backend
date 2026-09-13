@@ -57,6 +57,8 @@ let _fsTrack     = null;
 let _fsCounter   = null;
 let _fsRoot      = null;
 let _installed   = false;
+let _carouselTouchX = 0;
+let _carouselTouchY = 0;
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -66,6 +68,13 @@ function _getSlides() {
   let track = modalZone('.k-modal-carousel-track');
   if (!track) return [];
   return Array.from(track.querySelectorAll('.k-modal-slide'));
+}
+
+function _syncFsImagesFromRenderedSlides() {
+  _fsImages = _getSlides().map(function(s) {
+    return s.currentSrc || s.src || s.getAttribute('src') || '';
+  }).filter(Boolean);
+  return _fsImages;
 }
 
 function _isEnrichedMobileDetail() {
@@ -129,7 +138,7 @@ function _injectViewFullBtn() {
 
   btn.addEventListener('click', function(e) {
     e.stopPropagation();
-    _openFs(state.carouselIndex || 0);
+    openCurrentImageFullscreen(state.carouselIndex || 0);
   });
 }
 
@@ -201,6 +210,17 @@ function _openFs(startIdx) {
   document.body.style.overflow = 'hidden';
 }
 
+/**
+ * Ouvre le média actuellement rendu par le carousel canonique.
+ * La liste fullscreen est relue depuis le DOM à chaque ouverture : elle suit
+ * donc selected_media/detail.media et ne peut pas retomber sur une ancienne
+ * copie de state.modalProduct.images.
+ */
+export function openCurrentImageFullscreen(startIdx = state.carouselIndex || 0) {
+  _syncFsImagesFromRenderedSlides();
+  _openFs(startIdx);
+}
+
 function _closeFs() {
   if (!_fsOpen) return;
   _fsOpen = false;
@@ -250,13 +270,36 @@ function _setupFsHandlers(fs) {
 function _setupCarouselTap() {
   let carousel = modalZone('.k-modal-carousel');
   if (!carousel) return;
+
+  // Le core historique écoute touchend sur .k-modal-img-wrap et possède encore
+  // un ancien fullscreen basé sur state.modalProduct.images. Intercepter
+  // uniquement le TAP court ici empêche ce chemin legacy de gagner la course,
+  // tout en laissant les swipes horizontaux/verticaux remonter au core.
+  carousel.addEventListener('touchstart', function(e) {
+    if (!e.touches || e.touches.length !== 1) return;
+    _carouselTouchX = e.touches[0].clientX;
+    _carouselTouchY = e.touches[0].clientY;
+  }, { passive: true });
+
+  carousel.addEventListener('touchend', function(e) {
+    const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    if (!isMobile || !e.changedTouches || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - _carouselTouchX;
+    const dy = e.changedTouches[0].clientY - _carouselTouchY;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    openCurrentImageFullscreen(state.carouselIndex || 0);
+  }, { passive: false });
+
   carousel.addEventListener('click', function() {
     const isMobile = window.matchMedia('(max-width: 899px)').matches;
 
     // Mobile conserve la lightbox tactile.
     // Desktop : le hero est désormais la vue produit finale.
     if (isMobile) {
-      _openFs(state.carouselIndex || 0);
+      openCurrentImageFullscreen(state.carouselIndex || 0);
     }
   });
 }
@@ -282,10 +325,7 @@ function _setupCarouselSync() {
  */
 export function setupImageUX() {
   requestAnimationFrame(function() {
-    let slides = _getSlides();
-    _fsImages = slides.map(function(s) {
-      return s.src || s.getAttribute('src') || '';
-    });
+    _syncFsImagesFromRenderedSlides();
 
     _refreshCounter(state.carouselIndex || 0);
     _injectViewFullBtn();
