@@ -7,19 +7,18 @@
  * @criticality   high
  * @inputs        promoted AliExpress candidate, live DS API, optional staging logistics address
  * @outputs       product/SKU resolution, live stock/price, freight proof, place-order payload readiness
- * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/aliexpress-form-body-fetch.js, services/suppliers/aliexpress-purchase-preflight.js
+ * @depends       db.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/aliexpress-purchase-preflight.js
  * @db-read       sourcing_candidates, products, product_skus
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v3
+ * @version       2026-09-ae-prepayment-v4
  */
 'use strict';
 
 const db = require('../db');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
-const { formBodyFetch } = require('../services/suppliers/connectors/aliexpress-form-body-fetch');
 const preflight = require('../services/suppliers/aliexpress-purchase-preflight');
 
 const PROOF_FLAG = 'KOMERCE_ALLOW_ALIEXPRESS_PREPAYMENT_PROOF';
@@ -89,12 +88,20 @@ function selectSnapshot(rows) {
         1,
         { requireOrderIdentity: false }
       );
+      if (!resolved.raw_sku_id) {
+        failures.push({
+          candidate_id: row.candidate_id,
+          supplier_sku: row.supplier_sku,
+          error: 'sku_id natif AliExpress absent pour freight.get',
+        });
+        continue;
+      }
       return { row, resolved };
     } catch (error) {
       failures.push({ candidate_id: row.candidate_id, supplier_sku: row.supplier_sku, error: error.message });
     }
   }
-  const err = new Error(`Aucun SKU AliExpress promu résolvable pour la preuve (${failures.length} essais)`);
+  const err = new Error(`Aucun SKU AliExpress promu avec sku_id natif pour la preuve freight.get (${failures.length} essais)`);
   err.failures = failures.slice(0, 8);
   throw err;
 }
@@ -126,18 +133,16 @@ async function run(env = process.env) {
     { requireOrderIdentity: true }
   );
 
-  const freightParams = preflight.buildFreightBusinessParams(liveResolved, {
-    country_code: countryCode,
-    province_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_PROVINCE_CODE || null,
-    city_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_CITY_CODE || null,
-    send_goods_country_code: env.KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE || null,
-  });
-
   let freight;
   try {
+    const freightParams = preflight.buildFreightBusinessParams(liveResolved, {
+      country_code: countryCode,
+      province_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_PROVINCE_CODE || null,
+      city_code: env.KOMERCE_ALIEXPRESS_PREPAYMENT_CITY_CODE || null,
+      send_goods_country_code: env.KOMERCE_ALIEXPRESS_SEND_GOODS_COUNTRY_CODE || null,
+    });
     const freightPayload = await connected.invokeTop(preflight.METHODS.FREIGHT, freightParams, {
       env: providerEnv,
-      fetchImpl: formBodyFetch(fetch),
     });
     freight = {
       method: preflight.METHODS.FREIGHT,
@@ -148,7 +153,7 @@ async function run(env = process.env) {
   } catch (error) {
     freight = {
       method: preflight.METHODS.FREIGHT,
-      invoked: true,
+      invoked: false,
       permission: 'call-failed',
       error_class: preflight.classifyApiError(error),
       error: String(error.message || error).slice(0, 600),
@@ -167,13 +172,14 @@ async function run(env = process.env) {
 
   const out = {
     runtime: rt,
-    proof: 'aliexpress-prepayment-v1',
+    proof: 'aliexpress-prepayment-v2',
     candidate: {
       candidate_id: row.candidate_id,
       product_id: row.product_id,
       product_sku_id: row.product_sku_id,
       supplier_product_id: row.supplier_product_id,
       supplier_sku: row.supplier_sku,
+      native_sku_id: liveResolved.raw_sku_id,
       sku_attr: liveResolved.sku_attr,
     },
     snapshot: {
