@@ -273,21 +273,27 @@ function buildOptionAxes(variantRows) {
 
   for (const variant of variantRows) {
     if (!axes.has(variant.variant_type)) {
-      axes.set(variant.variant_type, new Map());
+      axes.set(variant.variant_type, {
+        display_name: asStringOrNull(variant.display_name),
+        values: new Map(),
+      });
     }
-    const values = axes.get(variant.variant_type);
-    if (values.has(variant.variant_value)) continue;
+    const axis = axes.get(variant.variant_type);
+    if (!axis.display_name && asStringOrNull(variant.display_name)) {
+      axis.display_name = asStringOrNull(variant.display_name);
+    }
+    if (axis.values.has(variant.variant_value)) continue;
     const urls = toUrlList(variant.images, variant.image_url);
-    values.set(variant.variant_value, {
+    axis.values.set(variant.variant_value, {
       value: variant.variant_value,
       thumbnail_url: urls[0] || null,
     });
   }
 
-  return [...axes.entries()].map(([key, values]) => ({
+  return [...axes.entries()].map(([key, axis]) => ({
     key,
-    display_name: key,
-    values: [...values.values()],
+    display_name: axis.display_name || key,
+    values: [...axis.values.values()],
   }));
 }
 
@@ -434,7 +440,7 @@ async function getProductDetail(dbClient, productId) {
     airVolumetricDivisor,
   ] = await Promise.all([
     dbClient.query(
-      `SELECT variant_type, variant_value, image_url, images, display_order
+      `SELECT variant_type, variant_value, display_name, image_url, images, display_order
          FROM product_variants
         WHERE product_id = $1
         ORDER BY variant_type, display_order ASC, variant_value ASC`,
