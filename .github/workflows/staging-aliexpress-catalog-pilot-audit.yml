@@ -1,0 +1,85 @@
+name: Staging AliExpress catalog pilot audit
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: AliExpress catalog pilot — source/readiness audit
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] aliexpress-catalog-pilot-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Audit exact five products
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          node <<'NODE'
+          const db = require('./db');
+          const refs = ['KPR-131413','KPR-131414','KPR-131415','KPR-131416','KPR-131417'];
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT p.id, p.product_ref, p.name, p.name_source,
+                     p.description, p.description_source, p.source_locale,
+                     p.category, p.subcategory, p.fragility, p.emoji,
+                     p.price_kmf, p.stock, p.lifecycle_status, p.is_active,
+                     p.content_source, p.needs_review, p.enrichment_confidence,
+                     COUNT(DISTINCT cm.id) FILTER (WHERE cm.is_active = TRUE)::int AS active_media,
+                     COUNT(DISTINCT ps.id) FILTER (WHERE ps.is_active = TRUE)::int AS active_skus,
+                     COUNT(DISTINCT ps.id) FILTER (
+                       WHERE ps.is_active = TRUE
+                         AND ps.supplier_unit_ref IS NOT NULL
+                         AND ps.supplier_order_identity IS NOT NULL
+                     )::int AS soi_complete_skus
+                FROM products p
+                LEFT JOIN catalog_media cm ON cm.product_id = p.id
+                LEFT JOIN product_skus ps ON ps.product_id = p.id
+               WHERE p.product_ref = ANY($1::text[])
+               GROUP BY p.id
+               ORDER BY p.product_ref`, [refs]);
+            console.log(JSON.stringify(rows, null, 2));
+            const missing = refs.filter(ref => !rows.some(r => r.product_ref === ref));
+            if (missing.length) {
+              console.error('Missing refs:', missing);
+              process.exitCode = 1;
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Close successful command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'AliExpress catalog pilot read-only audit completed successfully.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
