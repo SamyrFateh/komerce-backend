@@ -117,8 +117,13 @@ async function withPublicationDecision(q, work) {
 }
 
 async function publish(q, before) {
+  const { rows: [{ count: mediaCount }] } = await q.query(
+    `SELECT COUNT(*)::int AS count FROM catalog_media WHERE product_id = $1 AND is_active = TRUE`,
+    [before.id]
+  );
   const patch = { is_active: true };
-  const check = validatePublicationUpdate({ before, patch });
+  const context = { catalogMediaCount: mediaCount };
+  const check = validatePublicationUpdate({ before, patch, context });
   if (!check.ok) return { status: 422, body: { error: check.error, code: check.code } };
 
   const capacity = await assertCatalogCapacity(q);
@@ -227,8 +232,16 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
 
     // Cap déjà contrôlé sous le même advisory lock ; ne pas refaire une lecture
     // susceptible de rendre les tests/transactions inutilement bavards.
+    const { rows: [{ count: overrideMediaCount }] } = await tx.query(
+      `SELECT COUNT(*)::int AS count FROM catalog_media WHERE product_id = $1 AND is_active = TRUE`,
+      [overrideResult.product.id]
+    );
     const patch = { is_active: true };
-    const check = validatePublicationUpdate({ before: overrideResult.product, patch });
+    const check = validatePublicationUpdate({
+      before: overrideResult.product,
+      patch,
+      context: { catalogMediaCount: overrideMediaCount },
+    });
     if (!check.ok) return { status: 422, body: { error: check.error, code: check.code } };
     const { rows: [product] } = await tx.query(
       `UPDATE products
