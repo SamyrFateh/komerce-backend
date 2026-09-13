@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/ALIEXPRESS_BUSINESS_READINESS.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  purchasing, supplier-integration, catalog
- * @version       2026-09-ae-prepayment-v4
+ * @version       2026-09-ae-prepayment-v5
  */
 'use strict';
 
@@ -88,20 +88,12 @@ function selectSnapshot(rows) {
         1,
         { requireOrderIdentity: false }
       );
-      if (!resolved.raw_sku_id) {
-        failures.push({
-          candidate_id: row.candidate_id,
-          supplier_sku: row.supplier_sku,
-          error: 'sku_id natif AliExpress absent pour freight.get',
-        });
-        continue;
-      }
       return { row, resolved };
     } catch (error) {
       failures.push({ candidate_id: row.candidate_id, supplier_sku: row.supplier_sku, error: error.message });
     }
   }
-  const err = new Error(`Aucun SKU AliExpress promu avec sku_id natif pour la preuve freight.get (${failures.length} essais)`);
+  const err = new Error(`Aucun SKU AliExpress promu résoluble pour la preuve pré-paiement (${failures.length} essais)`);
   err.failures = failures.slice(0, 8);
   throw err;
 }
@@ -172,7 +164,7 @@ async function run(env = process.env) {
 
   const out = {
     runtime: rt,
-    proof: 'aliexpress-prepayment-v2',
+    proof: 'aliexpress-prepayment-v3',
     candidate: {
       candidate_id: row.candidate_id,
       product_id: row.product_id,
