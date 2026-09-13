@@ -25,11 +25,63 @@ function sku(overrides = {}) {
   };
 }
 
+function hubRoute(overrides = {}) {
+  return {
+    mode: 'PROCUREMENT_HUB',
+    hub: { code: 'DXB', name: 'Hub Dubai', country_code: 'AE', ...overrides },
+  };
+}
+
 describe('supplier fulfillment readiness', () => {
+  it('refuse une destination brute sans Procurement Route explicite', async () => {
+    const db = dbWith(sku());
+    const out = await readiness.evaluateSupplierFulfillmentReadiness({
+      db,
+      productSkuId: 'sku-1',
+      destination: { country_code: 'KM' },
+      adapters: { aliexpress: ali },
+    });
+    expect(out.status).toBe('PROCUREMENT_ROUTE_UNRESOLVED');
+    expect(out.reason).toMatch(/procurementRoute explicite requis|destination brute interdite/i);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('n’ouvre aucun mode direct fournisseur-client dans le moteur actuel', async () => {
+    const db = dbWith(sku());
+    const out = await readiness.evaluateSupplierFulfillmentReadiness({
+      db,
+      productSkuId: 'sku-1',
+      procurementRoute: { mode: 'DIRECT_TO_CUSTOMER' },
+      adapters: { aliexpress: ali },
+    });
+    expect(out.status).toBe('PROCUREMENT_ROUTE_UNRESOLVED');
+    expect(out.reason).toMatch(/seul PROCUREMENT_HUB est ouvert/i);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('dérive la destination fournisseur du hub et non du Market', () => {
+    expect(readiness.normalizeProcurementRoute(hubRoute())).toEqual({
+      mode: 'PROCUREMENT_HUB',
+      hub: {
+        id: null,
+        code: 'DXB',
+        name: 'Hub Dubai',
+        country_code: 'AE',
+        province_code: null,
+        city_code: null,
+      },
+      supplier_destination: {
+        country_code: 'AE',
+        province_code: null,
+        city_code: null,
+      },
+    });
+  });
+
   it('bloque une identité persistée absente', async () => {
     const db = dbWith(sku({ supplier_unit_ref: null, supplier_order_identity: null }));
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', destination: { country_code: 'KM' },
+      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
       adapters: { aliexpress: ali },
     });
     expect(out.status).toBe('BLOCKED_SUPPLIER_IDENTITY');
@@ -39,7 +91,7 @@ describe('supplier fulfillment readiness', () => {
   it('bloque si le supplier_product_id n’est pas univoque', async () => {
     const db = dbWith(sku(), ['100', '200']);
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', destination: { country_code: 'KM' },
+      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
       adapters: { aliexpress: ali },
     });
     expect(out.status).toBe('BLOCKED_SUPPLIER_IDENTITY');
@@ -55,14 +107,14 @@ describe('supplier fulfillment readiness', () => {
       },
     };
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', quantity: 2, destination: { country_code: 'KM' },
+      db, productSkuId: 'sku-1', quantity: 2, procurementRoute: hubRoute(),
       adapters: { aliexpress: ali }, context,
     });
     expect(out.status).toBe('OUT_OF_STOCK');
     expect(out.ready).toBe(false);
   });
 
-  it('retourne NOT_SHIPPABLE sans option de fret', async () => {
+  it('retourne NOT_SHIPPABLE sans option de fret vers le hub', async () => {
     const db = dbWith(sku());
     const context = {
       aliexpressConnected: {
@@ -78,15 +130,16 @@ describe('supplier fulfillment readiness', () => {
       },
     };
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', destination: { country_code: 'KM' },
+      db, productSkuId: 'sku-1', procurementRoute: hubRoute(),
       adapters: { aliexpress: ali }, context,
     });
     expect(out.status).toBe('NOT_SHIPPABLE');
   });
 
-  it('devient FULFILLMENT_READY sans jamais appeler placeOrder', async () => {
+  it('devient FULFILLMENT_READY vers le hub sans jamais appeler placeOrder', async () => {
     const db = dbWith(sku());
     const invokeTop = jest.fn(async () => ({ ok: true }));
+    const buildFreightBusinessParams = jest.fn(() => ({ p: 'x' }));
     const context = {
       aliexpressConnected: {
         fetchProducts: jest.fn(async () => ({ products: [{}] })),
@@ -95,19 +148,26 @@ describe('supplier fulfillment readiness', () => {
       aliexpressPreflight: {
         METHODS: { FREIGHT: 'freight' },
         resolveOrderableUnit: jest.fn(() => ({ stock_available: 9, unit_price: 4.2, currency: 'USD' })),
-        buildFreightBusinessParams: jest.fn(() => ({ p: 'x' })),
+        buildFreightBusinessParams,
         summarizeFreightResponse: jest.fn(() => ({ success: true, has_options: true, error: null })),
         classifyApiError: jest.fn(() => 'other'),
       },
     };
     const out = await readiness.evaluateSupplierFulfillmentReadiness({
-      db, productSkuId: 'sku-1', quantity: 1, destination: { country_code: 'KM' },
+      db, productSkuId: 'sku-1', quantity: 1, procurementRoute: hubRoute(),
       adapters: { aliexpress: ali }, context,
     });
     expect(out.status).toBe('FULFILLMENT_READY');
     expect(out.ready).toBe(true);
+    expect(out.evidence.procurement_route_mode).toBe('PROCUREMENT_HUB');
+    expect(out.evidence.procurement_hub_code).toBe('DXB');
+    expect(out.evidence.procurement_hub_country_code).toBe('AE');
     expect(out.evidence.place_order_invoked).toBe(false);
     expect(out.evidence.payment_invoked).toBe(false);
+    expect(buildFreightBusinessParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ country_code: 'AE' })
+    );
     expect(invokeTop).toHaveBeenCalledTimes(1);
     expect(invokeTop.mock.calls[0][0]).toBe('freight');
   });
