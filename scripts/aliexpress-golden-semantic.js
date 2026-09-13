@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  sourcing, catalog, supplier-integration, staging
- * @version       2026-09-golden-semantic-v1
+ * @version       2026-09-golden-semantic-v2
  */
 'use strict';
 
@@ -41,17 +41,25 @@ function productText(product = {}) {
     .join(' ');
 }
 
+function requiredMatchCount(queryTokenCount) {
+  if (queryTokenCount <= 0) return 0;
+  if (queryTokenCount <= 2) return 1;
+  return Math.max(2, Math.ceil(queryTokenCount * 0.6));
+}
+
 function audit(product, query) {
   const queryTokens = [...new Set(tokens(query))];
   const sourceTokens = new Set(tokens(productText(product)));
   const matchedTokens = queryTokens.filter((token) => sourceTokens.has(token));
-  const requiredMatches = queryTokens.length >= 4 ? 2 : queryTokens.length ? 1 : 0;
+  const requiredMatches = requiredMatchCount(queryTokens.length);
+  const coverageRatio = queryTokens.length ? matchedTokens.length / queryTokens.length : 0;
   return {
     relevant: requiredMatches > 0 && matchedTokens.length >= requiredMatches,
     query_tokens: queryTokens,
     matched_tokens: matchedTokens,
     required_matches: requiredMatches,
+    coverage_ratio: Number(coverageRatio.toFixed(3)),
   };
 }
 
-module.exports = { tokens, audit };
+module.exports = { tokens, requiredMatchCount, audit };
