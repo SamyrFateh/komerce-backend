@@ -184,6 +184,33 @@ const STRUCTURAL_PROBES = Object.freeze({
     `);
     return row?.represented === true;
   },
+  '225_purchase_orders_exact_supplier_identity.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'purchase_orders' AND column_name = 'order_item_id'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'purchase_orders' AND column_name = 'product_sku_id'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'purchase_orders' AND column_name = 'supplier_unit_ref'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'purchase_orders' AND column_name = 'supplier_order_identity'
+        )
+        AND EXISTS (
+          SELECT 1 FROM pg_indexes
+           WHERE schemaname = 'public' AND indexname = 'ux_purchase_orders_order_item_supplier_active'
+        )
+        AS represented
+    `);
+    return row?.represented === true;
+  },
 });
 
 function baselineFromDumpCommit() {

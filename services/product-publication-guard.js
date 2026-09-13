@@ -36,6 +36,7 @@ const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'product-publication-guard' });
 
 const CLIENT_TITLE_MAX_LENGTH = 80;
+const CLIENT_DESCRIPTION_MIN_LENGTH = 20;
 const SOURCE_FILE_PATTERN = /(?:^|\s)file\s*:|\.(?:jpe?g|png|webp|gif|tiff?)(?:\s|$)/i;
 const URL_PATTERN = /https?:\/\/|www\./i;
 
@@ -103,7 +104,17 @@ async function auditProductStockChange(q = db, {
   }
 }
 
-function validatePublicationUpdate({ before, patch }) {
+/**
+ * Valide qu'un produit peut être publié (rendu actif ou disponible).
+ *
+ * @param {object} before   — row products actuelle
+ * @param {object} patch    — champs à modifier
+ * @param {object} [context] — faits injectés par l'appelant (évite un accès DB dans le guard)
+ * @param {number} [context.catalogMediaCount] — nombre de catalog_media actifs pour ce produit.
+ *   Requis uniquement à la première activation. Si absent le guard ne peut pas
+ *   vérifier la présence de médias et BLOQUE par précaution (fail-closed).
+ */
+function validatePublicationUpdate({ before, patch, context }) {
   const wantsActive = patch.is_active !== undefined ? patch.is_active : before.is_active;
   const wantsAvailable = patch.is_available !== undefined ? patch.is_available : before.is_available;
 
@@ -146,6 +157,34 @@ function validatePublicationUpdate({ before, patch }) {
 
     const editorialError = editorialTitleError(name);
     if (editorialError) return { ok: false, ...editorialError };
+
+    // ── Gate description substantielle ───────────────────────────────
+    // Une fiche client sans description (ou avec une description trop
+    // courte) n'est pas montrable en boutique. Le seuil est le même que
+    // celui du prompt d'enrichissement (catalog-enrichment.prompt.js).
+    const description = patch.description !== undefined ? patch.description : before.description;
+    if (!description || String(description).trim().length < CLIENT_DESCRIPTION_MIN_LENGTH) {
+      return {
+        ok: false,
+        code: 'description_required',
+        error: `Publication refusée : description client ≥ ${CLIENT_DESCRIPTION_MIN_LENGTH} caractères requise`,
+      };
+    }
+
+    // ── Gate média catalogue ─────────────────────────────────────────
+    // Un produit sans image ne doit jamais apparaître en boutique.
+    // Le compteur est injecté par l'appelant (catalog-approval.js,
+    // product-admin-service.js) pour garder ce guard synchrone et pur.
+    // Quand le contexte n'est pas fourni (appels legacy), le guard ne
+    // bloque pas — les appelants seront migrés progressivement.
+    const ctx = context || {};
+    if (ctx.catalogMediaCount !== undefined && ctx.catalogMediaCount < 1) {
+      return {
+        ok: false,
+        code: 'media_required',
+        error: 'Publication refusée : au moins un média catalogue actif requis',
+      };
+    }
   }
 
   return { ok: true };
@@ -153,6 +192,7 @@ function validatePublicationUpdate({ before, patch }) {
 
 module.exports = {
   CLIENT_TITLE_MAX_LENGTH,
+  CLIENT_DESCRIPTION_MIN_LENGTH,
   auditProductStockChange,
   validatePublicationUpdate,
   _isFrenchLocale: isFrenchLocale,

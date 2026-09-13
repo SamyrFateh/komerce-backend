@@ -67,4 +67,26 @@ describe('ci-migrate — structural baseline reconciliation', () => {
     expect(probeSource).toContain('supplier_catalog_import_rejections');
     expect(probeSource).toContain('sourcing_candidate_observations');
   });
+
+  test('migration 225 probe checks the exact supplier PO snapshot structure', () => {
+    const probeSource = String(STRUCTURAL_PROBES['225_purchase_orders_exact_supplier_identity.sql']);
+
+    expect(probeSource).toContain('purchase_orders');
+    expect(probeSource).toContain('order_item_id');
+    expect(probeSource).toContain('product_sku_id');
+    expect(probeSource).toContain('supplier_unit_ref');
+    expect(probeSource).toContain('supplier_order_identity');
+    expect(probeSource).toContain('ux_purchase_orders_order_item_supplier_active');
+  });
+
+  test('removes migration 225 from baseline when exact-PO structure is absent', async () => {
+    const client = {
+      query: jest.fn().mockResolvedValue({ rows: [{ represented: false }] }),
+    };
+    const baseline = new Set(['225_purchase_orders_exact_supplier_identity.sql']);
+
+    const result = await reconcileStructuralBaseline(client, baseline);
+
+    expect(result.has('225_purchase_orders_exact_supplier_identity.sql')).toBe(false);
+  });
 });

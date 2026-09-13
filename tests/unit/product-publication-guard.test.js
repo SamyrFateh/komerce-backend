@@ -10,6 +10,7 @@ jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn()
 
 const {
   CLIENT_TITLE_MAX_LENGTH,
+  CLIENT_DESCRIPTION_MIN_LENGTH,
   auditProductStockChange,
   validatePublicationUpdate,
 } = require('../../services/product-publication-guard');
@@ -53,6 +54,7 @@ describe('product-publication-guard', () => {
       is_available: false,
       content_source: 'ai_enriched',
       source_locale: 'en',
+      description: 'Coffret cadeau artistique fait main, idéal pour toutes les occasions.',
     };
     expect(validatePublicationUpdate({ before, patch: { is_active: true } })).toEqual({ ok: true });
   });
@@ -82,6 +84,156 @@ describe('product-publication-guard', () => {
       patch: { is_active: true },
     })).toMatchObject({ ok: false, code: 'title_source_noise' });
   });
+
+  // ── Gate description ─────────────────────────────────────────────
+
+  it('refuse première activation sans description', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: null,
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } }))
+      .toMatchObject({ ok: false, code: 'description_required' });
+  });
+
+  it('refuse première activation avec description trop courte', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Trop court',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } }))
+      .toMatchObject({ ok: false, code: 'description_required' });
+  });
+
+  it('accepte première activation avec description substantielle', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Câble USB-C charge rapide 120W, compatible avec tous les appareils récents.',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } }))
+      .toEqual({ ok: true });
+  });
+
+  it('le seuil description est exactement CLIENT_DESCRIPTION_MIN_LENGTH', () => {
+    const before = {
+      name: 'Câble USB-C',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+    };
+    expect(validatePublicationUpdate({
+      before: { ...before, description: 'x'.repeat(CLIENT_DESCRIPTION_MIN_LENGTH) },
+      patch: { is_active: true },
+    })).toEqual({ ok: true });
+    expect(validatePublicationUpdate({
+      before: { ...before, description: 'x'.repeat(CLIENT_DESCRIPTION_MIN_LENGTH - 1) },
+      patch: { is_active: true },
+    })).toMatchObject({ ok: false, code: 'description_required' });
+  });
+
+  // ── Gate média ──────────────────────────────────────────────────
+
+  it('refuse première activation quand context.catalogMediaCount = 0', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Câble USB-C charge rapide 120W, compatible avec tous les appareils récents.',
+    };
+    expect(validatePublicationUpdate({
+      before,
+      patch: { is_active: true },
+      context: { catalogMediaCount: 0 },
+    })).toMatchObject({ ok: false, code: 'media_required' });
+  });
+
+  it('accepte première activation quand context.catalogMediaCount >= 1', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Câble USB-C charge rapide 120W, compatible avec tous les appareils récents.',
+    };
+    expect(validatePublicationUpdate({
+      before,
+      patch: { is_active: true },
+      context: { catalogMediaCount: 3 },
+    })).toEqual({ ok: true });
+  });
+
+  it('ne bloque pas sur le média quand context absent (appels legacy)', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Câble USB-C charge rapide 120W, compatible avec tous les appareils récents.',
+    };
+    expect(validatePublicationUpdate({
+      before,
+      patch: { is_active: true },
+    })).toEqual({ ok: true });
+  });
+
+  it('le gate média ne s\'applique pas aux mises à jour d\'un produit déjà actif', () => {
+    const before = {
+      name: 'Câble USB-C rapide',
+      category: 'Tech',
+      price_kmf: 5000,
+      stock: 10,
+      is_active: true,
+      is_available: true,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+      description: 'Description existante suffisante pour le test.',
+    };
+    expect(validatePublicationUpdate({
+      before,
+      patch: { stock: 5 },
+      context: { catalogMediaCount: 0 },
+    })).toEqual({ ok: true });
+  });
+
+  // ── Produit déjà actif ──────────────────────────────────────────
 
   it('ne réapplique pas les invariants de première activation aux mises à jour d’un produit déjà actif', () => {
     const before = {

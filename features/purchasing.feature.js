@@ -38,6 +38,7 @@ module.exports = {
       'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d\'achat sans exécution automatique',
       'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
+      'Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -71,9 +72,12 @@ module.exports = {
     routes: [
       'routes/purchasing.js',
     ],
-    migrations: [],
+    migrations: [
+      'migrations/225_purchase_orders_exact_supplier_identity.sql',
+    ],
     tests: [
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
+      'tests/integration/purchasing-exact-sku-po.test.js',
       'tests/unit/purchasing.test.js',
       'tests/unit/purchasing-receive-service.test.js',
       'tests/unit/purchasing-cancel-service.test.js',
@@ -94,6 +98,7 @@ module.exports = {
     tables: [
       'order_items: R',
       'orders: R',
+      'product_skus: R',
       'product_suppliers: RW',
       'products: R',
       'purchase_orders: RW!',
@@ -157,6 +162,10 @@ module.exports = {
   invariants: [
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
+    { statement: 'une ligne LOCAL_STOCK ne crée jamais de Purchase Order fournisseur ; seules les lignes IMPORT appartiennent au procurement fournisseur',
+      test: 'tests/unit/purchasing-trigger-service.test.js' },
+    { statement: 'si order_items.sku_id est renseigné, la Purchase Order doit conserver exactement ce product_sku_id, son supplier_unit_ref et sa Supplier Order Identity ; product_suppliers ne peut pas substituer un supplier_sku générique',
+      test: 'tests/integration/purchasing-exact-sku-po.test.js' },
     { statement: 'une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage',
       test: 'tests/unit/supplier-order-identity.test.js' },
     { statement: 'tout adapter fulfillment est provider-scopé, traite un payload d\'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent',
@@ -182,7 +191,7 @@ module.exports = {
       ownsLifecycle:       true,
       activeService:       true,
       multiConsumer:       false,
-      ownsMigrations:      false,
+      ownsMigrations:      true,
       externalSideEffect:  'outbound-message',
       surface:             'api',
     },
