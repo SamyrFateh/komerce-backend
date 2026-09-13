@@ -1,0 +1,126 @@
+name: Staging AliExpress FR enrichment pilot
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-aliexpress-enrich-fr-pilot
+  cancel-in-progress: false
+
+jobs:
+  enrich-fr-pilot:
+    name: AliExpress FR enrichment — 5-product pilot
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] aliexpress-enrich-fr-pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      CATALOG_ENRICH_PROVIDER: openai
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Require staging secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          test -n "${OPENAI_API_KEY:-}" || { echo '::error::OPENAI_API_KEY manquant'; exit 1; }
+
+      - name: Execute bounded French enrichment pilot
+        id: enrich
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 600s node scripts/batch-enrich-fr.js --execute --limit=5 --concurrency=1)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Audit exact five enriched products
+        id: audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          const refs = ['KPR-131413','KPR-131414','KPR-131415','KPR-131416','KPR-131417'];
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT p.id, p.product_ref, p.content_source, p.needs_review,
+                     p.enrichment_confidence, p.source_locale,
+                     length(trim(coalesce(p.name,''))) AS name_len,
+                     length(trim(coalesce(p.description,''))) AS description_len,
+                     COUNT(ps.id) FILTER (
+                       WHERE ps.is_active = TRUE
+                         AND ps.supplier_unit_ref IS NOT NULL
+                         AND ps.supplier_order_identity IS NOT NULL
+                     )::int AS soi_complete_skus
+                FROM products p
+                LEFT JOIN product_skus ps ON ps.product_id = p.id
+               WHERE p.product_ref = ANY($1::text[])
+               GROUP BY p.id, p.product_ref, p.content_source, p.needs_review,
+                        p.enrichment_confidence, p.source_locale
+               ORDER BY p.product_ref`, [refs]);
+
+            console.log(JSON.stringify(rows, null, 2));
+            const byRef = new Map(rows.map(r => [r.product_ref, r]));
+            const missing = refs.filter(ref => !byRef.has(ref));
+            const notEnriched = rows.filter(r => r.content_source !== 'ai_enriched');
+            const badText = rows.filter(r => Number(r.name_len) < 2 || Number(r.description_len) < 20);
+            const noSoi = rows.filter(r => Number(r.soi_complete_skus) < 1);
+            if (missing.length || notEnriched.length || badText.length || noSoi.length) {
+              console.error(JSON.stringify({ missing, notEnriched: notEnriched.map(r => r.product_ref), badText: badText.map(r => r.product_ref), noSoi: noSoi.map(r => r.product_ref) }, null, 2));
+              process.exitCode = 1;
+            }
+          })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Write pilot summary
+        if: always()
+        shell: bash
+        env:
+          ENRICH_SUMMARY: ${{ steps.enrich.outputs.summary }}
+        run: |
+          {
+            echo '## AliExpress FR enrichment pilot'
+            echo
+            echo '- scope: KPR-131413 → KPR-131417 (5 products)'
+            echo '- provider: OpenAI'
+            echo '- SOI prerequisite: already proven +32 complete SKUs'
+            if [ -n "${ENRICH_SUMMARY:-}" ]; then echo "- enrichment: \`${ENRICH_SUMMARY}\`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Staging AliExpress FR enrichment pilot completed successfully for KPR-131413 → KPR-131417. Post-write audit passed.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
