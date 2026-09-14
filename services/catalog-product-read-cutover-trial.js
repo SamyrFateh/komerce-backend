@@ -7,7 +7,7 @@
  * @inputs        canonical_product_projection, proven_catalog_product_link
  * @outputs       reversible_internal_read_seam_trial_report
  * @depends       db.js, services/sourcing-canonical-product-projection.js, services/catalog-public-view.js
- * @used-by       scripts/catalog-product-read-cutover-trial-staging.js
+ * @used-by       scripts/catalog-product-read-cutover-trial-staging.js, services/catalog-product-route-canary.js
  * @db-read       sourcing_canonical_entities, sourcing_resolution_bindings, sourcing_observations, sourcing_captures, sourcing_candidates, products
  * @db-write      none
  * @db-txn        none

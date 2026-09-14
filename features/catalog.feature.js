@@ -231,6 +231,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/admin-boutique-categories.test.js',
+      'tests/unit/catalog-product-route-canary-http.test.js',
       'tests/unit/api-connector-base.test.js',
       'tests/unit/categories-cache.test.js',
       'tests/unit/categories.test.js',
@@ -387,6 +388,7 @@ module.exports = {
       { fn: 'updateSourcingFields', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'bulkAssignSourcingRail', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'replaceVariantsForSourcing', file: 'services/catalog-product-mutation-service.js' },
+      { fn: 'maybeApplyCatalogProductRouteCanary', file: 'services/catalog-product-route-canary.js' },
     ],
     consumes: [
       'sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)',

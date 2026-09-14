@@ -121,6 +121,8 @@ module.exports = {
       'tests/unit/sourcing-shadow-resolution-service.test.js',
       'tests/unit/sourcing-shadow-proof-service.test.js',
       'tests/unit/sourcing-canonical-product-projection.test.js',
+      'tests/unit/sourcing-catalog-product-linkage.test.js',
+      'tests/unit/catalog-product-route-canary.test.js',
       'tests/unit/sourcing-product-read-comparison.test.js',
       'tests/unit/catalog-product-read-cutover-trial.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',

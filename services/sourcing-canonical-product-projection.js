@@ -7,7 +7,7 @@
  * @inputs        active_product_resolution_bindings, immutable_product_observations, identity_evidence
  * @outputs       shadow_canonical_product_projection
  * @depends       db.js
- * @used-by       scripts/sourcing-product-projection-trial-staging.js
+ * @used-by       scripts/sourcing-product-projection-trial-staging.js, services/catalog-product-route-canary.js
  * @db-read       sourcing_canonical_entities, sourcing_resolution_bindings, sourcing_observations, sourcing_captures, sourcing_sources, sourcing_observation_evidence
  * @db-write      none
  * @db-txn        none
