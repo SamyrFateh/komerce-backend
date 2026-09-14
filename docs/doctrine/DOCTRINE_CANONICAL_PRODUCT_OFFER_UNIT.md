@@ -51,3 +51,8 @@ Une Unit déterministe peut rester non prête : SOI absente, stock nul, unité i
 Ce lot est strictement read-only. Il ne modifie ni Catalog, ni Supplier Order Identity historique, ni Purchasing. Il n'effectue aucune Selection, publication, commande fournisseur ou `placeOrder`.
 
 La comparaison avec `product_skus` est un rapport de parité uniquement. Le legacy reste autoritatif.
+
+
+## Rapport corpus
+
+Le collecteur de comparaison peut scanner les identités actives et les `product_skus` fournisseur uniquement dans un job/report shadow explicite. Les APIs `collectCanonicalOfferProjectionById` et `collectCanonicalUnitProjectionById` restent ciblées par ID pour tout futur consumer HTTP ou Purchasing.
