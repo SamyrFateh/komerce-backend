@@ -59,6 +59,6 @@ test('seam non SAFE sert strictement legacy', async () => {
 });
 test('exception interne est absorbée et observable seulement en interne', async () => {
   const result = await run({ linkageFn: async () => { throw new Error('db'); } });
-  expect(result.diagnostic.status).toBe('legacy_canary_error');
+  expect(result.diagnostic.status).toBe('legacy_read_error');
   expect(result.row).toBe(legacy);
 });
