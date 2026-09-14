@@ -49,6 +49,7 @@ module.exports = {
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
       'Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection',
       'preuve multi-source read-only avant essai de projection canonique Product',
+      'Golden E2E provider-agnostic de Source à Canonical Unit puis Purchasing HARD_STOP',
       'projection canonique Product read-only en shadow, consensus-only avec conflits préservés',
       'comparaison parallèle read-only entre projection Product canonique et autorité historique reliée',
       'scan de candidat (pricing-engine) et décision garder / watchlist / rejeter',
@@ -93,6 +94,7 @@ module.exports = {
       'scripts/sourcing-product-projection-trial-staging.js',
       'scripts/sourcing-product-read-comparison-staging.js',
       'scripts/catalog-product-read-cutover-trial-staging.js',
+      'scripts/sourcing-golden-e2e-staging.js',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
@@ -101,6 +103,7 @@ module.exports = {
       'services/sourcing-resolution-evidence.js',
       'services/sourcing-shadow-resolution-service.js',
       'services/sourcing-shadow-proof-service.js',
+      'services/sourcing-golden-e2e-service.js',
       'services/sourcing-canonical-product-projection.js',
       'services/sourcing-canonical-commercial-projection-core.js',
       'services/sourcing-canonical-offer-projection.js',
@@ -125,6 +128,7 @@ module.exports = {
       'tests/unit/sourcing-resolution-evidence.test.js',
       'tests/unit/sourcing-shadow-resolution-service.test.js',
       'tests/unit/sourcing-shadow-proof-service.test.js',
+      'tests/unit/sourcing-golden-e2e-service.test.js',
       'tests/unit/sourcing-canonical-product-projection.test.js',
       'tests/unit/sourcing-canonical-offer-projection.test.js',
       'tests/unit/sourcing-canonical-unit-projection.test.js',
@@ -210,6 +214,7 @@ module.exports = {
       { fn: 'recordCatalogImportObservationsShadow', file: 'services/sourcing-observation-shadow-service.js' },
       { fn: 'resolveCaptureShadow', file: 'services/sourcing-shadow-resolution-service.js' },
       { fn: 'collectShadowProof', file: 'services/sourcing-shadow-proof-service.js' },
+      { fn: 'collectGoldenE2E', file: 'services/sourcing-golden-e2e-service.js' },
       { fn: 'collectCanonicalProductProjections', file: 'services/sourcing-canonical-product-projection.js' },
       { fn: 'collectCanonicalOfferProjectionById', file: 'services/sourcing-canonical-offer-projection.js' },
       { fn: 'collectCanonicalUnitProjectionById', file: 'services/sourcing-canonical-unit-projection.js' },
@@ -260,6 +265,8 @@ module.exports = {
     'un conflit descriptif multi-source est préservé explicitement et ne devient jamais une valeur canonique silencieuse',
     'la comparaison Product parallèle ne fabrique jamais un lien catalogue : seul sourcing_candidates.product_id autorise la parité products',
     'l absence de produit catalogue relié bloque le gate de cutover sans invalider la projection canonique',
+    'Manual, CJ et AliExpress sont des preuves minimales, jamais une whitelist : une source future reste compatible via refs namespacées et SOI opaque',
+    'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
   ],
 
 };
