@@ -16,6 +16,7 @@ const {
   buildProductListUrl,
   fetchProducts,
   resetTokenCacheForTests,
+  DEFAULT_DETAIL_DELAY_MS,
 } = require('../../services/suppliers/connectors/cj-connector');
 
 function response(body, status = 200) {
@@ -144,6 +145,22 @@ describe('cj-connector', () => {
     expect(structure.sellable_units[1].stock_available).toBe(30);
   });
 
+  test('remappe un média variante dupliqué vers un supplier_media_id réellement présent', () => {
+    const duplicateImageDetail = {
+      ...rawDetail,
+      bigImage: rawDetail.variants[0].variantImage,
+      productImageSet: [rawDetail.variants[0].variantImage],
+    };
+    const product = normalizeCjProduct(duplicateImageDetail);
+    const knownMediaIds = new Set((product.media || []).map((item) => item.supplier_media_id).filter(Boolean));
+    const refs = (product.sellable_units || []).flatMap((unit) => unit.media_refs || []);
+
+    expect(product.media.filter((item) => item.url === rawDetail.variants[0].variantImage)).toHaveLength(1);
+    expect(product.sellable_units[0].media_refs).toEqual([`${rawDetail.pid}:hero`]);
+    expect(refs.length).toBeGreaterThan(0);
+    expect(refs.every((ref) => knownMediaIds.has(ref))).toBe(true);
+  });
+
   test('normalise le détail CJ en V2 commandable avec prix et stock agrégés depuis les variantes', () => {
     const product = normalizeCjProduct(rawDetail);
     expect(product.supplier_product_id).toBe(rawDetail.pid);
@@ -251,6 +268,66 @@ describe('cj-connector', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url] = fetchImpl.mock.calls[0];
     expect(String(url)).toContain('/product/query?pid=1369601676230660096');
+  });
+
+  test('cadence les détails ciblés séquentiellement pour respecter la limite CJ 1 QPS', async () => {
+    const sleepImpl = jest.fn().mockResolvedValue(undefined);
+    const fetchImpl = jest.fn().mockImplementation(async (url) => {
+      const pid = new URL(String(url)).searchParams.get('pid');
+      return response({
+        code: 200,
+        result: true,
+        success: true,
+        data: { ...rawDetail, pid },
+        requestId: `req-${pid}`,
+      });
+    });
+    const productIds = ['1369601676230660096', '1369601676230660097', '1369601676230660098'];
+
+    const result = await fetchProducts({
+      fetchImpl,
+      sleepImpl,
+      env: { CJ_ACCESS_TOKEN: 'token' },
+      productIds,
+    });
+
+    expect(result.products).toHaveLength(3);
+    expect(result.invalid).toHaveLength(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleepImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl).toHaveBeenNthCalledWith(1, DEFAULT_DETAIL_DELAY_MS);
+    expect(sleepImpl).toHaveBeenNthCalledWith(2, DEFAULT_DETAIL_DELAY_MS);
+  });
+
+  test('retente localement un détail CJ en 429 sans paralléliser le core', async () => {
+    const sleepImpl = jest.fn().mockResolvedValue(undefined);
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce(response({
+        result: false,
+        success: false,
+        message: 'Too Many Requests, QPS limit is 1 time/1second',
+        requestId: 'req-429',
+      }, 429))
+      .mockResolvedValueOnce(response({
+        code: 200,
+        result: true,
+        success: true,
+        data: rawDetail,
+        requestId: 'req-ok',
+      }));
+
+    const result = await fetchProducts({
+      fetchImpl,
+      sleepImpl,
+      env: { CJ_ACCESS_TOKEN: 'token' },
+      productIds: [rawDetail.pid],
+    });
+
+    expect(result.products).toHaveLength(1);
+    expect(result.invalid).toHaveLength(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+    expect(sleepImpl).toHaveBeenCalledWith(DEFAULT_DETAIL_DELAY_MS);
   });
 
   test('propage une erreur CJ avec requestId sans secret', async () => {
