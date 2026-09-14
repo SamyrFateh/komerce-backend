@@ -33,9 +33,14 @@
  *     docs/DASHBOARDS_360_CANONICAL.md
  *
  * Modes :
- *   node scripts/gen-dashboards-360-canonical.js            → génère les deux fichiers
- *   node scripts/gen-dashboards-360-canonical.js --check    → cliquet, exit 1 si régression
- *   node scripts/gen-dashboards-360-canonical.js --save     → fige la baseline courante
+ *   node scripts/gen-dashboards-360-canonical.js               → génère les deux fichiers
+ *   node scripts/gen-dashboards-360-canonical.js --check       → cliquet, exit 1 si régression
+ *   node scripts/gen-dashboards-360-canonical.js --save        → fige la baseline courante
+ *   node scripts/gen-dashboards-360-canonical.js --check-zero  → génère le modèle en mémoire et
+ *       l'écrit dans un fichier TEMPORAIRE (os.tmpdir()), jamais dans docs/. Sert au zero-gate
+ *       (check-dashboards-360-canonical-zero.js --tmp) sans jamais muter l'arbre git — le
+ *       generatedAt change à chaque run, donc écrire dans docs/ ferait échouer en permanence
+ *       l'étape CI "Prove gates did not mutate the tree" (cf. incident PR #1514).
  *
  * Principe de preuve (identique à Legacy, jamais dérogé) :
  *   Un statut n'est écrit que s'il est observé dans le code. Aucun cas non
@@ -49,6 +54,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const ROOT = path.resolve(__dirname, '..');
 const CANON_DIR = path.join(ROOT, 'public/dashboards/canonical');
@@ -61,10 +67,13 @@ const DOCS = path.join(ROOT, 'docs');
 const OUT_JSON = path.join(DOCS, 'DASHBOARDS_360_CANONICAL.json');
 const OUT_MD = path.join(DOCS, 'DASHBOARDS_360_CANONICAL.md');
 const BASELINE = path.join(__dirname, '.dashboards-360-canonical-baseline.json');
+// Emplacement non-tracké partagé avec check-dashboards-360-canonical-zero.js --tmp.
+const TMP_REPORT = path.join(os.tmpdir(), 'komerce-dashboards-360-canonical.json');
 
 const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
 const SAVE = args.includes('--save');
+const CHECK_ZERO = args.includes('--check-zero');
 
 const RED = '\x1b[31m', GRN = '\x1b[32m', YLW = '\x1b[33m', CYN = '\x1b[36m', MAG = '\x1b[35m', BLD = '\x1b[1m', DIM = '\x1b[2m', R = '\x1b[0m';
 
@@ -1012,6 +1021,12 @@ if (require.main === module) {
 
   if (CHECK) {
     process.exit(runCheck(model));
+  }
+
+  if (CHECK_ZERO) {
+    fs.writeFileSync(TMP_REPORT, JSON.stringify(model, null, 2));
+    console.log(`${GRN}${BLD}✔ Projection Canonical générée pour le zero-gate${R} ${DIM}(non écrite dans docs/, ${TMP_REPORT})${R}`);
+    process.exit(0);
   }
 
   if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
