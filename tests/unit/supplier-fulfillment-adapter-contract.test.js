@@ -1,5 +1,8 @@
 'use strict';
 
+// Regression boundary: Canonical Offer/Unit shadow must not change this authority.
+
+
 const contract = require('../../services/suppliers/supplier-fulfillment-adapter-contract');
 const readiness = require('../../services/suppliers/supplier-fulfillment-readiness');
 const aliexpress = require('../../services/suppliers/aliexpress-fulfillment-adapter');
