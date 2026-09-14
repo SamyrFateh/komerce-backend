@@ -66,8 +66,27 @@ describe('Sourcing — decision-first visual', () => {
     expect(decision.summaryCards(items).every(card => card.tone === 'neutral')).toBe(true);
   });
 
-  test('enhance conserve le mount global sourcing et décore uniquement MetricStrip', async () => {
-    const payload = { scope: { mode: 'global_sourcing' }, summary: summaryFixture() };
+  test('healthMetrics affiche le verdict backend sans le reclasser', () => {
+    expect(decision.healthMetrics({
+      state: {
+        global: 'BROKEN', integrity: 'BROKEN', performance: 'ATTENTION', blockers: 2,
+        trend: { status: 'UNKNOWN' },
+      },
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'health', value: 'BROKEN', tone: 'critical' }),
+      expect.objectContaining({ key: 'integrity', value: 'BROKEN', tone: 'critical' }),
+      expect.objectContaining({ key: 'performance', value: 'ATTENTION', tone: 'warning' }),
+      expect.objectContaining({ key: 'blockers', value: '2', tone: 'critical' }),
+      expect.objectContaining({ key: 'trend', value: 'UNKNOWN', tone: 'neutral' }),
+    ]));
+  });
+
+  test('enhance conserve le mount global et lit la santé déjà projetée par le backend', async () => {
+    const payload = {
+      scope: { mode: 'global_sourcing' },
+      summary: summaryFixture(),
+      health: { schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } },
+    };
     const baseMount = jest.fn(options => Promise.resolve(payload));
     const base = { metricItems: workspace.metricItems, mount: baseMount };
     const ui = {
@@ -80,12 +99,14 @@ describe('Sourcing — decision-first visual', () => {
       DecisionStrip: { render: jest.fn() },
       SummaryCards: { render: jest.fn() },
     };
+    const fetchFn = jest.fn();
 
     const enhanced = decision.enhance(base, decisionUi);
-    const result = await enhanced.mount({ ui, document: {} });
+    const result = await enhanced.mount({ ui, document: {}, fetch: fetchFn });
 
     expect(baseMount).toHaveBeenCalledTimes(1);
     expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).not.toBe(ui.MetricStrip.render);
+    expect(fetchFn).not.toHaveBeenCalled();
     expect(result).toBe(payload);
   });
 });

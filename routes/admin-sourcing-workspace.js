@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
  * @outputs       global_sourcing_projection, sourcing_action_results
- * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js
+ * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
  * @db-write      none
  * @db-txn        delegated_to_sourcing_workspace_service
- * @doctrine      global_sourcing_authority, no_client_market_dimension, no_browser_internal_ids
+ * @doctrine      global_sourcing_authority, no_client_market_dimension, no_browser_internal_ids, dashboard_observes_server_truth
  * @impact-areas  sourcing, catalog, partners, admin-dashboard
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -22,6 +22,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 const workspace = require('../services/sourcing-workspace');
+const sourcingHealth = require('../services/sourcing-integrity-service');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin', 'sourcing']), requireSourcingGlobalAuthority];
@@ -68,7 +69,11 @@ function handleError(err, res, next) {
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(await workspace.buildWorkspace());
+    const [payload, health] = await Promise.all([
+      workspace.buildWorkspace(),
+      sourcingHealth.buildHealthDashboard(),
+    ]);
+    res.json({ ...payload, health });
   } catch (err) { handleError(err, res, next); }
 });
 
