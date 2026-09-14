@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-12T18:03:17.114Z",
+  "generatedAt": "2026-09-14T12:43:01.234Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 637,
-    "protected": 582,
+    "total": 639,
+    "protected": 584,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -815,6 +815,21 @@
     },
     {
       "key": "GET /api/admin/dashboard/operations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/orders/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/orders",
       "level": "PROTECTED",
       "roles": [
         "admin"

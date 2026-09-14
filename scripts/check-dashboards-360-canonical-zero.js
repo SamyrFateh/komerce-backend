@@ -10,12 +10,25 @@
  * Fail-closed zero-debt gate for the Canonical dashboard 360 projection.
  * Unlike the rollback Legacy map, the new Canonical proof starts clean:
  * there is therefore no tolerance baseline to maintain or grow.
+ *
+ * Modes :
+ *   node scripts/check-dashboards-360-canonical-zero.js        → lit docs/DASHBOARDS_360_CANONICAL.json
+ *       (utiliser après une génération réelle, ex. dashboards:canonical:360:save)
+ *   node scripts/check-dashboards-360-canonical-zero.js --tmp  → lit la projection temporaire écrite
+ *       par `gen-dashboards-360-canonical.js --check-zero` (os.tmpdir()) — mode CI, ne touche jamais
+ *       à docs/ (cf. incident PR #1514 : le generatedAt mutait l'arbre à chaque run).
  */
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const REPORT = path.resolve(__dirname, '..', 'docs', 'DASHBOARDS_360_CANONICAL.json');
+const args = process.argv.slice(2);
+const USE_TMP = args.includes('--tmp');
+
+const REPORT = USE_TMP
+  ? path.join(os.tmpdir(), 'komerce-dashboards-360-canonical.json')
+  : path.resolve(__dirname, '..', 'docs', 'DASHBOARDS_360_CANONICAL.json');
 
 const BLOCKING = Object.freeze({
   surfaceWithoutModule: 'surface de navigation sans module',

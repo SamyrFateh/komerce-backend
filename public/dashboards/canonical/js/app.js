@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/orders, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -25,6 +25,7 @@
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
+    ORDERS: 'orders',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
     OPERATIONS_WORKSPACE: 'operations-workspace',
@@ -145,6 +146,7 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
+    if (path === '/admin/orders' || path === '/admin-next/orders') return SURFACES.ORDERS;
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (path === '/admin/clients' || path === '/admin-next/clients') return SURFACES.CLIENT_INDEX;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
@@ -363,6 +365,10 @@
     return canonicalMount(global.KomerceCanonicalOperations, 'canonical_operations_module_missing', root, user, adminContext, requestedMarket);
   }
 
+  function renderOrders(root, user, adminContext, requestedMarket) {
+    return canonicalMount(global.KomerceCanonicalOrders, 'canonical_orders_module_missing', root, user, adminContext, requestedMarket);
+  }
+
   function renderFinance(root, user, adminContext, requestedMarket) {
     return canonicalMount(global.KomerceCanonicalFinance, 'canonical_finance_module_missing', root, user, adminContext, requestedMarket);
   }
@@ -569,6 +575,14 @@
     });
   }
 
+  function renderOrdersShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'orders',
+      title: 'Suivi des commandes',
+      render: renderOrders,
+    });
+  }
+
   function renderFinanceShell(root, user, adminContext) {
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'finance',
@@ -652,6 +666,7 @@
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
+    if (surface === SURFACES.ORDERS) return renderOrdersShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
     if (surface === SURFACES.FINANCE) return renderFinanceShell(root, user, adminContext);
     return renderPilotageShell(root, user, adminContext);
@@ -742,6 +757,7 @@
     mountMarketSelector,
     renderPilotage,
     renderCommerce,
+    renderOrders,
     renderOperations,
     renderFinance,
     renderOperationsWorkspace,
@@ -758,6 +774,7 @@
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,
+    renderOrdersShell,
     renderClientIndexShell,
     renderOperationsShell,
     renderFinanceShell,
