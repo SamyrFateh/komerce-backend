@@ -1,5 +1,9 @@
 'use strict';
-/** @test-kind unit @test-runner jest @test-requires none */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { prepareCanonicalUnitPurchase } = require('../../services/suppliers/canonical-unit-purchasing-gate');
 
 const soi = (provider, payload) => ({ provider, version: 1, payload });
