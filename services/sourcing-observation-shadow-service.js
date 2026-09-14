@@ -5,13 +5,13 @@
  * @layer         service
  * @criticality   high
  * @inputs        normalized_supplier_product_v2_batch, catalog_import_context
- * @outputs       sourcing_source, capture, immutable_observations, shadow_summary
- * @depends       db.js, node:crypto, services/sourcing-observation-shadow-plan.js
+ * @outputs       sourcing_source, capture, immutable_observations, shadow_summary, shadow_resolution_summary
+ * @depends       db.js, node:crypto, services/sourcing-observation-shadow-plan.js, services/sourcing-shadow-resolution-service.js
  * @used-by       services/suppliers/catalog-import-orchestrator.js
  * @db-read       none
  * @db-write      sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
  * @db-txn        owned
- * @doctrine      docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md
+ * @doctrine      docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md, docs/doctrine/DOCTRINE_SOURCE_SHADOW_RESOLUTION.md
  * @impact-areas  sourcing, catalog, supplier-import
  * @version       2026-09
  */
@@ -20,12 +20,13 @@
 const crypto = require('crypto');
 const db = require('../db');
 const { isV2, buildObservationPlan, observedProvides } = require('./sourcing-observation-shadow-plan');
+const shadowResolution = require('./sourcing-shadow-resolution-service');
 
 const CHUNK = 150;
 
 function sourceTypeOf(value) {
   const v = String(value || '').trim().toLowerCase();
-  if (!['api', 'csv', 'manual', 'json'].includes(v)) throw new Error(`source_type shadow non supporte: ${v || '(vide)'}`);
+  if (!['api', 'csv', 'manual', 'json'].includes(v)) throw new Error('source_type shadow non supporte: ' + (v || '(vide)'));
   return v;
 }
 
@@ -68,7 +69,7 @@ async function insertRows(client, rows) {
       const b = i * 10;
       params.push(r.id, r.captureId, r.grain, r.sourceRef, null, r.parentId, r.observedAt,
         JSON.stringify(r.normalized), '{}', JSON.stringify(r.raw));
-      const p = (n) => `$${b + n}`;
+      const p = (n) => '$' + (b + n);
       return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)}::jsonb,${p(9)}::jsonb,${p(10)}::jsonb)`;
     });
     await client.query(
@@ -131,17 +132,25 @@ async function persistShadow(client, context) {
 async function recordCatalogImportObservationsShadow(context) {
   if (!(context?.products || []).some(isV2)) return { status: 'skipped', reason: 'no_v2_products', observations: 0 };
   const client = await db.getClient();
+  let summary;
   try {
     await client.query('BEGIN');
-    const summary = await persistShadow(client, context);
+    summary = await persistShadow(client, context);
     await client.query('COMMIT');
-    return summary;
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;
   } finally {
     client.release();
   }
+
+  let resolution;
+  try {
+    resolution = await shadowResolution.resolveCaptureShadow(summary.capture_id);
+  } catch (err) {
+    resolution = { status: 'failed', code: err.code || 'SHADOW_RESOLUTION_FAILED' };
+  }
+  return { ...summary, resolution };
 }
 
 module.exports = {

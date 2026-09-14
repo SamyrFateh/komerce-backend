@@ -49,6 +49,7 @@ module.exports = {
     in: [
       'ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)',
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
+      'Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection',
       'scan de candidat (pricing-engine) et décision garder / watchlist / rejeter',
       'cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist',
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
@@ -66,7 +67,7 @@ module.exports = {
       'moteur margin/rail admin economic-engine (routes/sourcing.js, services/sourcing-analysis.js, ' +
         'services/sourcing-mutations.js) — HOMONYME sans rapport : voir note ci-dessous',
       'calcul de prix (feature economic-engine, pricing-engine, consommé ici en lecture)',
-      'Candidate Retrieval, Resolution et Selection runtime — hors PR 2',
+      'Selection fournisseur, publication, exposition commerciale et commande fournisseur',
     ],
   },
 
@@ -108,6 +109,8 @@ module.exports = {
       'services/sourcing-candidate-import-service.js',
       'services/sourcing-observation-shadow-plan.js',
       'services/sourcing-observation-shadow-service.js',
+      'services/sourcing-resolution-evidence.js',
+      'services/sourcing-shadow-resolution-service.js',
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
     ],
@@ -120,6 +123,8 @@ module.exports = {
       'tests/unit/sourcing-candidate-import-service.test.js',
       'tests/unit/sourcing-observation-shadow-plan.test.js',
       'tests/unit/sourcing-observation-shadow-service.test.js',
+      'tests/unit/sourcing-resolution-evidence.test.js',
+      'tests/unit/sourcing-shadow-resolution-service.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
@@ -149,6 +154,12 @@ module.exports = {
       'sourcing_source_provides: W!',    // OWNER — capabilities observées shadow
       'sourcing_captures: W!',           // OWNER — lots d acquisition shadow
       'sourcing_observations: W!',       // OWNER — observations immuables shadow
+      'sourcing_observation_evidence: W!', // OWNER — index Evidence reconstructible PR 3
+      'sourcing_canonical_entities: RW!',  // OWNER — lifecycle identites canoniques shadow
+      'sourcing_canonical_entity_refs: W!', // OWNER — refs externes source-scoped
+      'sourcing_match_proposals: W!',      // OWNER — propositions append-only
+      'sourcing_resolution_decisions: W!', // OWNER — decisions append-only
+      'sourcing_resolution_bindings: RW!', // OWNER — projection courante Observation -> Canonical
       'supplier_catalog_imports: R',    // W-via:catalog-import-orchestrator (feature catalog)
       // PDC-8 Lot 6 — import-product ouvre une transaction dédiée (db.getClient)
       // qui inclut les appels catalog owner dans la même transaction.
@@ -196,6 +207,7 @@ module.exports = {
       { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
       { fn: 'archiveMissingCandidatesFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
       { fn: 'recordCatalogImportObservationsShadow', file: 'services/sourcing-observation-shadow-service.js' },
+      { fn: 'resolveCaptureShadow', file: 'services/sourcing-shadow-resolution-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
@@ -238,7 +250,9 @@ module.exports = {
     'le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité',
     'une ré-observation V2 crée une nouvelle Capture et de nouvelles Observations ; elle ne mute jamais une Observation existante',
     'un échec du writer shadow ne bloque jamais l import sourcing_candidates autoritatif',
-    'PR 2 ne crée ni Evidence, ni Resolution, ni Selection et ne déduit aucun execution_mode',
+    'Candidate Retrieval réduit l espace de comparaison mais ne décide jamais seul de l identité',
+    'Resolution ne compare jamais prix, stock, fret ou délai et ne sélectionne aucun fournisseur',
+    'un LINK automatique PR 3 exige une preuve forte non contradictoire : source_ref exacte, contexte Offer même Source+parent, ou GTIN exact',
   ],
 
 };

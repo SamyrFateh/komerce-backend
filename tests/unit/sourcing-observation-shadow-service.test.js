@@ -1,7 +1,10 @@
 'use strict';
 
 jest.mock('../../db');
+jest.mock('../../services/sourcing-shadow-resolution-service');
+
 const db = require('../../db');
+const shadowResolution = require('../../services/sourcing-shadow-resolution-service');
 const shadow = require('../../services/sourcing-observation-shadow-service');
 
 function product() {
@@ -14,9 +17,14 @@ function product() {
 }
 
 describe('sourcing shadow observation persistence', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    shadowResolution.resolveCaptureShadow.mockResolvedValue({
+      status: 'resolved', observations: 3, new_canonical: 3, linked: 0, review_required: 0,
+    });
+  });
 
-  test('ecrit Source/Capture/Observations dans une transaction sans execution mode', async () => {
+  test('ecrit Source/Capture/Observations puis lance Resolution apres le COMMIT', async () => {
     const seen = [];
     const client = {
       query: jest.fn(async (sql, params) => { seen.push(String(sql)); return { rows: [], params }; }),
@@ -31,6 +39,7 @@ describe('sourcing shadow observation persistence', () => {
 
     expect(out.status).toBe('recorded');
     expect([out.products, out.offers, out.units, out.observations]).toEqual([1, 1, 1, 3]);
+    expect(out.resolution.status).toBe('resolved');
     expect(seen.some((s) => s.includes('INSERT INTO sourcing_sources'))).toBe(true);
     expect(seen.some((s) => s.includes('INSERT INTO sourcing_captures'))).toBe(true);
     expect(seen.some((s) => s.includes('INSERT INTO sourcing_observations'))).toBe(true);
@@ -38,13 +47,34 @@ describe('sourcing shadow observation persistence', () => {
     expect(client.query.mock.calls[0][0]).toBe('BEGIN');
     expect(client.query.mock.calls[client.query.mock.calls.length - 1][0]).toBe('COMMIT');
     expect(client.release).toHaveBeenCalledTimes(1);
+    expect(shadowResolution.resolveCaptureShadow).toHaveBeenCalledTimes(1);
+    expect(shadowResolution.resolveCaptureShadow).toHaveBeenCalledWith(out.capture_id);
   });
 
-  test('V1 ne cree aucune connexion DB', async () => {
+  test('un echec Resolution reste non bloquant apres la persistance des Observations', async () => {
+    const client = { query: jest.fn(async () => ({ rows: [] })), release: jest.fn() };
+    db.getClient.mockResolvedValue(client);
+    const error = new Error('resolver unavailable');
+    error.code = 'RESOLVER_TEST_FAILURE';
+    shadowResolution.resolveCaptureShadow.mockRejectedValue(error);
+
+    const out = await shadow.recordCatalogImportObservationsShadow({
+      importId: 'import-2', supplierName: 'CJdropshipping', supplierId: 'cj', sourceType: 'api',
+      products: [product()],
+    });
+
+    expect(out.status).toBe('recorded');
+    expect(out.resolution).toEqual({ status: 'failed', code: 'RESOLVER_TEST_FAILURE' });
+    expect(client.query.mock.calls.some(([sql]) => sql === 'COMMIT')).toBe(true);
+    expect(client.query.mock.calls.some(([sql]) => sql === 'ROLLBACK')).toBe(false);
+  });
+
+  test('V1 ne cree aucune connexion DB ni Resolution', async () => {
     const out = await shadow.recordCatalogImportObservationsShadow({
       supplierName: 'Legacy', sourceType: 'manual', products: [{ product_name: 'x' }],
     });
     expect(out.status).toBe('skipped');
     expect(db.getClient).not.toHaveBeenCalled();
+    expect(shadowResolution.resolveCaptureShadow).not.toHaveBeenCalled();
   });
 });
