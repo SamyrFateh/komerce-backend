@@ -161,6 +161,83 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Workspaces autorisés | `PROVEN` | `FINANCE_SCHEMA.drill` filtré par rôle |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
 
+## Atelier économique
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_ATELIER_ECONOMIQUE_UI.md` (FIGÉ 2026-09-08).
+> Côté « fourni » : payload réel `GET /api/admin/workspaces/pricing`, scope `global_pricing`.
+
+| Information cible (doctrine §) | Statut | Motif |
+|---|---|---|
+| Verdict d'équilibre du marché (§8) | `PROVEN` | `economic.executive.status` = `blocking` / label `Bloquant` + `recommendation` — vérité `economic-engine` |
+| Alertes économiques | `PROVEN` | `economic.executive.alerts` (ex. `severity=critical`, `category=rentabilite`) |
+| Charges structurelles à couvrir (§6) | `PROVEN` | `economic.charges.totals.monthly` + `economic.executive.charges_summary.total_monthly` / `total_per_order` |
+| Contribution générée (§6) | `PROJECTABLE` | agrégat des `recommendations[].estimated_contribution_kmf`, sans recomposition portefeuille inventée |
+| Couverture (§6) | `PROJECTABLE` | champs `coverage` disponibles par ligne ; total projeté, recalcul serveur au changement de prix (doctrine §5) |
+| Reste à couvrir (§6) | `PROJECTABLE` | dérivé serveur disponible par ligne ; agrégat pur |
+| Contribution moyenne / article (§6) | `PROJECTABLE` | moyenne des contributions unitaires `recommendations[]`, sans scoring ajouté |
+| KPI économiques de tête | `PROVEN` | `economic.executive.kpis` : `total_cost_per_order`, `seuil_rentabilite`, `safety_ratio`, `margin_pressure`, `net_profit_per_order` |
+| Bloc Coûts variables directs (§3.1) | `PROVEN` | `cost_components` `economic_nature=variable`, `allocation_perimeter=direct` |
+| Bloc Charges fixes directes (§3.2) | `PROVEN` | `cost_components` `economic_nature=fixed`, `allocation_perimeter=direct` (ex. `charges_fixes_mensuelles_kmf`) |
+| Bloc Charges fixes mutualisées + quote-part Market ID (§3.3) | `BACKEND_GAP` | le payload `global_pricing` n'expose aucun `allocation_perimeter=mutualized` ni quote-part Market ID ; à prouver en scope `pricing/market/{code}` ou à câbler dans la projection |
+| Chaîne produit : coût d'achat (§4) | `PROVEN` | `products[].cost_kmf` / `recommendations[].cost_kmf` |
+| Chaîne produit : coûts variables hors achat + coût variable complet (§4) | `PROVEN` | `recommendations[].business_variable_cost_kmf`, `variable_cost_complete_kmf` — grisés/non éditables (§7) |
+| Chaîne produit : bornes marché basse / cible / haute (§4) | `PROVEN` | `recommendations[]` : `survival_price_kmf` (plancher), `minimum_safe_price_kmf`, `test_price_kmf`, `recommended_price_kmf` |
+| Chaîne produit : prix final marché retenu — seul levier (§5) | `PROVEN` | `simulation_products[].current_price_kmf` / `recommendations[].current_price_kmf` |
+| Chaîne produit : contribution unitaire (§4) | `PROVEN` | `recommendations[].estimated_contribution_kmf`, `estimated_margin_pct` |
+| Statut / santé produit | `PROVEN` | `recommendations[].status` (`overpriced`…), `health_status`, `sourcing_decision` — ordre serveur conservé |
+| Ancrage marché / observations concurrentes | `BACKEND_GAP` | `summary.competitor_observations=0`, `observed_cost_lines=0`, `recommendations[].market_confidence=unknown` — aucune observation ingérée ; le verdict `Bloquant` est alors légitime, pas masqué |
+| Taux de change appliqués | `PROVEN` | `rates.current` (`eur_kmf`, `aed_kmf`) + `rates.history` |
+| Taxonomie des charges | `PROVEN` | `cost_meta` (familles, natures, périmètres, unités, scopes, méthodes d'allocation) |
+| Fraîcheur / qualité | `PROVEN` | `economic.executive.generated_at` ; couverture d'observation exposée, révèle honnêtement le gap ancrage marché |
+
+Note de scope : matrice établie en `global_pricing`. Les lignes mutualisation / quote-part doivent être re-vérifiées en `pricing/market/{code}` avant clôture, la quote-part Market ID étant par nature une vérité par marché.
+
+## Catalogue pays
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_CATALOGUE.md` (une vérité produit, N projections marché).
+> Côté « fourni » : payload réel `GET /api/admin/workspaces/catalog`, scope `global_catalog`.
+
+| Information cible (doctrine §) | Statut | Motif |
+|---|---|---|
+| Autorité de première publication humaine (§6) | `PROVEN` | `curation.first_publication_authority` = `human_approval` |
+| Cap de curation / places restantes (§2) | `PROVEN` | `curation` : `catalog_cap_mvp`, `published_products`, `remaining_slots`, `fill_pct`, `at_cap` |
+| KPI catalogue | `PROVEN` | `summary` : `total_products`, `active_products`, `inactive_products`, `approval_pending`, `needs_review`, `categories` |
+| File de raffinerie / produits à valider (§2, §6) | `PROVEN` | collection `approval` (`content_source=connector_raw`, `needs_review=true`) |
+| Étages de la raffinerie — six étages (§2) | `PROJECTABLE` | dérivable de `lifecycle_status` (`active`/`candidate`) + `content_source` (`manual`/`connector_raw`) + `needs_review` ; aucun champ « étage » canonique explicite |
+| Éligibilité — étage ③ (§3) | `BACKEND_GAP` | aucun verdict d'éligibilité explicite dans le payload ; seul `needs_review` en tient lieu partiellement |
+| Préparation éditoriale française — étage ⑤ (§4) | `BACKEND_GAP` | `name`/`description` FR présents, mais aucun état de préparation éditoriale exposé |
+| Confiance d'enrichissement IA (§8) | `BACKEND_GAP` | `enrichment_confidence=null` sur tous les produits (publiés et en attente) ; l'assistance IA sous gouvernance n'est pas mesurée |
+| Taxonomie catégories | `PROVEN` | collection `categories` (11), ordre et rails serveur (`display_order`, `show_in_rail`) |
+| Produits publiés | `PROVEN` | collection `products` (`lifecycle_status`, `content_source`, `is_active`, `is_available`) |
+| Projection par marché — « Catalogue pays » (§1.1) | `BACKEND_GAP` ici | payload `global_catalog` : aucun champ marché / exposition (`market`/`expose`) ; la projection par pays est servie par la surface `market-catalog`, à tracer séparément |
+| Fraîcheur | `PROVEN` | `products[].updated_at`, `approval[].created_at` |
+| Qualité d'enrichissement | `BACKEND_GAP` | aucune mesure de confiance / complétude d'enrichissement exposée |
+
+Note de scope : cette matrice couvre la curation **globale** (vérité produit commune). La dimension « pays » du mock MOCK-CAT-001 (quels produits exposés par marché) relève de la surface `market-catalog` et doit être tracée à partir de son propre payload avant clôture.
+
+## Marchés
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_AUTONOMIE_RESPONSABLE_PAYS.md` §8 (Dashboard de délégation).
+> Côté « fourni » : payload composite `dashboard/context` + `users` + `pricing/market/{code}` (scope `market_pricing`).
+
+| Information cible (doctrine §8) | Statut | Motif |
+|---|---|---|
+| Identité du responsable | `PROVEN` | `users[]` : `full_name`, `email`, `role` |
+| Marché | `PROVEN` | `context.access.allowedMarkets` (`CG`, `CM`, `KM`, `YT`) + `pricing/market/{code}.scope` (`market_code`, `market_name`, `market_currency`) |
+| Niveau viewer / manager | `PROJECTABLE` | dérivable de `users[].market_scopes` + flags `access` ; aucun champ « niveau » unique canonique |
+| Capacité | `PROVEN` | `pricing/market/{code}.capabilities` (15 booléens : `simulation`, `cost_overrides`, `market_decision`, `market_corridor`, `manage_decision_policy`, `local_price_activation`, `local_strategy_owner`…) |
+| Périmètre | `PROVEN` | `scope` (`market_pricing`, `inherits_global`) + bloc `access` market-scopé |
+| État : disponible / manquante / bloquée | `PROJECTABLE` | projection des booléens `capabilities`/`access` (true = disponible, false = manquante) ; distinguer « bloquée » exige un motif serveur non fourni |
+| Outil / URL | `PROJECTABLE` | hrefs de navigation (config UI), sans preuve serveur d'accessibilité effective |
+| Dernière preuve d'accès | `PROJECTABLE` | `users[].last_login_at` (proxy global, non granulaire par marché) |
+| Dernière mutation auditée | `BACKEND_GAP` | la table `market_delegation_audit` existe (services de délégation) mais n'est projetée dans aucun payload Marchés ; aucune référence dans `markets*.js` |
+| Q1 « A-t-il le droit ? » | `PROVEN` | `access` + `capabilities` répondent directement |
+| Q2 « Peut-il réellement faire le travail ? » | `PROVEN` | les 15 booléens `capabilities` encodent exactement la faisabilité UI/API |
+| Overrides locaux du marché | `PROVEN` | `summary.overridden_cost_components` (ex. KM : 1 override) |
+| Frontière stratégie locale (currency boundary §4) | `PROVEN` | `access.local_strategy_owner=false` / `can_activate_local_prices=false` pour l'admin global : l'activation du prix local reste au responsable pays |
+
+Note de scope : matrice établie sur le marché `KM`. Les statuts `capabilities`/`access` sont par acteur × marché ; l'énumération « chaque responsable × chaque marché » de la doctrine §8 exige la jointure `users[].market_scopes` × assignments `market-delegation/team`, à valider avant clôture.
+
 ## Lots suivants
 
-Les gaps Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Commandes reste le seul écran non couvert : non migré en decision-first, sans payload canonique (`entities/orders/` → 404, `orders` → quasi vide). Sa migration exige d'abord un **contrat de payload** (files de travail, KPI prouvables, actions déléguées à la state machine commande) — chantier à part, pas une matrice à remplir. Deux compléments restent à tracer sur des surfaces annexes : la projection par marché du Catalogue (surface `market-catalog`) et l'énumération responsable × marché de la délégation (jointure `users` × `market-delegation/team`).
