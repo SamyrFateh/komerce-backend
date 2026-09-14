@@ -48,6 +48,7 @@ module.exports = {
   perimeter: {
     in: [
       'ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)',
+      'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
       'scan de candidat (pricing-engine) et décision garder / watchlist / rejeter',
       'cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist',
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
@@ -65,6 +66,7 @@ module.exports = {
       'moteur margin/rail admin economic-engine (routes/sourcing.js, services/sourcing-analysis.js, ' +
         'services/sourcing-mutations.js) — HOMONYME sans rapport : voir note ci-dessous',
       'calcul de prix (feature economic-engine, pricing-engine, consommé ici en lecture)',
+      'Candidate Retrieval, Resolution et Selection runtime — hors PR 2',
     ],
   },
 
@@ -104,6 +106,8 @@ module.exports = {
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
+      'services/sourcing-observation-shadow-plan.js',
+      'services/sourcing-observation-shadow-service.js',
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
     ],
@@ -114,6 +118,8 @@ module.exports = {
     tests: [
       'tests/unit/sourcing-scanner.test.js',
       'tests/unit/sourcing-candidate-import-service.test.js',
+      'tests/unit/sourcing-observation-shadow-plan.test.js',
+      'tests/unit/sourcing-observation-shadow-service.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
@@ -139,6 +145,10 @@ module.exports = {
     tables: [
       'sourcing_candidates: RW!',        // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'sourcing_candidate_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'sourcing_sources: W!',            // OWNER — writer shadow PR 2
+      'sourcing_source_provides: W!',    // OWNER — capabilities observées shadow
+      'sourcing_captures: W!',           // OWNER — lots d acquisition shadow
+      'sourcing_observations: W!',       // OWNER — observations immuables shadow
       'supplier_catalog_imports: R',    // W-via:catalog-import-orchestrator (feature catalog)
       // PDC-8 Lot 6 — import-product ouvre une transaction dédiée (db.getClient)
       // qui inclut les appels catalog owner dans la même transaction.
@@ -185,6 +195,7 @@ module.exports = {
     internalApi: [
       { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
       { fn: 'archiveMissingCandidatesFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
+      { fn: 'recordCatalogImportObservationsShadow', file: 'services/sourcing-observation-shadow-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
@@ -225,6 +236,9 @@ module.exports = {
     'une devise hors whitelist (AED, EUR, USD, KMF) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)',
     'un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé',
     'le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité',
+    'une ré-observation V2 crée une nouvelle Capture et de nouvelles Observations ; elle ne mute jamais une Observation existante',
+    'un échec du writer shadow ne bloque jamais l import sourcing_candidates autoritatif',
+    'PR 2 ne crée ni Evidence, ni Resolution, ni Selection et ne déduit aucun execution_mode',
   ],
 
 };
