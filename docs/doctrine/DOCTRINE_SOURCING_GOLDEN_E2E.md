@@ -4,9 +4,9 @@
 
 Le Golden prouve la continuité de la chaîne persistée :
 
-\`Source → Capture → Observation → Resolution → Canonical Product → Offer → Unit → sourcing_candidate → promotion catalogue inactive → product_sku → Canonical Unit → Supplier Order Identity → Purchasing readiness / HARD_STOP\`.
+`Source → Capture → Observation → Resolution → Canonical Product → Offer → Unit → sourcing_candidate → promotion catalogue inactive → product_sku → Canonical Unit → Supplier Order Identity → Purchasing readiness / HARD_STOP`.
 
-Il s'agit d'une preuve d'intégrité et non d'un rollout. Le script est read-only, ne publie rien, n'appelle aucun fournisseur et ne possède aucune capacité \`placeOrder\`.
+Il s'agit d'une preuve d'intégrité et non d'un rollout. Le script est read-only, ne publie rien, n'appelle aucun fournisseur et ne possède aucune capacité `placeOrder`.
 
 ## Compatibilité avec les sources futures
 
@@ -14,10 +14,10 @@ Manual, CJ et AliExpress constituent le minimum de preuve du lot, jamais une whi
 
 - Source instance stable et namespace explicite ;
 - Capture append-only ;
-- Observation \`product\`, \`offer\` ou \`unit\` avec provenance ;
+- Observation `product`, `offer` ou `unit` avec provenance ;
 - refs externes namespacées par Source ;
 - hiérarchie Product → Offer → Unit ;
-- Supplier Order Identity opaque \`{ provider, version, payload }\` ;
+- Supplier Order Identity opaque `{ provider, version, payload }` ;
 - adapter enregistré pour le provider au moment d'un futur preflight.
 
 Le core ne branche pas sur les champs provider-native. Il transmet le payload opaque à l'adapter qui le possède.
@@ -46,32 +46,32 @@ Le core ne branche pas sur les champs provider-native. Il transmet le payload op
 
 La promotion Golden attendue crée uniquement un brouillon :
 
-- \`products.is_active = FALSE\` ;
-- \`products.lifecycle_status = 'candidate'\` ;
+- `products.is_active = FALSE` ;
+- `products.lifecycle_status = 'candidate'` ;
 - aucun prix, stock ou statut public n'est activé par l'audit ;
-- \`product_sku\` conserve la ref exacte et la SOI fournie par la source ;
+- `product_sku` conserve la ref exacte et la SOI fournie par la source ;
 - Manual/CSV sans SOI reste valide pour Sourcing et Catalog mais bloqué pour Purchasing.
 
 ### Purchasing
 
 Les issues terminales de la preuve sont exclusivement :
 
-- identité exacte : \`HARD_STOP\` ;
-- aucune Unit, ambiguity ou SOI absente : \`BLOCKED_SUPPLIER_IDENTITY\`.
+- identité exacte : `HARD_STOP` ;
+- aucune Unit, ambiguity ou SOI absente : `BLOCKED_SUPPLIER_IDENTITY`.
 
-Même avec un preflight déterministe réussi et un payload construit, \`place_order_invoked\` reste \`false\`. Aucun paiement et aucune commande externe ne sont accessibles depuis le Golden.
+Même avec un preflight déterministe réussi et un payload construit, `place_order_invoked` reste `false`. Aucun paiement et aucune commande externe ne sont accessibles depuis le Golden.
 
 ## Script staging
 
-\`node scripts/sourcing-golden-e2e-staging.js\`
+`node scripts/sourcing-golden-e2e-staging.js`
 
 Options :
 
-- \`--compact\` : JSON sur une ligne.
+- `--compact` : JSON sur une ligne.
 
 Le script lit le corpus staging réel et échoue avec un code non nul si une preuve obligatoire manque. Il n'insère pas de fixtures et ne maquille pas un environnement incomplet. Sa sortie stable contient :
 
-\`\`\`json
+```json
 {
   "status": "PASS",
   "integrity": {},
@@ -81,17 +81,17 @@ Le script lit le corpus staging réel et échoue avec un code non nul si une pre
   "commandability": {},
   "hard_failures": []
 }
-\`\`\`
+```
 
 Puis :
 
-\`\`\`text
+```text
 INTEGRITY        PASS
 RESOLUTION       PASS
 CATALOG          PASS
 UNIT IDENTITY    PASS
 COMMANDABILITY   PASS
-\`\`\`
+```
 
 ## Hard failures
 
@@ -110,8 +110,8 @@ Au minimum :
 - SOI absente non bloquée ;
 - SOI non adossée à une ref Unit exacte ;
 - SOI Manual/CSV fabriquée ;
-- \`placeOrder\` appelé.
+- `placeOrder` appelé.
 
 ## Limites explicites
 
-Le Golden ne fait pas de Selection et ne prouve pas la disponibilité commerciale future d'une source. Une source peut être correctement ingérée et résolue tout en restant non ready maintenant. L'absence de données Allegro suffisantes est publiée comme \`GAP_NO_STAGING_DATA\`, sans affaiblir les invariants applicables à toute nouvelle source.
+Le Golden ne fait pas de Selection et ne prouve pas la disponibilité commerciale future d'une source. Une source peut être correctement ingérée et résolue tout en restant non ready maintenant. L'absence de données Allegro suffisantes est publiée comme `GAP_NO_STAGING_DATA`, sans affaiblir les invariants applicables à toute nouvelle source.
