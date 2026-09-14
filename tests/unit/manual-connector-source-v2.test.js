@@ -77,6 +77,47 @@ describe('manual rich source — contrat V2', () => {
     )).toBe(false);
   });
 
+  test('préserve brand, specifications et GTIN pour la Resolution universelle', () => {
+    const specifications = [
+      { key: 'gtin', label: 'GTIN', value: '3560071499999' },
+      { key: 'model', label: 'Model', value: 'KOM-PROOF-1' },
+    ];
+    const item = {
+      product_name: 'Produit preuve multi-source',
+      currency: 'EUR',
+      brand: 'Komerce Proof',
+      specifications,
+      highlights: [{ key: 'proof', label: 'Identité contrôlée' }],
+    };
+    const normalized = normalizeFormItem(item, 'Proof Supplier A');
+
+    expect(normalized.schema_version).toBe('2');
+    expect(normalized.brand).toBe('Komerce Proof');
+    expect(normalized.specifications).toEqual(specifications);
+    expect(normalized.specifications).not.toBe(specifications);
+    expect(normalized.highlights).toEqual([{ key: 'proof', label: 'Identité contrôlée' }]);
+  });
+
+  test('fetchProducts accepte un V2 manuel portant un GTIN déterministe', () => {
+    const result = fetchProducts({
+      supplier_name: 'Proof Supplier B',
+      items: [{
+        product_name: 'Produit preuve multi-source - source B',
+        currency: 'USD',
+        brand: 'Komerce Proof',
+        specifications: [{ key: 'gtin', label: 'GTIN', value: '3560071499999' }],
+      }],
+    });
+
+    expect(result.invalid).toEqual([]);
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0]).toMatchObject({
+      schema_version: '2',
+      brand: 'Komerce Proof',
+      specifications: [{ key: 'gtin', label: 'GTIN', value: '3560071499999' }],
+    });
+  });
+
   test('une saisie plate reste V1 compatible et ne reçoit pas de structure artificielle', () => {
     const normalized = normalizeFormItem({
       product_name: 'Savon',
