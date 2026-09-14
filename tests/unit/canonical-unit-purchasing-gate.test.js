@@ -28,7 +28,7 @@ test.each([
 });
 
 test.each([
-  ['NO_UNIT'], ['AMBIGUOUS_UNIT'], ['NO_SUPPLIER_IDENTITY'], ['INACTIVE_UNIT'],
+  ['NO_UNIT'], ['AMBIGUOUS_PRODUCT'], ['AMBIGUOUS_UNIT'], ['NO_SUPPLIER_IDENTITY'], ['INACTIVE_UNIT'],
 ])('%s bloque avant adapter', async (status) => {
   const a = adapter('cj');
   const out = await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', adapters: { cj: a }, resolveFn: async () => ({ status }) });
@@ -36,10 +36,42 @@ test.each([
   expect(a.evaluate).not.toHaveBeenCalled();
 });
 
-test('adapter absent, stock zéro et prix absent bloquent', async () => {
+test('adapter absent, stock zéro, stock inconnu et prix absent bloquent', async () => {
   expect((await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', resolveFn: async () => resolved(soi('cj', { vid: 'V1' })) })).status).toBe('BLOCKED_SUPPLIER_IDENTITY');
   expect((await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', adapters: { cj: adapter('cj') }, resolveFn: async () => resolved(soi('cj', { vid: 'V1' }), { stock_available: 0 }) })).reason).toBe('OUT_OF_STOCK');
+  expect((await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', adapters: { cj: adapter('cj') }, resolveFn: async () => resolved(soi('cj', { vid: 'V1' }), { stock_available: null }) })).reason).toBe('STOCK_UNAVAILABLE');
   expect((await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', adapters: { cj: adapter('cj') }, resolveFn: async () => resolved(soi('cj', { vid: 'V1' }), { purchase_price: null }) })).reason).toBe('PRICE_UNAVAILABLE');
+});
+
+test('quantité invalide bloque avant résolution', async () => {
+  const resolveFn = jest.fn();
+  const out = await prepareCanonicalUnitPurchase({ productSkuId: 'sku1', quantity: 0, resolveFn });
+  expect(out).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', reason: 'INVALID_QUANTITY', place_order_invoked: false });
+  expect(resolveFn).not.toHaveBeenCalled();
+});
+
+test('exception resolver, preflight et build payload restent fail-closed', async () => {
+  const resolverFailure = await prepareCanonicalUnitPurchase({
+    productSkuId: 'sku1',
+    resolveFn: async () => { throw new Error('db unavailable'); },
+  });
+  expect(resolverFailure.reason).toBe('CANONICAL_RESOLUTION_UNAVAILABLE');
+
+  const preflightAdapter = adapter('cj');
+  preflightAdapter.evaluate.mockImplementation(async () => { throw new Error('provider down'); });
+  const preflightFailure = await prepareCanonicalUnitPurchase({
+    productSkuId: 'sku1', adapters: { cj: preflightAdapter },
+    resolveFn: async () => resolved(soi('cj', { vid: 'V1' })),
+  });
+  expect(preflightFailure).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', reason: 'PREFLIGHT_ERROR', place_order_invoked: false });
+
+  const payloadAdapter = adapter('cj');
+  payloadAdapter.buildOrderPayload.mockImplementation(async () => { throw new Error('payload fail'); });
+  const payloadFailure = await prepareCanonicalUnitPurchase({
+    productSkuId: 'sku1', adapters: { cj: payloadAdapter },
+    resolveFn: async () => resolved(soi('cj', { vid: 'V1' })),
+  });
+  expect(payloadFailure).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', reason: 'BUILD_ORDER_PAYLOAD_ERROR', place_order_invoked: false });
 });
 
 test('manual/CSV sans SOI reste sourcing mais Purchasing blocked; placeOrder est inexistant', async () => {

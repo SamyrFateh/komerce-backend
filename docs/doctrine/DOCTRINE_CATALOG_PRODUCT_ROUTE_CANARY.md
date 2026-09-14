@@ -40,6 +40,6 @@ Cardinalité : zéro lien retourne `[]`; un lien retourne son ID; plusieurs lien
 - `legacy_conflict` : projection sûre et hybride, avec au moins un fallback de conflit.
 - `legacy_ambiguity` : plusieurs Canonical Products liés ; aucun arbitrage.
 - `legacy_unsafe` : la seam n'est pas SAFE ; legacy strict.
-- `legacy_canary_error` : exception interne absorbée ; legacy strict.
+- `legacy_read_error` : exception interne absorbée ; legacy strict.
 
 Chaque diagnostic conserve `canonical_fields_applied`, `conflict_fallbacks` et `absent_fallbacks`. Il n'est jamais inclus dans le JSON Boutique.

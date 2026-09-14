@@ -35,7 +35,17 @@ async function prepareCanonicalUnitPurchase({
   context = {},
   resolveFn = canonicalResolver.resolveCanonicalUnitForProductSku,
 } = {}) {
-  const resolution = await resolveFn(productSkuId, query);
+  const requestedQuantity = Number(quantity);
+  if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+    return blocked('INVALID_QUANTITY', { product_sku_id: productSkuId, quantity });
+  }
+
+  let resolution;
+  try {
+    resolution = await resolveFn(productSkuId, query);
+  } catch (error) {
+    return blocked('CANONICAL_RESOLUTION_UNAVAILABLE', { product_sku_id: productSkuId, error_name: error?.name || 'Error' });
+  }
   if (resolution.status !== canonicalResolver.STATUS.RESOLVED) {
     return blocked(resolution.status, { product_sku_id: productSkuId, canonical_resolution: resolution.status });
   }
@@ -54,28 +64,51 @@ async function prepareCanonicalUnitPurchase({
 
   const state = resolution.canonical_unit.current_state || {};
   if (state.is_active === false) return blocked('INACTIVE_UNIT', { canonical_unit_id: resolution.canonical_unit_id });
-  if (Number(state.stock_available) < Number(quantity)) return blocked('OUT_OF_STOCK', { stock_available: state.stock_available });
-  if (!(Number(state.purchase_price) > 0)) return blocked('PRICE_UNAVAILABLE');
-  if (!state.currency) return blocked('CURRENCY_UNAVAILABLE');
 
-  const verdict = await adapterCheck.adapter.evaluate({
-    row: { ...resolution.legacy_sku, supplier_unit_ref: resolution.supplier_unit_ref },
-    identity,
-    quantity,
-    context,
-    canonicalUnit: resolution.canonical_unit,
-  });
+  if (state.stock_available === null || state.stock_available === undefined || state.stock_available === '') {
+    return blocked('STOCK_UNAVAILABLE', { canonical_unit_id: resolution.canonical_unit_id });
+  }
+  const stock = Number(state.stock_available);
+  if (!Number.isFinite(stock)) return blocked('STOCK_UNAVAILABLE', { stock_available: state.stock_available });
+  if (stock < requestedQuantity) return blocked('OUT_OF_STOCK', { stock_available: stock, quantity: requestedQuantity });
+
+  const price = Number(state.purchase_price);
+  if (!Number.isFinite(price) || price <= 0) return blocked('PRICE_UNAVAILABLE');
+  if (!String(state.currency || '').trim()) return blocked('CURRENCY_UNAVAILABLE');
+
+  let verdict;
+  try {
+    verdict = await adapterCheck.adapter.evaluate({
+      row: { ...resolution.legacy_sku, supplier_unit_ref: resolution.supplier_unit_ref },
+      identity,
+      quantity: requestedQuantity,
+      context,
+      canonicalUnit: resolution.canonical_unit,
+    });
+  } catch (error) {
+    return blocked('PREFLIGHT_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' });
+  }
   if (!verdict?.ready) return { ...verdict, place_order_invoked: false };
   if (typeof adapterCheck.adapter.buildOrderPayload !== 'function') {
     return blocked('BUILD_ORDER_PAYLOAD_CAPABILITY_UNAVAILABLE', { provider: identity.provider });
   }
-  const payload = await adapterCheck.adapter.buildOrderPayload({
-    identity,
-    quantity,
-    canonicalUnit: resolution.canonical_unit,
-    preflight: verdict,
-    context,
-  });
+
+  let payload;
+  try {
+    payload = await adapterCheck.adapter.buildOrderPayload({
+      identity,
+      quantity: requestedQuantity,
+      canonicalUnit: resolution.canonical_unit,
+      preflight: verdict,
+      context,
+    });
+  } catch (error) {
+    return blocked('BUILD_ORDER_PAYLOAD_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' });
+  }
+  if (payload === null || payload === undefined) {
+    return blocked('BUILD_ORDER_PAYLOAD_EMPTY', { provider: identity.provider });
+  }
+
   return {
     status: 'HARD_STOP',
     ready: false,
