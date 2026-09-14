@@ -66,7 +66,7 @@ function buildGoldenE2EReport(snapshot = {}) {
 
   const observedKinds = unique(sources.map(sourceKind));
   for (const required of REQUIRED_SOURCES) {
-    if (!observedKinds.includes(required)) fail(integrityFailures, \`required_source_missing:\${required}\`);
+    if (!observedKinds.includes(required)) fail(integrityFailures, `required_source_missing:${required}`);
   }
 
   const provenanceLost = observations.filter((row) =>
@@ -232,13 +232,13 @@ function buildGoldenE2EReport(snapshot = {}) {
 
 async function collectGoldenE2E(query = db.query.bind(db), resolveFn = unitResolver.resolveCanonicalUnitForProductSku) {
   const [sourceResult, observationResult, catalogResult, refResult, projectionReport] = await Promise.all([
-    query(\`
+    query(`
       SELECT source_id, adapter_type
         FROM sourcing_sources
        WHERE status = 'active'
        ORDER BY source_id
-    \`),
-    query(\`
+    `),
+    query(`
       SELECT c.source_id, s.adapter_type, c.capture_id, o.observation_id,
              o.grain::text AS grain, o.source_ref, o.observed_at, o.normalized,
              rb.canonical_entity_id, ce.parent_entity_id, ce.status AS entity_status
@@ -250,8 +250,8 @@ async function collectGoldenE2E(query = db.query.bind(db), resolveFn = unitResol
         LEFT JOIN sourcing_canonical_entities ce
           ON ce.canonical_entity_id = rb.canonical_entity_id
        ORDER BY c.source_id, o.observed_at, o.observation_id
-    \`),
-    query(\`
+    `),
+    query(`
       SELECT sc.id AS candidate_id, sc.supplier_name, sc.supplier_product_id,
              sc.state AS candidate_state, sc.product_id,
              p.lifecycle_status, p.is_active AS product_is_active,
@@ -262,8 +262,8 @@ async function collectGoldenE2E(query = db.query.bind(db), resolveFn = unitResol
         LEFT JOIN product_skus sku ON sku.product_id = sc.product_id
        WHERE sc.normalized_source_contract IS NOT NULL
        ORDER BY sc.created_at, sc.id, sku.id
-    \`),
-    query(\`
+    `),
+    query(`
       SELECT ce.canonical_entity_id, ce.grain::text AS grain,
              ref.source_id, ref.ref_kind, ref.ref_value
         FROM sourcing_canonical_entity_refs ref
@@ -271,7 +271,7 @@ async function collectGoldenE2E(query = db.query.bind(db), resolveFn = unitResol
           ON ce.canonical_entity_id = ref.canonical_entity_id
        WHERE ce.status = 'active'
        ORDER BY ce.canonical_entity_id, ref.source_id, ref.ref_kind, ref.ref_value
-    \`),
+    `),
     productProjection.collectCanonicalProductProjections(query),
   ]);
 
