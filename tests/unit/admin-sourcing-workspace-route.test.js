@@ -87,19 +87,13 @@ beforeEach(() => {
   mockCalls.createSupplier.mockResolvedValue({ partner_ref: 'KPT-000001', name: 'Supplier' });
 });
 
-test('grant sourcing ouvre la projection globale sans marché', async () => {
+test('grant sourcing ouvre une projection globale incluant la santé canonique', async () => {
   const res = await request(app()).get('/api/admin/workspaces/sourcing');
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockCalls.buildWorkspace).toHaveBeenCalledTimes(1);
-});
-
-test('grant sourcing ouvre la santé canonique en lecture seule', async () => {
-  const res = await request(app()).get('/api/admin/workspaces/sourcing/health');
-  expect(res.status).toBe(200);
-  expect(res.headers['cache-control']).toContain('no-store');
-  expect(res.body).toMatchObject({ schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } });
   expect(mockCalls.buildHealthDashboard).toHaveBeenCalledTimes(1);
+  expect(res.body.health).toMatchObject({ schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } });
 });
 
 test('role admin seul ne suffit jamais sans grant sourcing', async () => {
@@ -108,19 +102,11 @@ test('role admin seul ne suffit jamais sans grant sourcing', async () => {
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('sourcing_global_access_denied');
   expect(mockCalls.buildWorkspace).not.toHaveBeenCalled();
-});
-
-test('la santé sourcing est soumise au même grant global', async () => {
-  mockSourcingAllowed = false;
-  const res = await request(app()).get('/api/admin/workspaces/sourcing/health');
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('sourcing_global_access_denied');
   expect(mockCalls.buildHealthDashboard).not.toHaveBeenCalled();
 });
 
 test.each([
   ['/api/admin/workspaces/sourcing?market_id=cm', 'get', null, 'sourcing_market_dimension_forbidden'],
-  ['/api/admin/workspaces/sourcing/health?marketCode=CM', 'get', null, 'sourcing_market_dimension_forbidden'],
   ['/api/admin/workspaces/sourcing/imports', 'post', { marketCode: 'CM' }, 'sourcing_market_dimension_forbidden'],
   ['/api/admin/workspaces/sourcing/imports', 'post', { import_id: 'internal' }, 'sourcing_internal_id_forbidden'],
 ])('refuse les dimensions d’autorité navigateur', async (url, method, body, code) => {
