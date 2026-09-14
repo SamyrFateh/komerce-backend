@@ -33,12 +33,14 @@ const rowsOf = (result) => Array.isArray(result?.rows) ? result.rows : [];
 const unique = (values) => [...new Set(values.filter((value) => value != null).map(String))].sort();
 
 function sourceKind(row) {
-  const value = String(row?.adapter_type || row?.source_id || row?.supplier_name || '').toLowerCase();
-  if (value.includes('aliexpress')) return 'aliexpress';
-  if (value === 'cj' || value.includes(':cj')) return 'cj';
-  if (value.includes('allegro')) return 'allegro';
-  if (value.includes('manual') || value.includes('csv')) return 'manual';
-  return value;
+  const adapter = String(row?.adapter_type || '').trim().toLowerCase();
+  if (adapter && adapter !== 'api') return adapter;
+  const sourceId = String(row?.source_id || '').trim().toLowerCase();
+  if (sourceId) {
+    const parts = sourceId.split(':').filter(Boolean);
+    return parts[0] === 'api' ? (parts[1] || parts[0]) : parts[0];
+  }
+  return String(row?.supplier_name || '').trim().toLowerCase();
 }
 
 function section(failures, metrics) {
