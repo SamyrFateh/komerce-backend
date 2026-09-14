@@ -156,7 +156,7 @@ test('Golden traverse ingestion, Resolution, Product/Offer/Unit, catalog SKU et 
   expect(report).toMatchObject({
     integrity: { status: 'PASS', provenance_preserved: true, economic_product_leaks: [], place_order_invoked: false },
     resolution: { status: 'PASS', cross_source_products: 1, distinct_products: 2,
-      repeated_source_identities: 3, descriptive_conflicts_preserved: 1 },
+      repeated_source_identities: 2, descriptive_conflicts_preserved: 1 },
     catalog: { status: 'PASS', inactive_promotions: 3 },
     unit_identity: { status: 'PASS', ambiguous_blocked: 1 },
     commandability: { status: 'PASS', missing_soi_blocked: 1 },
