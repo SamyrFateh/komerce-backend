@@ -120,7 +120,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 **Invariant I-10** : les codes sont en clair uniquement pendant leur fenêtre TTL, avec le même niveau de confiance que `DATABASE_URL`. Voir **SEC-1** dans `STATUS.md`.
 
-> **N4 — État vérifié code (2026-06-15)** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` et doit être appliquée sur Railway si la table est absente. Le câblage applicatif est présent : `routes/auth.js` génère un `jti`, insère le token au logout, `middleware/auth.js` vérifie `revoked_tokens`, et `bootstrap/crons.js` purge les lignes expirées via `startJwtRevocationCleanupCron()`. **Action DB live restante** : vérifier `SELECT 1 FROM revoked_tokens LIMIT 1`; appliquer la migration si absente.
+> **N4 — État vérifié code (2026-06-15)** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` et doit être appliquée sur Railway si la table est absente. Le câblage applicatif est présent : `routes/auth.js` génère un `jti`, insère le token au logout, `middleware/auth.js` vérifie, et `bootstrap/crons.js` purge les lignes expirées via `startJwtRevocationCleanupCron()`. **Action DB live restante** : vérifier `SELECT 1 FROM revoked_tokens LIMIT 1`; appliquer la migration si absente.
 
 ### 4.3 Wallet (5 tables)
 
@@ -239,7 +239,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
-### 4.10 Sourcing et fournisseurs (11 tables live + 1 visée)
+### 4.10 Sourcing et fournisseurs
 
 | Table | Rôle |
 |---|---|
@@ -256,6 +256,48 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
 | `supplier_oauth_connections` | Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur. **Migration 218 — promue le 2026-09-12 (schema-promote, dump live verifie).** |
 
+<!-- schema-pending
+object: sourcing_sources
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Instances de sources de sourcing avec adapter, acquisition/continuity et reference externe de credential ; aucune autorite runtime en PR 1A.
+-->
+<!-- schema-pending
+object: sourcing_source_provides
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Capabilities relationnelles catalog/offers/units d'une source ; invariant api => units en base.
+-->
+<!-- schema-pending
+object: sourcing_source_execution_modes
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Modes d'execution supportes human/api, distincts de la readiness instantanee.
+-->
+<!-- schema-pending
+object: sourcing_captures
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Runs/lots d'acquisition d'une source ; lifecycle operationnel mutable, sans verite produit.
+-->
+<!-- schema-pending
+object: sourcing_observations
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Observations immuables product/offer/unit ; source unique via capture. Migration 226 vise aussi l'enum sourcing_observation_grain.
+-->
+<!-- schema-pending
+object: sourcing_observation_evidence
+kind: table
+migration: 226
+section: ### 4.10 Sourcing et fournisseurs
+role: Index d'evidence derive, namespaced et reconstructible pour le futur Candidate Retrieval ; non autoritatif.
+-->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 
