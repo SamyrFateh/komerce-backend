@@ -1,0 +1,3 @@
+-- @migration 226_sourcing_observation_foundation.sql
+-- @domain sourcing
+-- PR 1A foundation; additive only.
