@@ -161,6 +161,37 @@ Cette liste sépare les informations promises par les mocks des données effecti
 | Workspaces autorisés | `PROVEN` | `FINANCE_SCHEMA.drill` filtré par rôle |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
 
+## Atelier économique
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_ATELIER_ECONOMIQUE_UI.md` (FIGÉ 2026-09-08).
+> Côté « fourni » : payload réel `GET /api/admin/workspaces/pricing`, scope `global_pricing`.
+
+| Information cible (doctrine §) | Statut | Motif |
+|---|---|---|
+| Verdict d'équilibre du marché (§8) | `PROVEN` | `economic.executive.status` = `blocking` / label `Bloquant` + `recommendation` — vérité `economic-engine` |
+| Alertes économiques | `PROVEN` | `economic.executive.alerts` (ex. `severity=critical`, `category=rentabilite`) |
+| Charges structurelles à couvrir (§6) | `PROVEN` | `economic.charges.totals.monthly` + `economic.executive.charges_summary.total_monthly` / `total_per_order` |
+| Contribution générée (§6) | `PROJECTABLE` | agrégat des `recommendations[].estimated_contribution_kmf`, sans recomposition portefeuille inventée |
+| Couverture (§6) | `PROJECTABLE` | champs `coverage` disponibles par ligne ; total projeté, recalcul serveur au changement de prix (doctrine §5) |
+| Reste à couvrir (§6) | `PROJECTABLE` | dérivé serveur disponible par ligne ; agrégat pur |
+| Contribution moyenne / article (§6) | `PROJECTABLE` | moyenne des contributions unitaires `recommendations[]`, sans scoring ajouté |
+| KPI économiques de tête | `PROVEN` | `economic.executive.kpis` : `total_cost_per_order`, `seuil_rentabilite`, `safety_ratio`, `margin_pressure`, `net_profit_per_order` |
+| Bloc Coûts variables directs (§3.1) | `PROVEN` | `cost_components` `economic_nature=variable`, `allocation_perimeter=direct` |
+| Bloc Charges fixes directes (§3.2) | `PROVEN` | `cost_components` `economic_nature=fixed`, `allocation_perimeter=direct` (ex. `charges_fixes_mensuelles_kmf`) |
+| Bloc Charges fixes mutualisées + quote-part Market ID (§3.3) | `BACKEND_GAP` | le payload `global_pricing` n'expose aucun `allocation_perimeter=mutualized` ni quote-part Market ID ; à prouver en scope `pricing/market/{code}` ou à câbler dans la projection |
+| Chaîne produit : coût d'achat (§4) | `PROVEN` | `products[].cost_kmf` / `recommendations[].cost_kmf` |
+| Chaîne produit : coûts variables hors achat + coût variable complet (§4) | `PROVEN` | `recommendations[].business_variable_cost_kmf`, `variable_cost_complete_kmf` — grisés/non éditables (§7) |
+| Chaîne produit : bornes marché basse / cible / haute (§4) | `PROVEN` | `recommendations[]` : `survival_price_kmf` (plancher), `minimum_safe_price_kmf`, `test_price_kmf`, `recommended_price_kmf` |
+| Chaîne produit : prix final marché retenu — seul levier (§5) | `PROVEN` | `simulation_products[].current_price_kmf` / `recommendations[].current_price_kmf` |
+| Chaîne produit : contribution unitaire (§4) | `PROVEN` | `recommendations[].estimated_contribution_kmf`, `estimated_margin_pct` |
+| Statut / santé produit | `PROVEN` | `recommendations[].status` (`overpriced`…), `health_status`, `sourcing_decision` — ordre serveur conservé |
+| Ancrage marché / observations concurrentes | `BACKEND_GAP` | `summary.competitor_observations=0`, `observed_cost_lines=0`, `recommendations[].market_confidence=unknown` — aucune observation ingérée ; le verdict `Bloquant` est alors légitime, pas masqué |
+| Taux de change appliqués | `PROVEN` | `rates.current` (`eur_kmf`, `aed_kmf`) + `rates.history` |
+| Taxonomie des charges | `PROVEN` | `cost_meta` (familles, natures, périmètres, unités, scopes, méthodes d'allocation) |
+| Fraîcheur / qualité | `PROVEN` | `economic.executive.generated_at` ; couverture d'observation exposée, révèle honnêtement le gap ancrage marché |
+
+Note de scope : matrice établie en `global_pricing`. Les lignes mutualisation / quote-part doivent être re-vérifiées en `pricing/market/{code}` avant clôture, la quote-part Market ID étant par nature une vérité par marché.
+
 ## Lots suivants
 
-Les gaps Catalogue pays, Commandes, Marchés et Atelier économique seront remplis avant migration de chaque surface, à partir de leurs payloads réels.
+Les gaps Catalogue pays, Commandes et Marchés restent à remplir à partir de leurs payloads réels. Catalogue et Marchés sont déjà migrés en decision-first : leur matrice est une dette de documentation ; Commandes n'a pas encore de payload canonique et exige d'abord un contrat de payload avant migration.
