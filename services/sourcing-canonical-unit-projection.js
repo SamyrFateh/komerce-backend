@@ -7,7 +7,7 @@
  * @inputs        active_unit_resolution_bindings, immutable_unit_observations
  * @outputs       shadow_canonical_unit_projection
  * @depends       db.js, services/sourcing-canonical-commercial-projection-core.js
- * @used-by       services/sourcing-canonical-offer-unit-comparison.js
+ * @used-by       services/sourcing-canonical-offer-unit-comparison.js, services/sourcing-canonical-unit-product-sku-resolution.js
  * @db-read       sourcing_canonical_entities, sourcing_resolution_bindings, sourcing_observations, sourcing_captures, sourcing_sources, sourcing_canonical_entity_refs
  * @db-write      none
  * @db-txn        none
