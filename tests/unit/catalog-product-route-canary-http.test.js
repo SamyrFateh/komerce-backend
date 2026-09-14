@@ -41,10 +41,12 @@ function loadRoute({ visible = true, throwCanary = false } = {}) {
 }
 
 beforeEach(() => {
+  process.env.CATALOG_PRODUCT_READ_MODE = 'CANARY';
   process.env.CATALOG_PRODUCT_ROUTE_CANARY_ENABLED = 'true';
   process.env.CATALOG_PRODUCT_ROUTE_CANARY_PRODUCT_IDS = id;
 });
 afterEach(() => {
+  delete process.env.CATALOG_PRODUCT_READ_MODE;
   delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_ENABLED;
   delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_PRODUCT_IDS;
   jest.resetModules();
@@ -75,5 +77,24 @@ test('erreur canary retourne HTTP 200 legacy normal', async () => {
   const res = await request(app).get('/api/products/' + id).set('x-komerce-catalog-canary', 'v1');
   expect(res.status).toBe(200);
   expect(pricing.mock.calls[0][1].products[0]).toBe(legacy);
+  expect(res.body).not.toHaveProperty('diagnostic');
+});
+
+
+test('CANONICAL_PREFERRED ne requiert pas les gates Canary et garde le JSON public identique', async () => {
+  process.env.CATALOG_PRODUCT_READ_MODE = 'CANONICAL_PREFERRED';
+  delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_ENABLED;
+  delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_PRODUCT_IDS;
+  const { app, pricing } = loadRoute();
+  const res = await request(app).get('/api/products/' + id);
+  expect(res.status).toBe(200);
+  expect(pricing.mock.calls[0][1].products[0]).toMatchObject({
+    name_source: 'Canonical source',
+    description_source: 'Legacy source desc',
+    source_locale: 'fr',
+    price_kmf: 5000,
+    stock: 7,
+  });
+  expect(res.body).toMatchObject({ id, name: 'Public', description: 'Public desc', price_kmf: 5000, stock: 7 });
   expect(res.body).not.toHaveProperty('diagnostic');
 });

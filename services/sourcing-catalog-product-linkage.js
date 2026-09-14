@@ -7,7 +7,7 @@
  * @inputs        catalog_product_id
  * @outputs       active_canonical_product_ids
  * @depends       db.js
- * @used-by       services/catalog-product-route-canary.js
+ * @used-by       services/catalog-product-source-read-service.js
  * @db-read       sourcing_candidates, sourcing_captures, sourcing_observations, sourcing_resolution_bindings, sourcing_canonical_entities
  * @db-write      none
  * @db-txn        none
