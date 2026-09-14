@@ -5,7 +5,7 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
- * @outputs       global_sourcing_projection, sourcing_health_projection, sourcing_action_results
+ * @outputs       global_sourcing_projection, sourcing_action_results
  * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
@@ -69,14 +69,11 @@ function handleError(err, res, next) {
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(await workspace.buildWorkspace());
-  } catch (err) { handleError(err, res, next); }
-});
-
-router.get('/health', async (req, res, next) => {
-  try {
-    res.set('Cache-Control', 'no-store');
-    res.json(await sourcingHealth.buildHealthDashboard());
+    const [payload, health] = await Promise.all([
+      workspace.buildWorkspace(),
+      sourcingHealth.buildHealthDashboard(),
+    ]);
+    res.json({ ...payload, health });
   } catch (err) { handleError(err, res, next); }
 });
 
