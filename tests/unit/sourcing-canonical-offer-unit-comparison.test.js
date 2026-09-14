@@ -1,5 +1,9 @@
 'use strict';
-/** @test-kind unit @test-runner jest @test-requires none */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { compareCanonicalOfferUnitWithLegacy } = require('../../services/sourcing-canonical-offer-unit-comparison');
 
 test('compare les refs/SOI sans écrire ni sélectionner', () => {

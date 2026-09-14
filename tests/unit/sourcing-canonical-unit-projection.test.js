@@ -1,5 +1,9 @@
 'use strict';
-/** @test-kind unit @test-runner jest @test-requires none */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { buildCanonicalUnitProjection } = require('../../services/sourcing-canonical-unit-projection');
 
 const row = (id, ref, time, normalized = {}) => ({
