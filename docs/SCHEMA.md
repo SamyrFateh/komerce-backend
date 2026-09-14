@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 150 | Vérifié sur le dump live Railway. |
+| Tables | 156 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
-| ENUMs | 16 | Types métier présents dans le dump live Railway. |
-| Index | 383 | Performance + contraintes uniques |
-| Foreign keys | 282 | Cohérence relationnelle |
-| Fonctions | 26 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 44 | Triggers présents dans le dump live Railway. |
+| ENUMs | 17 | Types métier présents dans le dump live Railway. |
+| Index | 390 | Performance + contraintes uniques |
+| Foreign keys | 288 | Cohérence relationnelle |
+| Fonctions | 28 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 45 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -255,49 +255,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `garment_models` | Modèles vêtements (module cérémonie). |
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
 | `supplier_oauth_connections` | Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur. **Migration 218 — promue le 2026-09-12 (schema-promote, dump live verifie).** |
+| `sourcing_sources` | Instances de sources de sourcing avec adapter, acquisition/continuity et reference externe de credential ; aucune autorite runtime en PR 1A. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_source_provides` | Capabilities relationnelles catalog/offers/units d'une source ; invariant api => units en base. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_source_execution_modes` | Modes d'execution supportes human/api, distincts de la readiness instantanee. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_captures` | Runs/lots d'acquisition d'une source ; lifecycle operationnel mutable, sans verite produit. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_observations` | Observations immuables product/offer/unit ; source unique via capture. Migration 226 vise aussi l'enum sourcing_observation_grain. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_observation_evidence` | Index d'evidence derive, namespaced et reconstructible pour le futur Candidate Retrieval ; non autoritatif. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: sourcing_sources
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Instances de sources de sourcing avec adapter, acquisition/continuity et reference externe de credential ; aucune autorite runtime en PR 1A.
--->
-<!-- schema-pending
-object: sourcing_source_provides
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Capabilities relationnelles catalog/offers/units d'une source ; invariant api => units en base.
--->
-<!-- schema-pending
-object: sourcing_source_execution_modes
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Modes d'execution supportes human/api, distincts de la readiness instantanee.
--->
-<!-- schema-pending
-object: sourcing_captures
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Runs/lots d'acquisition d'une source ; lifecycle operationnel mutable, sans verite produit.
--->
-<!-- schema-pending
-object: sourcing_observations
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Observations immuables product/offer/unit ; source unique via capture. Migration 226 vise aussi l'enum sourcing_observation_grain.
--->
-<!-- schema-pending
-object: sourcing_observation_evidence
-kind: table
-migration: 226
-section: ### 4.10 Sourcing et fournisseurs
-role: Index d'evidence derive, namespaced et reconstructible pour le futur Candidate Retrieval ; non autoritatif.
--->
 
 ### 4.11 Scans et opérations terrain (5 tables)
 

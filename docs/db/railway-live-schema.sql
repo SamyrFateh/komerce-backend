@@ -234,6 +234,17 @@ CREATE TYPE public.shared_cart_status AS ENUM (
 
 
 --
+-- Name: sourcing_observation_grain; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.sourcing_observation_grain AS ENUM (
+    'product',
+    'offer',
+    'unit'
+);
+
+
+--
 -- Name: user_role; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -805,6 +816,55 @@ CREATE FUNCTION public.set_updated_at() RETURNS trigger
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: sourcing_check_api_requires_units(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_check_api_requires_units() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  offending_source text;
+BEGIN
+  SELECT em.source_id
+    INTO offending_source
+    FROM public.sourcing_source_execution_modes em
+   WHERE em.mode = 'api'
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.sourcing_source_provides sp
+        WHERE sp.source_id = em.source_id
+          AND sp.layer = 'units'
+     )
+   LIMIT 1;
+
+  IF offending_source IS NOT NULL THEN
+    RAISE EXCEPTION
+      'capability invariant: source % supports api execution but does not provide units',
+      offending_source
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: sourcing_forbid_observation_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_forbid_observation_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION
+    'append-only violation: % interdit sur %', TG_OP, TG_TABLE_NAME
+    USING ERRCODE = 'restrict_violation';
 END;
 $$;
 
@@ -6062,6 +6122,31 @@ COMMENT ON COLUMN public.sourcing_candidates.normalized_source_contract IS 'Snap
 
 
 --
+-- Name: sourcing_captures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_captures (
+    capture_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_id text NOT NULL,
+    status text DEFAULT 'running'::text NOT NULL,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    completed_at timestamp with time zone,
+    stats jsonb DEFAULT '{}'::jsonb NOT NULL,
+    raw_artifact_ref text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_captures_raw_artifact_ref_nonempty CHECK (((raw_artifact_ref IS NULL) OR (btrim(raw_artifact_ref) <> ''::text))),
+    CONSTRAINT sourcing_captures_status_chk CHECK ((status = ANY (ARRAY['running'::text, 'complete'::text, 'partial'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_captures; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_captures IS 'Run ou lot d acquisition d une source; lifecycle operationnel uniquement.';
+
+
+--
 -- Name: sourcing_global_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6072,6 +6157,130 @@ CREATE TABLE public.sourcing_global_access_grants (
     reason text,
     revoked_at timestamp with time zone
 );
+
+
+--
+-- Name: sourcing_observation_evidence; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_observation_evidence (
+    evidence_id bigint NOT NULL,
+    observation_id uuid NOT NULL,
+    evidence_type text NOT NULL,
+    evidence_key text NOT NULL,
+    value text NOT NULL,
+    extractor_version text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_observation_evidence_extractor_nonempty CHECK ((btrim(extractor_version) <> ''::text)),
+    CONSTRAINT sourcing_observation_evidence_key_nonempty CHECK ((btrim(evidence_key) <> ''::text)),
+    CONSTRAINT sourcing_observation_evidence_type_chk CHECK ((evidence_type = ANY (ARRAY['deterministic_id'::text, 'source_ref'::text, 'lexical'::text, 'perceptual'::text, 'attribute'::text]))),
+    CONSTRAINT sourcing_observation_evidence_value_nonempty CHECK ((btrim(value) <> ''::text))
+);
+
+
+--
+-- Name: TABLE sourcing_observation_evidence; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_observation_evidence IS 'Index d evidence derive et reconstructible pour candidate retrieval.';
+
+
+--
+-- Name: sourcing_observation_evidence_evidence_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sourcing_observation_evidence_evidence_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sourcing_observation_evidence_evidence_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.sourcing_observation_evidence_evidence_id_seq OWNED BY public.sourcing_observation_evidence.evidence_id;
+
+
+--
+-- Name: sourcing_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_observations (
+    observation_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    capture_id uuid NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    source_ref text,
+    principal_ref text,
+    parent_observation_id uuid,
+    observed_at timestamp with time zone NOT NULL,
+    normalized jsonb DEFAULT '{}'::jsonb NOT NULL,
+    field_provenance jsonb DEFAULT '{}'::jsonb NOT NULL,
+    raw_fragment jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_observations_principal_ref_nonempty CHECK (((principal_ref IS NULL) OR (btrim(principal_ref) <> ''::text))),
+    CONSTRAINT sourcing_observations_source_ref_nonempty CHECK (((source_ref IS NULL) OR (btrim(source_ref) <> ''::text)))
+);
+
+
+--
+-- Name: TABLE sourcing_observations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_observations IS 'Observation immuable d une entite resolvable product, offer ou unit.';
+
+
+--
+-- Name: sourcing_source_execution_modes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_source_execution_modes (
+    source_id text NOT NULL,
+    mode text NOT NULL,
+    CONSTRAINT sourcing_source_execution_mode_chk CHECK ((mode = ANY (ARRAY['human'::text, 'api'::text])))
+);
+
+
+--
+-- Name: sourcing_source_provides; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_source_provides (
+    source_id text NOT NULL,
+    layer text NOT NULL,
+    CONSTRAINT sourcing_source_provides_layer_chk CHECK ((layer = ANY (ARRAY['catalog'::text, 'offers'::text, 'units'::text])))
+);
+
+
+--
+-- Name: sourcing_sources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_sources (
+    source_id text NOT NULL,
+    adapter_type text NOT NULL,
+    acquisition text NOT NULL,
+    continuity text NOT NULL,
+    credential_ref text,
+    status text DEFAULT 'active'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_sources_acquisition_chk CHECK ((acquisition = ANY (ARRAY['pull'::text, 'push'::text]))),
+    CONSTRAINT sourcing_sources_adapter_type_nonempty CHECK ((btrim(adapter_type) <> ''::text)),
+    CONSTRAINT sourcing_sources_continuity_chk CHECK ((continuity = ANY (ARRAY['recurring'::text, 'one_shot'::text]))),
+    CONSTRAINT sourcing_sources_credential_ref_nonempty CHECK (((credential_ref IS NULL) OR (btrim(credential_ref) <> ''::text))),
+    CONSTRAINT sourcing_sources_source_id_nonempty CHECK ((btrim(source_id) <> ''::text)),
+    CONSTRAINT sourcing_sources_status_chk CHECK ((status = ANY (ARRAY['active'::text, 'disabled'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_sources; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_sources IS 'PR 1A shadow foundation. Source instance observable; aucune autorite prod.';
 
 
 --
@@ -7058,6 +7267,13 @@ ALTER TABLE ONLY public.pricing_benchmarks ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.pricing_matrices_audit ALTER COLUMN id SET DEFAULT nextval('public.pricing_matrices_audit_id_seq'::regclass);
+
+
+--
+-- Name: sourcing_observation_evidence evidence_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observation_evidence ALTER COLUMN evidence_id SET DEFAULT nextval('public.sourcing_observation_evidence_evidence_id_seq'::regclass);
 
 
 --
@@ -8453,11 +8669,75 @@ ALTER TABLE ONLY public.sourcing_candidates
 
 
 --
+-- Name: sourcing_captures sourcing_captures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_captures
+    ADD CONSTRAINT sourcing_captures_pkey PRIMARY KEY (capture_id);
+
+
+--
 -- Name: sourcing_global_access_grants sourcing_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sourcing_global_access_grants
     ADD CONSTRAINT sourcing_global_access_grants_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: sourcing_observation_evidence sourcing_observation_evidence_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observation_evidence
+    ADD CONSTRAINT sourcing_observation_evidence_pkey PRIMARY KEY (evidence_id);
+
+
+--
+-- Name: sourcing_observation_evidence sourcing_observation_evidence_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observation_evidence
+    ADD CONSTRAINT sourcing_observation_evidence_unique UNIQUE (observation_id, evidence_type, evidence_key, value, extractor_version);
+
+
+--
+-- Name: sourcing_observations sourcing_observations_identity_capture_uniq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observations
+    ADD CONSTRAINT sourcing_observations_identity_capture_uniq UNIQUE (observation_id, capture_id);
+
+
+--
+-- Name: sourcing_observations sourcing_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observations
+    ADD CONSTRAINT sourcing_observations_pkey PRIMARY KEY (observation_id);
+
+
+--
+-- Name: sourcing_source_execution_modes sourcing_source_execution_modes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_execution_modes
+    ADD CONSTRAINT sourcing_source_execution_modes_pkey PRIMARY KEY (source_id, mode);
+
+
+--
+-- Name: sourcing_source_provides sourcing_source_provides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_provides
+    ADD CONSTRAINT sourcing_source_provides_pkey PRIMARY KEY (source_id, layer);
+
+
+--
+-- Name: sourcing_sources sourcing_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_sources
+    ADD CONSTRAINT sourcing_sources_pkey PRIMARY KEY (source_id);
 
 
 --
@@ -11162,6 +11442,55 @@ CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts U
 
 
 --
+-- Name: sourcing_captures_source_started_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_captures_source_started_idx ON public.sourcing_captures USING btree (source_id, started_at DESC);
+
+
+--
+-- Name: sourcing_observation_evidence_lookup_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observation_evidence_lookup_idx ON public.sourcing_observation_evidence USING btree (evidence_type, evidence_key, value);
+
+
+--
+-- Name: sourcing_observation_evidence_observation_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observation_evidence_observation_idx ON public.sourcing_observation_evidence USING btree (observation_id);
+
+
+--
+-- Name: sourcing_observations_capture_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observations_capture_idx ON public.sourcing_observations USING btree (capture_id);
+
+
+--
+-- Name: sourcing_observations_grain_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observations_grain_idx ON public.sourcing_observations USING btree (grain);
+
+
+--
+-- Name: sourcing_observations_observed_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observations_observed_at_idx ON public.sourcing_observations USING btree (observed_at DESC);
+
+
+--
+-- Name: sourcing_observations_source_ref_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_observations_source_ref_idx ON public.sourcing_observations USING btree (source_ref) WHERE (source_ref IS NOT NULL);
+
+
+--
 -- Name: uniq_active_assignment_ceiling_capability; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11355,6 +11684,27 @@ CREATE UNIQUE INDEX ux_product_skus_supplier_unit_ref ON public.product_skus USI
 --
 
 CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purchase_orders USING btree (order_item_id, product_supplier_id) WHERE ((order_item_id IS NOT NULL) AND (product_supplier_id IS NOT NULL) AND (status <> 'cancelled'::text));
+
+
+--
+-- Name: sourcing_observations sourcing_observations_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER sourcing_observations_append_only BEFORE DELETE OR UPDATE ON public.sourcing_observations FOR EACH ROW EXECUTE FUNCTION public.sourcing_forbid_observation_mutation();
+
+
+--
+-- Name: sourcing_source_execution_modes sourcing_source_exec_api_requires_units; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_source_exec_api_requires_units AFTER INSERT OR DELETE OR UPDATE ON public.sourcing_source_execution_modes DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_api_requires_units();
+
+
+--
+-- Name: sourcing_source_provides sourcing_source_provides_units_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_source_provides_units_guard AFTER DELETE OR UPDATE ON public.sourcing_source_provides DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_api_requires_units();
 
 
 --
@@ -13730,6 +14080,14 @@ ALTER TABLE ONLY public.sourcing_candidates
 
 
 --
+-- Name: sourcing_captures sourcing_captures_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_captures
+    ADD CONSTRAINT sourcing_captures_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id);
+
+
+--
 -- Name: sourcing_global_access_grants sourcing_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13743,6 +14101,46 @@ ALTER TABLE ONLY public.sourcing_global_access_grants
 
 ALTER TABLE ONLY public.sourcing_global_access_grants
     ADD CONSTRAINT sourcing_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_observation_evidence sourcing_observation_evidence_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observation_evidence
+    ADD CONSTRAINT sourcing_observation_evidence_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.sourcing_observations(observation_id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_observations sourcing_observations_capture_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observations
+    ADD CONSTRAINT sourcing_observations_capture_id_fkey FOREIGN KEY (capture_id) REFERENCES public.sourcing_captures(capture_id);
+
+
+--
+-- Name: sourcing_observations sourcing_observations_parent_same_capture; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_observations
+    ADD CONSTRAINT sourcing_observations_parent_same_capture FOREIGN KEY (parent_observation_id, capture_id) REFERENCES public.sourcing_observations(observation_id, capture_id);
+
+
+--
+-- Name: sourcing_source_execution_modes sourcing_source_execution_modes_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_execution_modes
+    ADD CONSTRAINT sourcing_source_execution_modes_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_source_provides sourcing_source_provides_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_provides
+    ADD CONSTRAINT sourcing_source_provides_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id) ON DELETE CASCADE;
 
 
 --
