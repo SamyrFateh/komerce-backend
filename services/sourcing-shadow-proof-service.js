@@ -89,6 +89,7 @@ async function collectShadowProof(query = db.query.bind(db)) {
       LEFT JOIN sourcing_resolution_bindings rb
         ON rb.observation_id = o.observation_id AND rb.ended_at IS NULL
      GROUP BY s.source_id, s.adapter_type
+    HAVING COUNT(DISTINCT c.capture_id) > 0
      ORDER BY s.source_id
   `);
 
