@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical_sourcing_summary, canonical_sourcing_health, decision_primitives
  * @outputs       decision_first_sourcing_overview, sourcing_health_overview
- * @depends       sourcing-workspace, decision-primitives, primitives, /api/admin/workspaces/sourcing/health
+ * @depends       sourcing-workspace, decision-primitives, primitives
  * @used-by       canonical admin Sourcing workspace runtime
  * @db-read       none
  * @db-write      none
@@ -28,8 +28,6 @@
   }
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createSourcingDecision() {
   'use strict';
-
-  const HEALTH_ENDPOINT = '/api/admin/workspaces/sourcing/health';
 
   const DECISION_COPY = Object.freeze({
     scanned: Object.freeze({
@@ -178,17 +176,6 @@
     });
   }
 
-  async function fetchHealth(fetchFn) {
-    if (typeof fetchFn !== 'function') return null;
-    const response = await fetchFn(HEALTH_ENDPOINT, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
-    if (!response.ok) return null;
-    return response.json().catch(() => null);
-  }
-
   function healthTone(status) {
     if (status === 'BROKEN') return 'critical';
     if (status === 'ATTENTION') return 'warning';
@@ -315,11 +302,8 @@
         return Promise.resolve(baseMount({
           ...options,
           ui: decorateUi(options && options.ui, decisionUi, options && options.document),
-        })).then(async result => {
-          let health = null;
-          try { health = await fetchHealth(options && options.fetch); }
-          catch (_) { health = null; }
-          renderHealth(options && options.root, options && options.ui, options && options.document, health);
+        })).then(result => {
+          renderHealth(options && options.root, options && options.ui, options && options.document, result && result.health);
           return result;
         });
       },
@@ -336,14 +320,12 @@
   }
 
   return Object.freeze({
-    HEALTH_ENDPOINT,
     DECISION_COPY,
     indexMetrics,
     decisionItems,
     summaryCards,
     renderMetricOverview,
     decorateUi,
-    fetchHealth,
     healthMetrics,
     renderHealth,
     enhance,
