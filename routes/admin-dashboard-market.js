@@ -35,6 +35,7 @@ const pilotage = require('../services/dashboard-pilotage-market');
 const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
+const orders = require('../services/dashboard-orders');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -201,6 +202,27 @@ router.get(
 );
 
 router.get(
+  '/orders/market/:marketCode',
+  authenticate,
+  attachMarketDashboardDelegation,
+  requireMarketDashboardReadRole,
+  rejectClientMarketId,
+  resolveRequestedMarket,
+  attachAuthorizedMarkets,
+  requireDashboardMarketRead,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await orders.buildOrders({ market: req.dashboardMarket });
+      res.json(payload);
+    } catch (err) {
+      log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] orders market error');
+      next(err);
+    }
+  }
+);
+
+router.get(
   '/finance/market/:marketCode',
   authenticate,
   attachMarketDashboardDelegation,
@@ -252,6 +274,21 @@ router.get(
       res.json(payload);
     } catch (err) {
       log.error({ err }, '[admin-dashboard-market] operations global error');
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/orders',
+  rejectClientMarketId,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await orders.buildOrders();
+      res.json(payload);
+    } catch (err) {
+      log.error({ err }, '[admin-dashboard-market] orders global error');
       next(err);
     }
   }
