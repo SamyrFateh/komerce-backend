@@ -9,6 +9,7 @@ const { buildCanonicalProductProjection } = require('../../services/sourcing-can
 const { buildCanonicalOfferProjection } = require('../../services/sourcing-canonical-offer-projection');
 const { buildCanonicalUnitProjection } = require('../../services/sourcing-canonical-unit-projection');
 const { planSkuReconciliation } = require('../../services/catalog-promotion/sku');
+const { createDraftProductFromSourcingCandidate } = require('../../services/catalog-candidate-product-service');
 const { prepareCanonicalUnitPurchase } = require('../../services/suppliers/canonical-unit-purchasing-gate');
 const { buildGoldenE2EReport } = require('../../services/sourcing-golden-e2e-service');
 
@@ -120,11 +121,29 @@ test('Golden traverse ingestion, Resolution, Product/Offer/Unit, catalog SKU et 
   expect(hardStop).toMatchObject({ status: 'HARD_STOP', place_order_invoked: false });
   expect(hardStop).not.toHaveProperty('placeOrder');
 
+  const ambiguousStop = await prepareCanonicalUnitPurchase({
+    productSkuId: 'sku-ambiguous',
+    resolveFn: async () => ({ status: 'AMBIGUOUS_UNIT' }),
+    adapters: { cj: adapter },
+  });
+  expect(ambiguousStop).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', place_order_invoked: false });
+  expect(adapter.evaluate).toHaveBeenCalledTimes(1);
+
+  const catalogQuery = jest.fn(async (sql) => {
+    expect(sql).toContain("FALSE, 'candidate'");
+    return { rows: [{ id: 'catalog-draft' }] };
+  });
+  await expect(createDraftProductFromSourcingCandidate({ query: catalogQuery }, {
+    candidate: { product_name: 'Travel Mug', purchase_price_kmf: 1000 },
+    initialPrice: 2000,
+  })).resolves.toBe('catalog-draft');
+
   const report = buildGoldenE2EReport({
     sources: [
       { source_id: 'manual:ops:1', adapter_type: 'manual' },
       { source_id: 'api:cj', adapter_type: 'cj' },
       { source_id: 'api:aliexpress', adapter_type: 'aliexpress' },
+      { source_id: 'api:future-provider:tenant-a', adapter_type: 'future-provider' },
     ],
     observations,
     products,
@@ -162,6 +181,7 @@ test('Golden traverse ingestion, Resolution, Product/Offer/Unit, catalog SKU et 
     commandability: { status: 'PASS', missing_soi_blocked: 1 },
     hard_failures: [],
   });
+  expect(report.sources.observed).toContain('future-provider');
 });
 
 test('Manual/CSV sans SOI reste projetable mais Purchasing est bloqué', async () => {
