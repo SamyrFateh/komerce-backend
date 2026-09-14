@@ -152,6 +152,8 @@ function buildGoldenE2EReport(snapshot = {}) {
   const resolved = resolutions.filter((item) => item.status === unitResolver.STATUS.RESOLVED);
   const ambiguous = resolutions.filter((item) => item.status === unitResolver.STATUS.AMBIGUOUS_UNIT);
   const noIdentity = resolutions.filter((item) => item.status === unitResolver.STATUS.NO_SUPPLIER_IDENTITY);
+  const readErrors = resolutions.filter((item) => item.status === 'READ_ERROR');
+  if (readErrors.length) fail(unitFailures, 'canonical_unit_read_error');
   if (!resolved.length) fail(unitFailures, 'exact_canonical_unit_not_resolved');
   if (!ambiguous.length) fail(unitFailures, 'ambiguous_unit_block_not_proven');
   if (!noIdentity.length) fail(commandabilityFailures, 'missing_soi_block_not_proven');
@@ -215,6 +217,7 @@ function buildGoldenE2EReport(snapshot = {}) {
     unit_identity: section(unitFailures, {
       exact: resolved.length,
       ambiguous_blocked: ambiguous.length,
+      read_errors: readErrors.length,
       namespace_mixes: namespaceMixes.map(([canonical_unit_id]) => canonical_unit_id),
     }),
     commandability: section(commandabilityFailures, {
