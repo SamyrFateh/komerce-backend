@@ -480,3 +480,75 @@ node scripts/ci-migrate.js   # baseline git dynamique + migrations nouvelles
 3. **`db/schema.sql`** est obsolète (mars 2026, v1.3). Ce document le remplace comme référence d'état réel.
 4. **Présence DB live de `revoked_tokens`** : à vérifier sur Railway. Le code et la migration sont prêts ; la DB live reste la source de vérité finale.
 5. **Trou apparent** dans la numérotation migrations entre 025 et 033 — vérifier l'historique git si nécessaire.
+
+<!-- schema-pending
+object: sourcing_commercial_principals
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Identite commerciale canonique shadow partageable entre plusieurs sources.
+-->
+
+<!-- schema-pending
+object: sourcing_source_principal_refs
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Mapping source-scoped principal_ref vers un commercial principal Komerce commun.
+-->
+
+<!-- schema-pending
+object: sourcing_canonical_entities
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Supertype shadow des identites canoniques Product Offer Unit avec lifecycle ACTIVE/SUPERSEDED.
+-->
+
+<!-- schema-pending
+object: sourcing_canonical_entity_refs
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: References externes namespaced par source et ref_kind.
+-->
+
+<!-- schema-pending
+object: sourcing_match_proposals
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Propositions append-only de comparaison Observation/candidat avec evidence.
+-->
+
+<!-- schema-pending
+object: sourcing_resolution_decisions
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Decisions append-only LINK DISTINCT REVIEW_REQUIRED MERGE SPLIT.
+-->
+
+<!-- schema-pending
+object: sourcing_resolution_bindings
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Projection courante Observation vers identite canonique.
+-->
+
+<!-- schema-pending
+object: sourcing_identity_constraints
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Contraintes MUST_LINK et CANNOT_LINK reversibles par decision auditee.
+-->
+
+<!-- schema-pending
+object: sourcing_merge_policies
+kind: table
+migration: 227
+section: ### 4.10 Sourcing et fournisseurs
+role: Politique de projection de champs par grain sans selection d'offre.
+-->
