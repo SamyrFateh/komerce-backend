@@ -19,7 +19,7 @@
 
 const GTIN_KEYS = new Set(['gtin', 'ean', 'ean8', 'ean13', 'upc', 'upca', 'barcode']);
 const MPN_KEYS = new Set(['mpn', 'manufacturerpartnumber', 'manufacturerreference', 'partnumber']);
-const MODEL_KEYS = new Set(['model', 'modelnumber', 'manufacturer_model']);
+const MODEL_KEYS = new Set(['model', 'modelnumber', 'manufacturermodel']);
 
 function normalizeText(value) {
   return String(value ?? '').trim().toLowerCase().normalize('NFKD')
@@ -183,6 +183,7 @@ function scoreCandidate(currentEvidence, candidateEvidence, hints = {}) {
     contradiction_score: round5(contradicted / denominator),
     coverage_score: round5(compared / denominator),
     source_ref_exact: Boolean(hints.sourceRefExact) || hasExact(currentEvidence, 'source_ref', 'source_scoped_ref', candidateMap),
+    context_exact: Boolean(hints.contextExact),
     gtin_exact: hasExact(currentEvidence, 'deterministic_id', 'gtin', candidateMap),
     mpn_exact: hasExact(currentEvidence, 'deterministic_id', 'mpn', candidateMap),
     brand_exact: hasExact(currentEvidence, 'attribute', 'brand', candidateMap),
@@ -194,6 +195,7 @@ function scoreCandidate(currentEvidence, candidateEvidence, hints = {}) {
 
 function rankCandidate(candidate) {
   if (candidate.source_ref_exact && candidate.contradiction_score === 0) return 100;
+  if (candidate.context_exact && candidate.contradiction_score === 0) return 95;
   if (candidate.gtin_exact && candidate.contradiction_score === 0) return 90;
   if (candidate.mpn_exact && candidate.brand_exact && candidate.contradiction_score === 0) return 70;
   return Math.round((candidate.support_score * 50) + (candidate.coverage_score * 20) - (candidate.contradiction_score * 60));
@@ -203,17 +205,17 @@ function chooseResolutionRoute(candidates) {
   if (!candidates?.length) return { action: 'NEW_CANONICAL', candidate: null, reason: 'no_candidate' };
   const ordered = [...candidates].sort((a, b) => rankCandidate(b) - rankCandidate(a));
   const auto = ordered.filter((candidate) =>
-    candidate.contradiction_score === 0 && (candidate.source_ref_exact || candidate.gtin_exact)
+    candidate.contradiction_score === 0 &&
+    (candidate.source_ref_exact || candidate.context_exact || candidate.gtin_exact)
   );
   const distinctAutoIds = new Set(auto.map((candidate) => candidate.canonical_entity_id));
 
   if (distinctAutoIds.size === 1) {
     const candidate = auto[0];
-    return {
-      action: 'LINK',
-      candidate,
-      reason: candidate.source_ref_exact ? 'exact_source_ref' : 'exact_gtin',
-    };
+    let reason = 'exact_gtin';
+    if (candidate.source_ref_exact) reason = 'exact_source_ref';
+    else if (candidate.context_exact) reason = 'same_source_parent_context';
+    return { action: 'LINK', candidate, reason };
   }
 
   return {
