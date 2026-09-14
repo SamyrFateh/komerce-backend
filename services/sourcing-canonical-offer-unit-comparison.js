@@ -21,38 +21,108 @@ const db = require('../db');
 const offerProjection = require('./sourcing-canonical-offer-projection');
 const unitProjection = require('./sourcing-canonical-unit-projection');
 
-function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySkus = [] } = {}) {
-  const unitByRef = new Map();
-  for (const unit of units) {
-    for (const ref of unit.identity?.deterministic_refs || []) {
-      if (!unitByRef.has(String(ref.value))) unitByRef.set(String(ref.value), []);
-      unitByRef.get(String(ref.value)).push(unit);
-    }
-  }
+const UNIT_REF_KINDS = Object.freeze({
+  supplier_unit_ref: new Set(['supplier_unit_ref', 'unit.source_ref', 'source_ref', 'supplier_variant_id']),
+  supplier_sku: new Set(['supplier_sku', 'unit.source_ref', 'source_ref']),
+});
 
+function stable(value) {
+  if (value == null) return 'null';
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
+  if (typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function normalizedProvider(value) {
+  return String(value || '').trim().toLowerCase() || null;
+}
+
+function providerFromNamespace(namespace) {
+  const parts = String(namespace || '').trim().toLowerCase().split(':').filter(Boolean);
+  if (!parts.length) return null;
+  return parts[0] === 'api' ? (parts[1] || null) : parts[0];
+}
+
+function providerForRef(unit, ref) {
+  const provenance = unit.provenance || [];
+  const source = provenance.find((item) => String(item.source_id) === String(ref.namespace));
+  return normalizedProvider(source?.adapter_type) || providerFromNamespace(ref.namespace);
+}
+
+function legacyRefClaims(sku) {
+  const claims = [];
+  if (sku.supplier_unit_ref != null && sku.supplier_unit_ref !== '') {
+    claims.push({ field: 'supplier_unit_ref', value: String(sku.supplier_unit_ref) });
+  }
+  if (sku.supplier_sku != null && sku.supplier_sku !== '') {
+    claims.push({ field: 'supplier_sku', value: String(sku.supplier_sku) });
+  }
+  return claims;
+}
+
+function matchingRefs(unit, sku, provider) {
+  if (!provider) return [];
+  const claims = legacyRefClaims(sku);
+  return (unit.identity?.deterministic_refs || []).filter((ref) => {
+    if (providerForRef(unit, ref) !== provider) return false;
+    return claims.some((claim) =>
+      claim.value === String(ref.value)
+      && UNIT_REF_KINDS[claim.field]?.has(String(ref.kind))
+    );
+  });
+}
+
+function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySkus = [] } = {}) {
   const parity = [];
   const ambiguities = [];
   const missingIdentities = [];
+
   for (const sku of legacySkus) {
-    const refs = [sku.supplier_unit_ref, sku.supplier_sku].filter(Boolean).map(String);
-    const matches = [...new Set(refs.flatMap((ref) => unitByRef.get(ref) || []))];
-    if (!refs.length) missingIdentities.push({ product_sku_id: sku.id, reason: 'legacy_missing_supplier_ref' });
-    else if (!matches.length) missingIdentities.push({ product_sku_id: sku.id, refs, reason: 'canonical_unit_not_found' });
-    else if (matches.length > 1) ambiguities.push({ product_sku_id: sku.id, canonical_unit_ids: matches.map((u) => u.canonical_unit_id) });
-    else {
+    const claims = legacyRefClaims(sku);
+    const provider = normalizedProvider(sku.supplier_order_identity?.provider);
+    if (!claims.length) {
+      missingIdentities.push({ product_sku_id: sku.id, reason: 'legacy_missing_supplier_ref' });
+      continue;
+    }
+    if (!provider) {
+      missingIdentities.push({ product_sku_id: sku.id, refs: claims.map((item) => item.value), reason: 'legacy_provider_namespace_missing' });
+      continue;
+    }
+
+    const matches = units.filter((unit) => matchingRefs(unit, sku, provider).length > 0);
+    if (!matches.length) {
+      missingIdentities.push({ product_sku_id: sku.id, provider, refs: claims.map((item) => item.value), reason: 'canonical_unit_not_found' });
+    } else if (matches.length > 1) {
+      ambiguities.push({ product_sku_id: sku.id, provider, canonical_unit_ids: matches.map((u) => u.canonical_unit_id) });
+    } else {
       const unit = matches[0];
+      const refs = matchingRefs(unit, sku, provider);
       parity.push({
         product_sku_id: sku.id,
         canonical_unit_id: unit.canonical_unit_id,
-        supplier_unit_ref_equal: !sku.supplier_unit_ref || (unit.identity.deterministic_refs || []).some((ref) => String(ref.value) === String(sku.supplier_unit_ref)),
-        supplier_order_identity_equal: JSON.stringify(sku.supplier_order_identity || null) === JSON.stringify(unit.current_state?.supplier_order_identity || null),
+        provider,
+        matched_ref_keys: refs.map((ref) => `${ref.namespace}|${ref.kind}|${ref.value}`).sort(),
+        supplier_unit_ref_equal: !sku.supplier_unit_ref || refs.some((ref) => String(ref.value) === String(sku.supplier_unit_ref)),
+        supplier_order_identity_equal: stable(sku.supplier_order_identity || null) === stable(unit.current_state?.supplier_order_identity || null),
       });
     }
   }
-  const hardFailures = parity.filter((item) => !item.supplier_unit_ref_equal).map((item) => ({
-    product_sku_id: item.product_sku_id,
-    reason: 'supplier_unit_ref_mismatch',
-  }));
+
+  const hardFailures = [];
+  for (const item of parity) {
+    if (!item.supplier_unit_ref_equal) {
+      hardFailures.push({ product_sku_id: item.product_sku_id, reason: 'supplier_unit_ref_mismatch' });
+    }
+    if (!item.supplier_order_identity_equal) {
+      hardFailures.push({ product_sku_id: item.product_sku_id, reason: 'supplier_order_identity_mismatch' });
+    }
+  }
+  for (const item of ambiguities) {
+    hardFailures.push({ product_sku_id: item.product_sku_id, reason: 'canonical_unit_ambiguity' });
+  }
+
   return {
     offers: { projected: offers.length },
     units: { projected: units.length, legacy: legacySkus.length },
@@ -63,7 +133,6 @@ function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySk
     authority_unchanged: true,
   };
 }
-
 
 async function collectCanonicalOfferUnitComparison(
   query = db.query.bind(db),
@@ -103,4 +172,8 @@ async function collectCanonicalOfferUnitComparison(
   };
 }
 
-module.exports = { compareCanonicalOfferUnitWithLegacy, collectCanonicalOfferUnitComparison };
+module.exports = {
+  compareCanonicalOfferUnitWithLegacy,
+  collectCanonicalOfferUnitComparison,
+  _providerFromNamespace: providerFromNamespace,
+};
