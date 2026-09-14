@@ -99,6 +99,7 @@ module.exports = {
       'migrations/088_sourcing_standalone_fixes.sql',
       'migrations/102_sourcing_candidates_raw_payload.sql',
       'migrations/149_sourcing_workspace_business_refs.sql',
+      'migrations/226_sourcing_observation_foundation.sql',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
@@ -116,6 +117,7 @@ module.exports = {
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
+      'tests/unit/sourcing-observation-foundation-migration.test.js',
     ],
   },
 
