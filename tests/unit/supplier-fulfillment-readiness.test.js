@@ -1,5 +1,8 @@
 'use strict';
 
+// Regression boundary: Canonical Offer/Unit shadow must not change this authority.
+
+
 const readiness = require('../../services/suppliers/supplier-fulfillment-readiness');
 
 function dbWith(row) {

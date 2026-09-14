@@ -1,5 +1,8 @@
 'use strict';
 
+// Regression boundary: Canonical Offer/Unit shadow must not change this authority.
+
+
 const identity = require('../../services/suppliers/supplier-order-identity');
 
 function contract(overrides = {}) {

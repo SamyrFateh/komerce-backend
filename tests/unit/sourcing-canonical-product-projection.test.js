@@ -1,5 +1,8 @@
 'use strict';
 
+// Regression boundary: Canonical Offer/Unit shadow must not change this authority.
+
+
 /**
  * @test-kind unit
  * @test-runner jest
