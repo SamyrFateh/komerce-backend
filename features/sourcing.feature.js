@@ -92,6 +92,7 @@ module.exports = {
       'scripts/sourcing-shadow-proof-staging.js',
       'scripts/sourcing-product-projection-trial-staging.js',
       'scripts/sourcing-product-read-comparison-staging.js',
+      'scripts/catalog-product-read-cutover-trial-staging.js',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
@@ -102,6 +103,7 @@ module.exports = {
       'services/sourcing-shadow-proof-service.js',
       'services/sourcing-canonical-product-projection.js',
       'services/sourcing-product-read-comparison.js',
+      'services/catalog-product-read-cutover-trial.js',
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
     ],
@@ -119,6 +121,7 @@ module.exports = {
       'tests/unit/sourcing-shadow-proof-service.test.js',
       'tests/unit/sourcing-canonical-product-projection.test.js',
       'tests/unit/sourcing-product-read-comparison.test.js',
+      'tests/unit/catalog-product-read-cutover-trial.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
@@ -197,6 +200,7 @@ module.exports = {
       { fn: 'collectShadowProof', file: 'services/sourcing-shadow-proof-service.js' },
       { fn: 'collectCanonicalProductProjections', file: 'services/sourcing-canonical-product-projection.js' },
       { fn: 'collectProductReadComparison', file: 'services/sourcing-product-read-comparison.js' },
+      { fn: 'collectCatalogProductReadCutoverTrial', file: 'services/catalog-product-read-cutover-trial.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
