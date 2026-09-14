@@ -215,6 +215,29 @@ Note de scope : matrice établie en `global_pricing`. Les lignes mutualisation /
 
 Note de scope : cette matrice couvre la curation **globale** (vérité produit commune). La dimension « pays » du mock MOCK-CAT-001 (quels produits exposés par marché) relève de la surface `market-catalog` et doit être tracée à partir de son propre payload avant clôture.
 
+## Marchés
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_AUTONOMIE_RESPONSABLE_PAYS.md` §8 (Dashboard de délégation).
+> Côté « fourni » : payload composite `dashboard/context` + `users` + `pricing/market/{code}` (scope `market_pricing`).
+
+| Information cible (doctrine §8) | Statut | Motif |
+|---|---|---|
+| Identité du responsable | `PROVEN` | `users[]` : `full_name`, `email`, `role` |
+| Marché | `PROVEN` | `context.access.allowedMarkets` (`CG`, `CM`, `KM`, `YT`) + `pricing/market/{code}.scope` (`market_code`, `market_name`, `market_currency`) |
+| Niveau viewer / manager | `PROJECTABLE` | dérivable de `users[].market_scopes` + flags `access` ; aucun champ « niveau » unique canonique |
+| Capacité | `PROVEN` | `pricing/market/{code}.capabilities` (15 booléens : `simulation`, `cost_overrides`, `market_decision`, `market_corridor`, `manage_decision_policy`, `local_price_activation`, `local_strategy_owner`…) |
+| Périmètre | `PROVEN` | `scope` (`market_pricing`, `inherits_global`) + bloc `access` market-scopé |
+| État : disponible / manquante / bloquée | `PROJECTABLE` | projection des booléens `capabilities`/`access` (true = disponible, false = manquante) ; distinguer « bloquée » exige un motif serveur non fourni |
+| Outil / URL | `PROJECTABLE` | hrefs de navigation (config UI), sans preuve serveur d'accessibilité effective |
+| Dernière preuve d'accès | `PROJECTABLE` | `users[].last_login_at` (proxy global, non granulaire par marché) |
+| Dernière mutation auditée | `BACKEND_GAP` | la table `market_delegation_audit` existe (services de délégation) mais n'est projetée dans aucun payload Marchés ; aucune référence dans `markets*.js` |
+| Q1 « A-t-il le droit ? » | `PROVEN` | `access` + `capabilities` répondent directement |
+| Q2 « Peut-il réellement faire le travail ? » | `PROVEN` | les 15 booléens `capabilities` encodent exactement la faisabilité UI/API |
+| Overrides locaux du marché | `PROVEN` | `summary.overridden_cost_components` (ex. KM : 1 override) |
+| Frontière stratégie locale (currency boundary §4) | `PROVEN` | `access.local_strategy_owner=false` / `can_activate_local_prices=false` pour l'admin global : l'activation du prix local reste au responsable pays |
+
+Note de scope : matrice établie sur le marché `KM`. Les statuts `capabilities`/`access` sont par acteur × marché ; l'énumération « chaque responsable × chaque marché » de la doctrine §8 exige la jointure `users[].market_scopes` × assignments `market-delegation/team`, à valider avant clôture.
+
 ## Lots suivants
 
-Le gap Marchés reste à remplir : la surface est déjà migrée en decision-first, sa matrice est une dette de documentation, à établir à partir de son payload composite (`dashboard/context` + `users` + `pricing/market/{code}`). Commandes n'a pas encore de payload canonique et exige d'abord un contrat de payload avant migration. La projection par marché du Catalogue (surface `market-catalog`) reste également à tracer.
+Commandes reste le seul écran non couvert : non migré en decision-first, sans payload canonique (`entities/orders/` → 404, `orders` → quasi vide). Sa migration exige d'abord un **contrat de payload** (files de travail, KPI prouvables, actions déléguées à la state machine commande) — chantier à part, pas une matrice à remplir. Deux compléments restent à tracer sur des surfaces annexes : la projection par marché du Catalogue (surface `market-catalog`) et l'énumération responsable × marché de la délégation (jointure `users` × `market-delegation/team`).
