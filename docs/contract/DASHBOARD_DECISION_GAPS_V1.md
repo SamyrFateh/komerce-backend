@@ -213,7 +213,30 @@ Note de scope : matrice établie en `global_pricing`. Les lignes mutualisation /
 | Fraîcheur | `PROVEN` | `products[].updated_at`, `approval[].created_at` |
 | Qualité d'enrichissement | `BACKEND_GAP` | aucune mesure de confiance / complétude d'enrichissement exposée |
 
-Note de scope : cette matrice couvre la curation **globale** (vérité produit commune). La dimension « pays » du mock MOCK-CAT-001 (quels produits exposés par marché) relève de la surface `market-catalog` et doit être tracée à partir de son propre payload avant clôture.
+Note de scope : cette matrice couvre la curation **globale** (vérité produit commune). La dimension « pays » du mock MOCK-CAT-001 (quels produits exposés par marché) relève de la surface `market-catalog` et est tracée ci-dessous à partir de son propre payload.
+
+## Catalogue pays — projection marché (`market-catalog`)
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_CATALOGUE.md` §1.1 (une vérité produit, N projections marché — devise, prix marché, disponibilité/restrictions, rails de livraison, moyens de paiement, merchandising local).
+> Côté « fourni » : payload réel `GET /api/market-delegation/markets/:marketCode/catalog/exposure`, capacité `catalog.expose` (`services/market-delegation-catalog-service.js` → `services/catalog-market-exposure-service.js`).
+
+| Information cible (doctrine §1.1) | Statut | Motif |
+|---|---|---|
+| Décision d'exposition par marché (visible/masqué) | `PROVEN` | `exposure[].commercial_exposure` + `decision_recorded` ; absence de décision = `DISABLED` côté SQL (`COALESCE(pme.commercial_exposure, 'DISABLED')`), conforme à la doctrine `missing_exposure_is_disabled` |
+| Produits sans décision explicite | `PROVEN` | `summary.undecided_products`, décompte exact via `decision_recorded !== true` |
+| Produits exposés signalés à relire (qualité catalogue global) | `PROVEN` | `summary.exposed_needs_review` + `exposure[].needs_review` |
+| Couverture du marché (taux d'exposition) | `PROVEN` | `summary.exposure_pct` |
+| Devise du marché | `PROVEN` | `market.currency` |
+| Prix commercial décidé pour le marché | `BACKEND_GAP` ici | absent de ce payload ; porté par `pricing/market/{code}` (section Atelier économique / Marchés) — aucune jointure faite entre les deux surfaces |
+| Disponibilité commerciale / restrictions propres au marché | `PROJECTABLE` | `exposure[].is_available` est un flag du catalogue global, pas une restriction distincte par marché — à ne pas confondre avec l'exposition |
+| Rails de livraison déjà résolus par la logistique | `BACKEND_GAP` | aucun champ logistique dans ce payload |
+| Moyens de paiement disponibles | `BACKEND_GAP` | aucun champ paiement dans ce payload |
+| Merchandising / ordre de mise en avant local | `BACKEND_GAP` | `category`/`subcategory` sont des attributs du catalogue global, aucun ordre propre au marché |
+| Autorité de mutation (qui peut exposer) | `PROVEN` | `actor_capabilities` + capacité `catalog.expose` exigée server-side (`resolveAuthorization`) |
+| Traçabilité de la décision | `PROVEN` | `market_delegation_audit` alimenté (`CATALOG_PRODUCT_EXPOSED` / `CATALOG_PRODUCT_HIDDEN`, `before`/`after`, `correlationId`) via `audit()` dans `setExposure` |
+| Fraîcheur | `PROVEN` quand champ présent | `exposure[].decided_at` |
+
+Conclusion : la dimension **exposition par marché** (§1.1, le cœur du mock MOCK-CAT-001) est `PROVEN` de bout en bout côté lecture *et* écriture, UI (`market-catalog-decision.js`) déjà câblée dessus sans recalcul. Les autres dimensions listées par la doctrine (prix, rails, paiement, merchandising) restent `BACKEND_GAP` sur cette surface car elles appartiennent à d'autres features propriétaires (pricing, logistics, payments) et ne sont pas jointes ici — c'est cohérent avec la doctrine (« les overlays ne deviennent jamais une seconde vérité produit »), pas un oubli à corriger dans `market-catalog`.
 
 ## Marchés
 
@@ -235,9 +258,17 @@ Note de scope : cette matrice couvre la curation **globale** (vérité produit c
 | Q2 « Peut-il réellement faire le travail ? » | `PROVEN` | les 15 booléens `capabilities` encodent exactement la faisabilité UI/API |
 | Overrides locaux du marché | `PROVEN` | `summary.overridden_cost_components` (ex. KM : 1 override) |
 | Frontière stratégie locale (currency boundary §4) | `PROVEN` | `access.local_strategy_owner=false` / `can_activate_local_prices=false` pour l'admin global : l'activation du prix local reste au responsable pays |
+| Énumération responsable × marché, tous marchés, en un seul payload | `BACKEND_GAP` | aucun endpoint ne joint le scope legacy (`operator_market_scopes`) et les affectations delegation (`market-delegation` assignments/memberships) sur l'ensemble des marchés à la fois — voir détail ci-dessous |
+| Par utilisateur → ses marchés (scope legacy viewer/manager) | `PROVEN` | `GET /api/admin/users` (`market_scopes` par utilisateur) et `GET /api/admin/users/:id/market-scopes` (historique actif/révoqué) — `routes/admin/users.js` |
+| Par marché → ses membres + capacités granulaires (15 booléens) | `PROVEN`, mais scopé à un marché à la fois | `GET /api/market-delegation/markets/:marketCode/team` — nécessite un acteur ayant la capacité `team.read` *sur ce marché précis* (`resolveAuthorization`, `routes/market-delegation-team.js`) |
+| Jointure combinée scope legacy × capacités delegation, vue admin centrale | `BACKEND_GAP` confirmé | les deux modèles ne sont pas projetés ensemble ; contrairement aux routes dashboard globales (`admin-dashboard-market.js`, garde `requireDashboardGlobalAuthority`), `market-delegation-team.js` n'a **aucune** autorité centrale équivalente — un admin global sans affectation `market-delegation` explicite sur un marché ne peut pas lister son équipe. La jointure devrait itérer `GET /users/markets` puis appeler `/markets/{code}/team` par marché ; non exécutable pour un admin central aujourd'hui sans lui provisionner une affectation par marché |
 
-Note de scope : matrice établie sur le marché `KM`. Les statuts `capabilities`/`access` sont par acteur × marché ; l'énumération « chaque responsable × chaque marché » de la doctrine §8 exige la jointure `users[].market_scopes` × assignments `market-delegation/team`, à valider avant clôture.
+Note de scope : matrice établie sur le marché `KM`. Les statuts `capabilities`/`access` sont par acteur × marché. L'énumération globale « chaque responsable × chaque marché » de la doctrine §8 est désormais tracée (ci-dessus) et confirmée `BACKEND_GAP` : ce n'est pas un simple manque de projection, mais une absence d'autorité centrale sur `market-delegation-team.js` — un chantier d'autorisation, pas seulement de payload, avant de pouvoir fermer cette ligne.
 
 ## Lots suivants
 
-Commandes reste le seul écran non couvert : non migré en decision-first, sans payload canonique (`entities/orders/` → 404, `orders` → quasi vide). Sa migration exige d'abord un **contrat de payload** (files de travail, KPI prouvables, actions déléguées à la state machine commande) — chantier à part, pas une matrice à remplir. Deux compléments restent à tracer sur des surfaces annexes : la projection par marché du Catalogue (surface `market-catalog`) et l'énumération responsable × marché de la délégation (jointure `users` × `market-delegation/team`).
+Commandes reste le seul écran non couvert : non migré en decision-first, sans payload canonique (`entities/orders/` → 404, `orders` → quasi vide). Sa migration exige d'abord un **contrat de payload** (files de travail, KPI prouvables, actions déléguées à la state machine commande) — chantier à part, pas une matrice à remplir. F1 (contrat de payload `services/dashboard-orders.js` + routes `orders`/`orders/market/:marketCode`) est posé sur la branche `feat/dashboard-orders-payload` ; F2 (surface UI decision-first) et le câblage nav/runtime restent à faire.
+
+Les deux compléments annexes sont désormais tracés (voir sections « Catalogue pays — projection marché » et « Marchés » ci-dessus) :
+- projection par marché du Catalogue (`market-catalog`) : dimension exposition `PROVEN` de bout en bout ; prix/rails/paiement/merchandising restent `BACKEND_GAP`, portés par d'autres features et non joints ici par design doctrinal ;
+- énumération responsable × marché de la délégation : confirmée `BACKEND_GAP` — pas un simple trou de payload mais une absence d'autorité centrale sur `market-delegation-team.js` ; fermer cette ligne suppose un chantier d'autorisation (donner à l'admin global une lecture cross-marché) avant toute projection.
