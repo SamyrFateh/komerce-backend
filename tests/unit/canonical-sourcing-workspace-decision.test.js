@@ -66,6 +66,34 @@ describe('Sourcing — decision-first visual', () => {
     expect(decision.summaryCards(items).every(card => card.tone === 'neutral')).toBe(true);
   });
 
+  test('healthMetrics affiche le verdict backend sans le reclasser', () => {
+    expect(decision.healthMetrics({
+      state: {
+        global: 'BROKEN', integrity: 'BROKEN', performance: 'ATTENTION', blockers: 2,
+        trend: { status: 'UNKNOWN' },
+      },
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'health', value: 'BROKEN', tone: 'critical' }),
+      expect.objectContaining({ key: 'integrity', value: 'BROKEN', tone: 'critical' }),
+      expect.objectContaining({ key: 'performance', value: 'ATTENTION', tone: 'warning' }),
+      expect.objectContaining({ key: 'blockers', value: '2', tone: 'critical' }),
+      expect.objectContaining({ key: 'trend', value: 'UNKNOWN', tone: 'neutral' }),
+    ]));
+  });
+
+  test('fetchHealth consomme le contrat global canonique et échoue sans inventer de verdict', async () => {
+    const payload = { schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } };
+    const okFetch = jest.fn(async () => ({ ok: true, json: async () => payload }));
+    await expect(decision.fetchHealth(okFetch)).resolves.toEqual(payload);
+    expect(okFetch).toHaveBeenCalledWith(
+      '/api/admin/workspaces/sourcing/health',
+      expect.objectContaining({ method: 'GET', credentials: 'include' })
+    );
+
+    const failedFetch = jest.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }));
+    await expect(decision.fetchHealth(failedFetch)).resolves.toBeNull();
+  });
+
   test('enhance conserve le mount global sourcing et décore uniquement MetricStrip', async () => {
     const payload = { scope: { mode: 'global_sourcing' }, summary: summaryFixture() };
     const baseMount = jest.fn(options => Promise.resolve(payload));
