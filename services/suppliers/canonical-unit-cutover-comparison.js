@@ -24,8 +24,12 @@ const STATUS = Object.freeze({
 });
 
 function stable(value) {
-  if (value == null) return null;
-  return JSON.stringify(value, Object.keys(value).sort());
+  if (value == null) return 'null';
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
+  if (typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function compareLegacyCanonicalUnit(legacy, canonical) {
