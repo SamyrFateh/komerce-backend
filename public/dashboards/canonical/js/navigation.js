@@ -30,7 +30,18 @@
     Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage', roles: Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) }),
     Object.freeze({ id: 'pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: Object.freeze(['admin', 'market_operator']) }),
     Object.freeze({ id: 'catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: Object.freeze(['admin', 'market_operator']) }),
-    Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
+    Object.freeze({
+      id: 'orders',
+      label: 'Commandes',
+      // Domaine groupé (doctrine §4/§9) : Commerce (surface existante,
+      // inchangée) + Suivi des commandes (nouvelle surface decision-first
+      // MOCK-ORD-001). Additif et réversible d'une ligne — aucun domaine
+      // « Commerce » distinct n'existait avant ce lot.
+      spaces: Object.freeze([
+        Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'orders-overview', label: 'Suivi des commandes', href: '/admin/orders', roles: Object.freeze(['admin', 'market_operator']) }),
+      ]),
+    }),
     Object.freeze({ id: 'markets', label: 'Marchés', href: '/dashboards/canonical/access.html', roles: Object.freeze(['admin', 'market_operator']) }),
     Object.freeze({
       id: 'operations',
@@ -103,6 +114,7 @@
     'product-360': 'catalog',
 
     commerce: 'orders',
+    orders: 'orders',
     'order-360': 'orders',
     'client-index': 'orders',
     'client-360': 'orders',
@@ -124,6 +136,12 @@
   // Parentage des surfaces techniques vers leur espace N2 (uniquement pour
   // les domaines groupés Opérations / Finance).
   const SURFACE_TO_SPACE = Object.freeze({
+    commerce: 'commerce',
+    orders: 'orders-overview',
+    'order-360': 'commerce',
+    'client-index': 'commerce',
+    'client-360': 'commerce',
+
     operations: 'operations-overview',
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
