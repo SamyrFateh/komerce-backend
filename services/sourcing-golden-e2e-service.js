@@ -7,7 +7,7 @@
  * @inputs        persisted multi-source lineage and canonical Unit resolutions
  * @outputs       deterministic Golden E2E integrity report
  * @depends       db.js, services/sourcing-canonical-product-projection.js, services/sourcing-canonical-unit-product-sku-resolution.js
- * @used-by       scripts/sourcing-golden-e2e-staging.js, tests/unit/sourcing-golden-e2e.test.js
+ * @used-by       scripts/sourcing-golden-e2e-staging.js, tests/unit/sourcing-golden-e2e-service.test.js
  * @db-read       sourcing_sources, sourcing_captures, sourcing_observations, sourcing_resolution_bindings, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_candidates, products, product_skus
  * @db-write      none
  * @db-txn        none
