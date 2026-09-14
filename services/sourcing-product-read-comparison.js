@@ -85,6 +85,21 @@ function buildCatalogComparison(projectedProduct, historicalProduct) {
   };
 }
 
+function unpromotedCandidatesFromRows(rows) {
+  const unique = new Map();
+  for (const row of rows || []) {
+    if (!row.candidate_id || row.product_id || unique.has(row.candidate_id)) continue;
+    unique.set(row.candidate_id, {
+      candidate_id: row.candidate_id,
+      candidate_state: row.candidate_state,
+      canonical_product_id: row.canonical_entity_id,
+      source_id: row.source_id,
+      source_ref: row.source_ref,
+    });
+  }
+  return [...unique.values()];
+}
+
 async function collectProductReadComparison(query = db.query.bind(db)) {
   const projectionReport = await canonicalProjection.collectCanonicalProductProjections(query);
   const linkageResult = await query(`
@@ -126,6 +141,7 @@ async function collectProductReadComparison(query = db.query.bind(db)) {
   const candidateLinks = rows.filter((row) => row.candidate_id);
   const catalogLinks = rows.filter((row) => row.product_id);
   const missingCandidateLinks = rows.filter((row) => !row.candidate_id);
+  const unpromotedCandidateLinks = unpromotedCandidatesFromRows(rows);
   const historicalByCanonical = new Map();
 
   for (const row of catalogLinks) {
@@ -171,6 +187,7 @@ async function collectProductReadComparison(query = db.query.bind(db)) {
       candidate_links: candidateLinks.length,
       candidate_link_coverage: rows.length ? candidateLinks.length / rows.length : 0,
       catalog_product_links: catalogLinks.length,
+      unpromoted_candidates: unpromotedCandidateLinks.length,
       distinct_catalog_products: new Set(catalogLinks.map((row) => row.product_id)).size,
       comparisons: comparisons.length,
       mismatches: mismatchCount,
@@ -180,6 +197,7 @@ async function collectProductReadComparison(query = db.query.bind(db)) {
       source_id: row.source_id,
       source_ref: row.source_ref,
     })),
+    unpromoted_candidate_links: unpromotedCandidateLinks,
     comparisons,
     verdict: {
       status,
@@ -195,5 +213,6 @@ module.exports = {
   collectProductReadComparison,
   compareProjectedField,
   buildCatalogComparison,
+  unpromotedCandidatesFromRows,
   _stableValue: stableValue,
 };

@@ -9,6 +9,7 @@
 const {
   compareProjectedField,
   buildCatalogComparison,
+  unpromotedCandidatesFromRows,
 } = require('../../services/sourcing-product-read-comparison');
 
 describe('parallel Product read comparison', () => {
@@ -84,5 +85,36 @@ describe('parallel Product read comparison', () => {
     });
     expect(result.status).toBe('MISMATCH');
     expect(result.mismatches).toEqual(['product_name']);
+  });
+
+  test('liste exactement les candidats liés mais non encore promus, sans doublon', () => {
+    const rows = [
+      {
+        canonical_entity_id: 'canon-1', source_id: 'manual:a', source_ref: 'ref-a',
+        candidate_id: 'candidate-1', candidate_state: 'scanned', product_id: null,
+      },
+      {
+        canonical_entity_id: 'canon-1', source_id: 'manual:a', source_ref: 'ref-a',
+        candidate_id: 'candidate-1', candidate_state: 'scanned', product_id: null,
+      },
+      {
+        canonical_entity_id: 'canon-2', source_id: 'manual:b', source_ref: 'ref-b',
+        candidate_id: 'candidate-2', candidate_state: 'imported_to_catalog', product_id: 'product-2',
+      },
+      {
+        canonical_entity_id: 'canon-3', source_id: 'manual:c', source_ref: 'ref-c',
+        candidate_id: null, candidate_state: null, product_id: null,
+      },
+    ];
+
+    expect(unpromotedCandidatesFromRows(rows)).toEqual([
+      {
+        candidate_id: 'candidate-1',
+        candidate_state: 'scanned',
+        canonical_product_id: 'canon-1',
+        source_id: 'manual:a',
+        source_ref: 'ref-a',
+      },
+    ]);
   });
 });
