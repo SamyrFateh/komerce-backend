@@ -12,8 +12,8 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @impact-areas  catalog, product-discovery, product-detail
- * @version       2026-07
+ * @impact-areas  catalog, product-discovery, product-detail, sourcing
+ * @version       2026-09
  */
 
 /**
@@ -22,11 +22,10 @@
  *
  * Une saisie plate continue de produire un contrat V1 compatible.
  *
- * Si l'entrée porte explicitement une structure riche (`media`, `option_axes`,
- * `sellable_units`, `source_locale`) et ne fixe pas elle-même une version, le
- * connecteur la place en V2. Il PRÉSERVE ces faits tels quels et laisse le
- * contrat versionné les valider : aucune matrice SKU ni association média n'est
- * reconstruite ici.
+ * Si l'entrée porte explicitement un champ du contrat riche V2 et ne fixe pas
+ * elle-même une version, le connecteur la place en V2. Il PRÉSERVE ces faits
+ * tels quels et laisse le contrat versionné les valider : aucune identité,
+ * matrice SKU, Evidence ou association média n'est reconstruite ici.
  */
 
 'use strict';
@@ -34,7 +33,23 @@
 const { partitionValid } = require('../normalized-product');
 const { parseStrictNumber, parseStrictInteger, parsePositiveDimension } = require('./_connector-utils');
 
-const V2_FIELDS = Object.freeze(['source_locale', 'media', 'option_axes', 'sellable_units']);
+// Champs V2 qui ne font pas partie du socle plat historique. Ils doivent tous
+// survivre au connecteur Manual afin qu'une source humaine/ERP/partenaire soit
+// aussi expressive qu'une API, notamment pour les Evidence de Resolution
+// (brand/specifications/GTIN) sans règle spéciale dans le resolver.
+const V2_FIELDS = Object.freeze([
+  'source_locale',
+  'media',
+  'option_axes',
+  'sellable_units',
+  'brand',
+  'highlights',
+  'specifications',
+  'sections',
+  'materials',
+  'care',
+  'warnings',
+]);
 
 function cloneJsonValue(value) {
   if (value === undefined) return undefined;
@@ -108,7 +123,7 @@ function normalizeFormItem(item, supplierName) {
   if (explicitVersion) obj.schema_version = explicitVersion;
   else if (hasRichStructure) obj.schema_version = '2';
 
-  // Préserver les structures riches sans interprétation. Le schéma V2 et les
+  // Préserver les extensions V2 sans interprétation. Le schéma V2 et les
   // invariants référentiels de normalized-product.js sont les seuls juges.
   if (hasRichStructure) {
     for (const field of V2_FIELDS) {
