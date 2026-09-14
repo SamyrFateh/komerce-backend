@@ -26,7 +26,7 @@ const CHUNK = 150;
 
 function sourceTypeOf(value) {
   const v = String(value || '').trim().toLowerCase();
-  if (!['api', 'csv', 'manual', 'json'].includes(v)) throw new Error(`source_type shadow non supporte: ${ v || '(vide)' }`);
+  if (!['api', 'csv', 'manual', 'json'].includes(v)) throw new Error('source_type shadow non supporte: ' + (v || '(vide)'));
   return v;
 }
 
@@ -69,7 +69,7 @@ async function insertRows(client, rows) {
       const b = i * 10;
       params.push(r.id, r.captureId, r.grain, r.sourceRef, null, r.parentId, r.observedAt,
         JSON.stringify(r.normalized), '{}', JSON.stringify(r.raw));
-      const p = (n) => `${b + n}`;
+      const p = (n) => '$' + (b + n);
       return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)}::jsonb,${p(9)}::jsonb,${p(10)}::jsonb)`;
     });
     await client.query(
