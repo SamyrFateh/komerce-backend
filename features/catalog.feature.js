@@ -123,6 +123,7 @@ module.exports = {
       'services/suppliers/catalog-import-json.js',
       'services/catalog-eligibility.js',
       'services/catalog-public-view.js',
+      'services/catalog-product-route-canary.js',
       'services/catalog-product-detail.js',
       'services/catalog-enrichment.js',
       'services/prompts/catalog-enrichment.prompt.js',
@@ -388,6 +389,7 @@ module.exports = {
       { fn: 'replaceVariantsForSourcing', file: 'services/catalog-product-mutation-service.js' },
     ],
     consumes: [
+      'sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)',
       'notifications (alert persistence via utils/alerts.js)',
       'auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',

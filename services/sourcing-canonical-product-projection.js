@@ -154,6 +154,31 @@ function buildCanonicalProductProjection(rows, evidenceRows = []) {
   };
 }
 
+async function collectCanonicalProductProjectionById(canonicalProductId, query = db.query.bind(db)) {
+  const observationResult = await query(`
+    SELECT ce.canonical_entity_id, o.observation_id, c.source_id, s.adapter_type,
+           o.observed_at, o.normalized
+      FROM sourcing_canonical_entities ce
+      JOIN sourcing_resolution_bindings rb ON rb.canonical_entity_id = ce.canonical_entity_id AND rb.ended_at IS NULL
+      JOIN sourcing_observations o ON o.observation_id = rb.observation_id
+      JOIN sourcing_captures c ON c.capture_id = o.capture_id
+      JOIN sourcing_sources s ON s.source_id = c.source_id
+     WHERE ce.canonical_entity_id = $1
+       AND ce.grain::text = 'product' AND ce.status = 'active' AND o.grain::text = 'product'
+     ORDER BY o.observed_at, o.observation_id
+  `, [canonicalProductId]);
+  if (!(observationResult.rows || []).length) return null;
+  const evidenceResult = await query(`
+    SELECT e.evidence_type, e.evidence_key, e.value
+      FROM sourcing_resolution_bindings rb
+      JOIN sourcing_observations o ON o.observation_id = rb.observation_id
+      JOIN sourcing_observation_evidence e ON e.observation_id = o.observation_id
+     WHERE rb.canonical_entity_id = $1 AND rb.ended_at IS NULL
+     ORDER BY e.evidence_type, e.evidence_key, e.value
+  `, [canonicalProductId]);
+  return buildCanonicalProductProjection(observationResult.rows, evidenceResult.rows || []);
+}
+
 async function collectCanonicalProductProjections(query = db.query.bind(db)) {
   const observationResult = await query(`
     SELECT ce.canonical_entity_id,
@@ -228,6 +253,7 @@ module.exports = {
   PRODUCT_FIELDS,
   FORBIDDEN_ECONOMIC_FIELDS,
   collectCanonicalProductProjections,
+  collectCanonicalProductProjectionById,
   buildCanonicalProductProjection,
   projectField,
   _stableValue: stableValue,
