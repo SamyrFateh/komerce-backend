@@ -33,7 +33,7 @@ const rowsOf = (result) => Array.isArray(result?.rows) ? result.rows : [];
 const unique = (values) => [...new Set(values.filter((value) => value != null).map(String))].sort();
 
 function sourceKind(row) {
-  const value = String(row?.adapter_type || row?.source_id || '').toLowerCase();
+  const value = String(row?.adapter_type || row?.source_id || row?.supplier_name || '').toLowerCase();
   if (value.includes('aliexpress')) return 'aliexpress';
   if (value === 'cj' || value.includes(':cj')) return 'cj';
   if (value.includes('allegro')) return 'allegro';
