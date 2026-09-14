@@ -327,6 +327,7 @@ module.exports = {
       'services/dashboard-commerce.js',
       'services/dashboard-finance-canonical.js',
       'services/dashboard-operations.js',
+      'services/dashboard-orders.js',
       'services/dashboard-pilotage-market.js',
       'services/operations-workspace.js',
       'services/order-360.js',

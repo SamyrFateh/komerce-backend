@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-12T22:43:27.731Z",
+  "generatedAt": "2026-09-14T12:42:57.240Z",
   "summary": {
-    "navItems": 12,
-    "navMatrixEntries": 35,
-    "canonicalModules": 49,
-    "apiEdgesTraced": 58,
+    "navItems": 13,
+    "navMatrixEntries": 37,
+    "canonicalModules": 51,
+    "apiEdgesTraced": 59,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
     "unprovenContracts": 0,
     "notFoundContracts": 0,
     "notFoundDynamic": 8,
-    "unresolvedFetches": 15,
+    "unresolvedFetches": 16,
     "legacyDependencies": 0,
     "clientMarketAuthoritySuspects": 0,
     "moduleFilesWithoutHeader": 0
@@ -157,8 +157,8 @@
     },
     {
       "role": "admin",
-      "itemId": "orders",
-      "label": "Commandes",
+      "itemId": "commerce",
+      "label": "Commerce",
       "href": "/admin/commerce",
       "surfaceId": "commerce",
       "resolvedVia": "app-equality",
@@ -169,14 +169,38 @@
     },
     {
       "role": "market_operator",
-      "itemId": "orders",
-      "label": "Commandes",
+      "itemId": "commerce",
+      "label": "Commerce",
       "href": "/admin/commerce",
       "surfaceId": "commerce",
       "resolvedVia": "app-equality",
       "moduleFiles": [
         "commerce-decision.js",
         "commerce.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "orders-overview",
+      "label": "Suivi des commandes",
+      "href": "/admin/orders",
+      "surfaceId": "orders",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "orders-decision.js",
+        "orders.js"
+      ]
+    },
+    {
+      "role": "market_operator",
+      "itemId": "orders-overview",
+      "label": "Suivi des commandes",
+      "href": "/admin/orders",
+      "surfaceId": "orders",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "orders-decision.js",
+        "orders.js"
       ]
     },
     {
@@ -665,6 +689,14 @@
       "normalized": "/api/admin/entities/orders/{param}",
       "matchedRoute": "/api/admin/entities/orders/{orderReference}",
       "contractStatus": "PROVEN"
+    },
+    {
+      "module": "orders.js",
+      "rawUrl": "endpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
     },
     {
       "module": "pilotage.js",
@@ -1437,6 +1469,42 @@
       "fetchCount": 1
     },
     {
+      "file": "orders-decision.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-orders-decision-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "decision_first_dashboard_visuals",
+        "missing_data_never_means_zero"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOrders"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "orders.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-orders-dashboard",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "canonical_admin_no_legacy_imports",
+        "server_market_scope_is_authority"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalOrders"
+      ],
+      "fetchCount": 1
+    },
+    {
       "file": "pilotage-decision.js",
       "hasHeader": true,
       "isLite": false,
@@ -1788,6 +1856,7 @@
       "config.submitEndpoint (pricing-structure-event-panel.js)",
       "context.endpoint (action-center.js)",
       "endpoint (operations.js)",
+      "endpoint (orders.js)",
       "endpoint (pilotage.js)",
       "endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)",
       "path (action-center.js)",
