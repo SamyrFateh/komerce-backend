@@ -81,21 +81,12 @@ describe('Sourcing — decision-first visual', () => {
     ]));
   });
 
-  test('fetchHealth consomme le contrat global canonique et échoue sans inventer de verdict', async () => {
-    const payload = { schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } };
-    const okFetch = jest.fn(async () => ({ ok: true, json: async () => payload }));
-    await expect(decision.fetchHealth(okFetch)).resolves.toEqual(payload);
-    expect(okFetch).toHaveBeenCalledWith(
-      '/api/admin/workspaces/sourcing/health',
-      expect.objectContaining({ method: 'GET', credentials: 'include' })
-    );
-
-    const failedFetch = jest.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }));
-    await expect(decision.fetchHealth(failedFetch)).resolves.toBeNull();
-  });
-
-  test('enhance conserve le mount global sourcing et décore uniquement MetricStrip', async () => {
-    const payload = { scope: { mode: 'global_sourcing' }, summary: summaryFixture() };
+  test('enhance conserve le mount global et lit la santé déjà projetée par le backend', async () => {
+    const payload = {
+      scope: { mode: 'global_sourcing' },
+      summary: summaryFixture(),
+      health: { schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } },
+    };
     const baseMount = jest.fn(options => Promise.resolve(payload));
     const base = { metricItems: workspace.metricItems, mount: baseMount };
     const ui = {
@@ -108,12 +99,14 @@ describe('Sourcing — decision-first visual', () => {
       DecisionStrip: { render: jest.fn() },
       SummaryCards: { render: jest.fn() },
     };
+    const fetchFn = jest.fn();
 
     const enhanced = decision.enhance(base, decisionUi);
-    const result = await enhanced.mount({ ui, document: {} });
+    const result = await enhanced.mount({ ui, document: {}, fetch: fetchFn });
 
     expect(baseMount).toHaveBeenCalledTimes(1);
     expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).not.toBe(ui.MetricStrip.render);
+    expect(fetchFn).not.toHaveBeenCalled();
     expect(result).toBe(payload);
   });
 });
