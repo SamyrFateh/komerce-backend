@@ -8,6 +8,11 @@ const {
   buildIntegrityAudit,
   collectIntegrityAudit,
 } = require('../../scripts/sourcing-integrity-audit');
+const {
+  buildFinalAuthoritySnapshot,
+  buildHealthDashboardFromAudit,
+  buildHealthDashboard,
+} = require('../../services/sourcing-integrity-service');
 
 const resolved = (id = 'sku1', provider = 'cj') => ({
   status: 'RESOLVED',
@@ -106,11 +111,52 @@ test('collectIntegrityAudit reste read-only et résout chaque SKU actif', async 
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [{ review_required: 0 }] })
     .mockResolvedValueOnce({ rows: [{ id: 'sku1' }, { id: 'sku2' }] });
-  const resolveFn = jest.fn(async (id) => resolved(id));
+  const resolveFn = jest.fn(async id => resolved(id));
   const goldenFn = jest.fn(async () => ({ status: 'PASS', hard_failures: [], catalog: { status: 'PASS' } }));
   const report = await collectIntegrityAudit(query, resolveFn, goldenFn);
   expect(report.status).toBe('HEALTHY');
   expect(resolveFn).toHaveBeenCalledTimes(2);
   expect(goldenFn).toHaveBeenCalledTimes(1);
   for (const [sql] of query.mock.calls) expect(String(sql).toLowerCase()).not.toContain('insert ');
+});
+
+test('autorité finale sépare Sourcing, Selection et Hub', () => {
+  const authority = buildFinalAuthoritySnapshot();
+  expect(authority).toMatchObject({
+    status: 'FINAL_TECHNICAL_AUTHORITY',
+    product_authority: 'CANONICAL_PRODUCT',
+    offer_authority: 'CANONICAL_OFFER',
+    unit_authority: 'CANONICAL_UNIT',
+    selection_authority: 'NOT_AUTHORIZED_IN_SOURCING',
+    supplier_order_side_effect: 'HARD_STOP',
+    hub_routing_authority: 'OUT_OF_SCOPE_NEXT_DOMAIN',
+  });
+  expect(authority.retirement_matrix.REMOVE_NOW).toEqual([]);
+});
+
+test('dashboard santé respecte ETAT → agrégats → exceptions → drill-down → raw', () => {
+  const audit = buildIntegrityAudit(healthySnapshot());
+  const dashboard = buildHealthDashboardFromAudit(audit);
+  expect(dashboard).toMatchObject({
+    schema_version: 'sourcing-health-dashboard-v1',
+    scope: { mode: 'global_sourcing' },
+    state: { global: 'HEALTHY', integrity: 'HEALTHY', performance: 'HEALTHY', blockers: 0, attention: 0 },
+    aggregates: { replay_splits: 0, ambiguous_blocked: 0 },
+    exceptions: [],
+    authority: { status: 'FINAL_TECHNICAL_AUTHORITY' },
+    raw: { report_version: 'sourcing-operational-integrity-v1', status: 'HEALTHY' },
+  });
+  expect(dashboard.state.trend.status).toBe('UNKNOWN');
+});
+
+test('dashboard santé n invente pas un vert quand l audit est BROKEN', async () => {
+  const brokenAudit = buildIntegrityAudit(healthySnapshot({
+    observations: [{ observation_id: 'o1', capture_id: 'c1', source_id: 'api:cj', grain: 'unit', source_ref: 'R1', active_binding_count: 2 }],
+  }));
+  const dashboard = await buildHealthDashboard({ auditFn: jest.fn(async () => brokenAudit) });
+  expect(dashboard.state.global).toBe('BROKEN');
+  expect(dashboard.state.integrity).toBe('BROKEN');
+  expect(dashboard.state.performance).toBe('BROKEN');
+  expect(dashboard.state.blockers).toBeGreaterThan(0);
+  expect(dashboard.exceptions[0].severity).toBe('BROKEN');
 });
