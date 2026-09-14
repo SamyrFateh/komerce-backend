@@ -5,15 +5,15 @@
  * @layer         service
  * @criticality   medium
  * @inputs        normalized_supplier_products, catalog_import_context
- * @outputs       sourcing_candidates, import_summary
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
+ * @outputs       sourcing_candidates, import_summary, shadow_observation_summary
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
  * @used-by       routes/sourcing-scanner.js
  * @db-read       none
  * @db-write      supplier_catalog_imports
  * @db-txn        resolve_before_behavior_change
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @impact-areas  catalog, product-detail
- * @version       2026-08
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md
+ * @impact-areas  catalog, product-detail, sourcing
+ * @version       2026-09
  */
 
 'use strict';
@@ -32,6 +32,7 @@ const scanner = require('../supplier-catalog-scanner');
 const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
 const sourcingCandidateImport = require('../sourcing-candidate-import-service');
+const sourcingObservationShadow = require('../sourcing-observation-shadow-service');
 const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
 const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
@@ -90,6 +91,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
   }
 
   // ING-6 — la source JSON emprunte un chemin transactionnel dédié.
+  // PR 2 ne modifie pas encore ce rail ; il sera raccordé au writer shadow
+  // après sa propre frontière V2.
   if (sourceType === 'json') {
     return importJsonCatalog(b, userId);
   }
@@ -146,6 +149,25 @@ async function importCatalog(body, userId, dispatchToConnector) {
     [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length, userId || null]
   );
   const importId = importRes.rows[0].id;
+
+  // PR 2 — shadow dual-write : aucune erreur de cette couche ne peut bloquer
+  // le chemin historique sourcing_candidates. Le résumé est exposé pour preuve.
+  let shadowIngestion;
+  try {
+    shadowIngestion = await sourcingObservationShadow.recordCatalogImportObservationsShadow({
+      importId,
+      supplierName,
+      sourceType,
+      supplierId: b.supplier_id || null,
+      sourceFilename: b.source_filename || null,
+      products,
+    });
+  } catch (errShadow) {
+    shadowIngestion = {
+      status: 'failed',
+      code: errShadow.code || 'SHADOW_OBSERVATION_FAILED',
+    };
+  }
 
   // 4. Pour chaque NormalizedSupplierProduct : raffiner et persister.
   const results = { created: 0, errors: [...invalidFromConnector] };
@@ -226,6 +248,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       rejected: results.errors.length,
       reject_reasons: aggregateReasons(results.errors),
       unmapped_columns: connectorResult.unmapped_columns || [],
+      shadow_ingestion: shadowIngestion,
     },
   };
 }
