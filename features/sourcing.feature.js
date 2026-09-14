@@ -49,6 +49,8 @@ module.exports = {
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
       'Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection',
       'preuve multi-source read-only avant essai de projection canonique Product',
+      'projection canonique Product read-only en shadow, consensus-only avec conflits préservés',
+      'comparaison parallèle read-only entre projection Product canonique et autorité historique reliée',
       'scan de candidat (pricing-engine) et décision garder / watchlist / rejeter',
       'cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist',
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
@@ -88,6 +90,8 @@ module.exports = {
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
+      'scripts/sourcing-product-projection-trial-staging.js',
+      'scripts/sourcing-product-read-comparison-staging.js',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
@@ -96,6 +100,8 @@ module.exports = {
       'services/sourcing-resolution-evidence.js',
       'services/sourcing-shadow-resolution-service.js',
       'services/sourcing-shadow-proof-service.js',
+      'services/sourcing-canonical-product-projection.js',
+      'services/sourcing-product-read-comparison.js',
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
     ],
@@ -111,6 +117,8 @@ module.exports = {
       'tests/unit/sourcing-resolution-evidence.test.js',
       'tests/unit/sourcing-shadow-resolution-service.test.js',
       'tests/unit/sourcing-shadow-proof-service.test.js',
+      'tests/unit/sourcing-canonical-product-projection.test.js',
+      'tests/unit/sourcing-product-read-comparison.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
@@ -140,6 +148,7 @@ module.exports = {
       'sourcing_resolution_decisions: RW!',
       'sourcing_resolution_bindings: RW!',
       'supplier_catalog_imports: R',
+      'products: R',
       'catalog_media: R',
       'product_variants: R',
       'product_skus: R',
@@ -186,6 +195,8 @@ module.exports = {
       { fn: 'recordCatalogImportObservationsShadow', file: 'services/sourcing-observation-shadow-service.js' },
       { fn: 'resolveCaptureShadow', file: 'services/sourcing-shadow-resolution-service.js' },
       { fn: 'collectShadowProof', file: 'services/sourcing-shadow-proof-service.js' },
+      { fn: 'collectCanonicalProductProjections', file: 'services/sourcing-canonical-product-projection.js' },
+      { fn: 'collectProductReadComparison', file: 'services/sourcing-product-read-comparison.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
@@ -222,6 +233,10 @@ module.exports = {
     'Resolution ne compare jamais prix, stock, fret ou délai et ne sélectionne aucun fournisseur',
     'un LINK automatique PR 3 exige une preuve forte non contradictoire : source_ref exacte, contexte Offer même Source+parent, ou GTIN exact',
     'le Product projection trial reste ferme tant que la preuve multi-source n est pas invariant-safe et cross-source',
+    'la projection Product shadow ne projette aucun prix, devise, stock, MOQ, délai, sellable_unit ou Supplier Order Identity',
+    'un conflit descriptif multi-source est préservé explicitement et ne devient jamais une valeur canonique silencieuse',
+    'la comparaison Product parallèle ne fabrique jamais un lien catalogue : seul sourcing_candidates.product_id autorise la parité products',
+    'l absence de produit catalogue relié bloque le gate de cutover sans invalider la projection canonique',
   ],
 
 };
