@@ -71,9 +71,11 @@ Aucun composant. La clôture d'autorité ne doit pas créer une dette de rollbac
 
 ## Health Dashboard
 
-Le backend expose un payload canonique stable par :
+Le backend expose la santé dans le **payload canonique existant** :
 
-`GET /api/admin/workspaces/sourcing/health`
+`GET /api/admin/workspaces/sourcing`
+
+sous la clé `health`. Aucune seconde surface `/health` n'est créée : le Workspace Sourcing reste une projection backend unique et le navigateur ne recalcule rien.
 
 La hiérarchie est :
 
