@@ -27,9 +27,13 @@ const READ_MODES = Object.freeze({
   CANONICAL_PREFERRED: 'CANONICAL_PREFERRED',
 });
 
-function resolveCatalogProductReadMode(env = process.env) {
-  const requested = String(env.CATALOG_PRODUCT_READ_MODE || '').trim().toUpperCase();
+function normalizeReadMode(value) {
+  const requested = String(value || '').trim().toUpperCase();
   return Object.values(READ_MODES).includes(requested) ? requested : READ_MODES.LEGACY_ONLY;
+}
+
+function resolveCatalogProductReadMode(env = process.env) {
+  return normalizeReadMode(env.CATALOG_PRODUCT_READ_MODE);
 }
 
 function canaryGatesOpen(productId, headers, env) {
@@ -98,14 +102,15 @@ async function readCatalogProductSource({
   projectionFn = projection.collectCanonicalProductProjectionById,
   seamFn = applyCanonicalSourceReadSeam,
 } = {}) {
-  if (mode === READ_MODES.LEGACY_ONLY) {
-    return { row: legacyRow, diagnostic: diagnostic('legacy_mode'), mode };
+  const effectiveMode = normalizeReadMode(mode);
+  if (effectiveMode === READ_MODES.LEGACY_ONLY) {
+    return { row: legacyRow, diagnostic: diagnostic('legacy_mode'), mode: effectiveMode };
   }
-  if (mode === READ_MODES.CANARY && !canaryGatesOpen(productId, headers, env)) {
-    return { row: legacyRow, diagnostic: diagnostic('legacy_mode'), mode };
+  if (effectiveMode === READ_MODES.CANARY && !canaryGatesOpen(productId, headers, env)) {
+    return { row: legacyRow, diagnostic: diagnostic('legacy_mode'), mode: effectiveMode };
   }
   const result = await resolveCanonicalPreferred({ productId, legacyRow, query, linkageFn, projectionFn, seamFn });
-  return { ...result, mode };
+  return { ...result, mode: effectiveMode };
 }
 
 module.exports = {
