@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  catalog, sourcing, supplier-import, purchasing
- * @version       2026-09-v2
+ * @version       2026-09-v3
  */
 'use strict';
 
@@ -30,6 +30,8 @@ const ACCESS_TOKEN_ENV = 'CJ_ACCESS_TOKEN';
 const MAX_PAGE_SIZE = 100;
 const MAX_TARGETED_PRODUCTS = 20;
 const SOURCE_LOCALE = 'en';
+const DEFAULT_DETAIL_DELAY_MS = 1100;
+const DEFAULT_DETAIL_RETRIES = 2;
 
 let cachedAccessToken = null;
 
@@ -250,23 +252,41 @@ function normalizeCjProduct(raw = {}) {
   const supplierCategory = categoryLabel(raw);
 
   const media = [];
-  const seenMedia = new Set();
+  const mediaIdByUrl = new Map();
+  const mediaAliases = new Map();
   function addMedia(url, supplierMediaId, alt, optionValues = null) {
     const normalized = normalizeHttpUrl(url);
-    if (!normalized || seenMedia.has(normalized)) return;
-    seenMedia.add(normalized);
+    if (!normalized) return null;
+    if (mediaIdByUrl.has(normalized)) return mediaIdByUrl.get(normalized);
+    const resolvedMediaId = supplierMediaId || null;
+    mediaIdByUrl.set(normalized, resolvedMediaId);
     media.push({
-      supplier_media_id: supplierMediaId,
+      supplier_media_id: resolvedMediaId,
       url: normalized,
       role: 'PRODUCT',
       alt: alt || null,
       option_values: optionValues,
       display_order: media.length,
     });
+    return resolvedMediaId;
   }
   if (image) addMedia(image, id ? `${id}:hero` : null, name || null);
   for (const url of toArray(raw.productImageSet)) addMedia(url, id ? `${id}:media:${media.length + 1}` : null, name || null);
-  for (const item of commandable.variant_media) addMedia(item.url, item.supplier_media_id, item.alt, item.option_values);
+  for (const item of commandable.variant_media) {
+    const resolvedMediaId = addMedia(item.url, item.supplier_media_id, item.alt, item.option_values);
+    if (item.supplier_media_id && resolvedMediaId !== item.supplier_media_id) {
+      mediaAliases.set(item.supplier_media_id, resolvedMediaId);
+    }
+  }
+
+  const sellableUnits = commandable.sellable_units
+    ? commandable.sellable_units.map((unit) => {
+      const refs = toArray(unit.media_refs)
+        .map((ref) => mediaAliases.has(ref) ? mediaAliases.get(ref) : ref)
+        .filter(Boolean);
+      return { ...unit, media_refs: refs.length ? [...new Set(refs)] : null };
+    })
+    : null;
 
   return {
     schema_version: '2',
@@ -287,7 +307,7 @@ function normalizeCjProduct(raw = {}) {
     dimensions: null,
     media: media.length ? media : null,
     option_axes: commandable.option_axes,
-    sellable_units: commandable.sellable_units,
+    sellable_units: sellableUnits,
     brand: null,
     highlights: null,
     specifications: null,
@@ -318,7 +338,10 @@ async function parseJsonResponse(response, label) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.result === false || body.success === false) {
     const requestId = body.requestId ? ` requestId=${body.requestId}` : '';
-    throw new Error(`[CJdropshipping] ${label} échoué (${response.status}): ${body.message || 'erreur inconnue'}${requestId}`);
+    const error = new Error(`[CJdropshipping] ${label} échoué (${response.status}): ${body.message || 'erreur inconnue'}${requestId}`);
+    error.status = response.status;
+    error.requestId = body.requestId || null;
+    throw error;
   }
   return body;
 }
@@ -379,17 +402,55 @@ async function fetchProductDetail(productId, options = {}) {
   return { product: body.data, request_id: body.requestId ?? null };
 }
 
-async function mapWithConcurrency(items, limit, mapper) {
-  const out = new Array(items.length);
-  let cursor = 0;
-  async function worker() {
-    while (cursor < items.length) {
-      const index = cursor++;
-      out[index] = await mapper(items[index], index);
+function boundedInteger(value, fallback, max) {
+  const n = Number.parseInt(value ?? fallback, 10);
+  return Number.isInteger(n) && n >= 0 && n <= max ? n : fallback;
+}
+
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchProductDetailsPaced(productIds, options = {}) {
+  const fetchImpl = options.fetchImpl || fetch;
+  const env = options.env || process.env;
+  const accessToken = options.accessToken || await getAccessToken({ fetchImpl, env });
+  const sleepImpl = options.sleepImpl || defaultSleep;
+  const delayMs = boundedInteger(
+    options.detailDelayMs ?? options.detail_delay_ms ?? env.CJ_PRODUCT_DETAIL_DELAY_MS,
+    DEFAULT_DETAIL_DELAY_MS,
+    10000
+  );
+  const retries = boundedInteger(
+    options.detailRetries ?? options.detail_retries ?? env.CJ_PRODUCT_DETAIL_RETRIES,
+    DEFAULT_DETAIL_RETRIES,
+    5
+  );
+  const results = [];
+
+  for (let index = 0; index < productIds.length; index += 1) {
+    const productId = productIds[index];
+    if (index > 0 && delayMs > 0) await sleepImpl(delayMs);
+
+    let attempt = 0;
+    while (true) {
+      try {
+        const detail = await fetchProductDetail(productId, { fetchImpl, env, accessToken });
+        results.push({ productId, raw: detail.product, request_id: detail.request_id, error: null });
+        break;
+      } catch (error) {
+        if (error?.status === 429 && attempt < retries) {
+          attempt += 1;
+          if (delayMs > 0) await sleepImpl(delayMs);
+          continue;
+        }
+        results.push({ productId, raw: null, request_id: error?.requestId || null, error });
+        break;
+      }
     }
   }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
-  return out;
+
+  return results;
 }
 
 function normalizeProductIds(options = {}) {
@@ -406,14 +467,7 @@ async function fetchProducts(options = {}) {
   const productIds = normalizeProductIds(options);
 
   if (productIds.length) {
-    const details = await mapWithConcurrency(productIds, 4, async (productId) => {
-      try {
-        const detail = await fetchProductDetail(productId, { fetchImpl, env, accessToken });
-        return { productId, raw: detail.product, request_id: detail.request_id, error: null };
-      } catch (error) {
-        return { productId, raw: null, request_id: null, error };
-      }
-    });
+    const details = await fetchProductDetailsPaced(productIds, { ...options, fetchImpl, env, accessToken });
     const normalized = details.filter((item) => item.raw).map((item) => normalizeCjProduct(item.raw));
     const { valid, invalid } = partitionValid(normalized);
     const detailErrors = details
@@ -443,11 +497,10 @@ async function fetchProducts(options = {}) {
 
   if (options.includeCommandableUnits === true || options.include_commandable_units === true) {
     const ids = rawProducts.map((raw) => String(raw.id || raw.pid || '').trim()).filter(Boolean);
-    const details = await mapWithConcurrency(ids, 4, async (productId) => {
-      const detail = await fetchProductDetail(productId, { fetchImpl, env, accessToken });
-      return detail.product;
-    });
-    rawProducts = details;
+    const details = await fetchProductDetailsPaced(ids, { ...options, fetchImpl, env, accessToken });
+    const failed = details.find((item) => item.error);
+    if (failed) throw failed.error;
+    rawProducts = details.map((item) => item.raw);
   }
 
   const normalized = rawProducts.map(normalizeCjProduct);
@@ -478,6 +531,8 @@ module.exports = {
   ACCESS_TOKEN_ENV,
   MAX_PAGE_SIZE,
   MAX_TARGETED_PRODUCTS,
+  DEFAULT_DETAIL_DELAY_MS,
+  DEFAULT_DETAIL_RETRIES,
   IS_ACTIVE,
   INACTIVE_REASON,
   isConfigured,
@@ -490,6 +545,7 @@ module.exports = {
   getAccessToken,
   buildProductListUrl,
   fetchProductDetail,
+  fetchProductDetailsPaced,
   fetchProducts,
   resetTokenCacheForTests,
 };
