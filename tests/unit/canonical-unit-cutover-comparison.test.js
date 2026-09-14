@@ -1,5 +1,9 @@
 'use strict';
-/** @test-kind unit @test-runner jest @test-requires none */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { compareLegacyCanonicalUnit } = require('../../services/suppliers/canonical-unit-cutover-comparison');
 const soi = { provider: 'cj', version: 1, payload: { pid: 'P', vid: 'V', variant_sku: 'S' } };
 test.each([
