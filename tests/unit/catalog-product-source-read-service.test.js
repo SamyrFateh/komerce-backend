@@ -45,6 +45,15 @@ test('mode absent ou invalide résout LEGACY_ONLY', () => {
   expect(resolveCatalogProductReadMode({ CATALOG_PRODUCT_READ_MODE: 'canonical_preferred' })).toBe('CANONICAL_PREFERRED');
 });
 
+test('mode explicite invalide fail-closed en LEGACY_ONLY sans lookup canonique', async () => {
+  const linkageFn = jest.fn();
+  const result = await run({ mode: 'bogus-mode', linkageFn });
+  expect(result.row).toBe(legacy);
+  expect(result.mode).toBe('LEGACY_ONLY');
+  expect(result.diagnostic.status).toBe('legacy_mode');
+  expect(linkageFn).not.toHaveBeenCalled();
+});
+
 test('LEGACY_ONLY ne réalise aucun lookup canonique', async () => {
   const linkageFn = jest.fn();
   const result = await run({ mode: READ_MODES.LEGACY_ONLY, linkageFn });
