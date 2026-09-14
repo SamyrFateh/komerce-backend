@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_filters, product_id, optional_market_code, admin_product_payload
  * @outputs       market_aware_product_list, market_aware_product_detail, product_mutation_result
- * @depends       db.js, validators.js, middleware/auth.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js
+ * @depends       db.js, validators.js, middleware/auth.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js, services/catalog-product-route-canary.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-catalog.js, public/boutique/js/b-modal-core.js, komerce-api.js
  * @db-read       product_skus, product_variants, products
  * @db-write      none
@@ -41,6 +41,7 @@ const {
   toPublicProduct,
 } = require('../services/catalog-public-view');
 const { applyActiveMarketPricesToCatalogRows } = require('../services/market-local-price-resolution-service');
+const { maybeApplyCatalogProductRouteCanary } = require('../services/catalog-product-route-canary');
 const log = require('../utils/logger').child({ module: 'products' });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -191,9 +192,17 @@ router.get('/:id', requireUUID, async (req, res, next) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Produit introuvable' });
 
+    const canary = await maybeApplyCatalogProductRouteCanary({
+      productId: req.params.id,
+      legacyRow: rows[0],
+      query: db.query.bind(db),
+      headers: req.headers,
+    });
+    if (canary.diagnostic) log.debug({ productId: req.params.id, ...canary.diagnostic }, 'catalog product route canary');
+
     const [product] = await applyActiveMarketPricesToCatalogRows(db, {
       marketCode: rawMarket,
-      products: [rows[0]],
+      products: [canary.row],
     });
 
     if (product.has_variants) {

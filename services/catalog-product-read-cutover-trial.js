@@ -7,7 +7,7 @@
  * @inputs        canonical_product_projection, proven_catalog_product_link
  * @outputs       reversible_internal_read_seam_trial_report
  * @depends       db.js, services/sourcing-canonical-product-projection.js, services/catalog-public-view.js
- * @used-by       scripts/catalog-product-read-cutover-trial-staging.js
+ * @used-by       scripts/catalog-product-read-cutover-trial-staging.js, services/catalog-product-route-canary.js
  * @db-read       sourcing_canonical_entities, sourcing_resolution_bindings, sourcing_observations, sourcing_captures, sourcing_candidates, products
  * @db-write      none
  * @db-txn        none
@@ -77,7 +77,7 @@ function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
-function buildReadSeamTrial(legacyRow, projectedProduct) {
+function applyCanonicalSourceReadSeam(legacyRow, projectedProduct) {
   const hybrid = { ...legacyRow };
   const decisions = {};
   let canonicalFieldsApplied = 0;
@@ -120,6 +120,7 @@ function buildReadSeamTrial(legacyRow, projectedProduct) {
   const publicContractEqual = stableValue(legacyPublic) === stableValue(hybridPublic);
 
   return {
+    hybrid_row: hybrid,
     product_id: legacyRow.id,
     canonical_product_id: projectedProduct?.canonical_product_id || null,
     source_count: projectedProduct?.source_count || 0,
@@ -187,7 +188,7 @@ async function collectCatalogProductReadCutoverTrial(query = db.query.bind(db)) 
     const legacyRow = productById.get(productId);
     const projection = projectionById.get(canonicalProductId);
     if (!legacyRow || !projection) continue;
-    trials.push(buildReadSeamTrial(legacyRow, projection));
+    trials.push(applyCanonicalSourceReadSeam(legacyRow, projection));
   }
 
   const failed = trials.filter((trial) => trial.status === 'FAIL');
@@ -240,7 +241,8 @@ module.exports = {
   TRIAL_VERSION,
   SOURCE_FIELD_MAPPING,
   PROTECTED_FIELDS,
-  buildReadSeamTrial,
+  applyCanonicalSourceReadSeam,
+  buildReadSeamTrial: applyCanonicalSourceReadSeam,
   collectCatalogProductReadCutoverTrial,
   _stableValue: stableValue,
 };
