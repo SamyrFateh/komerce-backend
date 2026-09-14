@@ -41,10 +41,12 @@ function loadRoute({ visible = true, throwCanary = false } = {}) {
 }
 
 beforeEach(() => {
+  process.env.CATALOG_PRODUCT_READ_MODE = 'CANARY';
   process.env.CATALOG_PRODUCT_ROUTE_CANARY_ENABLED = 'true';
   process.env.CATALOG_PRODUCT_ROUTE_CANARY_PRODUCT_IDS = id;
 });
 afterEach(() => {
+  delete process.env.CATALOG_PRODUCT_READ_MODE;
   delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_ENABLED;
   delete process.env.CATALOG_PRODUCT_ROUTE_CANARY_PRODUCT_IDS;
   jest.resetModules();

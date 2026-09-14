@@ -124,6 +124,7 @@ module.exports = {
       'services/catalog-eligibility.js',
       'services/catalog-public-view.js',
       'services/catalog-product-route-canary.js',
+      'services/catalog-product-source-read-service.js',
       'services/catalog-product-detail.js',
       'services/catalog-enrichment.js',
       'services/prompts/catalog-enrichment.prompt.js',
@@ -232,6 +233,7 @@ module.exports = {
     tests: [
       'tests/unit/admin-boutique-categories.test.js',
       'tests/unit/catalog-product-route-canary-http.test.js',
+      'tests/unit/catalog-product-source-read-service.test.js',
       'tests/unit/api-connector-base.test.js',
       'tests/unit/categories-cache.test.js',
       'tests/unit/categories.test.js',
@@ -389,6 +391,8 @@ module.exports = {
       { fn: 'bulkAssignSourcingRail', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'replaceVariantsForSourcing', file: 'services/catalog-product-mutation-service.js' },
       { fn: 'maybeApplyCatalogProductRouteCanary', file: 'services/catalog-product-route-canary.js' },
+      { fn: 'readCatalogProductSource', file: 'services/catalog-product-source-read-service.js' },
+      { fn: 'resolveCatalogProductReadMode', file: 'services/catalog-product-source-read-service.js' },
     ],
     consumes: [
       'sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)',
