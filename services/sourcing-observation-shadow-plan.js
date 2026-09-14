@@ -1,3 +1,20 @@
+/**
+ * @komerce-arch
+ * @role          sourcing-observation-shadow-plan
+ * @domain        sourcing
+ * @layer         service
+ * @criticality   medium
+ * @inputs        normalized_supplier_product_v2_batch, capture_context
+ * @outputs       immutable_observation_plan, observed_capabilities
+ * @depends       node:crypto
+ * @used-by       services/sourcing-observation-shadow-service.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md
+ * @impact-areas  sourcing, supplier-import
+ * @version       2026-09
+ */
 'use strict';
 
 const crypto = require('crypto');

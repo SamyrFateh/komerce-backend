@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          sourcing-observation-shadow-owner
@@ -13,10 +11,11 @@
  * @db-read       none
  * @db-write      sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
  * @db-txn        owned
- * @doctrine      docs/doctrine/DOCTRINE_SOURCE_OBSERVATION.md
+ * @doctrine      docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md
  * @impact-areas  sourcing, catalog, supplier-import
  * @version       2026-09
  */
+'use strict';
 
 const crypto = require('crypto');
 const db = require('../db');
