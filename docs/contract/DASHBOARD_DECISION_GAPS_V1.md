@@ -192,6 +192,29 @@ Cette liste sépare les informations promises par les mocks des données effecti
 
 Note de scope : matrice établie en `global_pricing`. Les lignes mutualisation / quote-part doivent être re-vérifiées en `pricing/market/{code}` avant clôture, la quote-part Market ID étant par nature une vérité par marché.
 
+## Catalogue pays
+
+> Côté « promis » : `docs/doctrine/DOCTRINE_CATALOGUE.md` (une vérité produit, N projections marché).
+> Côté « fourni » : payload réel `GET /api/admin/workspaces/catalog`, scope `global_catalog`.
+
+| Information cible (doctrine §) | Statut | Motif |
+|---|---|---|
+| Autorité de première publication humaine (§6) | `PROVEN` | `curation.first_publication_authority` = `human_approval` |
+| Cap de curation / places restantes (§2) | `PROVEN` | `curation` : `catalog_cap_mvp`, `published_products`, `remaining_slots`, `fill_pct`, `at_cap` |
+| KPI catalogue | `PROVEN` | `summary` : `total_products`, `active_products`, `inactive_products`, `approval_pending`, `needs_review`, `categories` |
+| File de raffinerie / produits à valider (§2, §6) | `PROVEN` | collection `approval` (`content_source=connector_raw`, `needs_review=true`) |
+| Étages de la raffinerie — six étages (§2) | `PROJECTABLE` | dérivable de `lifecycle_status` (`active`/`candidate`) + `content_source` (`manual`/`connector_raw`) + `needs_review` ; aucun champ « étage » canonique explicite |
+| Éligibilité — étage ③ (§3) | `BACKEND_GAP` | aucun verdict d'éligibilité explicite dans le payload ; seul `needs_review` en tient lieu partiellement |
+| Préparation éditoriale française — étage ⑤ (§4) | `BACKEND_GAP` | `name`/`description` FR présents, mais aucun état de préparation éditoriale exposé |
+| Confiance d'enrichissement IA (§8) | `BACKEND_GAP` | `enrichment_confidence=null` sur tous les produits (publiés et en attente) ; l'assistance IA sous gouvernance n'est pas mesurée |
+| Taxonomie catégories | `PROVEN` | collection `categories` (11), ordre et rails serveur (`display_order`, `show_in_rail`) |
+| Produits publiés | `PROVEN` | collection `products` (`lifecycle_status`, `content_source`, `is_active`, `is_available`) |
+| Projection par marché — « Catalogue pays » (§1.1) | `BACKEND_GAP` ici | payload `global_catalog` : aucun champ marché / exposition (`market`/`expose`) ; la projection par pays est servie par la surface `market-catalog`, à tracer séparément |
+| Fraîcheur | `PROVEN` | `products[].updated_at`, `approval[].created_at` |
+| Qualité d'enrichissement | `BACKEND_GAP` | aucune mesure de confiance / complétude d'enrichissement exposée |
+
+Note de scope : cette matrice couvre la curation **globale** (vérité produit commune). La dimension « pays » du mock MOCK-CAT-001 (quels produits exposés par marché) relève de la surface `market-catalog` et doit être tracée à partir de son propre payload avant clôture.
+
 ## Lots suivants
 
-Les gaps Catalogue pays, Commandes et Marchés restent à remplir à partir de leurs payloads réels. Catalogue et Marchés sont déjà migrés en decision-first : leur matrice est une dette de documentation ; Commandes n'a pas encore de payload canonique et exige d'abord un contrat de payload avant migration.
+Le gap Marchés reste à remplir : la surface est déjà migrée en decision-first, sa matrice est une dette de documentation, à établir à partir de son payload composite (`dashboard/context` + `users` + `pricing/market/{code}`). Commandes n'a pas encore de payload canonique et exige d'abord un contrat de payload avant migration. La projection par marché du Catalogue (surface `market-catalog`) reste également à tracer.
