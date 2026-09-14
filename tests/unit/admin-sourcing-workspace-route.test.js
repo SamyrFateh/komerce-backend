@@ -29,6 +29,7 @@ jest.mock('../../middleware/require-sourcing-global-authority', () => ({
 
 const mockCalls = {
   buildWorkspace: jest.fn(),
+  buildHealthDashboard: jest.fn(),
   importCatalog: jest.fn(),
   updatePortfolioProduct: jest.fn(),
   updateCandidate: jest.fn(),
@@ -56,6 +57,10 @@ jest.mock('../../services/sourcing-workspace', () => ({
   setSupplierActive: (...args) => mockCalls.setSupplierActive(...args),
 }));
 
+jest.mock('../../services/sourcing-integrity-service', () => ({
+  buildHealthDashboard: (...args) => mockCalls.buildHealthDashboard(...args),
+}));
+
 const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-sourcing-workspace');
@@ -71,6 +76,11 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockSourcingAllowed = true;
   mockCalls.buildWorkspace.mockResolvedValue({ scope: { mode: 'global_sourcing' }, summary: {}, portfolio: {}, imports: [], candidates: [], suppliers: [] });
+  mockCalls.buildHealthDashboard.mockResolvedValue({
+    schema_version: 'sourcing-health-dashboard-v1',
+    scope: { mode: 'global_sourcing' },
+    state: { global: 'HEALTHY', integrity: 'HEALTHY', performance: 'HEALTHY', blockers: 0, attention: 0 },
+  });
   mockCalls.updatePortfolioProduct.mockResolvedValue({ product_ref: 'KPR-000001' });
   mockCalls.scanCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', state: 'scanned' });
   mockCalls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
@@ -84,6 +94,14 @@ test('grant sourcing ouvre la projection globale sans marché', async () => {
   expect(mockCalls.buildWorkspace).toHaveBeenCalledTimes(1);
 });
 
+test('grant sourcing ouvre la santé canonique en lecture seule', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/sourcing/health');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(res.body).toMatchObject({ schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } });
+  expect(mockCalls.buildHealthDashboard).toHaveBeenCalledTimes(1);
+});
+
 test('role admin seul ne suffit jamais sans grant sourcing', async () => {
   mockSourcingAllowed = false;
   const res = await request(app()).get('/api/admin/workspaces/sourcing');
@@ -92,8 +110,17 @@ test('role admin seul ne suffit jamais sans grant sourcing', async () => {
   expect(mockCalls.buildWorkspace).not.toHaveBeenCalled();
 });
 
+test('la santé sourcing est soumise au même grant global', async () => {
+  mockSourcingAllowed = false;
+  const res = await request(app()).get('/api/admin/workspaces/sourcing/health');
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('sourcing_global_access_denied');
+  expect(mockCalls.buildHealthDashboard).not.toHaveBeenCalled();
+});
+
 test.each([
   ['/api/admin/workspaces/sourcing?market_id=cm', 'get', null, 'sourcing_market_dimension_forbidden'],
+  ['/api/admin/workspaces/sourcing/health?marketCode=CM', 'get', null, 'sourcing_market_dimension_forbidden'],
   ['/api/admin/workspaces/sourcing/imports', 'post', { marketCode: 'CM' }, 'sourcing_market_dimension_forbidden'],
   ['/api/admin/workspaces/sourcing/imports', 'post', { import_id: 'internal' }, 'sourcing_internal_id_forbidden'],
 ])('refuse les dimensions d’autorité navigateur', async (url, method, body, code) => {
