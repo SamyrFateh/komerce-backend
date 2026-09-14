@@ -128,7 +128,7 @@ module.exports = {
       'tests/unit/sourcing-resolution-evidence.test.js',
       'tests/unit/sourcing-shadow-resolution-service.test.js',
       'tests/unit/sourcing-shadow-proof-service.test.js',
-      'tests/unit/sourcing-golden-e2e.test.js',
+      'tests/unit/sourcing-golden-e2e-service.test.js',
       'tests/unit/sourcing-canonical-product-projection.test.js',
       'tests/unit/sourcing-canonical-offer-projection.test.js',
       'tests/unit/sourcing-canonical-unit-projection.test.js',
