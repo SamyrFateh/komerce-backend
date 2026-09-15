@@ -76,6 +76,9 @@ router.get('/:id/detail', async (req, res, next) => {
           marketCode: req.query.market,
           products: [priceProduct],
         });
+        if (marketProduct?.purchasable === false) {
+          return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
+        }
         if (marketProduct?.market_price_source === 'LOCAL_ACTIVE') {
           detail.pricing.price_kmf = marketProduct.price_kmf;
           detail.pricing.old_price_kmf = marketProduct.market_price_promo_applied

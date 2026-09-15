@@ -83,6 +83,9 @@ router.get('/', async (req, res, next) => {
       params.push(marketCode);
     }
 
+    // Le prédicat canonique inclut, en contexte marché, exposition ENABLED +
+    // LOCAL_ACTIVE. Il est donc appliqué AVANT ORDER BY / LIMIT / OFFSET : une
+    // page ne peut plus être vidée après coup par un filtre buyer-effectif.
     const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})];
 
     if (category) {
@@ -121,30 +124,17 @@ router.get('/', async (req, res, next) => {
       marketCode: market,
       products: rows,
     });
-    // Doctrine L1 : un marché explicitement demandé ne doit jamais afficher
-    // comme achetable un produit NOT_DECISIONAL (pas de LOCAL_ACTIVE) —
-    // jamais de fallback silencieux vers products.price_kmf dans le catalogue.
+    // Défense en profondeur : le SQL marché a déjà exclu les produits sans
+    // LOCAL_ACTIVE avant pagination. Le filtre mémoire interdit néanmoins de
+    // réexposer un NOT_DECISIONAL si le resolver évolue indépendamment.
     const projectedRows = market
       ? priced.filter((p) => p.purchasable !== false)
       : priced;
 
-    // Doctrine L1 : le total de pagination doit refléter le même filtre que
-    // `projectedRows` ci-dessus. Sans ce EXISTS, un marché sans LOCAL_ACTIVE
-    // pour certains produits gonflait artificiellement `total` (produits
-    // exclus de la page mais comptés quand même) — jamais de fallback
-    // silencieux vers products.price_kmf, y compris dans le comptage.
-    const countWhere = marketCode
-      ? `${where} AND EXISTS (
-           SELECT 1
-             FROM product_market_price_drafts d
-             JOIN markets m ON m.id = d.market_id AND m.is_active = TRUE
-            WHERE d.product_id = p.id
-              AND d.status = 'LOCAL_ACTIVE'
-              AND m.code = $${marketCodeParamIndex}
-         )`
-      : where;
+    // Même `where` que la requête paginée : l'assiette du COUNT est donc
+    // strictement identique, sans deuxième implémentation du gate marché.
     const { rows: [{ count }] } = await db.query(
-      `SELECT COUNT(*) FROM products p WHERE ${countWhere}`,
+      `SELECT COUNT(*) FROM products p WHERE ${where}`,
       params
     );
 
