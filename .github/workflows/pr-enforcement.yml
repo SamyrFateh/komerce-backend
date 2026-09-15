@@ -17,7 +17,7 @@ jobs:
   changes:
     name: Detect PR scope
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
@@ -60,6 +60,16 @@ jobs:
         run: node scripts/docs-history-lint.js --strict --full
       - name: Impact suppression hygiene
         run: node scripts/impact-suppression-check.js
+      # Le registre commité est une projection, jamais une vérité autonome.
+      # On le régénère depuis les montages Express du HEAD avant le gate afin
+      # qu'une projection stale ne produise ni faux vert ni faux rouge.
+      - name: Hydrate route registry for feature audit
+        run: node scripts/gen-route-registry.js
+      - name: Feature audit — strict veto
+        run: node scripts/feature-audit.js --strict
+      - name: Restore ephemeral route registry
+        if: always()
+        run: git restore --source=HEAD -- docs/_generated/route-registry.json
 
   backend:
     name: Backend gates
@@ -153,6 +163,59 @@ jobs:
         run: node scripts/check-schema-resurrection.js
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
+
+  from_scratch:
+    name: From-scratch DB + integration + E2E API
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || needs.changes.outputs.governance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild PostgreSQL from canonical schema-only snapshot
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Integration DB proofs
+        run: npm run test:integration
+      - name: Feature-first E2E API proofs
+        run: npm run test:e2e:features
 
   dashboard:
     name: Dashboard canonical gates
@@ -315,7 +378,7 @@ jobs:
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations, dashboard, boutique, governance]
+    needs: [changes, backend, migrations, from_scratch, dashboard, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -324,6 +387,7 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
+          FROM_SCRATCH_RESULT: ${{ needs.from_scratch.result }}
           DASHBOARD_RESULT: ${{ needs.dashboard.result }}
           BOUTIQUE_RESULT: ${{ needs.boutique.result }}
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
@@ -331,11 +395,12 @@ jobs:
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
+          echo "from_scratch=$FROM_SCRATCH_RESULT"
           echo "dashboard=$DASHBOARD_RESULT"
           echo "boutique=$BOUTIQUE_RESULT"
           echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1
