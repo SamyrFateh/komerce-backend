@@ -23,24 +23,35 @@
 --   - append-only                                -> trigger interdisant DELETE
 --                                                    (même doctrine que scan_events/incidents)
 --
--- L'ordre causal PAR agrégat et le parallélisme ENTRE agrégats ne sont PAS
--- des propriétés du schéma : ils sont garantis par le worker
--- (services/outbox-worker.js) via un verrou advisory Postgres par agrégat,
--- transaction-scoped — voir ce fichier pour la preuve. FOR UPDATE SKIP LOCKED
--- seul ne suffit pas (cf. doctrine F0) : il empêche le double-claim mais ne
--- garantit aucun ordre entre deux événements du même agrégat.
+-- L'ordre causal PAR agrégat et le parallélisme ENTRE agrégats sont garantis
+-- par la combinaison producer+worker via le même verrou advisory Postgres par
+-- agrégat, transaction-scoped.
+--
+-- IMPORTANT : created_at N'EST PAS l'autorité d'ordre. Il est assigné à
+-- l'INSERT, pas au COMMIT ; deux transactions concurrentes pourraient donc
+-- devenir visibles dans l'ordre inverse de leurs timestamps. L'autorité
+-- d'ordre est aggregate_sequence, attribué par le producer sous
+-- pg_advisory_xact_lock(hashtext(aggregate_type||':'||aggregate_id)), verrou
+-- bloquant tenu jusqu'au COMMIT/ROLLBACK de l'appelant. Le worker lit toujours
+-- le plus petit aggregate_sequence pending et acquiert le MÊME verrou avant le
+-- claim. FOR UPDATE SKIP LOCKED seul ne suffit pas : il protège une ligne, pas
+-- toute la causalité d'un agrégat.
 
 CREATE TABLE IF NOT EXISTS outbox_events (
-  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  aggregate_type  TEXT        NOT NULL,
-  aggregate_id    TEXT        NOT NULL,
-  event_type      TEXT        NOT NULL
-                              CHECK (event_type IN ('physical_outcome_reported')),
-  payload         JSONB       NOT NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  processed_at    TIMESTAMPTZ,
-  attempts        INT         NOT NULL DEFAULT 0,
-  last_error      TEXT,
+  id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  aggregate_type     TEXT        NOT NULL,
+  aggregate_id       TEXT        NOT NULL,
+  aggregate_sequence BIGINT      NOT NULL,
+  event_type         TEXT        NOT NULL
+                                 CHECK (event_type IN ('physical_outcome_reported')),
+  payload            JSONB       NOT NULL,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at       TIMESTAMPTZ,
+  attempts           INT         NOT NULL DEFAULT 0,
+  last_error         TEXT,
+
+  CONSTRAINT uq_outbox_events_aggregate_sequence
+    UNIQUE (aggregate_type, aggregate_id, aggregate_sequence),
 
   CONSTRAINT chk_outbox_events_payload_shape CHECK (
     jsonb_typeof(payload) = 'object'
@@ -48,12 +59,19 @@ CREATE TABLE IF NOT EXISTS outbox_events (
   )
 );
 
--- Claim efficace : la file des événements non traités, la plus ancienne
--- d'abord, par agrégat.
+COMMENT ON COLUMN outbox_events.created_at IS
+  'Audit/observabilité uniquement — PAS l''autorité d''ordre. Voir aggregate_sequence pour l''ordre causal garanti par agrégat.';
+
+COMMENT ON COLUMN outbox_events.aggregate_sequence IS
+  'Autorité d''ordre par agrégat, attribuée par le producer sous pg_advisory_xact_lock (bloquant, tenu jusqu''au commit appelant). Jamais calculée hors de ce verrou.';
+
+-- Claim efficace : file des événements pending.
 CREATE INDEX IF NOT EXISTS idx_outbox_events_pending
   ON outbox_events (created_at)
   WHERE processed_at IS NULL;
 
+-- Équité inter-agrégats ; l'ordre causal intra-agrégat reste porté par
+-- uq_outbox_events_aggregate_sequence.
 CREATE INDEX IF NOT EXISTS idx_outbox_events_aggregate
   ON outbox_events (aggregate_type, aggregate_id, created_at);
 
