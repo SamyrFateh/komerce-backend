@@ -114,7 +114,7 @@ function renderCanonicalCard(card) {
     : '<span class="k-discovery-canonical-price-placeholder" aria-hidden="true"></span>';
 
   return `
-    <article class="k-card k-discovery-canonical-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem">
+    <article class="k-card k-discovery-canonical-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem" tabindex="0" aria-label="Voir ${safeTitle}">
       <div class="k-card-img-wrap k-discovery-canonical-media">
         ${image}
         ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
