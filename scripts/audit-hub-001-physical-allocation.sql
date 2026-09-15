@@ -41,6 +41,15 @@ SELECT
   ) AS parcel_membership_destination_conflicts,
   (SELECT COUNT(*)
      FROM (
+       SELECT parcel_id, order_item_id
+         FROM parcel_items
+        WHERE order_item_id IS NOT NULL
+        GROUP BY parcel_id, order_item_id
+       HAVING COUNT(*) > 1
+     ) dup
+  ) AS duplicate_parcel_order_item_groups,
+  (SELECT COUNT(*)
+     FROM (
        SELECT oi.id
          FROM order_items oi
          LEFT JOIN inventory_items ii
@@ -70,6 +79,14 @@ WHERE oi.id IS NULL OR o.id IS NULL OR p.id IS NULL
    OR o.relais_id IS DISTINCT FROM p.relais_id
    OR o.market_id IS DISTINCT FROM r.market_id
 ORDER BY pi.id
+LIMIT 100;
+
+SELECT parcel_id, order_item_id, COUNT(*) AS duplicate_rows, SUM(COALESCE(quantity, 0)) AS total_quantity
+FROM parcel_items
+WHERE order_item_id IS NOT NULL
+GROUP BY parcel_id, order_item_id
+HAVING COUNT(*) > 1
+ORDER BY duplicate_rows DESC, parcel_id, order_item_id
 LIMIT 100;
 
 ROLLBACK;
