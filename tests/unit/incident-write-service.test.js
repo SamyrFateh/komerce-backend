@@ -8,6 +8,7 @@ const {
   acknowledgeAlertEngineIncident,
   resolveOpsIncident,
   resolvePhysicalProofIncident,
+  resolveUpstreamTruthIncident,
   detachUserFromIncidents,
   seedIncident,
 } = require('../../services/incident-write-service');
@@ -198,21 +199,69 @@ describe('incident-write-service — F2/F3', () => {
     })).rejects.toMatchObject({ code: 'PHYSICAL_PROOF_SCOPE_MISMATCH' });
   });
 
+  test('UPSTREAM_TRUTH remains active when authoritative predicate still fails', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{
+      id: 'inc-up', status: 'open', incident_type: 'payment_issue', origin_domain: 'PAYMENTS',
+      resolver_domain: 'PAYMENTS', resolution_class: 'UPSTREAM_TRUTH', details: {},
+    }] }) };
+    const revalidate = jest.fn().mockResolvedValue(false);
+    await expect(resolveUpstreamTruthIncident(executor, {
+      incidentId: 'inc-up', revalidate,
+    })).resolves.toMatchObject({ resolved: false, reason: 'PREDICATE_STILL_FAILS' });
+    expect(revalidate).toHaveBeenCalledWith(executor, expect.objectContaining({
+      incident: expect.objectContaining({ id: 'inc-up', resolver_domain: 'PAYMENTS' }),
+    }));
+    expect(executor.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('UPSTREAM_TRUTH resolves only after authoritative truth revalidates', async () => {
+    const executor = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inc-up', status: 'investigating', incident_type: 'reconciliation_error',
+        origin_domain: 'ORDERS', resolver_domain: 'ORDERS', resolution_class: 'UPSTREAM_TRUTH',
+        details: { type: 'order_status_drift' },
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'inc-up', status: 'resolved' }] }) };
+    const result = await resolveUpstreamTruthIncident(executor, {
+      incidentId: 'inc-up', revalidate: async () => true, notes: 'orders truth corrected',
+    });
+    expect(result).toMatchObject({ resolved: true, resolver_domain: 'ORDERS' });
+    expect(executor.query).toHaveBeenCalledTimes(2);
+    expect(executor.query.mock.calls[1][0]).toContain("status = 'resolved'");
+  });
+
+  test('UPSTREAM_TRUTH revalidation boundary rejects physical incidents', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{
+      id: 'inc-p', status: 'open', incident_type: 'weight_mismatch', origin_domain: 'LOGISTICS',
+      resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF', details: {},
+    }] }) };
+    await expect(resolveUpstreamTruthIncident(executor, {
+      incidentId: 'inc-p', revalidate: async () => true,
+    })).rejects.toMatchObject({ code: 'INCIDENT_RESOLVER_AUTHORITY_MISMATCH' });
+  });
+
   test('detachUserFromIncidents preserves both detach operations', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
     await detachUserFromIncidents(executor, 'u1');
     expect(executor.query).toHaveBeenCalledTimes(2);
   });
 
-  test('seed contract accepts governed 19-value input without inventing historical SLA', async () => {
+  test('seed contract accepts governed 19-value input and persists canonical due_at', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
-    const values = Array.from({ length: 19 }, (_, i) => `v${i + 1}`);
+    const values = [
+      '00000000-0000-0000-0000-000000000001', null, null, 'weight_mismatch', 'medium',
+      'open', 'Weight', 'Mismatch', '{}', 'none', false, null,
+      'system', null, null, null,
+      'LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF',
+    ];
     await seedIncident(executor, values);
-    expect(executor.query.mock.calls[0][0]).toContain('origin_domain, resolver_domain, resolution_class');
-    expect(executor.query.mock.calls[0][0]).not.toContain('due_at');
+    const [sql, params] = executor.query.mock.calls[0];
+    expect(sql).toContain('origin_domain, resolver_domain, resolution_class, due_at');
+    expect(params.slice(-4, -1)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    expect(params.at(-1)).toBeInstanceOf(Date);
   });
 
-  test('legacy 16-value seed derives governance rather than writing null authority', async () => {
+  test('legacy 16-value seed derives governance and persists due_at', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
     const values = [
       '00000000-0000-0000-0000-000000000001', null, null, 'weight_mismatch', 'medium',
@@ -220,7 +269,21 @@ describe('incident-write-service — F2/F3', () => {
       'system', null, null, null,
     ];
     await seedIncident(executor, values);
-    expect(executor.query.mock.calls[0][1].slice(-3)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    const params = executor.query.mock.calls[0][1];
+    expect(params.slice(-4, -1)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    expect(params.at(-1)).toBeInstanceOf(Date);
+  });
+
+  test('governed seed rejects caller-invented authority', async () => {
+    const executor = { query: jest.fn() };
+    const values = [
+      '00000000-0000-0000-0000-000000000001', null, null, 'weight_mismatch', 'medium',
+      'open', 'Weight', 'Mismatch', '{}', 'none', false, null,
+      'system', null, null, null,
+      'LOGISTICS', 'ORDERS', 'UPSTREAM_TRUTH',
+    ];
+    await expect(seedIncident(executor, values)).rejects.toThrow(/RESOLVER_DOMAIN_MISMATCH|RESOLUTION_CLASS_MISMATCH/);
+    expect(executor.query).not.toHaveBeenCalled();
   });
 
   test('seed contract rejects unsupported arity', async () => {
