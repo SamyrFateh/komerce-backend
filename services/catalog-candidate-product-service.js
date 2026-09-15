@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        sourcing_candidate, initial_price
+ * @inputs        sourcing_candidate, initial_price, normalized_source_contract
  * @outputs       product_id
  * @depends       none
  * @used-by       routes/sourcing-scanner.js
@@ -13,10 +13,17 @@
  * @db-txn        caller_owned
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §7
  * @impact-areas  catalog, sourcing
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
+
+function sourceLocaleFromCandidate(candidate = {}) {
+  const locale = candidate?.normalized_source_contract?.source_locale;
+  if (typeof locale !== 'string') return 'en';
+  const normalized = locale.trim();
+  return normalized || 'en';
+}
 
 /**
  * Creates the inactive catalog draft produced by the sourcing promotion flow.
@@ -29,6 +36,7 @@ async function createDraftProductFromSourcingCandidate(q, {
   initialPrice,
 }) {
   const weightKg = candidate.estimated_weight_kg || null;
+  const sourceLocale = sourceLocaleFromCandidate(candidate);
 
   const prodRes = await q.query(
     `INSERT INTO products (
@@ -48,11 +56,11 @@ async function createDraftProductFromSourcingCandidate(q, {
       weightKg,
       candidate.product_name,
       candidate.description || null,
-      'en',
+      sourceLocale,
     ]
   );
 
   return prodRes.rows[0].id;
 }
 
-module.exports = { createDraftProductFromSourcingCandidate };
+module.exports = { createDraftProductFromSourcingCandidate, sourceLocaleFromCandidate };
