@@ -1,0 +1,49 @@
+name: F3 incident PostgreSQL proof
+
+on:
+  pull_request:
+    paths:
+      - 'services/incident-write-service.js'
+      - 'services/incident-escalation.js'
+      - 'services/incident-governance.js'
+      - 'migrations/231_incident_sla_escalation_contract.sql'
+      - 'tests/integration/incident-f3-postgres.test.js'
+      - '.github/workflows/f3-incident-postgres-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-proof:
+    name: F3 PostgreSQL adversarial proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Run F3 PostgreSQL proof
+        run: npx jest tests/integration/incident-f3-postgres.test.js --ci --runInBand --forceExit
