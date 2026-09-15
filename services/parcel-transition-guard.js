@@ -8,7 +8,7 @@
  * @outputs       throws on blocked transition, resolves {allowed:true} otherwise
  * @depends       db, services/incident-governance
  * @used-by       services/parcel-operations.js#transitionParcelStatus
- * @db-read       incidents
+ * @db-read       incidents, parcels
  * @db-write      none
  * @db-txn        caller_owned_queryable
  * @doctrine      F2_INCIDENT_GOVERNANCE_CONTRACT
@@ -20,7 +20,14 @@
 const pool = require('../db');
 const { isIrreversibleTransitionBlocked } = require('./incident-governance');
 
+const IRREVERSIBLE_HUB_TRANSITIONS = new Set(['shipped']);
+
 async function assertParcelTransitionAllowed(parcelId, targetStatus, executor = pool) {
+  // F2 only governs irreversible outward physical transitions. Receiving,
+  // inspection, evidence addition and reversible/local transitions must stay
+  // possible so an incident can actually be investigated and resolved.
+  if (!IRREVERSIBLE_HUB_TRANSITIONS.has(targetStatus)) return { allowed: true };
+
   const db = executor && typeof executor.query === 'function' ? executor : pool;
 
   const { rows } = await db.query(
