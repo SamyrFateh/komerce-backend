@@ -43,6 +43,7 @@ jest.mock('../../services/hub-operations', () => ({
 
 const express = require('express');
 const request = require('supertest');
+const VALID_ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
 let app;
 let currentUser;
@@ -167,13 +168,13 @@ describe('scans — GET /:order_id', () => {
 
   it('réservé admin', async () => {
     currentUser = { id: 'u1', role: 'agent_relais' };
-    const res = await request(app).get('/api/scans/123e4567-e89b-12d3-a456-426614174000');
+    const res = await request(app).get(`/api/scans/${VALID_ORDER_ID}`);
     expect(res.status).toBe(403);
   });
 
   it('renvoie les scans pour un UUID valide', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 's1', step: 'sourcing' }] });
-    const res = await request(app).get('/api/scans/123e4567-e89b-12d3-a456-426614174000');
+    const res = await request(app).get(`/api/scans/${VALID_ORDER_ID}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ id: 's1', step: 'sourcing' }]);
   });
