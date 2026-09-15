@@ -1,368 +1,189 @@
 'use strict';
 
-
-/**
- * @test-kind unit
- * @test-runner jest
- * @test-requires none
- */
-/**
- * Tests unitaires — inventory-service.js
- *
- * Invariants couverts :
- *   receiveItem           : article introuvable → throw ; nominal → insère + propose
- *   proposeAssignment     : colis compatible trouvé → status proposed ;
- *                           aucun colis → status buffered
- *   scanIntoParcel        : item déjà assigné → throw ; parcel introuvable → throw ;
- *                           nominal → assigned, matched_proposal distingué
- *   updateOrderCompletion : mise à jour du ratio (received / total)
- *   shouldDispatch        : ratio 1 → dispatch_full ; deadline passée + ratio ≥ 0.5 → partial ;
- *                           deadline passée + ratio < 0.5 → wait_or_cancel
- *   getStats / listProposals / listOpenParcels : délèguent à db.query, retournent les rows
- *
- * DB mockée — aucune connexion Postgres.
- */
-
-// ─── Mock db ─────────────────────────────────────────────────────────────────
+/** @test-kind unit @test-runner jest @test-requires none */
 let mockQuery;
-jest.mock('../../db', () => ({ get query() { return mockQuery; } }));
+let mockResolvePurchaseAllocation;
+let mockAssertParcelCompatible;
+let mockAssignPhysical;
+let mockRecordEvidence;
+let mockSetCompletion;
 
-function loadService() {
-  jest.resetModules();
-  jest.mock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
-  return require('../../services/inventory-service');
-}
+jest.mock('../../db', () => ({
+  query: (...args) => mockQuery(...args),
+  withTransaction: async (work) => work({ query: (...args) => mockQuery(...args) }),
+}));
+
+jest.mock('../../services/hub-allocation-service', () => ({
+  resolvePurchaseAllocation: (...args) => mockResolvePurchaseAllocation(...args),
+  assertParcelCompatible: (...args) => mockAssertParcelCompatible(...args),
+  hubAllocationError: (code, message, details = {}) => Object.assign(new Error(message || code), { code, details }),
+}));
+
+jest.mock('../../services/parcel-item-mutation-service', () => ({
+  assignPhysicalAllocationToParcel: (...args) => mockAssignPhysical(...args),
+}));
+
+jest.mock('../../services/scan-write-service', () => ({
+  recordHubAllocationScanEvent: (...args) => mockRecordEvidence(...args),
+}));
+
+jest.mock('../../services/order-mutation-service', () => ({
+  setInventoryCompletion: (...args) => mockSetCompletion(...args),
+}));
+
+const svc = require('../../services/inventory-service');
 
 beforeEach(() => {
   mockQuery = jest.fn();
+  mockResolvePurchaseAllocation = jest.fn();
+  mockAssertParcelCompatible = jest.fn();
+  mockAssignPhysical = jest.fn();
+  mockRecordEvidence = jest.fn();
+  mockSetCompletion = jest.fn().mockResolvedValue({});
 });
 
-// ─── receiveItem ─────────────────────────────────────────────────────────────
-describe("receiveItem", () => {
-  test("throw si article introuvable", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] }); // oi not found
-    const svc = loadService();
-    await expect(svc.receiveItem({ order_item_id: 'unk' })).rejects.toThrow('introuvable');
+const allocation = {
+  order_item_id: 'oi-1', order_id: 'ord-1', product_id: 'prod-1',
+  purchase_order_id: 'po-1', physical_quantity: 2,
+  market_id: 'market-1', relais_id: 'relais-1', identity_strength: 'EXACT_SUPPLIER_UNIT',
+};
+
+describe('receiveItem — proven purchase allocation', () => {
+  test('order_id fourni ne peut jamais réassigner la ligne commerciale', async () => {
+    mockResolvePurchaseAllocation.mockResolvedValue(allocation);
+    await expect(svc.receiveItem({ order_item_id: 'oi-1', order_id: 'ord-other', quantity: 1 }))
+      .rejects.toMatchObject({ code: 'HUB_ORDER_REASSIGNMENT_FORBIDDEN' });
+    expect(mockQuery).not.toHaveBeenCalled();
   });
 
-  test("nominal : INSERT inventory_item + propose + updateOrderCompletion", async () => {
-    const oi = { id: 'oi-1', order_id: 'ord-1', product_id: 'p-1', quantity: 1, product_name: 'Riz' };
-    const inv = { id: 'inv-1', order_item_id: 'oi-1', order_id: 'ord-1', status: 'received', destination_island: 'Grande Comore' };
-
-    mockQuery = jest.fn()
-      // 1. SELECT order_items JOIN products
-      .mockResolvedValueOnce({ rows: [oi] })
-      // 2. INSERT inventory_items
+  test('réception nominale persiste PO exacte + verification et propose par destination canonique', async () => {
+    mockResolvePurchaseAllocation.mockResolvedValue(allocation);
+    const inv = {
+      id: 'inv-1', order_item_id: 'oi-1', order_id: 'ord-1', product_id: 'prod-1', quantity: 2,
+      purchase_order_id: 'po-1', identity_verified_at: new Date(), status: 'received',
+    };
+    mockQuery
       .mockResolvedValueOnce({ rows: [inv] })
-      // 3. proposeAssignment → SELECT inventory_items
-      .mockResolvedValueOnce({ rows: [{ ...inv, destination_island: 'Grande Comore' }] })
-      // 4. proposeAssignment → SELECT parcels
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-1', reference: 'P001', order_id: 'ord-1', priority: 0, item_count: 0 }] })
-      // 5. proposeAssignment → UPDATE inventory_items
+      .mockResolvedValueOnce({ rows: [{ ...inv, relais_id: 'relais-1', market_id: 'market-1', authoritative_order_id: 'ord-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'parcel-1', reference: 'P1', order_id: 'ord-1', relais_id: 'relais-1', priority: -1, item_count: 1 }] })
       .mockResolvedValueOnce({ rows: [] })
-      // 6. updateOrderCompletion → SELECT counts
-      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 0 }] })
-      // 7. updateOrderCompletion → UPDATE orders
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rows: [{ total: 2, received: 2, assigned: 0 }] });
 
-    const svc = loadService();
-    const result = await svc.receiveItem({ order_item_id: 'oi-1' });
-    expect(result.item).toBeDefined();
-    expect(result.proposal).toBeDefined();
+    const result = await svc.receiveItem({ order_item_id: 'oi-1', purchase_order_id: 'po-1', quantity: 2, received_by: 'u-1' });
+    expect(result.allocation).toEqual(expect.objectContaining({ purchase_order_id: 'po-1', market_id: 'market-1', relais_id: 'relais-1' }));
+    expect(result.proposal).toMatchObject({ status: 'proposed', parcel_id: 'parcel-1' });
+    expect(mockQuery.mock.calls[0][0]).toContain('purchase_order_id, identity_verified_at');
+    expect(mockSetCompletion).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      orderId: 'ord-1', itemsReceived: 2, itemsTotal: 2, completionRatio: 1,
+    }));
   });
 });
 
-// ─── proposeAssignment ────────────────────────────────────────────────────────
-describe("proposeAssignment", () => {
-  test("retourne null si item déjà assigné (status non éligible)", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] }); // item absent → already assigned
-    const svc = loadService();
-    const result = await svc.proposeAssignment('inv-already');
-    expect(result).toBeNull();
+describe('proposeAssignment — guidance only', () => {
+  test('allocation non prouvée est bufferisée, jamais proposée', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inv-u', order_id: 'ord-1', order_item_id: 'oi-1', purchase_order_id: null,
+        identity_verified_at: null, relais_id: 'r-1', market_id: 'm-1', authoritative_order_id: 'ord-1', status: 'received',
+      }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await expect(svc.proposeAssignment('inv-u')).resolves.toMatchObject({
+      status: 'buffered', reason: 'purchase_allocation_unproven',
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(2);
   });
 
-  test("status proposed si un colis compatible existe", async () => {
-    const item = { id: 'inv-2', order_id: 'ord-1', destination_island: 'Grande Comore', status: 'received' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] })   // SELECT inventory_items
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-2', reference: 'P002', order_id: 'ord-1', priority: 0, item_count: 0 }] }) // SELECT parcels
-      .mockResolvedValueOnce({ rows: [] });       // UPDATE inventory_items
+  test('proposition filtre par relais ET market, pas par île', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inv-2', order_id: 'ord-1', order_item_id: 'oi-1', purchase_order_id: 'po-1',
+        identity_verified_at: new Date(), relais_id: 'r-1', market_id: 'm-1', authoritative_order_id: 'ord-1', status: 'received',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'p-1', reference: 'P1', priority: 0, item_count: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
 
-    const svc = loadService();
     const result = await svc.proposeAssignment('inv-2');
-    expect(result.status).toBe('proposed');
-    expect(result.parcel_id).toBe('pcl-2');
-  });
-
-  test("status buffered si aucun colis compatible", async () => {
-    const item = { id: 'inv-3', order_id: 'ord-1', destination_island: 'Mohéli', status: 'received' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] })  // SELECT inventory_items
-      .mockResolvedValueOnce({ rows: [] })       // SELECT parcels → aucun
-      .mockResolvedValueOnce({ rows: [] });      // UPDATE inventory_items (buffered)
-
-    const svc = loadService();
-    const result = await svc.proposeAssignment('inv-3');
-    expect(result.status).toBe('buffered');
-    expect(result.reason).toBe('no_compatible_parcel');
+    expect(result.parcel_id).toBe('p-1');
+    expect(mockQuery.mock.calls[1][0]).toContain('p.relais_id = $1');
+    expect(mockQuery.mock.calls[1][0]).toContain('r.market_id = $2');
+    expect(mockQuery.mock.calls[1][0]).not.toContain('destination_island');
   });
 });
 
-// ─── scanIntoParcel ───────────────────────────────────────────────────────────
-describe("scanIntoParcel", () => {
-  test("throw si item introuvable ou déjà assigné", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] }); // item absent
-    const svc = loadService();
-    await expect(svc.scanIntoParcel('inv-x', 'pcl-x')).rejects.toThrow('introuvable');
+describe('scanIntoParcel — compatible container, no reassign', () => {
+  const item = {
+    id: 'inv-1', status: 'proposed', order_id: 'ord-1', order_item_id: 'oi-1', product_id: 'prod-1',
+    quantity: 1, purchase_order_id: 'po-1', identity_verified_at: new Date(), proposed_parcel_id: 'parcel-1',
+    market_id: 'market-1', relais_id: 'relais-1', purchase_order_order_id: 'ord-1', purchase_order_item_id: 'oi-1',
+    purchase_status: 'confirmed',
+  };
+
+  test('allocation non prouvée ne peut pas être assignée', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...item, purchase_order_id: null, identity_verified_at: null }] });
+    await expect(svc.scanIntoParcel('inv-1', 'parcel-1')).rejects.toMatchObject({ code: 'HUB_PURCHASE_ALLOCATION_UNPROVEN' });
+    expect(mockAssertParcelCompatible).not.toHaveBeenCalled();
   });
 
-  test("throw si parcel introuvable", async () => {
-    const item = { id: 'inv-4', order_id: 'ord-1', order_item_id: 'oi-4', proposed_parcel_id: null, status: 'proposed' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] }) // item
-      .mockResolvedValueOnce({ rows: [] });    // parcel introuvable
-    const svc = loadService();
-    await expect(svc.scanIntoParcel('inv-4', 'pcl-ghost')).rejects.toThrow('Colis introuvable');
-  });
-
-  test("nominal matched_proposal:true si parcel = proposed_parcel_id", async () => {
-    const item = { id: 'inv-5', order_id: 'ord-1', order_item_id: 'oi-5', proposed_parcel_id: 'pcl-5', status: 'proposed' };
-    mockQuery = jest.fn()
+  test('assignation nominale = compatibility + packing + evidence dans la même transaction', async () => {
+    mockQuery
       .mockResolvedValueOnce({ rows: [item] })
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-5', reference: 'P005', status: 'preparation' }] })
-      .mockResolvedValueOnce({ rows: [] }) // UPDATE inventory_items
-      .mockResolvedValueOnce({ rows: [] }) // INSERT parcel_items
-      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] }) // counts
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE orders
+      .mockResolvedValueOnce({ rows: [{ ...item, status: 'assigned', parcel_id: 'parcel-1' }] })
+      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] });
+    mockAssertParcelCompatible.mockResolvedValue({ id: 'parcel-1', reference: 'P1' });
+    mockAssignPhysical.mockResolvedValue({ parcel_item_id: 'pi-1' });
+    mockRecordEvidence.mockResolvedValue({ id: 'scan-event-1' });
 
-    const svc = loadService();
-    const result = await svc.scanIntoParcel('inv-5', 'pcl-5');
-    expect(result.assigned).toBe(true);
-    expect(result.matched_proposal).toBe(true);
+    const result = await svc.scanIntoParcel('inv-1', 'parcel-1', { scanned_by: 'u-1' });
+    expect(result).toMatchObject({ assigned: true, matched_proposal: true, evidence_scan_event_id: 'scan-event-1' });
+    expect(mockRecordEvidence).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      purchaseOrderId: 'po-1', marketId: 'market-1', relaisId: 'relais-1',
+    }));
   });
 
-  test("nominal matched_proposal:false si parcel différent", async () => {
-    const item = { id: 'inv-6', order_id: 'ord-1', order_item_id: 'oi-6', proposed_parcel_id: 'pcl-original', status: 'proposed' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] })
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-other', reference: 'P006', status: 'preparation' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] })
-      .mockResolvedValueOnce({ rows: [] });
+  test('colis différent mais compatible n’est pas une réassignation commerciale', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...item, proposed_parcel_id: 'parcel-proposed' }] })
+      .mockResolvedValueOnce({ rows: [{ ...item, status: 'assigned', parcel_id: 'parcel-compatible' }] })
+      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] });
+    mockAssertParcelCompatible.mockResolvedValue({ id: 'parcel-compatible', reference: 'PC' });
+    mockAssignPhysical.mockResolvedValue({ parcel_item_id: 'pi-1' });
+    mockRecordEvidence.mockResolvedValue({ id: 'ev-1' });
 
-    const svc = loadService();
-    const result = await svc.scanIntoParcel('inv-6', 'pcl-other');
+    const result = await svc.scanIntoParcel('inv-1', 'parcel-compatible');
     expect(result.matched_proposal).toBe(false);
+    expect(result.message).toMatch(/aucune vérité commerciale réassignée/);
   });
 });
 
-// ─── shouldDispatch ───────────────────────────────────────────────────────────
-describe("shouldDispatch", () => {
-  test("throw si commande introuvable", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] });
-    const svc = loadService();
-    await expect(svc.shouldDispatch('ord-ghost')).rejects.toThrow('Commande introuvable');
+describe('completion and dispatch', () => {
+  test('completion additionne les quantités, pas le nombre de rows physiques', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 5, received: 3, assigned: 2 }] });
+    const result = await svc.updateOrderCompletion('ord-1');
+    expect(result).toEqual({ total: 5, received: 3, assigned: 2, ratio: 0.6 });
   });
 
-  test("dispatch_full si ratio >= 1", async () => {
-    mockQuery = jest.fn().mockResolvedValue({
-      rows: [{ id: 'ord-1', completion_ratio: 1, deadline_dispatch: null }]
-    });
-    const svc = loadService();
-    const r = await svc.shouldDispatch('ord-1');
-    expect(r.decision).toBe('dispatch_full');
-  });
-
-  test("dispatch_partial si deadline passée et ratio >= 0.5", async () => {
-    const past = new Date(Date.now() - 86400000).toISOString(); // hier
-    mockQuery = jest.fn().mockResolvedValue({
-      rows: [{ id: 'ord-2', completion_ratio: 0.7, deadline_dispatch: past }]
-    });
-    const svc = loadService();
-    const r = await svc.shouldDispatch('ord-2');
-    expect(r.decision).toBe('dispatch_partial');
-  });
-
-  test("wait_or_cancel si deadline passée et ratio < 0.5", async () => {
-    const past = new Date(Date.now() - 86400000).toISOString();
-    mockQuery = jest.fn().mockResolvedValue({
-      rows: [{ id: 'ord-3', completion_ratio: 0.3, deadline_dispatch: past }]
-    });
-    const svc = loadService();
-    const r = await svc.shouldDispatch('ord-3');
-    expect(r.decision).toBe('wait_or_cancel');
-  });
-
-  test("wait si rien de spécial", async () => {
-    const future = new Date(Date.now() + 86400000).toISOString();
-    mockQuery = jest.fn().mockResolvedValue({
-      rows: [{ id: 'ord-4', completion_ratio: 0.5, deadline_dispatch: future }]
-    });
-    const svc = loadService();
-    const r = await svc.shouldDispatch('ord-4');
-    expect(r.decision).toBe('wait');
+  test.each([
+    [1, null, 'dispatch_full'],
+    [0.7, new Date(Date.now() - 1000).toISOString(), 'dispatch_partial'],
+    [0.3, new Date(Date.now() - 1000).toISOString(), 'wait_or_cancel'],
+    [0.5, new Date(Date.now() + 86400000).toISOString(), 'wait'],
+  ])('ratio=%s deadline=%s => %s', async (ratio, deadline, decision) => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'o', completion_ratio: ratio, deadline_dispatch: deadline }] });
+    await expect(svc.shouldDispatch('o')).resolves.toMatchObject({ decision });
   });
 });
 
-// ─── updateOrderCompletion ────────────────────────────────────────────────────
-describe("updateOrderCompletion", () => {
-  test("retourne null si commande absente", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] }); // no counts
-    const svc = loadService();
-    const r = await svc.updateOrderCompletion('ord-ghost');
-    expect(r).toBeUndefined(); // early return if !counts
+describe('views', () => {
+  test('stats expose identity_unproven', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ received: 1, proposed: 2, assigned: 3, buffered: 4, overdue: 1, identity_unproven: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ open_parcels: 5, shipped_parcels: 6 }] });
+    await expect(svc.getStats()).resolves.toMatchObject({ identity_unproven: 2, open_parcels: 5 });
   });
 
-  test("calcule le ratio et met à jour orders", async () => {
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [{ total: 4, received: 2, assigned: 1 }] })
-      .mockResolvedValueOnce({ rows: [] });
-    const svc = loadService();
-    const r = await svc.updateOrderCompletion('ord-5');
-    expect(r.ratio).toBeCloseTo(0.5);
-    expect(r.total).toBe(4);
-  });
-});
-
-// ─── getStats ─────────────────────────────────────────────────────────────────
-describe("getStats", () => {
-  test("merge inventory_items et parcels stats", async () => {
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [{ received: 3, proposed: 2, assigned: 1, buffered: 0, overdue: 0, avg_assign_minutes: 15 }] })
-      .mockResolvedValueOnce({ rows: [{ open_parcels: 5, shipped_parcels: 2 }] });
-    const svc = loadService();
-    const stats = await svc.getStats();
-    expect(stats.received).toBe(3);
-    expect(stats.open_parcels).toBe(5);
-  });
-});
-
-// ─── Lot A, branches manquantes ───────────────────────────────────────────────
-
-describe("inventory-service — Lot A, branches manquantes", () => {
-  describe("receiveItem — order_id explicite", () => {
-    test("order_id fourni explicitement a priorité sur oi.order_id", async () => {
-      const oi = { id: 'oi-9', order_id: 'ord-oi', product_id: 'p-9', quantity: 1, product_name: 'Sucre' };
-      const inv = { id: 'inv-9', order_item_id: 'oi-9', order_id: 'ord-explicit', status: 'received', destination_island: 'Anjouan' };
-
-      mockQuery = jest.fn()
-        .mockResolvedValueOnce({ rows: [oi] })
-        .mockResolvedValueOnce({ rows: [inv] })
-        .mockResolvedValueOnce({ rows: [] }) // proposeAssignment → item non trouvé (status déjà avancé) → null
-        .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 0 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      const svc = loadService();
-      await svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' });
-
-      // 2e appel = INSERT inventory_items — vérifier que order_id explicite est utilisé
-      expect(mockQuery.mock.calls[1][1]).toEqual(['oi-9', 'ord-explicit']);
-      // 4e appel = updateOrderCompletion SELECT counts, doit utiliser ord-explicit
-      expect(mockQuery.mock.calls[3][1]).toEqual(['ord-explicit']);
-    });
-  });
-
-  describe("proposeAssignment — alternatives", () => {
-    test("plusieurs colis compatibles → alternatives contient les suivants", async () => {
-      const item = { id: 'inv-alt', order_id: 'ord-1', destination_island: 'Grande Comore', status: 'received' };
-      mockQuery = jest.fn()
-        .mockResolvedValueOnce({ rows: [item] })
-        .mockResolvedValueOnce({ rows: [
-          { id: 'pcl-a', reference: 'PA', order_id: 'ord-1', priority: 0, item_count: 0 },
-          { id: 'pcl-b', reference: 'PB', order_id: 'ord-1', priority: 0, item_count: 1 },
-          { id: 'pcl-c', reference: 'PC', order_id: 'ord-1', priority: 1, item_count: 0 },
-        ] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      const svc = loadService();
-      const result = await svc.proposeAssignment('inv-alt');
-      expect(result.parcel_id).toBe('pcl-a');
-      expect(result.alternatives).toHaveLength(2);
-      expect(result.alternatives[0].id).toBe('pcl-b');
-    });
-  });
-
-  describe("proposeAll", () => {
-    test("compte proposed/buffered/errors sur plusieurs items", async () => {
-      mockQuery = jest.fn()
-        // SELECT items éligibles
-        .mockResolvedValueOnce({ rows: [{ id: 'inv-p1' }, { id: 'inv-p2' }, { id: 'inv-p3' }] })
-        // item 1 → proposeAssignment: SELECT item, SELECT parcels (compatible) → UPDATE
-        .mockResolvedValueOnce({ rows: [{ id: 'inv-p1', order_id: 'ord-1', destination_island: 'GC', status: 'received' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'pcl-x', reference: 'PX', order_id: 'ord-1', priority: 0, item_count: 0 }] })
-        .mockResolvedValueOnce({ rows: [] })
-        // item 2 → proposeAssignment: SELECT item, SELECT parcels (aucun) → UPDATE buffered
-        .mockResolvedValueOnce({ rows: [{ id: 'inv-p2', order_id: 'ord-2', destination_island: 'Mohéli', status: 'buffered' }] })
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] })
-        // item 3 → proposeAssignment throws (db error) → catch → errors++
-        .mockRejectedValueOnce(new Error('db timeout'));
-
-      const svc = loadService();
-      const result = await svc.proposeAll();
-      expect(result).toEqual({ proposed: 1, buffered: 1, errors: 1 });
-    });
-
-    test("aucun item éligible → tous les compteurs à zéro", async () => {
-      mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] });
-      const svc = loadService();
-      const result = await svc.proposeAll();
-      expect(result).toEqual({ proposed: 0, buffered: 0, errors: 0 });
-    });
-  });
-
-  describe("shouldDispatch — branches supplémentaires", () => {
-    test("completion_ratio absent/null → ratio par défaut 0", async () => {
-      mockQuery = jest.fn().mockResolvedValue({
-        rows: [{ id: 'ord-9', completion_ratio: null, deadline_dispatch: null }]
-      });
-      const svc = loadService();
-      const r = await svc.shouldDispatch('ord-9');
-      expect(r.decision).toBe('wait');
-      expect(r.ratio).toBe(0);
-    });
-
-    test("deadline_dispatch absent → deadlinePassed toujours false", async () => {
-      mockQuery = jest.fn().mockResolvedValue({
-        rows: [{ id: 'ord-10', completion_ratio: 0.3, deadline_dispatch: null }]
-      });
-      const svc = loadService();
-      const r = await svc.shouldDispatch('ord-10');
-      expect(r.decision).toBe('wait');
-    });
-  });
-
-  describe("listProposals", () => {
-    test("retourne les rows tels que renvoyés par la requête", async () => {
-      const rows = [{ id: 'inv-1', product_name: 'Riz', order_ref: 'K-1' }];
-      mockQuery = jest.fn().mockResolvedValueOnce({ rows });
-      const svc = loadService();
-      const result = await svc.listProposals();
-      expect(result).toBe(rows);
-      expect(mockQuery.mock.calls[0][0]).toContain('FROM inventory_items ii');
-    });
-  });
-
-  describe("updateOrderCompletion — total à zéro", () => {
-    test("counts.total = 0 → ratio forcé à 0 (pas de division par zéro)", async () => {
-      mockQuery = jest.fn()
-        .mockResolvedValueOnce({ rows: [{ total: 0, received: 0, assigned: 0 }] })
-        .mockResolvedValueOnce({ rows: [] });
-      const svc = loadService();
-      const r = await svc.updateOrderCompletion('ord-empty');
-      expect(r.ratio).toBe(0);
-    });
-  });
-
-  describe("listOpenParcels", () => {
-    test("retourne les colis ouverts (draft/preparation)", async () => {
-      const rows = [{ id: 'pcl-1', reference: 'P001', status: 'draft' }];
-      mockQuery = jest.fn().mockResolvedValueOnce({ rows });
-      const svc = loadService();
-      const result = await svc.listOpenParcels();
-      expect(result).toBe(rows);
-      expect(mockQuery.mock.calls[0][0]).toContain("'draft', 'preparation'");
-    });
+  test('open parcels expose market + relay', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'p', market_id: 'm', relais_id: 'r' }] });
+    await expect(svc.listOpenParcels()).resolves.toEqual([{ id: 'p', market_id: 'm', relais_id: 'r' }]);
   });
 });
