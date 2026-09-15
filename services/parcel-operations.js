@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      parcel_items, parcels
@@ -17,7 +17,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
- * @version       2026-06
+ * @version       2026-09
  */
 
 'use strict';
@@ -64,6 +64,7 @@ const {
   checkParcelCancellable,
   validateParcelTransition,
 } = require('./parcel-guards');
+const { assertParcelTransitionAllowed } = require('./parcel-transition-guard');
 
 const log = require('../utils/logger').child({ module: 'parcel-operations' });
 
@@ -606,6 +607,11 @@ async function cancelBackorder(orderId, body, user) {
  */
 async function transitionParcelStatus(dbClient, parcelId, newStatus, opts = {}) {
   const { trackingRef, skipValidation = false, cancelReason } = opts;
+
+  // F2 authority guard is not part of simulator/state-machine validation.
+  // It is always evaluated, so skipValidation can never bypass an active
+  // Hub-relevant incident or an unknown Logistics incident fail-closed.
+  await assertParcelTransitionAllowed(parcelId, newStatus, dbClient);
 
   if (!skipValidation) {
     // Charger le statut actuel
