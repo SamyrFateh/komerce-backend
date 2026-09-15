@@ -99,6 +99,7 @@ describe('market-delegation runtime compatibility bridge', () => {
       'network.read',
       'market_config.read',
       'finance.read',
+      'catalog.read',
     ]);
   });
 

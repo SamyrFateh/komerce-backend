@@ -31,6 +31,7 @@ const CAPABILITIES = Object.freeze([
   ['finance.act','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
   ['settlement.receive','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
   ['catalog.expose','DELEGATION','commerce','MARKET','DELEGABLE',true,'LIVE'],
+  ['catalog.read','DELEGATION','commerce','MARKET','DELEGABLE',false,'LIVE'],
   ['local_offer.manage','DELEGATION','commerce','MARKET','DELEGABLE',true,'LIVE'],
   ['cash_control.policy.manage','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
   ['execution.order.mark_ordered','EXECUTION','operations','MARKET','DELEGABLE',true,'LIVE'],

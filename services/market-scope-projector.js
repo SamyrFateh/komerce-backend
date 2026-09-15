@@ -36,6 +36,7 @@ const LEGACY_VIEWER_CAPABILITIES = Object.freeze([
   'network.read',
   'market_config.read',
   'finance.read',
+  'catalog.read',
 ]);
 
 function requireExecutor(executor) {

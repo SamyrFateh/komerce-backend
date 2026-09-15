@@ -68,10 +68,15 @@ function rejectMarketId(body) {
 router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
+      // Lecture = catalog.read (universel, viewer inclus). L'écriture reste
+      // gardée par catalog.expose sur la route PUT ci-dessous — voir
+      // migration 236_market_delegation_catalog_read_capability.sql pour le
+      // pourquoi (catalog.expose n'était jamais accordé à un viewer, par
+      // conception de la migration 207 ; ça bloquait donc aussi sa lecture).
       const authz = await resolveAuthorization(client, {
         userId: req.user.id,
         marketCode: req.params.marketCode,
-        requiredCapability: 'catalog.expose',
+        requiredCapability: 'catalog.read',
       });
       const exposure = await listExposure(client, { marketId: authz.market_id });
       return { authz, exposure, summary: summarizeExposure(exposure) };

@@ -25,9 +25,22 @@ describe('market-delegation catalog routes', () => {
   });
 
   test('catalog exposure is capability based, never user role based', () => {
-    expect(routeSource).toContain(`'catalog.expose'`);
     expect(routeSource).not.toMatch(/requireRole\(/);
     expect(routeSource).not.toMatch(/req\.user\.role\s*===\s*['"]market_operator/);
+  });
+
+  test('GET exposure requires catalog.read — universal read, viewer included', () => {
+    const getHandler = routeSource.split(`router.put('/markets/:marketCode/catalog/exposure/:productId'`)[0];
+    expect(getHandler).toContain(`requiredCapability: 'catalog.read'`);
+    expect(getHandler).not.toContain(`requiredCapability: 'catalog.expose'`);
+  });
+
+  test('write authority (catalog.expose) is delegated to the service layer, never re-declared in the route', () => {
+    // setExposure() (market-delegation-catalog-service.js) owns the
+    // 'catalog.expose' requirement — see market-delegation-catalog-service.test.js
+    // ("capability absente → 403, aucune écriture tentée"). The route itself
+    // must not hardcode a second, possibly diverging capability check.
+    expect(routeSource).not.toMatch(/requiredCapability:\s*['"]catalog\.expose['"]/);
   });
 
   test('GET renvoie le résumé d’exposition calculé côté service', () => {

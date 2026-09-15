@@ -122,6 +122,7 @@ module.exports = {
       'market-autonomy (décision locale DRAFT_PENDING_GATE via market-commercial-price-service ; aucun LOCAL_ACTIVE forcé)',
       'orders (commandes et order_items market-scoped)',
       'logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)',
+      'market-delegation (services/market-delegation-service.js + services/market-scope-projector.js — autorité canonique assignment/membership/capabilities et projectAssignment(), consommées par scripts/provision-market-operator.js pour ne plus jamais écrire operator_market_scopes directement)',
       'infrastructure (db.js — pool utilisé par les scripts de provisioning et de seed staging)',
     ],
   },
