@@ -25,6 +25,7 @@ const {
   watchlistCandidate,
   rejectCandidate,
 } = require('../../services/sourcing-candidate-actions');
+const candidateProductService = jest.requireActual('../../services/catalog-candidate-product-service');
 
 describe('sourcing-candidate-actions', () => {
   it('refuse une devise hors whitelist avant toute lecture ou écriture', async () => {
@@ -74,5 +75,27 @@ describe('sourcing-candidate-actions', () => {
   it('exporte une classe d’erreur typée pour les façades HTTP', () => {
     const err = new SourcingCandidateActionError(409, 'Conflict', 'candidate_conflict');
     expect(err).toMatchObject({ name: 'SourcingCandidateActionError', status: 409, code: 'candidate_conflict' });
+  });
+});
+
+describe('catalog candidate draft source locale', () => {
+  it('préserve la locale du contrat normalisé pour la traduction FR', async () => {
+    const q = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-1' }] }) };
+    const candidate = {
+      product_name: 'Kabel USB',
+      description: 'Przewód USB do ładowania',
+      purchase_price_kmf: 1500,
+      komerce_category: 'electronique',
+      normalized_source_contract: { source_locale: 'pl-PL' },
+    };
+
+    await expect(candidateProductService.createDraftProductFromSourcingCandidate(q, {
+      candidate,
+      initialPrice: 2500,
+    })).resolves.toBe('product-1');
+
+    expect(q.query.mock.calls[0][1][7]).toBe('pl-PL');
+    expect(candidateProductService.sourceLocaleFromCandidate(candidate)).toBe('pl-PL');
+    expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');
   });
 });
