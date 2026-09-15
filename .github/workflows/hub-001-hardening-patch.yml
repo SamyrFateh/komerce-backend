@@ -1,0 +1,97 @@
+name: "HUB-001 one-shot invariant hardening"
+
+on:
+  push:
+    branches:
+      - feat/hub001-physical-identity-custody
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/hub001-physical-identity-custody
+      - name: Harden physical-unit creation boundary
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          migration = Path('migrations/233_hub_physical_identity_allocation_custody.sql')
+          sql = migration.read_text()
+          marker = "-- Physical state is strict. Market ownership is derived exactly once from active\n"
+          guard = """-- Initial physical identity is neutral: no caller can smuggle an outbound state,\n-- Market or terminal outcome at INSERT time. Those facts must pass their canonical boundaries.\nCREATE OR REPLACE FUNCTION hub_guard_physical_unit_insert()\nRETURNS trigger AS $$\nBEGIN\n  IF NEW.market_id IS NOT NULL THEN\n    RAISE EXCEPTION 'hub_market_only_derived_at_outbound';\n  END IF;\n\n  IF NEW.outcome_type IS NOT NULL OR NEW.outcome_recorded_at IS NOT NULL THEN\n    RAISE EXCEPTION 'hub_physical_outcome_requires_recording_boundary';\n  END IF;\n\n  IF NEW.state NOT IN ('RECEIVED', 'QUARANTINED') THEN\n    RAISE EXCEPTION 'hub_physical_initial_state_invalid:%', NEW.state;\n  END IF;\n\n  RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nDROP TRIGGER IF EXISTS trg_hub_physical_unit_insert_guard ON hub_physical_units;\nCREATE TRIGGER trg_hub_physical_unit_insert_guard\n  BEFORE INSERT ON hub_physical_units\n  FOR EACH ROW EXECUTE FUNCTION hub_guard_physical_unit_insert();\n\n"""
+          if 'hub_guard_physical_unit_insert()' not in sql:
+              if marker not in sql:
+                  raise SystemExit('migration marker not found')
+              sql = sql.replace(marker, guard + marker, 1)
+              migration.write_text(sql)
+
+          service = Path('services/hub-physical-identity.js')
+          js = service.read_text()
+          old = "  if (!UNIT_STATES.has(initialState)) fail('HUB_PHYSICAL_STATE_INVALID');\n\n  const { rows: [unit] } = await db.query("
+          new = "  if (!UNIT_STATES.has(initialState)) fail('HUB_PHYSICAL_STATE_INVALID');\n  if (!['RECEIVED', 'QUARANTINED'].includes(initialState)) {\n    fail('HUB_PHYSICAL_INITIAL_STATE_INVALID', 'Une unité physique doit naître RECEIVED ou QUARANTINED');\n  }\n\n  const { rows: [unit] } = await db.query("
+          if 'HUB_PHYSICAL_INITIAL_STATE_INVALID' not in js:
+              if old not in js:
+                  raise SystemExit('service marker not found')
+              js = js.replace(old, new, 1)
+              service.write_text(js)
+
+          tests = Path('tests/integration/hub-physical-identity-postgres.test.js')
+          t = tests.read_text()
+          t = t.replace("reference: 'OUT-KM-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED', locationRef: 'HUB-DXB-PACK',", "reference: 'OUT-KM-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED', locationRef: 'HUB-DXB-PACK',")
+          t = t.replace("reference: 'OUT-CM-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED', locationRef: 'HUB-DXB-PACK',", "reference: 'OUT-CM-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED', locationRef: 'HUB-DXB-PACK',")
+          mixed_marker = "    const kmAllocation = inbound.allocations.find((x) => String(x.allocation.market_id) === String(km.market));\n"
+          if "await advanceToPicked(targets.kmUnit.id);" not in t:
+              t = t.replace(mixed_marker, "    await advanceToPicked(targets.kmUnit.id);\n    await advanceToPicked(targets.cmUnit.id);\n\n" + mixed_marker, 1)
+          t = t.replace("reference: 'OUT-SPLIT-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED',", "reference: 'OUT-SPLIT-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',")
+          split_marker = "\n    const move = await transact((client) => moveAllocationQuantity(client, {\n"
+          if "await advanceToPicked(target.id);" not in t:
+              t = t.replace(split_marker, "\n    await advanceToPicked(target.id);\n" + split_marker, 1)
+
+          outcome_marker = "\ndescribe('HUB-001 — physical outcome transactional contract', () => {\n"
+          direct_test = """
+
+describe('HUB-001 — DB creation hard stops', () => {
+  test('direct INSERT cannot smuggle Market or outbound state into a physical unit', async () => {
+    const market = id();
+    await query('INSERT INTO markets(id) VALUES ($1)', [market]);
+
+    await expect(query(
+      `INSERT INTO hub_physical_units(reference, unit_type, state, market_id)
+       VALUES ('SMUGGLE-MARKET', 'MARKET_PARCEL', 'RECEIVED', $1)`,
+      [market]
+    )).rejects.toThrow(/hub_market_only_derived_at_outbound/);
+
+    await expect(query(
+      `INSERT INTO hub_physical_units(reference, unit_type, state)
+       VALUES ('SMUGGLE-PACKED', 'MARKET_PARCEL', 'PACKED')`
+    )).rejects.toThrow(/hub_physical_initial_state_invalid/);
+
+    await expect(transact((client) => createPhysicalUnit(client, {
+      reference: 'SERVICE-SMUGGLE',
+      unitType: 'MARKET_PARCEL',
+      initialState: 'PACKED',
+    }))).rejects.toMatchObject({
+      name: 'HubPhysicalError',
+      code: 'HUB_PHYSICAL_INITIAL_STATE_INVALID',
+    });
+  });
+});
+"""
+          if "describe('HUB-001 — DB creation hard stops'" not in t:
+              if outcome_marker not in t:
+                  raise SystemExit('test marker not found')
+              t = t.replace(outcome_marker, direct_test + outcome_marker, 1)
+          tests.write_text(t)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add migrations/233_hub_physical_identity_allocation_custody.sql services/hub-physical-identity.js tests/integration/hub-physical-identity-postgres.test.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(hub): enforce neutral physical identity at creation"
+          git push origin HEAD:feat/hub001-physical-identity-custody
