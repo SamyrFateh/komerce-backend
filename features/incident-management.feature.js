@@ -29,12 +29,13 @@ module.exports = {
       'policy de blocage des transitions physiques irréversibles consommée par Logistics',
       'F3 : due_at persistant, escalade SLA durable vers Action Center et marqueur d’escalade idempotent',
       'F3 : fermeture PHYSICAL_PROOF uniquement après nouvelle preuve scan_events et revalidation synchrone du prédicat',
+      'F3 : fermeture UPSTREAM_TRUTH uniquement après correction authoritative amont puis revalidation du prédicat par le caller',
       'engagement opérationnel réel déclenché par une résolution lorsque l’autorité le permet',
     ],
     out: [
       "logique métier propre au domaine qui a détecté l'écart (logistics, payments, notifications restent propriétaires de leurs propres flux)",
       'preuve physique : scan_events reste lifecycle-owned par Logistics',
-      'correction de vérité UPSTREAM_TRUTH : reste propriétaire du domaine resolver_domain',
+      'correction de vérité UPSTREAM_TRUTH : reste propriétaire du domaine resolver_domain ; Incident Management ne fait que revalider/fermer ensuite',
       'health check / observation technique passive (feature platform-ops)',
     ],
   },
@@ -94,6 +95,7 @@ module.exports = {
       { fn: 'acknowledgeAlertEngineIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolveOpsIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolvePhysicalProofIncident', file: 'services/incident-write-service.js' },
+      { fn: 'resolveUpstreamTruthIncident', file: 'services/incident-write-service.js' },
       { fn: 'detachUserFromIncidents', file: 'services/incident-write-service.js' },
       { fn: 'seedIncident', file: 'services/incident-write-service.js' },
       { fn: 'scanOverdueIncidents', file: 'services/incident-escalation.js' },
@@ -108,9 +110,7 @@ module.exports = {
   },
 
   debt: {
-    knownGaps: [
-      { gap: 'UPSTREAM_TRUTH correction reste volontairement hors Incident Management : le domaine resolver corrige sa vérité authoritative, Hub revalide ensuite.', risk: 'aucune autorité inventée ; incident reste bloquant selon policy tant que le prédicat ne repasse pas.' },
-    ],
+    knownGaps: [],
   },
 
   authority: 'backend-core — tout changement de lifecycle incident doit etre valide par le proprietaire de services/incident-service.js',
@@ -121,7 +121,7 @@ module.exports = {
     'origin_domain, resolver_domain et resolution_class sont queryables dès la création gouvernée',
     'tout nouvel incident gouverné possède due_at dérivé uniquement de resolution_class',
     'un incident historique UNCLASSIFIED ne peut pas être fermé par un chemin terminal générique',
-    'UPSTREAM_TRUTH ne peut jamais être fermé par Incident Management sans correction authoritative amont',
+    'UPSTREAM_TRUTH ne peut jamais être fermé avant correction authoritative amont et revalidation du prédicat original',
     'PHYSICAL_PROOF ne peut jamais être fermé par un chemin terminal générique : nouvelle preuve + revalidation sont obligatoires',
     'une escalade SLA ne résout jamais l’incident et atteint un sink durable Action Center',
     'le marqueur escalation_level et le signal Action Center sont atomiques dans une même transaction',
@@ -144,7 +144,7 @@ module.exports = {
       'table incidents riche et lifecycle engageant',
       'API interne d’écriture consommée par plusieurs domaines producteurs derrière la boundary owner',
       'F2 possède la migration 230 pour le triplet d’autorité et la policy de fermeture/blocage',
-      'F3 possède la migration 231 pour SLA/escalade et impose la revalidation de preuve physique avant résolution',
+      'F3 possède la migration 231 pour SLA/escalade et impose la revalidation de preuve physique ou de vérité amont avant résolution',
     ],
   },
 };
