@@ -48,7 +48,7 @@ BEGIN
         RAISE EXCEPTION 'hub_quarantine_incident_active';
       END IF;
 
-      SELECT COALESCE(e.from_state, 'RECEIVED')
+      SELECT COALESCE(NULLIF(e.from_state, 'QUARANTINED'), 'RECEIVED')
         INTO resume_state
         FROM hub_custody_events e
        WHERE e.physical_unit_id = OLD.id
