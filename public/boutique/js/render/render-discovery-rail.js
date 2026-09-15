@@ -89,7 +89,7 @@ function renderCanonicalActionSlot(card, safeTitle) {
 
   return `
     <div class="k-card-add k-discovery-canonical-action-slot" role="group" aria-label="Action pour ${safeTitle}">
-      <button class="k-discovery-canonical-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}">${sanitize(card.ctaLabel)}</button>
+      <button class="k-discovery-canonical-cta" type="button" data-discovery-action="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" aria-label="${sanitize(card.ctaLabel)} ${safeTitle}">${sanitize(card.ctaLabel)}</button>
     </div>`;
 }
 
