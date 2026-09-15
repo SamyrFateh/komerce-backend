@@ -15,6 +15,18 @@ function makeClient(script = []) {
         return { rows: [], rowCount: 0 };
       }
 
+      // F2 adds a read-only incident-policy lookup before irreversible parcel
+      // transitions. Legacy scripted tests are not about incident policy, so this
+      // observational query is neutral by default and does not consume their
+      // positional result queue. Dedicated F2 tests exercise blocking rows.
+      if (
+        normalized.includes('FROM parcels p') &&
+        normalized.includes('JOIN incidents i') &&
+        normalized.includes("i.status IN ('open', 'investigating')")
+      ) {
+        return { rows: [], rowCount: 0 };
+      }
+
       const next = queue.shift();
       if (!next) {
         throw new Error(`No mock query result for SQL: ${normalized}`);

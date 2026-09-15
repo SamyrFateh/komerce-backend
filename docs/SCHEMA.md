@@ -318,7 +318,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `sms_log` | Log SMS. |
 | `signals` | Signaux opérationnels et décisionnels. **Migration 222 (2026-09-12, `intended_migration_schema`)** : + `market_id` UUID nullable, FK `markets(id)` ; `NULL` signifie explicitement signal global, une valeur non NULL borne le lifecycle au Market ID canonique résolu côté serveur. L’identité active devient `(signal_type, market_id, entity_type, entity_id)` pour éviter tout écrasement cross-market. |
 | `alerts` | Alertes. |
-| `incidents` | Incidents. |
+| `incidents` | Incidents. **Migration 230 (2026-09-15, `intended_migration_schema`)** : + `origin_domain`, `resolver_domain` et `resolution_class` pour persister dès la création le domaine d'origine, l'autorité capable de fournir la prochaine vérité/preuve valide et la classe de résolution (`PHYSICAL_PROOF` / `UPSTREAM_TRUTH`). Les historiques `reconciliation_error` ambigus restent explicitement `UNCLASSIFIED` plutôt que d'inventer une autorité. |
 | `unsold_items` | Items invendus. |
 | `business_rules` | Règles métier. |
 | `business_rules_history` | Historique règles. |
