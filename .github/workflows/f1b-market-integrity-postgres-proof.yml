@@ -3,8 +3,7 @@ name: F1-B market integrity PostgreSQL proof
 on:
   pull_request:
     paths:
-      - 'migrations/229_f1_market_integrity_guards.sql'
-      - 'migrations/scheduled/229_f1_market_integrity_guards.sql'
+      - 'migrations/232_f1_market_integrity_guards_activation.sql'
       - 'tests/integration/f1-market-integrity-destructive.test.js'
       - 'tests/unit/f1-market-integrity-migration.test.js'
       - '.github/workflows/f1b-market-integrity-postgres-proof.yml'
