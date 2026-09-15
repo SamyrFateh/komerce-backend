@@ -50,6 +50,7 @@ function bindShell(shell) {
   if (!shell || shell.dataset.discoveryBound === '1') return shell;
   shell.dataset.discoveryBound = '1';
   shell.addEventListener('click', handleDiscoveryClick);
+  shell.addEventListener('keydown', handleDiscoveryKeydown);
   return shell;
 }
 
@@ -170,6 +171,63 @@ function cardsForCategory(cards, category) {
   return list.filter(card =>
     Array.isArray(card?.category_keys) && card.category_keys.includes(category)
   );
+}
+
+function discoveryProductCard(ref) {
+  const cards = Array.isArray(_lastCards) ? _lastCards : [];
+  return cards.find(card =>
+    card?.kind === 'product'
+    && String(card.cta_action_ref) === String(ref)
+  ) || null;
+}
+
+function discoveryCategory(card) {
+  const keys = Array.isArray(card?.category_keys) ? card.category_keys : [];
+  return keys.find(key => String(key).toLowerCase() !== 'soldes') || '';
+}
+
+/**
+ * openModal() ouvre encore le shell produit à partir de state.products avant que
+ * le Product Detail Contract ne prenne le relais. Un produit Discovery est déjà
+ * garanti public par le backend mais peut ne pas faire partie du snapshot
+ * catalogue chargé/paginé côté navigateur. On crée donc un snapshot UI minimal,
+ * explicitement éphémère, uniquement pour amorcer le shell canonique.
+ *
+ * La vérité transactionnelle reste GET /api/products/:id/detail : ce snapshot ne
+ * porte ni variantes, ni disponibilité, ni stock et ne doit jamais autoriser un
+ * quick-add par défaut.
+ */
+function ensureDiscoveryProductSnapshot(ref) {
+  const existing = Array.isArray(state.products)
+    ? state.products.find(candidate => String(candidate?.id) === String(ref))
+    : null;
+  if (existing) return existing;
+
+  const card = discoveryProductCard(ref);
+  if (!card || !card.title) return null;
+
+  const snapshot = {
+    id: card.cta_action_ref,
+    name: String(card.title),
+    image_url: card.image_ref ? String(card.image_ref) : '',
+    price_kmf: card.price != null ? Number(card.price) : null,
+    category: discoveryCategory(card),
+    promo_pct: 0,
+    __discovery_ephemeral: true,
+  };
+
+  if (!Array.isArray(state.products)) state.products = [];
+  state.products.push(snapshot);
+  return snapshot;
+}
+
+function cleanupDiscoveryProductSnapshots() {
+  if (!Array.isArray(state.products)) return;
+  for (let index = state.products.length - 1; index >= 0; index -= 1) {
+    if (state.products[index]?.__discovery_ephemeral) {
+      state.products.splice(index, 1);
+    }
+  }
 }
 
 function refreshGhostSnapshot() {
@@ -342,7 +400,9 @@ async function openDiscoveryDetail(kind, ref) {
   if (!kind || !ref) return false;
 
   if (kind === 'product') {
-    openModal(ref);
+    const product = ensureDiscoveryProductSnapshot(ref);
+    if (!product) return false;
+    openModal(product.id);
     return true;
   }
 
@@ -386,7 +446,18 @@ function handleDiscoveryClick(event) {
       return;
     }
 
-    const product = state.products.find(candidate => String(candidate?.id) === String(id));
+    const product = Array.isArray(state.products)
+      ? state.products.find(candidate => String(candidate?.id) === String(id))
+      : null;
+
+    // Un produit visible dans Discovery mais absent du snapshot catalogue (ou
+    // seulement présent comme snapshot éphémère d'ouverture) n'a pas de vérité
+    // variantes locale suffisante pour un quick-add. Fail-safe : ouvrir la PDC.
+    if (!product || product.__discovery_ephemeral) {
+      openDiscoveryDetail('product', id);
+      return;
+    }
+
     quickAdd(id, actionButton, { hasVariants: productHasVariants(product) });
     return;
   }
@@ -404,6 +475,21 @@ function handleDiscoveryClick(event) {
   openDiscoveryDetail(kind, ref);
 }
 
+function handleDiscoveryKeydown(event) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  if (event.target.closest('button, a, input, select, textarea, [data-action]')) return;
+
+  const target = event.target.closest('[data-discovery-kind][data-discovery-ref]');
+  if (!target) return;
+
+  const kind = target.dataset.discoveryKind;
+  const ref = target.dataset.discoveryRef;
+  if (!kind || !ref) return;
+
+  event.preventDefault();
+  openDiscoveryDetail(kind, ref);
+}
+
 export function setupDiscoveryRail() {
   if (_installed) return;
   _installed = true;
@@ -415,6 +501,7 @@ export function setupDiscoveryRail() {
   window.addEventListener(PAGER_BUMP_EVENT, handlePagerBump);
   bus.on('chip:center', handlePagerCategoryCentered);
   bus.on('catalog:cat-changed', handleCatalogCategoryChanged);
+  bus.on('modal:closed', cleanupDiscoveryProductSnapshots);
 
   // Un seul fetch alimente Tout et les éventuelles projections de bump.
   // category_keys reste la vérité qui borne le sous-pool local de la catégorie.
@@ -428,9 +515,12 @@ export {
   refreshDiscoveryRail,
   openDiscoveryDetail,
   handleDiscoveryClick,
+  handleDiscoveryKeydown,
   handlePagerBump,
   handlePagerCategoryCentered,
   cardsForCategory,
   activeCategoryFromDom,
   productHasVariants,
+  ensureDiscoveryProductSnapshot,
+  cleanupDiscoveryProductSnapshots,
 };
