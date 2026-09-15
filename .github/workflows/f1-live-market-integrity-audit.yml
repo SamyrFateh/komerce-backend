@@ -1,0 +1,32 @@
+name: F1 live market integrity audit
+
+on:
+  push:
+    branches:
+      - audit/f1-live-market-integrity-20260915
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Production PostgreSQL READ-ONLY audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify DB secret is available
+        run: |
+          test -n "$RAILWAY_DATABASE_URL" || { echo 'RAILWAY_DATABASE_URL is unavailable'; exit 1; }
+      - name: Install psql if needed
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+      - name: Execute canonical F1 audit — transaction READ ONLY + ROLLBACK
+        run: |
+          psql "$RAILWAY_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/audit-f1-market-integrity.sql
