@@ -61,9 +61,9 @@ async function restorePriceHistory() {
 }
 
 async function seedStrategyFixtures() {
-  // Le snapshot CI ne contient aucune donnée. La preuve doit donc créer le
+  // Le snapshot CI ne contient aucune donnée métier. La preuve crée donc le
   // produit et l'utilisateur référencé par les FK applied_by avant d'appeler
-  // le vrai service.
+  // le vrai service. Les données de référence, elles, viennent du bootstrap CI.
   await pool.query(`
     INSERT INTO users (id, full_name, email, role)
     VALUES ($1, 'Admin TXG-02', 'txg02-admin@komerce.test', 'admin')
@@ -126,13 +126,13 @@ describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
       expect(result.ok).toBe(true);
 
       const { rows: [row] } = await pool.query('SELECT price_kmf FROM products WHERE id = $1', [PRODUCT_ID]);
-      expect(row.price_kmf).toBe(54321); // <- persisté malgré price_history indisponible
+      expect(Number(row.price_kmf)).toBe(54321); // pg retourne NUMERIC sous forme de string
 
       const { rows: histRows } = await pool.query(
         'SELECT new_price_kmf FROM pricing_strategy_history WHERE product_id = $1 ORDER BY applied_at DESC LIMIT 1',
         [PRODUCT_ID]
       );
-      expect(histRows[0].new_price_kmf).toBe(54321); // <- historique stratégie toujours écrit
+      expect(Number(histRows[0].new_price_kmf)).toBe(54321); // même boundary NUMERIC
     } finally {
       await restorePriceHistory();
     }
