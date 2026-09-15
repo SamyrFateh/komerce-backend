@@ -7,11 +7,11 @@
  * @inputs        sourcing_source_runtime, sourcing_candidates, catalog_products, market_visibility
  * @outputs       catalog_live_sources, refinery_pipeline, incoming_products, source_discovery
  * @depends       db.js, services/sourcing-source-autopilot.js, services/sourcing-import-dispatch.js
- * @used-by       services/catalog-workspace.js
+ * @used-by       services/catalog-workspace-live-composer.js
  * @db-read       sourcing_candidates, products, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
  * @db-txn        none
- * @doctrine      catalog_observes_sourcing_without_stealing_mutation_authority, live_flow_uses_real_boutique_visibility_predicate
+ * @doctrine      catalog_observes_sourcing_without_stealing_mutation_authority, live_flow_uses_real_boutique_visibility_predicate, downstream_counts_are_distinct_canonical_products
  * @impact-areas  catalog, sourcing, boutique, admin-dashboard
  * @version       2026-09
  */
@@ -79,18 +79,18 @@ async function queryPipelineTotals() {
       COUNT(*) FILTER (WHERE sc.state <> 'rejected')::int AS captured,
       COUNT(*) FILTER (WHERE sc.state = ANY($1::text[]))::int AS normalized,
       COUNT(*) FILTER (WHERE sc.state = ANY($2::text[]))::int AS qualified,
-      COUNT(*) FILTER (
+      COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL
           AND p.content_source = 'ai_enriched'
           AND p.needs_review = FALSE
       )::int AS fr_ready,
-      COUNT(*) FILTER (
+      COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL
           AND p.lifecycle_status = 'candidate'
           AND p.is_active = FALSE
       )::int AS curation,
-      COUNT(*) FILTER (WHERE p.is_active = TRUE)::int AS catalog,
-      COUNT(*) FILTER (WHERE ${boutiqueEffectiveSql('p')})::int AS boutique
+      COUNT(DISTINCT p.id) FILTER (WHERE p.is_active = TRUE)::int AS catalog,
+      COUNT(DISTINCT p.id) FILTER (WHERE ${boutiqueEffectiveSql('p')})::int AS boutique
       FROM sourcing_candidates sc
       LEFT JOIN products p ON p.id = sc.product_id
   `, [NORMALIZED_STATES, QUALIFIED_STATES]);
@@ -104,18 +104,18 @@ async function queryPipelineBySupplier() {
       COUNT(*) FILTER (WHERE sc.state <> 'rejected')::int AS captured,
       COUNT(*) FILTER (WHERE sc.state = ANY($1::text[]))::int AS normalized,
       COUNT(*) FILTER (WHERE sc.state = ANY($2::text[]))::int AS qualified,
-      COUNT(*) FILTER (
+      COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL
           AND p.content_source = 'ai_enriched'
           AND p.needs_review = FALSE
       )::int AS fr_ready,
-      COUNT(*) FILTER (
+      COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL
           AND p.lifecycle_status = 'candidate'
           AND p.is_active = FALSE
       )::int AS curation,
-      COUNT(*) FILTER (WHERE p.is_active = TRUE)::int AS catalog,
-      COUNT(*) FILTER (WHERE ${boutiqueEffectiveSql('p')})::int AS boutique
+      COUNT(DISTINCT p.id) FILTER (WHERE p.is_active = TRUE)::int AS catalog,
+      COUNT(DISTINCT p.id) FILTER (WHERE ${boutiqueEffectiveSql('p')})::int AS boutique
       FROM sourcing_candidates sc
       LEFT JOIN products p ON p.id = sc.product_id
      GROUP BY sc.supplier_name
