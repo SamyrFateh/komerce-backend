@@ -5,8 +5,9 @@
  * F1 — Market Integrity / Immutable Order Market — tests destructifs.
  *
  * Précondition : DATABASE_URL pointe vers une base construite depuis le
- * schéma canonique puis réconciliée avec migrations/229_f1_market_integrity_guards.sql.
+ * schéma canonique puis réconciliée avec migrations/232_f1_market_integrity_guards_activation.sql.
  * F1-B est activée uniquement après le live data preflight propre du 2026-09-15.
+ * La candidate 229 reste immuable dans migrations/scheduled/.
  *
  * Couvre les scénarios de la doctrine F1 + l'analyse de concurrence TOCTOU.
  */
