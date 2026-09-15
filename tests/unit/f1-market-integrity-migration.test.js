@@ -6,14 +6,16 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const migration = fs.readFileSync(
-  path.join(ROOT, 'migrations', 'scheduled', '229_f1_market_integrity_guards.sql'),
+  path.join(ROOT, 'migrations', '229_f1_market_integrity_guards.sql'),
   'utf8'
 );
 
-describe('F1 — migration 229 candidate (market integrity guards)', () => {
-  test('candidate reste hors du runner actif tant que le live preflight n\'est pas validé', () => {
-    expect(fs.existsSync(path.join(ROOT, 'migrations', '229_f1_market_integrity_guards.sql'))).toBe(false);
-    expect(fs.existsSync(path.join(ROOT, 'migrations', 'scheduled', '229_f1_market_integrity_guards.sql'))).toBe(true);
+describe('F1 — migration 229 active (market integrity guards)', () => {
+  test('F1-B est dans le runner actif uniquement après live preflight propre', () => {
+    expect(fs.existsSync(path.join(ROOT, 'migrations', '229_f1_market_integrity_guards.sql'))).toBe(true);
+    expect(fs.existsSync(path.join(ROOT, 'migrations', 'scheduled', '229_f1_market_integrity_guards.sql'))).toBe(false);
+    expect(migration).toMatch(/F1-B ACTIVÉ après live data preflight/);
+    expect(migration).toMatch(/orders_market_relais_mismatch = 0/);
   });
 
   test('F1.1 — orders.market_id immutable après INSERT', () => {
@@ -22,7 +24,7 @@ describe('F1 — migration 229 candidate (market integrity guards)', () => {
     expect(migration).toMatch(/BEFORE UPDATE ON orders/);
   });
 
-  test('F1.2 — cohérence relais/Market vérifiée à INSERT et UPDATE, sous verrou', () => {
+  test('F1.2 — cohérence relais\/Market vérifiée à INSERT et UPDATE, sous verrou', () => {
     expect(migration).toMatch(/TG_OP\s*=\s*'INSERT'/);
     expect(migration).toMatch(/NEW\.relais_id IS DISTINCT FROM OLD\.relais_id/);
     expect(migration).toMatch(/FOR SHARE/);
