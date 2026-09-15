@@ -17,45 +17,20 @@
  *
  * HUB-000 / F0 — Outbox Worker (durable consumer).
  *
- * Garanties et comment elles sont obtenues :
+ * Garanties :
+ *   - claim sûr                    -> FOR UPDATE SKIP LOCKED sur la ligne
+ *   - un seul event / agrégat      -> pg_try_advisory_xact_lock(hashtext(type:id))
+ *   - parallélisme inter-agrégats  -> clés de verrou distinctes + clients pg distincts
+ *   - ordre causal intra-agrégat   -> plus petit aggregate_sequence pending, jamais created_at
+ *   - idempotence                  -> UNIQUE(event_id, consumer_key) + ON CONFLICT DO NOTHING
+ *   - ACK atomique                 -> reçu + processed_at dans la même transaction
+ *   - retry durable                -> attempts/last_error persistés après rollback, sous le même verrou d'agrégat
  *
- *   - claim sûr (pas de double-claim)   -> FOR UPDATE SKIP LOCKED sur la ligne
- *   - un seul event in-flight / agrégat -> pg_try_advisory_xact_lock(hashtext(type:id)),
- *                                          transaction-scoped : tenu pendant TOUT le
- *                                          traitement (pas juste le claim), relâché au
- *                                          COMMIT/ROLLBACK. Un concurrent qui essaie le
- *                                          même agrégat pendant ce temps échoue le TRY
- *                                          (non-bloquant) et repasse au cycle suivant —
- *                                          il ne peut donc JAMAIS s'exécuter avant que le
- *                                          premier ait terminé (complété ou annulé).
- *   - parallélisme entre agrégats       -> agrégats différents = clés de hash différentes,
- *                                          traités en Promise.all sur des clients pg
- *                                          distincts, aucune contention entre eux.
- *   - ordre causal PAR agrégat          -> on ne claim jamais que l'événement le PLUS
- *                                          ANCIEN non traité de l'agrégat (MIN(created_at)
- *                                          scindé par agrégat) ; combiné à la règle
- *                                          ci-dessus, l'événement suivant du même agrégat
- *                                          ne peut être vu qu'au cycle d'après, une fois le
- *                                          précédent COMMIT (donc processed_at posé) ou
- *                                          ROLLBACK (donc toujours le plus ancien pendant).
- *   - idempotence                       -> INSERT ... ON CONFLICT (event_id, consumer_key)
- *                                          DO NOTHING dans physical_outcome_receipts (déjà
- *                                          contraint en DB, pas une convention applicative).
- *   - ACK                               -> processed_at posé UNIQUEMENT dans la même
- *                                          transaction que l'écriture du reçu : soit les
- *                                          deux sont commit ensemble, soit ni l'un ni
- *                                          l'autre (crash = ROLLBACK implicite côté
- *                                          Postgres à la perte de connexion). Donc jamais
- *                                          de reçu écrit sans ACK, jamais d'ACK sans reçu.
- *   - retry durable                     -> attempts/last_error survivent même à un échec
- *                                          métier (pas un crash) via une écriture COURTE
- *                                          et SÉPARÉE après ROLLBACK de la transaction
- *                                          principale (sinon le ROLLBACK effacerait aussi
- *                                          le compteur de tentative qu'on veut garder).
+ * created_at reste une heuristique d'équité ENTRE agrégats ; il ne porte
+ * jamais l'ordre causal. Le producer attribue aggregate_sequence sous le même
+ * verrou d'agrégat que celui utilisé ici.
  *
- * Hors scope F0 (doctrine) : aucune mutation Purchasing/Orders/refund/reorder. Le
- * consumer réel de ce lot est physical_outcome_receipts uniquement — HUB-001 branchera
- * les vrais consumers métier plus tard, chacun avec son propre consumer_key.
+ * Hors scope F0 : aucune mutation Purchasing/Orders/refund/reorder.
  */
 
 'use strict';
@@ -63,9 +38,9 @@
 const DEFAULT_CONSUMER_KEY = 'physical_outcome_receipts_v1';
 
 /**
- * Trouve les agrégats ayant au moins un événement non traité, les plus anciens en tête.
- * Lecture seule, hors transaction — sert seulement à distribuer le travail entre workers
- * concurrents ; le claim réel (et donc la vérité) se fait dans processAggregateOnce().
+ * Liste les agrégats ayant au moins un événement pending. created_at sert
+ * uniquement à l'équité entre agrégats ; le claim intra-agrégat est ordonné
+ * exclusivement par aggregate_sequence.
  */
 async function listPendingAggregates(pool, limit) {
   const { rows } = await pool.query(
@@ -80,10 +55,6 @@ async function listPendingAggregates(pool, limit) {
   return rows.map((r) => ({ aggregateType: r.aggregate_type, aggregateId: r.aggregate_id }));
 }
 
-/**
- * Écrit le reçu d'audit durable (consumer minimal réel F0). Aucun effet métier.
- * Idempotence garantie par la contrainte UNIQUE(event_id, consumer_key) en DB.
- */
 async function writeReceipt(executor, { eventId, consumerKey, aggregateType, aggregateId, payload }) {
   await executor.query(
     `INSERT INTO physical_outcome_receipts
@@ -95,9 +66,37 @@ async function writeReceipt(executor, { eventId, consumerKey, aggregateType, agg
 }
 
 /**
- * Traite AU PLUS UN événement pour un agrégat donné, avec toutes les garanties
- * documentées en tête de fichier. Retourne un résumé — ne lève jamais (les erreurs
- * métier sont capturées et reflétées dans le résumé + persistées en DB).
+ * Persiste attempts/last_error après rollback de la transaction principale.
+ * Le même verrou d'agrégat est repris, et processed_at IS NULL empêche un
+ * échec retardataire de salir un événement déjà traité avec succès.
+ */
+async function recordFailure(pool, { aggregateType, aggregateId, eventId, message }) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${aggregateType}:${aggregateId}`]);
+    await client.query(
+      `UPDATE outbox_events
+       SET attempts = attempts + 1, last_error = $2
+       WHERE id = $1
+         AND processed_at IS NULL`,
+      [eventId, message]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      // Connexion perdue : Postgres rollback implicitement.
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Traite au plus un événement pour un agrégat donné.
  */
 async function processAggregateOnce(pool, { aggregateType, aggregateId }, { consumerKey = DEFAULT_CONSUMER_KEY } = {}) {
   const client = await pool.connect();
@@ -112,18 +111,17 @@ async function processAggregateOnce(pool, { aggregateType, aggregateId }, { cons
       [lockArg]
     );
     if (!lockRows[0].locked) {
-      // Un autre worker traite déjà cet agrégat — on ne bloque jamais, on repasse
-      // simplement au cycle suivant. C'est ce non-blocage qui garantit qu'on ne
-      // s'exécute jamais AVANT la fin du traitement en cours du même agrégat.
       await client.query('ROLLBACK');
       return { aggregateType, aggregateId, outcome: 'skipped_locked' };
     }
 
     const { rows: claimRows } = await client.query(
-      `SELECT id, aggregate_type, aggregate_id, payload
+      `SELECT id, aggregate_type, aggregate_id, aggregate_sequence, payload
        FROM outbox_events
-       WHERE aggregate_type = $1 AND aggregate_id = $2 AND processed_at IS NULL
-       ORDER BY created_at ASC
+       WHERE aggregate_type = $1
+         AND aggregate_id = $2
+         AND processed_at IS NULL
+       ORDER BY aggregate_sequence ASC
        LIMIT 1
        FOR UPDATE SKIP LOCKED`,
       [aggregateType, aggregateId]
@@ -152,31 +150,31 @@ async function processAggregateOnce(pool, { aggregateType, aggregateId }, { cons
     );
 
     await client.query('COMMIT');
-    return { aggregateType, aggregateId, outcome: 'processed', eventId: claimedEvent.id };
+    return {
+      aggregateType,
+      aggregateId,
+      outcome: 'processed',
+      eventId: claimedEvent.id,
+      aggregateSequence: Number(claimedEvent.aggregate_sequence),
+    };
   } catch (err) {
     try {
       await client.query('ROLLBACK');
     } catch (rollbackErr) {
-      // connexion déjà perdue (ex. crash simulé) — rien à faire, le ROLLBACK
-      // implicite de Postgres à la fermeture de connexion s'en charge.
+      // Connexion déjà perdue : rollback implicite côté Postgres.
     }
 
-    // La transaction principale est annulée (donc le reçu éventuellement déjà
-    // inséré dans CETTE transaction repart aussi — pas de reçu orphelin sans ACK).
-    // On persiste attempts/last_error séparément : sinon le ROLLBACK effacerait
-    // la preuve de la tentative, et le retry durable ne serait plus prouvable.
     if (claimedEvent) {
       try {
-        await pool.query(
-          `UPDATE outbox_events
-           SET attempts = attempts + 1, last_error = $2
-           WHERE id = $1`,
-          [claimedEvent.id, String(err && err.message ? err.message : err)]
-        );
+        await recordFailure(pool, {
+          aggregateType,
+          aggregateId,
+          eventId: claimedEvent.id,
+          message: String(err && err.message ? err.message : err),
+        });
       } catch (bookkeepingErr) {
-        // best-effort : si même cette écriture échoue, l'événement reste pending
-        // et sera retenté au cycle suivant — pas de perte, juste un attempts
-        // sous-compté pour ce tour.
+        // Best effort : l'événement reste pending et sera retenté. Une panne de
+        // bookkeeping ne doit jamais transformer un échec en perte d'événement.
       }
     }
 
@@ -193,27 +191,19 @@ async function processAggregateOnce(pool, { aggregateType, aggregateId }, { cons
 }
 
 /**
- * Un cycle de poll : distribue jusqu'à `concurrency` agrégats en parallèle,
- * un événement (le plus ancien pending) par agrégat. Sûr à appeler en boucle
- * (setInterval) ou depuis plusieurs instances de process — toute la sûreté
- * vient du verrou advisory par agrégat + FOR UPDATE SKIP LOCKED, pas d'un
- * quelconque état en mémoire de ce module.
+ * Un cycle de poll : jusqu'à `concurrency` agrégats indépendants en parallèle,
+ * un événement au plus par agrégat.
  */
 async function pollOnce(pool, { concurrency = 10, consumerKey = DEFAULT_CONSUMER_KEY } = {}) {
   const aggregates = await listPendingAggregates(pool, concurrency);
-  if (aggregates.length === 0) {
-    return [];
-  }
+  if (aggregates.length === 0) return [];
   return Promise.all(
     aggregates.map((agg) => processAggregateOnce(pool, agg, { consumerKey }))
   );
 }
 
 /**
- * Démarre une boucle de poll continue. Retourne une fonction stop().
- * Hors scope des tests unitaires/intégration (qui appellent pollOnce()/
- * processAggregateOnce() directement pour un contrôle déterministe) — utilisée
- * seulement par le futur point d'entrée process worker (HUB-001).
+ * Boucle continue optionnelle. HUB-001 décidera du point d'entrée process.
  */
 function startPolling(pool, { intervalMs = 1000, concurrency = 10, consumerKey = DEFAULT_CONSUMER_KEY, onCycle } = {}) {
   let stopped = false;
@@ -225,9 +215,7 @@ function startPolling(pool, { intervalMs = 1000, concurrency = 10, consumerKey =
       const results = await pollOnce(pool, { concurrency, consumerKey });
       if (onCycle) onCycle(results);
     } finally {
-      if (!stopped) {
-        timer = setTimeout(tick, intervalMs);
-      }
+      if (!stopped) timer = setTimeout(tick, intervalMs);
     }
   }
 
@@ -242,6 +230,7 @@ function startPolling(pool, { intervalMs = 1000, concurrency = 10, consumerKey =
 module.exports = {
   DEFAULT_CONSUMER_KEY,
   listPendingAggregates,
+  recordFailure,
   processAggregateOnce,
   pollOnce,
   startPolling,
