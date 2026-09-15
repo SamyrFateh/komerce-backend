@@ -184,8 +184,9 @@ const AlertEngine = {
     const params = [];
     let idx = 1;
     if (filters && filters.type) {
-      conditions.push(`COALESCE(i.details->>'alert_type', i.incident_type) = $${idx++}`);
+      conditions.push(`(i.incident_type = $${idx} OR i.details->>'alert_type' = $${idx})`);
       params.push(filters.type);
+      idx += 1;
     }
     if (filters && filters.severity) {
       conditions.push(`i.severity = $${idx++}`);
