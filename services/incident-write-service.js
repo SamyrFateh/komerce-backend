@@ -9,16 +9,16 @@
  * @depends       services/incident-governance
  * @used-by       services/scan-engine.js, services/reconciliation-service.js, services/alert-engine.js,
  *                routes/admin/users.js, routes/admin/system.js, routes/ops-api.js
- * @db-read       incidents
+ * @db-read       incidents, scan_events
  * @db-write      incidents
  * @db-txn        caller_owned_queryable
- * @doctrine      lifecycle_owner_boundary, preserve_caller_transaction, F2_INCIDENT_GOVERNANCE_CONTRACT
+ * @doctrine      lifecycle_owner_boundary, preserve_caller_transaction, F2_INCIDENT_GOVERNANCE_CONTRACT, F3_PROOF_REVALIDATION_CONTRACT
  * @impact-areas  incident-management, logistics, payments, notifications, dashboard, platform-ops
  * @version       2026-09
  */
 'use strict';
 
-const { resolveGovernanceOrThrow, assertTerminalResolutionAllowed } = require('./incident-governance');
+const { resolveGovernanceOrThrow, assertTerminalResolutionAllowed, computeDueAt } = require('./incident-governance');
 
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') {
@@ -35,8 +35,8 @@ async function createScanIncident(executor, params) {
       parcel_id, order_id, order_item_id, scan_event_id,
       incident_type, severity, title, description, details,
       client_impact, detected_by, detected_source,
-      origin_domain, resolver_domain, resolution_class
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      origin_domain, resolver_domain, resolution_class, due_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
     RETURNING *
   `, [
     params.parcel_id || null, params.order_id || null,
@@ -46,6 +46,7 @@ async function createScanIncident(executor, params) {
     params.client_impact || 'none', params.detected_by || null,
     params.detected_source || 'system', governance.origin_domain,
     governance.resolver_domain, governance.resolution_class,
+    computeDueAt(governance.resolution_class),
   ]);
   return incident;
 }
@@ -68,13 +69,14 @@ async function createReconciliationIncident(executor, orderId, parcelId, orderIt
     INSERT INTO incidents (
       parcel_id, order_id, order_item_id,
       incident_type, severity, title, description, details, detected_source,
-      origin_domain, resolver_domain, resolution_class
-    ) VALUES ($1,$2,$3,'reconciliation_error',$4,$5,$6,$7,'reconciliation',$8,$9,$10)
+      origin_domain, resolver_domain, resolution_class, due_at
+    ) VALUES ($1,$2,$3,'reconciliation_error',$4,$5,$6,$7,'reconciliation',$8,$9,$10,$11)
     RETURNING *
   `, [
     parcelId, orderId, orderItemId, issue.severity, issue.message, issue.message,
     JSON.stringify({ ...issue.details, type: issue.type }), governance.origin_domain,
     governance.resolver_domain, governance.resolution_class,
+    computeDueAt(governance.resolution_class),
   ]);
   return incident;
 }
@@ -103,13 +105,14 @@ async function createAlertEngineIncidentIfNew(executor, {
     INSERT INTO incidents (
       parcel_id, order_id, incident_type, severity,
       title, description, details, detected_source,
-      origin_domain, resolver_domain, resolution_class
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,'system',$8,$9,$10)
+      origin_domain, resolver_domain, resolution_class, due_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,'system',$8,$9,$10,$11)
     RETURNING *
   `, [
     parcelId, orderId, incidentType, severity || 'medium',
     description || type, description || null, JSON.stringify(details),
     governance.origin_domain, governance.resolver_domain, governance.resolution_class,
+    computeDueAt(governance.resolution_class),
   ]);
   return incident;
 }
@@ -144,6 +147,115 @@ async function resolveOpsIncident(executor, { incidentId, resolution }) {
     `UPDATE incidents SET status = 'resolved', resolved_at = NOW(), resolution = $1 WHERE id = $2`,
     [resolution, incidentId]
   );
+}
+
+/**
+ * F3 — seule boundary terminale pour un incident PHYSICAL_PROOF.
+ *
+ * Le caller (Logistics) fournit la fonction de revalidation du prédicat qu'il
+ * possède. Cette fonction est exécutée avec le MEME executor transactionnel,
+ * après preuve que `proofScanEventId` est une nouvelle preuve append-only du
+ * même colis. Aucune écriture n'est faite dans scan_events.
+ *
+ * Retourne { resolved:false, reason:'PREDICATE_STILL_FAILS' } si la nouvelle
+ * preuve ne rétablit pas l'invariant. L'incident reste alors OPEN/INVESTIGATING.
+ */
+async function resolvePhysicalProofIncident(executor, {
+  incidentId,
+  proofScanEventId,
+  revalidate,
+  resolvedBy = null,
+  notes = null,
+}) {
+  const db = requireExecutor(executor);
+  if (typeof revalidate !== 'function') {
+    throw new TypeError('[resolvePhysicalProofIncident] revalidate(executor, context) is required');
+  }
+
+  const { rows: [incident] } = await db.query(`
+    SELECT i.*, trigger_scan.created_at AS trigger_scan_created_at
+      FROM incidents i
+      LEFT JOIN scan_events trigger_scan ON trigger_scan.id = i.scan_event_id
+     WHERE i.id = $1
+     FOR UPDATE OF i
+  `, [incidentId]);
+
+  if (!incident) {
+    const err = new Error('[resolvePhysicalProofIncident] incident not found');
+    err.code = 'INCIDENT_NOT_FOUND';
+    throw err;
+  }
+  if (!['open', 'investigating'].includes(incident.status)) {
+    const err = new Error('[resolvePhysicalProofIncident] incident is not active');
+    err.code = 'INCIDENT_NOT_ACTIVE';
+    throw err;
+  }
+  if (
+    incident.origin_domain !== 'LOGISTICS' ||
+    incident.resolver_domain !== 'LOGISTICS' ||
+    incident.resolution_class !== 'PHYSICAL_PROOF'
+  ) {
+    const err = new Error('[resolvePhysicalProofIncident] resolver authority is not Logistics/PHYSICAL_PROOF');
+    err.code = 'INCIDENT_RESOLVER_AUTHORITY_MISMATCH';
+    throw err;
+  }
+  if (!incident.parcel_id) {
+    const err = new Error('[resolvePhysicalProofIncident] physical incident has no parcel_id');
+    err.code = 'PHYSICAL_INCIDENT_WITHOUT_PARCEL';
+    throw err;
+  }
+
+  const { rows: [proof] } = await db.query(`
+    SELECT id, parcel_id, event_type, status, created_at, corrects_event_id,
+           photo_urls, notes
+      FROM scan_events
+     WHERE id = $1
+       AND parcel_id = $2
+  `, [proofScanEventId, incident.parcel_id]);
+
+  if (!proof) {
+    const err = new Error('[resolvePhysicalProofIncident] proof scan does not belong to incident parcel');
+    err.code = 'PHYSICAL_PROOF_SCOPE_MISMATCH';
+    throw err;
+  }
+
+  const floor = incident.trigger_scan_created_at || incident.created_at;
+  if (!proof.created_at || !floor || new Date(proof.created_at) <= new Date(floor)) {
+    const err = new Error('[resolvePhysicalProofIncident] stale proof cannot resolve incident');
+    err.code = 'STALE_PHYSICAL_PROOF';
+    throw err;
+  }
+
+  const predicate = await revalidate(db, { incident, proof });
+  if (predicate !== true) {
+    return { resolved: false, reason: 'PREDICATE_STILL_FAILS', incident_id: incident.id, proof_scan_event_id: proof.id };
+  }
+
+  const resolution = {
+    type: 'physical_proof_revalidated',
+    proof_scan_event_id: proof.id,
+    proof_event_type: proof.event_type,
+    revalidated_at: new Date().toISOString(),
+    notes: notes || null,
+  };
+  const { rows: [resolved] } = await db.query(`
+    UPDATE incidents
+       SET status = 'resolved',
+           resolution_type = 'auto_resolved',
+           resolution = $2::jsonb,
+           resolved_at = NOW(),
+           resolved_by = $3,
+           updated_at = NOW()
+     WHERE id = $1
+       AND status IN ('open', 'investigating')
+     RETURNING *
+  `, [incident.id, JSON.stringify(resolution), resolvedBy]);
+
+  return {
+    resolved: Boolean(resolved),
+    incident: resolved || null,
+    proof_scan_event_id: proof.id,
+  };
 }
 
 async function detachUserFromIncidents(executor, userId) {
@@ -199,6 +311,7 @@ module.exports = {
   createAlertEngineIncidentIfNew,
   acknowledgeAlertEngineIncident,
   resolveOpsIncident,
+  resolvePhysicalProofIncident,
   detachUserFromIncidents,
   seedIncident,
 };
