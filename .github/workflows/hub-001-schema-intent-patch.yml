@@ -1,4 +1,4 @@
-name: HUB-001 schema intent patch
+name: "HUB-001 schema intent patch"
 
 on:
   push:
@@ -10,63 +10,51 @@ permissions:
 
 jobs:
   patch-schema-intent:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feat/hub001-physical-identity-custody
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Append HUB-001 schema-pending declarations
+      - name: Append HUB-001 schema intent
+        shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const file = 'docs/SCHEMA.md';
-          let md = fs.readFileSync(file, 'utf8');
-          if (!md.includes('object: hub_purchase_allocations')) {
-            const blocks = `
+          if grep -q "object: hub_purchase_allocations" docs/SCHEMA.md; then
+            exit 0
+          fi
+          cat >> docs/SCHEMA.md <<'EOF'
 
-<!-- schema-pending
-object: hub_purchase_allocations
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Snapshot economique immuable Purchase Order exacte vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
--->
+          <!-- schema-pending
+          object: hub_purchase_allocations
+          kind: table
+          migration: 233
+          section: ### 4.2 Logistique colis (5 tables)
+          role: Snapshot economique immuable Purchase Order exacte vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
+          -->
 
-<!-- schema-pending
-object: hub_physical_units
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives.
--->
+          <!-- schema-pending
+          object: hub_physical_units
+          kind: table
+          migration: 233
+          section: ### 4.2 Logistique colis (5 tables)
+          role: Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives.
+          -->
 
-<!-- schema-pending
-object: hub_physical_unit_placements
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique.
--->
+          <!-- schema-pending
+          object: hub_physical_unit_placements
+          kind: table
+          migration: 233
+          section: ### 4.2 Logistique colis (5 tables)
+          role: Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique.
+          -->
 
-<!-- schema-pending
-object: hub_custody_events
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001.
--->
-`;
-            md = md.trimEnd() + blocks + '\n';
-            fs.writeFileSync(file, md);
-          }
-          NODE
-      - name: Commit schema intent
-        run: |
-          if git diff --quiet -- docs/SCHEMA.md; then exit 0; fi
+          <!-- schema-pending
+          object: hub_custody_events
+          kind: table
+          migration: 233
+          section: ### 4.2 Logistique colis (5 tables)
+          role: Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001.
+          -->
+          EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/SCHEMA.md
