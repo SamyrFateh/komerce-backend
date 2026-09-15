@@ -19,7 +19,9 @@ describe('incident-service', () => {
   });
 
   test('listIncidents supports simple domain filters', async () => {
-    pool.query.mockResolvedValue({ rows: [] });
+    pool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ total: '0' }] });
     await listIncidents({ incident_type: 'missing_item', parcel_id: 'p1', order_id: 'o1', client_impact: 'blocked' });
     expect(pool.query.mock.calls[0][0]).toContain('i.incident_type = $1');
     expect(pool.query.mock.calls[0][0]).toContain('i.parcel_id = $2');
