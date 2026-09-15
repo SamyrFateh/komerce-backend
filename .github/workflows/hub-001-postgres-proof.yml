@@ -1,0 +1,48 @@
+name: HUB-001 physical identity PostgreSQL proof
+
+on:
+  pull_request:
+    paths:
+      - 'services/hub-physical-identity.js'
+      - 'services/outbox-producer.js'
+      - 'migrations/233_hub_physical_identity_allocation_custody.sql'
+      - 'tests/integration/hub-physical-identity-postgres.test.js'
+      - '.github/workflows/hub-001-postgres-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-proof:
+    name: HUB-001 PostgreSQL adversarial proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Run HUB-001 PostgreSQL proof
+        run: npx jest tests/integration/hub-physical-identity-postgres.test.js --ci --runInBand --forceExit

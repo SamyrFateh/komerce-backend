@@ -1,6 +1,6 @@
 # LEDGER — état de clôture Komerce
 
-Mis à jour : 2026-08-14
+Mis à jour : 2026-09-15
 
 ## Source de vérité opérationnelle
 
@@ -119,3 +119,24 @@ Clos pour le périmètre indiscutable :
 - Le lien suit immédiatement un changement de relais et reste absent lorsque le relais ne fournit aucune donnée de localisation exploitable.
 - Aucun contrat de commande, paiement, OTP ou notification n'est modifié.
 - Tests checkout ciblés : 148/148 verts ; cartes, ownership, projections et gardes CSS sans régression.
+
+## HUB-000 — fondations Hub closes — 2026-09-15
+
+- **F0 PASS** : outbox transactionnelle durable, causalité intra-agrégat, retry et receipt idempotent.
+- **F1 PASS** : audit live Market Integrity sans anomalie inexpliquée puis activation append-only des guards `orders.market_id ↔ relais.market_id`.
+- **F2 PASS** : gouvernance incidents avec `origin_domain`, `resolver_domain`, `resolution_class` et transition policy fail-closed.
+- **F3 PASS** : SLA persisté, escalade durable vers Action Center, preuve physique dans `scan_events` et revalidation atomique.
+- **F4 PASS** : gate d'autorité empêchant Logistics d'écrire directement les vérités Purchasing/Sourcing et les colonnes protégées de `orders`.
+- HUB-000 est clos sur `main` au merge de la PR #1531 ; HUB-001 ne devait pas commencer avant ce point.
+
+## HUB-001 — Physical Identity, Allocation & Custody — OUVERT — 2026-09-15
+
+- Branche : `feat/hub001-physical-identity-custody`, créée depuis le `main` post-HUB-000.
+- PR : #1532.
+- Autorités : Purchasing/Sourcing/Orders/Market gardent leurs vérités ; Logistics possède uniquement identité physique, placement et custody.
+- Allocation Hub = snapshot économique immuable de la PO exacte vers `order_item_id`, `product_sku_id`, Supplier Order Identity, `market_id` et destination.
+- Un colis fournisseur entrant peut être multi-market ; tout outbound `PACKED`/`DISPATCHED` doit être homogène sur exactement un Market dérivé serveur.
+- `SPLIT`/`MERGE`/`REPACK` déplacent uniquement des placements physiques ; ils ne réassignent jamais une allocation économique.
+- Quantité physique active plafonnée à la quantité achetée sous verrou DB ; custody append-only ; identités ambiguës mises en quarantaine au lieu d'être devinées.
+- Outcomes physiques irréversibles publient l'événement F0 dans la même transaction, sans refund/reorder implicite.
+- Verdict HUB-001 reste **PENDING** jusqu'à PR enforcement + preuve PostgreSQL adversariale entièrement verts.

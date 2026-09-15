@@ -572,3 +572,35 @@ migration: 227
 section: ### 4.10 Sourcing et fournisseurs
 role: Politique de projection de champs par grain sans selection d'offre.
 -->
+
+<!-- schema-pending
+object: hub_purchase_allocations
+kind: table
+migration: 233
+section: ### 4.2 Logistique colis (5 tables)
+role: Snapshot economique immuable Purchase Order exacte vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
+-->
+
+<!-- schema-pending
+object: hub_physical_units
+kind: table
+migration: 233
+section: ### 4.2 Logistique colis (5 tables)
+role: Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives.
+-->
+
+<!-- schema-pending
+object: hub_physical_unit_placements
+kind: table
+migration: 233
+section: ### 4.2 Logistique colis (5 tables)
+role: Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique.
+-->
+
+<!-- schema-pending
+object: hub_custody_events
+kind: table
+migration: 233
+section: ### 4.2 Logistique colis (5 tables)
+role: Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001.
+-->
