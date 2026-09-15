@@ -258,6 +258,79 @@ async function resolvePhysicalProofIncident(executor, {
   };
 }
 
+/**
+ * F3 — boundary terminale pour UPSTREAM_TRUTH après correction authoritative.
+ *
+ * Incident Management ne corrige JAMAIS la vérité amont. Le domaine owner
+ * effectue d'abord sa mutation via sa propre boundary. Hub/Logistics fournit
+ * ensuite un prédicat de revalidation qui RELIT cette vérité durable avec le
+ * même executor. Seul un résultat strictement `true` autorise la fermeture.
+ */
+async function resolveUpstreamTruthIncident(executor, {
+  incidentId,
+  revalidate,
+  resolvedBy = null,
+  notes = null,
+}) {
+  const db = requireExecutor(executor);
+  if (typeof revalidate !== 'function') {
+    throw new TypeError('[resolveUpstreamTruthIncident] revalidate(executor, context) is required');
+  }
+
+  const { rows: [incident] } = await db.query(`
+    SELECT *
+      FROM incidents
+     WHERE id = $1
+     FOR UPDATE
+  `, [incidentId]);
+
+  if (!incident) {
+    const err = new Error('[resolveUpstreamTruthIncident] incident not found');
+    err.code = 'INCIDENT_NOT_FOUND';
+    throw err;
+  }
+  if (!['open', 'investigating'].includes(incident.status)) {
+    const err = new Error('[resolveUpstreamTruthIncident] incident is not active');
+    err.code = 'INCIDENT_NOT_ACTIVE';
+    throw err;
+  }
+  if (incident.resolution_class !== 'UPSTREAM_TRUTH' || !incident.resolver_domain || incident.resolver_domain === 'UNCLASSIFIED') {
+    const err = new Error('[resolveUpstreamTruthIncident] incident does not have proven UPSTREAM_TRUTH resolver authority');
+    err.code = 'INCIDENT_RESOLVER_AUTHORITY_MISMATCH';
+    throw err;
+  }
+
+  const predicate = await revalidate(db, { incident });
+  if (predicate !== true) {
+    return { resolved: false, reason: 'PREDICATE_STILL_FAILS', incident_id: incident.id };
+  }
+
+  const resolution = {
+    type: 'upstream_truth_revalidated',
+    resolver_domain: incident.resolver_domain,
+    revalidated_at: new Date().toISOString(),
+    notes: notes || null,
+  };
+  const { rows: [resolved] } = await db.query(`
+    UPDATE incidents
+       SET status = 'resolved',
+           resolution_type = 'auto_resolved',
+           resolution = $2::jsonb,
+           resolved_at = NOW(),
+           resolved_by = $3,
+           updated_at = NOW()
+     WHERE id = $1
+       AND status IN ('open', 'investigating')
+     RETURNING *
+  `, [incident.id, JSON.stringify(resolution), resolvedBy]);
+
+  return {
+    resolved: Boolean(resolved),
+    incident: resolved || null,
+    resolver_domain: incident.resolver_domain,
+  };
+}
+
 async function detachUserFromIncidents(executor, userId) {
   const db = requireExecutor(executor);
   await db.query('UPDATE incidents SET detected_by = NULL WHERE detected_by = $1::uuid', [userId]);
@@ -276,20 +349,40 @@ async function seedIncident(executor, values) {
     throw new TypeError('[seedIncident] expected 16 legacy or 19 governed positional values');
   }
 
-  let governedValues = values;
+  const incidentType = values[3];
+  const details = parseSeedDetails(values[8]);
+  const subtype = incidentType === 'reconciliation_error' ? details.type : undefined;
+  let governedValues;
+
   if (values.length === 16) {
-    const incidentType = values[3];
-    const details = parseSeedDetails(values[8]);
-    const governance = resolveGovernanceOrThrow({
-      incident_type: incidentType,
-      subtype: incidentType === 'reconciliation_error' ? details.type : undefined,
-    });
+    const governance = resolveGovernanceOrThrow({ incident_type: incidentType, subtype });
     governedValues = [
       ...values,
       governance.origin_domain,
       governance.resolver_domain,
       governance.resolution_class,
     ];
+  } else {
+    const governance = resolveGovernanceOrThrow({
+      incident_type: incidentType,
+      subtype,
+      origin_domain: values[16],
+      resolver_domain: values[17],
+      resolution_class: values[18],
+    });
+    governedValues = [
+      ...values.slice(0, 16),
+      governance.origin_domain,
+      governance.resolver_domain,
+      governance.resolution_class,
+    ];
+  }
+
+  const dueAt = computeDueAt(governedValues[18]);
+  if (!dueAt) {
+    const err = new Error('[seedIncident] governed incident requires a canonical SLA deadline');
+    err.code = 'INCIDENT_DUE_AT_REQUIRED';
+    throw err;
   }
 
   return db.query(`
@@ -298,11 +391,11 @@ async function seedIncident(executor, values) {
       status, title, description, details,
       client_impact, client_notified, detected_by,
       detected_source, resolution, resolved_at, resolved_by,
-      origin_domain, resolver_domain, resolution_class
+      origin_domain, resolver_domain, resolution_class, due_at
     ) VALUES (
       $1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12::uuid,
-      $13,$14::jsonb,$15,$16,$17,$18,$19
-    )`, governedValues);
+      $13,$14::jsonb,$15,$16,$17,$18,$19,$20
+    )`, [...governedValues, dueAt]);
 }
 
 module.exports = {
@@ -312,6 +405,7 @@ module.exports = {
   acknowledgeAlertEngineIncident,
   resolveOpsIncident,
   resolvePhysicalProofIncident,
+  resolveUpstreamTruthIncident,
   detachUserFromIncidents,
   seedIncident,
 };
