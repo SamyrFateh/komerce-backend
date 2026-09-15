@@ -1,6 +1,6 @@
 'use strict';
 jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
-const { createClient, configuration } = require('../../services/suppliers/allegro-sandbox-client');
+const { createClient, configuration, seedConfiguration } = require('../../services/suppliers/allegro-sandbox-client');
 const env = () => ({ KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1', ALLEGRO_SANDBOX_CLIENT_ID: 'app',
   ALLEGRO_SANDBOX_CLIENT_SECRET: 'secret', ALLEGRO_SANDBOX_USER_AGENT: 'KomerceTest/1',
   ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32), ALLEGRO_SANDBOX_REFRESH_TOKEN: 'bootstrap' });
@@ -103,4 +103,60 @@ test('default db, environment and clock are usable through the same boundary', a
   globalThis.fetch = jest.fn().mockResolvedValueOnce(ok(token())).mockResolvedValue(ok({ offers: [] }));
   require('../../db').withTransaction.mockImplementation(fn => fn({ query: async () => ({ rows: [] }) }));
   try { await createClient().get('/sale/offers'); } finally { process.env = previous; globalThis.fetch = oldFetch; }
+});
+
+test('seller sandbox seed has an independent staging-only kill switch', () => {
+  const seedEnv = { ...env(), KOMERCE_ENV: 'staging', KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED: '1' };
+  expect(() => seedConfiguration(seedEnv)).not.toThrow();
+  expect(() => seedConfiguration({ ...seedEnv, KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED: '0' })).toThrow('SEED_DISABLED');
+  expect(() => seedConfiguration({ ...seedEnv, KOMERCE_ENV: 'production' })).toThrow('STAGING_ONLY');
+  expect(() => seedConfiguration({ ...seedEnv, KOMERCE_ENV: '', NODE_ENV: 'production' })).toThrow('STAGING_ONLY');
+});
+
+test('seller seed search and draft creation remain sandbox-bound and token-encapsulated', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/sale/products')) return ok({ products: [{ id: 'abc-123', name: 'USB Cable' }] });
+    if (url.endsWith('/sale/product-offers') && init.method === 'POST') return ok({ id: '987654321' });
+    return ok({ offers: [] });
+  });
+  const found = await s.client.searchProducts('usb cable', { limit: 3 });
+  expect(found.products[0].id).toBe('abc-123');
+  const created = await s.client.createDraftOffer({
+    productId: 'abc-123', name: 'Komerce Sandbox USB Cable', pricePln: 29.9, stock: 12,
+  });
+  expect(created).toEqual({ id: '987654321' });
+  expect(s.dbImpl.withTransaction).toHaveBeenCalledTimes(1);
+  const providerCalls = s.fetchImpl.mock.calls.filter(([url]) => !url.includes('/auth/'));
+  expect(providerCalls).toHaveLength(2);
+  for (const [url, init] of providerCalls) {
+    expect(new URL(url).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
+    expect(init.headers.Authorization).toBe('Bearer access-1');
+    expect(init.redirect).toBe('error');
+  }
+  const payload = JSON.parse(providerCalls[1][1].body);
+  expect(payload.productSet).toEqual([{ product: { id: 'abc-123' } }]);
+  expect(payload.publication).toEqual({ status: 'INACTIVE' });
+  expect(payload.sellingMode).toEqual({ format: 'BUY_NOW', price: { amount: '29.90', currency: 'PLN' } });
+  expect(payload.stock).toEqual({ available: 12 });
+});
+
+test('seller seed input validation fails before provider side effects', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  await expect(s.client.searchProducts('x')).rejects.toThrow('QUERY_INVALID');
+  await expect(s.client.searchProducts('valid', { limit: 21 })).rejects.toThrow('LIMIT_INVALID');
+  for (const args of [
+    { productId: '../bad', name: 'Valid name', pricePln: 10, stock: 1 },
+    { productId: 'abc-123', name: 'x', pricePln: 10, stock: 1 },
+    { productId: 'abc-123', name: 'Valid name', pricePln: 0, stock: 1 },
+    { productId: 'abc-123', name: 'Valid name', pricePln: 10, stock: 0 },
+  ]) {
+    await expect(s.client.createDraftOffer(args)).rejects.toThrow('ALLEGRO_SANDBOX_SEED_');
+  }
+  expect(s.fetchImpl).not.toHaveBeenCalled();
 });
