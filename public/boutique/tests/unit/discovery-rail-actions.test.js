@@ -117,7 +117,12 @@ test('le stepper et le review restent délégués aux propriétaires panier sur 
   expect(mockOpenCartWithHighlight).toHaveBeenCalledWith('p-1');
 });
 
-test('le clic hors contrôle panier ouvre toujours la fiche Product', () => {
+test('le clic hors contrôle panier ouvre la fiche d’un Product déjà chargé', () => {
+  // Ce test appelle le handler directement, sans setupDiscoveryRail() : il couvre
+  // donc le chemin catalogue déjà chargé. Le cas inverse (Product projeté par
+  // Discovery mais absent de state.products) est couvert par
+  // discovery-product-click.test.js via le vrai montage du rail.
+  state.products = [{ id: 'p-1', name: 'Savon', has_variants: false }];
   document.body.innerHTML = `
     <article class="k-card k-discovery-canonical-card" data-discovery-kind="product" data-discovery-ref="p-1">
       <div class="k-card-name">Savon</div>
