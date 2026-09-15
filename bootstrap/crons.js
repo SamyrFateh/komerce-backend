@@ -5,14 +5,14 @@
  * @layer         cron
  * @criticality   critical
  * @inputs        timers, database_state, rules
- * @outputs       automatic_transitions, purges, reminders
+ * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations
  * @depends       services/cash-reminder-service.js, services/inventory-service.js,
- *                services/mobile-money-reconciliation.js, utils/rules.js
+ *                services/mobile-money-reconciliation.js, services/incident-escalation.js, utils/rules.js
  * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
- * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation
- * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments
+ * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation, bounded_incident_sla_escalation
+ * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments, incident-management
  * @version       2026-09
  */
 
@@ -100,6 +100,37 @@ function startOperationalCrons() {
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
   startMobileMoneyReconciliationCron(); // migration 169
+  startIncidentSlaEscalationCron(); // HUB-000 F3
+}
+
+// HUB-000 F3 — SLA incident : composition root uniquement.
+// Le cron n'interprète aucune vérité métier et ne ferme aucun incident. Il
+// déclenche seulement un scanner borné dont l'idempotence/concurrence est
+// protégée en DB par incident-escalation.js (FOR UPDATE SKIP LOCKED + marker).
+function startIncidentSlaEscalationCron() {
+  const INTERVAL_MS = 5 * 60 * 1000;
+  const BATCH_LIMIT = 50;
+  let running = false;
+
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const { scanOverdueIncidents } = require('../services/incident-escalation');
+      const result = await scanOverdueIncidents({ limit: BATCH_LIMIT });
+      if (result.escalated_count > 0) {
+        log.info({ escalated: result.escalated_count }, 'Incident SLA escalation pass done');
+      }
+    } catch (err) {
+      log.error({ err }, 'Incident SLA escalation cron failed');
+    } finally {
+      running = false;
+    }
+  };
+
+  setTimeout(run, 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+  log.info({ interval_min: 5, batch_limit: BATCH_LIMIT }, 'Incident SLA escalation cron scheduled');
 }
 
 // Mobile Money — callback provider non requis pour progresser : toutes les
@@ -178,7 +209,7 @@ function startPickupTokenCleanupCron() {
         log.info({ deleted }, 'pickup ephemeral tokens purge done');
       }
     } catch (err) {
-      log.error({ err }, 'pickup token cleanup cron failed');
+      log.error({ err }, 'pickup token cleanup failed');
     }
   };
 
@@ -207,7 +238,7 @@ function startJwtRevocationCleanupCron() {
         log.info({ deleted: rowCount }, 'revoked_tokens cleanup done');
       }
     } catch (err) {
-      log.error({ err }, 'revoked_tokens cleanup cron failed');
+      log.error({ err }, 'revoked_tokens cleanup failed');
     }
   };
 
@@ -223,6 +254,7 @@ module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
   startBackorderCron,
+  startIncidentSlaEscalationCron,
   startMobileMoneyReconciliationCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
