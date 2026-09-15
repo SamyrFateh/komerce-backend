@@ -5,13 +5,13 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
- * @outputs       global_sourcing_projection, sourcing_action_results
+ * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results
  * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
  * @db-write      none
  * @db-txn        delegated_to_sourcing_workspace_service
- * @doctrine      global_sourcing_authority, no_client_market_dimension, no_browser_internal_ids, dashboard_observes_server_truth
+ * @doctrine      global_sourcing_authority, no_client_market_dimension, no_browser_internal_ids, source_autopilot_is_explicit_operator_authority, dashboard_observes_server_truth
  * @impact-areas  sourcing, catalog, partners, admin-dashboard
  * @version       2026-09
  */
@@ -79,6 +79,16 @@ router.get('/', async (req, res, next) => {
 
 router.post('/imports', async (req, res, next) => {
   try { sendAction(res, 'import_catalog', await workspace.importCatalog(req.body, req.user)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/activate', async (req, res, next) => {
+  try { sendAction(res, 'activate_source_autopilot', await workspace.setSourceAutopilot(req.params.sourceRef, true)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/deactivate', async (req, res, next) => {
+  try { sendAction(res, 'deactivate_source_autopilot', await workspace.setSourceAutopilot(req.params.sourceRef, false)); }
   catch (err) { handleError(err, res, next); }
 });
 
