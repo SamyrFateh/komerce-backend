@@ -49,6 +49,7 @@ module.exports = {
   files: {
     services: [
       'services/outbox-producer.js',
+      'services/outbox-worker.js',
     ],
     middleware: [
       'middleware/error-handler.js',
@@ -250,18 +251,11 @@ module.exports = {
       '.github/workflows/railway-prod-unblock.yml',
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
-      // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.
       '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
       '.github/workflows/staging-discovery-ops.yml',
       '.github/workflows/showcase-v2-media-realism.yml',
       '.github/workflows/schema-refresh.yml',
-      // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.
-      // `.github/workflows-disabled/README.md`) : conservés dans Git mais
-      // inactifs, réactivés individuellement après revue (chantier CI cible :
-      // fast local → scoped merge enforcement → heavy certification).
-      // Déclarés à leur emplacement RÉEL pour rester possédés — ni faux
-      // « absent du disque », ni orphelins.
       '.github/workflows-disabled/README.md',
       '.github/workflows-disabled/apply-komerce-arch-headers.yml',
       '.github/workflows-disabled/carte-first.yml',
@@ -329,10 +323,6 @@ module.exports = {
       'db/seed-products-v2.json',
       'db/seed.sql',
     ],
-    // server.js est aussi déclaré ici (D2, 2026-07-29) : les 5 endpoints
-    // ci-dessous (exposes) sont montés inline directement sur `app` dans
-    // server.js, pas via un routeur monté séparément — FF-D2 a besoin de
-    // le trouver dans un groupe "routes" pour rattacher ces endpoints.
     routes: [
       'server.js',
     ],
@@ -371,6 +361,8 @@ module.exports = {
       'tests/unit/schema-sync-summary.test.js',
       // tests/unit/rules-engine.test.js — transféré à business-rules (arbitrage B)
       'tests/unit/upload.test.js',
+      'tests/integration/outbox-producer.test.js',
+      'tests/integration/outbox-worker.test.js',
     ],
   },
 
@@ -388,19 +380,16 @@ module.exports = {
       // business_rules_history — retiré : propriété business-rules (arbitrage B)
       // charges — retiré : propriété economic-engine (arbitrage B)
 
-      'economic_snapshots: W~',   // technical-writer : bootstrap/crons.js planifie le snapshot, economic-engine le calcule et le possède
-      // finance_config — retiré : propriété economic-engine (arbitrage B). Écriture runtime constatée : services/pricing-rates.js, routes/admin-finance-config.js, routes/admin-costing.js — toutes economic-engine
-      'pickup_print_tokens: W~',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
-      'pickup_reveal_codes: W~',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
-      'revoked_tokens: W~',   // technical-writer : purge planifiée. Propriétaire : auth-identity (arbitrage A)
+      'economic_snapshots: W~',
+      // finance_config — retiré : propriété economic-engine (arbitrage B).
+      'pickup_print_tokens: W~',
+      'pickup_reveal_codes: W~',
+      'revoked_tokens: W~',
       // schema_migrations : écrit par scripts/run-migrations.js (runner CI/deploy).
-      // Ce fichier est hors des SCAN_ROOTS du générateur de graphe (scripts/ non
-      // scanné), donc invérifiable par header — c'est un angle mort de l'outil,
-      // pas une fausse déclaration. Vérifié manuellement le 2026-07-07.
-      'schema_migrations: W',   // technical-writer : DDL versionné, aucune décision métier
+      'schema_migrations: W',
       // users — retiré : propriété auth-identity (arbitrage A)
-      'outbox_events: W',   // technical-writer : primitive outbox transactionnelle (HUB-000/F0), services/outbox-producer.js. Aucune vérité métier — futurs consumers (Purchasing/Orders) possèderont leur propre écriture
-      'physical_outcome_receipts: W',   // technical-writer : reçu d'audit append-only du consumer minimal F0, sans effet métier (migrations/228)
+      'outbox_events: W',   // producer écrit l'événement et la séquence ; worker écrit ACK/retry. Infrastructure reste le writer technique unique.
+      'physical_outcome_receipts: W',   // reçu d'audit append-only du consumer minimal F0, écrit par outbox-worker.
     ],
   },
 
@@ -411,23 +400,12 @@ module.exports = {
     note: "3 routes publiques par design : GET /health, /health/ready, /health/version (sondes Railway/uptime, pas de données sensibles). GET /api/public/config public par design (clés publiques Stripe/PayPal). GET /*.html : routes HTML des dashboards, protégées par session côté client. Webhook authkey-whatsapp : vérifié par token WhatsApp (META_WA_VERIFY_TOKEN).",
   },
   contract: {
-    // Ajouté (audit 2026-07-06, §axe1-bug2) : ces 5 routes sont câblées
-    // directement sur `app` dans server.js (pas via un `router` local), ce
-    // qui les rendait invisibles de scripts/gen-route-registry.js jusqu'à
-    // correction du générateur. Elles existent et tournent en production
-    // depuis avant cet audit — seule leur déclaration ici était manquante.
-    // GET /api/public/config en particulier est consommée activement par
-    // le paiement boutique (b-paypal.js, b-checkout.js) : voir komerce-boutique
-    // features/payment.feature.js.
     exposes: [
       'GET /api/health',
       'GET /api/public/config',
       'GET /webhook/authkey-whatsapp',
       'GET /*.html',
     ],
-    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : aucune de ces
-    // entrées n'est une route HTTP — ce sont des exports JS internes consommés
-    // par les features métier via require(), jamais via un client HTTP.
     internalApi: [
       'middleware/error-handler.js — gestion centralisée des erreurs Express',
       'middleware/rate-limit.js — rate limiting par IP/route',
