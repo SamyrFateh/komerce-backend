@@ -110,5 +110,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Un SQL direct ne doit jamais pouvoir laisser une quarantaine physique sans
+-- dossier opérationnel. Le contrôle est différé à COMMIT pour permettre au
+-- service HUB-001 de créer l'unité puis l'incident dans la même transaction.
+-- Les outcomes destructifs sont une autre classe : ils sont possédés par le
+-- fait physique + outbox F0 et restent terminaux sans incident de réparation.
+CREATE OR REPLACE FUNCTION hub_require_quarantine_incident()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.state = 'QUARANTINED' AND NEW.outcome_type IS NULL THEN
+    IF NOT EXISTS (
+      SELECT 1
+        FROM incidents i
+       WHERE i.status IN ('open', 'investigating')
+         AND i.details->>'physical_unit_id' = NEW.id::text
+    ) THEN
+      RAISE EXCEPTION 'hub_quarantine_incident_required';
+    END IF;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_hub_quarantine_incident_required ON hub_physical_units;
+CREATE CONSTRAINT TRIGGER trg_hub_quarantine_incident_required
+  AFTER INSERT OR UPDATE OF state, outcome_type ON hub_physical_units
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW
+  EXECUTE FUNCTION hub_require_quarantine_incident();
+
 COMMENT ON FUNCTION hub_guard_physical_unit_update() IS
   'HUB-001 hardening — outbound mono-Market + mono-destination ; sortie de QUARANTINED seulement après incident résolu et vers état pré-quarantaine.';
+COMMENT ON FUNCTION hub_require_quarantine_incident() IS
+  'HUB-001 — toute quarantaine non destructive doit avoir un incident actif au COMMIT ; empêche les quarantaines orphelines même par SQL direct.';
