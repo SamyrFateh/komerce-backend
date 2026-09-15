@@ -23,16 +23,19 @@ module.exports = {
 
   perimeter: {
     in: [
-      'création, qualification (type/sévérité/impact client) et résolution (reship/refund/manual_fix/dismissed/auto_resolved) d\'un incident',
+      'création, qualification (type/sévérité/impact client) et résolution d’un incident sous autorité explicite',
       'table incidents possédée par incident-management ; les producteurs cross-feature passent par incident-write-service.js',
       'gouvernance F2 : origin_domain, resolver_domain et resolution_class déterminés dès la création',
       'policy de blocage des transitions physiques irréversibles consommée par Logistics',
-      'engagement opérationnel réel déclenché par une résolution (ex. reship crée un incident fils)',
+      'F3 : due_at persistant, escalade SLA durable vers Action Center et marqueur d’escalade idempotent',
+      'F3 : fermeture PHYSICAL_PROOF uniquement après nouvelle preuve scan_events et revalidation synchrone du prédicat',
+      'F3 : fermeture UPSTREAM_TRUTH uniquement après correction authoritative amont puis revalidation du prédicat par le caller',
+      'engagement opérationnel réel déclenché par une résolution lorsque l’autorité le permet',
     ],
     out: [
       "logique métier propre au domaine qui a détecté l'écart (logistics, payments, notifications restent propriétaires de leurs propres flux)",
       'preuve physique : scan_events reste lifecycle-owned par Logistics',
-      'SLA/due_at/escalation opérationnelle (F3)',
+      'correction de vérité UPSTREAM_TRUTH : reste propriétaire du domaine resolver_domain ; Incident Management ne fait que revalider/fermer ensuite',
       'health check / observation technique passive (feature platform-ops)',
     ],
   },
@@ -42,14 +45,17 @@ module.exports = {
       'services/incident-service.js',
       'services/incident-write-service.js',
       'services/incident-governance.js',
+      'services/incident-escalation.js',
       'services/parcel-transition-guard.js',
     ],
     tests: [
       'tests/unit/incident-service.test.js',
       'tests/unit/incident-write-service.test.js',
       'tests/unit/incident-governance.test.js',
+      'tests/unit/incident-escalation.test.js',
       'tests/unit/parcel-transition-guard.test.js',
       'tests/unit/parcel-operations-incident-governance.test.js',
+      'tests/integration/incident-f3-postgres.test.js',
     ],
   },
 
@@ -64,6 +70,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/230_incident_governance_contract.sql',
+      'migrations/231_incident_sla_escalation_contract.sql',
     ],
   },
 
@@ -87,21 +94,23 @@ module.exports = {
       { fn: 'createAlertEngineIncidentIfNew', file: 'services/incident-write-service.js' },
       { fn: 'acknowledgeAlertEngineIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolveOpsIncident', file: 'services/incident-write-service.js' },
+      { fn: 'resolvePhysicalProofIncident', file: 'services/incident-write-service.js' },
+      { fn: 'resolveUpstreamTruthIncident', file: 'services/incident-write-service.js' },
       { fn: 'detachUserFromIncidents', file: 'services/incident-write-service.js' },
       { fn: 'seedIncident', file: 'services/incident-write-service.js' },
+      { fn: 'scanOverdueIncidents', file: 'services/incident-escalation.js' },
       { fn: 'assertParcelTransitionAllowed', file: 'services/parcel-transition-guard.js' },
     ],
     consumes: [
       'orders (dépendance data cross-feature observée et gouvernée par O5)',
       'infrastructure (DB/logger/bootstrap techniques)',
-      'logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2)',
+      'logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)',
+      'decision-signals (sink durable Action Center pour escalade SLA via signal-service)',
     ],
   },
 
   debt: {
-    knownGaps: [
-      { gap: 'RESOLU LOT9/F2 - producteurs et résolutions passent par la boundary owner et la policy de gouvernance.', risk: 'nul pour le contrat F2 ; SLA/revalidation complète restent F3.' },
-    ],
+    knownGaps: [],
   },
 
   authority: 'backend-core — tout changement de lifecycle incident doit etre valide par le proprietaire de services/incident-service.js',
@@ -109,10 +118,14 @@ module.exports = {
   invariants: [
     "jamais de suppression d'incident (soft-close uniquement)",
     'résolution explicite avec raison et type',
-    'une résolution reship crée un incident fils',
     'origin_domain, resolver_domain et resolution_class sont queryables dès la création gouvernée',
+    'tout nouvel incident gouverné possède due_at dérivé uniquement de resolution_class',
     'un incident historique UNCLASSIFIED ne peut pas être fermé par un chemin terminal générique',
-    'aucun chemin terminal générique ne peut clore UPSTREAM_TRUTH avant le contrat F3',
+    'UPSTREAM_TRUTH ne peut jamais être fermé avant correction authoritative amont et revalidation du prédicat original',
+    'PHYSICAL_PROOF ne peut jamais être fermé par un chemin terminal générique : nouvelle preuve + revalidation sont obligatoires',
+    'une escalade SLA ne résout jamais l’incident et atteint un sink durable Action Center',
+    'le marqueur escalation_level et le signal Action Center sont atomiques dans une même transaction',
+    'scan_events reste append-only/lifecycle-owned par Logistics ; Incident Management ne réécrit jamais la preuve',
   ],
 
   classification: {
@@ -131,6 +144,7 @@ module.exports = {
       'table incidents riche et lifecycle engageant',
       'API interne d’écriture consommée par plusieurs domaines producteurs derrière la boundary owner',
       'F2 possède la migration 230 pour le triplet d’autorité et la policy de fermeture/blocage',
+      'F3 possède la migration 231 pour SLA/escalade et impose la revalidation de preuve physique ou de vérité amont avant résolution',
     ],
   },
 };

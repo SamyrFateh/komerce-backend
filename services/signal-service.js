@@ -4,15 +4,16 @@
  * @domain        decision-signals
  * @layer         service
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id
+ * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id, optional_transaction_executor
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js
- * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js
+ * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
+ *                services/incident-escalation.js
  * @db-read       cash_collections, orders, parcels, purchase_orders
  * @db-write      signals
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority
- * @impact-areas  decision-signals, purchasing, orders, logistics, market-authorization
+ * @db-txn        optional_caller_owned_transaction_for_upsert
+ * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
+ * @impact-areas  decision-signals, purchasing, orders, logistics, market-authorization, incident-management
  * @version       2026-09
  */
 
@@ -33,8 +34,11 @@ let log = require('../utils/logger').child({ module: 'signal-service' });
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update one active derived fact
    Identity = signal_type + market_id + entity_type + entity_id.
+   An optional executor lets an owning caller persist the signal inside its
+   already-open transaction; default behavior remains the shared db pool.
    ═══════════════════════════════════════════════════════════════ */
-async function upsertSignal(sig) {
+async function upsertSignal(sig, executor = db) {
+  const q = executor && typeof executor.query === 'function' ? executor : db;
   const marketId = sig.market_id || null;
   const sql = `
     WITH candidate AS (
@@ -115,7 +119,7 @@ async function upsertSignal(sig) {
     SELECT * FROM inserted
     LIMIT 1
   `;
-  const result = await db.query(sql, [
+  const result = await q.query(sql, [
     sig.signal_type,
     sig.severity || 'warning',
     sig.title,

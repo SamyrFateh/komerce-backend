@@ -1,7 +1,7 @@
 'use strict';
 
 /** @test-kind unit @test-runner jest @test-requires none */
-const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+const { makeClient, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
 
 jest.mock('../../db', () => ({ query: jest.fn(), connect: jest.fn() }));
 const pool = require('../../db');
@@ -45,15 +45,15 @@ describe('incident-service', () => {
     });
   });
 
-  test('PHYSICAL_PROOF can close explicitly and commits', async () => {
-    const client = makeClient([
-      { rows: [{ id: 'inc-001', status: 'open', incident_type: 'weight_mismatch', resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS', parcel_id: null, order_item_id: null }] },
-      { rows: [], rowCount: 1 },
-    ]);
+  test('PHYSICAL_PROOF cannot close through generic manual_fix', async () => {
+    const client = makeClient([{
+      rows: [{ id: 'inc-001', status: 'open', incident_type: 'weight_mismatch', resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS', parcel_id: null, order_item_id: null }],
+    }]);
     pool.connect.mockResolvedValue(client);
     await expect(resolveIncident('inc-001', { resolution_type: 'manual_fix', resolved_by: 'admin-1' }))
-      .resolves.toEqual({ success: true, incident_id: 'inc-001', resolution_type: 'manual_fix' });
-    expectTransactionCommitted(client);
+      .rejects.toThrow(/PHYSICAL_PROOF/);
+    expectTransactionRolledBack(client);
+    expect(client.calls.some(c => String(c.sql).includes('UPDATE incidents SET'))).toBe(false);
   });
 
   test.each(['manual_fix', 'auto_resolved', 'reship', 'refund', 'dismissed'])(
@@ -77,18 +77,15 @@ describe('incident-service', () => {
     expectTransactionRolledBack(client);
   });
 
-  test('reship follow-up incident is created with governance triplet', async () => {
-    const client = makeClient([
-      { rows: [{ id: 'inc-001', status: 'open', incident_type: 'missing_item', resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS', parcel_id: 'p1', order_id: 'o1', order_item_id: 'oi1', details: { note: 'x' } }] },
-      { rows: [], rowCount: 1 },
-      { rows: [{ id: 'inc-child' }], rowCount: 1 },
-    ]);
+  test('PHYSICAL_PROOF cannot create reship follow-up through generic terminal path', async () => {
+    const client = makeClient([{
+      rows: [{ id: 'inc-001', status: 'open', incident_type: 'missing_item', resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS', parcel_id: 'p1', order_id: 'o1', order_item_id: 'oi1', details: { note: 'x' } }],
+    }]);
     pool.connect.mockResolvedValue(client);
-    await resolveIncident('inc-001', { resolution_type: 'reship', resolved_by: 'admin-1' });
-    const insertCall = client.calls.find(c => String(c.sql).includes('INSERT INTO incidents'));
-    expect(insertCall.sql).toContain('origin_domain, resolver_domain, resolution_class');
-    expect(insertCall.params.slice(-3)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
-    expectTransactionCommitted(client);
+    await expect(resolveIncident('inc-001', { resolution_type: 'reship', resolved_by: 'admin-1' }))
+      .rejects.toThrow(/PHYSICAL_PROOF/);
+    expectTransactionRolledBack(client);
+    expect(client.calls.some(c => String(c.sql).includes('INSERT INTO incidents'))).toBe(false);
   });
 
   test('missing incident rolls back', async () => {
