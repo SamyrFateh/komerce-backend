@@ -6,33 +6,33 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 564
-- Files with full headers: 519
+- Scanned code files: 587
+- Files with full headers: 542
 - Files with lite headers: 45
-- Files with any headers: 564
+- Files with any headers: 587
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1344
-- Edges: 6704
-- DB tables: 155
-- Doctrines: 442
+- Graph nodes: 1396
+- Edges: 6955
+- DB tables: 167
+- Doctrines: 459
 - Impact areas: 183
-- Unresolved code edges: 631
-- Tables multi-écrivains directs (>=2): 70
+- Unresolved code edges: 665
+- Tables multi-écrivains directs (>=2): 71
 - Avertissements db-write / db-write-via en chevauchement: 7
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 21
+- admin-dashboard: 22
 - auth: 14
 - auth-identity: 6
 - auth-passkey: 7
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 100
+- catalog: 102
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -40,7 +40,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - documents: 15
 - economic-engine: 56
 - incident-management: 2
-- infrastructure: 20
+- infrastructure: 22
 - inventory: 2
 - local-stock: 4
 - logistics: 46
@@ -53,14 +53,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - orders: 30
 - payment: 26
 - providers-services: 7
-- purchasing: 13
+- purchasing: 15
 - recommendations: 6
 - refunds: 2
 - settlement: 2
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
-- sourcing: 6
+- sourcing: 22
 - tracking: 1
 - unsold-resolution: 1
 - wallet: 3
@@ -85,7 +85,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 127
 - route-manifest: 1
 - schema: 1
-- service: 262
+- service: 285
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -168,6 +168,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-mutation-service.js — orders-cross-feature-mutation-boundary (orders, critical, full)
 - services/order-payment-confirmation.js — payment-to-stock-single-entry (orders, critical, full)
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
+- services/outbox-producer.js — outbox-producer (infrastructure, critical, full)
+- services/outbox-worker.js — outbox-worker (infrastructure, critical, full)
 - services/parcel-item-mutation-service.js — logistics-parcel-item-mutation-service (logistics, critical, full)
 - services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
 - services/payment-mobile-money.js — payment-mobile-money (payment, critical, full)
@@ -339,6 +341,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
 - services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
 - services/catalog-product-mutation-service.js — catalog-product-mutation-service (catalog, high, full)
+- services/catalog-product-read-cutover-trial.js — catalog-product-read-cutover-trial (sourcing, high, full)
+- services/catalog-product-route-canary.js — catalog-product-route-canary-compatibility (catalog, high, full)
+- services/catalog-product-source-read-service.js — catalog-product-source-read-authority (catalog, high, full)
 - services/catalog-promotion.js — catalog-promotion-orchestrator (catalog, high, full)
 - services/catalog-promotion/axes.js — catalog-promotion-axes-mapping (catalog, high, full)
 - services/catalog-promotion/content.js — catalog-promotion-content-mapping (catalog, high, full)
@@ -368,6 +373,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dashboard-metrics/logistics.js — dashboard-metrics-logistics (dashboard, high, full)
 - services/dashboard-operations.js — canonical-operations-dashboard-service (admin-dashboard, high, full)
 - services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
+- services/dashboard-orders.js — dashboard-orders-service (admin-dashboard, high, full)
 - services/dashboard-pilotage-market.js — dashboard-pilotage-market-aggregate (admin-dashboard, high, full)
 - services/documents/customs-invoice.js — customs-invoice (documents, high, full)
 - services/documents/pdf-renderer.js — private-document-pdf-renderer (documents, high, full)
@@ -463,11 +469,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/signal-admin-service.js — decision-signal-admin-service (decision-signals, high, full)
 - services/sourcing-candidate-actions.js — sourcing-candidate-action-service (sourcing, high, full)
 - services/sourcing-candidate-import-service.js — sourcing-candidate-import-owner (sourcing, high, full)
+- services/sourcing-canonical-commercial-projection-core.js — sourcing-canonical-commercial-projection-core (sourcing, high, full)
+- services/sourcing-canonical-offer-projection.js — sourcing-canonical-offer-projection (sourcing, high, full)
+- services/sourcing-canonical-offer-unit-comparison.js — sourcing-canonical-offer-unit-comparison (sourcing, high, full)
+- services/sourcing-canonical-product-projection.js — sourcing-canonical-product-projection-trial (sourcing, high, full)
+- services/sourcing-canonical-unit-product-sku-resolution.js — sourcing-canonical-unit-product-sku-resolution (sourcing, high, full)
+- services/sourcing-canonical-unit-projection.js — sourcing-canonical-unit-projection (sourcing, high, full)
+- services/sourcing-catalog-product-linkage.js — sourcing-catalog-product-linkage (sourcing, high, full)
+- services/sourcing-golden-e2e-service.js — sourcing-golden-e2e-read-model (sourcing, high, full)
+- services/sourcing-integrity-service.js — sourcing-integrity-health-service (sourcing, high, full)
+- services/sourcing-observation-shadow-service.js — sourcing-observation-shadow-owner (sourcing, high, full)
+- services/sourcing-product-read-comparison.js — sourcing-product-read-comparison (sourcing, high, full)
+- services/sourcing-shadow-proof-service.js — sourcing-shadow-proof (sourcing, high, full)
+- services/sourcing-shadow-resolution-service.js — sourcing-shadow-resolution-owner (sourcing, high, full)
 - services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/aliexpress-fulfillment-adapter.js — aliexpress-fulfillment-adapter (purchasing, high, full)
 - services/suppliers/aliexpress-oauth.js — aliexpress-oauth-session-manager (catalog, high, full)
 - services/suppliers/aliexpress-purchase-preflight.js — aliexpress-purchase-preflight (purchasing, high, full)
+- services/suppliers/canonical-unit-cutover-comparison.js — canonical-unit-purchasing-cutover-comparison (purchasing, high, full)
+- services/suppliers/canonical-unit-purchasing-gate.js — canonical-unit-purchasing-hard-stop-gate (purchasing, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
@@ -845,6 +866,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty_rewards: 2 écrivains directs — routes/admin-loyalty.js, services/loyalty-service.js
 - market_delegation_audit: 2 écrivains directs — middleware/require-market-execution-capability.js, services/market-delegation-service.js
 - order_incidents: 2 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js
+- outbox_events: 2 écrivains directs — services/outbox-producer.js, services/outbox-worker.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
 - paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
@@ -852,7 +874,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_market_price_draft_events: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
-- providers: 2 écrivains directs — services/provider-status-mutation-service.js, services/providers-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
@@ -872,6 +893,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: Allocation & Custody) -> services/outbox-producer.js (Allocation & Custody))
+- uses: Allocation & Custody) -> services/outbox-worker.js (Allocation & Custody))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
@@ -899,11 +922,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: dashboards -> routes/wallet.js (dashboards)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
+- uses: futur HUB-001 (Physical Identity -> services/outbox-producer.js (futur HUB-001 (Physical Identity)
+- uses: futur HUB-001 (Physical Identity -> services/outbox-worker.js (futur HUB-001 (Physical Identity)
 - uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
 - uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
 - uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
 - uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
+- uses: future purchasing cutover composition root -> services/suppliers/canonical-unit-purchasing-gate.js (future purchasing cutover composition root)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
@@ -981,11 +1007,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
-- uses: public/boutique/test-modal-view-model.html -> public/boutique/js/test-modal-view-model-redirect.js (public/boutique/test-modal-view-model.html)
-- uses: purchasing preflight -> services/suppliers/supplier-order-identity.js (purchasing preflight)
-- uses: railway-runtime -> server.js (railway-runtime)
-- uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
-- uses: release à -> services/local-stock-service.js (release à)
 
 ## Files Still Without Headers Or Aggregation
 

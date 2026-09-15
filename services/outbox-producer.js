@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          outbox-producer
@@ -30,6 +28,8 @@
  * Aucun emit()/setImmediate()/callback post-COMMIT/appel direct vers
  * Purchasing ou Orders : ce module écrit une ligne, un point.
  */
+
+'use strict';
 
 const VALID_OUTCOME_TYPES = new Set(['LOST', 'STOLEN', 'DESTROYED', 'DAMAGED_UNUSABLE']);
 
