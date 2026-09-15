@@ -260,7 +260,7 @@ module.exports = {
 
   invariants: [
     'un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n\'est jamais ré-importable (ING-5 verrou 1)',
-    'une devise hors whitelist (AED, EUR, USD, KMF) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)',
+    'une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)',
     'un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé',
     'le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité',
     'une ré-observation V2 crée une nouvelle Capture et de nouvelles Observations ; elle ne mute jamais une Observation existante',

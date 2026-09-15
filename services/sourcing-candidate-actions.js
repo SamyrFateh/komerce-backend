@@ -44,7 +44,7 @@ async function requireCandidate(id, q = db) {
 }
 
 async function updateCandidate(id, body = {}, actorId = null, q = db) {
-  const CURRENCY_WHITELIST = ['AED', 'EUR', 'USD', 'KMF'];
+  const CURRENCY_WHITELIST = ['AED', 'EUR', 'USD', 'KMF', 'PLN'];
   if (body.currency !== undefined && !CURRENCY_WHITELIST.includes(body.currency)) {
     throw new SourcingCandidateActionError(400, `currency doit être l'une de : ${CURRENCY_WHITELIST.join(', ')}`, 'candidate_currency_invalid');
   }

@@ -10,7 +10,7 @@
     "product_name":        { "type": "string", "minLength": 2, "maxLength": 300 },
     "supplier_category":   { "type": ["string", "null"], "maxLength": 200 },
     "purchase_price":      { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
-    "currency":            { "enum": ["AED", "EUR", "USD", "KMF"] },
+    "currency":            { "enum": ["AED", "EUR", "USD", "KMF", "PLN"] },
     "image_url":           { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
     "product_url":         { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
     "description":         { "type": ["string", "null"], "maxLength": 10000 },
@@ -97,7 +97,7 @@
           },
           "stock_available": { "type": ["integer", "null"], "minimum": 0 },
           "purchase_price":  { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
-          "currency":        { "type": ["string", "null"], "enum": ["AED", "EUR", "USD", "KMF", null] },
+          "currency":        { "type": ["string", "null"], "enum": ["AED", "EUR", "USD", "KMF", "PLN", null] },
           "media_refs": {
             "type": ["array", "null"],
             "maxItems": 100,

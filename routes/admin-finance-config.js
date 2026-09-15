@@ -72,6 +72,7 @@ const FIELD_SCHEMA = {
 
   // — Paramètres sourcing —
   taux_change_eur_kmf:         { type: 'decimal', group: 'sourcing', label: 'Taux de change EUR→KMF',    unit: 'KMF/€', min: 1 },
+  taux_pln_kmf: { type: 'decimal', group: 'sourcing', label: 'Taux de change PLN→KMF', unit: 'KMF/PLN', min: 0.000001 },
   markup_cible_pct:            { type: 'decimal', group: 'sourcing', label: 'Markup cible',              unit: '%',   min: 0, max: 1000 },
   cout_achat_moyen_eur:        { type: 'decimal', group: 'sourcing', label: 'Coût achat moyen',          unit: '€',   min: 0 },
   delai_transit_jours:         { type: 'int',     group: 'sourcing', label: 'Délai transit moyen',       unit: 'jours', min: 0 },
