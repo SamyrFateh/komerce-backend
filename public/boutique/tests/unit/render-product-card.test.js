@@ -41,6 +41,7 @@ function baseVm(overrides = {}) {
     promoLabel: '',
     safeName: 'Chaise',
     safeDescription: '',
+    safeSellerLine: '',
     priceLabel: '12 500 KMF',
     priceEurLabel: '',
     oldPriceLabel: '',
@@ -93,6 +94,21 @@ describe('renderProductCard — contrôle panier neutre', () => {
     const html = renderProductCard({ id: 1 });
     expect(html).toContain('<div class="k-card-add');
     expect(html).not.toMatch(/<button[^>]*class="k-card-add[^>]*>[\s\S]*<button/);
+  });
+});
+
+describe('renderProductCard — sourceur visible', () => {
+  it('affiche une micro-ligne Vendu par sur la carte grille quand elle existe', () => {
+    buildProductCardViewModel.mockReturnValue(baseVm({ safeSellerLine: 'Vendu par CJdropshipping' }));
+    const html = renderProductCard({ id: 1 });
+    expect(html).toContain('class="k-card-source k-card-price-eur"');
+    expect(html).toContain('Vendu par CJdropshipping');
+  });
+
+  it('n’ajoute aucune ligne sourceur si le view-model la laisse vide', () => {
+    const html = renderProductCard({ id: 1 });
+    expect(html).not.toContain('k-card-source');
+    expect(html).not.toContain('Vendu par');
   });
 });
 

@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
  * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @version       2026-09
  */
 'use strict';
 
@@ -36,6 +36,14 @@ import { sanitize, fmt, fmtPrice, optimizeImgUrl } from '../b-utils.js';
 
 const DEFAULT_PRODUCT_NAME = 'Produit Komerce';
 const DEFAULT_IMAGE_URL = '/images/placeholder-product.svg';
+const SOURCE_LABELS = Object.freeze({
+  cj: 'CJdropshipping',
+  cjdropshipping: 'CJdropshipping',
+  aliexpress: 'AliExpress',
+  'ali express': 'AliExpress',
+  allegro: 'Allegro',
+  'allegro sandbox': 'Allegro',
+});
 
 function normalizeString(value, fallback = '') {
   if (value === null || value === undefined) return fallback;
@@ -66,6 +74,14 @@ function inferAvailabilityStatus(product) {
     product.availability_status || product.availabilityStatus || product.status,
     'available'
   );
+}
+
+function inferSellerLabel(product) {
+  const raw = normalizeString(product.sourcing_source || product.sourcingSource, '');
+  if (!raw) return '';
+  const key = raw.toLowerCase();
+  if (key === 'manual' || key === 'manuel' || key === 'komerce') return '';
+  return SOURCE_LABELS[key] || raw;
 }
 
 function inferDataQualityScore(product) {
@@ -119,6 +135,7 @@ export function buildProductCardViewModel(product = {}, options = {}) {
   const id = product.id;
   const name = normalizeString(product.name, DEFAULT_PRODUCT_NAME);
   const description = normalizeString(product.description, '');
+  const sellerLabel = inferSellerLabel(product);
   const priceKmf = normalizeNumber(product.price_kmf ?? product.priceKmf, 0);
   const promoPct = normalizePromoPct(product.promo_pct ?? product.promoPct);
   const oldPriceKmf = promoPct > 0 && priceKmf > 0
@@ -169,6 +186,9 @@ export function buildProductCardViewModel(product = {}, options = {}) {
     shortName: sanitize(normalizeString(product.short_name || product.shortName, name)),
     description,
     safeDescription: sanitize(description),
+    sellerLabel,
+    sellerLine: sellerLabel ? `Vendu par ${sellerLabel}` : '',
+    safeSellerLine: sellerLabel ? sanitize(`Vendu par ${sellerLabel}`) : '',
     imageUrl,
     optimizedImageUrl: optimizeImgUrl(imageUrl, options.imageSize || 400),
     imageAlt: sanitize(normalizeString(product.image_alt || product.imageAlt, name)),
