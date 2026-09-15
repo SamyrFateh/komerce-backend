@@ -244,6 +244,32 @@ CREATE TRIGGER trg_hub_placement_insert_guard
   BEFORE INSERT ON hub_physical_unit_placements
   FOR EACH ROW EXECUTE FUNCTION hub_guard_placement_insert();
 
+-- Initial physical identity is neutral: no caller can smuggle an outbound state,
+-- Market or terminal outcome at INSERT time. Those facts must pass their canonical boundaries.
+CREATE OR REPLACE FUNCTION hub_guard_physical_unit_insert()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.market_id IS NOT NULL THEN
+    RAISE EXCEPTION 'hub_market_only_derived_at_outbound';
+  END IF;
+
+  IF NEW.outcome_type IS NOT NULL OR NEW.outcome_recorded_at IS NOT NULL THEN
+    RAISE EXCEPTION 'hub_physical_outcome_requires_recording_boundary';
+  END IF;
+
+  IF NEW.state NOT IN ('RECEIVED', 'QUARANTINED') THEN
+    RAISE EXCEPTION 'hub_physical_initial_state_invalid:%', NEW.state;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_hub_physical_unit_insert_guard ON hub_physical_units;
+CREATE TRIGGER trg_hub_physical_unit_insert_guard
+  BEFORE INSERT ON hub_physical_units
+  FOR EACH ROW EXECUTE FUNCTION hub_guard_physical_unit_insert();
+
 -- Physical state is strict. Market ownership is derived exactly once from active
 -- immutable allocations at the outbound boundary, never supplied/inferred by an agent.
 CREATE OR REPLACE FUNCTION hub_guard_physical_unit_update()

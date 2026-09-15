@@ -220,13 +220,16 @@ describe('HUB-001 — market-safe physical identity', () => {
 
     const targets = await transact(async (client) => {
       const kmUnit = await createPhysicalUnit(client, {
-        reference: 'OUT-KM-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED', locationRef: 'HUB-DXB-PACK',
+        reference: 'OUT-KM-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED', locationRef: 'HUB-DXB-PACK',
       });
       const cmUnit = await createPhysicalUnit(client, {
-        reference: 'OUT-CM-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED', locationRef: 'HUB-DXB-PACK',
+        reference: 'OUT-CM-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED', locationRef: 'HUB-DXB-PACK',
       });
       return { kmUnit, cmUnit };
     });
+
+    await advanceToPicked(targets.kmUnit.id);
+    await advanceToPicked(targets.cmUnit.id);
 
     const kmAllocation = inbound.allocations.find((x) => String(x.allocation.market_id) === String(km.market));
     const cmAllocation = inbound.allocations.find((x) => String(x.allocation.market_id) === String(cm.market));
@@ -276,8 +279,10 @@ describe('HUB-001 — market-safe physical identity', () => {
 
     await advanceToPicked(inbound.unit.id);
     const target = await transact((client) => createPhysicalUnit(client, {
-      reference: 'OUT-SPLIT-001', unitType: 'MARKET_PARCEL', initialState: 'PICKED',
+      reference: 'OUT-SPLIT-001', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',
     }));
+
+    await advanceToPicked(target.id);
 
     const move = await transact((client) => moveAllocationQuantity(client, {
       fromUnitId: inbound.unit.id,
@@ -383,6 +388,33 @@ describe('HUB-001 — market-safe physical identity', () => {
     expect(counts.rows[0]).toEqual({ allocations: 0, placements: 0 });
     expect((await query('SELECT state FROM hub_physical_units WHERE id=$1', [result.unit.id])).rows[0].state)
       .toBe('QUARANTINED');
+  });
+});
+
+describe('HUB-001 — DB creation hard stops', () => {
+  test('direct INSERT cannot smuggle Market or outbound state into a physical unit', async () => {
+    const market = id();
+    await query('INSERT INTO markets(id) VALUES ($1)', [market]);
+
+    await expect(query(
+      `INSERT INTO hub_physical_units(reference, unit_type, state, market_id)
+       VALUES ('SMUGGLE-MARKET', 'MARKET_PARCEL', 'RECEIVED', $1)`,
+      [market]
+    )).rejects.toThrow(/hub_market_only_derived_at_outbound/);
+
+    await expect(query(
+      `INSERT INTO hub_physical_units(reference, unit_type, state)
+       VALUES ('SMUGGLE-PACKED', 'MARKET_PARCEL', 'PACKED')`
+    )).rejects.toThrow(/hub_physical_initial_state_invalid/);
+
+    await expect(transact((client) => createPhysicalUnit(client, {
+      reference: 'SERVICE-SMUGGLE',
+      unitType: 'MARKET_PARCEL',
+      initialState: 'PACKED',
+    }))).rejects.toMatchObject({
+      name: 'HubPhysicalError',
+      code: 'HUB_PHYSICAL_INITIAL_STATE_INVALID',
+    });
   });
 });
 

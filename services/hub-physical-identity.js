@@ -236,6 +236,9 @@ async function createPhysicalUnit(executor, {
   if (!reference || !String(reference).trim()) fail('HUB_PHYSICAL_REFERENCE_REQUIRED');
   if (!UNIT_TYPES.has(unitType)) fail('HUB_PHYSICAL_UNIT_TYPE_INVALID');
   if (!UNIT_STATES.has(initialState)) fail('HUB_PHYSICAL_STATE_INVALID');
+  if (!['RECEIVED', 'QUARANTINED'].includes(initialState)) {
+    fail('HUB_PHYSICAL_INITIAL_STATE_INVALID', 'Une unité physique doit naître RECEIVED ou QUARANTINED');
+  }
 
   const { rows: [unit] } = await db.query(
     `INSERT INTO hub_physical_units (
