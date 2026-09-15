@@ -40,16 +40,31 @@ async function cleanup() {
 // ─────────────────────────────────────────────────────────────────────────────
 const ITEST_TAG = 'itest-post-o8';
 
-async function createTestRelais(opts = {}) {
+async function resolveTestMarketId(opts = {}) {
+  if (opts.market_id) return opts.market_id;
+  const marketCode = String(opts.market_code || 'KM').trim().toUpperCase();
   const { rows } = await getDb().query(
-    `INSERT INTO relais (name, agent_name, phone, address, island, is_active)
-     VALUES ($1,$2,$3,$4,$5,true) RETURNING *`,
+    `SELECT id FROM markets WHERE code = $1 AND is_active = TRUE LIMIT 1`,
+    [marketCode]
+  );
+  if (!rows[0]) {
+    throw new Error(`ITest reference market ${marketCode} is missing; run scripts/ci-db-bootstrap.js`);
+  }
+  return rows[0].id;
+}
+
+async function createTestRelais(opts = {}) {
+  const marketId = await resolveTestMarketId(opts);
+  const { rows } = await getDb().query(
+    `INSERT INTO relais (name, agent_name, phone, address, island, market_id, is_active)
+     VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING *`,
     [
       opts.name || `${ITEST_TAG} relais`,
       opts.agent_name || `${ITEST_TAG} agent`,
       opts.phone || `+2693${Math.floor(1000000 + Math.random()*8999999)}`,
       opts.address || 'ITest address, Moroni',
       opts.island || 'Ngazidja',
+      marketId,
     ]
   );
   return rows[0];
@@ -135,6 +150,6 @@ module.exports = {
   createUser, tokenFor, revoke, cleanup,
   // POST-O8 business fixtures
   ITEST_TAG,
-  createTestRelais, createLegacyProduct, createSkuProduct,
+  resolveTestMarketId, createTestRelais, createLegacyProduct, createSkuProduct,
   createPendingOrder, createOrderItem, cleanupBusinessFixtures,
 };
