@@ -5,13 +5,13 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration incident-f3-postgres.test.js
- * @brief HUB-000 / F3 — concurrence SLA, rollback du sink et preuve physique atomique sur PostgreSQL réel.
+ * @brief HUB-000 / F3 — concurrence SLA, rollback du sink et preuve/revalidation atomique sur PostgreSQL réel.
  */
 
 const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const { escalateOneOverdueIncident } = require('../../services/incident-escalation');
-const { resolvePhysicalProofIncident } = require('../../services/incident-write-service');
+const { resolvePhysicalProofIncident, resolveUpstreamTruthIncident } = require('../../services/incident-write-service');
 
 jest.setTimeout(30000);
 
@@ -32,9 +32,9 @@ async function query(sql, params = []) {
   }
 }
 
-async function seedParcel({ parcelId, orderId, marketId = null } = {}) {
+async function seedParcel({ parcelId, orderId, marketId = null, orderStatus = null } = {}) {
   if (orderId) {
-    await query('INSERT INTO orders(id, reference, market_id) VALUES ($1,$2,$3)', [orderId, `ORD-${orderId}`, marketId]);
+    await query('INSERT INTO orders(id, reference, market_id, status) VALUES ($1,$2,$3,$4)', [orderId, `ORD-${orderId}`, marketId, orderStatus]);
   }
   await query('INSERT INTO parcels(id, reference, order_id) VALUES ($1,$2,$3)', [parcelId, `PCL-${parcelId}`, orderId || null]);
 }
@@ -70,7 +70,8 @@ beforeAll(async () => {
       CREATE TABLE orders (
         id TEXT PRIMARY KEY,
         reference TEXT,
-        market_id TEXT
+        market_id TEXT,
+        status TEXT
       );
       CREATE TABLE parcels (
         id TEXT PRIMARY KEY,
@@ -287,5 +288,60 @@ describe('F3 PostgreSQL — physical proof resolution', () => {
 
     const { rows: [state] } = await query('SELECT status FROM incidents WHERE id=$1', [inc.id]);
     expect(state.status).toBe('open');
+  });
+});
+
+describe('F3 PostgreSQL — upstream truth revalidation', () => {
+  test('authoritative correction + predicate pass is required before resolution', async () => {
+    await seedParcel({ parcelId: 'p-upstream', orderId: 'o-upstream', marketId: 'market-a', orderStatus: 'pending' });
+    const inc = await seedIncident({
+      id: 'inc-upstream',
+      incident_type: 'reconciliation_error',
+      parcel_id: 'p-upstream',
+      order_id: 'o-upstream',
+      details: { type: 'order_status_drift' },
+      origin_domain: 'ORDERS',
+      resolver_domain: 'ORDERS',
+      resolution_class: 'UPSTREAM_TRUTH',
+    });
+
+    const failedClient = await clientInSchema();
+    try {
+      await failedClient.query('BEGIN');
+      const failed = await resolveUpstreamTruthIncident(failedClient, {
+        incidentId: inc.id,
+        revalidate: async (executor) => {
+          const { rows: [order] } = await executor.query('SELECT status FROM orders WHERE id=$1', ['o-upstream']);
+          return order.status === 'shipped';
+        },
+      });
+      expect(failed).toMatchObject({ resolved: false, reason: 'PREDICATE_STILL_FAILS' });
+      await failedClient.query('COMMIT');
+    } finally {
+      failedClient.release();
+    }
+    expect((await query('SELECT status FROM incidents WHERE id=$1', [inc.id])).rows[0].status).toBe('open');
+
+    // ORDERS corrige sa propre vérité via son autorité. Incident Management ne fait aucune mutation amont.
+    await query("UPDATE orders SET status='shipped' WHERE id=$1", ['o-upstream']);
+
+    const passClient = await clientInSchema();
+    try {
+      await passClient.query('BEGIN');
+      const resolved = await resolveUpstreamTruthIncident(passClient, {
+        incidentId: inc.id,
+        revalidate: async (executor) => {
+          const { rows: [order] } = await executor.query('SELECT status FROM orders WHERE id=$1', ['o-upstream']);
+          return order.status === 'shipped';
+        },
+      });
+      expect(resolved).toMatchObject({ resolved: true, resolver_domain: 'ORDERS' });
+      await passClient.query('COMMIT');
+    } finally {
+      passClient.release();
+    }
+
+    const { rows: [state] } = await query('SELECT status, resolution_type FROM incidents WHERE id=$1', [inc.id]);
+    expect(state).toEqual({ status: 'resolved', resolution_type: 'auto_resolved' });
   });
 });
