@@ -22,6 +22,7 @@ const sandboxClient = require('../services/suppliers/allegro-sandbox-client');
 const SEED_PREFIX = 'Komerce Sandbox Seed';
 const SEED_SEARCHES = Object.freeze(['kabel usb', 'mysz bezprzewodowa', 'lampka led']);
 const SEED_PRICES = Object.freeze([29.90, 49.90, 79.90]);
+const SEED_EXTERNAL_IDS = Object.freeze(['komerce-sandbox-seed-1', 'komerce-sandbox-seed-2', 'komerce-sandbox-seed-3']);
 
 function seedCount(argv) {
   const raw = argv.find(arg => arg.startsWith('--seed='));
@@ -40,31 +41,39 @@ function createdOfferId(payload) {
 
 async function seedOfferIds(count, api = sandboxClient, env = process.env) {
   api.seedConfiguration(env);
-  const listed = await api.get('/sale/offers', { limit: 100, offset: 0 });
-  const ids = (Array.isArray(listed?.offers) ? listed.offers : [])
-    .filter(row => String(row?.name || '').startsWith(SEED_PREFIX))
-    .map(row => String(row.id))
-    .filter(id => /^[0-9]{1,30}$/.test(id))
-    .slice(0, count);
+  const ids = new Array(count).fill(null);
   const usedProducts = new Set();
 
-  for (const phrase of SEED_SEARCHES) {
-    if (ids.length >= count) break;
+  // Reuse the exact same drafts across retries. Allegro supports seller-offer
+  // filtering by external.id, which is a much stronger identity than title text.
+  for (let index = 0; index < count; index += 1) {
+    const listed = await api.get('/sale/offers', { 'external.id': SEED_EXTERNAL_IDS[index] });
+    const offer = (Array.isArray(listed?.offers) ? listed.offers : [])
+      .find(row => String(row?.external?.id || '') === SEED_EXTERNAL_IDS[index]
+        && /^[0-9]{1,30}$/.test(String(row?.id || '')));
+    if (offer) ids[index] = String(offer.id);
+  }
+
+  for (let index = 0; index < count; index += 1) {
+    if (ids[index]) continue;
+    const phrase = SEED_SEARCHES[index];
     const found = await api.searchProducts(phrase, { limit: 10 });
     const products = Array.isArray(found?.products) ? found.products : [];
     const product = products.find(row => row?.id && !usedProducts.has(String(row.id)));
     if (!product) continue;
     usedProducts.add(String(product.id));
-    const index = ids.length;
     const created = await api.createDraftOffer({
       productId: String(product.id),
       name: `${SEED_PREFIX} ${index + 1} - ${String(product.name || phrase)}`.slice(0, 75),
+      externalId: SEED_EXTERNAL_IDS[index],
       pricePln: SEED_PRICES[index],
       stock: 10 + index,
     });
-    ids.push(createdOfferId(created));
+    ids[index] = createdOfferId(created);
   }
-  if (ids.length !== count) throw new Error(`ALLEGRO_SANDBOX_SEED_INCOMPLETE_${ids.length}_OF_${count}`);
+
+  const complete = ids.filter(Boolean);
+  if (complete.length !== count) throw new Error(`ALLEGRO_SANDBOX_SEED_INCOMPLETE_${complete.length}_OF_${count}`);
   return ids;
 }
 
@@ -111,4 +120,7 @@ if (require.main === module) {
   }).catch(error => { console.error(error.message); process.exitCode = 1; })
     .finally(async () => { await require('../db').pool.end(); process.exit(process.exitCode || 0); });
 }
-module.exports = { SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, seedCount, createdOfferId, seedOfferIds, run };
+module.exports = {
+  SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS,
+  seedCount, createdOfferId, seedOfferIds, run,
+};

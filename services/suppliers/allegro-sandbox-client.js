@@ -150,28 +150,34 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     if (q.length < 2 || q.length > 120) throw new Error('ALLEGRO_SANDBOX_SEED_QUERY_INVALID');
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) throw new Error('ALLEGRO_SANDBOX_SEED_LIMIT_INVALID');
     const url = new URL('/sale/products', API);
-    url.search = new URLSearchParams({ phrase: q, limit: String(limit) }).toString();
-    return authorizedJson(c, url, { method: 'GET' });
+    // The live contract does not expose a generic `limit` query parameter here.
+    // Keep our operator bound local rather than sending an unsupported parameter.
+    url.search = new URLSearchParams({ phrase: q }).toString();
+    const payload = await authorizedJson(c, url, { method: 'GET' });
+    const products = Array.isArray(payload?.products) ? payload.products.slice(0, limit) : [];
+    return { ...payload, products };
   }
 
-  async function createDraftOffer({ productId, name, pricePln, stock = 10 }) {
+  async function createDraftOffer({ productId, name, externalId, pricePln, stock = 10 }) {
     const c = seedConfiguration(env);
     const id = String(productId || '').trim();
     const title = String(name || '').trim();
+    const external = String(externalId || '').trim();
     const price = Number(pricePln);
     if (!/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_SEED_PRODUCT_ID_INVALID');
     if (title.length < 3 || title.length > 75) throw new Error('ALLEGRO_SANDBOX_SEED_NAME_INVALID');
+    if (!/^komerce-sandbox-seed-[1-3]$/.test(external)) throw new Error('ALLEGRO_SANDBOX_SEED_EXTERNAL_ID_INVALID');
     if (!Number.isFinite(price) || price <= 0 || price > 1000000) throw new Error('ALLEGRO_SANDBOX_SEED_PRICE_INVALID');
     if (!Number.isSafeInteger(stock) || stock < 1 || stock > 1000) throw new Error('ALLEGRO_SANDBOX_SEED_STOCK_INVALID');
+    // Deliberately mirror Allegro's minimal draft contract. Product-specific
+    // parameters, delivery, payments and location must not be guessed by Komerce.
     const payload = {
       productSet: [{ product: { id } }],
       name: title,
-      parameters: [{ id: '11323', valuesIds: ['11323_1'] }],
-      sellingMode: { format: 'BUY_NOW', price: { amount: price.toFixed(2), currency: 'PLN' } },
+      external: { id: external },
+      sellingMode: { price: { amount: price.toFixed(2), currency: 'PLN' } },
       stock: { available: stock },
       publication: { status: 'INACTIVE' },
-      payments: { invoice: 'NO_INVOICE' },
-      location: { countryCode: 'PL', province: 'MAZOWIECKIE', city: 'Warszawa', postCode: '00-001' },
     };
     const url = new URL('/sale/product-offers', API);
     return authorizedJson(c, url, {
