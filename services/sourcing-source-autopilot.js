@@ -66,8 +66,7 @@ async function ensureRegisteredPullSources(q = db) {
        ON CONFLICT (source_id) DO UPDATE
          SET adapter_type = EXCLUDED.adapter_type,
              acquisition = EXCLUDED.acquisition,
-             continuity = EXCLUDED.continuity,
-             updated_at = NOW()`,
+             continuity = EXCLUDED.continuity`,
       [sourceRef, descriptor.adapter]
     );
     registered.push(sourceRef);
