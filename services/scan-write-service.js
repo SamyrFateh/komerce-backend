@@ -7,13 +7,13 @@
  * @inputs        db_or_transaction_executor, scan mutation payload
  * @outputs       query result / created scan row
  * @depends       none (executor fourni par l'appelant)
- * @used-by       routes/hub-dashboard.js, routes/admin/users.js, services/qr-collection-core.js
+ * @used-by       routes/hub-dashboard.js, routes/admin/users.js, services/qr-collection-core.js, services/inventory-service.js
  * @db-read       none
- * @db-write      scans
+ * @db-write      scans, scan_events
  * @db-txn        caller_transaction_preserved
- * @doctrine      writer_not_owner_boundary
- * @impact-areas  logistics, orders, dashboard
- * @version       2026-08
+ * @doctrine      writer_not_owner_boundary, HUB-001_PHYSICAL_IDENTITY_ALLOCATION_CUSTODY
+ * @impact-areas  logistics, orders, dashboard, inventory
+ * @version       2026-09
  */
 
 'use strict';
@@ -41,6 +41,56 @@ async function recordHubPreparationScan(executor, {
      VALUES ($1, 'preparation', $2, $3, $4)`,
     [orderId, scannedBy, notes, scanCode]
   );
+}
+
+/**
+ * HUB-001 — preuve append-only qu'une allocation physique prouvée a été
+ * scannée dans un Market Parcel compatible. scan_events reste lifecycle-owned
+ * par Logistics ; Inventory ne fait donc aucun INSERT direct dans cette table.
+ */
+async function recordHubAllocationScanEvent(executor, {
+  parcelId,
+  orderId,
+  inventoryItemId,
+  orderItemId,
+  purchaseOrderId,
+  marketId,
+  relaisId,
+  quantity,
+  scannedBy = null,
+  matchedProposal = null,
+}) {
+  assertExecutor(executor);
+
+  const metadata = {
+    inventory_item_id: inventoryItemId,
+    order_item_id: orderItemId,
+    purchase_order_id: purchaseOrderId,
+    market_id: marketId,
+    relais_id: relaisId,
+    quantity,
+    matched_proposal: matchedProposal,
+    hub_contract: 'HUB-001',
+  };
+
+  const { rows: [event] } = await executor.query(`
+    INSERT INTO scan_events (
+      parcel_id, order_id, event_type, scan_code,
+      scanned_by, actor_role, notes, metadata, status
+    ) VALUES (
+      $1, $2, 'item_scanned', $3,
+      $4, 'hub_agent', 'Physical allocation assigned to compatible Market Parcel', $5::jsonb, 'applied'
+    )
+    RETURNING id, parcel_id, order_id, event_type, created_at
+  `, [
+    parcelId,
+    orderId,
+    String(inventoryItemId),
+    scannedBy,
+    JSON.stringify(metadata),
+  ]);
+
+  return event;
 }
 
 /**
@@ -81,6 +131,7 @@ async function detachUserFromScans(executor, userId) {
 
 module.exports = {
   recordHubPreparationScan,
+  recordHubAllocationScanEvent,
   recordQrCollectionScan,
   detachUserFromScans,
 };
