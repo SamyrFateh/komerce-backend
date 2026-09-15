@@ -1,6 +1,7 @@
 'use strict';
 
 /** @test-kind unit @test-runner jest @test-requires none */
+jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../services/notification-service', () => ({ notifyText: jest.fn(), notifyParcelScan: jest.fn() }));
 jest.mock('../../utils/rules', () => ({ getRule: jest.fn(), getRuleNumber: jest.fn() }));
 jest.mock('../../utils/reference', () => ({ generateParcelRef: jest.fn() }));
@@ -13,7 +14,10 @@ jest.mock('../../services/parcel-guards', () => ({
   validateParcelCreate: jest.fn(), validateSplitItems: jest.fn(), checkParcelCancellable: jest.fn(), validateParcelTransition: jest.fn(),
 }));
 jest.mock('../../services/parcel-transition-guard', () => ({ assertParcelTransitionAllowed: jest.fn() }));
-jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }) }));
+jest.mock('../../utils/logger', () => ({
+  child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() }),
+  forModule: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() }),
+}));
 
 const { assertParcelTransitionAllowed } = require('../../services/parcel-transition-guard');
 const { validateParcelTransition } = require('../../services/parcel-guards');
