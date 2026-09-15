@@ -20,6 +20,8 @@ Purchasing possède `purchase_orders` et la Supplier Order Identity utilisée po
 
 HUB-001 est donc un consommateur des vérités amont, jamais un mécanisme de réparation de ces vérités.
 
+Lorsqu'une vérité amont nécessaire manque ou se contredit, Hub peut constater l'impossibilité physique et mettre l'unité en quarantaine, mais le dossier d'exception reste gouverné par Incident Management. `resolver_domain` et `due_at` sont déterminés dès l'ouverture ; Hub ne peut pas fermer une erreur `UPSTREAM_TRUTH` par décision manuelle.
+
 ## 3. Allocation économique
 
 `hub_purchase_allocations` est un snapshot append-only/immutable créé à partir d'une Purchase Order exacte. Il conserve au minimum :
@@ -32,7 +34,7 @@ HUB-001 est donc un consommateur des vérités amont, jamais un mécanisme de r�
 - `market_id` ;
 - la destination autoritative (`destination_ref`).
 
-Une PO historique ou ambiguë qui ne permet pas de reconstruire exactement cette identité n'est jamais devinée. Le physique correspondant est mis en quarantaine ou l'opération échoue fermé.
+Une PO historique ou ambiguë qui ne permet pas de reconstruire exactement cette identité n'est jamais devinée. Le physique correspondant est mis en quarantaine avec un incident gouverné, ou l'opération échoue fermé.
 
 Une allocation ne se modifie pas. Changer son Market, son order item, sa destination ou son identité fournisseur signifierait une nouvelle décision économique amont, hors autorité Hub.
 
@@ -46,15 +48,17 @@ Les opérations `SPLIT`, `MERGE` et `REPACK` ferment les anciens placements et e
 
 La somme des placements actifs d'une allocation ne peut jamais dépasser la quantité achetée, y compris sous concurrence.
 
-## 5. Multi-market
+## 5. Multi-market et destination
 
-Un colis fournisseur entrant peut légitimement contenir des allocations destinées à plusieurs Markets. Le Hub est alors un point de transit neutre : aucune destination n'est encore inventée au niveau du contenant.
+Un colis fournisseur entrant peut légitimement contenir des allocations destinées à plusieurs Markets ou destinations. Le Hub est alors un point de transit neutre : aucune destination n'est inventée au niveau du contenant.
 
-Avant la sortie, la matière doit être séparée explicitement. Toute unité qui passe à `PACKED` ou `DISPATCHED` doit contenir au moins une allocation active et exactement un `market_id` distinct. Le `market_id` de l'unité physique est dérivé par le système depuis ces allocations puis devient immuable.
+Avant la sortie, la matière doit être séparée explicitement. Toute unité qui passe à `PACKED` ou `DISPATCHED` doit contenir au moins une allocation active, exactement un `market_id` distinct **et exactement une `destination_ref` distincte**. Être mono-Market ne suffit pas : deux relais différents du même Market ne peuvent jamais partager silencieusement un même outbound.
 
-Conséquence : KM, CM, CG ou tout futur Market peuvent partager un inbound, mais ne peuvent jamais se mélanger silencieusement dans un outbound.
+Le `market_id` de l'unité physique est dérivé par le système depuis les allocations puis devient immuable. La destination reste dérivée de l'allocation économique immuable et n'est jamais saisie par l'opérateur Hub.
 
-## 6. Custody
+Conséquence : KM, CM, CG ou tout futur Market peuvent partager un inbound, mais ni deux Markets ni deux destinations commerciales ne peuvent se mélanger silencieusement dans un outbound.
+
+## 6. Custody et quarantaine
 
 `hub_custody_events` est append-only. Il trace les transitions d'état, entrées/sorties de placement, opérations physiques et constats irréversibles.
 
@@ -63,6 +67,15 @@ Cycle nominal :
 `RECEIVED → IDENTIFIED → QUALITY_CHECKED → LOCATED → ALLOCATED → PICKED → PACKED → DISPATCHED`
 
 `QUARANTINED` est le fail-closed opérationnel lorsqu'une identité ou un état physique ne permet pas de poursuivre avec certitude. `SUPERSEDED` clôt une unité vidée par une opération physique explicite.
+
+Une quarantaine provoquée par une vérité Purchasing/Orders non prouvée ouvre dans la même transaction un incident `UPSTREAM_TRUTH`. La sortie de quarantaine exige :
+
+1. correction durable par le domaine `resolver_domain` ;
+2. revalidation F3 du prédicat original ;
+3. résolution de l'incident ;
+4. rematérialisation des allocations/placements sur **la même unité physique**.
+
+Tant qu'un incident actif référence l'unité physique, un `QUARANTINED → RECEIVED` direct est interdit. Les outcomes destructifs (`LOST`, `STOLEN`, `DESTROYED`, `DAMAGED_UNUSABLE`) restent irréversibles.
 
 Aucune suppression d'historique n'est autorisée.
 
@@ -84,9 +97,11 @@ HUB-001 échoue fermé notamment si :
 - `market_id` ou la destination amont ne sont pas résolvables ;
 - une quantité physique dépasserait la quantité achetée ;
 - un opérateur tente de modifier une allocation économique ;
-- une unité outbound est vide ou multi-market ;
-- une opération tente de modifier le contenu d'une unité déjà `PACKED`, `DISPATCHED`, `QUARANTINED` ou `SUPERSEDED`.
+- une unité outbound est vide, multi-market **ou multi-destination** ;
+- une opération tente de modifier le contenu d'une unité déjà `PACKED`, `DISPATCHED`, `QUARANTINED` ou `SUPERSEDED` ;
+- une unité QUARANTINED possède encore un incident actif ;
+- une réouverture physique tente de contourner la revalidation F3.
 
 ## 9. Non-objectifs HUB-001
 
-Ce lot n'introduit pas de commande fournisseur automatique, de paiement fournisseur, de remboursement client, de réassignation commerciale, de nouvelle résolution Sourcing, ni de nouvelle preuve d'incident. Les preuves d'incident physiques restent dans `scan_events` conformément à HUB-000/F3.
+Ce lot n'introduit pas de commande fournisseur automatique, de paiement fournisseur, de remboursement client, de réassignation commerciale, de nouvelle résolution Sourcing, ni de nouveau store de preuve. Les preuves physiques d'incident restent dans `scan_events` conformément à HUB-000/F3 ; `hub_custody_events` trace la custody et le lineage, pas une preuve concurrente.

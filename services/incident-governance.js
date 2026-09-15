@@ -8,13 +8,13 @@
  * @outputs       origin_domain, resolver_domain, resolution_class
  * @depends       none
  * @used-by       services/incident-write-service.js, services/incident-service.js,
- *                services/parcel-transition-guard.js
+ *                services/parcel-transition-guard.js, services/hub-physical-identity.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      F2_INCIDENT_GOVERNANCE_CONTRACT
- * @impact-areas  incident-management, logistics, orders
- * @version       2026-09 (rev.2 — reconciliation_error corrigé en mapping par sous-type)
+ * @impact-areas  incident-management, logistics, orders, purchasing
+ * @version       2026-09 (rev.3 — HUB-001 upstream quarantine subtypes)
  *
  * F2 — Incident Governance Contract.
  *
@@ -39,29 +39,13 @@
  *                          pour un NOUVEL incident (resolveGovernanceOrThrow
  *                          échoue fail-closed dans ce cas).
  *
- * ⚠️ CORRECTIF (revue F2) : `reconciliation_error` n'a PAS un owner unique.
- * services/reconciliation-service.js produit plusieurs sous-types
- * hétérogènes sous ce même incident_type (stockés dans `details.type`), qui
- * n'ont pas tous le même origin_domain/resolver_domain. Le mapping v1 de ce
- * fichier affirmait `reconciliation_error -> ORDERS/ORDERS/UPSTREAM_TRUTH`
- * pour TOUS les sous-types : c'était une autorité inventée, pas observée.
- * Corrigé ci-dessous via RECONCILIATION_SUBTYPE_MAPPING.
+ * `reconciliation_error` n'a PAS un owner unique. Le mapping est donc par
+ * sous-type. HUB-001 ajoute trois sous-types upstream uniquement : identité
+ * d'achat/SOI et quantité d'achat appartiennent à Purchasing ; destination
+ * commerciale appartient à Orders. Le Hub les détecte mais ne les corrige pas.
  *
- * Mapping confirmé contre le producteur réel `services/reconciliation-service.js` :
- * six sous-types créent effectivement des incidents. `partial_allocation`
- * est un cas normal documenté et ne crée aucun incident ; il est donc
- * volontairement absent du mapping. `parcel_items` est lifecycle-owned par
- * Logistics, ce qui fixe l'autorité des écarts d'allocation.
- *
- * Le reste du mapping (11 types non-reconciliation) couvre exhaustivement
- * les valeurs actives du CHECK constraint `incidents.incident_type`
- * (migrations/022_parcel_first_refactor.sql).
- *
- * hub_relevant = true seulement si origin_domain === 'LOGISTICS'. Un type
- * partageant order_id/parcel_id avec un colis (ex. payment_issue,
- * reconciliation_error) ne devient PAS Hub-relevant par la seule présence de
- * ces clés (doctrine §6 — "Unknown Hub incident = block. Unknown
- * foreign-domain incident = no invented Hub authority.").
+ * Le reste du mapping couvre les valeurs actives du CHECK constraint
+ * `incidents.incident_type` (migrations/022_parcel_first_refactor.sql).
  */
 'use strict';
 
@@ -92,6 +76,9 @@ const RECONCILIATION_SUBTYPE_MAPPING = Object.freeze({
   over_allocation:      Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
   unallocated_item:     Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
   order_status_drift:   Object.freeze({ origin_domain: 'ORDERS', resolver_domain: 'ORDERS', resolution_class: 'UPSTREAM_TRUTH' }),
+  hub_purchase_identity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
+  hub_purchase_quantity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
+  hub_destination_conflict:       Object.freeze({ origin_domain: 'ORDERS', resolver_domain: 'ORDERS', resolution_class: 'UPSTREAM_TRUTH' }),
 });
 
 function resolveGovernance(incidentType, context = {}) {

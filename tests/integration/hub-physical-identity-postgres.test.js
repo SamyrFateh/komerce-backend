@@ -141,6 +141,25 @@ beforeAll(async () => {
         qty integer NOT NULL,
         status text NOT NULL
       );
+      CREATE TABLE incidents (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        parcel_id uuid,
+        order_id uuid,
+        order_item_id uuid,
+        incident_type text NOT NULL,
+        severity text NOT NULL DEFAULT 'medium',
+        status text NOT NULL DEFAULT 'open',
+        title text,
+        description text,
+        details jsonb NOT NULL DEFAULT '{}'::jsonb,
+        detected_source text,
+        origin_domain text,
+        resolver_domain text,
+        resolution_class text,
+        due_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
       CREATE TABLE outbox_events (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         aggregate_type text NOT NULL,
@@ -167,6 +186,7 @@ afterEach(async () => {
     hub_physical_unit_placements,
     hub_physical_units,
     hub_purchase_allocations,
+    incidents,
     outbox_events,
     purchase_orders,
     order_items,
@@ -380,6 +400,11 @@ describe('HUB-001 — market-safe physical identity', () => {
 
     expect(result.quarantined).toBe(true);
     expect(result.reason_code).toBe('HUB_SUPPLIER_IDENTITY_UNRESOLVABLE');
+    expect(result.incident).toMatchObject({
+      status: 'open',
+      resolver_domain: 'PURCHASING',
+      resolution_class: 'UPSTREAM_TRUTH',
+    });
     const counts = await query(`
       SELECT
         (SELECT COUNT(*) FROM hub_purchase_allocations)::integer AS allocations,
