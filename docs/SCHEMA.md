@@ -340,6 +340,26 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 ---
 
+### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
+
+<!-- schema-pending
+object: outbox_events
+kind: table
+migration: 228
+section: ### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
+role: Primitive outbox transactionnelle. Un fait métier et son événement (physical_outcome_reported) écrits dans la même transaction côté appelant (services/outbox-producer.js) ; livraison at-least-once, retry durable (attempts/last_error), append-only.
+-->
+
+<!-- schema-pending
+object: physical_outcome_receipts
+kind: table
+migration: 228
+section: ### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
+role: Reçu d'audit durable du consumer minimal réel F0 (services/outbox-worker.js), sans effet métier. Idempotence garantie par UNIQUE(event_id, consumer_key).
+-->
+
+---
+
 ## 5. Vues critiques
 
 | Vue | Rôle | Consommée par |
