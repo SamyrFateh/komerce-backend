@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -209,31 +208,40 @@ describe('checkCashPending', () => {
 });
 
 describe('_createAlertIfNew', () => {
-  it('incident déjà ouvert pour ce colis+type → retourne null, pas d\'INSERT', async () => {
+  it('incident déjà ouvert pour ce colis+type canonique → retourne null, pas d\'INSERT', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'existing-inc' }] });
     const result = await AlertEngine._createAlertIfNew('stuck_parcel', 'p1', 'o1', 'high', 'desc', { a: 1 });
     expect(result).toBeNull();
     expect(db.query).toHaveBeenCalledTimes(1);
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toContain('incident_type = $2');
+    expect(sql).toContain("details->>'alert_type' = $3");
+    expect(params).toEqual(['p1', 'delay', 'stuck_parcel']);
   });
 
-  it('aucun incident existant → INSERT exécuté, incident retourné', async () => {
+  it('aucun incident existant → INSERT canonique avec gouvernance, incident retourné', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: 'new-inc', type: 'stuck_parcel' }] });
+      .mockResolvedValueOnce({ rows: [{ id: 'new-inc', incident_type: 'delay' }] });
     const result = await AlertEngine._createAlertIfNew('stuck_parcel', 'p1', 'o1', 'high', 'desc', { a: 1 });
-    expect(result).toEqual({ id: 'new-inc', type: 'stuck_parcel' });
+    expect(result).toEqual({ id: 'new-inc', incident_type: 'delay' });
     expect(db.query).toHaveBeenCalledTimes(2);
-    const [, insertParams] = db.query.mock.calls[1];
-    expect(insertParams).toEqual(['p1', 'o1', 'stuck_parcel', 'high', 'desc', JSON.stringify({ a: 1 })]);
+    const [insertSql, insertParams] = db.query.mock.calls[1];
+    expect(insertSql).toContain('origin_domain, resolver_domain, resolution_class');
+    expect(insertParams).toEqual([
+      'p1', 'o1', 'delay', 'high', 'desc', 'desc',
+      JSON.stringify({ a: 1, alert_type: 'stuck_parcel' }),
+      'LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF',
+    ]);
   });
 
-  it('metadata absente → JSON.stringify({})', async () => {
+  it('metadata absente → details garde alert_type canonique', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'new-inc' }] });
     await AlertEngine._createAlertIfNew('stuck_parcel', 'p1', 'o1', 'high', 'desc', undefined);
     const [, insertParams] = db.query.mock.calls[1];
-    expect(insertParams[5]).toBe('{}');
+    expect(insertParams[6]).toBe(JSON.stringify({ alert_type: 'stuck_parcel' }));
   });
 });
 
@@ -243,17 +251,17 @@ describe('getActiveAlerts', () => {
     const result = await AlertEngine.getActiveAlerts();
     expect(result).toEqual([]);
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).not.toMatch(/i\.type = \$/);
+    expect(sql).not.toMatch(/i\.incident_type = \$/);
     expect(sql).not.toMatch(/i\.severity = \$/);
     expect(params).toEqual([]);
   });
 
-  it('filtre type seul', async () => {
+  it('filtre type seul via incident_type canonique', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
-    await AlertEngine.getActiveAlerts({ type: 'stuck_parcel' });
+    await AlertEngine.getActiveAlerts({ type: 'delay' });
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).toMatch(/i\.type = \$1/);
-    expect(params).toEqual(['stuck_parcel']);
+    expect(sql).toMatch(/i\.incident_type = \$1/);
+    expect(params).toEqual(['delay']);
   });
 
   it('filtre severity seul', async () => {
@@ -270,7 +278,7 @@ describe('getActiveAlerts', () => {
     const result = await AlertEngine.getActiveAlerts({ type: 'delay', severity: 'high' });
     expect(result).toEqual(rows);
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).toMatch(/i\.type = \$1/);
+    expect(sql).toMatch(/i\.incident_type = \$1/);
     expect(sql).toMatch(/i\.severity = \$2/);
     expect(params).toEqual(['delay', 'high']);
   });
