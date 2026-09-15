@@ -24,6 +24,7 @@ module.exports = {
 
   perimeter: {
     in: [
+      'préflight Allegro Sandbox : identité exacte et stock/prix live, achat bloqué faute de checkout acheteur supporté',
       'déclenchement automatique d\'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur',
       'notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande',
       'réception (partielle ou totale) d\'un bon de commande, et rattachement au flux logistique',
@@ -56,6 +57,7 @@ module.exports = {
 
   files: {
     services: [
+      'services/suppliers/allegro-fulfillment-adapter.js',
       'services/purchasing-trigger-service.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
@@ -78,6 +80,7 @@ module.exports = {
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
     ],
     tests: [
+      'tests/unit/allegro-fulfillment-adapter.test.js',
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/integration/purchasing-exact-sku-po.test.js',
       'tests/unit/purchasing.test.js',

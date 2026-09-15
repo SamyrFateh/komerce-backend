@@ -33,7 +33,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress)',
+      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
@@ -47,6 +47,7 @@ module.exports = {
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
+      'source Allegro Sandbox vendeur : offres exactes V2 en PLN, OAuth refresh chiffré sous verrou, aucun achat automatique',
       'source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique',
       'pool AliExpress staging borné à 500 références réellement en stock, dédupliqué et reprenable, alimenté exclusivement via la Raffinerie et sans publication automatique',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
@@ -79,11 +80,14 @@ module.exports = {
       'utils/categories-cache.js',
     ],
     scripts: [
+      'scripts/allegro-sandbox-check.js',
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
     ],
     services: [
+      'services/suppliers/allegro-sandbox-client.js',
+      'services/suppliers/connectors/allegro-connector.js',
       'services/product-publication-guard.js',
       'services/product-admin-service.js',
       'services/product-variant-service.js',
@@ -168,6 +172,7 @@ module.exports = {
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
       'docs/CJ_CONNECTOR.md',
       'docs/cj-connector-validation.md',
+      'docs/allegro-sandbox.md',
       'docs/cj-real-showcase-63.md',
       'docs/cj-real-showcase-validation.md',
       'docs/cj-real-showcase-runbook.md',
@@ -231,6 +236,9 @@ module.exports = {
       'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
+      'tests/unit/allegro-sandbox-client.test.js',
+      'tests/unit/allegro-connector.test.js',
+      'tests/unit/allegro-sandbox-check.test.js',
       'tests/unit/admin-boutique-categories.test.js',
       'tests/unit/catalog-product-route-canary-http.test.js',
       'tests/unit/catalog-product-source-read-service.test.js',

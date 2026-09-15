@@ -46,6 +46,7 @@ module.exports = {
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
+      'taux sourcing PLN vers KMF explicite dans finance_config, aucun taux par défaut',
       'moteur de pricing et application des regles',
       'audit des changements de prix produit dans price_history',
       'allocation de cout',
@@ -133,6 +134,7 @@ module.exports = {
       'routes/sourcing.js',
     ],
     migrations: [
+      'migrations/235_sourcing_pln_rate.sql',
       'migrations/019_finance_columns.sql',
       'migrations/033_parametres_extension.sql',
       'migrations/035c_fix_suppliers_stats_enum.sql',

@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const ALLOWED_CURRENCIES = new Set(['AED', 'EUR', 'USD', 'KMF']);
+const ALLOWED_CURRENCIES = new Set(['AED', 'EUR', 'USD', 'KMF', 'PLN']);
 const BLOCKED_SUPPLIER_IDENTITY = 'BLOCKED_SUPPLIER_IDENTITY';
 
 function positiveInt(value, name = 'quantity') {

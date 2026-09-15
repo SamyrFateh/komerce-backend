@@ -197,7 +197,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel. |
+| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Intention migration 235 (non attestée live) : `taux_pln_kmf` (`NUMERIC(18,6)`) nullable, strictement positif lorsque renseigné, aucun taux par défaut. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel. |
 | `economic_variables` | Variables économiques (legacy, voir ADR-009). |
 | `exchange_rates` | Taux de change historisés. |
 | `pricing_components` | Composantes de pricing. |

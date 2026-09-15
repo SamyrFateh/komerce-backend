@@ -59,7 +59,7 @@ const { resolveFxRates } = require('../utils/rates');
  * @param {object} finance   { taux_aed_kmf, taux_change_eur_kmf }
  * @returns {number} montant en KMF (entier)
  */
-const SUPPORTED_CURRENCIES = ['AED', 'EUR', 'USD', 'KMF'];
+const SUPPORTED_CURRENCIES = ['AED', 'EUR', 'USD', 'KMF', 'PLN'];
 
 function convertToKMF(amount, currency, finance) {
   const v = Number(amount) || 0;
@@ -75,6 +75,11 @@ function convertToKMF(amount, currency, finance) {
     );
   }
   if (cur === 'KMF') return Math.round(v);
+  if (cur === 'PLN') {
+    const rate = Number(finance?.taux_pln_kmf);
+    if (!Number.isFinite(rate) || rate <= 0) throw new Error('PLN_FX_RATE_REQUIRED: finance_config.taux_pln_kmf requis');
+    return Math.round(v * rate);
+  }
   const fx = resolveFxRates(finance);
   if (cur === 'AED') return Math.round(v * fx.aed_kmf);
   if (cur === 'EUR') return Math.round(v * fx.eur_kmf);

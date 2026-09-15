@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        supplier_import_payload
  * @outputs       normalized_supplier_products, connector_catalog
- * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js
+ * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
  * @db-read       none
  * @db-write      none
@@ -23,6 +23,7 @@ const manualConnector = require('./suppliers/connectors/manual-connector');
 const noonModule = require('./suppliers/connectors/noon-connector');
 const cjModule = require('./suppliers/connectors/cj-connector');
 const aliexpressModule = require('./suppliers/connectors/aliexpress-connected-connector');
+const allegroModule = require('./suppliers/connectors/allegro-connector');
 
 const CONNECTORS = Object.freeze({
   csv: { module: csvConnector, active: true, label: 'CSV import' },
@@ -30,6 +31,7 @@ const CONNECTORS = Object.freeze({
   api: {
     noon: { module: noonModule, active: noonModule.IS_ACTIVE, label: 'Noon API', reason: noonModule.INACTIVE_REASON },
     cj: { module: cjModule, active: cjModule.IS_ACTIVE, label: 'CJdropshipping API', reason: cjModule.INACTIVE_REASON },
+    allegro: { supportsFullSnapshot: false, module: allegroModule, get active() { return allegroModule.IS_ACTIVE; }, label: 'Allegro Sandbox (seller test offers)', get reason() { return allegroModule.INACTIVE_REASON; } },
     aliexpress: {
       module: aliexpressModule,
       active: aliexpressModule.IS_ACTIVE,
@@ -90,6 +92,7 @@ async function dispatchToConnector(body = {}) {
     const supplier = String(body.supplier_id || '').toLowerCase();
     const entry = CONNECTORS.api[supplier];
     if (!entry) throw new Error(`API non configurée : supplier "${supplier}" inconnu. Sources connues : ${Object.keys(CONNECTORS.api).join(', ')}`);
+    if (entry.supportsFullSnapshot === false && body.is_full_snapshot) throw new Error('Ce connecteur borné ne permet pas un archivage full snapshot');
     if (!entry.active) throw new Error(`API non configurée : ${entry.reason || 'connecteur inactif'}`);
     if (!entry.module || typeof entry.module.fetchProducts !== 'function') {
       throw new Error(`API "${supplier}" déclarée mais non câblée. Voir api-connector.base.js.`);
