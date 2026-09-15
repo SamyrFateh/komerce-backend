@@ -4,10 +4,10 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        sandbox credentials, bounded read request
+ * @inputs        sandbox credentials, bounded read request, guarded seller draft seed
  * @outputs       provider JSON, ephemeral access token
  * @depends       db.js, node:crypto
- * @used-by       services/suppliers/connectors/allegro-connector.js
+ * @used-by       services/suppliers/connectors/allegro-connector.js, scripts/allegro-sandbox-check.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
  * @db-txn        owned
@@ -30,6 +30,14 @@ function configuration(env) {
   const raw = env.ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY.trim();
   if (!/^[a-f0-9]{64}$/i.test(raw)) throw new Error('ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 32 octets hex requis');
   return { key: Buffer.from(raw, 'hex'), userAgent: env.ALLEGRO_SANDBOX_USER_AGENT.trim() };
+}
+
+function seedConfiguration(env) {
+  const c = configuration(env);
+  const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
+  if (runtime !== 'staging') throw new Error('ALLEGRO_SANDBOX_SEED_STAGING_ONLY');
+  if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED !== '1') throw new Error('ALLEGRO_SANDBOX_SEED_DISABLED');
+  return c;
 }
 
 function encrypt(token, key) {
@@ -110,24 +118,78 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     return inFlight;
   }
 
-  async function get(path, params = {}) {
-    const c = configuration(env); // Gate is rechecked for every call, even with a cached token.
-    if (!/^\/sale\/(offers|product-offers\/[0-9]{1,30})$/.test(path)) throw new Error('ALLEGRO_READ_PATH_NOT_ALLOWED');
-    const url = new URL(path, API);
-    url.search = new URLSearchParams(params).toString();
+  async function authorizedJson(c, url, init = {}) {
     const bearer = await accessToken(c);
     try {
-      return await json(url.toString(), { method: 'GET', headers: {
-        Authorization: `Bearer ${bearer}`, Accept: 'application/vnd.allegro.public.v1+json',
-        'User-Agent': c.userAgent,
-      } });
+      return await json(url.toString(), {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${bearer}`,
+          Accept: 'application/vnd.allegro.public.v1+json',
+          'User-Agent': c.userAgent,
+          ...(init.headers || {}),
+        },
+      });
     } catch (error) {
       if (error.message === 'ALLEGRO_HTTP_401') cached = null;
       throw error;
     }
   }
-  return { get };
+
+  async function get(path, params = {}) {
+    const c = configuration(env); // Gate is rechecked for every call, even with a cached token.
+    if (!/^\/sale\/(offers|product-offers\/[0-9]{1,30})$/.test(path)) throw new Error('ALLEGRO_READ_PATH_NOT_ALLOWED');
+    const url = new URL(path, API);
+    url.search = new URLSearchParams(params).toString();
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
+  async function searchProducts(phrase, { limit = 10 } = {}) {
+    const c = seedConfiguration(env);
+    const q = String(phrase || '').trim();
+    if (q.length < 2 || q.length > 120) throw new Error('ALLEGRO_SANDBOX_SEED_QUERY_INVALID');
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) throw new Error('ALLEGRO_SANDBOX_SEED_LIMIT_INVALID');
+    const url = new URL('/sale/products', API);
+    url.search = new URLSearchParams({ phrase: q, limit: String(limit) }).toString();
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
+  async function createDraftOffer({ productId, name, pricePln, stock = 10 }) {
+    const c = seedConfiguration(env);
+    const id = String(productId || '').trim();
+    const title = String(name || '').trim();
+    const price = Number(pricePln);
+    if (!/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_SEED_PRODUCT_ID_INVALID');
+    if (title.length < 3 || title.length > 75) throw new Error('ALLEGRO_SANDBOX_SEED_NAME_INVALID');
+    if (!Number.isFinite(price) || price <= 0 || price > 1000000) throw new Error('ALLEGRO_SANDBOX_SEED_PRICE_INVALID');
+    if (!Number.isSafeInteger(stock) || stock < 1 || stock > 1000) throw new Error('ALLEGRO_SANDBOX_SEED_STOCK_INVALID');
+    const payload = {
+      productSet: [{ product: { id } }],
+      name: title,
+      parameters: [{ id: '11323', valuesIds: ['11323_1'] }],
+      sellingMode: { format: 'BUY_NOW', price: { amount: price.toFixed(2), currency: 'PLN' } },
+      stock: { available: stock },
+      publication: { status: 'INACTIVE' },
+      payments: { invoice: 'NO_INVOICE' },
+      location: { countryCode: 'PL', province: 'MAZOWIECKIE', city: 'Warszawa', postCode: '00-001' },
+    };
+    const url = new URL('/sale/product-offers', API);
+    return authorizedJson(c, url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  return { get, searchProducts, createDraftOffer };
 }
 
 const client = createClient();
-module.exports = { configuration, createClient, get: client.get };
+module.exports = {
+  configuration,
+  seedConfiguration,
+  createClient,
+  get: client.get,
+  searchProducts: client.searchProducts,
+  createDraftOffer: client.createDraftOffer,
+};
