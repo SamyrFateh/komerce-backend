@@ -8,7 +8,7 @@
  * @outputs       outbox_events row id
  * @depends       none
  * @used-by       futur HUB-001 (Physical Identity, Allocation & Custody)
- * @db-read       none
+ * @db-read       outbox_events
  * @db-write      outbox_events
  * @db-txn        caller-owned — ce module n'ouvre JAMAIS sa propre transaction
  * @doctrine      HUB-000 F0 (transactional outbox lite)
@@ -24,6 +24,10 @@
  * l'atomicité fait+événement. Un appel hors transaction n'est pas détecté ici
  * (ce module ne peut pas vérifier l'état transactionnel du client), mais viole
  * la doctrine — la responsabilité d'atomicité appartient à l'appelant.
+ *
+ * Ordre causal : ce module attribue aggregate_sequence sous
+ * pg_advisory_xact_lock(hashtext('type:id')) — c'est LUI, et pas created_at,
+ * qui porte l'ordre causal par agrégat. created_at reste audit/observabilité.
  *
  * Aucun emit()/setImmediate()/callback post-COMMIT/appel direct vers
  * Purchasing ou Orders : ce module écrit une ligne, un point.
@@ -69,10 +73,28 @@ async function reportPhysicalOutcome(executor, { aggregateType, aggregateId, out
 
   const payload = Object.assign({}, details, { outcome_type: outcomeType });
 
+  // Sérialisation par agrégat. Le verrou est BLOQUANT et transaction-scoped :
+  // il reste tenu jusqu'au COMMIT/ROLLBACK de l'appelant. Ainsi deux producers
+  // concurrents du même agrégat ne peuvent pas réserver des séquences dans un
+  // ordre puis committer dans l'ordre inverse.
+  await q.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${aggregateType}:${aggregateId}`]);
+
+  // Séquence attribuée SOUS le verrou. La contrainte UNIQUE côté DB est la
+  // preuve supplémentaire que deux positions identiques ne peuvent pas être
+  // acceptées silencieusement.
   const { rows } = await q.query(
-    `INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
-     VALUES ($1, $2, 'physical_outcome_reported', $3::jsonb)
-     RETURNING id`,
+    `INSERT INTO outbox_events (aggregate_type, aggregate_id, aggregate_sequence, event_type, payload)
+     VALUES (
+       $1, $2,
+       COALESCE(
+         (SELECT MAX(aggregate_sequence)
+            FROM outbox_events
+           WHERE aggregate_type = $1 AND aggregate_id = $2),
+         0
+       ) + 1,
+       'physical_outcome_reported', $3::jsonb
+     )
+     RETURNING id, aggregate_sequence`,
     [aggregateType, aggregateId, JSON.stringify(payload)]
   );
 
