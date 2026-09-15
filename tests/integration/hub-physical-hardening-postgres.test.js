@@ -18,6 +18,7 @@ const {
   createPhysicalUnit,
   transitionPhysicalUnit,
   moveAllocationQuantity,
+  recordPhysicalUnitOutcome,
 } = require('../../services/hub-physical-identity');
 
 jest.setTimeout(30000);
@@ -246,6 +247,17 @@ describe('HUB-001 hardening — destination commerciale', () => {
 });
 
 describe('HUB-001 hardening — quarantaine gouvernée F2/F3', () => {
+  test('orphan non-destructive quarantine is rejected at commit', async () => {
+    await expect(transact((client) => createPhysicalUnit(client, {
+      reference: 'ORPHAN-QUARANTINE',
+      unitType: 'SUPPLIER_PACKAGE',
+      initialState: 'QUARANTINED',
+    }))).rejects.toThrow(/hub_quarantine_incident_required/);
+
+    expect((await query("SELECT COUNT(*)::integer AS n FROM hub_physical_units WHERE reference='ORPHAN-QUARANTINE'")).rows[0].n)
+      .toBe(0);
+  });
+
   test('missing SOI creates durable Purchasing incident and cannot release while OPEN', async () => {
     const purchase = await seedPurchase({ soi: null });
     const result = await transact((client) => receiveSupplierPackage(client, {
@@ -318,5 +330,25 @@ describe('HUB-001 hardening — quarantaine gouvernée F2/F3', () => {
     );
     expect(Number(placement.quantity)).toBe(1);
     expect(String(placement.purchase_order_id)).toBe(String(purchase.po));
+  });
+
+  test('destructive outcome may quarantine without repair incident and remains terminal', async () => {
+    const purchase = await seedPurchase();
+    const inbound = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-DESTRUCTIVE',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+
+    const outcome = await transact((client) => recordPhysicalUnitOutcome(client, {
+      unitId: inbound.unit.id,
+      outcomeType: 'DESTROYED',
+    }));
+    expect(outcome.unit).toMatchObject({ state: 'QUARANTINED', outcome_type: 'DESTROYED' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM incidents')).rows[0].n).toBe(0);
+
+    await expect(query(
+      "UPDATE hub_physical_units SET state='RECEIVED' WHERE id=$1",
+      [inbound.unit.id]
+    )).rejects.toThrow(/hub_destructive_outcome_quarantine_terminal/);
   });
 });
