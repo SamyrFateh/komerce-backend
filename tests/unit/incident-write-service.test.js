@@ -7,20 +7,23 @@ const {
   createAlertEngineIncidentIfNew,
   acknowledgeAlertEngineIncident,
   resolveOpsIncident,
+  resolvePhysicalProofIncident,
   detachUserFromIncidents,
   seedIncident,
 } = require('../../services/incident-write-service');
 
-describe('incident-write-service — F2', () => {
-  test('scan creation resolves canonical governance', async () => {
+describe('incident-write-service — F2/F3', () => {
+  test('scan creation resolves canonical governance and persists due_at', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'inc-1' }] }) };
     const incident = await createScanIncident(executor, {
       parcel_id: 'p1', order_id: 'o1', incident_type: 'sequence_violation', severity: 'high',
       title: 'Sequence', details: { step: 'shipped' }, detected_source: 'system',
     });
     expect(incident).toEqual({ id: 'inc-1' });
-    expect(executor.query.mock.calls[0][0]).toContain('origin_domain, resolver_domain, resolution_class');
-    expect(executor.query.mock.calls[0][1].slice(-3)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    expect(executor.query.mock.calls[0][0]).toContain('origin_domain, resolver_domain, resolution_class, due_at');
+    const values = executor.query.mock.calls[0][1];
+    expect(values.slice(-4, -1)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    expect(values.at(-1)).toBeInstanceOf(Date);
   });
 
   test('scan creation unknown type fails closed before SQL', async () => {
@@ -30,24 +33,28 @@ describe('incident-write-service — F2', () => {
     expect(executor.query).not.toHaveBeenCalled();
   });
 
-  test('reconciliation Logistics subtype gets Logistics authority', async () => {
+  test('reconciliation Logistics subtype gets Logistics authority + due_at', async () => {
     const executor = { query: jest.fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'inc-2' }] }) };
     await expect(createReconciliationIncident(executor, 'o1', 'p1', 'oi1', {
       type: 'over_allocation', severity: 'high', message: 'over', details: {},
     })).resolves.toEqual({ id: 'inc-2' });
-    expect(executor.query.mock.calls[1][1].slice(-3)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    const values = executor.query.mock.calls[1][1];
+    expect(values.slice(-4, -1)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+    expect(values.at(-1)).toBeInstanceOf(Date);
   });
 
-  test('reconciliation Orders subtype gets Orders/UPSTREAM_TRUTH', async () => {
+  test('reconciliation Orders subtype gets Orders/UPSTREAM_TRUTH + due_at', async () => {
     const executor = { query: jest.fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'inc-3' }] }) };
     await createReconciliationIncident(executor, 'o1', null, null, {
       type: 'order_status_drift', severity: 'medium', message: 'drift', details: {},
     });
-    expect(executor.query.mock.calls[1][1].slice(-3)).toEqual(['ORDERS', 'ORDERS', 'UPSTREAM_TRUTH']);
+    const values = executor.query.mock.calls[1][1];
+    expect(values.slice(-4, -1)).toEqual(['ORDERS', 'ORDERS', 'UPSTREAM_TRUTH']);
+    expect(values.at(-1)).toBeInstanceOf(Date);
   });
 
   test('unknown reconciliation subtype fails closed', async () => {
@@ -58,7 +65,7 @@ describe('incident-write-service — F2', () => {
     expect(executor.query).not.toHaveBeenCalled();
   });
 
-  test('Alert Engine maps stuck_parcel to canonical delay and persists alert label in details', async () => {
+  test('Alert Engine maps stuck_parcel to canonical delay and persists SLA', async () => {
     const executor = { query: jest.fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'inc-4' }] }) };
@@ -67,11 +74,13 @@ describe('incident-write-service — F2', () => {
       description: 'stuck', metadata: { days: 10 },
     })).resolves.toEqual({ id: 'inc-4' });
     expect(executor.query.mock.calls[0][1]).toEqual(['p1', 'delay', 'stuck_parcel']);
-    expect(executor.query.mock.calls[1][1]).toEqual([
+    const values = executor.query.mock.calls[1][1];
+    expect(values.slice(0, 10)).toEqual([
       'p1', 'o1', 'delay', 'high', 'stuck', 'stuck',
       JSON.stringify({ days: 10, alert_type: 'stuck_parcel' }),
       'LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF',
     ]);
+    expect(values[10]).toBeInstanceOf(Date);
   });
 
   test('acknowledge keeps guarded open -> investigating update', async () => {
@@ -81,14 +90,13 @@ describe('incident-write-service — F2', () => {
     expect(executor.query.mock.calls[0][0]).toContain("WHERE id = $1 AND status = 'open'");
   });
 
-  test('resolveOpsIncident allows PHYSICAL_PROOF then updates', async () => {
-    const executor = { query: jest.fn()
-      .mockResolvedValueOnce({ rows: [{ incident_type: 'weight_mismatch', details: {}, resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS' }] })
-      .mockResolvedValueOnce({ rowCount: 1 }) };
-    await resolveOpsIncident(executor, { incidentId: 'inc-6', resolution: '{"type":"ack"}' });
-    expect(executor.query).toHaveBeenCalledTimes(2);
-    expect(executor.query.mock.calls[0][0]).toContain('resolution_class, resolver_domain');
-    expect(executor.query.mock.calls[1][0]).toContain("status = 'resolved'");
+  test('generic resolveOpsIncident cannot close PHYSICAL_PROOF anymore', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{
+      incident_type: 'weight_mismatch', details: {}, resolution_class: 'PHYSICAL_PROOF', resolver_domain: 'LOGISTICS',
+    }] }) };
+    await expect(resolveOpsIncident(executor, { incidentId: 'inc-6', resolution: '{}' }))
+      .rejects.toThrow(/PHYSICAL_PROOF/);
+    expect(executor.query).toHaveBeenCalledTimes(1);
   });
 
   test('resolveOpsIncident cannot close UPSTREAM_TRUTH', async () => {
@@ -110,17 +118,98 @@ describe('incident-write-service — F2', () => {
     expect(executor.query).toHaveBeenCalledTimes(1);
   });
 
+  test('PHYSICAL_PROOF remains active when fresh proof does not satisfy predicate', async () => {
+    const executor = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inc-p', status: 'open', parcel_id: 'parcel-1', created_at: '2026-09-15T10:00:00Z',
+        trigger_scan_created_at: '2026-09-15T10:00:00Z', origin_domain: 'LOGISTICS',
+        resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF', incident_type: 'weight_mismatch',
+      }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'scan-2', parcel_id: 'parcel-1', event_type: 'weigh', status: 'applied',
+        created_at: '2026-09-15T11:00:00Z', corrects_event_id: null, photo_urls: [], notes: null,
+      }] }) };
+    const revalidate = jest.fn().mockResolvedValue(false);
+
+    await expect(resolvePhysicalProofIncident(executor, {
+      incidentId: 'inc-p', proofScanEventId: 'scan-2', revalidate,
+    })).resolves.toMatchObject({ resolved: false, reason: 'PREDICATE_STILL_FAILS' });
+
+    expect(revalidate).toHaveBeenCalledWith(executor, expect.objectContaining({
+      incident: expect.objectContaining({ id: 'inc-p' }),
+      proof: expect.objectContaining({ id: 'scan-2' }),
+    }));
+    expect(executor.query).toHaveBeenCalledTimes(2);
+  });
+
+  test('stale physical proof is rejected before predicate revalidation', async () => {
+    const executor = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inc-p', status: 'open', parcel_id: 'parcel-1', created_at: '2026-09-15T10:00:00Z',
+        trigger_scan_created_at: '2026-09-15T10:00:00Z', origin_domain: 'LOGISTICS',
+        resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF', incident_type: 'weight_mismatch',
+      }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'scan-old', parcel_id: 'parcel-1', event_type: 'weigh', status: 'applied',
+        created_at: '2026-09-15T09:59:00Z', corrects_event_id: null, photo_urls: [], notes: null,
+      }] }) };
+    const revalidate = jest.fn();
+
+    await expect(resolvePhysicalProofIncident(executor, {
+      incidentId: 'inc-p', proofScanEventId: 'scan-old', revalidate,
+    })).rejects.toMatchObject({ code: 'STALE_PHYSICAL_PROOF' });
+    expect(revalidate).not.toHaveBeenCalled();
+  });
+
+  test('fresh physical proof + satisfied predicate resolves incident without mutating scan_events', async () => {
+    const executor = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inc-p', status: 'investigating', parcel_id: 'parcel-1', created_at: '2026-09-15T10:00:00Z',
+        trigger_scan_created_at: null, origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS',
+        resolution_class: 'PHYSICAL_PROOF', incident_type: 'quantity_mismatch',
+      }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'scan-new', parcel_id: 'parcel-1', event_type: 'content_verified', status: 'applied',
+        created_at: '2026-09-15T11:00:00Z', corrects_event_id: null, photo_urls: [], notes: 'verified',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'inc-p', status: 'resolved' }] }) };
+
+    const result = await resolvePhysicalProofIncident(executor, {
+      incidentId: 'inc-p', proofScanEventId: 'scan-new', revalidate: async () => true,
+      resolvedBy: null, notes: 'count verified',
+    });
+    expect(result).toMatchObject({ resolved: true, proof_scan_event_id: 'scan-new' });
+    expect(executor.query).toHaveBeenCalledTimes(3);
+    const allSql = executor.query.mock.calls.map(([sql]) => String(sql)).join('\n');
+    expect(allSql).not.toMatch(/(?:UPDATE|DELETE)\s+scan_events/i);
+    expect(executor.query.mock.calls[2][0]).toContain("status = 'resolved'");
+  });
+
+  test('physical proof cannot be borrowed from another parcel', async () => {
+    const executor = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'inc-p', status: 'open', parcel_id: 'parcel-1', created_at: '2026-09-15T10:00:00Z',
+        trigger_scan_created_at: null, origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS',
+        resolution_class: 'PHYSICAL_PROOF', incident_type: 'scan_anomaly',
+      }] })
+      .mockResolvedValueOnce({ rows: [] }) };
+    await expect(resolvePhysicalProofIncident(executor, {
+      incidentId: 'inc-p', proofScanEventId: 'foreign-scan', revalidate: async () => true,
+    })).rejects.toMatchObject({ code: 'PHYSICAL_PROOF_SCOPE_MISMATCH' });
+  });
+
   test('detachUserFromIncidents preserves both detach operations', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
     await detachUserFromIncidents(executor, 'u1');
     expect(executor.query).toHaveBeenCalledTimes(2);
   });
 
-  test('seed contract accepts governed 19-value input', async () => {
+  test('seed contract accepts governed 19-value input without inventing historical SLA', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
     const values = Array.from({ length: 19 }, (_, i) => `v${i + 1}`);
     await seedIncident(executor, values);
     expect(executor.query.mock.calls[0][0]).toContain('origin_domain, resolver_domain, resolution_class');
+    expect(executor.query.mock.calls[0][0]).not.toContain('due_at');
   });
 
   test('legacy 16-value seed derives governance rather than writing null authority', async () => {
