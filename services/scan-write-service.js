@@ -7,7 +7,7 @@
  * @inputs        db_or_transaction_executor, scan mutation payload
  * @outputs       query result / created scan row
  * @depends       none (executor fourni par l'appelant)
- * @used-by       routes/hub-dashboard.js, routes/admin/users.js, services/qr-collection-core.js, services/inventory-service.js
+ * @used-by       routes/hub-dashboard.js, routes/admin/users.js, services/qr-collection-core.js, services/inventory-service.js, services/hub-packing-service.js
  * @db-read       none
  * @db-write      scans, scan_events
  * @db-txn        caller_transaction_preserved
@@ -24,10 +24,6 @@ function assertExecutor(executor) {
   }
 }
 
-/**
- * Enregistre un scan de préparation produit par le Hub.
- * L'appelant conserve la propriété de sa transaction éventuelle.
- */
 async function recordHubPreparationScan(executor, {
   orderId,
   scannedBy,
@@ -35,7 +31,6 @@ async function recordHubPreparationScan(executor, {
   scanCode,
 }) {
   assertExecutor(executor);
-
   return executor.query(
     `INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
      VALUES ($1, 'preparation', $2, $3, $4)`,
@@ -43,11 +38,34 @@ async function recordHubPreparationScan(executor, {
   );
 }
 
-/**
- * HUB-001 — preuve append-only qu'une allocation physique prouvée a été
- * scannée dans un Market Parcel compatible. scan_events reste lifecycle-owned
- * par Logistics ; Inventory ne fait donc aucun INSERT direct dans cette table.
- */
+async function recordHubPhysicalEvent(executor, {
+  parcelId,
+  orderId,
+  eventType,
+  scanCode,
+  scannedBy = null,
+  notes,
+  metadata = {},
+}) {
+  assertExecutor(executor);
+  const { rows: [event] } = await executor.query(`
+    INSERT INTO scan_events (
+      parcel_id, order_id, event_type, scan_code,
+      scanned_by, actor_role, notes, metadata, status
+    ) VALUES ($1,$2,$3,$4,$5,'hub_agent',$6,$7::jsonb,'applied')
+    RETURNING id, parcel_id, order_id, event_type, created_at
+  `, [
+    parcelId,
+    orderId || null,
+    eventType,
+    scanCode || null,
+    scannedBy,
+    notes || null,
+    JSON.stringify({ ...metadata, hub_contract: 'HUB-001' }),
+  ]);
+  return event;
+}
+
 async function recordHubAllocationScanEvent(executor, {
   parcelId,
   orderId,
@@ -60,43 +78,88 @@ async function recordHubAllocationScanEvent(executor, {
   scannedBy = null,
   matchedProposal = null,
 }) {
-  assertExecutor(executor);
-
-  const metadata = {
-    inventory_item_id: inventoryItemId,
-    order_item_id: orderItemId,
-    purchase_order_id: purchaseOrderId,
-    market_id: marketId,
-    relais_id: relaisId,
-    quantity,
-    matched_proposal: matchedProposal,
-    hub_contract: 'HUB-001',
-  };
-
-  const { rows: [event] } = await executor.query(`
-    INSERT INTO scan_events (
-      parcel_id, order_id, event_type, scan_code,
-      scanned_by, actor_role, notes, metadata, status
-    ) VALUES (
-      $1, $2, 'item_scanned', $3,
-      $4, 'hub_agent', 'Physical allocation assigned to compatible Market Parcel', $5::jsonb, 'applied'
-    )
-    RETURNING id, parcel_id, order_id, event_type, created_at
-  `, [
+  return recordHubPhysicalEvent(executor, {
     parcelId,
     orderId,
-    String(inventoryItemId),
+    eventType: 'item_scanned',
+    scanCode: String(inventoryItemId),
     scannedBy,
-    JSON.stringify(metadata),
-  ]);
-
-  return event;
+    notes: 'Physical allocation assigned to compatible Market Parcel',
+    metadata: {
+      action: 'assign',
+      inventory_item_id: inventoryItemId,
+      order_item_id: orderItemId,
+      purchase_order_id: purchaseOrderId,
+      market_id: marketId,
+      relais_id: relaisId,
+      quantity,
+      matched_proposal: matchedProposal,
+    },
+  });
 }
 
-/**
- * Enregistre la preuve de scan créée lors d'une collecte QR validée.
- * Le RETURNING id est conservé car parcelSync consomme cet identifiant.
- */
+async function recordHubSplitEvent(executor, {
+  parcelId,
+  orderId,
+  sourceInventoryItemId,
+  childInventoryItemId,
+  orderItemId,
+  purchaseOrderId,
+  fromParcelId,
+  toParcelId,
+  quantity,
+  scannedBy = null,
+}) {
+  return recordHubPhysicalEvent(executor, {
+    parcelId,
+    orderId,
+    eventType: 'correction',
+    scanCode: String(childInventoryItemId),
+    scannedBy,
+    notes: 'Explicit physical allocation split',
+    metadata: {
+      action: 'split',
+      source_inventory_item_id: sourceInventoryItemId,
+      child_inventory_item_id: childInventoryItemId,
+      order_item_id: orderItemId,
+      purchase_order_id: purchaseOrderId,
+      from_parcel_id: fromParcelId,
+      to_parcel_id: toParcelId,
+      quantity,
+    },
+  });
+}
+
+async function recordHubRepackEvent(executor, {
+  parcelId,
+  orderId,
+  inventoryItemId,
+  orderItemId,
+  purchaseOrderId,
+  fromParcelId,
+  toParcelId,
+  quantity,
+  scannedBy = null,
+}) {
+  return recordHubPhysicalEvent(executor, {
+    parcelId,
+    orderId,
+    eventType: 'correction',
+    scanCode: String(inventoryItemId),
+    scannedBy,
+    notes: 'Explicit physical allocation repack',
+    metadata: {
+      action: 'repack',
+      inventory_item_id: inventoryItemId,
+      order_item_id: orderItemId,
+      purchase_order_id: purchaseOrderId,
+      from_parcel_id: fromParcelId,
+      to_parcel_id: toParcelId,
+      quantity,
+    },
+  });
+}
+
 async function recordQrCollectionScan(executor, {
   orderId,
   scannedBy,
@@ -104,7 +167,6 @@ async function recordQrCollectionScan(executor, {
   scanCode,
 }) {
   assertExecutor(executor);
-
   const { rows: [scanRow] } = await executor.query(
     `INSERT INTO scans
        (order_id, step, scanned_by, location, scan_code, notes)
@@ -112,17 +174,11 @@ async function recordQrCollectionScan(executor, {
      RETURNING id`,
     [orderId, scannedBy, location, scanCode]
   );
-
   return scanRow;
 }
 
-/**
- * Détache un utilisateur supprimé des scans historiques sans supprimer
- * l'historique logistique lui-même.
- */
 async function detachUserFromScans(executor, userId) {
   assertExecutor(executor);
-
   return executor.query(
     'UPDATE scans SET scanned_by = NULL WHERE scanned_by = $1::uuid',
     [userId]
@@ -131,7 +187,10 @@ async function detachUserFromScans(executor, userId) {
 
 module.exports = {
   recordHubPreparationScan,
+  recordHubPhysicalEvent,
   recordHubAllocationScanEvent,
+  recordHubSplitEvent,
+  recordHubRepackEvent,
   recordQrCollectionScan,
   detachUserFromScans,
 };
