@@ -133,6 +133,19 @@ async function resolveActiveProductMarketPricingById(executor = db, { marketId, 
   return resolveActiveProductMarketPricing(executor, { marketId, product });
 }
 
+/**
+ * Doctrine (2026-09, décision L1) : `products.price_kmf` reste une référence
+ * globale / legacy / atelier (Pipeline A), mais elle ne devient JAMAIS
+ * silencieusement le prix acheteur d'un marché. Dès qu'un `marketId` est
+ * résolu côté serveur, seul un `LOCAL_ACTIVE` pour ce marché rend le produit
+ * achetable. Absence de `LOCAL_ACTIVE` → NOT_DECISIONAL → le checkout refuse
+ * explicitement, il ne retombe jamais sur le prix global.
+ *
+ * Si `marketId` est null (relais/flux non encore rattaché à un marché —
+ * transition en cours, cf. `domaine_minimal_boutique_first`), aucun gate
+ * marché ne s'applique : ce n'est pas un contexte marché, donc pas un
+ * fallback silencieux au sens de cette doctrine.
+ */
 async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId, items, productMap }) {
   let totalKmf = 0;
   const cache = new Map();
@@ -158,6 +171,14 @@ async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId,
         effective_unit_price_kmf: pricing.effective_unit_price_kmf,
         active_at: pricing.active_at,
       };
+    } else if (marketId) {
+      // Marché résolu mais aucun LOCAL_ACTIVE : NOT_DECISIONAL. Jamais de
+      // fallback silencieux vers products.price_kmf pour un achat réel.
+      throw new MarketCommercialPriceError(
+        409,
+        'market_price_not_purchasable',
+        `Produit ${product.id} non achetable sur ce marché (aucun prix local actif).`
+      );
     }
 
     const qty = parseInt(item.quantity, 10) || 1;
@@ -180,7 +201,13 @@ async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode,
         AND status = 'LOCAL_ACTIVE'`,
     [market.id, productIds]
   );
-  if (!decisions.length) return products;
+  const markNotDecisional = (product) => ({
+    ...product,
+    purchasable: false,
+    market_price_source: 'NOT_DECISIONAL',
+    market_price_reason: 'NO_LOCAL_ACTIVE_PRICE_FOR_MARKET',
+  });
+  if (!decisions.length) return products.map(markNotDecisional);
 
   const decisionMap = new Map(decisions.map(row => [String(row.product_id), row]));
   const decisionIds = [...decisionMap.keys()];
@@ -207,7 +234,10 @@ async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode,
   for (const product of products) {
     const decision = decisionMap.get(String(product.id));
     if (!decision) {
-      output.push(product);
+      // Marché résolu, aucun LOCAL_ACTIVE : NOT_DECISIONAL. Le produit reste
+      // affichable (métadonnées) mais n'est jamais marqué achetable sur ce
+      // marché — jamais de fallback silencieux vers products.price_kmf.
+      output.push(markNotDecisional(product));
       continue;
     }
     if (decision.currency !== market.currency) {
@@ -219,6 +249,7 @@ async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode,
     output.push({
       ...product,
       price_kmf: effectiveUnitPriceKmf,
+      purchasable: true,
       market_price_source: PRICE_STATUSES.ACTIVE,
       market_price_amount: Number(decision.amount),
       market_price_currency: decision.currency,

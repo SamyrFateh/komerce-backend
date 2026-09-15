@@ -117,13 +117,34 @@ router.get('/', async (req, res, next) => {
         LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, safeLimit, Number(offset)]
     );
-    const projectedRows = await applyActiveMarketPricesToCatalogRows(db, {
+    const priced = await applyActiveMarketPricesToCatalogRows(db, {
       marketCode: market,
       products: rows,
     });
+    // Doctrine L1 : un marché explicitement demandé ne doit jamais afficher
+    // comme achetable un produit NOT_DECISIONAL (pas de LOCAL_ACTIVE) —
+    // jamais de fallback silencieux vers products.price_kmf dans le catalogue.
+    const projectedRows = market
+      ? priced.filter((p) => p.purchasable !== false)
+      : priced;
 
+    // Doctrine L1 : le total de pagination doit refléter le même filtre que
+    // `projectedRows` ci-dessus. Sans ce EXISTS, un marché sans LOCAL_ACTIVE
+    // pour certains produits gonflait artificiellement `total` (produits
+    // exclus de la page mais comptés quand même) — jamais de fallback
+    // silencieux vers products.price_kmf, y compris dans le comptage.
+    const countWhere = marketCode
+      ? `${where} AND EXISTS (
+           SELECT 1
+             FROM product_market_price_drafts d
+             JOIN markets m ON m.id = d.market_id AND m.is_active = TRUE
+            WHERE d.product_id = p.id
+              AND d.status = 'LOCAL_ACTIVE'
+              AND m.code = $${marketCodeParamIndex}
+         )`
+      : where;
     const { rows: [{ count }] } = await db.query(
-      `SELECT COUNT(*) FROM products p WHERE ${where}`,
+      `SELECT COUNT(*) FROM products p WHERE ${countWhere}`,
       params
     );
 
@@ -204,6 +225,13 @@ router.get('/:id', requireUUID, async (req, res, next) => {
       marketCode: rawMarket,
       products: [sourceRead.row],
     });
+
+    // Doctrine L1 : marché explicite + NOT_DECISIONAL (aucun LOCAL_ACTIVE)
+    // → produit non disponible sur ce marché, jamais de prix global affiché
+    // comme achetable en silence.
+    if (rawMarket && product.purchasable === false) {
+      return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
+    }
 
     if (product.has_variants) {
       const { rows: vRows } = await db.query(

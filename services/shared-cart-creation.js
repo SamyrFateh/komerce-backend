@@ -48,10 +48,26 @@ async function resolveRelayMarketId(client, relayId) {
   return rows[0].market_id;
 }
 
+/**
+ * Doctrine (2026-09, décision L1, only_LOCAL_ACTIVE_is_buyer_effective) :
+ * quand un `marketId` est résolu côté serveur, seul un `LOCAL_ACTIVE` rend
+ * le produit achetable sur ce marché. Pas de LOCAL_ACTIVE → NOT_DECISIONAL →
+ * refus explicite, jamais de repli silencieux sur `fallbackKmf`
+ * (`products.price_kmf`, référence globale/legacy).
+ * Sans `marketId` résolu (flux non encore rattaché à un marché), le prix de
+ * référence reste utilisé tel quel — ce n'est pas un contexte marché gaté.
+ */
 async function effectiveUnitPriceForMarket(client, marketId, productId, fallbackKmf) {
   if (!marketId) return Number(fallbackKmf) || 0;
   const local = await resolveActiveProductMarketPricingById(client, { marketId, productId });
-  return local ? local.effective_unit_price_kmf : (Number(fallbackKmf) || 0);
+  if (!local) {
+    throw httpError(
+      'Produit non disponible sur ce marché (aucun prix local actif).',
+      409,
+      'shared_cart_product_not_purchasable_in_market'
+    );
+  }
+  return local.effective_unit_price_kmf;
 }
 
 async function resolveExistingOpenToken(userId) {
@@ -342,4 +358,5 @@ module.exports = {
   createSharedCartFromBasket,
   createSharedCartFromCartItems,
   clearCreatorBasketInTx,
+  _effectiveUnitPriceForMarket: effectiveUnitPriceForMarket,
 };

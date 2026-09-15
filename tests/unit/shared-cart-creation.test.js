@@ -36,6 +36,7 @@ const {
   createSharedCartFromBasket,
   createSharedCartFromCartItems,
   clearCreatorBasketInTx,
+  _effectiveUnitPriceForMarket,
 } = require('../../services/shared-cart-creation');
 
 describe('shared-cart-creation', () => {
@@ -696,3 +697,35 @@ describe('shared-cart-creation', () => {
     expect(err.existing_token).toBe(WINNER_TOKEN);
     expect(client.release).toHaveBeenCalled(); // transaction proprement libérée
   });
+
+describe('effectiveUnitPriceForMarket — doctrine L1 only_LOCAL_ACTIVE_is_buyer_effective', () => {
+  test('no marketId resolved → reference price used as-is (no market gate applies)', async () => {
+    const client = { query: jest.fn() };
+    const price = await _effectiveUnitPriceForMarket(client, null, 'p1', 5000);
+    expect(price).toBe(5000);
+    expect(client.query).not.toHaveBeenCalled();
+  });
+
+  test('marketId resolved but no LOCAL_ACTIVE → refuses, never falls back to the reference price', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 5000 }] }) // products SELECT
+        .mockResolvedValueOnce({ rows: [] }),                             // no LOCAL_ACTIVE decision
+    };
+    await expect(_effectiveUnitPriceForMarket(client, 'market-1', 'p1', 5000))
+      .rejects.toMatchObject({ code: 'shared_cart_product_not_purchasable_in_market', status: 409 });
+  });
+
+  test('marketId resolved with LOCAL_ACTIVE → uses the local effective price, not the reference', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 5000 }] }) // products SELECT
+        .mockResolvedValueOnce({ rows: [{
+          amount: '10000', currency: 'KMF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'KMF',
+        }] })
+        .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
+    };
+    const price = await _effectiveUnitPriceForMarket(client, 'market-1', 'p1', 5000);
+    expect(price).toBe(10000);
+  });
+});
