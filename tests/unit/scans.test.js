@@ -1,30 +1,10 @@
 'use strict';
 
-
+/** @test-kind unit @test-runner jest @test-requires none */
 /**
- * @test-kind unit
- * @test-runner jest
- * @test-requires none
- */
-/**
- * tests/unit/scans.test.js
- *
- * Tests du router routes/scans.js (façade mince — REFACTO-R3)
- *
- * Doctrine : route = auth + validation + appel service + réponse.
- * Ces tests vérifient que la façade délègue correctement et respecte
- * son contrat HTTP, SANS retester la logique métier de scan-operations.js
- * (déjà couverte par tests/unit/scan-operations.test.js).
- *
- * Couverture :
- *   ✓ POST / : délègue à scanOps.recordScan avec le device-id header
- *   ✓ POST /collect : réservé admin/agent_relais, délègue à scanOps.collectParcel
- *   ✓ POST /hub/receive : résout qr_code → po_id, 404 si QR inconnu, 400 si ni po_id ni qr_code
- *   ✓ GET /hub/pending : reste accessible AVANT la route générique /:order_id
- *   ✓ POST /verify-qr : délègue à scanOps.verifyQr
- *   ✓ GET /:order_id : 400 si order_id n'est pas un UUID valide (garde-fou avant requête SQL)
- *   ✓ GET /:order_id : réservé admin uniquement (pas agent_relais)
- *   ✓ triggerScan3 est bien ré-exporté pour purchasing.js
+ * Router routes/scans.js — façade mince.
+ * HUB-002 : /api/scans/hub/receive délègue désormais à la boundary opérateur
+ * qui ouvre une transaction et appelle HUB-001 receiveSupplierPackage().
  */
 
 jest.mock('../../middleware/auth', () => ({
@@ -35,7 +15,6 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
-// Validation Joi non testée ici (façade mince) — bypass pour isoler le routage
 jest.mock('../../middleware/validate', () => ({
   validate: () => (req, res, next) => next(),
 }));
@@ -57,8 +36,14 @@ jest.mock('../../services/scan-operations', () => ({
   triggerScan3: (...args) => mockTriggerScan3(...args),
 }));
 
+const mockReceiveSupplierPackageCommand = jest.fn();
+jest.mock('../../services/hub-operations', () => ({
+  receiveSupplierPackageCommand: (...args) => mockReceiveSupplierPackageCommand(...args),
+}));
+
 const express = require('express');
 const request = require('supertest');
+const VALID_ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
 let app;
 let currentUser;
@@ -77,10 +62,9 @@ beforeEach(() => {
   });
 });
 
-describe('scans — POST / (façade recordScan)', () => {
+describe('scans — POST /', () => {
   it('délègue à recordScan avec le device-id header', async () => {
     mockRecordScan.mockResolvedValueOnce({ status: 200, body: { ok: true } });
-
     const res = await request(app)
       .post('/api/scans')
       .set('x-device-id', 'device-123')
@@ -105,7 +89,6 @@ describe('scans — POST /collect', () => {
 
   it('délègue à collectParcel avec ip/user-agent', async () => {
     mockCollectParcel.mockResolvedValueOnce({ status: 200, body: { collected: true } });
-
     const res = await request(app)
       .post('/api/scans/collect')
       .set('User-Agent', 'TestAgent/1.0')
@@ -122,34 +105,43 @@ describe('scans — POST /collect', () => {
 });
 
 describe('scans — POST /hub/receive', () => {
-  it('400 si ni po_id ni qr_code fourni', async () => {
-    const res = await request(app).post('/api/scans/hub/receive').send({});
-    expect(res.status).toBe(400);
-  });
+  it('délègue le manifeste exact à HUB-002 sans résoudre market/SOI côté route', async () => {
+    const payload = {
+      reference: 'SUP-MIX-001',
+      location_ref: 'HUB-DXB-A1',
+      contents: [
+        { purchase_order_id: '00000000-0000-0000-0000-000000000301', quantity: 1 },
+        { purchase_order_id: '00000000-0000-0000-0000-000000000302', quantity: 2 },
+      ],
+    };
+    mockReceiveSupplierPackageCommand.mockResolvedValueOnce({ status: 201, body: { quarantined: false, unit: { id: 'u1' } } });
 
-  it('404 si le qr_code ne correspond à aucun purchase_order actif', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    const res = await request(app).post('/api/scans/hub/receive').send({ qr_code: 'QR-UNKNOWN' });
-    expect(res.status).toBe(404);
-    expect(res.body.error).toMatch(/QR-UNKNOWN/);
-  });
+    const res = await request(app).post('/api/scans/hub/receive').send(payload);
 
-  it('résout qr_code → po_id puis renvoie 501 vers /api/purchasing/:po_id/receive', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'po-1' }] });
-    const res = await request(app).post('/api/scans/hub/receive').send({ qr_code: 'QR-OK' });
-    expect(res.status).toBe(501);
-    expect(res.body.po_id).toBe('po-1');
-  });
-
-  it('utilise po_id directement si fourni (pas de lookup qr_code)', async () => {
-    const res = await request(app).post('/api/scans/hub/receive').send({ po_id: 'po-direct' });
-    expect(res.status).toBe(501);
-    expect(res.body.po_id).toBe('po-direct');
+    expect(res.status).toBe(201);
+    expect(mockReceiveSupplierPackageCommand).toHaveBeenCalledWith(payload, 'admin-1');
     expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('propage une quarantaine gouvernée en 202 sans la transformer en succès nominal', async () => {
+    mockReceiveSupplierPackageCommand.mockResolvedValueOnce({
+      status: 202,
+      body: { quarantined: true, incident: { id: 'inc1' } },
+    });
+    const res = await request(app).post('/api/scans/hub/receive').send({ reference: 'SUP-BAD', contents: [{}] });
+    expect(res.status).toBe(202);
+    expect(res.body.quarantined).toBe(true);
+  });
+
+  it('refuse un rôle non Hub avant toute exécution', async () => {
+    currentUser = { id: 'u1', role: 'client' };
+    const res = await request(app).post('/api/scans/hub/receive').send({ reference: 'SUP-1', contents: [] });
+    expect(res.status).toBe(403);
+    expect(mockReceiveSupplierPackageCommand).not.toHaveBeenCalled();
   });
 });
 
-describe('scans — GET /hub/pending (doit primer sur /:order_id)', () => {
+describe('scans — GET /hub/pending', () => {
   it('reste accessible et ne tombe pas dans la route générique', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ order_id: 'o1', reference: 'CMD-1' }] });
     const res = await request(app).get('/api/scans/hub/pending');
@@ -167,29 +159,29 @@ describe('scans — POST /verify-qr', () => {
   });
 });
 
-describe('scans — GET /:order_id (route générique, en dernier)', () => {
+describe('scans — GET /:order_id', () => {
   it('400 si order_id n\'est pas un UUID valide', async () => {
     const res = await request(app).get('/api/scans/not-a-uuid');
     expect(res.status).toBe(400);
     expect(mockQuery).not.toHaveBeenCalled();
   });
 
-  it('réservé admin (403 pour agent_relais)', async () => {
+  it('réservé admin', async () => {
     currentUser = { id: 'u1', role: 'agent_relais' };
-    const res = await request(app).get('/api/scans/123e4567-e89b-12d3-a456-426614174000');
+    const res = await request(app).get(`/api/scans/${VALID_ORDER_ID}`);
     expect(res.status).toBe(403);
   });
 
   it('renvoie les scans pour un UUID valide', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 's1', step: 'sourcing' }] });
-    const res = await request(app).get('/api/scans/123e4567-e89b-12d3-a456-426614174000');
+    const res = await request(app).get(`/api/scans/${VALID_ORDER_ID}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ id: 's1', step: 'sourcing' }]);
   });
 });
 
 describe('scans — exports', () => {
-  it('ré-exporte triggerScan3 pour purchasing.js, qui délègue au service', async () => {
+  it('ré-exporte triggerScan3 pour purchasing.js', async () => {
     let router;
     jest.isolateModules(() => { router = require('../../routes/scans'); });
     expect(typeof router.triggerScan3).toBe('function');

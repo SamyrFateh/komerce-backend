@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-14T12:43:01.234Z",
+  "generatedAt": "2026-09-15T21:07:36.897Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 639,
-    "protected": 584,
+    "total": 644,
+    "protected": 589,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2943,7 +2943,23 @@
       ]
     },
     {
+      "key": "POST /api/hub/move",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/hub/orders/mark-ordered",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/outcome",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2969,6 +2985,14 @@
     },
     {
       "key": "POST /api/hub/photo",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/revalidate",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -3016,6 +3040,22 @@
         "admin",
         "agent_hub",
         "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/hub/transition",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/unit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
       ]
     },
     {
