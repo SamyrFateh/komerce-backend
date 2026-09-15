@@ -73,6 +73,7 @@ const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
+const { MarketCommercialPriceError } = require('./market-commercial-price-service');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -251,11 +252,24 @@ async function runOrderCheckout({ user, body }) {
     // relais résolu côté serveur. Cette boundary recalcule aussi le total à
     // partir des prix effectifs (global/SKU quand aucun override, local actif
     // sinon) avant transport, fidélité, wallet et snapshot order_items.
-    const marketPricing = await applyActiveMarketPricesToCheckoutItems(client, {
-      marketId: relais?.market_id || null,
-      items,
-      productMap,
-    });
+    let marketPricing;
+    try {
+      marketPricing = await applyActiveMarketPricesToCheckoutItems(client, {
+        marketId: relais?.market_id || null,
+        items,
+        productMap,
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      if (e instanceof MarketCommercialPriceError) {
+        // Sans ce catch, l'erreur (ex: 409 market_price_not_purchasable)
+        // remonte au error-handler générique, qui ne reconnaît pas les codes
+        // métier hors Postgres et la reclasse en 'unknown' — le client perd
+        // le code et reçoit "Erreur interne du serveur" pour un refus légitime.
+        return fail(e.status || 409, { error: e.message, code: e.code });
+      }
+      throw e;
+    }
     let total_kmf = marketPricing.total_kmf;
 
     // ── Fulfillment mixte — Lots B/C/D ────────────────────────────────

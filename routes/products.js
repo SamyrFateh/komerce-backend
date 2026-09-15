@@ -83,6 +83,9 @@ router.get('/', async (req, res, next) => {
       params.push(marketCode);
     }
 
+    // Le prédicat canonique inclut, en contexte marché, exposition ENABLED +
+    // LOCAL_ACTIVE. Il est donc appliqué AVANT ORDER BY / LIMIT / OFFSET : une
+    // page ne peut plus être vidée après coup par un filtre buyer-effectif.
     const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})];
 
     if (category) {
@@ -117,11 +120,19 @@ router.get('/', async (req, res, next) => {
         LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, safeLimit, Number(offset)]
     );
-    const projectedRows = await applyActiveMarketPricesToCatalogRows(db, {
+    const priced = await applyActiveMarketPricesToCatalogRows(db, {
       marketCode: market,
       products: rows,
     });
+    // Défense en profondeur : le SQL marché a déjà exclu les produits sans
+    // LOCAL_ACTIVE avant pagination. Le filtre mémoire interdit néanmoins de
+    // réexposer un NOT_DECISIONAL si le resolver évolue indépendamment.
+    const projectedRows = market
+      ? priced.filter((p) => p.purchasable !== false)
+      : priced;
 
+    // Même `where` que la requête paginée : l'assiette du COUNT est donc
+    // strictement identique, sans deuxième implémentation du gate marché.
     const { rows: [{ count }] } = await db.query(
       `SELECT COUNT(*) FROM products p WHERE ${where}`,
       params
@@ -204,6 +215,13 @@ router.get('/:id', requireUUID, async (req, res, next) => {
       marketCode: rawMarket,
       products: [sourceRead.row],
     });
+
+    // Doctrine L1 : marché explicite + NOT_DECISIONAL (aucun LOCAL_ACTIVE)
+    // → produit non disponible sur ce marché, jamais de prix global affiché
+    // comme achetable en silence.
+    if (rawMarket && product.purchasable === false) {
+      return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
+    }
 
     if (product.has_variants) {
       const { rows: vRows } = await db.query(

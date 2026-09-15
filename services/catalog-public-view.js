@@ -8,11 +8,11 @@
  * @outputs       public_product_view
  * @depends       (none)
  * @used-by       routes/products.js
- * @db-read       markets, product_market_exposure
+ * @db-read       markets, product_market_exposure, product_market_price_drafts
  * @db-write      (none)
  * @db-txn        (none)
- * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
- * @impact-areas  catalog, product-discovery, modal
+ * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective
+ * @impact-areas  catalog, product-discovery, modal, market-autonomy
  * @version       2026-09
  */
 
@@ -113,12 +113,11 @@ function isExcludedPublicProductRef(value) {
  * @param {number} [options.marketCodeParamIndex] index positionnel (1-based)
  *   du paramètre déjà réservé par l'appelant pour le code marché (ex. 'CM'),
  *   déjà résolu serveur — jamais une confiance aveugle en une valeur brute.
- *   Quand fourni, ajoute EXISTS (product_market_exposure ENABLED pour ce
- *   marché, joint par code) au prédicat — cutover LOT 4 : fail-closed par
- *   marché, absence de ligne = DISABLED. Quand omis (comportement
- *   historique, préservé à l'identique), aucune notion de marché n'entre
- *   dans la visibilité — c'était déjà le cas avant le cutover
- *   product_market_exposure.
+ *   Quand fourni, le produit doit à la fois avoir une exposition commerciale
+ *   ENABLED et un prix LOCAL_ACTIVE pour ce marché. Le gate est volontairement
+ *   placé dans le prédicat SQL canonique afin qu'il s'applique AVANT pagination
+ *   (ORDER BY / LIMIT / OFFSET) et au COUNT avec exactement la même assiette.
+ *   Quand omis, aucune notion de marché n'entre dans la visibilité historique.
  */
 function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   const a = assertSqlAlias(alias);
@@ -143,6 +142,12 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
       `JOIN markets pme_mkt ON pme_mkt.id = pme.market_id ` +
       `WHERE ${a}.id = pme.product_id AND pme_mkt.code = $${idx} ` +
       `AND pme.commercial_exposure = 'ENABLED')`
+    );
+    conditions.push(
+      `EXISTS (SELECT 1 FROM product_market_price_drafts pmpd ` +
+      `JOIN markets pmpd_mkt ON pmpd_mkt.id = pmpd.market_id AND pmpd_mkt.is_active = TRUE ` +
+      `WHERE ${a}.id = pmpd.product_id AND pmpd_mkt.code = $${idx} ` +
+      `AND pmpd.status = 'LOCAL_ACTIVE')`
     );
   }
 

@@ -279,17 +279,28 @@ describe('GET /api/products/:id — détail', () => {
     expect(params).toEqual([VALID_UUID]);
   });
 
-  it('avec ?market=CM → clause EXISTS product_market_exposure ajoutée en second paramètre', async () => {
+  it('avec ?market=CM → clause EXISTS product_market_exposure ajoutée en second paramètre (produit exposé mais purchasable)', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ id: VALID_UUID, name: 'Produit A', has_variants: false }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'mkt-cm', code: 'CM', currency: 'XAF', minor_unit: 0 }] }) // resolveMarketByCode
-      .mockResolvedValueOnce({ rows: [] }); // product_market_price_drafts (aucune décision locale active)
+      .mockResolvedValueOnce({ rows: [{ id: 'mkt-cm', code: 'CM', currency: 'KMF', minor_unit: 0 }] }) // resolveMarketByCode
+      .mockResolvedValueOnce({ rows: [{ product_id: VALID_UUID, amount: '9000', currency: 'KMF', active_at: null }] }) // LOCAL_ACTIVE présent
+      .mockResolvedValueOnce({ rows: [] }); // pas de conflit prix granulaire (SKU/variante)
     const res = await request(buildApp()).get(`/api/products/${VALID_UUID}?market=CM`);
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('EXISTS (SELECT 1 FROM product_market_exposure pme');
     expect(sql).toContain('pme_mkt.code = $2');
     expect(params).toEqual([VALID_UUID, 'CM']);
+  });
+
+  it('avec ?market=CM et sans LOCAL_ACTIVE → 404 (doctrine L1, NOT_DECISIONAL n\'est jamais achetable)', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: VALID_UUID, name: 'Produit A', has_variants: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'mkt-cm', code: 'CM', currency: 'XAF', minor_unit: 0 }] }) // resolveMarketByCode
+      .mockResolvedValueOnce({ rows: [] }); // product_market_price_drafts (aucune décision locale active)
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}?market=CM`);
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'Produit non disponible sur ce marché' });
   });
 
   it('produit avec variantes → groupées par variant_type', async () => {
