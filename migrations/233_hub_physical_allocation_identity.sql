@@ -1,7 +1,8 @@
 -- @migration 233_hub_physical_allocation_identity.sql
 -- @domain    inventory
 -- @purpose   HUB-001 — relier la présence physique au Hub à l'allocation
---            d'achat exacte sans dupliquer l'autorité Purchasing/Orders.
+--            d'achat exacte sans dupliquer l'autorité Purchasing/Orders et
+--            empêcher toute réassignation cross-Market/cross-destination.
 --
 -- Doctrine :
 --   UPSTREAM determines WHO/WHAT/WHERE; HUB determines HOW to handle it.
@@ -63,9 +64,92 @@ CREATE TRIGGER trg_inventory_allocation_identity_immutable
   FOR EACH ROW
   EXECUTE FUNCTION prevent_inventory_allocation_reassignment();
 
+-- Vérifie la compatibilité commerciale d'un couple order_item / parcel.
+-- Même relais => même destination canonique ; F1 garantit que ce relais porte
+-- le même Market que l'order. On vérifie néanmoins les deux valeurs ici pour
+-- que la frontière Hub reste autoportante et fail-closed.
+CREATE OR REPLACE FUNCTION assert_hub_parcel_membership_compatible(
+  p_order_item_id uuid,
+  p_parcel_id uuid
+) RETURNS void AS $$
+DECLARE
+  order_market_id uuid;
+  order_relais_id uuid;
+  parcel_market_id uuid;
+  parcel_relais_id uuid;
+BEGIN
+  SELECT o.market_id, o.relais_id
+    INTO order_market_id, order_relais_id
+    FROM public.order_items oi
+    JOIN public.orders o ON o.id = oi.order_id
+   WHERE oi.id = p_order_item_id;
+
+  IF order_market_id IS NULL OR order_relais_id IS NULL THEN
+    RAISE EXCEPTION 'hub_order_destination_unproven';
+  END IF;
+
+  SELECT r.market_id, p.relais_id
+    INTO parcel_market_id, parcel_relais_id
+    FROM public.parcels p
+    LEFT JOIN public.relais r ON r.id = p.relais_id
+   WHERE p.id = p_parcel_id;
+
+  IF parcel_market_id IS NULL OR parcel_relais_id IS NULL THEN
+    RAISE EXCEPTION 'hub_parcel_destination_unproven';
+  END IF;
+
+  IF parcel_relais_id IS DISTINCT FROM order_relais_id THEN
+    RAISE EXCEPTION 'hub_destination_reassignment_forbidden';
+  END IF;
+
+  IF parcel_market_id IS DISTINCT FROM order_market_id THEN
+    RAISE EXCEPTION 'hub_market_reassignment_forbidden';
+  END IF;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Filet DB global : aucun writer de parcel_items (Inventory, Logistics,
+-- admin, legacy) ne peut introduire un mélange cross-Market/cross-Relais.
+CREATE OR REPLACE FUNCTION prevent_parcel_item_destination_mismatch()
+RETURNS trigger AS $$
+BEGIN
+  PERFORM assert_hub_parcel_membership_compatible(NEW.order_item_id, NEW.parcel_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_parcel_item_destination_compatibility ON public.parcel_items;
+CREATE TRIGGER trg_parcel_item_destination_compatibility
+  BEFORE INSERT OR UPDATE OF parcel_id, order_item_id ON public.parcel_items
+  FOR EACH ROW
+  EXECUTE FUNCTION prevent_parcel_item_destination_mismatch();
+
+-- Même filet sur l'état physique : poser/changer inventory_items.parcel_id
+-- exige la même destination que l'order_item. Les changements purement
+-- physiques dans un même Market/Relais restent possibles ; la destination
+-- commerciale ne l'est jamais.
+CREATE OR REPLACE FUNCTION prevent_inventory_parcel_destination_mismatch()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.parcel_id IS NOT NULL
+     AND NEW.parcel_id IS DISTINCT FROM OLD.parcel_id THEN
+    PERFORM assert_hub_parcel_membership_compatible(NEW.order_item_id, NEW.parcel_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_inventory_parcel_destination_compatibility ON public.inventory_items;
+CREATE TRIGGER trg_inventory_parcel_destination_compatibility
+  BEFORE UPDATE OF parcel_id ON public.inventory_items
+  FOR EACH ROW
+  EXECUTE FUNCTION prevent_inventory_parcel_destination_mismatch();
+
 COMMENT ON COLUMN public.inventory_items.purchase_order_id IS
   'HUB-001 — allocation d''achat Purchasing exacte prouvée à la réception physique. NULL = historique/non prouvé, jamais deviné.';
 COMMENT ON COLUMN public.inventory_items.identity_verified_at IS
   'Instant où order_item/order/purchase_order ont été revalidés ensemble. Immuable une fois posé.';
 COMMENT ON FUNCTION prevent_inventory_allocation_reassignment() IS
   'HUB-001 — Hub peut changer le traitement physique, jamais réassigner l''identité commerciale ou d''achat prouvée.';
+COMMENT ON FUNCTION assert_hub_parcel_membership_compatible(uuid, uuid) IS
+  'HUB-001 — preuve DB que l''order_item et le Market Parcel partagent exactement le même Relais et le même Market.';
