@@ -5,15 +5,18 @@ const {
   CANONICAL_MAPPING,
   RECONCILIATION_SUBTYPE_MAPPING,
   UNCLASSIFIED,
+  SLA_DURATION_MS,
   resolveGovernance,
   validateGovernance,
   resolveGovernanceOrThrow,
   isHubRelevant,
   isIrreversibleTransitionBlocked,
   assertTerminalResolutionAllowed,
+  computeDueAt,
+  resolverDomainToOwnerRole,
 } = require('../../services/incident-governance');
 
-describe('incident-governance — F2', () => {
+describe('incident-governance — F2/F3', () => {
   test('physical type maps to Logistics/PHYSICAL_PROOF', () => {
     expect(resolveGovernance('weight_mismatch')).toEqual({
       origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF',
@@ -85,11 +88,35 @@ describe('incident-governance — F2', () => {
     }
   );
 
+  test.each(['manual_fix', 'auto_resolved', 'reship', 'refund', 'dismissed'])(
+    'PHYSICAL_PROOF cannot close generically via %s', (resolutionType) => {
+      expect(() => assertTerminalResolutionAllowed({ incident_type: 'weight_mismatch' }, resolutionType))
+        .toThrow(/PHYSICAL_PROOF/);
+    }
+  );
+
   test('persisted UNCLASSIFIED cannot close generically', () => {
     expect(() => assertTerminalResolutionAllowed({
       incident_type: 'reconciliation_error', subtype: 'legacy_unknown',
       resolution_class: 'UNCLASSIFIED', resolver_domain: 'UNCLASSIFIED',
     }, 'auto_resolved')).toThrow(/UNCLASSIFIED/);
+  });
+
+  test('F3 SLA is derived only from resolution_class', () => {
+    const base = new Date('2026-09-15T10:00:00.000Z');
+    expect(SLA_DURATION_MS.PHYSICAL_PROOF).toBe(24 * 60 * 60 * 1000);
+    expect(SLA_DURATION_MS.UPSTREAM_TRUTH).toBe(72 * 60 * 60 * 1000);
+    expect(computeDueAt('PHYSICAL_PROOF', base).toISOString()).toBe('2026-09-16T10:00:00.000Z');
+    expect(computeDueAt('UPSTREAM_TRUTH', base).toISOString()).toBe('2026-09-18T10:00:00.000Z');
+    expect(computeDueAt('UNCLASSIFIED', base)).toBeNull();
+  });
+
+  test('resolver authority maps to an existing operational Action Center role', () => {
+    expect(resolverDomainToOwnerRole('LOGISTICS')).toBe('hub');
+    expect(resolverDomainToOwnerRole('PURCHASING')).toBe('sourcing');
+    expect(resolverDomainToOwnerRole('PAYMENTS')).toBe('admin');
+    expect(resolverDomainToOwnerRole('ORDERS')).toBe('admin');
+    expect(resolverDomainToOwnerRole('future-domain')).toBe('admin');
   });
 
   test('direct mapping excludes reconciliation_error and covers direct active types', () => {
