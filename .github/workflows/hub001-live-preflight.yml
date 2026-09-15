@@ -1,0 +1,28 @@
+name: HUB-001 live physical allocation preflight
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Production PostgreSQL READ-ONLY HUB-001 audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify DB secret
+        run: test -n "$RAILWAY_DATABASE_URL"
+      - name: Install psql if needed
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Execute canonical HUB-001 audit — READ ONLY + ROLLBACK
+        run: psql "$RAILWAY_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/audit-hub-001-physical-allocation.sql
