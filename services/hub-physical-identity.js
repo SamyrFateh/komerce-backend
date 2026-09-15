@@ -5,15 +5,16 @@
  * @layer         service
  * @criticality   critical
  * @inputs        caller_owned_transaction_executor, purchase_order_identity, physical_unit_operation
- * @outputs       immutable_purchase_allocation, physical_unit, custody_events, transactional_outbox_event
- * @depends       services/outbox-producer.js
+ * @outputs       immutable_purchase_allocation, physical_unit, custody_events, governed_incident, transactional_outbox_event
+ * @depends       services/outbox-producer.js, services/incident-write-service.js
  * @used-by       HUB-001 internal logistics boundary
- * @db-read       purchase_orders, orders, order_items, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements
+ * @db-read       purchase_orders, orders, order_items, incidents, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events
  * @db-write      hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events
+ * @db-write-via:incident-write-service incidents
  * @db-write-via:outbox-producer outbox_events
  * @db-txn        caller_owned_transaction_required
- * @doctrine      HUB-001 Physical Identity, Allocation & Custody
- * @impact-areas  logistics, purchasing, market
+ * @doctrine      HUB-001 Physical Identity, Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT
+ * @impact-areas  logistics, purchasing, market, incident-management
  * @version       2026-09
  */
 
@@ -21,6 +22,10 @@
 
 const crypto = require('crypto');
 const { reportPhysicalOutcome, VALID_OUTCOME_TYPES } = require('./outbox-producer');
+const {
+  createHubPhysicalReconciliationIncident,
+  resolveUpstreamTruthIncident,
+} = require('./incident-write-service');
 
 const UNIT_TYPES = new Set(['SUPPLIER_PACKAGE', 'HANDLING_UNIT', 'MARKET_PARCEL']);
 const UNIT_STATES = new Set([
@@ -31,6 +36,19 @@ const CONTENT_MUTABLE_STATES = new Set([
   'RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED',
 ]);
 const PHYSICAL_OPERATIONS = new Set(['SPLIT', 'MERGE', 'REPACK']);
+
+const HUB_QUARANTINE_SUBTYPE_BY_REASON = Object.freeze({
+  HUB_PURCHASE_ORDER_UNRESOLVABLE: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_ORDER_CANCELLED: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_IDENTITY_INCOMPLETE: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_ORDER_ITEM_MISMATCH: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_SKU_MISMATCH: 'hub_purchase_identity_conflict',
+  HUB_SUPPLIER_IDENTITY_UNRESOLVABLE: 'hub_purchase_identity_conflict',
+  HUB_ALLOCATION_SNAPSHOT_DRIFT: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_QUANTITY_INVALID: 'hub_purchase_quantity_conflict',
+  HUB_ALLOCATION_OVERRECEIVED: 'hub_purchase_quantity_conflict',
+  HUB_DESTINATION_UNRESOLVABLE: 'hub_destination_conflict',
+});
 
 class HubPhysicalError extends Error {
   constructor(code, message) {
@@ -260,6 +278,12 @@ async function createPhysicalUnit(executor, {
   return unit;
 }
 
+function quarantineSubtypeForReason(reasonCode) {
+  const subtype = HUB_QUARANTINE_SUBTYPE_BY_REASON[reasonCode];
+  if (!subtype) fail('HUB_QUARANTINE_REASON_UNMAPPED', `Aucune autorité F2 pour ${reasonCode}`);
+  return subtype;
+}
+
 async function createQuarantinedInbound(executor, {
   reference,
   externalRef,
@@ -268,21 +292,52 @@ async function createQuarantinedInbound(executor, {
   reasonCode,
   reason,
   contents,
+  purchaseOrderId = null,
 }) {
-  const unit = await createPhysicalUnit(executor, {
+  const db = requireExecutor(executor);
+  const manifest = contents.map((c) => ({ purchase_order_id: c.purchase_order_id, quantity: c.quantity }));
+  const unit = await createPhysicalUnit(db, {
     reference,
     unitType: 'SUPPLIER_PACKAGE',
     externalRef,
     actorId,
     locationRef,
     initialState: 'QUARANTINED',
-    details: {
-      reason_code: reasonCode,
-      reason,
-      manifest: contents.map((c) => ({ purchase_order_id: c.purchase_order_id, quantity: c.quantity })),
-    },
+    details: { reason_code: reasonCode, reason, manifest },
   });
-  return { quarantined: true, reason_code: reasonCode, unit };
+
+  const subtype = quarantineSubtypeForReason(reasonCode);
+  let context = null;
+  if (purchaseOrderId) {
+    const { rows: [row] } = await db.query(
+      'SELECT id, order_id, order_item_id FROM purchase_orders WHERE id = $1',
+      [purchaseOrderId]
+    );
+    context = row || null;
+  }
+
+  const incident = await createHubPhysicalReconciliationIncident(db, {
+    physicalUnitId: unit.id,
+    subtype,
+    reasonCode,
+    message: reason,
+    purchaseOrderId: purchaseOrderId || null,
+    orderId: context && context.order_id,
+    orderItemId: context && context.order_item_id,
+    details: { manifest, physical_unit_reference: unit.reference },
+  });
+
+  await insertCustodyEvent(db, {
+    physicalUnitId: unit.id,
+    eventType: 'QUARANTINE',
+    fromState: 'QUARANTINED',
+    toState: 'QUARANTINED',
+    actorId,
+    locationRef,
+    details: { incident_id: incident.id, reason_code: reasonCode, incident_subtype: subtype },
+  });
+
+  return { quarantined: true, reason_code: reasonCode, unit, incident };
 }
 
 function normalizeInboundContents(contents) {
@@ -311,27 +366,40 @@ async function receiveSupplierPackage(executor, {
   const normalized = normalizeInboundContents(contents);
 
   const resolved = [];
-  try {
-    for (const content of normalized) {
+  for (const content of normalized) {
+    try {
       const snapshot = await resolvePurchaseSnapshot(db, content.purchase_order_id);
       if (content.quantity > snapshot.quantity) {
         fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité achetée');
       }
       resolved.push({ content, snapshot });
+    } catch (error) {
+      if (!(error instanceof HubPhysicalError)) throw error;
+      return createQuarantinedInbound(db, {
+        reference, externalRef, actorId, locationRef,
+        reasonCode: error.code,
+        reason: error.message,
+        contents: normalized,
+        purchaseOrderId: content.purchase_order_id,
+      });
     }
-  } catch (error) {
-    if (!(error instanceof HubPhysicalError)) throw error;
-    return createQuarantinedInbound(db, {
-      reference, externalRef, actorId, locationRef,
-      reasonCode: error.code,
-      reason: error.message,
-      contents: normalized,
-    });
   }
 
   const allocations = [];
   for (const entry of resolved) {
-    const allocation = await persistPurchaseAllocation(db, entry.snapshot);
+    let allocation;
+    try {
+      allocation = await persistPurchaseAllocation(db, entry.snapshot);
+    } catch (error) {
+      if (!(error instanceof HubPhysicalError)) throw error;
+      return createQuarantinedInbound(db, {
+        reference, externalRef, actorId, locationRef,
+        reasonCode: error.code,
+        reason: error.message,
+        contents: normalized,
+        purchaseOrderId: entry.content.purchase_order_id,
+      });
+    }
     const { rows: [placed] } = await db.query(
       `SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
          FROM hub_physical_unit_placements
@@ -344,6 +412,7 @@ async function receiveSupplierPackage(executor, {
         reasonCode: 'HUB_ALLOCATION_OVERRECEIVED',
         reason: 'La quantité déjà placée + reçue dépasse la quantité achetée',
         contents: normalized,
+        purchaseOrderId: entry.content.purchase_order_id,
       });
     }
     allocations.push({ allocation, quantity: entry.content.quantity });
@@ -388,6 +457,130 @@ async function receiveSupplierPackage(executor, {
   };
 }
 
+async function revalidateQuarantinedInbound(executor, {
+  unitId,
+  incidentId,
+  actorId = null,
+  locationRef = null,
+  notes = null,
+}) {
+  const db = requireExecutor(executor);
+  const { rows: [unit] } = await db.query(
+    'SELECT * FROM hub_physical_units WHERE id = $1 FOR UPDATE',
+    [unitId]
+  );
+  if (!unit) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
+  if (unit.unit_type !== 'SUPPLIER_PACKAGE' || unit.state !== 'QUARANTINED' || unit.outcome_type) {
+    fail('HUB_QUARANTINE_REVALIDATION_NOT_ALLOWED');
+  }
+
+  const { rows: [quarantineEvent] } = await db.query(`
+    SELECT details
+      FROM hub_custody_events
+     WHERE physical_unit_id = $1
+       AND event_type = 'QUARANTINE'
+       AND details ? 'manifest'
+     ORDER BY created_at DESC, id DESC
+     LIMIT 1
+  `, [unitId]);
+  const manifest = quarantineEvent && quarantineEvent.details && quarantineEvent.details.manifest;
+  if (!Array.isArray(manifest) || manifest.length === 0) fail('HUB_QUARANTINE_MANIFEST_MISSING');
+
+  let resolvedEntries = [];
+  const resolution = await resolveUpstreamTruthIncident(db, {
+    incidentId,
+    resolvedBy: actorId,
+    notes,
+    revalidate: async (sameDb, { incident }) => {
+      if (!incident.details || String(incident.details.physical_unit_id) !== String(unitId)) return false;
+      const next = [];
+      try {
+        for (const content of manifest) {
+          const snapshot = await resolvePurchaseSnapshot(sameDb, content.purchase_order_id);
+          if (Number(content.quantity) > Number(snapshot.quantity)) return false;
+
+          const { rows: [existing] } = await sameDb.query(
+            'SELECT * FROM hub_purchase_allocations WHERE purchase_order_id = $1 FOR SHARE',
+            [snapshot.purchase_order_id]
+          );
+          if (existing && !allocationMatches(existing, snapshot)) return false;
+
+          if (existing) {
+            const { rows: [placed] } = await sameDb.query(
+              `SELECT COALESCE(SUM(quantity),0)::integer AS quantity
+                 FROM hub_physical_unit_placements
+                WHERE allocation_id = $1 AND removed_at IS NULL`,
+              [existing.id]
+            );
+            if (Number(placed.quantity) + Number(content.quantity) > Number(snapshot.quantity)) return false;
+          }
+          next.push({ content, snapshot });
+        }
+      } catch (error) {
+        if (error instanceof HubPhysicalError) return false;
+        throw error;
+      }
+      resolvedEntries = next;
+      return true;
+    },
+  });
+
+  if (!resolution.resolved) {
+    return { resolved: false, reason: resolution.reason, incident_id: incidentId, unit_id: unitId };
+  }
+
+  const { rows: [released] } = await db.query(`
+    UPDATE hub_physical_units
+       SET state = 'RECEIVED',
+           current_location_ref = COALESCE($2, current_location_ref),
+           updated_at = now()
+     WHERE id = $1
+     RETURNING *
+  `, [unitId, locationRef]);
+
+  await insertCustodyEvent(db, {
+    physicalUnitId: unitId,
+    eventType: 'STATE_TRANSITION',
+    fromState: 'QUARANTINED',
+    toState: 'RECEIVED',
+    actorId,
+    locationRef: locationRef || released.current_location_ref,
+    details: { incident_id: incidentId, revalidated: true },
+  });
+
+  const operationId = crypto.randomUUID();
+  const allocations = [];
+  for (const entry of resolvedEntries) {
+    const allocation = await persistPurchaseAllocation(db, entry.snapshot);
+    await db.query(
+      `INSERT INTO hub_physical_unit_placements (
+         physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by
+       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5)`,
+      [unitId, allocation.id, entry.content.quantity, operationId, actorId]
+    );
+    await insertCustodyEvent(db, {
+      physicalUnitId: unitId,
+      eventType: 'PLACEMENT_IN',
+      allocationId: allocation.id,
+      quantity: entry.content.quantity,
+      operationId,
+      operationType: 'RECEIVE',
+      actorId,
+      locationRef: locationRef || released.current_location_ref,
+      details: { purchase_order_id: allocation.purchase_order_id, revalidated: true },
+    });
+    allocations.push({ allocation, quantity: entry.content.quantity });
+  }
+
+  return {
+    resolved: true,
+    unit: released,
+    incident: resolution.incident,
+    allocations,
+    operation_id: operationId,
+  };
+}
+
 async function transitionPhysicalUnit(executor, {
   unitId,
   toState,
@@ -404,6 +597,9 @@ async function transitionPhysicalUnit(executor, {
   );
   if (!before) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
   if (before.state === toState) return { noop: true, unit: before };
+  if (before.state === 'QUARANTINED') {
+    fail('HUB_QUARANTINE_REVALIDATION_REQUIRED', 'Utiliser revalidateQuarantinedInbound après résolution F3.');
+  }
 
   const { rows: [unit] } = await db.query(
     `UPDATE hub_physical_units
@@ -645,10 +841,12 @@ module.exports = {
   UNIT_TYPES,
   UNIT_STATES,
   PHYSICAL_OPERATIONS,
+  HUB_QUARANTINE_SUBTYPE_BY_REASON,
   resolvePurchaseSnapshot,
   snapshotPurchaseAllocation,
   createPhysicalUnit,
   receiveSupplierPackage,
+  revalidateQuarantinedInbound,
   transitionPhysicalUnit,
   moveAllocationQuantity,
   recordPhysicalUnitOutcome,

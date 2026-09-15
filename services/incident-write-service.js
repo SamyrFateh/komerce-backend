@@ -8,7 +8,7 @@
  * @outputs       incident_mutation_result
  * @depends       services/incident-governance
  * @used-by       services/scan-engine.js, services/reconciliation-service.js, services/alert-engine.js,
- *                routes/admin/users.js, routes/admin/system.js, routes/ops-api.js
+ *                services/hub-physical-identity.js, routes/admin/users.js, routes/admin/system.js, routes/ops-api.js
  * @db-read       incidents, scan_events
  * @db-write      incidents
  * @db-txn        caller_owned_queryable
@@ -76,6 +76,73 @@ async function createReconciliationIncident(executor, orderId, parcelId, orderIt
     parcelId, orderId, orderItemId, issue.severity, issue.message, issue.message,
     JSON.stringify({ ...issue.details, type: issue.type }), governance.origin_domain,
     governance.resolver_domain, governance.resolution_class,
+    computeDueAt(governance.resolution_class),
+  ]);
+  return incident;
+}
+
+/**
+ * HUB-001 — dossier d'exception pour une unité physique QUARANTINED parce
+ * qu'une vérité amont Purchasing/Orders n'est pas prouvée. La déduplication
+ * est par physical_unit_id + subtype : deux colis physiques ne partagent
+ * jamais silencieusement le même dossier.
+ */
+async function createHubPhysicalReconciliationIncident(executor, {
+  physicalUnitId,
+  subtype,
+  reasonCode,
+  message,
+  purchaseOrderId = null,
+  orderId = null,
+  orderItemId = null,
+  severity = 'high',
+  details = {},
+}) {
+  const db = requireExecutor(executor);
+  if (!physicalUnitId) {
+    throw new TypeError('[createHubPhysicalReconciliationIncident] physicalUnitId requis');
+  }
+  const governance = resolveGovernanceOrThrow({ incident_type: 'reconciliation_error', subtype });
+  const physicalUnitRef = String(physicalUnitId);
+
+  const { rows: existing } = await db.query(`
+    SELECT * FROM incidents
+     WHERE incident_type = 'reconciliation_error'
+       AND status IN ('open', 'investigating')
+       AND details->>'type' = $1
+       AND details->>'physical_unit_id' = $2
+     LIMIT 1
+  `, [subtype, physicalUnitRef]);
+  if (existing.length > 0) return existing[0];
+
+  const incidentDetails = {
+    ...details,
+    type: subtype,
+    physical_unit_id: physicalUnitRef,
+    reason_code: reasonCode || null,
+    purchase_order_id: purchaseOrderId ? String(purchaseOrderId) : null,
+  };
+
+  const { rows: [incident] } = await db.query(`
+    INSERT INTO incidents (
+      parcel_id, order_id, order_item_id,
+      incident_type, severity, title, description, details, detected_source,
+      origin_domain, resolver_domain, resolution_class, due_at
+    ) VALUES (
+      NULL,$1,$2,'reconciliation_error',$3,$4,$5,$6,'hub_physical_identity',
+      $7,$8,$9,$10
+    )
+    RETURNING *
+  `, [
+    orderId || null,
+    orderItemId || null,
+    severity,
+    message || reasonCode || subtype,
+    message || reasonCode || subtype,
+    JSON.stringify(incidentDetails),
+    governance.origin_domain,
+    governance.resolver_domain,
+    governance.resolution_class,
     computeDueAt(governance.resolution_class),
   ]);
   return incident;
@@ -401,6 +468,7 @@ async function seedIncident(executor, values) {
 module.exports = {
   createScanIncident,
   createReconciliationIncident,
+  createHubPhysicalReconciliationIncident,
   createAlertEngineIncidentIfNew,
   acknowledgeAlertEngineIncident,
   resolveOpsIncident,
