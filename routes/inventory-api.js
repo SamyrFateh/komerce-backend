@@ -4,26 +4,19 @@
  * @domain        inventory
  * @layer         route
  * @criticality   critical
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @inputs        authenticated hub physical receipt / scan request
+ * @outputs       inventory physical allocation response
+ * @depends       middleware/auth.js, services/inventory-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       none
  * @db-write      none
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  inventory
- * @version       2026-06
+ * @db-txn        service_owned
+ * @doctrine      HUB-001_PHYSICAL_IDENTITY_ALLOCATION_CUSTODY
+ * @impact-areas  inventory, logistics
+ * @version       2026-09
  */
-
 
 'use strict';
-/**
- * ═══════════════════════════════════════════════════════════════
- * INVENTORY API v3 — Scan-driven, proposals as guidance
- * Mounted at /api/hub/inventory
- * ═══════════════════════════════════════════════════════════════
- */
 const express = require('express');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
@@ -31,29 +24,48 @@ const inv = require('../services/inventory-service');
 
 router.use(authenticate, requireRole(['admin', 'agent_hub']));
 
-// ─── RECEIVE ──────────────────────────────────────────────────
-router.post('/receive', async (req, res, next) => {
+function errorStatus(err) {
+  if (!err || !err.code) return 400;
+  if (err.code === 'HUB_ORDER_ITEM_NOT_FOUND' || err.code === 'HUB_PARCEL_NOT_FOUND') return 404;
+  if (
+    err.code.includes('REASSIGNMENT') ||
+    err.code.includes('CONFLICT') ||
+    err.code.includes('AMBIGUOUS') ||
+    err.code.includes('UNPROVEN') ||
+    err.code.includes('INCOMPLETE') ||
+    err.code.includes('OVER_PURCHASE') ||
+    err.code === 'HUB_EXPLICIT_SPLIT_REQUIRED'
+  ) return 409;
+  return 400;
+}
+
+router.post('/receive', async (req, res) => {
   try {
-    const result = await inv.receiveItem(req.body);
+    const result = await inv.receiveItem({
+      ...req.body,
+      received_by: req.user && req.user.id || null,
+    });
     res.json({ ok: true, ...result });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    res.status(errorStatus(e)).json({ error: e.message, code: e.code || 'HUB_RECEIVE_FAILED', details: e.details || undefined });
   }
 });
 
-// ─── SCAN INTO PARCEL (the real action) ───────────────────────
-router.post('/scan-assign', async (req, res, next) => {
+router.post('/scan-assign', async (req, res) => {
   try {
     const { inventory_item_id, parcel_id } = req.body;
-    if (!inventory_item_id || !parcel_id) return res.status(400).json({ error: 'inventory_item_id + parcel_id requis' });
-    const result = await inv.scanIntoParcel(inventory_item_id, parcel_id);
+    if (!inventory_item_id || !parcel_id) {
+      return res.status(400).json({ error: 'inventory_item_id + parcel_id requis' });
+    }
+    const result = await inv.scanIntoParcel(inventory_item_id, parcel_id, {
+      scanned_by: req.user && req.user.id || null,
+    });
     res.json({ ok: true, ...result });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    res.status(errorStatus(e)).json({ error: e.message, code: e.code || 'HUB_ASSIGN_FAILED', details: e.details || undefined });
   }
 });
 
-// ─── RECALCULATE ALL PROPOSALS ────────────────────────────────
 router.post('/propose-all', async (req, res, next) => {
   try {
     const result = await inv.proposeAll();
@@ -63,7 +75,6 @@ router.post('/propose-all', async (req, res, next) => {
   }
 });
 
-// ─── LIST PROPOSALS + BUFFER ──────────────────────────────────
 router.get('/proposals', async (req, res, next) => {
   try {
     const items = await inv.listProposals();
@@ -73,7 +84,6 @@ router.get('/proposals', async (req, res, next) => {
   }
 });
 
-// ─── OPEN PARCELS (for UI dropdown) ───────────────────────────
 router.get('/open-parcels', async (req, res, next) => {
   try {
     const parcels = await inv.listOpenParcels();
@@ -83,17 +93,15 @@ router.get('/open-parcels', async (req, res, next) => {
   }
 });
 
-// ─── BUFFER ITEMS ─────────────────────────────────────────────
 router.get('/buffer', async (req, res, next) => {
   try {
     const items = await inv.listProposals();
-    res.json({ ok: true, items: items.filter(i => i.status === 'buffered') });
+    res.json({ ok: true, items: items.filter((i) => i.status === 'buffered') });
   } catch (e) {
     next(e);
   }
 });
 
-// ─── STATS / KPI ──────────────────────────────────────────────
 router.get('/stats', async (req, res, next) => {
   try {
     const stats = await inv.getStats();
@@ -103,7 +111,6 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
-// ─── DISPATCH DECISION ────────────────────────────────────────
 router.get('/order/:id/dispatch', async (req, res) => {
   try {
     const result = await inv.shouldDispatch(req.params.id);
