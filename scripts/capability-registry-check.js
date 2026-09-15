@@ -6,16 +6,27 @@ const { CAPABILITIES, autonomyStats } = require('../config/market-delegation-cap
 const { validateRegistry } = require('../services/capability-registry');
 
 const CHECKPOINT = Object.freeze({
-  lot: '7-structure-event',
-  total: 42,
-  delegation: 31,
-  live: 30,
+  lot: '8-decision-signal',
+  total: 43,
+  delegation: 32,
+  live: 31,
   p0_live: 15,
 });
 
 function checkMigrationCoverage(root = path.join(__dirname, '..')) {
-  const sql = fs.readFileSync(path.join(root, 'migrations', '193_market_delegation_capability_registry.sql'), 'utf8');
-  return CAPABILITIES.filter(row => !sql.includes(`'${row.capability}'`)).map(row => row.capability);
+  // Historiquement ce check ne lisait que 193_market_delegation_capability_registry.sql
+  // (la déclaration de base). Mais depuis, de nouvelles capabilities sont
+  // introduites directement par leur propre migration dédiée (ex.
+  // 210_market_delegation_structure_event_record_live.sql,
+  // 223_market_delegation_decision_signal_manage_live.sql) sans jamais être
+  // rétro-ajoutées à 193 — et ne doivent pas l'être : les migrations
+  // appliquées sont append-only (scripts/check-migration-immutability.js).
+  // On scanne donc l'historique complet des migrations numérotées, pas un
+  // seul fichier figé dans le temps.
+  const migrationsDir = path.join(root, 'migrations');
+  const files = fs.readdirSync(migrationsDir).filter(f => /^\d+.*\.sql$/.test(f));
+  const combined = files.map(f => fs.readFileSync(path.join(migrationsDir, f), 'utf8')).join('\n');
+  return CAPABILITIES.filter(row => !combined.includes(`'${row.capability}'`)).map(row => row.capability);
 }
 
 function runCheck({ root = path.join(__dirname, '..'), print = true } = {}) {
