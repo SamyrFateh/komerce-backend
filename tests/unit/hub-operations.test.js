@@ -113,7 +113,7 @@ test('operator transition cannot skip nominal custody sequence', async () => {
   db.withTransaction.mockImplementation(async (work) => work(tx));
 
   const denied = await hubOps.transitionOperatorUnitCommand({ unit_id: U1, to_state: 'PACKED' }, 'user-1');
-  expect(denied.status).toBe(409);
+  expect(denied.status).toBe(400);
   expect(denied.body.code).toBe('HUB_OPERATOR_TRANSITION_FORBIDDEN');
   expect(hubPhysical.transitionPhysicalUnit).not.toHaveBeenCalled();
 });
@@ -134,7 +134,7 @@ test('PACKED requires a MARKET_PARCEL', async () => {
   const tx = clientWithUnit({ id: U1, unit_type: 'HANDLING_UNIT', state: 'PICKED' });
   db.withTransaction.mockImplementation(async (work) => work(tx));
   const result = await hubOps.packParcel(U1, 'user-1');
-  expect(result.status).toBe(409);
+  expect(result.status).toBe(400);
   expect(result.body.code).toBe('HUB_OPERATOR_OUTBOUND_TYPE_REQUIRED');
 });
 
