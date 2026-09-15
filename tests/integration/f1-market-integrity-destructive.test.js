@@ -5,14 +5,14 @@
  * F1 — Market Integrity / Immutable Order Market — tests destructifs.
  *
  * Précondition : DATABASE_URL pointe vers une base construite depuis
- * db/schema.sql PLUS migrations/229_f1_market_integrity_guards.sql
- * (candidate — pas encore mergée sur main, voir F1-B).
+ * db/schema.sql PLUS migrations/scheduled/229_f1_market_integrity_guards.sql
+ * appliquée explicitement dans la base de test. Le fichier reste scheduled
+ * tant que le live data preflight F1 n'est pas validé.
  *
- * Couvre les 5 scénarios de la doctrine F1 + l'analyse de concurrence
- * (TOCTOU sur un relais qui change de Market pendant qu'une commande lui
- * est réassignée).
+ * Couvre les scénarios de la doctrine F1 + l'analyse de concurrence TOCTOU.
  */
 const { Pool } = require('pg');
+const { randomUUID } = require('crypto');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -72,7 +72,19 @@ describe('F1 — orders.market_id immutable (F1.1)', () => {
   });
 });
 
-describe('F1 — réassignation de relais dans le même Market (F1.2)', () => {
+describe('F1 — cohérence order.market_id ↔ relais.market_id (F1.2)', () => {
+  test('INSERT direct avec order.market_id KM + relais CM → FAIL', async () => {
+    const id = randomUUID();
+    const reference = `KOM-F1-MISMATCH-${Date.now()}`;
+    await expect(
+      pool.query(
+        `INSERT INTO orders (id, reference, market_id, relais_id, total_kmf, payment_mode, status)
+         VALUES ($1, $2, $3, $4, 10000, 'cash_relais', 'pending')`,
+        [id, reference, MARKET_KM, RELAIS_CM]
+      )
+    ).rejects.toThrow(/orders_relais_reassignment_cross_market/);
+  });
+
   test('2. relais_id A(KM) → B(KM), même market → PASS', async () => {
     await expect(
       pool.query('UPDATE orders SET relais_id = $1 WHERE id = $2', [RELAIS_KM_B, ORDER_ID])
@@ -98,19 +110,12 @@ describe('F1 — réassignation de relais dans le même Market (F1.2)', () => {
 
 describe('F1 — pas de drift silencieux de relais.market_id référencé (F1.3)', () => {
   test('4. relais KM référencé par une commande historique → UPDATE market_id = CM → FAIL', async () => {
-    // RELAIS_KM_A est référencé par ORDER_ID (fixture initiale).
     await expect(
       pool.query('UPDATE relais SET market_id = $1 WHERE id = $2', [MARKET_CM, RELAIS_KM_A])
     ).rejects.toThrow(/relais_market_id_immutable_once_referenced/);
   });
 
-  test('5. relais KM jamais référencé → UPDATE market_id = CM → PASS (arbitrage documenté)', async () => {
-    // Arbitrage F1 (§5, doctrine) : un relais non référencé par aucune
-    // commande n'a pas encore d'historique à protéger — la mutation est
-    // techniquement possible. Documenté explicitement plutôt qu'imposé
-    // par défaut : si le modèle réel traite relais.market_id comme une
-    // identité permanente même hors référencement, ce test doit devenir
-    // un FAIL et l'arbitrage doit être réécrit en conséquence.
+  test('5. relais KM jamais référencé → UPDATE market_id = CM → PASS', async () => {
     await expect(
       pool.query('UPDATE relais SET market_id = $1 WHERE id = $2', [MARKET_CM, RELAIS_KM_UNUSED])
     ).resolves.toBeDefined();
@@ -118,22 +123,18 @@ describe('F1 — pas de drift silencieux de relais.market_id référencé (F1.3)
 });
 
 describe('F1 — concurrence : pas de TOCTOU entre réassignation de relais et drift de marché', () => {
-  test('TX1 réassigne order → relais B pendant que TX2 tente de déplacer relais B vers CM : un seul gagne, jamais un état incohérent', async () => {
+  test('TX1 réassigne order → relais B pendant que TX2 tente de déplacer relais B vers CM : jamais d’état incohérent', async () => {
     const client1 = await pool.connect();
     const client2 = await pool.connect();
     try {
       await client1.query('BEGIN');
       await client2.query('BEGIN');
 
-      // TX1 prend le verrou FOR SHARE sur relais B en premier (résolution
-      // du nouveau relais dans le trigger F1.2).
       const tx1Promise = client1.query(
         'UPDATE orders SET relais_id = $1 WHERE id = $2',
         [RELAIS_KM_B, ORDER_ID]
       );
 
-      // Laisse le temps à TX1 d'acquérir son verrou avant que TX2 ne
-      // tente sa propre mutation sur la même ligne relais.
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const tx2Promise = client2.query(
@@ -144,9 +145,6 @@ describe('F1 — concurrence : pas de TOCTOU entre réassignation de relais et d
       await tx1Promise;
       await client1.query('COMMIT');
 
-      // TX2 était bloquée derrière le verrou FOR SHARE de TX1 ; une fois
-      // TX1 committée, relais B est référencé par ORDER_ID → F1.3 doit
-      // rejeter TX2.
       await expect(tx2Promise).rejects.toThrow(/relais_market_id_immutable_once_referenced/);
       await client2.query('ROLLBACK').catch(() => {});
 
