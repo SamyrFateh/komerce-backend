@@ -7,7 +7,7 @@
  * @inputs        db_or_transaction_executor, parcel item mutation payload
  * @outputs       query result / parcel item row
  * @depends       none (executor fourni par l'appelant)
- * @used-by       routes/hub-dashboard.js, services/inventory-service.js
+ * @used-by       routes/hub-dashboard.js, services/inventory-service.js, services/hub-packing-service.js
  * @db-read       order_items, parcel_items, parcels
  * @db-write      parcel_items
  * @db-txn        caller_transaction_preserved
@@ -31,17 +31,8 @@ function allocationError(code, message, details = {}) {
   return err;
 }
 
-/**
- * Assigne l'intégralité d'un order_item à un colis après validation de son
- * appartenance à la commande. Sémantique historique de hub-dashboard/create-parcel.
- */
-async function assignWholeOrderItemToParcel(executor, {
-  parcelId,
-  orderItemId,
-  orderId,
-}) {
+async function assignWholeOrderItemToParcel(executor, { parcelId, orderItemId, orderId }) {
   assertExecutor(executor);
-
   return executor.query(
     `INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
      SELECT $1, oi.id, oi.product_id, oi.quantity
@@ -51,18 +42,8 @@ async function assignWholeOrderItemToParcel(executor, {
   );
 }
 
-/**
- * Assigne un article déjà résolu (product_id + quantity connus) à un colis.
- * Sémantique historique de hub-dashboard/auto-prepare.
- */
-async function assignParcelItem(executor, {
-  parcelId,
-  orderItemId,
-  productId,
-  quantity,
-}) {
+async function assignParcelItem(executor, { parcelId, orderItemId, productId, quantity }) {
   assertExecutor(executor);
-
   return executor.query(
     `INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
      VALUES ($1, $2, $3, $4)
@@ -71,18 +52,8 @@ async function assignParcelItem(executor, {
   );
 }
 
-/**
- * Ajoute un article résolu et retourne la ligne créée si elle existe.
- * Sémantique historique de POST /hub-dash/parcels/:id/add-item.
- */
-async function addParcelItem(executor, {
-  parcelId,
-  orderItemId,
-  productId,
-  quantity,
-}) {
+async function addParcelItem(executor, { parcelId, orderItemId, productId, quantity }) {
   assertExecutor(executor);
-
   const { rows: [row] } = await executor.query(
     `INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
      VALUES ($1, $2, $3, $4)
@@ -90,36 +61,20 @@ async function addParcelItem(executor, {
      RETURNING *`,
     [parcelId, orderItemId, productId, quantity]
   );
-
   return row || null;
 }
 
-/**
- * Retire un article d'un colis et retourne la ligne supprimée si elle existe.
- */
-async function removeParcelItem(executor, {
-  parcelId,
-  orderItemId,
-}) {
+async function removeParcelItem(executor, { parcelId, orderItemId }) {
   assertExecutor(executor);
-
   const { rows: [row] } = await executor.query(
     'DELETE FROM parcel_items WHERE parcel_id = $1 AND order_item_id = $2 RETURNING *',
     [parcelId, orderItemId]
   );
-
   return row || null;
 }
 
-/**
- * Legacy helper : une unité. Conservé pour les anciens call-sites.
- */
-async function assignSingleOrderItemToParcel(executor, {
-  parcelId,
-  orderItemId,
-}) {
+async function assignSingleOrderItemToParcel(executor, { parcelId, orderItemId }) {
   assertExecutor(executor);
-
   return executor.query(
     `INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
      SELECT $1, $2, oi.product_id, 1
@@ -129,24 +84,7 @@ async function assignSingleOrderItemToParcel(executor, {
   );
 }
 
-/**
- * HUB-001 — matérialise une allocation physique dans le contenant cible sans
- * réinventer l'allocation commerciale.
- *
- * Règles :
- * - si une allocation parcel_items existe déjà dans le colis cible (ex.
- *   auto-parcel), elle sert de plan et n'est jamais dupliquée inutilement ;
- * - si le même order_item est déjà planifié dans un AUTRE colis actif et que
- *   le colis cible n'en porte aucune part, on refuse : un split/repack doit
- *   être explicite, jamais une réassignation silencieuse ;
- * - si la ligne du colis cible est née du scan physique, sa quantité monte au
- *   plus jusqu'au reliquat commercial encore disponible pour ce colis.
- */
-async function assignPhysicalAllocationToParcel(executor, {
-  parcelId,
-  orderItemId,
-  quantity,
-}) {
+async function assignPhysicalAllocationToParcel(executor, { parcelId, orderItemId, quantity }) {
   assertExecutor(executor);
   const physicalQty = Number(quantity);
   if (!Number.isInteger(physicalQty) || physicalQty <= 0) {
@@ -170,7 +108,7 @@ async function assignPhysicalAllocationToParcel(executor, {
       JOIN parcels p ON p.id = pi.parcel_id
      WHERE pi.order_item_id = $1
        AND p.status <> 'cancelled'
-     ORDER BY pi.created_at NULLS FIRST, pi.id
+     ORDER BY pi.id
      FOR UPDATE OF pi
   `, [orderItemId]);
 
@@ -199,20 +137,14 @@ async function assignPhysicalAllocationToParcel(executor, {
   if (targetRows.length > 0) {
     const primary = targetRows[0];
     const targetQty = targetRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
-    const desiredQty = Math.min(maxTargetQty, Math.max(targetQty, targetQty + physicalQty));
-
-    // Si la ligne existante est déjà un plan complet (auto-parcel), on ne
-    // double-compte pas le scan physique. Sinon, on augmente la première ligne.
+    const desiredQty = Math.min(maxTargetQty, targetQty + physicalQty);
     if (desiredQty > targetQty) {
       await executor.query(
-        `UPDATE parcel_items
-            SET quantity = quantity + $2
-          WHERE id = $1`,
+        `UPDATE parcel_items SET quantity = quantity + $2 WHERE id = $1`,
         [primary.id, desiredQty - targetQty]
       );
     }
-
-    return { parcel_item_id: primary.id, created: false, planned_quantity: Math.max(targetQty, desiredQty) };
+    return { parcel_item_id: primary.id, created: false, planned_quantity: desiredQty };
   }
 
   const insertQty = Math.min(physicalQty, maxTargetQty);
@@ -225,6 +157,80 @@ async function assignPhysicalAllocationToParcel(executor, {
   return { parcel_item_id: created.id, created: true, planned_quantity: Number(created.quantity) };
 }
 
+/**
+ * HUB-001 — split EXPLICITE d'une quantité de packing d'un Market Parcel vers
+ * un autre contenant compatible. Un split total serait un move/reassign : il
+ * est donc interdit ici. La somme des quantités reste constante.
+ */
+async function splitParcelItemAllocation(executor, {
+  fromParcelId,
+  toParcelId,
+  orderItemId,
+  quantity,
+}) {
+  assertExecutor(executor);
+  const splitQty = Number(quantity);
+  if (!Number.isInteger(splitQty) || splitQty <= 0) {
+    throw allocationError('HUB_INVALID_SPLIT_QUANTITY', 'Quantité de split invalide.', { quantity });
+  }
+  if (String(fromParcelId) === String(toParcelId)) {
+    throw allocationError('HUB_SPLIT_SAME_PARCEL', 'Le split exige deux colis distincts.');
+  }
+
+  const { rows: [orderItem] } = await executor.query(
+    'SELECT id, product_id FROM order_items WHERE id = $1 FOR SHARE',
+    [orderItemId]
+  );
+  if (!orderItem) throw allocationError('HUB_ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable.');
+
+  const { rows } = await executor.query(`
+    SELECT pi.id, pi.parcel_id, pi.quantity
+      FROM parcel_items pi
+     WHERE pi.order_item_id = $1
+       AND pi.parcel_id = ANY($2::uuid[])
+     ORDER BY pi.id
+     FOR UPDATE
+  `, [orderItemId, [fromParcelId, toParcelId]]);
+
+  const source = rows.find((r) => String(r.parcel_id) === String(fromParcelId));
+  const target = rows.find((r) => String(r.parcel_id) === String(toParcelId));
+  if (!source) {
+    throw allocationError('HUB_SPLIT_SOURCE_NOT_FOUND', 'Allocation source introuvable dans le colis source.');
+  }
+  const sourceQty = Number(source.quantity || 0);
+  if (splitQty >= sourceQty) {
+    throw allocationError(
+      'HUB_SPLIT_MUST_LEAVE_SOURCE',
+      'Un split doit laisser une quantité positive dans le colis source ; déplacer toute la quantité serait une réassignation.',
+      { source_quantity: sourceQty, split_quantity: splitQty }
+    );
+  }
+
+  await executor.query('UPDATE parcel_items SET quantity = quantity - $2 WHERE id = $1', [source.id, splitQty]);
+
+  let targetId;
+  if (target) {
+    await executor.query('UPDATE parcel_items SET quantity = quantity + $2 WHERE id = $1', [target.id, splitQty]);
+    targetId = target.id;
+  } else {
+    const { rows: [created] } = await executor.query(`
+      INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+    `, [toParcelId, orderItemId, orderItem.product_id, splitQty]);
+    targetId = created.id;
+  }
+
+  return {
+    order_item_id: orderItemId,
+    from_parcel_id: fromParcelId,
+    to_parcel_id: toParcelId,
+    split_quantity: splitQty,
+    source_remaining_quantity: sourceQty - splitQty,
+    target_parcel_item_id: targetId,
+  };
+}
+
 module.exports = {
   assignWholeOrderItemToParcel,
   assignParcelItem,
@@ -232,4 +238,5 @@ module.exports = {
   removeParcelItem,
   assignSingleOrderItemToParcel,
   assignPhysicalAllocationToParcel,
+  splitParcelItemAllocation,
 };
