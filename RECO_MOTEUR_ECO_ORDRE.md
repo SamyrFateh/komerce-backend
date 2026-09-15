@@ -90,3 +90,17 @@ Le terme « charge économique de période » n'a pas encore été confirmé com
 ## Décision humaine à prendre avant d'aller plus loin
 
 Le plan d'attaque original ne mentionne nulle part `pricing-recommend.js` / `pricing-apply.js` / `pricing-engine.js` (Pipeline A). Soit ils étaient hors radar au moment de la rédaction du plan, soit ils sont sciemment exclus. Dans les deux cas, **une clarification explicite est nécessaire avant L1** : le périmètre du "moteur économique" à verrouiller inclut-il ce chemin de sortie de prix legacy encore actif ?
+
+## 6. Confirmation critique — `products.price_kmf` est bien un prix acheteur-effectif, pas juste un chiffre d'admin
+
+`services/market-local-price-resolution-service.js` établit que le prix global du produit (`products.price_kmf`, réglé par le Pipeline A non gardé) est le prix **réellement facturé** dès qu'aucune décision `LOCAL_ACTIVE` n'existe pour le marché courant :
+
+- Catalogue : `applyActiveMarketPricesToCatalogRows` — si `decision` (le prix local actif) est absent, le produit est renvoyé tel quel, c'est-à-dire avec son `price_kmf` de base.
+- Checkout : `applyActiveMarketPricesToCheckoutItems` — même logique, `_effective_unit_price_kmf` reste au prix de base si aucun prix local actif n'est trouvé.
+
+Deux lectures possibles de la doctrine, non tranchées dans le plan :
+
+1. Le prix global est un **filet de sécurité hors doctrine "marché réel"** : la doctrine ne gouverne que les overrides locaux (déjà bien gardés par `market-local-price-activation-service.js`), et vendre au prix global avant qu'un marché ait une décision locale active est un choix produit assumé, pas une violation de l'invariant maturité/couverture.
+2. Le prix global **est** le "prix décisionnel" par défaut de tout marché non couvert par un prix local — auquel cas sa mise à jour devrait être soumise au même refus `NOT_DECISIONAL` que le reste, au moins pour les marchés qu'il dessert par défaut.
+
+**Recommandation** : ne pas trancher ce point par construction silencieuse en L1. Bloquer purement et simplement `/apply-price` tant qu'un marché desservi est `NOT_DECISIONAL` casserait la vente sur tout marché immature — probablement pas l'intention produit. À faire arbitrer explicitement avant d'écrire le moindre code de garde touchant au Pipeline A.
