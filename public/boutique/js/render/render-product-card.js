@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
  * @impact-areas  catalog, product-discovery
- * @version       2026-07
+ * @version       2026-09
  */
 'use strict';
 
@@ -125,6 +125,7 @@ function renderGridCard(product, cartSummary) {
       </div>
       <div class="k-card-info">
         <div class="k-card-name">${vm.safeName}</div>
+        ${vm.safeSellerLine ? `<div class="k-card-source k-card-price-eur">${vm.safeSellerLine}</div>` : ''}
         ${vm.safeDescription ? `<div class="k-card-desc">${vm.safeDescription}</div>` : ''}
         <div class="k-card-bottom k-card-prices-row">
           <div class="k-card-price-col">
