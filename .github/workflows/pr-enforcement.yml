@@ -280,6 +280,8 @@ jobs:
         run: |
           node scripts/arch-db-check.js
           node scripts/arch-header-sql-check.js
+      - name: Hub authority gate (F4 — logistics vs upstream authority tables/columns)
+        run: node scripts/hub-authority-gate.js
       - name: Feature slice guard
         run: node scripts/feature-guard.js --strict
       - name: Business graph semantic check on fresh projection

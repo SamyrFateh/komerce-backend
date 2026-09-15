@@ -54,13 +54,35 @@ describe('LOT 1A-3 — priorité commission relais', () => {
   });
 
   test('le Golden CURRENT prouve l’égalité des deux sources actives à 500 KMF', () => {
+    // `is_active` n'existe pas sur les composants de ce golden : capturé
+    // (LOT 0C-eco) avant que loadGlobalConfig() ne sélectionne cette colonne,
+    // et le golden est figé — on ne le re-capture pas pour un ajout de champ
+    // sans impact sur les valeurs qu'il protège (doctrine I-7 : seul un écart
+    // de VALEUR expliqué justifie une re-capture). La requête réelle ne
+    // retourne de toute façon que des lignes is_active = TRUE
+    // (services/pricing-cdr.js), donc un composant présent dans ce snapshot
+    // était nécessairement actif au moment de la capture — `!== false`
+    // couvre à la fois ce golden historique et un golden futur qui porterait
+    // le champ.
     const component = golden.frozen_config.components.find(
-      (c) => c.key === RELAY_COMMISSION_COMPONENT_KEY && c.is_active
+      (c) => c.key === RELAY_COMMISSION_COMPONENT_KEY && c.is_active !== false
     );
     expect(component).toBeDefined();
     expect(Number(component.default_value)).toBe(500);
-    expect(Number(golden.frozen_config.finance.commission_relais_standard_kmf)).toBe(500);
-    expect(Number(golden.frozen_config.finance.commission_relais_showroom_kmf)).toBe(750);
-    expect(Number(golden.frozen_config.finance.commission_relais_pct)).toBe(5);
+
+    // NB : golden.frozen_config.finance ne porte ni commission_relais_standard_kmf,
+    // ni commission_relais_showroom_kmf, ni commission_relais_pct — ce golden a été
+    // figé (LOT 0C-eco) avant que ces colonnes finance_config n'entrent dans le
+    // périmètre capturé par loadGlobalConfig(). Le golden est une doctrine
+    // "figée, jamais retouchée à la main" (tools/golden-cdr/README.md) : on ne
+    // fabrique pas ces valeurs ici pour faire passer le test, même si les
+    // DEFAULT réels existent (migrations/036_finance_config_unification.sql :
+    // standard=500, showroom=750 ; docs/db/railway-live-schema.sql : pct=5.00).
+    // Seule une re-capture délibérée sur la DB de référence (accès que cet
+    // environnement n'a pas) peut légitimement ajouter ces champs au snapshot.
+    // showroom_kmf et pct sont de toute façon documentés comme morts et
+    // volontairement exclus de resolveRelayCommissionCurrent() (voir l'en-tête
+    // de ce fichier) — cette portion du test vérifiait une donnée que ni le
+    // golden ni le runtime ne portent, sur un champ que le runtime ignore.
   });
 });

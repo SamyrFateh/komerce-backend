@@ -38,6 +38,7 @@
     "db:snapshot": "node scripts/db-snapshot.js",
     "db:sync": "npm run db:snapshot && npm run schema:promote:write && npm run arch:reconcile:write && npm run arch:gate",
     "arch:headers-sql": "node scripts/arch-header-sql-check.js",
+    "arch:hub-authority": "node scripts/hub-authority-gate.js",
     "arch:enrich": "node scripts/enrich-komerce-arch-db-fields.js",
     "arch:enrich:write": "node scripts/enrich-komerce-arch-db-fields.js --write",
     "arch:doctrine": "node scripts/arch-doctrine-sanitize-check.js",
