@@ -219,7 +219,7 @@ describe('_createAlertIfNew', () => {
     expect(params).toEqual(['p1', 'delay', 'stuck_parcel']);
   });
 
-  it('aucun incident existant → INSERT canonique avec gouvernance, incident retourné', async () => {
+  it('aucun incident existant → INSERT canonique avec gouvernance + SLA, incident retourné', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'new-inc', incident_type: 'delay' }] });
@@ -227,11 +227,11 @@ describe('_createAlertIfNew', () => {
     expect(result).toEqual({ id: 'new-inc', incident_type: 'delay' });
     expect(db.query).toHaveBeenCalledTimes(2);
     const [insertSql, insertParams] = db.query.mock.calls[1];
-    expect(insertSql).toContain('origin_domain, resolver_domain, resolution_class');
+    expect(insertSql).toContain('origin_domain, resolver_domain, resolution_class, due_at');
     expect(insertParams).toEqual([
       'p1', 'o1', 'delay', 'high', 'desc', 'desc',
       JSON.stringify({ a: 1, alert_type: 'stuck_parcel' }),
-      'LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF',
+      'LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF', expect.any(Date),
     ]);
   });
 
