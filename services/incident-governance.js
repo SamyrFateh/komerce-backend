@@ -235,12 +235,75 @@ function assertTerminalResolutionAllowed(incident, resolutionType) {
       `[incident-governance] ${resolutionType} interdit pour incident_type=${incident.incident_type}` +
       `${incident.subtype ? ' subtype=' + incident.subtype : ''} ` +
       `(resolution_class=UPSTREAM_TRUTH, resolver_domain=${resolverDomain}) — ` +
-      `seul le domaine amont peut corriger cet incident (contrat de correction authoritative F3, non encore implémenté).`
+      `seul le domaine amont peut corriger cet incident; Hub ne peut le fermer qu'après vérité authoritative corrigée et revalidation.`
     );
     err.code = 'UPSTREAM_TRUTH_TERMINAL_BYPASS';
     throw err;
   }
+
+  if (resolutionClass === 'PHYSICAL_PROOF') {
+    const err = new Error(
+      `[incident-governance] ${resolutionType} interdit pour incident_type=${incident.incident_type} ` +
+      `(resolution_class=PHYSICAL_PROOF) — une fermeture physique exige une nouvelle preuve scan_events ` +
+      `et la revalidation synchrone du prédicat original.`
+    );
+    err.code = 'PHYSICAL_PROOF_TERMINAL_BYPASS';
+    throw err;
+  }
   return true;
+}
+
+/*
+ * F3 — SLA policy.
+ *
+ * Smallest explicit policy, not a generic SLA engine: duration is a pure
+ * function of resolution_class only (§2 of the F3 mandate — no repo
+ * convention existed to build on, so this is the smallest explicit policy,
+ * documented here rather than invented silently).
+ *
+ *   PHYSICAL_PROOF -> short operational SLA: Logistics owns the next scan,
+ *                     can act same-day.
+ *   UPSTREAM_TRUTH -> domain correction SLA: a different domain must act
+ *                     first, then Logistics revalidates — longer window.
+ *
+ * UNCLASSIFIED is intentionally absent: resolveGovernanceOrThrow() never
+ * produces UNCLASSIFIED for a NEW incident (fail-closed), so no new incident
+ * can reach computeDueAt() with an unknown authority. Historical UNCLASSIFIED
+ * rows keep due_at = NULL (never backfilled — same reasoning as F2).
+ */
+const SLA_DURATION_MS = Object.freeze({
+  PHYSICAL_PROOF: 24 * 60 * 60 * 1000,
+  UPSTREAM_TRUTH: 72 * 60 * 60 * 1000,
+});
+
+function computeDueAt(resolutionClass, fromDate = new Date()) {
+  const durationMs = SLA_DURATION_MS[resolutionClass];
+  if (!durationMs) return null;
+  return new Date(fromDate.getTime() + durationMs);
+}
+
+/*
+ * F3 — resolver_domain -> Action Center owner_role.
+ *
+ * The durable operational sink for escalation delivery is the existing
+ * `signals` table (services/signal-service.js#upsertSignal), already
+ * idempotent on (signal_type, market_id, entity_type, entity_id) and already
+ * rendered by the Action Center. owner_role there is role-based
+ * (hub/relais/sourcing/admin); this maps F2's domain authority onto it so
+ * escalation reaches the resolver's actual operational surface instead of a
+ * generic admin queue. No new sink is created (§20 of the F3 mandate).
+ */
+const RESOLVER_DOMAIN_TO_OWNER_ROLE = Object.freeze({
+  LOGISTICS: 'hub',
+  PAYMENTS: 'admin',
+  ORDERS: 'admin',
+  PURCHASING: 'sourcing',
+  MARKET: 'admin',
+  UNCLASSIFIED: 'admin',
+});
+
+function resolverDomainToOwnerRole(resolverDomain) {
+  return RESOLVER_DOMAIN_TO_OWNER_ROLE[resolverDomain] || 'admin';
 }
 
 module.exports = {
@@ -251,6 +314,8 @@ module.exports = {
   RECONCILIATION_SUBTYPE_MAPPING,
   HUB_TRANSITION_POLICY,
   TERMINAL_RESOLUTION_TYPES,
+  SLA_DURATION_MS,
+  RESOLVER_DOMAIN_TO_OWNER_ROLE,
   resolveGovernance,
   validateGovernance,
   resolveGovernanceOrThrow,
@@ -258,4 +323,6 @@ module.exports = {
   isIrreversibleTransitionBlocked,
   assertIrreversibleTransitionAllowed,
   assertTerminalResolutionAllowed,
+  computeDueAt,
+  resolverDomainToOwnerRole,
 };
