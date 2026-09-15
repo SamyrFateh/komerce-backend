@@ -1,6 +1,6 @@
 'use strict';
 const {
-  run, seedCount, createdOfferId, seedOfferIds,
+  run, seedCount, createdOfferId, seedOfferIds, SEED_EXTERNAL_IDS,
 } = require('../../scripts/allegro-sandbox-check');
 const dispatch = require('../../services/sourcing-import-dispatch');
 const connector = require('../../services/suppliers/connectors/allegro-connector');
@@ -75,36 +75,36 @@ test('bounded seed creates real seller drafts then passes their ids through the 
   const report = await run(['--seed=3', '--import'], { ...d, client: api, env });
   expect(report).toMatchObject({ seeded: 3, offer_ids: ['101', '102', '103'], accepted: 3 });
   expect(api.seedConfiguration).toHaveBeenCalledWith(env);
+  expect(api.get).toHaveBeenCalledTimes(3);
   expect(api.createDraftOffer).toHaveBeenCalledTimes(3);
+  expect(api.createDraftOffer.mock.calls.map(([arg]) => arg.externalId)).toEqual(SEED_EXTERNAL_IDS);
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['101', '102', '103'] });
   expect(d.importCatalog).toHaveBeenCalledTimes(1);
 });
 
-test('seed reuses prior Komerce drafts and fails closed if the sandbox catalog is insufficient', async () => {
+test('seed reuses exact external ids and fails closed if sandbox catalog is insufficient', async () => {
   const api = {
     seedConfiguration: jest.fn(),
-    get: jest.fn().mockResolvedValue({
-      offers: [
-        { id: '201', name: 'Komerce Sandbox Seed 1 - A' },
-        { id: 'x', name: 'Komerce Sandbox Seed malformed' },
-        { id: '999', name: 'Unrelated' },
-      ],
+    get: jest.fn(async (_path, params) => {
+      if (params['external.id'] === SEED_EXTERNAL_IDS[0]) {
+        return { offers: [{ id: '201', external: { id: SEED_EXTERNAL_IDS[0] } }] };
+      }
+      return { offers: [] };
     }),
     searchProducts: jest.fn()
-      .mockResolvedValueOnce({ products: [] })
       .mockResolvedValueOnce({ products: [{ id: 'p-2', name: 'Mouse' }] })
       .mockResolvedValueOnce({ products: [] }),
     createDraftOffer: jest.fn().mockResolvedValue({ id: '202' }),
   };
   await expect(seedOfferIds(3, api, {})).rejects.toThrow('SEED_INCOMPLETE');
   expect(api.createDraftOffer).toHaveBeenCalledTimes(1);
+  expect(api.createDraftOffer.mock.calls[0][0].externalId).toBe(SEED_EXTERNAL_IDS[1]);
 
-  api.get.mockResolvedValue({
-    offers: [
-      { id: '201', name: 'Komerce Sandbox Seed 1 - A' },
-      { id: '202', name: 'Komerce Sandbox Seed 2 - B' },
-      { id: '203', name: 'Komerce Sandbox Seed 3 - C' },
-    ],
+  api.get.mockImplementation(async (_path, params) => {
+    const index = SEED_EXTERNAL_IDS.indexOf(params['external.id']);
+    return index < 0 ? { offers: [] } : {
+      offers: [{ id: String(201 + index), external: { id: SEED_EXTERNAL_IDS[index] } }],
+    };
   });
   api.searchProducts.mockClear(); api.createDraftOffer.mockClear();
   await expect(seedOfferIds(3, api, {})).resolves.toEqual(['201', '202', '203']);

@@ -113,35 +113,53 @@ test('seller sandbox seed has an independent staging-only kill switch', () => {
   expect(() => seedConfiguration({ ...seedEnv, KOMERCE_ENV: '', NODE_ENV: 'production' })).toThrow('STAGING_ONLY');
 });
 
-test('seller seed search and draft creation remain sandbox-bound and token-encapsulated', async () => {
+test('seller seed search uses only supported provider params and bounds results locally', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async url => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/sale/products')) return ok({ products: [
+      { id: 'p1' }, { id: 'p2' }, { id: 'p3' }, { id: 'p4' },
+    ] });
+    return ok({ offers: [] });
+  });
+  const found = await s.client.searchProducts('usb cable', { limit: 3 });
+  expect(found.products.map(p => p.id)).toEqual(['p1', 'p2', 'p3']);
+  const providerUrl = new URL(s.fetchImpl.mock.calls.find(([url]) => url.includes('/sale/products'))[0]);
+  expect(providerUrl.searchParams.get('phrase')).toBe('usb cable');
+  expect(providerUrl.searchParams.has('limit')).toBe(false);
+});
+
+test('seller draft creation stays sandbox-bound, minimal and token-encapsulated', async () => {
   const s = setup();
   s.runtime.KOMERCE_ENV = 'staging';
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
   s.fetchImpl.mockImplementation(async (url, init) => {
     if (url.includes('/auth/')) return ok(token());
-    if (url.includes('/sale/products')) return ok({ products: [{ id: 'abc-123', name: 'USB Cable' }] });
     if (url.endsWith('/sale/product-offers') && init.method === 'POST') return ok({ id: '987654321' });
     return ok({ offers: [] });
   });
-  const found = await s.client.searchProducts('usb cable', { limit: 3 });
-  expect(found.products[0].id).toBe('abc-123');
   const created = await s.client.createDraftOffer({
-    productId: 'abc-123', name: 'Komerce Sandbox USB Cable', pricePln: 29.9, stock: 12,
+    productId: 'abc-123', name: 'Komerce Sandbox USB Cable', externalId: 'komerce-sandbox-seed-1',
+    pricePln: 29.9, stock: 12,
   });
   expect(created).toEqual({ id: '987654321' });
   expect(s.dbImpl.withTransaction).toHaveBeenCalledTimes(1);
-  const providerCalls = s.fetchImpl.mock.calls.filter(([url]) => !url.includes('/auth/'));
-  expect(providerCalls).toHaveLength(2);
-  for (const [url, init] of providerCalls) {
-    expect(new URL(url).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
-    expect(init.headers.Authorization).toBe('Bearer access-1');
-    expect(init.redirect).toBe('error');
-  }
-  const payload = JSON.parse(providerCalls[1][1].body);
-  expect(payload.productSet).toEqual([{ product: { id: 'abc-123' } }]);
-  expect(payload.publication).toEqual({ status: 'INACTIVE' });
-  expect(payload.sellingMode).toEqual({ format: 'BUY_NOW', price: { amount: '29.90', currency: 'PLN' } });
-  expect(payload.stock).toEqual({ available: 12 });
+  const providerCall = s.fetchImpl.mock.calls.find(([url]) => url.endsWith('/sale/product-offers'));
+  const [url, init] = providerCall;
+  expect(new URL(url).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
+  expect(init.headers.Authorization).toBe('Bearer access-1');
+  expect(init.redirect).toBe('error');
+  const payload = JSON.parse(init.body);
+  expect(payload).toEqual({
+    productSet: [{ product: { id: 'abc-123' } }],
+    name: 'Komerce Sandbox USB Cable',
+    external: { id: 'komerce-sandbox-seed-1' },
+    sellingMode: { price: { amount: '29.90', currency: 'PLN' } },
+    stock: { available: 12 },
+    publication: { status: 'INACTIVE' },
+  });
 });
 
 test('seller seed input validation fails before provider side effects', async () => {
@@ -150,11 +168,13 @@ test('seller seed input validation fails before provider side effects', async ()
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
   await expect(s.client.searchProducts('x')).rejects.toThrow('QUERY_INVALID');
   await expect(s.client.searchProducts('valid', { limit: 21 })).rejects.toThrow('LIMIT_INVALID');
+  const valid = { productId: 'abc-123', name: 'Valid name', externalId: 'komerce-sandbox-seed-1', pricePln: 10, stock: 1 };
   for (const args of [
-    { productId: '../bad', name: 'Valid name', pricePln: 10, stock: 1 },
-    { productId: 'abc-123', name: 'x', pricePln: 10, stock: 1 },
-    { productId: 'abc-123', name: 'Valid name', pricePln: 0, stock: 1 },
-    { productId: 'abc-123', name: 'Valid name', pricePln: 10, stock: 0 },
+    { ...valid, productId: '../bad' },
+    { ...valid, name: 'x' },
+    { ...valid, externalId: 'bad' },
+    { ...valid, pricePln: 0 },
+    { ...valid, stock: 0 },
   ]) {
     await expect(s.client.createDraftOffer(args)).rejects.toThrow('ALLEGRO_SANDBOX_SEED_');
   }
