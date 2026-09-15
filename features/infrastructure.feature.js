@@ -47,6 +47,9 @@ module.exports = {
   },
 
   files: {
+    services: [
+      'services/outbox-producer.js',
+    ],
     middleware: [
       'middleware/error-handler.js',
       'middleware/rate-limit.js',
@@ -85,6 +88,7 @@ module.exports = {
       'migrations/084_jwt_revocation.sql',
       'migrations/AUD-10_rename_tracking_fix.sql',
       'migrations/deploy-all.sql',
+      'migrations/228_outbox_events_foundation.sql',
     ],
     scripts: [
       'scripts/.boutique-360-baseline.json',
@@ -395,6 +399,8 @@ module.exports = {
       // pas une fausse déclaration. Vérifié manuellement le 2026-07-07.
       'schema_migrations: W',   // technical-writer : DDL versionné, aucune décision métier
       // users — retiré : propriété auth-identity (arbitrage A)
+      'outbox_events: W',   // technical-writer : primitive outbox transactionnelle (HUB-000/F0), services/outbox-producer.js. Aucune vérité métier — futurs consumers (Purchasing/Orders) possèderont leur propre écriture
+      'physical_outcome_receipts: W',   // technical-writer : reçu d'audit append-only du consumer minimal F0, sans effet métier (migrations/228)
     ],
   },
 
