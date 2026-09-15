@@ -152,11 +152,34 @@ async function detachUserFromIncidents(executor, userId) {
   await db.query('UPDATE incidents SET resolved_by = NULL WHERE resolved_by = $1::uuid', [userId]);
 }
 
+function parseSeedDetails(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch (_) { return {}; }
+}
+
 async function seedIncident(executor, values) {
   const db = requireExecutor(executor);
-  if (!Array.isArray(values) || values.length !== 19) {
-    throw new TypeError('[seedIncident] expected exactly 19 positional values');
+  if (!Array.isArray(values) || ![16, 19].includes(values.length)) {
+    throw new TypeError('[seedIncident] expected 16 legacy or 19 governed positional values');
   }
+
+  let governedValues = values;
+  if (values.length === 16) {
+    const incidentType = values[3];
+    const details = parseSeedDetails(values[8]);
+    const governance = resolveGovernanceOrThrow({
+      incident_type: incidentType,
+      subtype: incidentType === 'reconciliation_error' ? details.type : undefined,
+    });
+    governedValues = [
+      ...values,
+      governance.origin_domain,
+      governance.resolver_domain,
+      governance.resolution_class,
+    ];
+  }
+
   return db.query(`
     INSERT INTO incidents (
       id, parcel_id, order_id, incident_type, severity,
@@ -167,7 +190,7 @@ async function seedIncident(executor, values) {
     ) VALUES (
       $1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12::uuid,
       $13,$14::jsonb,$15,$16,$17,$18,$19
-    )`, values);
+    )`, governedValues);
 }
 
 module.exports = {
