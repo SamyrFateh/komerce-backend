@@ -4,7 +4,7 @@
  * @domain        sourcing
  * @layer         service
  * @criticality   high
- * @inputs        sourcing_sources_status, connector_automation_registry
+ * @inputs        sourcing_sources_autopilot_switch, connector_automation_registry
  * @outputs       recurring_source_imports, source_runtime_projection
  * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js
  * @used-by       services/sourcing-workspace.js, scripts/sourcing-source-autopilot.js
@@ -12,7 +12,7 @@
  * @db-write      sourcing_sources, sourcing_captures
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
  * @db-txn        advisory_lock_per_source
- * @doctrine      source_on_means_active_recurring_acquisition, provider_agnostic_runner, bounded_pull, fail_closed_connector_readiness
+ * @doctrine      source_on_means_active_recurring_acquisition, source_lifecycle_is_not_autopilot_authority, provider_agnostic_runner, bounded_pull, fail_closed_connector_readiness
  * @impact-areas  sourcing, catalog, supplier-import
  * @version       2026-09
  */
@@ -61,8 +61,8 @@ async function ensureRegisteredPullSources(q = db) {
     const sourceRef = descriptorSourceRef(descriptor);
     await q.query(
       `INSERT INTO sourcing_sources
-         (source_id, adapter_type, acquisition, continuity, status)
-       VALUES ($1, $2, 'pull', 'recurring', 'disabled')
+         (source_id, adapter_type, acquisition, continuity, status, autopilot_enabled)
+       VALUES ($1, $2, 'pull', 'recurring', 'active', false)
        ON CONFLICT (source_id) DO UPDATE
          SET adapter_type = EXCLUDED.adapter_type,
              acquisition = EXCLUDED.acquisition,
@@ -83,6 +83,7 @@ async function listSources(q = db) {
             s.acquisition,
             s.continuity,
             s.status,
+            s.autopilot_enabled,
             s.updated_at,
             last_capture.status AS last_capture_status,
             last_capture.completed_at AS last_capture_at,
@@ -115,7 +116,7 @@ async function listSources(q = db) {
 
 async function requireSource(sourceRef, q = db) {
   const { rows: [row] } = await q.query(
-    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status
+    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status, autopilot_enabled
        FROM sourcing_sources
       WHERE source_id = $1`,
     [sourceRef]
@@ -176,7 +177,10 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
   await ensureRegisteredPullSources();
   const source = await requireSource(sourceRef);
   if (source.status !== 'active') {
-    return { status: 'skipped', source_ref: sourceRef, reason: 'source_disabled' };
+    return { status: 'skipped', source_ref: sourceRef, reason: 'source_lifecycle_disabled' };
+  }
+  if (!source.autopilot_enabled) {
+    return { status: 'skipped', source_ref: sourceRef, reason: 'autopilot_off' };
   }
   if (source.acquisition !== 'pull' || source.continuity !== 'recurring') {
     return { status: 'skipped', source_ref: sourceRef, reason: 'source_not_recurring_pull' };
@@ -277,6 +281,9 @@ async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
   const automation = automationBySourceRef(sourceRef);
 
   if (active) {
+    if (source.status !== 'active') {
+      throw new SourcingSourceAutopilotError(409, 'Source désactivée au niveau lifecycle', 'sourcing_source_lifecycle_disabled');
+    }
     if (!runtimeEnabled()) {
       throw new SourcingSourceAutopilotError(
         409,
@@ -298,12 +305,12 @@ async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
 
   await db.query(
     `UPDATE sourcing_sources
-        SET status = $2, updated_at = NOW()
+        SET autopilot_enabled = $2, updated_at = NOW()
       WHERE source_id = $1`,
-    [source.source_ref, active ? 'active' : 'disabled']
+    [source.source_ref, Boolean(active)]
   );
 
-  const state = { source_ref: source.source_ref, status: active ? 'active' : 'disabled' };
+  const state = { source_ref: source.source_ref, autopilot_enabled: Boolean(active) };
   if (active && runNow) state.first_run = await runSourceOnce(source.source_ref, { reason: 'activation' });
   return state;
 }
@@ -316,6 +323,7 @@ async function runActiveSources({ limit = DEFAULT_BATCH_LIMIT, reason = 'schedul
     `SELECT source_id AS source_ref
        FROM sourcing_sources
       WHERE status = 'active'
+        AND autopilot_enabled = true
         AND acquisition = 'pull'
         AND continuity = 'recurring'
       ORDER BY updated_at ASC, source_id ASC
