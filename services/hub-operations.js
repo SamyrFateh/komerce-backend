@@ -3,67 +3,322 @@
  * @role          hub-operations
  * @domain        logistics
  * @layer         service
- * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/parcelSync.js
- * @used-by       routes/hub.js
- * @db-read       business_rules, parcel_items, parcels, products, scan_events
- * @db-write      parcels, products, scan_events
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, DOCTRINE_DENSITE_VALEUR (V-4, 2026-07-02)
- * @impact-areas  unknown
- * @version       2026-06
+ * @criticality   critical
+ * @inputs        runtime_context, operator_command_payload
+ * @outputs       physical_unit_result, custody_side_effects
+ * @depends       db, services/hub-physical-identity.js
+ * @used-by       routes/hub.js, routes/scans.js
+ * @db-read       business_rules, hub_physical_units, parcel_items, parcels, products, scan_events
+ * @db-write      products, scan_events
+ * @db-write-via:hub-physical-identity hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, incidents, outbox_events
+ * @db-txn        operator_command_atomic
+ * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR
+ * @impact-areas  logistics, purchasing, incident-management
+ * @version       2026-09
  */
 
 'use strict';
 
-/**
- * KOMERCE — Service opérations hub terrain (REFACTO-R2)
- *
- * Extraction iso-comportement depuis routes/hub.js :
- *   POST /api/hub/scan        → scanParcel(parcelRef, userId, notes?)
- *   POST /api/hub/pack        → packParcel(parcelId, userId, boxLabel?, notes?)
- *   POST /api/hub/seal        → sealParcel(parcelId, userId, notes?)
- *   POST /api/hub/batch-scan  → batchScan(parcelRefs, userId, notes?)
- *
- * Invariant I-09 : le colis est une unité autonome. Les mutations ici ne
- * dépendent jamais du statut de la commande parente — seul `order_id` est
- * lu pour l'appel à safeSyncScanToParcels (qui orchestre lui-même les
- * transitions orders.status).
- *
- * FIX-004 : safeSyncScanToParcels est appelé DANS la transaction (client
- * passé en second argument) pour que le verrou FOR UPDATE reste actif
- * pendant toute la durée du sync.
- *
- * Pattern de retour : { status: number, body: object }
- * (même convention que pricing-apply.js pour cohérence projet)
- */
-
 const db = require('../db');
-const { safeSyncScanToParcels } = require('../utils/parcelSync');
+const {
+  HubPhysicalError,
+  createPhysicalUnit,
+  receiveSupplierPackage: receiveSupplierPackageCore,
+  revalidateQuarantinedInbound,
+  transitionPhysicalUnit,
+  moveAllocationQuantity,
+  recordPhysicalUnitOutcome,
+} = require('./hub-physical-identity');
 
-// ══════════════════════════════════════════════════════════════════════════
-// V-4 DOCTRINE_DENSITE_VALEUR — repack prescrit, jamais improvisé (R2)
-// Le système décide (flags + seuil business_rules), l'agent hub exécute.
-// SANS CONTRAINTE : toute erreur ici est avalée — le scan n'échoue JAMAIS
-// à cause du volume. Champs additifs dans le body, contrat existant intact.
-// ══════════════════════════════════════════════════════════════════════════
+const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const OPERATOR_CONTAINER_TYPES = new Set(['HANDLING_UNIT', 'MARKET_PARCEL']);
+const OPERATOR_MOVES = new Set(['SPLIT', 'MERGE', 'REPACK']);
+const NEXT_OPERATOR_STATE = Object.freeze({
+  RECEIVED: 'IDENTIFIED',
+  IDENTIFIED: 'QUALITY_CHECKED',
+  QUALITY_CHECKED: 'LOCATED',
+  LOCATED: 'ALLOCATED',
+  ALLOCATED: 'PICKED',
+  PICKED: 'PACKED',
+  PACKED: 'DISPATCHED',
+});
 
-const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000; // fallback ultime si business_rules inaccessible
+function badRequest(message, code = 'HUB_OPERATOR_BAD_REQUEST') {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function requireUuid(value, name) {
+  if (!value || !UUID_RE.test(String(value))) {
+    throw badRequest(`${name} doit être un UUID valide`, 'HUB_OPERATOR_UUID_INVALID');
+  }
+  return String(value);
+}
+
+function requireText(value, name, max = 200) {
+  const text = String(value || '').trim();
+  if (!text || text.length > max) throw badRequest(`${name} est requis`, 'HUB_OPERATOR_TEXT_INVALID');
+  return text;
+}
+
+function hubErrorResponse(error) {
+  const code = error && error.code;
+  if (code === '22P02' || String(code || '').startsWith('HUB_OPERATOR_')) {
+    return { status: 400, body: { error: error.message, code } };
+  }
+  if (code === 'HUB_PHYSICAL_UNIT_NOT_FOUND' || code === 'INCIDENT_NOT_FOUND') {
+    return { status: 404, body: { error: error.message, code } };
+  }
+  if (error instanceof HubPhysicalError || String(code || '').startsWith('HUB_')) {
+    return { status: 409, body: { error: error.message, code } };
+  }
+  throw error;
+}
+
+async function withOperatorTransaction(work) {
+  return db.withTransaction(async (client) => work(client));
+}
+
+async function loadPhysicalUnit(client, unitId) {
+  const { rows: [unit] } = await client.query(
+    'SELECT * FROM hub_physical_units WHERE id = $1 FOR UPDATE',
+    [unitId]
+  );
+  if (!unit) {
+    const error = new HubPhysicalError('HUB_PHYSICAL_UNIT_NOT_FOUND', 'Unité physique introuvable');
+    throw error;
+  }
+  return unit;
+}
+
+async function transitionOperatorUnit(client, { unitId, toState, actorId, locationRef = null, details = {} }) {
+  const unit = await loadPhysicalUnit(client, unitId);
+  const expected = NEXT_OPERATOR_STATE[unit.state];
+  if (!expected || expected !== toState) {
+    throw new HubPhysicalError(
+      'HUB_OPERATOR_TRANSITION_FORBIDDEN',
+      `Transition opérateur interdite : ${unit.state} → ${toState}`
+    );
+  }
+  if (['PACKED', 'DISPATCHED'].includes(toState) && unit.unit_type !== 'MARKET_PARCEL') {
+    throw new HubPhysicalError(
+      'HUB_OPERATOR_OUTBOUND_TYPE_REQUIRED',
+      `${toState} exige une unité MARKET_PARCEL`
+    );
+  }
+  return transitionPhysicalUnit(client, {
+    unitId,
+    toState,
+    actorId,
+    locationRef,
+    details,
+  });
+}
 
 /**
- * Calcule les tâches volume d'un colis à la réception :
- *   - 'measure' : produit sans volume_cm3 → mesurer L×l×h à la 1ʳᵉ réception
- *                 (le volume alimente la ventilation fret 095 et la densité V-2)
- *   - 'repack'  : gain prouvé (volume_cm3 − repack_volume_cm3) ≥ REPACK_MIN_GAIN_CM3
- *                 et non repack_exempt → consigne d'emballage optimisé
- * Les exemptions (fragile, boîte = valeur perçue, douane) sont posées par
- * l'admin via products.repack_exempt — jamais décidées ici ni par l'agent.
- *
- * @param {string} parcelId
- * @returns {Promise<{ next_action: string|null, tasks: Array }>}
+ * L'ancien scan parcel_ref → safeSyncScanToParcels(order_id) est fermé.
+ * La réception fournisseur canonique passe par receiveSupplierPackageCommand().
  */
+async function receiveParcel() {
+  return {
+    status: 410,
+    body: {
+      error: 'Flux Hub legacy désactivé : utiliser POST /api/scans/hub/receive avec le manifeste Purchase Order exact.',
+      code: 'HUB_LEGACY_PARCEL_SCAN_DISABLED',
+    },
+  };
+}
+
+async function receiveSupplierPackageCommand(payload, userId) {
+  try {
+    const reference = requireText(payload && payload.reference, 'reference', 200);
+    const contents = payload && payload.contents;
+    if (!Array.isArray(contents) || contents.length === 0) {
+      throw badRequest('contents doit contenir au moins une allocation Purchase Order');
+    }
+    const normalizedContents = contents.map((item) => ({
+      purchase_order_id: requireUuid(item && item.purchase_order_id, 'purchase_order_id'),
+      quantity: Number(item && item.quantity),
+    }));
+    if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+      throw badRequest('quantity doit être un entier strictement positif');
+    }
+
+    const result = await withOperatorTransaction((client) => receiveSupplierPackageCore(client, {
+      reference,
+      externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      contents: normalizedContents,
+    }));
+
+    return {
+      status: result.quarantined ? 202 : 201,
+      body: result,
+    };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function createOperatorUnitCommand(payload, userId) {
+  try {
+    const reference = requireText(payload && payload.reference, 'reference', 200);
+    const unitType = String(payload && payload.unit_type || '').trim().toUpperCase();
+    if (!OPERATOR_CONTAINER_TYPES.has(unitType)) {
+      throw badRequest('unit_type doit être HANDLING_UNIT ou MARKET_PARCEL');
+    }
+    const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
+      reference,
+      unitType,
+      externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      initialState: 'RECEIVED',
+      details: { operator_created: true },
+    }));
+    return { status: 201, body: { physical_unit: unit } };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function transitionOperatorUnitCommand(payload, userId) {
+  try {
+    const unitId = requireUuid(payload && payload.unit_id, 'unit_id');
+    const toState = String(payload && payload.to_state || '').trim().toUpperCase();
+    const result = await withOperatorTransaction((client) => transitionOperatorUnit(client, {
+      unitId,
+      toState,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      details: payload.details && typeof payload.details === 'object' ? payload.details : {},
+    }));
+    return { status: 200, body: result };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function moveAllocationCommand(payload, userId) {
+  try {
+    const fromUnitId = requireUuid(payload && payload.from_unit_id, 'from_unit_id');
+    const toUnitId = requireUuid(payload && payload.to_unit_id, 'to_unit_id');
+    const allocationId = requireUuid(payload && payload.allocation_id, 'allocation_id');
+    const quantity = Number(payload && payload.quantity);
+    const operationType = String(payload && payload.operation_type || '').trim().toUpperCase();
+    if (!Number.isInteger(quantity) || quantity <= 0) throw badRequest('quantity doit être un entier strictement positif');
+    if (!OPERATOR_MOVES.has(operationType)) throw badRequest('operation_type doit être SPLIT, MERGE ou REPACK');
+
+    const result = await withOperatorTransaction((client) => moveAllocationQuantity(client, {
+      fromUnitId,
+      toUnitId,
+      allocationId,
+      quantity,
+      operationType,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+    }));
+    return { status: 200, body: result };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function revalidateQuarantineCommand(payload, userId) {
+  try {
+    const unitId = requireUuid(payload && payload.unit_id, 'unit_id');
+    const incidentId = requireUuid(payload && payload.incident_id, 'incident_id');
+    const result = await withOperatorTransaction((client) => revalidateQuarantinedInbound(client, {
+      unitId,
+      incidentId,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      notes: payload.notes ? String(payload.notes).trim() : null,
+    }));
+    return {
+      status: result.resolved ? 200 : 409,
+      body: result,
+    };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function recordPhysicalOutcomeCommand(payload, userId) {
+  try {
+    const unitId = requireUuid(payload && payload.unit_id, 'unit_id');
+    const outcomeType = String(payload && payload.outcome_type || '').trim().toUpperCase();
+    const result = await withOperatorTransaction((client) => recordPhysicalUnitOutcome(client, {
+      unitId,
+      outcomeType,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      details: payload.details && typeof payload.details === 'object' ? payload.details : {},
+    }));
+    return { status: 200, body: result };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function packParcel(unitId, userId, boxLabel, notes) {
+  try {
+    const id = requireUuid(unitId, 'parcel_id');
+    const result = await withOperatorTransaction((client) => transitionOperatorUnit(client, {
+      unitId: id,
+      toState: 'PACKED',
+      actorId: userId || null,
+      details: {
+        box_label: boxLabel || null,
+        notes: notes || null,
+        operator_action: 'pack',
+      },
+    }));
+    return {
+      status: 200,
+      body: { message: `Unité ${id} emballée`, physical_unit: result.unit },
+    };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function sealParcel(unitId, userId, notes) {
+  try {
+    const id = requireUuid(unitId, 'parcel_id');
+    const result = await withOperatorTransaction((client) => transitionOperatorUnit(client, {
+      unitId: id,
+      toState: 'DISPATCHED',
+      actorId: userId || null,
+      details: { notes: notes || null, operator_action: 'seal_dispatch' },
+    }));
+    return {
+      status: 200,
+      body: { message: `Unité ${id} scellée et dispatchée`, physical_unit: result.unit },
+    };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+async function batchScan() {
+  return {
+    status: 410,
+    body: {
+      error: 'Batch scan legacy désactivé : chaque colis fournisseur doit être reçu avec son manifeste Purchase Order exact.',
+      code: 'HUB_LEGACY_BATCH_SCAN_DISABLED',
+    },
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// V-4 DOCTRINE_DENSITE_VALEUR — mesure produit. Ce rail n'altère pas
+// l'identité/custody HUB-001 et reste volontairement indépendant.
+// ══════════════════════════════════════════════════════════════════════════
+
 async function computeVolumeTasks(parcelId) {
   const empty = { next_action: null, tasks: [] };
   try {
@@ -88,404 +343,56 @@ async function computeVolumeTasks(parcelId) {
         const v = rows[0].value && rows[0].value.value != null ? Number(rows[0].value.value) : Number(rows[0].value);
         if (!isNaN(v)) minGain = v;
       }
-    } catch (_) { /* business_rules inaccessible → fallback */ }
+    } catch (_) {}
 
     const tasks = [];
     for (const it of items) {
       if (it.repack_exempt) continue;
-      const vol    = it.volume_cm3        != null ? Number(it.volume_cm3)        : null;
+      const vol = it.volume_cm3 != null ? Number(it.volume_cm3) : null;
       const repack = it.repack_volume_cm3 != null ? Number(it.repack_volume_cm3) : null;
-
       if (vol == null) {
-        tasks.push({
-          task: 'measure',
-          product_id: it.product_id,
-          name: it.name,
-          quantity: it.quantity,
-          instruction: 'Mesurer L×l×h (cm) du produit emballé et saisir le volume',
-        });
+        tasks.push({ task: 'measure', product_id: it.product_id, name: it.name, quantity: it.quantity,
+          instruction: 'Mesurer L×l×h (cm) du produit emballé et saisir le volume' });
       } else if (repack != null && (vol - repack) >= minGain) {
-        tasks.push({
-          task: 'repack',
-          product_id: it.product_id,
-          name: it.name,
-          quantity: it.quantity,
+        tasks.push({ task: 'repack', product_id: it.product_id, name: it.name, quantity: it.quantity,
           gain_cm3: Math.round(vol - repack),
-          instruction: `Repacker en emballage optimisé (gain ${Math.round((vol - repack) / 1000)} dm³/unité)`,
-        });
+          instruction: `Repacker en emballage optimisé (gain ${Math.round((vol - repack) / 1000)} dm³/unité)` });
       }
     }
-
-    const next_action = tasks.some(t => t.task === 'repack') ? 'repack'
-      : tasks.some(t => t.task === 'measure') ? 'measure_volume'
-      : null;
-
+    const next_action = tasks.some((t) => t.task === 'repack') ? 'repack'
+      : tasks.some((t) => t.task === 'measure') ? 'measure_volume' : null;
     return { next_action, tasks };
   } catch (_) {
-    return empty; // sans contrainte : jamais d'échec de scan pour cause de volume
+    return empty;
   }
 }
 
-/**
- * Enregistre une mesure de volume produit (POST /api/hub/volume).
- * L'agent exécute une consigne de mesure — il ne décide rien (R2) :
- * pas de flag d'exemption ici, pas de seuil, juste la saisie.
- * Dernière mesure gagne (pas de verrou : la donnée fraîche prime).
- *
- * @param {string} productId
- * @param {string} userId
- * @param {{ volume_cm3?: number, repack_volume_cm3?: number }} payload
- * @returns {Promise<{ status: number, body: object }>}
- */
 async function recordVolume(productId, userId, payload) {
   const { volume_cm3, repack_volume_cm3 } = payload || {};
   if (volume_cm3 == null && repack_volume_cm3 == null) {
     return { status: 400, body: { error: 'Fournir volume_cm3 et/ou repack_volume_cm3' } };
   }
-
   const sets = [];
   const params = [];
   let i = 1;
-  if (volume_cm3 != null)        { sets.push(`volume_cm3 = $${i++}`);        params.push(volume_cm3); }
+  if (volume_cm3 != null) { sets.push(`volume_cm3 = $${i++}`); params.push(volume_cm3); }
   if (repack_volume_cm3 != null) { sets.push(`repack_volume_cm3 = $${i++}`); params.push(repack_volume_cm3); }
   params.push(productId);
-
   const { rows } = await db.query(
-    `UPDATE products SET ${sets.join(', ')}
-     WHERE id = $${i}
+    `UPDATE products SET ${sets.join(', ')} WHERE id = $${i}
      RETURNING id, name, volume_cm3, repack_volume_cm3, repack_exempt`,
     params
   );
-  if (!rows.length) {
-    return { status: 404, body: { error: 'Produit introuvable' } };
-  }
-
+  if (!rows.length) return { status: 404, body: { error: 'Produit introuvable' } };
   const p = rows[0];
   const gain = (p.volume_cm3 != null && p.repack_volume_cm3 != null)
-    ? Math.round(Number(p.volume_cm3) - Number(p.repack_volume_cm3))
-    : null;
-
-  return {
-    status: 200,
-    body: {
-      message: `Volume enregistré pour ${p.name}`,
-      product: p,
-      repack_gain_cm3: gain,
-      recorded_by: userId,
-    },
-  };
+    ? Math.round(Number(p.volume_cm3) - Number(p.repack_volume_cm3)) : null;
+  return { status: 200, body: { message: `Volume enregistré pour ${p.name}`, product: p, repack_gain_cm3: gain, recorded_by: userId } };
 }
 
-// ── receiveParcel (POST /scan) ──────────────────────────────────────────────
-
-/**
- * Reçoit un colis au hub : verrouille la ligne, synchronise l'étape
- * `hub_preparation` via safeSyncScanToParcels, commite.
- *
- * @param {string} parcelRef
- * @param {string} userId
- * @param {string|undefined} notes
- * @returns {Promise<{ status: number, body: object }>}
- */
-async function receiveParcel(parcelRef, userId, notes) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { rows } = await client.query(
-      `SELECT p.id, p.order_id, p.status, p.reference
-       FROM parcels p
-       WHERE p.reference = $1 AND p.status != 'cancelled'
-       FOR UPDATE`,
-      [parcelRef]
-    );
-
-    if (!rows.length) {
-      await client.query('ROLLBACK');
-      return { status: 404, body: { error: `Colis ${parcelRef} introuvable` } };
-    }
-
-    const parcel = rows[0];
-
-    const syncResult = await safeSyncScanToParcels({
-      order_id:   parcel.order_id,
-      step:       'hub_preparation',
-      scan_id:    null,
-      scanned_by: userId,
-      notes:      notes || `Hub scan: ${parcel.reference}`,
-    }, client);
-
-    await client.query('COMMIT');
-
-    const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
-
-    // V-4 : tâches volume/repack — hors transaction, jamais bloquant.
-    const volumeTasks = await computeVolumeTasks(parcel.id);
-
-    return {
-      status: 200,
-      body: {
-        message: `Colis ${parcel.reference} scanné au hub`,
-        parcel:  updated.rows[0],
-        sync:    syncResult,
-        next_action:  volumeTasks.next_action,   // 'repack' | 'measure_volume' | null
-        volume_tasks: volumeTasks.tasks,          // consignes par produit (R2 : exécution)
-      },
-    };
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
-// ── packParcel (POST /pack) ─────────────────────────────────────────────────
-
-/**
- * Marque un colis comme emballé (étape intermédiaire, pas de changement de
- * statut — juste un append dans le champ `notes`).
- *
- * @param {string|number} parcelId
- * @param {string} userId
- * @param {string|undefined} boxLabel
- * @param {string|undefined} notes
- * @returns {Promise<{ status: number, body: object }>}
- */
-async function packParcel(parcelId, userId, boxLabel, notes) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { rows } = await client.query(
-      `SELECT id, order_id, status, reference
-       FROM parcels WHERE id = $1 AND status != 'cancelled'
-       FOR UPDATE`,
-      [parcelId]
-    );
-
-    if (!rows.length) {
-      await client.query('ROLLBACK');
-      return { status: 404, body: { error: 'Colis introuvable' } };
-    }
-
-    const parcel = rows[0];
-
-    if (parcel.status !== 'preparation') {
-      await client.query('ROLLBACK');
-      return {
-        status: 400,
-        body: { error: `Colis ${parcel.reference} n'est pas en préparation (statut: ${parcel.status})` },
-      };
-    }
-
-    const packNote =
-      `[PACKED] ${new Date().toISOString()} by ${userId}` +
-      (boxLabel ? ` | Box: ${boxLabel}` : '') +
-      (notes    ? ` | ${notes}`         : '');
-
-    await client.query(
-      `UPDATE parcels
-       SET notes = CASE
-             WHEN notes IS NULL THEN $1
-             ELSE notes || E'\\n' || $1
-           END,
-           updated_at = NOW()
-       WHERE id = $2`,
-      [packNote, parcelId]
-    );
-
-    await client.query('COMMIT');
-
-    const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcelId]);
-
-    return {
-      status: 200,
-      body: {
-        message: `Colis ${parcel.reference} emballé`,
-        parcel:  updated.rows[0],
-      },
-    };
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
-// ── sealParcel (POST /seal) ─────────────────────────────────────────────────
-
-/**
- * Scelle un colis (prêt à expédier) : verrouille, vérifie le statut
- * `preparation`, synchronise l'étape `shipped` via safeSyncScanToParcels.
- *
- * @param {string|number} parcelId
- * @param {string} userId
- * @param {string|undefined} notes
- * @returns {Promise<{ status: number, body: object }>}
- */
-async function sealParcel(parcelId, userId, notes) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { rows } = await client.query(
-      `SELECT id, order_id, status, reference
-       FROM parcels WHERE id = $1 AND status != 'cancelled'
-       FOR UPDATE`,
-      [parcelId]
-    );
-
-    if (!rows.length) {
-      await client.query('ROLLBACK');
-      return { status: 404, body: { error: 'Colis introuvable' } };
-    }
-
-    const parcel = rows[0];
-
-    if (parcel.status !== 'preparation') {
-      await client.query('ROLLBACK');
-      return {
-        status: 400,
-        body: {
-          error: `Colis ${parcel.reference} doit être en préparation pour être scellé (statut: ${parcel.status})`,
-        },
-      };
-    }
-
-    const syncResult = await safeSyncScanToParcels({
-      order_id:   parcel.order_id,
-      step:       'shipped',
-      scan_id:    null,
-      scanned_by: userId,
-      notes:      notes || `Hub seal: ${parcel.reference}`,
-    }, client);
-
-    await client.query('COMMIT');
-
-    const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcelId]);
-
-    return {
-      status: 200,
-      body: {
-        message: `Colis ${parcel.reference} scellé — prêt à expédier`,
-        parcel:  updated.rows[0],
-        sync:    syncResult,
-      },
-    };
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
-// ── batchScan (POST /batch-scan) ────────────────────────────────────────────
-
-/**
- * Scanne plusieurs colis d'un coup. Chaque colis est traité dans sa propre
- * transaction (iso-comportement avec la route d'origine) : un échec isolé
- * n'annule pas les succès précédents.
- *
- * @param {string[]} parcelRefs
- * @param {string}   userId
- * @param {string|undefined} notes
- * @returns {Promise<{ status: number, body: object }>}
- */
-async function batchScan(parcelRefs, userId, notes) {
-  if (!Array.isArray(parcelRefs) || parcelRefs.length === 0) {
-    return { status: 400, body: { error: 'parcel_refs doit être un tableau non-vide' } };
-  }
-  if (parcelRefs.length > 50) {
-    return { status: 400, body: { error: 'Maximum 50 colis par batch' } };
-  }
-
-  const results = [];
-  const errors  = [];
-
-  for (const ref of parcelRefs) {
-    const client = await db.getClient();
-    try {
-      await client.query('BEGIN');
-
-      const { rows } = await client.query(
-        `SELECT p.id, p.order_id, p.status, p.reference
-         FROM parcels p
-         WHERE p.reference = $1 AND p.status != 'cancelled'
-         FOR UPDATE`,
-        [ref]
-      );
-
-      if (!rows.length) {
-        await client.query('ROLLBACK');
-        errors.push({ ref, error: 'Colis introuvable' });
-        continue;
-      }
-
-      const parcel = rows[0];
-
-      const syncResult = await safeSyncScanToParcels({
-        order_id:   parcel.order_id,
-        step:       'hub_preparation',
-        scan_id:    null,
-        scanned_by: userId,
-        notes:      notes || `Batch scan: ${parcel.reference}`,
-      }, client);
-
-      await client.query('COMMIT');
-
-      results.push({
-        ref:      parcel.reference,
-        parcel_id: parcel.id,
-        order_id: parcel.order_id,
-        status:   'scanned',
-        sync:     syncResult,
-      });
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      errors.push({ ref, error: err.message });
-    } finally {
-      client.release();
-    }
-  }
-
-  return {
-    status: 200,
-    body: {
-      message:       `${results.length}/${parcelRefs.length} colis scannés`,
-      scanned:       results,
-      errors,
-      total_success: results.length,
-      total_errors:  errors.length,
-    },
-  };
-}
-
-/**
- * Enregistre la photo de scellé d'un colis (POST /api/hub/photo) — Q-1.
- * BORNE 1 des fenêtres de responsabilité (doctrine non-conformité §2) :
- * défaut visible avant cette photo → fournisseur ; après → transport.
- * Insère un scan_event dédié event_type='seal_photo' : la preuve est datée,
- * signée (scanned_by) et rattachée au colis — jamais une simple URL orpheline.
- * Sans contrainte : l'absence de photo ne bloque jamais un scellé.
- *
- * @param {string} parcelId
- * @param {string} userId
- * @param {string} photoUrl  URL publique (/uploads/hub/...)
- * @param {string|null} notes
- * @returns {Promise<{ status: number, body: object }>}
- */
 async function recordSealPhoto(parcelId, userId, photoUrl, notes = null) {
-  const { rows: parcels } = await db.query(
-    'SELECT id, reference FROM parcels WHERE id = $1',
-    [parcelId]
-  );
-  if (!parcels.length) {
-    return { status: 404, body: { error: 'Colis introuvable' } };
-  }
-
+  const { rows: parcels } = await db.query('SELECT id, reference FROM parcels WHERE id = $1', [parcelId]);
+  if (!parcels.length) return { status: 404, body: { error: 'Colis introuvable' } };
   const { rows } = await db.query(
     `INSERT INTO scan_events
        (parcel_id, event_type, scanned_by, actor_role, photo_urls, notes)
@@ -493,14 +400,11 @@ async function recordSealPhoto(parcelId, userId, photoUrl, notes = null) {
      RETURNING id, created_at`,
     [parcelId, userId, photoUrl, notes]
   );
-
   const { rows: countRows } = await db.query(
     `SELECT COALESCE(SUM(cardinality(photo_urls)), 0) AS photo_count
-     FROM scan_events
-     WHERE parcel_id = $1 AND event_type = 'seal_photo'`,
+       FROM scan_events WHERE parcel_id = $1 AND event_type = 'seal_photo'`,
     [parcelId]
   );
-
   return {
     status: 201,
     body: {
@@ -513,4 +417,18 @@ async function recordSealPhoto(parcelId, userId, photoUrl, notes = null) {
   };
 }
 
-module.exports = { receiveParcel, packParcel, sealParcel, batchScan, recordVolume, computeVolumeTasks, recordSealPhoto };
+module.exports = {
+  receiveParcel,
+  receiveSupplierPackageCommand,
+  createOperatorUnitCommand,
+  transitionOperatorUnitCommand,
+  moveAllocationCommand,
+  revalidateQuarantineCommand,
+  recordPhysicalOutcomeCommand,
+  packParcel,
+  sealParcel,
+  batchScan,
+  recordVolume,
+  computeVolumeTasks,
+  recordSealPhoto,
+};

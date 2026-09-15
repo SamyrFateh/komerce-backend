@@ -6,27 +6,31 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/hub-operations.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, parcel_items, parcels, users
  * @db-write      none
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-1)
+ * @db-txn        service_owned
+ * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping
  * @impact-areas  logistics, market
  * @version       2026-09
  */
 
 /**
- * KOMERCE — Hub Terrain API (REFACTO-R2) — façade mince
+ * KOMERCE — Hub Terrain API
  *
- * POST /api/hub/scan        → hubOps.receiveParcel()
- * POST /api/hub/pack        → hubOps.packParcel()
- * POST /api/hub/seal        → hubOps.sealParcel()
- * POST /api/hub/batch-scan  → hubOps.batchScan()
- * GET  /api/hub/pending     — query lecture seule (reste ici)
- * GET  /api/hub/today       — query lecture seule (reste ici)
- * GET  /api/hub/search      — query lecture seule (reste ici)
- * GET  /api/hub/stats/week  — query lecture seule (reste ici)
+ * Mutation canonique HUB-002 :
+ * POST /api/hub/scan         → legacy fail-closed (410)
+ * POST /api/hub/unit         → crée HANDLING_UNIT / MARKET_PARCEL
+ * POST /api/hub/transition   → avance d'une étape du cycle physique
+ * POST /api/hub/move         → SPLIT / MERGE / REPACK d'une allocation
+ * POST /api/hub/revalidate   → sortie de quarantaine après vérité upstream + F3
+ * POST /api/hub/outcome      → LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE
+ * POST /api/hub/pack         → MARKET_PARCEL PICKED → PACKED
+ * POST /api/hub/seal         → MARKET_PARCEL PACKED → DISPATCHED
+ * POST /api/hub/batch-scan   → legacy fail-closed (410)
+ *
+ * La réception fournisseur canonique est POST /api/scans/hub/receive.
  */
 
 'use strict';
@@ -42,10 +46,7 @@ const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
 const uploadHub = require('../middleware/upload-hub');
 
-// Les opérations physiques restent exclusivement terrain Hub.
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
-// Les lectures terrain peuvent être supervisées par un market_operator, mais
-// uniquement sur les orders.market_id résolus depuis operator_market_scopes.
 const hubRead = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 
 function addMarketScope(req, conditions, params, column = 'o.market_id') {
@@ -54,16 +55,48 @@ function addMarketScope(req, conditions, params, column = 'o.market_id') {
   params.push(req.authorizedMarkets ? Array.from(req.authorizedMarkets) : []);
 }
 
-// ── POST /scan ───────────────────────────────────────────────────────────────
 router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res, next) => {
   try {
-    const { parcel_ref, notes } = req.body;
-    const result = await hubOps.receiveParcel(parcel_ref, req.user.id, notes);
+    const result = await hubOps.receiveParcel(req.body.parcel_ref, req.user.id, req.body.notes);
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 
-// ── POST /pack ───────────────────────────────────────────────────────────────
+router.post('/unit', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await hubOps.createOperatorUnitCommand(req.body || {}, req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.post('/transition', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await hubOps.transitionOperatorUnitCommand(req.body || {}, req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.post('/move', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await hubOps.moveAllocationCommand(req.body || {}, req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.post('/revalidate', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await hubOps.revalidateQuarantineCommand(req.body || {}, req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.post('/outcome', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await hubOps.recordPhysicalOutcomeCommand(req.body || {}, req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
 router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res, next) => {
   try {
     const { parcel_id, box_label, notes } = req.body;
@@ -72,7 +105,6 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res, 
   } catch (err) { next(err); }
 });
 
-// ── POST /seal ───────────────────────────────────────────────────────────────
 router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, next) => {
   try {
     const { parcel_id, notes } = req.body;
@@ -81,7 +113,6 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, 
   } catch (err) { next(err); }
 });
 
-// ── POST /volume ─────────────────────────────────────────────────────────────
 router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, res, next) => {
   try {
     const { product_id, volume_cm3, repack_volume_cm3 } = req.body;
@@ -90,7 +121,6 @@ router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, r
   } catch (err) { next(err); }
 });
 
-// ── POST /photo ──────────────────────────────────────────────────────────────
 router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateMagicBytes, async (req, res, next) => {
   const removeUploadedFile = () => {
     if (!req.file || !req.file.path) return;
@@ -114,16 +144,13 @@ router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateM
   }
 });
 
-// ── POST /batch-scan ─────────────────────────────────────────────────────────
 router.post('/batch-scan', ...hubAuth, async (req, res, next) => {
   try {
-    const { parcel_refs, notes } = req.body;
-    const result = await hubOps.batchScan(parcel_refs, req.user.id, notes);
+    const result = await hubOps.batchScan(req.body && req.body.parcel_refs, req.user.id, req.body && req.body.notes);
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 
-// ── GET /search ──────────────────────────────────────────────────────────────
 router.get('/search', ...hubRead, async (req, res, next) => {
   try {
     const { q, status, island, limit = 50, offset = 0 } = req.query;
@@ -176,7 +203,6 @@ router.get('/search', ...hubRead, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── GET /stats/week ──────────────────────────────────────────────────────────
 router.get('/stats/week', ...hubRead, async (req, res, next) => {
   try {
     const conditions = ["p.created_at >= CURRENT_DATE - INTERVAL '7 days'"];
@@ -230,7 +256,6 @@ router.get('/stats/week', ...hubRead, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── GET /pending ─────────────────────────────────────────────────────────────
 router.get('/pending', ...hubRead, async (req, res, next) => {
   try {
     const conditions = ["p.status IN ('draft', 'preparation')"];
@@ -254,7 +279,6 @@ router.get('/pending', ...hubRead, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── GET /today ───────────────────────────────────────────────────────────────
 router.get('/today', ...hubRead, async (req, res, next) => {
   try {
     const conditions = ['1=1'];

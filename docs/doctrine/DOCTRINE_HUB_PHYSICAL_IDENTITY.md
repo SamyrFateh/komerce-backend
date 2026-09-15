@@ -1,6 +1,6 @@
 # Doctrine — HUB Physical Identity, Allocation & Custody
 
-**Statut : canonique — HUB-001**  
+**Statut : canonique — HUB-001 + HUB-002**  
 **Domaine : logistics**  
 **Date : 2026-09-15**
 
@@ -89,7 +89,7 @@ Un rejeu du même outcome est idempotent ; un outcome différent après un premi
 
 ## 8. HARD STOP
 
-HUB-001 échoue fermé notamment si :
+HUB-001/HUB-002 échoue fermé notamment si :
 
 - la Purchase Order n'a pas d'`order_item_id` / `product_sku_id` exact ;
 - la Supplier Order Identity est absente ou invalide ;
@@ -100,8 +100,32 @@ HUB-001 échoue fermé notamment si :
 - une unité outbound est vide, multi-market **ou multi-destination** ;
 - une opération tente de modifier le contenu d'une unité déjà `PACKED`, `DISPATCHED`, `QUARANTINED` ou `SUPERSEDED` ;
 - une unité QUARANTINED possède encore un incident actif ;
-- une réouverture physique tente de contourner la revalidation F3.
+- une réouverture physique tente de contourner la revalidation F3 ;
+- un opérateur tente de sauter une étape du cycle nominal ;
+- un geste terrain tente de revenir au vieux rail `parcel/order` au lieu de la boundary physique canonique.
 
 ## 9. Non-objectifs HUB-001
 
-Ce lot n'introduit pas de commande fournisseur automatique, de paiement fournisseur, de remboursement client, de réassignation commerciale, de nouvelle résolution Sourcing, ni de nouveau store de preuve. Les preuves physiques d'incident restent dans `scan_events` conformément à HUB-000/F3 ; `hub_custody_events` trace la custody et le lineage, pas une preuve concurrente.
+HUB-001 n'introduit pas de commande fournisseur automatique, de paiement fournisseur, de remboursement client, de réassignation commerciale, de nouvelle résolution Sourcing, ni de nouveau store de preuve. Les preuves physiques d'incident restent dans `scan_events` conformément à HUB-000/F3 ; `hub_custody_events` trace la custody et le lineage, pas une preuve concurrente.
+
+## 10. HUB-002 — Operator Execution Cutover
+
+HUB-002 ne crée aucune nouvelle table et aucune nouvelle vérité métier. Il rend la boundary HUB-001 exécutable par les opérateurs terrain.
+
+La réception fournisseur canonique est `POST /api/scans/hub/receive`. Le payload transporte uniquement l'identité physique du colis et un manifeste explicite `{ purchase_order_id, quantity }`. L'opérateur ne fournit jamais `market_id`, destination, SKU, Supplier Order Identity ou allocation économique : le serveur les résout depuis la Purchase Order exacte.
+
+Les opérations terrain suivantes passent exclusivement par `services/hub-operations.js`, qui ouvre la transaction puis délègue à `services/hub-physical-identity.js` :
+
+- création d'un contenant `HANDLING_UNIT` ou `MARKET_PARCEL` ;
+- transition d'une seule étape du cycle nominal ;
+- `SPLIT`, `MERGE`, `REPACK` d'un placement physique ;
+- revalidation d'une quarantaine via F3 ;
+- constat d'un outcome physique via F0 ;
+- `PICKED → PACKED` ;
+- `PACKED → DISPATCHED`.
+
+Le vieux `POST /api/hub/scan` basé sur `parcel_ref → order_id → safeSyncScanToParcels()` et le batch équivalent sont fail-closed (`410`) : ils ne mutent plus `parcels`, `orders` ou une vérité amont.
+
+`POST /api/hub/pack` et `POST /api/hub/seal` conservent leurs URLs historiques pour limiter le coût de cutover, mais le champ `parcel_id` y désigne désormais l'UUID de la `hub_physical_unit` canonique. Le seal est donc strictement **physical-unit scoped** ; il ne peut plus expédier d'autres colis d'une commande par effet de bord.
+
+Les surfaces lecture legacy (`/api/hub/pending`, `/search`, `/today`, `/stats/week`) restent des projections d'observation pendant le cutover. Elles n'accordent aucune autorité d'écriture et ne sont pas une source de vérité HUB-001.

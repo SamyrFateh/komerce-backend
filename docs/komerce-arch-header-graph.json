@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 591,
-    "filesWithFullHeaders": 546,
+    "scannedCodeFiles": 587,
+    "filesWithFullHeaders": 542,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 591,
+    "filesWithAnyHeaders": 587,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1412,
-    "edges": 7025,
-    "dbTables": 171,
-    "doctrines": 467,
+    "graphNodes": 1396,
+    "edges": 6955,
+    "dbTables": 167,
+    "doctrines": 459,
     "impactAreas": 183,
-    "unresolvedCodeEdges": 674,
+    "unresolvedCodeEdges": 665,
     "dbWriteViaOverlapWarnings": 7,
     "multiWriterTables": 71
   },
@@ -41,7 +41,7 @@
     "market": 3,
     "economic-engine": 56,
     "sourcing": 22,
-    "logistics": 47,
+    "logistics": 46,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -66,7 +66,7 @@
     "local-stock": 4,
     "purchasing": 15,
     "unsold-resolution": 1,
-    "incident-management": 5,
+    "incident-management": 2,
     "market-autonomy": 4,
     "refunds": 2,
     "shared": 1
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 127,
     "entrypoint": 1,
-    "service": 289,
+    "service": 285,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,9 +114,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 88,
+    "critical": 87,
     "medium": 127,
-    "high": 323,
+    "high": 320,
     "low": 53
   },
   "nodes": [
@@ -248,8 +248,7 @@
       "outputs": [
         "automatic_transitions",
         "purges",
-        "reminders",
-        "incident_sla_escalations"
+        "reminders"
       ],
       "depends": [
         "services/cash-reminder-service.js",
@@ -275,16 +274,14 @@
       "doctrine": [
         "idempotence_cron",
         "retention_snapshots",
-        "bounded_mobile_money_reconciliation",
-        "bounded_incident_sla_escalation"
+        "bounded_mobile_money_reconciliation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
         "economic-engine",
-        "payments",
-        "incident-management"
+        "payments"
       ],
       "version": "2026-09"
     },
@@ -12205,7 +12202,7 @@
       "impactAreas": [
         "notification"
       ],
-      "version": "2026-09"
+      "version": "2026-06"
     },
     {
       "id": "services/apply-pricing-updates.js",
@@ -16097,185 +16094,6 @@
       "version": "2026-06"
     },
     {
-      "id": "services/hub-physical-identity.js",
-      "file": "services/hub-physical-identity.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "hub-physical-identity",
-      "domain": "logistics",
-      "layer": "service",
-      "criticality": "critical",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "caller_owned_transaction_executor",
-        "purchase_order_identity",
-        "physical_unit_operation"
-      ],
-      "outputs": [
-        "immutable_purchase_allocation",
-        "physical_unit",
-        "custody_events",
-        "governed_incident",
-        "transactional_outbox_event"
-      ],
-      "depends": [
-        "services/outbox-producer.js",
-        "services/incident-write-service.js"
-      ],
-      "usedBy": [
-        "HUB-001 internal logistics boundary"
-      ],
-      "dbRead": [
-        "purchase_orders",
-        "orders",
-        "order_items",
-        "incidents",
-        "hub_purchase_allocations",
-        "hub_physical_units",
-        "hub_physical_unit_placements",
-        "hub_custody_events"
-      ],
-      "dbWrite": [
-        "hub_purchase_allocations",
-        "hub_physical_units",
-        "hub_physical_unit_placements",
-        "hub_custody_events"
-      ],
-      "dbWriteVia": [
-        {
-          "via": "incident-write-service",
-          "tables": [
-            "incidents"
-          ]
-        },
-        {
-          "via": "outbox-producer",
-          "tables": [
-            "outbox_events"
-          ]
-        }
-      ],
-      "dbTxn": [
-        "caller_owned_transaction_required"
-      ],
-      "doctrine": [
-        "HUB-001 Physical Identity",
-        "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
-      ],
-      "impactAreas": [
-        "logistics",
-        "purchasing",
-        "market",
-        "incident-management"
-      ],
-      "version": "2026-09"
-    },
-    {
-      "id": "services/incident-escalation.js",
-      "file": "services/incident-escalation.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "incident-sla-escalation",
-      "domain": "incident-management",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "overdue_incidents",
-        "incident_governance",
-        "caller_or_pool_transaction"
-      ],
-      "outputs": [
-        "durable_action_center_signal",
-        "durable_escalation_marker"
-      ],
-      "depends": [
-        "db.js",
-        "services/incident-governance.js",
-        "services/signal-service.js"
-      ],
-      "usedBy": [
-        "bootstrap/crons.js",
-        "tests/unit/incident-escalation.test.js",
-        "tests/integration/incident-f3-postgres.test.js"
-      ],
-      "dbRead": [
-        "incidents",
-        "orders",
-        "parcels"
-      ],
-      "dbWrite": [
-        "incidents"
-      ],
-      "dbWriteVia": [
-        {
-          "via": "signal-service",
-          "tables": [
-            "signals"
-          ]
-        }
-      ],
-      "dbTxn": [
-        "per_incident_atomic_signal_and_marker"
-      ],
-      "doctrine": [
-        "F3_INCIDENT_SLA_CONTRACT",
-        "durable_operational_recipient",
-        "no_auto_resolution"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "decision-signals",
-        "logistics",
-        "orders",
-        "purchasing",
-        "payments"
-      ],
-      "version": "2026-09"
-    },
-    {
-      "id": "services/incident-governance.js",
-      "file": "services/incident-governance.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "incident-management-governance-mapping",
-      "domain": "incident-management",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "incident_type",
-        "reconciliation subtype (details.type)"
-      ],
-      "outputs": [
-        "origin_domain",
-        "resolver_domain",
-        "resolution_class"
-      ],
-      "depends": [],
-      "usedBy": [
-        "services/incident-write-service.js",
-        "services/incident-service.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "logistics",
-        "orders",
-        "purchasing"
-      ],
-      "version": "2026-09 (rev.3 — HUB-001 upstream quarantine subtypes)"
-    },
-    {
       "id": "services/incident-service.js",
       "file": "services/incident-service.js",
       "type": "file",
@@ -16295,8 +16113,7 @@
         "side_effects"
       ],
       "depends": [
-        "db",
-        "services/incident-governance"
+        "db"
       ],
       "usedBy": [],
       "dbRead": [
@@ -16313,13 +16130,12 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change",
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+        "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "unknown"
       ],
-      "version": "2026-09"
+      "version": "2026-06"
     },
     {
       "id": "services/incident-write-service.js",
@@ -16339,17 +16155,14 @@
       "outputs": [
         "incident_mutation_result"
       ],
-      "depends": [
-        "services/incident-governance"
-      ],
+      "depends": [],
       "usedBy": [
         "services/scan-engine.js",
         "services/reconciliation-service.js",
         "services/alert-engine.js"
       ],
       "dbRead": [
-        "incidents",
-        "scan_events"
+        "incidents"
       ],
       "dbWrite": [
         "incidents"
@@ -16360,9 +16173,7 @@
       ],
       "doctrine": [
         "lifecycle_owner_boundary",
-        "preserve_caller_transaction",
-        "F2_INCIDENT_GOVERNANCE_CONTRACT",
-        "F3_PROOF_REVALIDATION_CONTRACT"
+        "preserve_caller_transaction"
       ],
       "impactAreas": [
         "incident-management",
@@ -16372,7 +16183,7 @@
         "dashboard",
         "platform-ops"
       ],
-      "version": "2026-09"
+      "version": "2026-08"
     },
     {
       "id": "services/inventory-service.js",
@@ -19242,9 +19053,7 @@
         "futur HUB-001 (Physical Identity",
         "Allocation & Custody)"
       ],
-      "dbRead": [
-        "outbox_events"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "outbox_events"
       ],
@@ -19522,7 +19331,6 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
-        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "utils/logger.js",
         "utils/reference.js",
@@ -19575,7 +19383,7 @@
       "impactAreas": [
         "logistics"
       ],
-      "version": "2026-09"
+      "version": "2026-06"
     },
     {
       "id": "services/parcel-security.js",
@@ -19663,50 +19471,6 @@
         "logistics"
       ],
       "version": "2026-06"
-    },
-    {
-      "id": "services/parcel-transition-guard.js",
-      "file": "services/parcel-transition-guard.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "incident-management-transition-guard",
-      "domain": "incident-management",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "parcel_id",
-        "target_status"
-      ],
-      "outputs": [
-        "throws on blocked transition",
-        "resolves {allowed:true} otherwise"
-      ],
-      "depends": [
-        "db",
-        "services/incident-governance"
-      ],
-      "usedBy": [
-        "services/parcel-operations.js#transitionParcelStatus"
-      ],
-      "dbRead": [
-        "incidents",
-        "parcels"
-      ],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "caller_owned_queryable"
-      ],
-      "doctrine": [
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "logistics"
-      ],
-      "version": "2026-09"
     },
     {
       "id": "services/parcelOptimizationService.js",
@@ -23964,8 +23728,7 @@
       "inputs": [
         "runtime_context",
         "request_or_service_payload",
-        "optional_server_resolved_market_id",
-        "optional_transaction_executor"
+        "optional_server_resolved_market_id"
       ],
       "outputs": [
         "response_or_domain_result",
@@ -23991,20 +23754,18 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "optional_caller_owned_transaction_for_upsert"
+        "resolve_before_behavior_change"
       ],
       "doctrine": [
         "resolve_before_behavior_change",
-        "market_scope_is_server_authority",
-        "preserve_caller_transaction"
+        "market_scope_is_server_authority"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
         "logistics",
-        "market-authorization",
-        "incident-management"
+        "market-authorization"
       ],
       "version": "2026-09"
     },
@@ -28890,31 +28651,6 @@
       "table": "economic_variables"
     },
     {
-      "id": "db:hub_purchase_allocations",
-      "type": "db-table",
-      "table": "hub_purchase_allocations"
-    },
-    {
-      "id": "db:hub_physical_units",
-      "type": "db-table",
-      "table": "hub_physical_units"
-    },
-    {
-      "id": "db:hub_physical_unit_placements",
-      "type": "db-table",
-      "table": "hub_physical_unit_placements"
-    },
-    {
-      "id": "db:hub_custody_events",
-      "type": "db-table",
-      "table": "hub_custody_events"
-    },
-    {
-      "id": "db:outbox_events",
-      "type": "db-table",
-      "table": "outbox_events"
-    },
-    {
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
@@ -28948,6 +28684,11 @@
       "id": "db:ceiling_template_capabilities",
       "type": "db-table",
       "table": "ceiling_template_capabilities"
+    },
+    {
+      "id": "db:outbox_events",
+      "type": "db-table",
+      "table": "outbox_events"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -29118,11 +28859,6 @@
       "id": "doctrine:bounded_mobile_money_reconciliation",
       "type": "doctrine",
       "doctrine": "bounded_mobile_money_reconciliation"
-    },
-    {
-      "id": "doctrine:bounded_incident_sla_escalation",
-      "type": "doctrine",
-      "doctrine": "bounded_incident_sla_escalation"
     },
     {
       "id": "doctrine:feature_first",
@@ -30560,36 +30296,6 @@
       "doctrine": "2026-07-02)"
     },
     {
-      "id": "doctrine:HUB-001 Physical Identity",
-      "type": "doctrine",
-      "doctrine": "HUB-001 Physical Identity"
-    },
-    {
-      "id": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
-      "type": "doctrine",
-      "doctrine": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
-    },
-    {
-      "id": "doctrine:F3_INCIDENT_SLA_CONTRACT",
-      "type": "doctrine",
-      "doctrine": "F3_INCIDENT_SLA_CONTRACT"
-    },
-    {
-      "id": "doctrine:durable_operational_recipient",
-      "type": "doctrine",
-      "doctrine": "durable_operational_recipient"
-    },
-    {
-      "id": "doctrine:no_auto_resolution",
-      "type": "doctrine",
-      "doctrine": "no_auto_resolution"
-    },
-    {
-      "id": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-      "type": "doctrine",
-      "doctrine": "F2_INCIDENT_GOVERNANCE_CONTRACT"
-    },
-    {
       "id": "doctrine:lifecycle_owner_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_boundary"
@@ -30598,11 +30304,6 @@
       "id": "doctrine:preserve_caller_transaction",
       "type": "doctrine",
       "doctrine": "preserve_caller_transaction"
-    },
-    {
-      "id": "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
-      "type": "doctrine",
-      "doctrine": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
       "id": "doctrine:invoice_displays_actual_payment_currency",
@@ -31490,11 +31191,6 @@
       "area": "payments"
     },
     {
-      "id": "impact:incident-management",
-      "type": "impact-area",
-      "area": "incident-management"
-    },
-    {
       "id": "impact:whatsapp",
       "type": "impact-area",
       "area": "whatsapp"
@@ -32255,6 +31951,11 @@
       "area": "finance-config"
     },
     {
+      "id": "impact:incident-management",
+      "type": "impact-area",
+      "area": "incident-management"
+    },
+    {
       "id": "impact:platform-ops",
       "type": "impact-area",
       "area": "platform-ops"
@@ -32704,12 +32405,6 @@
     },
     {
       "from": "bootstrap/crons.js",
-      "to": "doctrine:bounded_incident_sla_escalation",
-      "type": "doctrine",
-      "label": "bounded_incident_sla_escalation"
-    },
-    {
-      "from": "bootstrap/crons.js",
       "to": "impact:cash-reminders",
       "type": "impact",
       "label": "cash-reminders"
@@ -32737,12 +32432,6 @@
       "to": "impact:payments",
       "type": "impact",
       "label": "payments"
-    },
-    {
-      "from": "bootstrap/crons.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
     },
     {
       "from": "bootstrap/env.js",
@@ -56007,319 +55696,10 @@
       "label": "unknown"
     },
     {
-      "from": "services/hub-physical-identity.js",
-      "to": "services/outbox-producer.js",
-      "type": "depends",
-      "label": "services/outbox-producer.js"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "services/incident-write-service.js",
-      "type": "depends",
-      "label": "services/incident-write-service.js"
-    },
-    {
-      "from": "HUB-001 internal logistics boundary",
-      "to": "services/hub-physical-identity.js",
-      "type": "uses",
-      "label": "HUB-001 internal logistics boundary"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:purchase_orders",
-      "type": "db-read",
-      "label": "purchase_orders"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:incidents",
-      "type": "db-read",
-      "label": "incidents"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_purchase_allocations",
-      "type": "db-read",
-      "label": "hub_purchase_allocations"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_physical_units",
-      "type": "db-read",
-      "label": "hub_physical_units"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_physical_unit_placements",
-      "type": "db-read",
-      "label": "hub_physical_unit_placements"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_custody_events",
-      "type": "db-read",
-      "label": "hub_custody_events"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_purchase_allocations",
-      "type": "db-write",
-      "label": "hub_purchase_allocations"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_physical_units",
-      "type": "db-write",
-      "label": "hub_physical_units"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_physical_unit_placements",
-      "type": "db-write",
-      "label": "hub_physical_unit_placements"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:hub_custody_events",
-      "type": "db-write",
-      "label": "hub_custody_events"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:incidents",
-      "type": "db-write-via",
-      "label": "incidents",
-      "via": "incident-write-service"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "db:outbox_events",
-      "type": "db-write-via",
-      "label": "outbox_events",
-      "via": "outbox-producer"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "doctrine:HUB-001 Physical Identity",
-      "type": "doctrine",
-      "label": "HUB-001 Physical Identity"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
-      "type": "doctrine",
-      "label": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "impact:purchasing",
-      "type": "impact",
-      "label": "purchasing"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "impact:market",
-      "type": "impact",
-      "label": "market"
-    },
-    {
-      "from": "services/hub-physical-identity.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "services/incident-governance.js",
-      "type": "depends",
-      "label": "services/incident-governance.js"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "services/signal-service.js",
-      "type": "depends",
-      "label": "services/signal-service.js"
-    },
-    {
-      "from": "bootstrap/crons.js",
-      "to": "services/incident-escalation.js",
-      "type": "uses",
-      "label": "bootstrap/crons.js"
-    },
-    {
-      "from": "tests/unit/incident-escalation.test.js",
-      "to": "services/incident-escalation.js",
-      "type": "uses",
-      "label": "tests/unit/incident-escalation.test.js"
-    },
-    {
-      "from": "tests/integration/incident-f3-postgres.test.js",
-      "to": "services/incident-escalation.js",
-      "type": "uses",
-      "label": "tests/integration/incident-f3-postgres.test.js"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db:incidents",
-      "type": "db-read",
-      "label": "incidents"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db:incidents",
-      "type": "db-write",
-      "label": "incidents"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db:signals",
-      "type": "db-write-via",
-      "label": "signals",
-      "via": "signal-service"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "doctrine:F3_INCIDENT_SLA_CONTRACT",
-      "type": "doctrine",
-      "label": "F3_INCIDENT_SLA_CONTRACT"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "doctrine:durable_operational_recipient",
-      "type": "doctrine",
-      "label": "durable_operational_recipient"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "doctrine:no_auto_resolution",
-      "type": "doctrine",
-      "label": "no_auto_resolution"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:decision-signals",
-      "type": "impact",
-      "label": "decision-signals"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:purchasing",
-      "type": "impact",
-      "label": "purchasing"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "impact:payments",
-      "type": "impact",
-      "label": "payments"
-    },
-    {
-      "from": "services/incident-write-service.js",
-      "to": "services/incident-governance.js",
-      "type": "uses",
-      "label": "services/incident-write-service.js"
-    },
-    {
-      "from": "services/incident-service.js",
-      "to": "services/incident-governance.js",
-      "type": "uses",
-      "label": "services/incident-service.js"
-    },
-    {
-      "from": "services/incident-governance.js",
-      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-      "type": "doctrine",
-      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
-    },
-    {
-      "from": "services/incident-governance.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
-    },
-    {
-      "from": "services/incident-governance.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/incident-governance.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/incident-governance.js",
-      "to": "impact:purchasing",
-      "type": "impact",
-      "label": "purchasing"
-    },
-    {
       "from": "services/incident-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "services/incident-service.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
     },
     {
       "from": "services/incident-service.js",
@@ -56359,21 +55739,9 @@
     },
     {
       "from": "services/incident-service.js",
-      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-      "type": "doctrine",
-      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
-    },
-    {
-      "from": "services/incident-service.js",
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
-    },
-    {
-      "from": "services/incident-write-service.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
     },
     {
       "from": "services/scan-engine.js",
@@ -56401,12 +55769,6 @@
     },
     {
       "from": "services/incident-write-service.js",
-      "to": "db:scan_events",
-      "type": "db-read",
-      "label": "scan_events"
-    },
-    {
-      "from": "services/incident-write-service.js",
       "to": "db:incidents",
       "type": "db-write",
       "label": "incidents"
@@ -56422,18 +55784,6 @@
       "to": "doctrine:preserve_caller_transaction",
       "type": "doctrine",
       "label": "preserve_caller_transaction"
-    },
-    {
-      "from": "services/incident-write-service.js",
-      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-      "type": "doctrine",
-      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
-    },
-    {
-      "from": "services/incident-write-service.js",
-      "to": "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
-      "type": "doctrine",
-      "label": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
       "from": "services/incident-write-service.js",
@@ -61048,12 +60398,6 @@
     {
       "from": "services/outbox-producer.js",
       "to": "db:outbox_events",
-      "type": "db-read",
-      "label": "outbox_events"
-    },
-    {
-      "from": "services/outbox-producer.js",
-      "to": "db:outbox_events",
       "type": "db-write",
       "label": "outbox_events"
     },
@@ -61428,12 +60772,6 @@
     },
     {
       "from": "services/parcel-operations.js",
-      "to": "services/parcel-transition-guard.js",
-      "type": "depends",
-      "label": "services/parcel-transition-guard.js"
-    },
-    {
-      "from": "services/parcel-operations.js",
       "to": "services/refund-service.js",
       "type": "depends",
       "label": "services/refund-service.js"
@@ -61649,54 +60987,6 @@
     },
     {
       "from": "services/parcel-service.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
-    },
-    {
-      "from": "services/parcel-operations.js#transitionParcelStatus",
-      "to": "services/parcel-transition-guard.js",
-      "type": "uses",
-      "label": "services/parcel-operations.js#transitionParcelStatus"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "db:incidents",
-      "type": "db-read",
-      "label": "incidents"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-      "type": "doctrine",
-      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
@@ -68404,12 +67694,6 @@
     },
     {
       "from": "services/signal-service.js",
-      "to": "doctrine:preserve_caller_transaction",
-      "type": "doctrine",
-      "label": "preserve_caller_transaction"
-    },
-    {
-      "from": "services/signal-service.js",
       "to": "impact:decision-signals",
       "type": "impact",
       "label": "decision-signals"
@@ -68437,12 +67721,6 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
-    },
-    {
-      "from": "services/signal-service.js",
-      "to": "impact:incident-management",
-      "type": "impact",
-      "label": "incident-management"
     },
     {
       "from": "services/simulator/cleanup.js",
@@ -74974,35 +74252,30 @@
       "doctrines": [
         "idempotence_cron",
         "retention_snapshots",
-        "bounded_mobile_money_reconciliation",
-        "bounded_incident_sla_escalation"
+        "bounded_mobile_money_reconciliation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
         "economic-engine",
-        "payments",
-        "incident-management"
+        "payments"
       ],
       "mustCheck": [
         "db:economic_snapshots",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:revoked_tokens",
-        "doctrine:bounded_incident_sla_escalation",
         "doctrine:bounded_mobile_money_reconciliation",
         "doctrine:idempotence_cron",
         "doctrine:retention_snapshots",
         "impact:auth-security",
         "impact:cash-reminders",
         "impact:economic-engine",
-        "impact:incident-management",
         "impact:inventory",
         "impact:payments",
         "server.js",
         "services/cash-reminder-service.js",
-        "services/incident-escalation.js",
         "services/inventory-service.js",
         "services/mobile-money-reconciliation.js",
         "utils/logger.js",
@@ -90745,183 +90018,6 @@
         "utils/parcelSync.js"
       ]
     },
-    "services/hub-physical-identity.js": {
-      "role": "hub-physical-identity",
-      "domain": "logistics",
-      "criticality": "critical",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "services/outbox-producer.js",
-        "services/incident-write-service.js"
-      ],
-      "directUsedBy": [
-        "HUB-001 internal logistics boundary"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "purchase_orders",
-        "orders",
-        "order_items",
-        "incidents",
-        "hub_purchase_allocations",
-        "hub_physical_units",
-        "hub_physical_unit_placements",
-        "hub_custody_events"
-      ],
-      "dbWrite": [
-        "hub_purchase_allocations",
-        "hub_physical_units",
-        "hub_physical_unit_placements",
-        "hub_custody_events"
-      ],
-      "dbWriteVia": [
-        {
-          "via": "incident-write-service",
-          "tables": [
-            "incidents"
-          ]
-        },
-        {
-          "via": "outbox-producer",
-          "tables": [
-            "outbox_events"
-          ]
-        }
-      ],
-      "doctrines": [
-        "HUB-001 Physical Identity",
-        "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
-      ],
-      "impactAreas": [
-        "logistics",
-        "purchasing",
-        "market",
-        "incident-management"
-      ],
-      "mustCheck": [
-        "db:hub_custody_events",
-        "db:hub_physical_unit_placements",
-        "db:hub_physical_units",
-        "db:hub_purchase_allocations",
-        "db:incidents",
-        "db:order_items",
-        "db:orders",
-        "db:outbox_events",
-        "db:purchase_orders",
-        "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
-        "doctrine:HUB-001 Physical Identity",
-        "impact:incident-management",
-        "impact:logistics",
-        "impact:market",
-        "impact:purchasing",
-        "services/incident-write-service.js",
-        "services/outbox-producer.js"
-      ]
-    },
-    "services/incident-escalation.js": {
-      "role": "incident-sla-escalation",
-      "domain": "incident-management",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db.js",
-        "services/incident-governance.js",
-        "services/signal-service.js"
-      ],
-      "directUsedBy": [
-        "bootstrap/crons.js",
-        "tests/unit/incident-escalation.test.js",
-        "tests/integration/incident-f3-postgres.test.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "incidents",
-        "orders",
-        "parcels"
-      ],
-      "dbWrite": [
-        "incidents"
-      ],
-      "dbWriteVia": [
-        {
-          "via": "signal-service",
-          "tables": [
-            "signals"
-          ]
-        }
-      ],
-      "doctrines": [
-        "F3_INCIDENT_SLA_CONTRACT",
-        "durable_operational_recipient",
-        "no_auto_resolution"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "decision-signals",
-        "logistics",
-        "orders",
-        "purchasing",
-        "payments"
-      ],
-      "mustCheck": [
-        "bootstrap/crons.js",
-        "db:incidents",
-        "db:orders",
-        "db:parcels",
-        "db:signals",
-        "doctrine:F3_INCIDENT_SLA_CONTRACT",
-        "doctrine:durable_operational_recipient",
-        "doctrine:no_auto_resolution",
-        "impact:decision-signals",
-        "impact:incident-management",
-        "impact:logistics",
-        "impact:orders",
-        "impact:payments",
-        "impact:purchasing",
-        "services/incident-governance.js",
-        "services/signal-service.js"
-      ]
-    },
-    "services/incident-governance.js": {
-      "role": "incident-management-governance-mapping",
-      "domain": "incident-management",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [
-        "services/incident-write-service.js",
-        "services/incident-service.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "logistics",
-        "orders",
-        "purchasing"
-      ],
-      "mustCheck": [
-        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-        "impact:incident-management",
-        "impact:logistics",
-        "impact:orders",
-        "impact:purchasing",
-        "services/incident-escalation.js",
-        "services/incident-service.js",
-        "services/incident-write-service.js"
-      ]
-    },
     "services/incident-service.js": {
       "role": "incident-service",
       "domain": "incident-management",
@@ -90930,8 +90026,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db",
-        "services/incident-governance"
+        "db"
       ],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -90946,8 +90041,7 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change",
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+        "resolve_before_behavior_change"
       ],
       "impactAreas": [
         "unknown"
@@ -90957,10 +90051,8 @@
         "db:orders",
         "db:parcels",
         "db:scan_events",
-        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "services/incident-governance.js"
+        "impact:unknown"
       ]
     },
     "services/incident-write-service.js": {
@@ -90970,9 +90062,7 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "services/incident-governance"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "services/scan-engine.js",
         "services/reconciliation-service.js",
@@ -90980,8 +90070,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "incidents",
-        "scan_events"
+        "incidents"
       ],
       "dbWrite": [
         "incidents"
@@ -90989,9 +90078,7 @@
       "dbWriteVia": [],
       "doctrines": [
         "lifecycle_owner_boundary",
-        "preserve_caller_transaction",
-        "F2_INCIDENT_GOVERNANCE_CONTRACT",
-        "F3_PROOF_REVALIDATION_CONTRACT"
+        "preserve_caller_transaction"
       ],
       "impactAreas": [
         "incident-management",
@@ -91003,9 +90090,6 @@
       ],
       "mustCheck": [
         "db:incidents",
-        "db:scan_events",
-        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-        "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
         "doctrine:lifecycle_owner_boundary",
         "doctrine:preserve_caller_transaction",
         "impact:dashboard",
@@ -91016,8 +90100,6 @@
         "impact:platform-ops",
         "routes/ops-api.js",
         "services/alert-engine.js",
-        "services/hub-physical-identity.js",
-        "services/incident-governance.js",
         "services/reconciliation-service.js",
         "services/scan-engine.js"
       ]
@@ -93898,9 +92980,7 @@
         "Allocation & Custody)"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "outbox_events"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "outbox_events"
       ],
@@ -93916,8 +92996,7 @@
         "db:outbox_events",
         "doctrine:HUB-000 F0 (transactional outbox lite)",
         "impact:infrastructure",
-        "impact:logistics",
-        "services/hub-physical-identity.js"
+        "impact:logistics"
       ]
     },
     "services/outbox-worker.js": {
@@ -94151,7 +93230,6 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
-        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "utils/logger.js",
         "utils/reference.js",
@@ -94220,7 +93298,6 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
-        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "services/simulator/state-advancer.js",
         "utils/logger.js",
@@ -94301,43 +93378,6 @@
         "services/parcel-guards.js",
         "services/parcel-operations.js",
         "utils/parcels.js"
-      ]
-    },
-    "services/parcel-transition-guard.js": {
-      "role": "incident-management-transition-guard",
-      "domain": "incident-management",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db",
-        "services/incident-governance"
-      ],
-      "directUsedBy": [
-        "services/parcel-operations.js#transitionParcelStatus"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "incidents",
-        "parcels"
-      ],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "F2_INCIDENT_GOVERNANCE_CONTRACT"
-      ],
-      "impactAreas": [
-        "incident-management",
-        "logistics"
-      ],
-      "mustCheck": [
-        "db:incidents",
-        "db:parcels",
-        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
-        "impact:incident-management",
-        "impact:logistics",
-        "services/parcel-operations.js"
       ]
     },
     "services/parcelOptimizationService.js": {
@@ -98512,16 +97552,14 @@
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change",
-        "market_scope_is_server_authority",
-        "preserve_caller_transaction"
+        "market_scope_is_server_authority"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
         "logistics",
-        "market-authorization",
-        "incident-management"
+        "market-authorization"
       ],
       "mustCheck": [
         "bootstrap/feature-wiring.js",
@@ -98531,17 +97569,14 @@
         "db:purchase_orders",
         "db:signals",
         "doctrine:market_scope_is_server_authority",
-        "doctrine:preserve_caller_transaction",
         "doctrine:resolve_before_behavior_change",
         "impact:decision-signals",
-        "impact:incident-management",
         "impact:logistics",
         "impact:market-authorization",
         "impact:orders",
         "impact:purchasing",
         "routes/signals.js",
         "services/action-center-workspace.js",
-        "services/incident-escalation.js",
         "services/signal-admin-service.js",
         "utils/logger.js"
       ]
@@ -103083,15 +102118,6 @@
       ]
     },
     {
-      "table": "incidents",
-      "writerCount": 3,
-      "writers": [
-        "services/incident-escalation.js",
-        "services/incident-service.js",
-        "services/incident-write-service.js"
-      ]
-    },
-    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 3,
       "writers": [
@@ -103248,6 +102274,14 @@
       "writers": [
         "routes/admin-finance-config.js",
         "services/pricing-rates.js"
+      ]
+    },
+    {
+      "table": "incidents",
+      "writerCount": 2,
+      "writers": [
+        "services/incident-service.js",
+        "services/incident-write-service.js"
       ]
     },
     {
@@ -106011,46 +105045,10 @@
       "label": "db"
     },
     {
-      "from": "HUB-001 internal logistics boundary",
-      "to": "services/hub-physical-identity.js",
-      "type": "uses",
-      "label": "HUB-001 internal logistics boundary"
-    },
-    {
-      "from": "services/incident-escalation.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "tests/unit/incident-escalation.test.js",
-      "to": "services/incident-escalation.js",
-      "type": "uses",
-      "label": "tests/unit/incident-escalation.test.js"
-    },
-    {
-      "from": "tests/integration/incident-f3-postgres.test.js",
-      "to": "services/incident-escalation.js",
-      "type": "uses",
-      "label": "tests/integration/incident-f3-postgres.test.js"
-    },
-    {
       "from": "services/incident-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "services/incident-service.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
-    },
-    {
-      "from": "services/incident-write-service.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
     },
     {
       "from": "services/inventory-service.js",
@@ -106381,24 +105379,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
-      "from": "services/parcel-transition-guard.js",
-      "to": "services/incident-governance",
-      "type": "depends",
-      "label": "services/incident-governance"
-    },
-    {
-      "from": "services/parcel-operations.js#transitionParcelStatus",
-      "to": "services/parcel-transition-guard.js",
-      "type": "uses",
-      "label": "services/parcel-operations.js#transitionParcelStatus"
     },
     {
       "from": "services/partner-admin-service.js",
