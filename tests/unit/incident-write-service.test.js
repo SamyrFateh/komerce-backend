@@ -116,11 +116,27 @@ describe('incident-write-service — F2', () => {
     expect(executor.query).toHaveBeenCalledTimes(2);
   });
 
-  test('seed contract includes governance triplet', async () => {
+  test('seed contract accepts governed 19-value input', async () => {
     const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
     const values = Array.from({ length: 19 }, (_, i) => `v${i + 1}`);
     await seedIncident(executor, values);
     expect(executor.query.mock.calls[0][0]).toContain('origin_domain, resolver_domain, resolution_class');
-    await expect(seedIncident(executor, ['short'])).rejects.toThrow(/19 positional values/);
+  });
+
+  test('legacy 16-value seed derives governance rather than writing null authority', async () => {
+    const executor = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
+    const values = [
+      '00000000-0000-0000-0000-000000000001', null, null, 'weight_mismatch', 'medium',
+      'open', 'Weight', 'Mismatch', '{}', 'none', false, null,
+      'system', null, null, null,
+    ];
+    await seedIncident(executor, values);
+    expect(executor.query.mock.calls[0][1].slice(-3)).toEqual(['LOGISTICS', 'LOGISTICS', 'PHYSICAL_PROOF']);
+  });
+
+  test('seed contract rejects unsupported arity', async () => {
+    const executor = { query: jest.fn() };
+    await expect(seedIncident(executor, ['short']))
+      .rejects.toThrow(/16 legacy or 19 governed positional values/);
   });
 });
