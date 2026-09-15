@@ -122,8 +122,9 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 // IMPORTANT : doit rester EN DERNIER (route générique)
 router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res, next) => {
   try {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(req.params.order_id)) {
+    const orderId = String(req.params.order_id || '').trim().toLowerCase();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(orderId)) {
       return res.status(400).json({ error: 'order_id invalide — UUID attendu' });
     }
     const { rows } = await db.query(
@@ -132,7 +133,7 @@ router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res, 
        LEFT JOIN users u ON u.id = s.scanned_by
        WHERE s.order_id = $1
        ORDER BY s.created_at ASC`,
-      [req.params.order_id]
+      [orderId]
     );
     res.json(rows);
   } catch (err) { next(err); }
