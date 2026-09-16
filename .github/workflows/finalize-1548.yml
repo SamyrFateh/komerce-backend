@@ -1,0 +1,86 @@
+name: Finalize 1548
+
+on:
+  push:
+    branches:
+      - fix/test-pyramid-from-scratch-governance
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/test-pyramid-from-scratch-governance
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Patch final publication reload gap
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'services/product-admin-service.js';
+          let src = fs.readFileSync(file, 'utf8');
+          const before = "'SELECT id, name, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1'";
+          const after = "'SELECT id, name, description, category, subcategory, price_kmf, stock, is_active, is_available, content_source, source_locale, lifecycle_status FROM products WHERE id = $1'";
+          if (!src.includes(before)) {
+            if (src.includes(after)) process.exit(0);
+            throw new Error('Expected updateProduct SELECT not found; refusing speculative patch');
+          }
+          src = src.replace(before, after);
+          fs.writeFileSync(file, src);
+          NODE
+      - name: Rebuild PostgreSQL from canonical schema-only snapshot
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Prove final G5 residue
+        run: npx jest tests/integration/sourcing-flow-g5.test.js --runInBand --forceExit
+      - name: Full integration DB proofs
+        run: npm run test:integration
+      - name: Feature-first E2E API proofs
+        run: npm run test:e2e:features
+      - name: Commit proven fix and remove temporary workflows
+        run: |
+          git rm .github/workflows/debug-integration-1548.yml .github/workflows/finalize-1548.yml
+          git add services/product-admin-service.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(catalog): reload publication fields before activation"
+          git push origin HEAD:fix/test-pyramid-from-scratch-governance
