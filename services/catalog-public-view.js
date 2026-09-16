@@ -8,40 +8,17 @@
  * @outputs       public_product_view
  * @depends       (none)
  * @used-by       routes/products.js
- * @db-read       markets, product_market_exposure, product_market_price_drafts
+ * @db-read       markets, product_market_exposure, product_market_price_drafts, product_skus, product_variants
  * @db-write      (none)
  * @db-txn        (none)
- * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective
- * @impact-areas  catalog, product-discovery, modal, market-autonomy
- * @version       2026-09
- */
-
-/**
- * KOMERCE — Frontière publique du catalogue
- * ═══════════════════════════════════════════════════════════════════
- *
- * Doctrine catalogue (DOCTRINE_CATALOGUE.md, invariant catalog.feature.js) :
- * « la boutique ne lit que les champs publiés : les champs de cuisine
- * (name_source, description_source, source_locale, content_source,
- * enrichment_version...) lui sont invisibles ».
- *
- * PRINCIPE : une seule liste de champs publiés, partagée par tous les
- * endpoints qui exposent un produit au client (liste ET détail). Aucun
- * endpoint public ne doit faire `SELECT *` puis `res.json(row)` brut —
- * c'est exactement ce qui laisse fuir les champs de cuisine dès qu'une
- * migration ajoute une colonne (cf. 098_catalog_refinery_foundation.sql).
- *
- * Toute nouvelle colonne de cuisine (raffinerie, overrides...) est donc
- * invisible par défaut : il faut l'ajouter explicitement ici pour
- * qu'elle devienne publique — jamais l'inverse.
+ * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
+ * @impact-areas  catalog, product-discovery, modal, market-autonomy, checkout
+ * @version       2026-09-business-truth
  */
 
 'use strict';
 
 const PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES = Object.freeze([
-  // Les 500 SHOWCASE-V2 sont des fixtures de staging. Elles peuvent rester en
-  // base pour les harnais/tests mais ne sont jamais des produits vendables
-  // destinés à la Boutique publique.
   'SHOWCASE-V2-',
 ]);
 
@@ -83,12 +60,6 @@ function assertSqlAlias(alias) {
   return alias;
 }
 
-/**
- * Un média inline data:image est un fixture/placeholder, pas une photographie
- * produit publiable. Les assets locaux (/images/...) et médias HTTPS restent
- * autorisés : le Golden Product et les fournisseurs réels continuent donc à
- * passer ce gate.
- */
 function isSyntheticPublicMediaUrl(value) {
   const url = String(value || '').trim();
   return /^data:image\//i.test(url);
@@ -100,24 +71,100 @@ function isExcludedPublicProductRef(value) {
   return PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES.some((prefix) => ref.startsWith(prefix));
 }
 
+function supplierOrderIdentitySql(skuAlias) {
+  const s = assertSqlAlias(skuAlias);
+  return `(
+    COALESCE(${s}.source, 'MANUAL') <> 'SUPPLIER'
+    OR (
+      NULLIF(BTRIM(${s}.supplier_sku), '') IS NOT NULL
+      AND NULLIF(BTRIM(${s}.supplier_unit_ref), '') IS NOT NULL
+      AND ${s}.supplier_order_identity IS NOT NULL
+      AND jsonb_typeof(${s}.supplier_order_identity) = 'object'
+      AND COALESCE(${s}.supplier_order_identity->>'provider', '')
+          ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
+      AND COALESCE(${s}.supplier_order_identity->>'version', '')
+          ~ '^[1-9][0-9]*$'
+      AND jsonb_typeof(${s}.supplier_order_identity->'payload') = 'object'
+      AND ${s}.supplier_order_identity->'payload' <> '{}'::jsonb
+    )
+  )`;
+}
+
+function sellableSkuSql(skuAlias) {
+  const s = assertSqlAlias(skuAlias);
+  return `(
+    ${s}.is_active = TRUE
+    AND ${s}.stock > 0
+    AND (${s}.price_kmf IS NULL OR ${s}.price_kmf > 0)
+    AND ${supplierOrderIdentitySql(s)}
+  )`;
+}
+
+/**
+ * Gate statique de vendabilité utilisé AVANT d'exposer un produit à un client.
+ *
+ * La boutique ne promet pas un produit si Komerce ne connaît aucune unité
+ * réellement vendable. Pour un produit SKU, toutes les unités actives qui ont
+ * encore du stock doivent être statiquement commandables : on n'affiche jamais
+ * une option AVAILABLE dont l'identité fournisseur est incomplète. Les SKU à
+ * stock nul peuvent rester dans la fiche comme OUT_OF_STOCK.
+ *
+ * Le preflight fournisseur dynamique reste exécuté au checkout : ce gate ne
+ * remplace pas la revalidation prix/stock/fret au moment du paiement.
+ */
+function sellableCatalogUnitSql(alias = 'p') {
+  const a = assertSqlAlias(alias);
+  return `(
+    (
+      ${a}.inventory_model = 'SKU'
+      AND EXISTS (
+        SELECT 1
+          FROM product_skus sellable_sku
+         WHERE sellable_sku.product_id = ${a}.id
+           AND ${sellableSkuSql('sellable_sku')}
+      )
+      AND NOT EXISTS (
+        SELECT 1
+          FROM product_skus unsafe_sku
+         WHERE unsafe_sku.product_id = ${a}.id
+           AND unsafe_sku.is_active = TRUE
+           AND unsafe_sku.stock > 0
+           AND NOT (
+             (unsafe_sku.price_kmf IS NULL OR unsafe_sku.price_kmf > 0)
+             AND ${supplierOrderIdentitySql('unsafe_sku')}
+           )
+      )
+    )
+    OR
+    (
+      COALESCE(${a}.inventory_model, 'LEGACY_VARIANTS') <> 'SKU'
+      AND (
+        (
+          COALESCE(${a}.has_variants, FALSE) = FALSE
+          AND (${a}.stock IS NULL OR ${a}.stock > 0)
+        )
+        OR
+        (
+          COALESCE(${a}.has_variants, FALSE) = TRUE
+          AND EXISTS (
+            SELECT 1
+              FROM product_variants sellable_variant
+             WHERE sellable_variant.product_id = ${a}.id
+               AND (sellable_variant.stock IS NULL OR sellable_variant.stock > 0)
+          )
+        )
+      )
+    )
+  )`;
+}
+
 /**
  * Prédicat SQL canonique d'exposition Boutique.
  *
- * On ne désactive ni ne supprime les fixtures : on sépare explicitement
- * données de staging et produits publics au point de lecture. Ceci protège
- * aussi les catégories/comptages, qui doivent refléter le catalogue réellement
- * visible plutôt que les 500 fixtures SHOWCASE-V2.
- *
- * @param {string} [alias='p'] alias SQL de la table products
- * @param {object} [options]
- * @param {number} [options.marketCodeParamIndex] index positionnel (1-based)
- *   du paramètre déjà réservé par l'appelant pour le code marché (ex. 'CM'),
- *   déjà résolu serveur — jamais une confiance aveugle en une valeur brute.
- *   Quand fourni, le produit doit à la fois avoir une exposition commerciale
- *   ENABLED et un prix LOCAL_ACTIVE pour ce marché. Le gate est volontairement
- *   placé dans le prédicat SQL canonique afin qu'il s'applique AVANT pagination
- *   (ORDER BY / LIMIT / OFFSET) et au COUNT avec exactement la même assiette.
- *   Quand omis, aucune notion de marché n'entre dans la visibilité historique.
+ * "Visible" est une vérité commerciale, pas un synonyme de "publié" :
+ * un produit visible est actif, disponible, montrable, possède au moins une
+ * unité vendable, et — lorsqu'un marché est fourni — est exposé avec un prix
+ * LOCAL_ACTIVE sur CE MÊME marché.
  */
 function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   const a = assertSqlAlias(alias);
@@ -127,9 +174,11 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
 
   const conditions = [
     `${a}.is_active = TRUE`,
+    `${a}.is_available = TRUE`,
     excludedRefs,
     `NULLIF(BTRIM(${a}.image_url), '') IS NOT NULL`,
     `${a}.image_url NOT ILIKE 'data:image/%'`,
+    sellableCatalogUnitSql(a),
   ].filter(Boolean);
 
   if (options.marketCodeParamIndex != null) {
@@ -139,7 +188,7 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
     }
     conditions.push(
       `EXISTS (SELECT 1 FROM product_market_exposure pme ` +
-      `JOIN markets pme_mkt ON pme_mkt.id = pme.market_id ` +
+      `JOIN markets pme_mkt ON pme_mkt.id = pme.market_id AND pme_mkt.is_active = TRUE ` +
       `WHERE ${a}.id = pme.product_id AND pme_mkt.code = $${idx} ` +
       `AND pme.commercial_exposure = 'ENABLED')`
     );
@@ -154,35 +203,18 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   return conditions.join(' AND ');
 }
 
-/**
- * Même décision hors SQL, utile aux tests/consommateurs qui manipulent déjà
- * une ligne produit en mémoire.
- */
 function isPublicCatalogProduct(row) {
-  if (!row || row.is_active === false) return false;
+  if (!row || row.is_active === false || row.is_available === false) return false;
   if (isExcludedPublicProductRef(row.product_ref)) return false;
   const imageUrl = String(row.image_url || '').trim();
   if (!imageUrl || isSyntheticPublicMediaUrl(imageUrl)) return false;
   return true;
 }
 
-/**
- * Colonnes SQL préfixées, pour un SELECT explicite (list).
- * @param {string} [alias='p'] alias de table
- * @returns {string}
- */
 function publicProductColumns(alias = 'p') {
   return PUBLIC_PRODUCT_FIELDS.map((f) => `${alias}.${f}`).join(',\n         ');
 }
 
-/**
- * Projette une ligne produit (potentiellement `SELECT *`, avec champs de
- * cuisine) sur la seule vue publique. `variants`, quand présent, est
- * toujours propagé (ajouté en mémoire par la route, pas une colonne DB).
- *
- * @param {Object} row
- * @returns {Object|null|undefined}
- */
 function toPublicProduct(row) {
   if (!row) return row;
   const out = {};
@@ -203,6 +235,7 @@ module.exports = {
   isSyntheticPublicMediaUrl,
   isExcludedPublicProductRef,
   isPublicCatalogProduct,
+  sellableCatalogUnitSql,
   publicCatalogVisibilitySql,
   publicProductColumns,
   toPublicProduct,
