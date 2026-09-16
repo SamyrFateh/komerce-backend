@@ -4,9 +4,9 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        catalog_workspace_projection, sourcing_live_flow_projection, catalog_business_truth
+ * @inputs        catalog_workspace_projection, sourcing_live_flow_projection
  * @outputs       catalog_workspace_with_live_flow_and_business_truth
- * @depends       services/catalog-workspace.js, services/catalog-live-flow.js, services/catalog-business-truth.js
+ * @depends       services/catalog-workspace.js, services/catalog-live-flow.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       delegated
  * @db-write      none
@@ -19,15 +19,13 @@
 
 const catalogWorkspace = require('./catalog-workspace');
 const liveFlow = require('./catalog-live-flow');
-const businessTruth = require('./catalog-business-truth');
 
 async function buildWorkspace(query = {}) {
-  const [catalog, live, business] = await Promise.all([
+  const [catalog, live] = await Promise.all([
     catalogWorkspace.buildWorkspace(query),
     liveFlow.buildProjection({ incomingLimit: query.live_limit }),
-    businessTruth.buildProjection(),
   ]);
-  return { ...catalog, live, business };
+  return { ...catalog, live, business: live.business };
 }
 
 module.exports = {
