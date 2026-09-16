@@ -1,0 +1,505 @@
+/*
+ * KOMERCE CANONICAL — THEME V2
+ *
+ * Visual convergence extracted from the approved Catalogue Control Tower.
+ * This layer is presentation-only: no business authority, routing or state
+ * semantics are changed here. It deliberately loads after visual-freeze-v1.
+ */
+
+:root {
+  --kmc-canon-bg: #f8fbff;
+  --kmc-canon-card: #ffffff;
+  --kmc-canon-ink: #102143;
+  --kmc-canon-text: #26385a;
+  --kmc-canon-muted: #7685a2;
+  --kmc-canon-line: #dfe7f2;
+  --kmc-canon-line-strong: #cfd9e8;
+  --kmc-canon-blue: #4f67ff;
+  --kmc-canon-blue-soft: #eef2ff;
+  --kmc-canon-green: #18b86a;
+  --kmc-canon-green-soft: #ebfbf3;
+  --kmc-canon-orange: #fb7a24;
+  --kmc-canon-orange-soft: #fff4eb;
+  --kmc-canon-pink: #df3f86;
+  --kmc-canon-pink-soft: #fff0f7;
+  --kmc-canon-violet: #7b61ff;
+  --kmc-canon-violet-soft: #f4f0ff;
+  --kmc-canon-yellow: #f0b427;
+  --kmc-canon-yellow-soft: #fff9e8;
+  --kmc-canon-red: #d94b53;
+  --kmc-canon-red-soft: #fff0f1;
+  --kmc-canon-radius: 8px;
+  --kmc-canon-shadow: 0 1px 2px rgb(16 33 67 / 0.025);
+
+  /* Re-point the shared primitives so every canonical surface inherits the
+     same palette without rewriting each dashboard. */
+  --kmc-ink: var(--kmc-canon-ink);
+  --kmc-muted: var(--kmc-canon-muted);
+  --kmc-paper: var(--kmc-canon-bg);
+  --kmc-card: var(--kmc-canon-card);
+  --kmc-line: var(--kmc-canon-line);
+  --kmc-line-strong: var(--kmc-canon-line-strong);
+  --kmc-navy: var(--kmc-canon-ink);
+  --kmc-blue: var(--kmc-canon-blue);
+  --kmc-blue-soft: var(--kmc-canon-blue-soft);
+  --kmc-teal: var(--kmc-canon-green);
+  --kmc-teal-soft: var(--kmc-canon-green-soft);
+  --kmc-violet: var(--kmc-canon-violet);
+  --kmc-violet-soft: var(--kmc-canon-violet-soft);
+  --kmc-coral: var(--kmc-canon-orange);
+  --kmc-coral-soft: var(--kmc-canon-orange-soft);
+  --kmc-positive: #108a55;
+  --kmc-positive-soft: var(--kmc-canon-green-soft);
+  --kmc-warning: #c46b15;
+  --kmc-warning-soft: var(--kmc-canon-orange-soft);
+  --kmc-critical: var(--kmc-canon-red);
+  --kmc-critical-soft: var(--kmc-canon-red-soft);
+  --kmc-radius-sm: 7px;
+  --kmc-radius-md: 8px;
+  --kmc-radius-lg: 9px;
+  --kmc-shadow-card: var(--kmc-canon-shadow);
+  --kmc-shadow-card-hover: 0 4px 14px rgb(16 33 67 / 0.07);
+}
+
+body[data-admin-generation="canonical"] {
+  color: var(--kmc-canon-text);
+  background:
+    linear-gradient(180deg, rgb(238 242 255 / 0.34), transparent 240px),
+    var(--kmc-canon-bg);
+}
+
+/* ---------- Global shell ---------- */
+
+.kmc-admin-navigation {
+  background: #102143;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: 0 2px 10px rgb(16 33 67 / 0.10);
+}
+
+.kmc-admin-home-label {
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.kmc-admin-primary-link {
+  color: rgb(255 255 255 / 0.72);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.kmc-admin-primary-link.is-active {
+  color: #fff;
+  background: rgb(255 255 255 / 0.055);
+}
+
+.kmc-admin-primary-link.is-active::after {
+  height: 2px;
+  background: #7c8cff;
+}
+
+.kmc-admin-secondary-nav {
+  background: #fff;
+  border-bottom-color: var(--kmc-canon-line);
+  box-shadow: none;
+}
+
+.kmc-admin-secondary-link {
+  color: #61718d;
+  font-weight: 700;
+}
+
+.kmc-admin-secondary-link.is-active {
+  color: #4053e8;
+  border-color: #d8dfff;
+  background: var(--kmc-canon-blue-soft);
+  box-shadow: none;
+}
+
+.kmc-admin-market-select {
+  border-color: rgb(255 255 255 / 0.16);
+  background: #172a4a;
+}
+
+.kmc-admin-account,
+.kmc-admin-settings-link,
+.kmc-admin-logout {
+  color: rgb(255 255 255 / 0.82);
+}
+
+/* ---------- Page hierarchy ---------- */
+
+.kmc-dashboard,
+.kmc-workspace,
+.kmc-operations-workspace,
+.kmc-client-index,
+.kmc-access-shell,
+[data-canonical-surface="pricing-workspace"] {
+  gap: 10px;
+}
+
+.kmc-dashboard-header,
+.kmc-workspace-header,
+.kmc-access-hero {
+  padding: 5px 4px 8px;
+  border: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.kmc-dashboard-header::after { display: none; }
+
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-workspace-kicker,
+.kmc-access-kicker {
+  width: fit-content;
+  margin-bottom: 2px;
+  padding: 3px 7px;
+  color: #4456df;
+  border-radius: 999px;
+  background: var(--kmc-canon-blue-soft);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.kmc-workspace-kicker::before {
+  width: 5px;
+  height: 5px;
+  background: var(--kmc-canon-blue);
+}
+
+.kmc-dashboard-title,
+.kmc-workspace-title,
+.kmc-access-hero h1 {
+  color: var(--kmc-canon-ink);
+  font-size: clamp(25px, 2.7vw, 34px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.kmc-dashboard-description,
+.kmc-workspace-subtitle,
+.kmc-access-hero p {
+  margin-top: 4px;
+  color: var(--kmc-canon-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kmc-workspace-nav-link,
+.kmc-admin-back {
+  min-height: 30px;
+  padding: 5px 9px;
+  color: #425575;
+  border-color: var(--kmc-canon-line);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+/* ---------- Cards, strips and sections ---------- */
+
+.kmc-section,
+.kmc-decision-surface-card,
+.kmc-alert-panel,
+.kmc-chart-panel,
+.kmc-access-panel,
+.kmc-access-operator,
+.kmc-entity-card,
+.kmc-settings-section {
+  border: 1px solid var(--kmc-canon-line);
+  border-radius: var(--kmc-canon-radius);
+  background: #fff;
+  box-shadow: var(--kmc-canon-shadow);
+}
+
+.kmc-decision-surface-card {
+  padding: 13px 14px;
+}
+
+.kmc-section-header,
+.kmc-chart-header {
+  padding: 12px 14px 0;
+}
+
+.kmc-section-body,
+.kmc-chart-slot {
+  padding: 12px 14px 14px;
+}
+
+.kmc-section-title,
+.kmc-chart-title,
+.kmc-alert-panel-title,
+.kmc-decision-dashboard-section-title {
+  color: #162947;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.kmc-section-title::before {
+  width: 4px;
+  height: 14px;
+  background: var(--kmc-canon-blue);
+  box-shadow: 0 0 0 3px rgb(79 103 255 / 0.08);
+}
+
+.kmc-section-description,
+.kmc-chart-description,
+.kmc-decision-dashboard-section-copy {
+  color: var(--kmc-canon-muted);
+  font-size: 10px;
+}
+
+.kmc-decision-strip,
+.kmc-summary-card-grid,
+.kmc-progress-grid,
+.kmc-metric-strip {
+  gap: 8px;
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-progress-card,
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row,
+.kmc-metric-card {
+  border-color: var(--kmc-canon-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--kmc-canon-shadow);
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-metric-card {
+  min-height: 86px;
+  padding: 12px 13px;
+}
+
+.kmc-decision-card::before,
+.kmc-summary-card::before,
+.kmc-metric-card::before {
+  border-radius: inherit;
+}
+
+.kmc-decision-card-value,
+.kmc-summary-card-value,
+.kmc-metric-value {
+  color: var(--kmc-canon-ink);
+}
+
+.kmc-metric-card::after {
+  width: 26px;
+  height: 26px;
+  top: 10px;
+  right: 10px;
+  border-radius: 7px;
+}
+
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row {
+  min-height: 43px;
+  padding: 8px 10px;
+}
+
+.kmc-trust-footer {
+  color: #65758f;
+  border-color: var(--kmc-canon-line);
+  background: #f8fbff;
+}
+
+/* ---------- Tables ---------- */
+
+.kmc-table-wrap,
+.kmc-workspace-table-wrap {
+  border: 1px solid var(--kmc-canon-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-data-table,
+.kmc-workspace-table {
+  color: #31425f;
+  font-size: 11px;
+}
+
+.kmc-data-table th,
+.kmc-workspace-table th {
+  padding: 9px 10px;
+  color: #667792;
+  background: #f8fbff;
+  border-bottom-color: var(--kmc-canon-line);
+  font-size: 9px;
+  letter-spacing: 0.035em;
+}
+
+.kmc-data-table td,
+.kmc-workspace-table td {
+  padding: 9px 10px;
+  border-bottom-color: #e8eef6;
+}
+
+.kmc-data-table tbody tr:hover,
+.kmc-workspace-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* ---------- Controls ---------- */
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  min-height: 32px;
+  padding: 6px 10px;
+  color: #fff;
+  border: 1px solid var(--kmc-canon-blue);
+  border-radius: 7px;
+  background: var(--kmc-canon-blue);
+  box-shadow: 0 2px 6px rgb(79 103 255 / 0.14);
+  font-size: 11px;
+}
+
+.kmc-workspace-action:hover:not(:disabled),
+.kmc-access-button.is-primary:hover:not(:disabled) {
+  border-color: #4053e8;
+  background: #4053e8;
+  box-shadow: 0 4px 10px rgb(79 103 255 / 0.18);
+}
+
+.kmc-workspace-action.is-secondary,
+.kmc-access-button:not(.is-primary):not(.is-danger) {
+  color: #4456df;
+  border-color: #d2d9ff;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-filter-bar,
+.kmc-market-context {
+  border-color: var(--kmc-canon-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-filter-control,
+.kmc-workspace-select {
+  border-color: var(--kmc-canon-line-strong);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.kmc-ui-state.is-empty,
+.kmc-workspace-empty {
+  color: #71809a;
+  border-color: var(--kmc-canon-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* ---------- Semantic accents ---------- */
+
+.is-positive,
+.kmc-decision-card.is-positive,
+.kmc-summary-card.is-positive,
+.kmc-metric-card.is-positive {
+  --decision-accent: var(--kmc-canon-green);
+  --decision-soft: var(--kmc-canon-green-soft);
+  --metric-accent: var(--kmc-canon-green);
+  --metric-soft: var(--kmc-canon-green-soft);
+}
+
+.is-warning,
+.kmc-decision-card.is-warning,
+.kmc-summary-card.is-warning,
+.kmc-metric-card.is-warning {
+  --decision-accent: var(--kmc-canon-orange);
+  --decision-soft: var(--kmc-canon-orange-soft);
+  --metric-accent: var(--kmc-canon-orange);
+  --metric-soft: var(--kmc-canon-orange-soft);
+}
+
+.is-critical,
+.kmc-decision-card.is-critical,
+.kmc-summary-card.is-critical,
+.kmc-metric-card.is-critical {
+  --decision-accent: var(--kmc-canon-red);
+  --decision-soft: var(--kmc-canon-red-soft);
+  --metric-accent: var(--kmc-canon-red);
+  --metric-soft: var(--kmc-canon-red-soft);
+}
+
+/* ---------- Catalogue: keep the approved dashboard, restore the canonical shell ---------- */
+
+body.kmc-catalog-live-mode > .kmc-admin-navigation {
+  display: block !important;
+}
+
+body.kmc-catalog-live-mode #canonical-admin-root {
+  width: min(var(--kmc-shell-max, 1480px), calc(100% - var(--kmc-shell-gutter, 32px)));
+  max-width: var(--kmc-shell-max, 1480px);
+  min-height: auto;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.kmc-catalog-control-tower {
+  min-height: auto;
+  grid-template-columns: minmax(0, 1fr);
+  background: transparent;
+}
+
+.kmc-ctl-sidebar {
+  display: none !important;
+}
+
+.kmc-ctl-stage {
+  min-width: 0;
+  width: 100%;
+}
+
+.kmc-ctl-topbar {
+  height: 44px;
+  margin: 12px 0 0;
+  padding: 0 10px;
+  border: 1px solid var(--kmc-canon-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-ctl-search {
+  width: min(720px, 100%);
+  border-color: #e3eaf4;
+  background: #fbfdff;
+}
+
+.kmc-ctl-user {
+  display: none;
+}
+
+.kmc-ctl-content {
+  padding: 12px 0 28px;
+}
+
+.kmc-ctl-panel,
+.kmc-ctl-source-card {
+  border-color: var(--kmc-canon-line);
+  box-shadow: var(--kmc-canon-shadow);
+}
+
+@media (max-width: 720px) {
+  body.kmc-catalog-live-mode #canonical-admin-root {
+    width: calc(100% - var(--kmc-shell-gutter-mobile, 24px));
+  }
+
+  .kmc-ctl-topbar {
+    margin-top: 10px;
+  }
+}
