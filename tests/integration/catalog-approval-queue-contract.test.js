@@ -47,7 +47,7 @@ if (!hasIntegrationEnv) {
   async function insertCandidate(overrides = {}) {
     const name = overrides.name === undefined ? `IT Candidate ${suffix()}` : overrides.name;
     const category = overrides.category === undefined ? 'test' : overrides.category;
-    const description = overrides.description === undefined ? 'Produit candidat intégration' : overrides.description;
+    const description = overrides.description === undefined ? 'Produit candidat intégration avec description publiable.' : overrides.description;
     const price = overrides.price_kmf === undefined ? 7000 : overrides.price_kmf;
     const stock = overrides.stock === undefined ? 5 : overrides.stock;
     const contentSource = overrides.content_source || 'ai_enriched';
@@ -65,6 +65,19 @@ if (!hasIntegrationEnv) {
       [name, description, category, price, stock, contentSource, needsReview, confidence]
     );
     productIds.add(product.id);
+
+    // Le guard de première publication est fail-closed sur le média : un
+    // candidat dit "conforme" dans ce contrat doit réellement être montrable.
+    // Les cas négatifs ciblent explicitement leur propre invariant (catégorie,
+    // whitelist, etc.), pas une absence accidentelle d'image.
+    if (overrides.with_media !== false) {
+      await db.query(
+        `INSERT INTO catalog_media (product_id, url, role, alt, display_order, is_active)
+         VALUES ($1, $2, 'PRODUCT', $3, 0, TRUE)`,
+        [product.id, `https://example.test/catalog/${product.id}.jpg`, `${name || 'Produit'} — image test`]
+      );
+    }
+
     return product;
   }
 
