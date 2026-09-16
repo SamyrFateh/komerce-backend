@@ -26,6 +26,34 @@ test('default check reads without importing or claiming purchase, notification o
   expect(d.importCatalog).not.toHaveBeenCalled();
 });
 
+test('explicit activation waits for observed ACTIVE seller state before canonical reread', async () => {
+  const d = deps();
+  const api = {
+    get: jest.fn()
+      .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
+      .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
+    activateOffer: jest.fn().mockResolvedValue({
+      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+    }),
+    getPublicationTasks: jest.fn().mockResolvedValue({
+      tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
+    }),
+  };
+  const report = await run(['--activate', '123'], {
+    ...d, client: api, activationPollMs: 0, sleepImpl: jest.fn(),
+  });
+  expect(report).toMatchObject({
+    mode: 'activate', offer_ids: ['123'],
+    activations: [{
+      offer_id: '123', publication_status: 'ACTIVE', already_active: false,
+      tasks: [{ offer_id: '123', status: 'SUCCESS', error_codes: [] }],
+    }],
+  });
+  expect(api.activateOffer).toHaveBeenCalledWith('123');
+  expect(api.getPublicationTasks).toHaveBeenCalledWith('123e4567-e89b-42d3-a456-426614174000');
+  expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
+});
+
 test('explicit import uses refinery with fixed sandbox identity and bounded snapshot', async () => {
   const d = deps(); await run(['--import', '123'], d);
   const [body, actor, loader] = d.importCatalog.mock.calls[0];
