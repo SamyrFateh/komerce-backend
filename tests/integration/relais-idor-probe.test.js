@@ -141,10 +141,17 @@ if (!hasIntegrationEnv) {
     let relaisA, relaisB, agentA, agentB, orderOfRelaisA;
 
     beforeAll(async () => {
+      const { rows: [market] } = await db.query(
+        `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+      );
+      if (!market) {
+        throw new Error('relais-idor-probe requires canonical active market KM');
+      }
+
       const mk = (suffix) => db.query(
-        `INSERT INTO relais (name, agent_name, phone, address, island)
-         VALUES ($1,$2,$3,$4,'Anjouan') RETURNING id`,
-        [`ITest Relais ${suffix}`, `Agent ${suffix}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`, `Adresse test ${suffix}`]
+        `INSERT INTO relais (name, agent_name, phone, address, island, market_id)
+         VALUES ($1,$2,$3,$4,'Anjouan',$5) RETURNING id`,
+        [`ITest Relais ${suffix}`, `Agent ${suffix}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`, `Adresse test ${suffix}`, market.id]
       );
       relaisA = (await mk('A')).rows[0].id;
       relaisB = (await mk('B')).rows[0].id;
@@ -153,12 +160,23 @@ if (!hasIntegrationEnv) {
       agentB = await createUser({ role: 'agent_relais', relais_id: relaisB });
 
       const { rows: [order] } = await db.query(
-        `INSERT INTO orders (reference, relais_id, total_kmf, payment_mode, status)
-         VALUES ($1, $2, 1000, 'cash_relais', 'available')
+        `INSERT INTO orders (reference, relais_id, market_id, total_kmf, payment_mode, status)
+         VALUES ($1, $2, $3, 1000, 'cash_relais', 'available')
          RETURNING id, reference`,
-        [`ITEST-IDOR-${Date.now()}`, relaisA]
+        [`ITEST-IDOR-${Date.now()}`, relaisA, market.id]
       );
       orderOfRelaisA = order;
+
+      const { rows: [authority] } = await db.query(
+        `SELECT o.market_id AS order_market_id, r.market_id AS relais_market_id
+           FROM orders o
+           JOIN relais r ON r.id = o.relais_id
+          WHERE o.id = $1`,
+        [orderOfRelaisA.id]
+      );
+      if (!authority || String(authority.order_market_id) !== String(authority.relais_market_id)) {
+        throw new Error('relais-idor-probe fixture violates order/relais market authority');
+      }
     });
 
     afterAll(async () => {
