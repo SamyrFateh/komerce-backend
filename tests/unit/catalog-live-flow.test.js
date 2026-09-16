@@ -9,6 +9,7 @@
 const mockQuery = jest.fn();
 const mockListSources = jest.fn();
 const mockConnectorCatalog = jest.fn();
+const mockSourceAutomationDescriptor = jest.fn();
 
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 jest.mock('../../services/sourcing-source-autopilot', () => ({
@@ -16,6 +17,7 @@ jest.mock('../../services/sourcing-source-autopilot', () => ({
 }));
 jest.mock('../../services/sourcing-import-dispatch', () => ({
   connectorCatalog: (...args) => mockConnectorCatalog(...args),
+  sourceAutomationDescriptor: (...args) => mockSourceAutomationDescriptor(...args),
 }));
 
 const liveFlow = require('../../services/catalog-live-flow');
@@ -24,11 +26,14 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockConnectorCatalog.mockReturnValue({
     api_suppliers: [
-      { supplier: 'cj', label: 'CJdropshipping API', active: true, automation_available: true, reason: null },
-      { supplier: 'noon', label: 'Noon API', active: false, automation_available: false, reason: 'credentials missing' },
+      { supplier: 'cj', label: 'CJdropshipping API', active: true, reason: null },
+      { supplier: 'noon', label: 'Noon API', active: false, reason: 'credentials missing' },
     ],
     sources: [{ type: 'manual', label: 'Saisie manuelle', active: true }],
   });
+  mockSourceAutomationDescriptor.mockImplementation((adapter) => (
+    String(adapter).toLowerCase() === 'cj' ? { adapter: 'cj' } : null
+  ));
 });
 
 test('le prédicat boutique live réutilise exposition ENABLED + prix LOCAL_ACTIVE', () => {
