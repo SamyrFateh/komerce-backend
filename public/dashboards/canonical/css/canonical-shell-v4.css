@@ -1,0 +1,498 @@
+/*
+ * KOMERCE CANONICAL — HYBRID SHELL V4
+ * Doctrine: docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V3.md
+ * Style authority: docs/doctrine/CANONICAL_UI_STYLE_CONTRACT_V1.md
+ *
+ * N1 = sidebar verticale persistante
+ * N2 = tabs horizontaux contextuels
+ * Topbar = recherche + contexte transverse
+ */
+
+:root {
+  --kmc-shell-sidebar-width: 176px;
+  --kmc-shell-topbar-height: 52px;
+  --kmc-shell-tabs-height: 44px;
+}
+
+body.kmc-shell-v4 {
+  min-height: 100vh;
+  padding-left: var(--kmc-shell-sidebar-width);
+  background: var(--kmc-canon-bg, #f8fbff);
+}
+
+/* ---------- N1 : sidebar ---------- */
+
+body.kmc-shell-v4 > .kmc-admin-navigation {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 100;
+  width: var(--kmc-shell-sidebar-width);
+  height: 100vh;
+  color: #fff;
+  border: 0;
+  border-right: 1px solid rgb(255 255 255 / 0.08);
+  background: #102143;
+  box-shadow: 3px 0 18px rgb(16 33 67 / 0.08);
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-inner {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 14px 11px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-identity {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 4px 12px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+body.kmc-shell-v4 .kmc-admin-home {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.kmc-admin-home-mark {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: #fff;
+  background: #4f67ff;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 2px 7px rgb(79 103 255 / 0.22);
+}
+
+body.kmc-shell-v4 .kmc-admin-home-label {
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+body.kmc-shell-v4 .kmc-admin-back {
+  display: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-nav {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 13px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link {
+  position: relative;
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgb(255 255 255 / 0.70);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 720;
+  text-decoration: none;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link:hover,
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
+  color: #fff;
+  background: rgb(255 255 255 / 0.055);
+  outline: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
+  color: #fff;
+  background: rgb(79 103 255 / 0.22);
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: #8290ff;
+}
+
+.kmc-admin-primary-icon {
+  width: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.kmc-admin-primary-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.kmc-shell-v4 .kmc-admin-utility-nav {
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link,
+body.kmc-shell-v4 .kmc-admin-logout {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  justify-content: flex-start;
+  color: rgb(255 255 255 / 0.72);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 11px;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link:hover,
+body.kmc-shell-v4 .kmc-admin-settings-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-logout:hover,
+body.kmc-shell-v4 .kmc-admin-logout:focus-visible {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link.is-active {
+  color: #fff;
+  background: rgb(79 103 255 / 0.22);
+}
+
+/* ---------- Topbar transverse ---------- */
+
+.kmc-admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  width: 100%;
+  height: var(--kmc-shell-topbar-height);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #dfe7f2;
+  background: rgb(255 255 255 / 0.97);
+  backdrop-filter: blur(12px);
+}
+
+.kmc-admin-search {
+  width: min(620px, 60%);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #e2e9f3;
+  border-radius: 7px;
+  background: #f8fbff;
+}
+
+.kmc-admin-search:focus-within {
+  border-color: #cfd7ff;
+  box-shadow: 0 0 0 3px rgb(79 103 255 / 0.07);
+}
+
+.kmc-admin-search-icon {
+  flex: 0 0 auto;
+  color: #8390a8;
+  font-size: 14px;
+}
+
+.kmc-admin-search-input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0;
+  color: #26385a;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+}
+
+.kmc-admin-search-input::placeholder {
+  color: #9aa7ba;
+}
+
+.kmc-admin-topbar-right {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.kmc-admin-topbar .kmc-admin-market-control {
+  display: inline-flex;
+}
+
+.kmc-admin-topbar .kmc-admin-market-select {
+  min-width: 142px;
+  height: 34px;
+  color: #26385a;
+  border: 1px solid #dfe7f2;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 11px;
+}
+
+.kmc-admin-topbar .kmc-admin-market-select:hover,
+.kmc-admin-topbar .kmc-admin-market-select:focus-visible {
+  border-color: #cfd7ff;
+  background: #fff;
+}
+
+.kmc-admin-topbar .kmc-admin-market-flag {
+  box-shadow: 0 0 0 1px #dfe7f2;
+}
+
+.kmc-admin-topbar .kmc-admin-account {
+  min-height: 34px;
+  padding: 0 10px;
+  color: #51617b;
+  border: 1px solid #dfe7f2;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 11px;
+}
+
+/* ---------- N2 : tabs horizontaux ---------- */
+
+.kmc-admin-domain-tabs {
+  position: sticky;
+  top: var(--kmc-shell-topbar-height);
+  z-index: 80;
+  width: 100%;
+  min-height: var(--kmc-shell-tabs-height);
+  padding: 0 18px;
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid #dfe7f2;
+  background: rgb(255 255 255 / 0.97);
+  backdrop-filter: blur(12px);
+}
+
+.kmc-admin-domain-tabs::-webkit-scrollbar { display: none; }
+
+.kmc-admin-domain-tab {
+  position: relative;
+  min-height: var(--kmc-shell-tabs-height);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: #7685a2;
+  font-size: 11px;
+  font-weight: 720;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kmc-admin-domain-tab:hover,
+.kmc-admin-domain-tab:focus-visible {
+  color: #4053e8;
+  outline: none;
+}
+
+.kmc-admin-domain-tab.is-active {
+  color: #4053e8;
+}
+
+.kmc-admin-domain-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: #4f67ff;
+}
+
+body.kmc-shell-v4 .kmc-admin-secondary-nav {
+  display: none !important;
+}
+
+/* ---------- Surface content ---------- */
+
+body.kmc-shell-v4 #canonical-admin-root,
+body.kmc-shell-v4 #market-autonomy-root,
+body.kmc-shell-v4 #market-catalog-root {
+  width: min(var(--kmc-shell-max, 1480px), calc(100% - 32px));
+  max-width: var(--kmc-shell-max, 1480px);
+  margin: 0 auto;
+  padding-top: 12px;
+}
+
+body.kmc-shell-v4 .kmc-section[id^='pricing-'],
+body.kmc-shell-v4 [id^='catalog-'] {
+  scroll-margin-top: calc(var(--kmc-shell-topbar-height) + var(--kmc-shell-tabs-height) + 14px);
+}
+
+/* Catalogue garde son contenu mock-parity mais abandonne son chrome local. */
+body.kmc-shell-v4 .kmc-ctl-sidebar,
+body.kmc-shell-v4 .kmc-ctl-topbar {
+  display: none !important;
+}
+
+body.kmc-shell-v4 .kmc-catalog-control-tower {
+  min-height: auto;
+  grid-template-columns: minmax(0, 1fr);
+  background: transparent;
+}
+
+body.kmc-shell-v4 .kmc-ctl-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 980px) {
+  :root { --kmc-shell-sidebar-width: 72px; }
+
+  body.kmc-shell-v4 .kmc-admin-navigation-inner {
+    padding-inline: 8px;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-navigation-identity {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-home {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-home-label,
+  body.kmc-shell-v4 .kmc-admin-primary-label,
+  body.kmc-shell-v4 .kmc-admin-settings-link {
+    font-size: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-primary-link {
+    justify-content: center;
+    padding: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-primary-icon {
+    width: 24px;
+    flex-basis: 24px;
+    font-size: 17px;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-settings-link::before {
+    content: '⚙';
+    font-size: 16px;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-logout {
+    justify-content: center;
+    padding-inline: 4px;
+    font-size: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-logout::before {
+    content: '↪';
+    font-size: 15px;
+  }
+
+  .kmc-admin-search {
+    width: min(520px, 70%);
+  }
+}
+
+@media (max-width: 680px) {
+  :root {
+    --kmc-shell-sidebar-width: 58px;
+    --kmc-shell-topbar-height: 48px;
+    --kmc-shell-tabs-height: 42px;
+  }
+
+  .kmc-admin-topbar {
+    padding-inline: 10px;
+    gap: 8px;
+  }
+
+  .kmc-admin-search {
+    width: 100%;
+  }
+
+  .kmc-admin-topbar-right .kmc-admin-account {
+    display: none;
+  }
+
+  .kmc-admin-topbar-right .kmc-admin-market-select {
+    min-width: 106px;
+    max-width: 122px;
+  }
+
+  .kmc-admin-domain-tabs {
+    padding-inline: 12px;
+    gap: 18px;
+  }
+
+  body.kmc-shell-v4 #canonical-admin-root,
+  body.kmc-shell-v4 #market-autonomy-root,
+  body.kmc-shell-v4 #market-catalog-root {
+    width: calc(100% - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.kmc-shell-v4 .kmc-admin-primary-link,
+  .kmc-admin-domain-tab {
+    transition: none;
+  }
+}
