@@ -143,6 +143,17 @@ Les Entity 360 héritent du parent métier de leur entrée : Order/Client 360 �
 
 Aucun dashboard ne doit créer sa propre navigation globale parallèle.
 
+### Propriétaire unique et déduplication
+
+Le shell applique un contrat **single-owner** :
+
+- au plus **une** navigation/sidebar canonique dans le document ;
+- au plus **une** topbar transverse ;
+- au plus **un** conteneur N2 horizontal ;
+- tout remount, changement de route ou bootstrap standalone supprime les projections orphelines avant de reconstruire le chrome courant ;
+- la déduplication se fait par rôle de shell (`navigation`, `topbar`, `domain-tabs`) et non uniquement par ID DOM ;
+- la présence de deux éléments jouant le même rôle est une non-conformité, même si un seul est visuellement apparent.
+
 ### Navigation sans flash
 
 Dans le runtime Admin Canonical chargé par `index.html` :
@@ -170,4 +181,5 @@ Le lot est conforme si :
 8. les tests empêchent le retour à une top-nav N1 ou à une sidebar locale par dashboard ;
 9. chaque tab visible a une cible réelle prouvée ;
 10. la navigation interne au runtime Canonical est atomique et sans reload document ;
-11. toute entrée Canonical standalone remonte le shell après résolution de la session et ne peut jamais devenir un cul-de-sac de navigation.
+11. toute entrée Canonical standalone remonte le shell après résolution de la session et ne peut jamais devenir un cul-de-sac de navigation ;
+12. sidebar, topbar et N2 respectent chacun le contrat single-owner, sans doublon DOM latent.
