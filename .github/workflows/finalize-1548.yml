@@ -75,7 +75,17 @@ jobs:
       - name: Full integration DB proofs
         run: npm run test:integration
       - name: Feature-first E2E API proofs
-        run: npm run test:e2e:features
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:e2e:features 2>&1 | tee e2e.log
+      - name: Upload E2E diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-debug-1548
+          path: e2e.log
+          if-no-files-found: error
       - name: Commit proven fix and remove temporary workflows
         run: |
           git rm .github/workflows/debug-integration-1548.yml .github/workflows/finalize-1548.yml
