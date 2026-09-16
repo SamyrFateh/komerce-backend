@@ -71,16 +71,43 @@ function isExcludedPublicProductRef(value) {
   return PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES.some((prefix) => ref.startsWith(prefix));
 }
 
+function supplierOrderIdentitySql(skuAlias) {
+  const s = assertSqlAlias(skuAlias);
+  return `(
+    COALESCE(${s}.source, 'MANUAL') <> 'SUPPLIER'
+    OR (
+      NULLIF(BTRIM(${s}.supplier_sku), '') IS NOT NULL
+      AND NULLIF(BTRIM(${s}.supplier_unit_ref), '') IS NOT NULL
+      AND ${s}.supplier_order_identity IS NOT NULL
+      AND jsonb_typeof(${s}.supplier_order_identity) = 'object'
+      AND COALESCE(${s}.supplier_order_identity->>'provider', '')
+          ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
+      AND COALESCE(${s}.supplier_order_identity->>'version', '')
+          ~ '^[1-9][0-9]*$'
+      AND jsonb_typeof(${s}.supplier_order_identity->'payload') = 'object'
+      AND ${s}.supplier_order_identity->'payload' <> '{}'::jsonb
+    )
+  )`;
+}
+
+function sellableSkuSql(skuAlias) {
+  const s = assertSqlAlias(skuAlias);
+  return `(
+    ${s}.is_active = TRUE
+    AND ${s}.stock > 0
+    AND (${s}.price_kmf IS NULL OR ${s}.price_kmf > 0)
+    AND ${supplierOrderIdentitySql(s)}
+  )`;
+}
+
 /**
  * Gate statique de vendabilité utilisé AVANT d'exposer un produit à un client.
  *
  * La boutique ne promet pas un produit si Komerce ne connaît aucune unité
- * réellement vendable :
- * - produit SKU : au moins un SKU actif, en stock, au prix exploitable ;
- * - SKU fournisseur : SOI conforme au contrat canonique minimal
- *   (supplier_unit_ref + provider + version + payload non vide) ;
- * - produit legacy sans variante : stock produit disponible ;
- * - produit legacy à variantes : au moins une variante disponible.
+ * réellement vendable. Pour un produit SKU, toutes les unités actives qui ont
+ * encore du stock doivent être statiquement commandables : on n'affiche jamais
+ * une option AVAILABLE dont l'identité fournisseur est incomplète. Les SKU à
+ * stock nul peuvent rester dans la fiche comme OUT_OF_STOCK.
  *
  * Le preflight fournisseur dynamique reste exécuté au checkout : ce gate ne
  * remplace pas la revalidation prix/stock/fret au moment du paiement.
@@ -94,23 +121,17 @@ function sellableCatalogUnitSql(alias = 'p') {
         SELECT 1
           FROM product_skus sellable_sku
          WHERE sellable_sku.product_id = ${a}.id
-           AND sellable_sku.is_active = TRUE
-           AND sellable_sku.stock > 0
-           AND (sellable_sku.price_kmf IS NULL OR sellable_sku.price_kmf > 0)
-           AND (
-             COALESCE(sellable_sku.source, 'MANUAL') <> 'SUPPLIER'
-             OR (
-               NULLIF(BTRIM(sellable_sku.supplier_sku), '') IS NOT NULL
-               AND NULLIF(BTRIM(sellable_sku.supplier_unit_ref), '') IS NOT NULL
-               AND sellable_sku.supplier_order_identity IS NOT NULL
-               AND jsonb_typeof(sellable_sku.supplier_order_identity) = 'object'
-               AND COALESCE(sellable_sku.supplier_order_identity->>'provider', '')
-                   ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
-               AND COALESCE(sellable_sku.supplier_order_identity->>'version', '')
-                   ~ '^[1-9][0-9]*$'
-               AND jsonb_typeof(sellable_sku.supplier_order_identity->'payload') = 'object'
-               AND sellable_sku.supplier_order_identity->'payload' <> '{}'::jsonb
-             )
+           AND ${sellableSkuSql('sellable_sku')}
+      )
+      AND NOT EXISTS (
+        SELECT 1
+          FROM product_skus unsafe_sku
+         WHERE unsafe_sku.product_id = ${a}.id
+           AND unsafe_sku.is_active = TRUE
+           AND unsafe_sku.stock > 0
+           AND NOT (
+             (unsafe_sku.price_kmf IS NULL OR unsafe_sku.price_kmf > 0)
+             AND ${supplierOrderIdentitySql('unsafe_sku')}
            )
       )
     )
