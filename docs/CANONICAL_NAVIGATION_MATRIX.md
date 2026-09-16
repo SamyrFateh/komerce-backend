@@ -1,8 +1,18 @@
 # Matrice de navigation Canonical
 
-Cette matrice est le contrat **courant** entre le shell Canonical et les guards serveur. Elle complète `docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V2.md` et remplace toute lecture historique contradictoire de `docs/admin-nav-capability-map.md`.
+Cette matrice est le contrat **courant** entre le shell Canonical et les guards serveur. Elle complète `docs/doctrine/ADMIN_NAVIGATION_DOCTRINE_V3.md` et remplace toute lecture historique contradictoire de `docs/admin-nav-capability-map.md`.
 
-Principe bloquant : **aucune destination visible ne peut exister sans un guard serveur correspondant**. Le navigateur n'accorde jamais un droit ; il ne fait que masquer les destinations que le serveur refuserait déjà.
+Principe bloquant : **aucune destination visible ne peut exister sans un guard serveur correspondant**. Le navigateur n'accorde jamais un droit ; il ne fait que projeter les destinations que le serveur autorise déjà.
+
+## Représentation du shell
+
+- N1 = **sidebar verticale persistante** ;
+- N2 = **onglets horizontaux contextuels** ;
+- N3 = filtres, sous-vues et actions locales ;
+- topbar = recherche de rubrique + Market ID + compte ;
+- Paramètres = utilitaire, jamais N1.
+
+Le même shell est utilisé sur toutes les pages Canonical.
 
 ## N1 — domaines métier
 
@@ -16,7 +26,7 @@ Ordre canonique :
 6. Opérations
 7. Finance
 
-`Paramètres` reste une utilité globale admin-only. `Market ID` reste un contexte transverse. Aucun workspace spécialisé ne devient un domaine N1.
+`Analyse` reste réservé tant qu'aucune surface + guard Canonical dédié n'existent.
 
 ## Visibilité N1 par rôle
 
@@ -31,70 +41,89 @@ Ordre canonique :
 | `agent_transitaire` | Opérations | `/admin/workspaces/shipping-customs` |
 | `support` | aucun domaine Canonical livré | `/portail` |
 
-Le rôle `support` n'est pas projeté artificiellement sur Dashboard. Son Back Office historique reste sa destination tant qu'un domaine Support Canonical avec guard serveur dédié n'existe pas.
+## N2 — Atelier économique
+
+Les onglets internes restent sur **la même autorité Pricing** ; ils ne créent aucun endpoint :
+
+| Onglet | Cible réelle | Rôles visibles |
+|---|---|---|
+| Vue d'ensemble | `/admin/workspaces/pricing` | `admin`, `market_operator` |
+| Produits | section `Décision produit` | `admin`, `market_operator` |
+| Coûts | section `Atelier des coûts` | `admin`, `market_operator` |
+| Stratégie | section `Stratégie & concurrence` | `admin`, `market_operator` |
+
+## N2 — Catalogue
+
+Pour l'admin global, les onglets organisent la Control Tower déjà existante :
+
+| Onglet | Cible réelle | Rôle |
+|---|---|---|
+| Vue catalogue | `/admin/workspaces/catalog` | `admin` |
+| Sources | `#catalog-sources` | `admin` |
+| Raffinerie | `#catalog-refinery` | `admin` |
+| Produits | `/admin/workspaces/catalog?view=advanced` | `admin` |
+| Boutique | `#catalog-boutique` | `admin` |
+
+Le `market_operator` ne reçoit jamais cette autorité globale ; son entrée Catalogue reste `/dashboards/canonical/market-catalog.html`.
 
 ## N2 — Commandes
 
-| Espace | Route | Rôles visibles |
+| Onglet | Route | Rôles visibles |
 |---|---|---|
-| Commerce | `/admin/commerce` | `admin`, `market_operator` |
-| Suivi des commandes | `/admin/orders` | `admin`, `market_operator` |
+| Vue d'ensemble | `/admin/commerce` | `admin`, `market_operator` |
+| Commandes | `/admin/orders` | `admin`, `market_operator` |
+| Clients | `/admin/clients` | `admin` uniquement selon guard actuel |
 
-Les Entity 360 restent des drill-downs, jamais des onglets N1/N2 : `Order 360`, `Client 360`.
+Order 360 et Client 360 restent des drill-downs.
+
+## N2 — Marchés
+
+| Onglet | Route | Rôle |
+|---|---|---|
+| Accès pays | `/dashboards/canonical/access.html` | `admin` |
+| Autonomie marché | `/dashboards/canonical/market-autonomy.html` | `market_operator` |
+
+Un profil ne voit qu'une destination Marchés aujourd'hui ; aucun faux second onglet n'est fabriqué.
 
 ## N2 — Opérations
 
-| Espace | Route | Guard de lecture constaté |
+| Onglet | Route | Guard de lecture constaté |
 |---|---|---|
 | Vue d'ensemble | `/admin/operations` | `admin`, `market_operator` |
-| Hub / Relais | `/admin/workspaces/operations` | `admin`, `agent_hub`, `agent_relais`, `market_operator` (`routes/admin-operations-workspace.js`) |
-| Expéditions & Douane | `/admin/workspaces/shipping-customs` | `admin`, `agent_hub`, `agent_transitaire`, `market_operator` (`routes/admin-shipping-customs-workspace.js`) |
-| Sourcing | `/admin/workspaces/sourcing` | `admin`, `sourcing` + autorité globale Sourcing (`routes/admin-sourcing-workspace.js`) |
-
-Les mutations restent plus restrictives que la lecture. La navigation ne déduit aucun droit d'action à partir d'un droit de lecture.
+| Hub / Relais | `/admin/workspaces/operations` | `admin`, `agent_hub`, `agent_relais`, `market_operator` |
+| Expéditions & Douane | `/admin/workspaces/shipping-customs` | `admin`, `agent_hub`, `agent_transitaire`, `market_operator` |
+| Sourcing | `/admin/workspaces/sourcing` | `admin`, `sourcing` + autorité globale Sourcing |
 
 ## N2 — Finance
 
-| Espace | Route | Guard de lecture constaté |
+| Onglet | Route | Guard de lecture constaté |
 |---|---|---|
 | Vue d'ensemble | `/admin/finance` | `admin`, `market_operator` |
-| Comptabilité | `/admin/workspaces/accounting` | `admin`, `finance`, `agent_relais`, `market_operator` (`routes/admin-finance-accounting-workspace.js`) |
-
-L'agent relais voit Finance parce que la projection Comptabilité contient ses dépôts/relevés autorisés ; il ne reçoit pas pour autant les actions de vérification admin.
-
-## Domaines directs
-
-| Domaine | Route admin | Route `market_operator` | Guard principal |
-|---|---|---|---|
-| Dashboard | `/admin/pilotage` | identique | données unifiées `admin`, `market_operator` (`routes/admin-dashboard-market.js`) |
-| Atelier économique | `/admin/workspaces/pricing` | identique, MarketScope obligatoire | `admin`, `market_operator` (`routes/admin-pricing-workspace.js`) |
-| Catalogue | `/admin/workspaces/catalog` | `/dashboards/canonical/market-catalog.html` | vérité globale admin ; pays via délégation marché |
-| Marchés | `/dashboards/canonical/access.html` | `/dashboards/canonical/market-autonomy.html` | provisioning global admin ; autonomie pays déléguée |
+| Comptabilité | `/admin/workspaces/accounting` | `admin`, `finance`, `agent_relais`, `market_operator` |
 
 ## Parentage des drill-downs
 
-| Surface technique | Domaine parent | Espace N2 parent |
+| Surface technique | Domaine parent | Onglet parent |
 |---|---|---|
 | Action Center | Dashboard | — |
-| Product 360 | Catalogue | — |
-| Order 360 | Commandes | Commerce |
-| Client Index / Client 360 | Commandes | Commerce |
+| Product 360 | Catalogue | Produits |
+| Order 360 | Commandes | Commandes |
+| Client Index / Client 360 | Commandes | Clients |
 | Hub / Relais | Opérations | Hub / Relais |
 | Expéditions & Douane | Opérations | Expéditions & Douane |
 | Sourcing | Opérations | Sourcing |
 | Comptabilité | Finance | Comptabilité |
 
-Le bouton Retour d'une Entity 360 est un retour contextuel ; il ne crée jamais une nouvelle rubrique.
+## Invariants V4
 
-## Invariants V3
-
-1. Dashboard n'est pas un fallback universel.
-2. Un rôle spécialisé atterrit sur son premier workspace réellement lisible.
-3. `market_operator` utilise Catalogue pays et Autonomie marché, pas les autorités globales admin.
-4. Les workspaces spécialisés restent N2.
-5. Si un rôle ne voit qu'un espace d'un domaine, le domaine N1 pointe directement sur cet espace ; aucun N2 artificiel n'est affiché.
-6. Si un rôle voit plusieurs espaces d'un domaine, le N2 contextuel les expose dans l'ordre canonique.
+1. N1 est vertical, jamais une top-nav métier concurrente.
+2. N2 est horizontal et contextuel au domaine actif.
+3. N3 reste local à la page.
+4. Dashboard n'est pas un fallback universel.
+5. Un rôle spécialisé atterrit sur son premier workspace réellement lisible.
+6. `market_operator` utilise les surfaces pays, pas les autorités globales admin.
 7. Paramètres n'est jamais N1.
-8. Market ID n'est jamais N1.
-9. Le shell est unique sur toutes les pages Canonical, y compris Catalogue et les pages Marchés standalone.
-10. Toute évolution d'un guard serveur qui change une destination visible doit mettre à jour cette matrice et `tests/unit/canonical-navigation-policy-v3.test.js` dans le même lot.
+8. Market ID n'est jamais N1/N2.
+9. Catalogue et Atelier économique utilisent exactement le même shell que les autres domaines.
+10. Les mocks sont traduits par `docs/doctrine/CANONICAL_UI_STYLE_CONTRACT_V1.md` en valeurs mesurables.
+11. Toute évolution d'un guard serveur qui change une destination visible met à jour cette matrice et les tests de navigation dans le même lot.
