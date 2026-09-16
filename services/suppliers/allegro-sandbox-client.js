@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        sandbox credentials, bounded read request, guarded seller draft seed
+ * @inputs        sandbox credentials, bounded read request, guarded seller draft seed/publication
  * @outputs       provider JSON, ephemeral access token
  * @depends       db.js, node:crypto
  * @used-by       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-purchase-reconciliation.js, scripts/allegro-sandbox-check.js
@@ -21,6 +21,7 @@ const API = 'https://api.allegro.pl.allegrosandbox.pl';
 const TOKEN = 'https://allegro.pl.allegrosandbox.pl/auth/oauth/token';
 const KEY = 'allegro_sandbox';
 const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function configuration(env) {
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX !== '1') throw new Error('ALLEGRO_SANDBOX_DISABLED');
@@ -38,6 +39,18 @@ function seedConfiguration(env) {
   if (runtime !== 'staging') throw new Error('ALLEGRO_SANDBOX_SEED_STAGING_ONLY');
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED !== '1') throw new Error('ALLEGRO_SANDBOX_SEED_DISABLED');
   return c;
+}
+
+function publicationOfferId(value) {
+  const id = String(value ?? '').trim();
+  if (!/^[0-9]{1,30}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_PUBLICATION_OFFER_ID_INVALID');
+  return id;
+}
+
+function publicationCommandId(value) {
+  const id = String(value ?? '').trim().toLowerCase();
+  if (!UUID_RE.test(id)) throw new Error('ALLEGRO_SANDBOX_PUBLICATION_COMMAND_ID_INVALID');
+  return id;
 }
 
 function encrypt(token, key) {
@@ -147,9 +160,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
   async function getSellerOrder(checkoutFormId) {
     const c = configuration(env);
     const id = String(checkoutFormId || '').trim().toLowerCase();
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
-      throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
-    }
+    if (!UUID_RE.test(id)) throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
     const url = new URL(`/order/checkout-forms/${id}`, API);
     return authorizedJson(c, url, { method: 'GET' });
   }
@@ -197,7 +208,36 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     });
   }
 
-  return { get, getSellerOrder, searchProducts, createDraftOffer };
+  async function activateOffer(offerId, { commandId = crypto.randomUUID() } = {}) {
+    const c = seedConfiguration(env);
+    const id = publicationOfferId(offerId);
+    const command = publicationCommandId(commandId);
+    const url = new URL(`/sale/offer-publication-commands/${command}`, API);
+    const payload = {
+      offerCriteria: [{ offers: [{ id }], type: 'CONTAINS_OFFERS' }],
+      publication: { action: 'ACTIVATE' },
+    };
+    const provider = await authorizedJson(c, url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(payload),
+    });
+    return { offer_id: id, command_id: command, provider };
+  }
+
+  async function getPublicationTasks(commandId, { limit = 100, offset = 0 } = {}) {
+    const c = seedConfiguration(env);
+    const command = publicationCommandId(commandId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000
+      || !Number.isSafeInteger(offset) || offset < 0 || offset > 999) {
+      throw new Error('ALLEGRO_SANDBOX_PUBLICATION_TASK_PAGE_INVALID');
+    }
+    const url = new URL(`/sale/offer-publication-commands/${command}/tasks`, API);
+    url.search = new URLSearchParams({ limit: String(limit), offset: String(offset) }).toString();
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
+  return { get, getSellerOrder, searchProducts, createDraftOffer, activateOffer, getPublicationTasks };
 }
 
 const client = createClient();
@@ -209,4 +249,6 @@ module.exports = {
   getSellerOrder: client.getSellerOrder,
   searchProducts: client.searchProducts,
   createDraftOffer: client.createDraftOffer,
+  activateOffer: client.activateOffer,
+  getPublicationTasks: client.getPublicationTasks,
 };

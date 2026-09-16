@@ -180,3 +180,58 @@ test('seller seed input validation fails before provider side effects', async ()
   }
   expect(s.fetchImpl).not.toHaveBeenCalled();
 });
+
+test('seller publication activation is sandbox-only, explicit ACTIVATE and asynchronously inspectable', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  const commandId = '123e4567-e89b-42d3-a456-426614174000';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes(`/sale/offer-publication-commands/${commandId}/tasks`)) {
+      return ok({ tasks: [{ offer: { id: '987654321' }, status: 'SUCCESS', errors: [] }] });
+    }
+    if (url.endsWith(`/sale/offer-publication-commands/${commandId}`) && init.method === 'PUT') {
+      return ok({ id: commandId, completedAt: null, taskCount: { total: 0, success: 0, failed: 0 } });
+    }
+    return ok({});
+  });
+
+  const activated = await s.client.activateOffer('987654321', { commandId });
+  expect(activated).toMatchObject({ offer_id: '987654321', command_id: commandId,
+    provider: { id: commandId, completedAt: null } });
+  const putCall = s.fetchImpl.mock.calls.find(([url, init]) => url.endsWith(`/sale/offer-publication-commands/${commandId}`) && init.method === 'PUT');
+  expect(putCall).toBeTruthy();
+  expect(new URL(putCall[0]).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
+  expect(putCall[1].headers['Content-Type']).toBe('application/vnd.allegro.public.v1+json');
+  expect(JSON.parse(putCall[1].body)).toEqual({
+    offerCriteria: [{ offers: [{ id: '987654321' }], type: 'CONTAINS_OFFERS' }],
+    publication: { action: 'ACTIVATE' },
+  });
+
+  const tasks = await s.client.getPublicationTasks(commandId, { limit: 1, offset: 0 });
+  expect(tasks.tasks[0]).toMatchObject({ offer: { id: '987654321' }, status: 'SUCCESS' });
+  const taskCall = s.fetchImpl.mock.calls.find(([url, init]) => url.includes(`/sale/offer-publication-commands/${commandId}/tasks`) && init.method === 'GET');
+  const taskUrl = new URL(taskCall[0]);
+  expect(taskUrl.searchParams.get('limit')).toBe('1');
+  expect(taskUrl.searchParams.get('offset')).toBe('0');
+});
+
+test('seller publication mutation validates exact offer, UUID and page before provider side effects', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  const commandId = '123e4567-e89b-42d3-a456-426614174000';
+  await expect(s.client.activateOffer('../bad', { commandId })).rejects.toThrow('PUBLICATION_OFFER_ID_INVALID');
+  await expect(s.client.activateOffer('123', { commandId: 'not-a-uuid' })).rejects.toThrow('PUBLICATION_COMMAND_ID_INVALID');
+  await expect(s.client.getPublicationTasks('not-a-uuid')).rejects.toThrow('PUBLICATION_COMMAND_ID_INVALID');
+  await expect(s.client.getPublicationTasks(commandId, { limit: 1001 })).rejects.toThrow('PUBLICATION_TASK_PAGE_INVALID');
+  expect(s.fetchImpl).not.toHaveBeenCalled();
+
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '0';
+  await expect(s.client.activateOffer('123', { commandId })).rejects.toThrow('SEED_DISABLED');
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.runtime.KOMERCE_ENV = 'production';
+  await expect(s.client.activateOffer('123', { commandId })).rejects.toThrow('STAGING_ONLY');
+  expect(s.fetchImpl).not.toHaveBeenCalled();
+});
