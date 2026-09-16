@@ -44,6 +44,7 @@ const INQUIRY_ID  = '66666666-6666-6666-6666-666666666666';
 let app;
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDbQuery.mockReset();
   mockSessionUser = { id: 'user-1', phone: '+2693334455' };
   app = express();
   app.use(express.json());
@@ -67,7 +68,7 @@ describe('GET public detail', () => {
     expect(res.status).toBe(404);
   });
 
-  it('service projette uniquement request/callback et jamais un contact provider', async () => {
+  it('service projette request/callback + disponibilité WhatsApp sans exposer de contact provider', async () => {
     marketOk();
     mockIsServiceExposable.mockResolvedValue(true);
     mockGetService.mockResolvedValue({
@@ -88,9 +89,26 @@ describe('GET public detail', () => {
     const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
     expect(res.status).toBe(200);
     expect(res.body.actions).toEqual(['request', 'callback']);
+    expect(res.body.whatsapp_available).toBe(true);
     expect(res.body.public_contact).toBeNull();
     expect(res.body.provider_id).toBeUndefined();
     expect(JSON.stringify(res.body)).not.toMatch(/2699999999|2693210000|2693210001/);
+  });
+
+  it('service sans capacité WhatsApp garde le parcours Inquiry classique', async () => {
+    marketOk();
+    mockIsServiceExposable.mockResolvedValue(true);
+    mockGetService.mockResolvedValue({
+      id: SERVICE_ID,
+      provider_name: 'Bâtir Anjouan',
+      title: 'Maçonnerie et petits travaux',
+      market_id: MARKET_ID,
+      actions_enabled: ['quote', 'callback', 'call'],
+    });
+
+    const res = await request(app).get(`/api/providers-services/services/${SERVICE_ID}`).query({ market: 'KM' });
+    expect(res.status).toBe(200);
+    expect(res.body.whatsapp_available).toBe(false);
   });
 
   it('physical_offer legacy call-only devient callback contextualisable', async () => {
@@ -145,6 +163,53 @@ describe('POST /inquiries', () => {
     });
   });
 
+  it('crée l Inquiry avant de remettre un handoff WhatsApp traçable', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
+      .mockResolvedValueOnce({ rows: [{
+        public_whatsapp: '+269 321 00 01',
+        provider_name: 'Dépannage Anjouan',
+        title: 'Plomberie maison',
+      }] });
+    mockIsServiceExposable.mockResolvedValue(true);
+    mockCreateContextualInquiry.mockResolvedValue({ id: INQUIRY_ID, status: 'sent', intent: 'request' });
+
+    const res = await request(app)
+      .post('/api/providers-services/inquiries')
+      .query({ market: 'KM' })
+      .send({ service_id: SERVICE_ID, intent: 'request', handoff: 'whatsapp' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.inquiry).toEqual({
+      id: INQUIRY_ID, status: 'sent', intent: 'request', target_kind: 'service',
+    });
+    expect(res.body.handoff).toEqual(expect.objectContaining({
+      channel: 'whatsapp',
+      reference: 'SR-66666666',
+    }));
+    expect(res.body.handoff.url).toMatch(/^https:\/\/wa\.me\/2693210001\?text=/);
+    const decoded = decodeURIComponent(res.body.handoff.url.split('?text=')[1]);
+    expect(decoded).toContain('Plomberie maison');
+    expect(decoded).toContain('SR-66666666');
+    expect(mockCreateContextualInquiry).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse le handoff WhatsApp si le provider ne possède plus le canal, sans créer d Inquiry', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
+      .mockResolvedValueOnce({ rows: [] });
+    mockIsServiceExposable.mockResolvedValue(true);
+
+    const res = await request(app)
+      .post('/api/providers-services/inquiries')
+      .query({ market: 'KM' })
+      .send({ service_id: SERVICE_ID, handoff: 'whatsapp' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('whatsapp_unavailable');
+    expect(mockCreateContextualInquiry).not.toHaveBeenCalled();
+  });
+
   it('callback sur offre physique conserve la cible comme propos connu', async () => {
     marketOk();
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
@@ -179,9 +244,14 @@ describe('POST /inquiries', () => {
     expect(res.status).toBe(400);
   });
 
-  it('refuse note > 600, double cible et session sans identité', async () => {
+  it('refuse WhatsApp sur physical_offer, note > 600, double cible et session sans identité', async () => {
     marketOk();
     let res = await request(app).post('/api/providers-services/inquiries').query({ market: 'KM' })
+      .send({ physical_offer_id: OFFER_ID, handoff: 'whatsapp' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('invalid_handoff_target');
+
+    res = await request(app).post('/api/providers-services/inquiries').query({ market: 'KM' })
       .send({ service_id: SERVICE_ID, requester_note: 'x'.repeat(601) });
     expect(res.status).toBe(400);
 
