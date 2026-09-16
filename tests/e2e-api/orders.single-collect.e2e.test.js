@@ -28,6 +28,7 @@
 const request = require('supertest');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
+const { generateAndStoreSecret } = require('../../services/pickup-secret-service');
 
 const { describeE2E, createCleanup, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -49,14 +50,23 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
        VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), 25000, 'cash_relais', 'paid', 'available')`,
       [orderId, `E2E-COLLECT-${tag(label)}`, relaisId]
     );
-    return orderId;
+    // Une commande AVAILABLE exige désormais le code de retrait courant pour
+    // être remise (voir services/pickup-collection-service.js::collectOrder,
+    // garde PICKUP_CODE_REQUIRED) : un appel orderId-seul est intentionnellement
+    // refusé pour empêcher la réutilisation du même appel sur plusieurs colis.
+    const generated = await generateAndStoreSecret({
+      orderId,
+      relaisId,
+      channel: 'cash_relais',
+    });
+    return { orderId, code: generated.code };
   }
 
-  function collect(orderId, name) {
+  function collect(orderId, name, code) {
     return request(app)
       .post(`/api/pickup/collect/${orderId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ collected_by_name: name });
+      .send({ collected_by_name: name, pickup_code: code });
   }
 
   beforeAll(async () => {
@@ -71,6 +81,10 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
     cleanup.trackSql(`DELETE FROM relais WHERE id = $1`, [relaisId]);
     cleanup.trackSql(`DELETE FROM users WHERE id = $1`, [agentId]);
     cleanup.trackSql(`DELETE FROM orders WHERE relais_id = $1`, [relaisId]);
+    // collectByPickupCode trace toute tentative en échec (anti-fraude) dans
+    // alerts ; le scénario de concurrence en génère volontairement (N-1
+    // échecs one-shot). À nettoyer avant orders (référence order_id/entity_id).
+    cleanup.trackSql(`DELETE FROM alerts WHERE entity_type = 'order' AND entity_id IN (SELECT id FROM orders WHERE relais_id = $1)`, [relaisId]);
 
     await db.query(
       `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
@@ -102,9 +116,9 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
 
   // ─────────────────────────────────────────────────────────────────────────
   it('0 — TÉMOIN : un appel isolé marque la commande comme récupérée', async () => {
-    const orderId = await seedOrder('nominal');
+    const { orderId, code } = await seedOrder('nominal');
 
-    const res = await collect(orderId, 'Client Nominal');
+    const res = await collect(orderId, 'Client Nominal', code);
     expect(res.status).toBe(200);
 
     const { rows } = await db.query('SELECT status, collected_by_name FROM orders WHERE id = $1', [orderId]);
@@ -119,12 +133,12 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
   });
 
   it('1 — CONCURRENCE : N appels simultanés sur la même commande → une seule remise', async () => {
-    const orderId = await seedOrder('race');
+    const { orderId, code } = await seedOrder('race');
     const N = 5;
 
     // Réellement concurrents : Promise.all, jamais en série.
     const results = await Promise.all(
-      Array.from({ length: N }, (_, i) => collect(orderId, `Concurrent ${i}`))
+      Array.from({ length: N }, (_, i) => collect(orderId, `Concurrent ${i}`, code))
     );
 
     const successes = results.filter((r) => r.status === 200);
@@ -146,11 +160,11 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
     expect(orderRows[0].collected_by_name).not.toBeNull();
 
     // Exactement un appel a réussi ; les N-1 autres ont échoué de façon
-    // intelligible (409, avec un message d'erreur exploitable).
+    // intelligible (404 après consommation one-shot, sans fuite d'état).
     expect(successes).toHaveLength(1);
     expect(failures).toHaveLength(N - 1);
     for (const f of failures) {
-      expect(f.status).toBe(409);
+      expect(f.status).toBe(404);
       expect(typeof f.body.error).toBe('string');
       expect(f.body.error.length).toBeGreaterThan(0);
     }

@@ -38,7 +38,7 @@ const request = require('supertest');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(60000);
 
@@ -58,6 +58,10 @@ describeE2E('E2E-P0-ORDERS — orders · annulation, référence, snapshot', ({ 
       'INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, $3, 30)',
       [id, `E2E Orders ${tag(label)}`, priceKmf]
     );
+    // Marché résolu côté serveur : un marketId exige un LOCAL_ACTIVE pour être
+    // achetable (market-local-price-resolution-service.js).
+    const { rows: [market] } = await db.query(`SELECT id FROM markets WHERE code = 'KM'`);
+    await activateLocalPrice(db, cleanup, { marketId: market.id, productId: id, amount: priceKmf, currency: 'KMF' });
     return id;
   }
 
@@ -121,8 +125,8 @@ describeE2E('E2E-P0-ORDERS — orders · annulation, référence, snapshot', ({ 
       ]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
-       VALUES ($1, 'E2E Relais Orders', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, island, market_id)
+       VALUES ($1, 'E2E Relais Orders', 'E2E Agent', '+269000111', 'Moroni Test', 'Ngazidja', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 
