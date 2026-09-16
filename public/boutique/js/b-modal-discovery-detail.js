@@ -17,7 +17,7 @@ import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
 const SERVICE_STYLE_ID = 'k-service-detail-style';
-const SERVICE_STYLE_HREF = '/boutique/css/service-detail.css?v=20260916';
+const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260916';
 const STORED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
 const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
 let _installed = false;
@@ -342,5 +342,4 @@ export {
   actionLabelFor,
   subjectFor,
   publicActionFor,
-  ensureServiceDetailStyles,
 };
