@@ -68,6 +68,31 @@ describe('createProviderInquiry', () => {
     });
   });
 
+  it('handoff WhatsApp reste une Inquiry request et renvoie une URL serveur', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true, status: 201,
+      json: async () => ({
+        inquiry: { id: 'inq-wa', status: 'sent', intent: 'request', target_kind: 'service' },
+        handoff: { channel: 'whatsapp', reference: 'SR-INQ', url: 'https://wa.me/2693210001?text=Bonjour' },
+      }),
+    });
+
+    const result = await createProviderInquiry('service', 'svc-wa', null, 'request', null, 'whatsapp');
+    expect(result.ok).toBe(true);
+    expect(result.handoff).toEqual(expect.objectContaining({ channel: 'whatsapp' }));
+    const options = global.fetch.mock.calls[0][1];
+    expect(JSON.parse(options.body)).toEqual({
+      service_id: 'svc-wa', intent: 'request', handoff: 'whatsapp',
+    });
+    expect(options.body).not.toMatch(/2693210001/);
+  });
+
+  it('refuse un handoff WhatsApp sur une physical_offer avant réseau', async () => {
+    const result = await createProviderInquiry('physical_offer', 'offer-1', null, 'request', null, 'whatsapp');
+    expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid_handoff_target' }));
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('préserve identity_required pour un message UX explicite', async () => {
     global.fetch.mockResolvedValue({
       ok: false, status: 401,
@@ -81,6 +106,15 @@ describe('createProviderInquiry', () => {
     global.fetch.mockResolvedValue({ ok: true, status: 201, json: async () => ({ inquiry: { status: 'sent' } }) });
     const result = await createProviderInquiry('service', 'svc-1');
     expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid_response' }));
+  });
+
+  it('handoff demandé sans URL valide est refusé', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true, status: 201,
+      json: async () => ({ inquiry: { id: 'inq-wa', status: 'sent', intent: 'request', target_kind: 'service' } }),
+    });
+    const result = await createProviderInquiry('service', 'svc-wa', null, 'request', null, 'whatsapp');
+    expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid_handoff_response' }));
   });
 
   it('échec réseau -> résultat structuré, jamais un throw', async () => {

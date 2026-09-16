@@ -15,6 +15,7 @@ const {
   isRootUnitTest,
   isBoutiqueUnitTest,
   isSchemaOrMigrationChange,
+  workspaceSourceFiles,
   contentReferencesSource,
 } = require('../../scripts/run-staged-related-tests');
 
@@ -47,6 +48,16 @@ describe('run-staged-related-tests — resolution ciblee', () => {
     expect(isBoutiqueSource('public/boutique/js/b-cart.js')).toBe(true);
     expect(isBoutiqueSource('public/boutique/css/cart.css')).toBe(false);
     expect(isBoutiqueSource('public/boutique/tests/unit/b-cart.test.js')).toBe(false);
+  });
+
+  test('scope les sources content-aware au workspace et ne fait pas fuiter Boutique vers le Jest backend', () => {
+    const files = [
+      'services/orders.js',
+      'public/boutique/js/discovery-inquiry.js',
+      'public/boutique/tests/unit/discovery-inquiry.test.js',
+    ];
+    expect(workspaceSourceFiles(files, isRootSource)).toEqual(['services/orders.js']);
+    expect(workspaceSourceFiles(files, isBoutiqueSource)).toEqual(['public/boutique/js/discovery-inquiry.js']);
   });
 
   test('separe les tests unitaires locaux des tests integration/E2E', () => {

@@ -76,7 +76,7 @@ describe('handleDiscoveryRequest', () => {
 
     expect(result).toBe(true);
     expect(mockCreateProviderInquiry).toHaveBeenCalledWith(
-      'service', 'svc-1', 'Cette semaine', 'request', 'Toyota Hilux 2012, phare avant droit'
+      'service', 'svc-1', 'Cette semaine', 'request', 'Toyota Hilux 2012, phare avant droit', null
     );
     expect(mockRequireIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(mockCreateProviderInquiry.mock.invocationCallOrder[0]);
@@ -96,16 +96,31 @@ describe('handleDiscoveryRequest', () => {
     expect(result).toBe(true);
     expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({ reason: 'demander à être rappelé' }));
     expect(mockCreateProviderInquiry).toHaveBeenCalledWith(
-      'service', 'svc-cb', null, 'callback', 'Je cherche le phare avant droit'
+      'service', 'svc-cb', null, 'callback', 'Je cherche le phare avant droit', null
     );
     expect(mockShowToast).toHaveBeenCalledWith('Demande de rappel envoyée', 'success', 3200);
+  });
+
+  it('handoff WhatsApp reste une request canonique et demande une identité avant mutation', async () => {
+    const button = document.createElement('button');
+    mockRequireIdentity.mockResolvedValue(null);
+
+    const result = await handleDiscoveryRequest({
+      kind: 'service', ref: 'svc-wa', source: button, handoff: 'whatsapp',
+    });
+
+    expect(result).toBe(false);
+    expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'discuter avec ce prestataire sur WhatsApp',
+    }));
+    expect(mockCreateProviderInquiry).not.toHaveBeenCalled();
   });
 
   it('physical_offer reste une Inquiry contextualisée, jamais une order', async () => {
     mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
     mockCreateProviderInquiry.mockResolvedValue({ ok: true, inquiry: { id: 'inq-2', status: 'sent', intent: 'request' } });
     await handleDiscoveryRequest({ kind: 'physical_offer', ref: 'offer-1', requesterNote: '30 sacs' });
-    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1', null, 'request', '30 sacs');
+    expect(mockCreateProviderInquiry).toHaveBeenCalledWith('physical_offer', 'offer-1', null, 'request', '30 sacs', null);
     expect(mockShowToast).toHaveBeenCalledWith('Demande envoyée pour cette offre', 'success', 3200);
   });
 
@@ -115,6 +130,16 @@ describe('handleDiscoveryRequest', () => {
     const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-gone' });
     expect(result).toBe(false);
     expect(mockShowToast).toHaveBeenCalledWith('Cette offre n’est plus disponible.', 'error', 3200);
+  });
+
+  it('WhatsApp indisponible reste un échec explicite, sans faux succès', async () => {
+    mockRequireIdentity.mockResolvedValue({ id: 'u-1', phone: '+2693334455' });
+    mockCreateProviderInquiry.mockResolvedValue({ ok: false, status: 409, code: 'whatsapp_unavailable' });
+    const result = await handleDiscoveryRequest({ kind: 'service', ref: 'svc-wa', handoff: 'whatsapp' });
+    expect(result).toBe(false);
+    expect(mockShowToast).toHaveBeenCalledWith(
+      'WhatsApp n’est pas disponible pour ce prestataire pour le moment.', 'error', 3200
+    );
   });
 });
 
