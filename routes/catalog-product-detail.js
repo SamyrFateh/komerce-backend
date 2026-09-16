@@ -52,24 +52,31 @@ router.get('/:id/detail', async (req, res, next) => {
     }
     const marketCode = rawMarket ? String(rawMarket).toUpperCase() : null;
 
-    // Frontière publique unique : une fiche accessible directement doit passer
-    // exactement le même prédicat que la grille /api/products. Avec un marché,
-    // cela inclut exposition + LOCAL_ACTIVE sur CE marché et unité vendable.
-    const visibilitySql = publicCatalogVisibilitySql(
-      'p',
-      marketCode ? { marketCodeParamIndex: 2 } : {}
-    );
-    const visibilityParams = marketCode ? [req.params.id, marketCode] : [req.params.id];
-    const { rows: [visibleProduct] } = await db.query(
-      `SELECT p.id, p.price_kmf, p.promo_pct, p.is_promo, p.promo_until
-         FROM products p
-        WHERE p.id = $1
-          AND ${visibilitySql}
-        LIMIT 1`,
-      visibilityParams
-    );
-    if (!visibleProduct) {
-      return res.status(404).json({ error: marketCode ? 'Produit non disponible sur ce marché' : 'Produit introuvable' });
+    let visibleProduct = null;
+
+    // La vérité « Visible » est market-scoped. Dès qu'un marché est fourni
+    // (cas Boutique), la fiche directe passe exactement la même frontière que
+    // la grille /api/products : produit publiable + unité vendable + exposition
+    // ENABLED + prix LOCAL_ACTIVE sur CE marché.
+    //
+    // Sans marché, on conserve le contrat historique du détail public : cette
+    // lecture non autorisante ne prétend pas qu'un produit est « Visible » dans
+    // un pays. Cela préserve les consommateurs legacy tout en gardant le gate
+    // commercial strict sur tous les parcours Boutique market-scoped.
+    if (marketCode) {
+      const visibilitySql = publicCatalogVisibilitySql('p', { marketCodeParamIndex: 2 });
+      const { rows: [row] } = await db.query(
+        `SELECT p.id, p.price_kmf, p.promo_pct, p.is_promo, p.promo_until
+           FROM products p
+          WHERE p.id = $1
+            AND ${visibilitySql}
+          LIMIT 1`,
+        [req.params.id, marketCode]
+      );
+      visibleProduct = row || null;
+      if (!visibleProduct) {
+        return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
+      }
     }
 
     const detail = await getProductDetail(db, req.params.id);
