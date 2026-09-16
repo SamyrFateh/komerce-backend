@@ -42,15 +42,21 @@ if (!hasIntegrationEnv) {
   const created = { orderIds: [], productIds: [], supplierIds: [], relaisIds: [] };
 
   async function seedFixture() {
+    const { rows: [market] } = await db.query(
+      `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+    );
+    if (!market) throw new Error('W3-1 requires canonical active market KM');
+
     const { rows: [relais] } = await db.query(
-      `INSERT INTO relais (name, agent_name, phone, address, island, is_active)
-       VALUES ($1,$2,$3,$4,$5,true) RETURNING id`,
+      `INSERT INTO relais (name, agent_name, phone, address, island, market_id, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING id`,
       [
         `${ITEST_TAG} relais`,
         `${ITEST_TAG} agent`,
         `+2693${Math.floor(1000000 + Math.random() * 8999999)}`,
         'ITest address, Moroni',
         'Ngazidja',
+        market.id,
       ]
     );
     created.relaisIds.push(relais.id);
@@ -79,9 +85,9 @@ if (!hasIntegrationEnv) {
     const ref = `ITEST-R3-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const { rows: [order] } = await db.query(
       `INSERT INTO orders
-         (reference, relais_id, total_kmf, payment_mode, payment_status, status)
-       VALUES ($1,$2,$3,'cash_relais','paid','ordered') RETURNING id, reference`,
-      [ref, relais.id, 10000]
+         (reference, relais_id, market_id, total_kmf, payment_mode, payment_status, status)
+       VALUES ($1,$2,$3,$4,'cash_relais','paid','ordered') RETURNING id, reference`,
+      [ref, relais.id, market.id, 10000]
     );
     created.orderIds.push(order.id);
 
