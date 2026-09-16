@@ -55,6 +55,10 @@ if (!hasIntegrationEnv) {
 
   async function seedGraph() {
     const tag = suffix();
+    const { rows: [market] } = await db.query(
+      `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+    );
+    if (!market) throw new Error('D-06 requires canonical active market KM');
 
     const { rows: [product] } = await db.query(
       `INSERT INTO products (name, category, price_kmf, stock, is_active)
@@ -65,18 +69,18 @@ if (!hasIntegrationEnv) {
     productId = product.id;
 
     const { rows: [relais] } = await db.query(
-      `INSERT INTO relais (name, agent_name, phone, address, island)
-       VALUES ($1, $2, $3, $4, 'Anjouan')
+      `INSERT INTO relais (name, agent_name, phone, address, island, market_id)
+       VALUES ($1, $2, $3, $4, 'Anjouan', $5)
        RETURNING id`,
-      [`IT Hub Relais ${tag}`, 'Agent D06', `+2693${Math.floor(1000000 + Math.random() * 8999999)}`, 'Adresse test D06']
+      [`IT Hub Relais ${tag}`, 'Agent D06', `+2693${Math.floor(1000000 + Math.random() * 8999999)}`, 'Adresse test D06', market.id]
     );
     relaisId = relais.id;
 
     const { rows: [order] } = await db.query(
-      `INSERT INTO orders (reference, relais_id, total_kmf, payment_mode, status)
-       VALUES ($1, $2, 4200, 'cash_relais', 'confirmed')
+      `INSERT INTO orders (reference, relais_id, market_id, total_kmf, payment_mode, status)
+       VALUES ($1, $2, $3, 4200, 'cash_relais', 'confirmed')
        RETURNING id, reference`,
-      [`IT-HUB-ORDER-${tag}`, relaisId]
+      [`IT-HUB-ORDER-${tag}`, relaisId, market.id]
     );
     orderId = order.id;
 
