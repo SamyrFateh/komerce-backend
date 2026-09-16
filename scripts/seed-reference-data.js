@@ -23,6 +23,14 @@ const REFERENCE_MARKETS = Object.freeze([
   Object.freeze({ code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: true }),
 ]);
 
+// Données de référence déterministes de migrations/142_currency_parities.sql.
+// Le snapshot schema-only conserve la table mais pas ces lignes historiques.
+const FIXED_CURRENCY_PARITIES = Object.freeze([
+  Object.freeze({ currency: 'EUR', eur_rate: 1, source_note: 'Référence — identité, pas un ancrage' }),
+  Object.freeze({ currency: 'KMF', eur_rate: 491.96775, source_note: 'Ancrage comorien, garanti Trésor français, en vigueur depuis 1999' }),
+  Object.freeze({ currency: 'XAF', eur_rate: 655.957, source_note: 'Franc CFA d’Afrique centrale (CEMAC), garanti Trésor français' }),
+]);
+
 async function tableExists(client, tableName) {
   const { rows: [row] } = await client.query(
     'SELECT to_regclass($1) IS NOT NULL AS present',
@@ -47,6 +55,23 @@ async function seedMarkets(client) {
     );
   }
   return { skipped: false, count: REFERENCE_MARKETS.length };
+}
+
+async function seedCurrencyParities(client) {
+  if (!(await tableExists(client, 'currency_parities'))) return { skipped: true, count: 0 };
+
+  for (const parity of FIXED_CURRENCY_PARITIES) {
+    await client.query(
+      `INSERT INTO currency_parities (currency, eur_rate, source_note)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (currency) DO UPDATE SET
+         eur_rate = EXCLUDED.eur_rate,
+         source_note = EXCLUDED.source_note,
+         updated_at = NOW()`,
+      [parity.currency, parity.eur_rate, parity.source_note]
+    );
+  }
+  return { skipped: false, count: FIXED_CURRENCY_PARITIES.length };
 }
 
 async function seedCapabilities(client) {
@@ -122,10 +147,11 @@ async function seedReferenceData(client) {
   const connection = client || await db.getClient();
   try {
     const markets = await seedMarkets(connection);
+    const currencyParities = await seedCurrencyParities(connection);
     const capabilities = await seedCapabilities(connection);
     const templateId = await ensureCurrentCeilingTemplate(connection);
     const ceiling = await seedCeilingCapabilities(connection, templateId);
-    return { markets, capabilities, ceiling, templateId };
+    return { markets, currencyParities, capabilities, ceiling, templateId };
   } finally {
     if (ownClient) connection.release();
   }
@@ -137,7 +163,7 @@ async function main() {
   }
   const result = await seedReferenceData();
   console.log(
-    `[seed-reference-data] markets=${result.markets.count}, capabilities=${result.capabilities.count}, ceiling=${result.ceiling.count}`
+    `[seed-reference-data] markets=${result.markets.count}, currency_parities=${result.currencyParities.count}, capabilities=${result.capabilities.count}, ceiling=${result.ceiling.count}`
   );
 }
 
@@ -152,8 +178,10 @@ if (require.main === module) {
 
 module.exports = {
   REFERENCE_MARKETS,
+  FIXED_CURRENCY_PARITIES,
   seedReferenceData,
   seedMarkets,
+  seedCurrencyParities,
   seedCapabilities,
   ensureCurrentCeilingTemplate,
   seedCeilingCapabilities,
