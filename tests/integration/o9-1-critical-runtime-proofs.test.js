@@ -112,16 +112,26 @@ if (!hasIntegrationEnv) {
     fixtureLockClient = null;
   }
 
+  async function resolveKmMarketId() {
+    const { rows: [market] } = await db.query(
+      `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+    );
+    if (!market) throw new Error('O9.1 requires canonical active market KM');
+    return market.id;
+  }
+
   async function seedRelais(suffix) {
+    const marketId = await resolveKmMarketId();
     const { rows: [row] } = await db.query(
-      `INSERT INTO relais (name, agent_name, phone, address, island, is_active)
-       VALUES ($1,$2,$3,$4,$5,true) RETURNING *`,
+      `INSERT INTO relais (name, agent_name, phone, address, island, market_id, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING *`,
       [
         `${TAG}-${suffix}-relais`,
         `${TAG}-${suffix}-agent`,
         `+2693${Math.floor(1000000 + Math.random() * 8999999)}`,
         'O9.1 integration test',
         'Ngazidja',
+        marketId,
       ]
     );
     created.relaisIds.push(row.id);
@@ -147,12 +157,21 @@ if (!hasIntegrationEnv) {
     totalEur = 20,
     paypalOrderId = null,
   } = {}) {
+    if (!relaisId) throw new Error('O9.1 order fixture requires relaisId');
+    const { rows: [authority] } = await db.query(
+      `SELECT market_id FROM relais WHERE id = $1 LIMIT 1`,
+      [relaisId]
+    );
+    if (!authority?.market_id) {
+      throw new Error(`O9.1 cannot resolve market authority for relais ${relaisId}`);
+    }
+
     const reference = `ITEST-${TAG}-${suffix}-${Math.random().toString(36).slice(2, 7)}`;
     const { rows: [row] } = await db.query(
       `INSERT INTO orders
-         (reference, relais_id, total_kmf, total_eur, payment_mode, payment_status, status, paypal_order_id)
-       VALUES ($1,$2,$3,$4,$5::payment_mode,$6,$7,$8) RETURNING *`,
-      [reference, relaisId, totalKmf, totalEur, paymentMode, paymentStatus, status, paypalOrderId]
+         (reference, relais_id, market_id, total_kmf, total_eur, payment_mode, payment_status, status, paypal_order_id)
+       VALUES ($1,$2,$3,$4,$5,$6::payment_mode,$7,$8,$9) RETURNING *`,
+      [reference, relaisId, authority.market_id, totalKmf, totalEur, paymentMode, paymentStatus, status, paypalOrderId]
     );
     created.orderIds.push(row.id);
     return row;
