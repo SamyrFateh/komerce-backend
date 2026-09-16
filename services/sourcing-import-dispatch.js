@@ -79,7 +79,6 @@ function connectorCatalog() {
       active: CONNECTORS.api[supplier].active,
       label: CONNECTORS.api[supplier].label,
       reason: CONNECTORS.api[supplier].active ? null : CONNECTORS.api[supplier].reason,
-      automation_available: Boolean(CONNECTORS.api[supplier].automation),
     })),
   };
 }
