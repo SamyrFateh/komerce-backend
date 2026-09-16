@@ -35,9 +35,15 @@ if (!hasIntegrationEnv) {
     buildMarketPilotage: (...args) => mockBuildMarketPilotage(...args),
   }));
 
-  jest.mock('../../utils/logger', () => ({
-    child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
-  }));
+  jest.mock('../../utils/logger', () => {
+    const makeLogger = () => ({
+      warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn(),
+    });
+    return {
+      child: jest.fn(() => makeLogger()),
+      forModule: jest.fn(() => makeLogger()),
+    };
+  });
 
   const express = require('express');
   const request = require('supertest');
