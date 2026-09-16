@@ -17,21 +17,22 @@ describe('public catalog route exposure gate', () => {
   test('la liste, les compteurs et le détail legacy partagent le prédicat canonique', () => {
     const productsRoute = source('routes/products.js');
 
-    // Liste et détail par id acceptent désormais un second argument
-    // options (marketCodeParam) pour le cutover product_market_exposure —
-    // même fonction canonique, jamais réimplémentée. /categories et
-    // /subcategories restent inchangés (hors périmètre de ce cutover,
-    // ils n'ont jamais accepté de paramètre marché).
     expect(productsRoute).toContain("const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})]");
     expect(productsRoute).toContain("WHERE ${publicCatalogVisibilitySql('p')}");
     expect(productsRoute).toContain("const conditions = [publicCatalogVisibilitySql('p'), 'p.subcategory IS NOT NULL']");
     expect(productsRoute).toContain("const detailConditions = [publicCatalogVisibilitySql('p', marketCode ? { marketCodeParamIndex: 2 } : {})]");
   });
 
+  test('la fiche canonique utilise la même frontière publique que la grille', () => {
+    const detailRoute = source('routes/catalog-product-detail.js');
+    expect(detailRoute).toContain('publicCatalogVisibilitySql');
+    expect(detailRoute).toContain("marketCode ? { marketCodeParamIndex: 2 } : {}");
+    expect(detailRoute).toContain('AND ${visibilitySql}');
+    expect(detailRoute).not.toContain('isProductExposedForMarketCode');
+  });
+
   test('le prédicat canonique reste la seule fonction qui construit la clause de visibilité — aucune réimplémentation inline', () => {
     const productsRoute = source('routes/products.js');
-    // Le prédicat s'appelle toujours via la fonction partagée, jamais par
-    // une reconstruction manuelle de ses conditions internes.
     expect(productsRoute).not.toMatch(/is_active = TRUE'.*image_url/s);
   });
 
