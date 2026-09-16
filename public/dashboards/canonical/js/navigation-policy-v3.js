@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      visible_destination_must_have_server_guard, n1_business_domains_only, n2_contextual_workspaces_only, market_id_is_transverse_context
  * @impact-areas  admin-dashboard, navigation, market-authorization
- * @version       2026-09-v3
+ * @version       2026-09-v3.1-business-truth
  */
 'use strict';
 
@@ -38,7 +38,7 @@
       id: 'catalog',
       label: 'Catalogue',
       href: '/admin/workspaces/catalog',
-      roles: Object.freeze(['admin', 'market_operator']),
+      roles: Object.freeze(['admin']),
     }),
     Object.freeze({
       id: 'orders',
@@ -91,7 +91,7 @@
     demo: 'dashboard',
     'pricing-workspace': 'pricing',
     'catalog-workspace': 'catalog',
-    'market-catalog': 'catalog',
+    'market-catalog': 'markets',
     'product-360': 'catalog',
     commerce: 'orders',
     orders: 'orders',
@@ -151,9 +151,6 @@
     const role = roleOf(user);
     if (item.id === 'markets' && role === 'market_operator') {
       return '/dashboards/canonical/market-autonomy.html';
-    }
-    if (item.id === 'catalog' && role === 'market_operator') {
-      return '/dashboards/canonical/market-catalog.html';
     }
     return item.href;
   }
@@ -259,10 +256,6 @@
 
   global.KomerceCanonicalNavigation = api;
 
-  // `navigation.js` enregistre son auto-mount avant cette policy. Sur les pages
-  // standalone Marchés, on effectue donc une seconde passe après DOM ready pour
-  // garantir que le DOM final porte la policy V3. Sur `index.html`, app.js
-  // remonte ensuite la navigation avec l'utilisateur authentifié.
   function finalizeStandaloneNavigation() {
     const doc = global.document;
     if (!doc) return;

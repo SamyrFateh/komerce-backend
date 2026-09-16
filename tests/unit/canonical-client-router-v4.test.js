@@ -16,7 +16,7 @@ function read(relative) {
   return fs.readFileSync(path.join(ROOT, relative), 'utf8');
 }
 
-describe('Canonical Client Router V4.1 — no flash + tabs fonctionnels', () => {
+describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => {
   test('toutes les routes admin portées par les tabs V4 sont routables sans reload document', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const hrefs = [...policy.matchAll(/href:\s*'([^']+)'/g)].map(match => match[1]);
@@ -28,13 +28,28 @@ describe('Canonical Client Router V4.1 — no flash + tabs fonctionnels', () => 
     });
   });
 
-  test('les tabs Catalogue par ancre pointent vers des sections réelles', () => {
+  test('Catalogue ne répète plus Sources, Raffinerie et Boutique comme onglets', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
-    const catalog = read('public/dashboards/canonical/js/catalog-control-tower.js');
-    ['catalog-sources', 'catalog-refinery', 'catalog-boutique'].forEach(id => {
-      expect(policy).toContain(`#${id}`);
-      expect(catalog).toContain(`'${id}'`);
-    });
+    const catalogBlock = policy.slice(
+      policy.indexOf('catalog: Object.freeze(['),
+      policy.indexOf('orders: Object.freeze([')
+    );
+    expect(catalogBlock).toContain("id: 'catalog-overview'");
+    expect(catalogBlock).toContain("id: 'catalog-products'");
+    expect(catalogBlock).not.toContain('catalog-sources');
+    expect(catalogBlock).not.toContain('catalog-refinery');
+    expect(catalogBlock).not.toContain('catalog-boutique');
+    expect(catalogBlock).not.toContain('catalog-country');
+  });
+
+  test('Catalogue pays appartient au domaine Marchés', () => {
+    const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
+    const marketsBlock = policy.slice(
+      policy.indexOf('markets: Object.freeze(['),
+      policy.indexOf('const PRICING_SECTION_IDS')
+    );
+    expect(marketsBlock).toContain("id: 'catalog-country'");
+    expect(marketsBlock).toContain('/dashboards/canonical/market-catalog.html');
   });
 
   test('les tabs Atelier économique pointent vers des sections réellement rendues', () => {
