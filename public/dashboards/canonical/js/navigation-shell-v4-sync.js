@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3
  * @impact-areas  admin-dashboard, navigation
- * @version       2026-09-v4
+ * @version       2026-09-v4.1
  */
 'use strict';
 
@@ -25,12 +25,19 @@
     const nav = global.KomerceCanonicalNavigation;
     if (!doc || !nav || typeof nav._applyHybridShell !== 'function') return;
 
-    const header = doc.getElementById?.('canonical-admin-navigation');
-    if (!header || header === lastHeader) return;
-    lastHeader = header;
+    if (typeof nav._dedupeShell === 'function') nav._dedupeShell(doc);
+    const header = doc.getElementById?.('canonical-admin-navigation')
+      || doc.querySelector?.('[data-canonical-shell-role="navigation"]');
+    if (!header) return;
 
-    doc.getElementById?.('canonical-admin-topbar')?.remove?.();
-    doc.getElementById?.('canonical-admin-domain-tabs')?.remove?.();
+    if (header !== lastHeader) lastHeader = header;
+
+    // Topbar et tabs sont des projections du header courant. On les
+    // reconstruit systématiquement pour éviter tout chrome orphelin/stale.
+    Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || [])
+      .forEach(node => node.remove?.());
+    Array.from(doc.querySelectorAll?.('#canonical-admin-domain-tabs, [data-canonical-shell-role="domain-tabs"]') || [])
+      .forEach(node => node.remove?.());
 
     nav._applyHybridShell(header, {
       document: doc,
