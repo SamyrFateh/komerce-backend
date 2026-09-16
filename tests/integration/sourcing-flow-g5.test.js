@@ -26,9 +26,8 @@
  *   Étape 6 — Synthèse globale (GET /synthesis)
  *             → pas d'erreur, objet KPI retourné
  *
- * Invariant G5 : un produit ne peut pas être mis en vente sans rail assigné
- * (ce guard est contractuel, pas testé ici car implémentation future — le test
- * vérifie le flow heureux complet et la persistance à chaque étape).
+ * Invariant G5 : le flow heureux doit satisfaire le contrat réel de première
+ * publication : contenu client substantiel + média catalogue actif.
  *
  * Sans DATABASE_URL → suite skippée proprement.
  *
@@ -65,13 +64,22 @@ if (!hasIntegrationEnv) {
 
     await new Promise((r) => setTimeout(r, 2000));
 
-    // Produit brut : pas de rail, pas de variantes — état "entrant" du flow
+    // Produit brut : pas de rail, pas de variantes — état "entrant" du flow.
+    // La description et le média représentent les éléments éditoriaux déjà
+    // acquis avant l'activation finale ; sans eux le guard catalogue doit
+    // légitimement refuser la première publication.
     const { rows: [prod] } = await db.query(
-      `INSERT INTO products (name, category, price_kmf, cost_kmf, weight_kg, stock, is_active)
-       VALUES ('Produit G5 Flow','test',5000,2500,0.30,0,false)
+      `INSERT INTO products (name, description, category, price_kmf, cost_kmf, weight_kg, stock, is_active)
+       VALUES ('Produit G5 Flow','Produit de test enrichi pour le parcours sourcing G5.','test',5000,2500,0.30,0,false)
        RETURNING id`
     );
     productId = prod.id;
+
+    await db.query(
+      `INSERT INTO catalog_media (product_id, url, role, alt, display_order, is_active)
+       VALUES ($1, $2, 'PRODUCT', 'Produit G5 Flow', 0, TRUE)`,
+      [productId, `https://example.test/catalog/${productId}.jpg`]
+    );
 
     adminUser = await createUser({ role: 'admin' });
   }, 30000);
