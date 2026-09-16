@@ -64,24 +64,50 @@ test('offre locale expose Demander + Être rappelé et garde le sujet connu', ()
   expect(slot.textContent).toContain('Ciment 42,5R — sac 50 kg · Bâtir Anjouan');
 });
 
-test('service sérieux pièce auto garde request/callback dans le même shell', () => {
+test('service sans WhatsApp garde request/callback dans sa surface dédiée', () => {
   renderDiscoveryModalDetail({
     kind: 'service', ref: 'svc-auto',
     detail: {
       title: 'Recherche et sourcing de pièces auto', provider_name: 'Atelier Mutsamudu',
       zone: 'Mutsamudu / Anjouan', description: 'Indiquez marque, modèle, année et pièce recherchée.',
-      actions: ['request', 'callback'],
+      actions: ['request', 'callback'], whatsapp_available: false,
     },
   });
   const slot = document.getElementById('k-modal-discovery-detail');
-  expect(slot.textContent).toContain('Service');
-  expect(slot.textContent).toContain('Sur demande');
+  expect(slot.querySelector('.k-service-detail-shell')).not.toBeNull();
+  expect(slot.textContent).toContain('Service local');
+  expect(slot.textContent).toContain('Près de vous');
   expect(slot.textContent).toContain('Demander ce service');
   expect(slot.textContent).toContain('Être rappelé');
   expect(slot.textContent).toContain('Recherche et sourcing de pièces auto · Atelier Mutsamudu');
 });
 
-test('les anciennes capacités convergent vers request/callback sans contact direct', () => {
+test('service WhatsApp affiche un CTA unique qui crée une Inquiry avant handoff', () => {
+  setupDiscoveryModalDetail();
+  listeners['modal:discovery-opened']({
+    kind: 'service', ref: 'svc-plomberie',
+    detail: {
+      title: 'Plomberie maison', provider_name: 'Dépannage Anjouan', zone: 'Mutsamudu',
+      description: 'Diagnostic et dépannage.', actions: ['callback'], whatsapp_available: true,
+    },
+  });
+
+  const slot = document.getElementById('k-modal-discovery-detail');
+  const whatsapp = slot.querySelector('[data-discovery-whatsapp]');
+  expect(whatsapp).not.toBeNull();
+  expect(whatsapp.textContent).toContain('Discuter sur WhatsApp');
+  expect(slot.textContent).not.toContain('Ajouter au panier');
+  expect(slot.textContent).not.toContain('Acheter maintenant');
+  expect(slot.querySelector('[data-discovery-select-action]')).toBeNull();
+
+  whatsapp.click();
+  expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
+  expect(mockRequestDiscovery).toHaveBeenCalledWith(
+    'service', 'svc-plomberie', expect.any(HTMLElement), null, 'request', null, 'whatsapp'
+  );
+});
+
+test('les anciennes capacités convergent vers request/callback sans contact direct dans la fiche', () => {
   expect(normalizeActions({ actions: ['quote', 'call', 'whatsapp', 'callback'] })).toEqual(['request', 'callback']);
   expect(publicActionFor('quote')).toBe('request');
   expect(publicActionFor('call')).toBe('callback');
@@ -99,7 +125,7 @@ test('les anciennes capacités convergent vers request/callback sans contact dir
 
 test('labels et sujet métier sont déterministes', () => {
   expect(kindLabelFor('physical_offer')).toBe('Offre locale');
-  expect(kindLabelFor('service')).toBe('Service');
+  expect(kindLabelFor('service')).toBe('Service local');
   expect(actionLabelFor('request', 'physical_offer')).toBe('Demander cette offre');
   expect(actionLabelFor('request', 'service')).toBe('Demander ce service');
   expect(actionLabelFor('callback', 'service')).toBe('Être rappelé');
