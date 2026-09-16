@@ -1,6 +1,6 @@
 name: Autopilot projections refresh once
 
-on:
+'on':
   push:
     branches:
       - feat/sourcing-source-autopilot
@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   refresh:
-    if: ${{ !contains(github.event.head_commit.message, 'chore(generated): refresh autopilot projections') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,26 +22,23 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Patch canonical contract generator for Source ON/OFF
+      - name: Patch canonical contract generator
+        shell: bash
         run: |
-          node <<'NODE'
+          node - <<'NODE'
           const fs = require('fs');
           const p = 'scripts/contract-generate.js';
           let s = fs.readFileSync(p, 'utf8');
-
           const routeAnchor = "  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate', method: 'post', schema: null },\n";
-          const routeInsert = routeAnchor +
-            "  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate', method: 'post', schema: null },\n" +
-            "  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate', method: 'post', schema: null },\n";
           if (!s.includes("/api/admin/workspaces/sourcing/sources/{sourceRef}/activate")) {
             if (!s.includes(routeAnchor)) throw new Error('route anchor missing');
-            s = s.replace(routeAnchor, routeInsert);
+            s = s.replace(routeAnchor, routeAnchor +
+              "  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate', method: 'post', schema: null },\n" +
+              "  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate', method: 'post', schema: null },\n");
           }
-
           const getOld = "get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors'], source: 'test' }";
           const getNew = "get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' }";
           if (s.includes(getOld)) s = s.replace(getOld, getNew);
-
           const responseAnchor = "  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate': {\n    post: { fields: ['ok','action','result'], source: 'test' }\n  },\n";
           if (!s.includes("'/api/admin/workspaces/sourcing/sources/{sourceRef}/activate'")) {
             if (!s.includes(responseAnchor)) throw new Error('response anchor missing');
@@ -50,21 +46,21 @@ jobs:
               "  '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate': {\n    post: { fields: ['ok','action','result'], source: 'test' }\n  },\n" +
               "  '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate': {\n    post: { fields: ['ok','action','result'], source: 'test' }\n  },\n");
           }
-
           fs.writeFileSync(p, s);
-
           const schema = 'docs/SCHEMA.md';
           let d = fs.readFileSync(schema, 'utf8');
           d = d.replace('distinct des faits économiques. **Migration 208', 'distinct de market_delegation_audit. **Migration 208');
           fs.writeFileSync(schema, d);
           NODE
-      - name: Regenerate canonical contract and security projections
+      - name: Regenerate canonical projections
+        shell: bash
         run: |
           npm run contract:generate
           npm run security:360
           node scripts/contract-check.js
           npm run security:360:check
-      - name: Commit generated truth and remove this one-shot workflow
+      - name: Commit generated truth and remove workflow
+        shell: bash
         run: |
           git rm .github/workflows/autopilot-projections-refresh-once.yml
           git add scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md docs/SECURITY_360.json docs/SECURITY_360.md docs/SCHEMA.md
