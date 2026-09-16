@@ -6,15 +6,17 @@
  * @criticality   medium
  * @inputs        market_id, listes explicites de product_id/physical_offer_id/service_id
  * @outputs       DiscoveryCard[] — projection de lecture, jamais persistée
- * @depends       db, services/local-stock-service.js, services/providers-service.js, services/catalog-public-view.js
+ * @depends       db, services/local-stock-service.js, services/catalog-market-exposure-service.js, services/market-local-price-resolution-service.js, services/providers-service.js, services/catalog-public-view.js
  * @used-by       services/discovery-rail-service.js
  * @db-read       products
  * @db-read-via:local-stock-service local_stock, local_stock_allocations
+ * @db-read-via:catalog-market-exposure-service product_market_exposure
+ * @db-read-via:market-local-price-resolution-service product_market_price_drafts, markets, product_skus, product_variants
  * @db-read-via:providers-service services, physical_offers, providers
  * @db-write      none
  * @db-txn        single_statement_sufficient
- * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
- * @impact-areas  recommendations, boutique, discovery-rail, category-navigation
+ * @doctrine      docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md, only_LOCAL_ACTIVE_is_buyer_effective
+ * @impact-areas  recommendations, boutique, discovery-rail, category-navigation, market-autonomy, pricing
  * @version       2026-09
  */
 
@@ -40,6 +42,8 @@
 
 const db = require('../db');
 const { isStockExposable } = require('./local-stock-service');
+const { EXPOSURE, getExposure } = require('./catalog-market-exposure-service');
+const { resolveActiveProductMarketPricing } = require('./market-local-price-resolution-service');
 const { publicCatalogVisibilitySql } = require('./catalog-public-view');
 const {
   isServiceExposable, getService,
@@ -71,8 +75,15 @@ function compactCategoryKeys(values = []) {
 }
 
 async function productCard(productId, marketId) {
-  const exposable = await isStockExposable(productId, marketId);
-  if (!exposable) return null;
+  const stockExposable = await isStockExposable(productId, marketId);
+  if (!stockExposable) return null;
+
+  // Le rail local ne doit jamais annoncer « Acheter » pour un Product que la
+  // frontière acheteur du même marché refusera ensuite. L'exposition pays est
+  // possédée par catalog-market-exposure-service ; absence de décision =
+  // DISABLED (fail-closed), exactement comme le Product Detail Contract.
+  const marketExposure = await getExposure(productId, marketId, db);
+  if (marketExposure !== EXPOSURE.ENABLED) return null;
 
   // Un Product du rail local reste exactement un Product public Komerce.
   // Discovery ne possède pas un deuxième gate catalogue : il réutilise la
@@ -80,7 +91,8 @@ async function productCard(productId, marketId) {
   // hero absent. Ainsi « Disponible maintenant » ne peut jamais réintroduire
   // un produit que GET /api/products a volontairement masqué.
   const { rows } = await db.query(
-    `SELECT p.id, p.name, p.image_url, p.price_kmf, p.category, p.promo_pct
+    `SELECT p.id, p.name, p.image_url, p.price_kmf, p.category,
+            p.promo_pct, p.is_promo, p.promo_until
        FROM products p
       WHERE p.id = $1
         AND ${publicCatalogVisibilitySql('p')}`,
@@ -89,6 +101,16 @@ async function productCard(productId, marketId) {
   if (!rows.length) return null;
   const p = rows[0];
 
+  // Même frontière prix que catalogue détail et checkout : dès qu'un marché
+  // est résolu, seul LOCAL_ACTIVE est achetable. Aucun fallback silencieux vers
+  // products.price_kmf. Le prix projeté dans Discovery est donc déjà le prix
+  // acheteur effectif de ce marché.
+  const pricing = await resolveActiveProductMarketPricing(db, {
+    marketId,
+    product: p,
+  });
+  if (!pricing?.buyer_effective) return null;
+
   return {
     kind: CARD_KIND.PRODUCT,
     title: p.name,
@@ -96,13 +118,13 @@ async function productCard(productId, marketId) {
     cta_label: CTA_LABEL[CARD_KIND.PRODUCT],
     cta_action_ref: p.id,
     image_ref: p.image_url,
-    price: p.price_kmf != null ? Number(p.price_kmf) : null,
+    price: pricing.effective_unit_price_kmf,
     zone: null,
     provider_name: null,
     description: null,
     category_keys: compactCategoryKeys([
       p.category,
-      Number(p.promo_pct || 0) > 0 ? 'Soldes' : null,
+      pricing.promo_applied ? 'Soldes' : null,
     ]),
   };
 }
