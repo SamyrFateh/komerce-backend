@@ -11,6 +11,8 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
 const BOOTSTRAP = 'public/dashboards/canonical/js/standalone-shell-bootstrap-v4.js';
+const POLICY = 'public/dashboards/canonical/js/navigation-policy-v4.js';
+const SYNC = 'public/dashboards/canonical/js/navigation-shell-v4-sync.js';
 const HTML_SURFACES = [
   'public/dashboards/canonical/access.html',
   'public/dashboards/canonical/market-autonomy.html',
@@ -36,10 +38,32 @@ describe('Canonical standalone shell V4.1', () => {
     expect(source).toContain("requestJson('/api/admin/dashboard/context')");
     expect(source).toContain('global.KOMERCE_CANONICAL_AUTH_USER = user');
     expect(source).toContain('global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext');
-    expect(source).toContain("doc?.getElementById?.('canonical-admin-navigation')?.remove?.()");
+    expect(source).toContain('querySelectorAll?.(CHROME_SELECTOR)');
     expect(source).toContain('nav.mount({');
     expect(source).toContain('user,');
     expect(source).toContain('adminContext,');
+  });
+
+  test('sidebar, topbar et tabs ont chacun un propriétaire unique partout', () => {
+    const bootstrap = read(BOOTSTRAP);
+    const policy = read(POLICY);
+    const sync = read(SYNC);
+
+    expect(bootstrap).toContain('[data-canonical-shell-role="navigation"]');
+    expect(bootstrap).toContain('[data-canonical-shell-role="topbar"]');
+    expect(bootstrap).toContain('[data-canonical-shell-role="domain-tabs"]');
+    expect(bootstrap).toContain('nodes.filter((node, index) => nodes.indexOf(node) === index)');
+
+    expect(policy).toContain("navigation: '#canonical-admin-navigation");
+    expect(policy).toContain("topbar: '#canonical-admin-topbar");
+    expect(policy).toContain("tabs: '#canonical-admin-domain-tabs");
+    expect(policy).toContain("header.setAttribute('data-canonical-shell-role', 'navigation')");
+    expect(policy).toContain("topbar.setAttribute('data-canonical-shell-role', 'topbar')");
+    expect(policy).toContain("nav.setAttribute('data-canonical-shell-role', 'domain-tabs')");
+    expect(policy).toContain('_dedupeShell: dedupeShell');
+
+    expect(sync).toContain("typeof nav._dedupeShell === 'function'");
+    expect(sync).toContain('if (header === lastHeader) return;');
   });
 
   test('une session expirée repart vers login avec retour vers la page courante', () => {
