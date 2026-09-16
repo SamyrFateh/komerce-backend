@@ -77,7 +77,8 @@ function isExcludedPublicProductRef(value) {
  * La boutique ne promet pas un produit si Komerce ne connaît aucune unité
  * réellement vendable :
  * - produit SKU : au moins un SKU actif, en stock, au prix exploitable ;
- * - SKU fournisseur : identité de commande exacte persistée obligatoire ;
+ * - SKU fournisseur : SOI conforme au contrat canonique minimal
+ *   (supplier_unit_ref + provider + version + payload non vide) ;
  * - produit legacy sans variante : stock produit disponible ;
  * - produit legacy à variantes : au moins une variante disponible.
  *
@@ -99,10 +100,16 @@ function sellableCatalogUnitSql(alias = 'p') {
            AND (
              COALESCE(sellable_sku.source, 'MANUAL') <> 'SUPPLIER'
              OR (
-               NULLIF(BTRIM(sellable_sku.supplier_unit_ref), '') IS NOT NULL
+               NULLIF(BTRIM(sellable_sku.supplier_sku), '') IS NOT NULL
+               AND NULLIF(BTRIM(sellable_sku.supplier_unit_ref), '') IS NOT NULL
                AND sellable_sku.supplier_order_identity IS NOT NULL
                AND jsonb_typeof(sellable_sku.supplier_order_identity) = 'object'
-               AND NULLIF(BTRIM(sellable_sku.supplier_order_identity->>'provider'), '') IS NOT NULL
+               AND COALESCE(sellable_sku.supplier_order_identity->>'provider', '')
+                   ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
+               AND COALESCE(sellable_sku.supplier_order_identity->>'version', '')
+                   ~ '^[1-9][0-9]*$'
+               AND jsonb_typeof(sellable_sku.supplier_order_identity->'payload') = 'object'
+               AND sellable_sku.supplier_order_identity->'payload' <> '{}'::jsonb
              )
            )
       )
