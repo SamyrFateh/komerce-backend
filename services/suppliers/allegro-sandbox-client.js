@@ -160,6 +160,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
         headers: {
           Authorization: `Bearer ${bearer}`,
           Accept: 'application/vnd.allegro.public.v1+json',
+          'Accept-Language': 'pl-PL',
           'User-Agent': c.userAgent,
           ...(init.headers || {}),
         },
@@ -257,7 +258,6 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     url.search = new URLSearchParams({ limit: String(limit), offset: String(offset) }).toString();
     return authorizedJson(c, url, { method: 'GET' });
   }
-
   return { get, getSellerOrder, searchProducts, createDraftOffer, activateOffer, getPublicationTasks };
 }
 
