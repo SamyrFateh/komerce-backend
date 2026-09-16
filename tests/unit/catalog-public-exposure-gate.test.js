@@ -23,12 +23,20 @@ describe('public catalog route exposure gate', () => {
     expect(productsRoute).toContain("const detailConditions = [publicCatalogVisibilitySql('p', marketCode ? { marketCodeParamIndex: 2 } : {})]");
   });
 
-  test('la fiche canonique utilise la même frontière publique que la grille', () => {
+  test('la fiche canonique market-scoped utilise la même frontière publique que la grille', () => {
     const detailRoute = source('routes/catalog-product-detail.js');
     expect(detailRoute).toContain('publicCatalogVisibilitySql');
-    expect(detailRoute).toContain("marketCode ? { marketCodeParamIndex: 2 } : {}");
+    expect(detailRoute).toContain('if (marketCode)');
+    expect(detailRoute).toContain("publicCatalogVisibilitySql('p', { marketCodeParamIndex: 2 })");
     expect(detailRoute).toContain('AND ${visibilitySql}');
     expect(detailRoute).not.toContain('isProductExposedForMarketCode');
+  });
+
+  test('sans marché, la fiche conserve le contrat historique sans prétendre être Visible dans un pays', () => {
+    const detailRoute = source('routes/catalog-product-detail.js');
+    expect(detailRoute).toContain('const detail = await getProductDetail(db, req.params.id)');
+    expect(detailRoute).toContain('Sans marché, on conserve le contrat historique du détail public');
+    expect(detailRoute).not.toContain("marketCode ? { marketCodeParamIndex: 2 } : {}");
   });
 
   test('le prédicat canonique reste la seule fonction qui construit la clause de visibilité — aucune réimplémentation inline', () => {
