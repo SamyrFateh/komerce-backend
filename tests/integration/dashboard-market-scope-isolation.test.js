@@ -29,6 +29,11 @@ if (!hasIntegrationEnv) {
       if (!req.user || req.user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
       next();
     },
+    requireRole: (roles) => (req, res, next) => {
+      if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
+      if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden' });
+      next();
+    },
   }));
 
   jest.mock('../../services/dashboard-pilotage-market', () => ({
