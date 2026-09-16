@@ -22,6 +22,7 @@ const TOKEN = 'https://allegro.pl.allegrosandbox.pl/auth/oauth/token';
 const KEY = 'allegro_sandbox';
 const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SAFE_PROVIDER_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
 
 function configuration(env) {
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX !== '1') throw new Error('ALLEGRO_SANDBOX_DISABLED');
@@ -53,6 +54,18 @@ function publicationCommandId(value) {
   return id;
 }
 
+function safeProvider422Diagnostic(payload) {
+  const errors = Array.isArray(payload?.errors) ? payload.errors : [];
+  const safe = [];
+  for (const item of errors.slice(0, 5)) {
+    const code = String(item?.code || '').trim();
+    const path = String(item?.path || '').trim();
+    if (!SAFE_PROVIDER_TOKEN_RE.test(code)) continue;
+    safe.push(SAFE_PROVIDER_TOKEN_RE.test(path) ? `${code}@${path}` : code);
+  }
+  return safe.length ? `[${safe.join(',')}]` : '';
+}
+
 function encrypt(token, key) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -79,8 +92,16 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     } catch {
       throw new Error('ALLEGRO_TRANSPORT_UNAVAILABLE');
     }
-    // Never expose provider bodies or fetch errors: they can echo credentials.
-    if (!response.ok) throw new Error(`ALLEGRO_HTTP_${response.status}`);
+    // Never expose provider bodies or free-text errors: they can echo credentials
+    // or seller data. For validation failures we retain only bounded code/path
+    // tokens matching a strict allowlist so operators can diagnose the contract.
+    if (!response.ok) {
+      let diagnostic = '';
+      if (response.status === 422) {
+        try { diagnostic = safeProvider422Diagnostic(await response.json()); } catch { diagnostic = ''; }
+      }
+      throw new Error(`ALLEGRO_HTTP_${response.status}${diagnostic}`);
+    }
     try { return await response.json(); } catch { throw new Error('ALLEGRO_INVALID_JSON'); }
   }
 
@@ -244,6 +265,7 @@ const client = createClient();
 module.exports = {
   configuration,
   seedConfiguration,
+  safeProvider422Diagnostic,
   createClient,
   get: client.get,
   getSellerOrder: client.getSellerOrder,
