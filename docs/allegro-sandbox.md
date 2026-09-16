@@ -22,6 +22,8 @@ Resources used by Komerce are deliberately bounded:
 - `GET /sale/offers`;
 - `GET /sale/product-offers/{offerId}`;
 - guarded staging seed: product search + seller draft creation;
+- guarded staging publication: `PUT /sale/offer-publication-commands/{commandId}` with hard-coded `ACTIVATE` for explicit offer IDs;
+- publication proof: `GET /sale/offer-publication-commands/{commandId}/tasks`;
 - purchase reconciliation: `GET /order/checkout-forms/{checkoutFormId}`;
 - OAuth `POST /auth/oauth/token` with `grant_type=refresh_token`.
 
@@ -38,7 +40,7 @@ Keep credentials in the server environment, never GitHub CI or a browser:
 - `ALLEGRO_SANDBOX_USER_AGENT` (registered application identifier)
 - `ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY` (independent random 32-byte hex key)
 - `KOMERCE_ALLOW_ALLEGRO_SANDBOX=1` (off by default)
-- `KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED=1` only when seller seed is intentionally enabled in staging
+- `KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED=1` only when seller seed/publication setup is intentionally enabled in staging
 
 Migration 218 must exist. OAuth refresh is serialized across replicas using a
 transaction-scoped PostgreSQL advisory lock. The latest encrypted refresh token
@@ -53,7 +55,7 @@ the encryption key without a deliberate reconnect/migration procedure.
 Required OAuth scopes depend on the operation:
 
 - catalog read / preflight: `allegro:api:sale:offers:read`;
-- guarded seller seed / offer creation: `allegro:api:sale:offers:write`;
+- guarded seller seed, offer creation and explicit sandbox publication: `allegro:api:sale:offers:write`;
 - verified purchase reconciliation: `allegro:api:orders:read`.
 
 A 401 invalidates the local bearer cache; calls are not automatically retried and
@@ -93,8 +95,14 @@ needed). The second also imports through the existing refinery, without full
 snapshot archival or automatic customer publication.
 
 The guarded `--seed=1..3` mode creates seller **draft** offers only. Draft seed is
-not proof of a customer-purchasable offer; activation/publication remains an
-explicit seller-side action before the purchase Golden E2E.
+not proof of a customer-purchasable offer and does not auto-publish anything.
+When a Golden setup deliberately needs a controlled seller offer, the same
+staging-only seed gate exposes an explicit operator action that sends Allegro's
+asynchronous publication command with hard-coded `ACTIVATE` for the exact offer
+ID. The command must then be verified through its task report and the offer must
+be re-read as `ACTIVE` before Komerce imports it. This seller-side activation is
+setup for the sandbox proof; it is not catalog publication inside Komerce and it
+does not open auto-order.
 
 ## Purchasing readiness
 
@@ -122,12 +130,13 @@ still ends at `HARD_STOP`; no external order or payment is executed by preflight
 The first real Allegro purchase proof is deliberately one product, one offer,
 quantity 1.
 
-1. Import/promote an active Allegro Sandbox offer through the normal refinery and catalogue path.
-2. Buy that SKU through Komerce staging and complete the Komerce payment flow until the customer order becomes `ordered`.
-3. Verify that Purchasing creates a PO containing the sold `product_sku_id`, `supplier_unit_ref`, exact SOI and quantity.
-4. From a **separate Allegro Sandbox buyer account**, buy the exact seller offer and complete the Allegro checkout/payment flow.
-5. Obtain the Allegro `checkoutForm.id` for that purchase.
-6. Run:
+1. Reuse/create one guarded seller sandbox draft if necessary, explicitly activate it, prove the publication task succeeded and re-read the offer as `ACTIVE`.
+2. Import/promote that active Allegro Sandbox offer through the normal refinery and catalogue path.
+3. Buy that SKU through Komerce staging and complete the Komerce payment flow until the customer order becomes `ordered`.
+4. Verify that Purchasing creates a PO containing the sold `product_sku_id`, `supplier_unit_ref`, exact SOI and quantity.
+5. From a **separate Allegro Sandbox buyer account**, buy the exact seller offer and complete the Allegro checkout/payment flow.
+6. Obtain the Allegro `checkoutForm.id` for that purchase.
+7. Run:
 
 ```sh
 node scripts/allegro-sandbox-purchase-proof.js PURCHASE_ORDER_ID CHECKOUT_FORM_ID
