@@ -22,9 +22,15 @@ async function createUser(opts = {}) {
   const jti = opts.jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   return { ...u, jti, token: tokenFor(u.id, { jti }) };
 }
-function tokenFor(id, { jti } = {}) {
-  const p = { id }; if (jti) p.jti = jti;
-  return jwt.sign(p, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+function tokenFor(id, { jti, method = 'integration-test' } = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign({
+    id,
+    jti: jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    auth_time: now,
+    amr: [String(method)],
+    token_use: 'session',
+  }, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
 }
 async function revoke(jti) {
   await getDb().query(`INSERT INTO revoked_tokens (jti, expires_at) VALUES ($1, now()+interval '1 hour') ON CONFLICT DO NOTHING`, [jti]);
