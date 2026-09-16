@@ -113,7 +113,9 @@ Contrat :
 - pas de gros pills lourds ;
 - scroll horizontal autorisé sur petit viewport ;
 - le N2 est toujours dérivé d'un domaine N1 visible ;
-- un N2 absent de l'autorité serveur n'est pas affiché.
+- un N2 absent de l'autorité serveur n'est pas affiché ;
+- **aucun onglet décoratif** : chaque N2 visible doit pointer vers une route Canonical réellement rendue ou une section locale réellement présente ;
+- un changement de N2 local ne recharge jamais le document complet.
 
 ## 6. Rôles et autorité
 
@@ -141,6 +143,19 @@ Les Entity 360 héritent du parent métier de leur entrée : Order/Client 360 �
 
 Aucun dashboard ne doit créer sa propre navigation globale parallèle.
 
+### Navigation sans flash
+
+Dans le runtime Admin Canonical chargé par `index.html` :
+
+- un clic N1/N2 vers une autre route `/admin/...` Canonical ne doit pas recharger le document complet ;
+- la vue courante reste visible pendant que la cible est préparée hors DOM ;
+- la cible ne remplace la vue visible qu'après un rendu réussi ;
+- si le rendu cible échoue, l'ancienne vue et l'ancienne URL restent l'état de référence ;
+- les tabs d'ancre (`#...`) utilisent l'historique navigateur et le scroll local, sans remount complet ;
+- Back/Forward doit restaurer la bonne rubrique sans revenir à un shell intermédiaire.
+
+Les pages Canonical encore standalone peuvent conserver une navigation documentaire tant qu'elles ne sont pas intégrées au runtime unique ; cette exception doit rester explicite et bornée.
+
 ## 9. Critères de conformité
 
 Le lot est conforme si :
@@ -152,4 +167,6 @@ Le lot est conforme si :
 5. aucun droit serveur n'est élargi ;
 6. Catalogue et Atelier économique suivent exactement le même chrome ;
 7. les mocks validés sont traduits en contrat de style mesurable ;
-8. les tests empêchent le retour à une top-nav N1 ou à une sidebar locale par dashboard.
+8. les tests empêchent le retour à une top-nav N1 ou à une sidebar locale par dashboard ;
+9. chaque tab visible a une cible réelle prouvée ;
+10. la navigation interne au runtime Canonical est atomique et sans reload document.
