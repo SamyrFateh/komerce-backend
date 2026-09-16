@@ -67,12 +67,16 @@ describe('Canonical Client Router V4.1 — no flash + tabs fonctionnels', () => 
     expect(router.sameRoute(from, to)).toBe(false);
   });
 
-  test('le rendu cible est préparé avant le swap du root visible', () => {
+  test('le rendu cible est préparé avant le commit du root visible', () => {
     const source = read('public/dashboards/canonical/js/canonical-client-router-v4.js');
     const renderIndex = source.indexOf('await app.renderReady(stage, user, adminContext)');
-    const swapIndex = source.indexOf('oldRoot.replaceWith(stage)');
+    const commitCallIndex = source.indexOf('commitStage(doc, oldRoot, stage, user, adminContext, surface, targetUrl)', renderIndex);
+    const commitFunctionIndex = source.indexOf('function commitStage');
+    const swapIndex = source.indexOf('oldRoot.replaceWith(stage)', commitFunctionIndex);
     expect(renderIndex).toBeGreaterThanOrEqual(0);
-    expect(swapIndex).toBeGreaterThan(renderIndex);
+    expect(commitCallIndex).toBeGreaterThan(renderIndex);
+    expect(commitFunctionIndex).toBeGreaterThanOrEqual(0);
+    expect(swapIndex).toBeGreaterThan(commitFunctionIndex);
     expect(source).toContain("global.history.pushState({}, '', targetUrl.href)");
     expect(source).not.toMatch(/global\.location\.href\s*=\s*targetUrl/);
   });
