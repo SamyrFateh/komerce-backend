@@ -93,11 +93,12 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
       throw new Error('ALLEGRO_TRANSPORT_UNAVAILABLE');
     }
     // Never expose provider bodies or free-text errors: they can echo credentials
-    // or seller data. For validation failures we retain only bounded code/path
-    // tokens matching a strict allowlist so operators can diagnose the contract.
+    // or seller data. For provider validation/authorization failures we retain only
+    // bounded code/path tokens matching a strict allowlist so operators can diagnose
+    // the contract without leaking messages, details or seller data.
     if (!response.ok) {
       let diagnostic = '';
-      if (response.status === 422) {
+      if (response.status === 403 || response.status === 422) {
         try { diagnostic = safeProvider422Diagnostic(await response.json()); } catch { diagnostic = ''; }
       }
       throw new Error(`ALLEGRO_HTTP_${response.status}${diagnostic}`);
