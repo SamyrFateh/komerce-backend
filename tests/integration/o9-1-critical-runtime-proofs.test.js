@@ -208,6 +208,7 @@ if (!hasIntegrationEnv) {
       extractCaptureInfo: jest.fn().mockReturnValue({
         status: 'COMPLETED',
         amount_value: amountEur,
+        currency: 'EUR',
         paypal_capture_id: captureId,
         paypal_order_id: paypalOrderId,
         payer_email: 'o9.1@paypal.test',
