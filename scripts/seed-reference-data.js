@@ -142,6 +142,25 @@ async function seedCeilingCapabilities(client, templateId) {
   return { skipped: false, count: eligible.length };
 }
 
+// finance_config est un singleton (id=1) normalement instancié par
+// bootstrap/startup-migrations.js au démarrage réel du serveur (migration
+// 049, colonnes à leurs valeurs par défaut du schéma). La reconstruction
+// from-scratch CI ne passe jamais par ce démarrage — les E2E montent
+// l'app Express directement depuis routes/ — donc sans ce seed la ligne
+// id=1 n'existe simplement pas, et tout ce qui en dépend (taux EUR/AED via
+// utils/rates.js, finance_config lui-même) échoue. Volontairement un
+// simple INSERT ... ON CONFLICT DO NOTHING (comme la migration 049) : on ne
+// touche jamais une ligne déjà là, les valeurs viennent des DEFAULT de la
+// colonne, jamais dupliquées ici.
+async function seedFinanceConfig(client) {
+  if (!(await tableExists(client, 'finance_config'))) return { skipped: true, count: 0 };
+
+  const { rowCount } = await client.query(
+    `INSERT INTO finance_config (id) VALUES (1) ON CONFLICT DO NOTHING`
+  );
+  return { skipped: false, count: rowCount };
+}
+
 async function seedReferenceData(client) {
   const ownClient = !client;
   const connection = client || await db.getClient();
@@ -151,7 +170,8 @@ async function seedReferenceData(client) {
     const capabilities = await seedCapabilities(connection);
     const templateId = await ensureCurrentCeilingTemplate(connection);
     const ceiling = await seedCeilingCapabilities(connection, templateId);
-    return { markets, currencyParities, capabilities, ceiling, templateId };
+    const financeConfig = await seedFinanceConfig(connection);
+    return { markets, currencyParities, capabilities, ceiling, templateId, financeConfig };
   } finally {
     if (ownClient) connection.release();
   }

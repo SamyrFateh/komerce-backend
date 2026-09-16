@@ -5,7 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { signAuthToken } = require('../../utils/auth-session');
 const { CAPABILITIES } = require('../../config/market-delegation-capabilities');
-const { projectAssignment } = require('../../services/market-scope-projector');
+const { projectAssignment, LEGACY_VIEWER_CAPABILITIES } = require('../../services/market-scope-projector');
 const { invalidateCurrencyParityCache } = require('../../utils/currency');
 const { createCleanup, tag, uuid } = require('./e2eDbKit');
 
@@ -193,7 +193,20 @@ async function createMarketDelegationFixture(db) {
   const viewerAMembership = await insertMembership(db, cleanup, {
     assignmentId: assignmentA.id,
     userId: viewerA.id,
-    capabilities: READ_ONLY_CAPABILITIES.filter((capability) => liveCapabilities.includes(capability)),
+    // Deux consommateurs distincts des capacités du viewer, avec des exigences
+    // différentes :
+    //  - market-scope-projector.js (routes legacy dashboards/pricing/operations,
+    //    via operator_market_scopes) exige la présence de la TOTALITÉ de
+    //    LEGACY_VIEWER_CAPABILITIES pour projeter ne serait-ce qu'un scope
+    //    viewer — sans ça, aucun scope n'est projeté du tout (403 partout).
+    //  - resolveAuthorization() (routes market-delegation-* canoniques, ex.
+    //    /team) vérifie les capacités directement sur membership_capabilities,
+    //    sans passer par la projection — team.read (READ_ONLY_CAPABILITIES)
+    //    n'est pas dans LEGACY_VIEWER_CAPABILITIES et serait donc absent si on
+    //    substituait l'une à l'autre au lieu de les union.
+    // D'où l'union des deux listes, pas un remplacement.
+    capabilities: [...new Set([...READ_ONLY_CAPABILITIES, ...LEGACY_VIEWER_CAPABILITIES])]
+      .filter((capability) => liveCapabilities.includes(capability)),
     grantedBy: managerA.id,
   });
   const managerBMembership = await insertMembership(db, cleanup, {
