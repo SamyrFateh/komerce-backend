@@ -4,20 +4,19 @@
     "components.css": 635,
     "desktop.css": 153,
     "checkout-desktop-v2.css": 1,
-    "discovery-desktop-v2.css": 5
+    "discovery-desktop-v2.css": 5,
+    "service-detail.css": 20260916
   },
   "hashes": {
     "base.css": "f8a887b3c13d",
     "components.css": "df9f1d518700",
     "desktop.css": "f4e9471572a0",
     "checkout-desktop-v2.css": "448a3576e613",
-    "discovery-desktop-v2.css": "3709e0397344"
+    "discovery-desktop-v2.css": "3709e0397344",
+    "service-detail.css": "a6ffcc91e38a"
   },
-  "updatedAt": "2026-09-07T11:38:54.089Z",
+  "updatedAt": "2026-09-16T12:22:00.000Z",
   "changedBundles": [
-    "base.css",
-    "components.css",
-    "desktop.css",
-    "discovery-desktop-v2.css"
+    "service-detail.css"
   ]
 }

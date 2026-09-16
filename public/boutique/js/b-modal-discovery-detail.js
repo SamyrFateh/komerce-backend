@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         ui-renderer
  * @owner         public/boutique/js/discovery-rail.js
- * @purpose       Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.
+ * @purpose       Rendre Physical Offer / Service dans l'unique shell #k-modal ; Service possède une surface dédiée et peut handoff vers WhatsApp après création de l'Inquiry.
  * @impact-areas  product-discovery, discovery-rail, modal-layout, desktop, mobile
  * @version       2026-09
  */
@@ -16,20 +16,32 @@ import { sanitize } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
+const SERVICE_STYLE_ID = 'k-service-detail-style';
+const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260916';
 const STORED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
 const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
-let _installed = false;
+let _installedSlot = null;
+let _busInstalled = false;
+
+function ensureServiceDetailStyles() {
+  if (document.getElementById(SERVICE_STYLE_ID)) return;
+  const link = document.createElement('link');
+  link.id = SERVICE_STYLE_ID;
+  link.rel = 'stylesheet';
+  link.href = SERVICE_STYLE_HREF;
+  document.head.appendChild(link);
+}
 
 function kindLabelFor(kind) {
-  return kind === 'physical_offer' ? 'Offre locale' : 'Service';
+  return kind === 'physical_offer' ? 'Offre locale' : 'Service local';
 }
 
 function statusFor(kind) {
-  return kind === 'physical_offer' ? 'Disponible ici' : 'Sur demande';
+  return kind === 'physical_offer' ? 'Disponible ici' : 'Près de vous';
 }
 
-function requestLabelFor(kind) {
-  return kind === 'physical_offer' ? 'Pour quand ?' : 'Pour quand ?';
+function requestLabelFor() {
+  return 'Pour quand ?';
 }
 
 function requestPlaceholderFor(kind) {
@@ -78,6 +90,27 @@ function callbackNotePlaceholderFor(detail = {}) {
   return detail.title
     ? `Ex. Je souhaite échanger à propos de « ${detail.title} »…`
     : 'Ajoutez une précision pour le rappel…';
+}
+
+function buildImage(detail, service = false) {
+  const imageClass = service ? 'k-service-detail-img' : 'k-modal-discovery-img';
+  const fallbackClass = service ? 'k-service-detail-media-fallback' : 'k-modal-discovery-media-fallback';
+  return detail.image_ref
+    ? `<img class="${imageClass}" src="${sanitize(detail.image_ref)}" alt="${sanitize(detail.title)}" loading="lazy" decoding="async">`
+    : `<div class="${fallbackClass}" aria-hidden="true">K</div>`;
+}
+
+function buildProvider(detail) {
+  if (detail.provider_name) {
+    return `<div class="k-modal-discovery-provider">${sanitize(detail.provider_name)}${detail.zone ? ` · ${sanitize(detail.zone)}` : ''}</div>`;
+  }
+  return detail.zone ? `<div class="k-modal-discovery-provider">${sanitize(detail.zone)}</div>` : '';
+}
+
+function buildDescription(detail) {
+  return detail.description
+    ? `<p class="k-modal-discovery-desc">${sanitize(detail.description)}</p>`
+    : '';
 }
 
 function buildActionChooserHTML(kind, ref, actions) {
@@ -134,16 +167,61 @@ function buildContextFormHTML(kind, ref, detail, action) {
   </section>`;
 }
 
-function buildDetailHTML(kind, ref, detail) {
-  const image = detail.image_ref
-    ? `<img class="k-modal-discovery-img" src="${sanitize(detail.image_ref)}" alt="${sanitize(detail.title)}" loading="lazy" decoding="async">`
-    : '<div class="k-modal-discovery-media-fallback" aria-hidden="true">K</div>';
-  const provider = detail.provider_name
-    ? `<div class="k-modal-discovery-provider">${sanitize(detail.provider_name)}${detail.zone ? ` · ${sanitize(detail.zone)}` : ''}</div>`
-    : (detail.zone ? `<div class="k-modal-discovery-provider">${sanitize(detail.zone)}</div>` : '');
-  const description = detail.description
-    ? `<p class="k-modal-discovery-desc">${sanitize(detail.description)}</p>`
-    : '';
+function buildServiceFallbackActions(ref, detail) {
+  const actions = normalizeActions(detail);
+  return `
+    <div class="k-service-detail-fallback">
+      <span class="k-modal-discovery-request-label">Que souhaitez-vous faire ?</span>
+      <div class="k-modal-discovery-actions" aria-label="Actions disponibles">
+        ${buildActionChooserHTML('service', ref, actions)}
+      </div>
+      ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
+    </div>`;
+}
+
+function buildServiceDetailHTML(ref, detail) {
+  ensureServiceDetailStyles();
+  const image = buildImage(detail, true);
+  const provider = buildProvider(detail);
+  const description = buildDescription(detail);
+  const whatsapp = detail.whatsapp_available === true
+    ? `<div class="k-service-detail-conversion">
+        <button class="k-service-detail-whatsapp" type="button"
+          data-discovery-whatsapp
+          data-discovery-kind="service"
+          data-discovery-ref="${sanitize(ref)}">
+          <span class="k-service-detail-whatsapp-mark" aria-hidden="true">↗</span>
+          Discuter sur WhatsApp
+        </button>
+        <p class="k-service-detail-handoff-note">Komerce crée d’abord votre demande et sa référence, puis ouvre la conversation WhatsApp avec le prestataire.</p>
+      </div>`
+    : buildServiceFallbackActions(ref, detail);
+
+  return `
+    <div class="k-service-detail-shell">
+      <div class="k-service-detail-media">${image}</div>
+      <div class="k-service-detail-body">
+        <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
+          <span class="k-modal-discovery-badge k-modal-discovery-kind">Service local</span>
+          <span class="k-modal-discovery-badge">Près de vous</span>
+        </div>
+        <h2 class="k-service-detail-title">${sanitize(detail.title)}</h2>
+        ${provider}
+        ${description}
+        <div class="k-service-detail-divider" aria-hidden="true"></div>
+        <div class="k-service-detail-promise">
+          <strong>Échange direct avec le prestataire</strong>
+          <span>La conversation se fait sur WhatsApp. Komerce garde la demande comme point de référence.</span>
+        </div>
+        ${whatsapp}
+      </div>
+    </div>`;
+}
+
+function buildPhysicalOfferDetailHTML(ref, detail) {
+  const image = buildImage(detail, false);
+  const provider = buildProvider(detail);
+  const description = buildDescription(detail);
   const actions = normalizeActions(detail);
 
   return `
@@ -151,8 +229,8 @@ function buildDetailHTML(kind, ref, detail) {
       <div class="k-modal-discovery-media">${image}</div>
       <div class="k-modal-discovery-body">
         <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
-          <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor(kind))}</span>
-          <span class="k-modal-discovery-badge">${sanitize(statusFor(kind))}</span>
+          <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor('physical_offer'))}</span>
+          <span class="k-modal-discovery-badge">${sanitize(statusFor('physical_offer'))}</span>
         </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
@@ -160,12 +238,18 @@ function buildDetailHTML(kind, ref, detail) {
         <div class="k-modal-discovery-request">
           <span class="k-modal-discovery-request-label">Que souhaitez-vous faire ?</span>
           <div class="k-modal-discovery-actions" aria-label="Actions disponibles">
-            ${buildActionChooserHTML(kind, ref, actions)}
+            ${buildActionChooserHTML('physical_offer', ref, actions)}
           </div>
         </div>
-        ${actions.map(action => buildContextFormHTML(kind, ref, detail, action)).join('')}
+        ${actions.map(action => buildContextFormHTML('physical_offer', ref, detail, action)).join('')}
       </div>
     </div>`;
+}
+
+function buildDetailHTML(kind, ref, detail) {
+  return kind === 'service'
+    ? buildServiceDetailHTML(ref, detail)
+    : buildPhysicalOfferDetailHTML(ref, detail);
 }
 
 export function renderDiscoveryModalDetail(payload) {
@@ -189,7 +273,7 @@ export function clearDiscoveryModalDetail() {
 }
 
 function selectAction(button) {
-  const shell = button.closest('.k-modal-discovery-shell');
+  const shell = button.closest('.k-modal-discovery-shell, .k-service-detail-shell');
   if (!shell) return;
   const action = button.dataset.discoverySelectAction;
   if (!INQUIRY_ACTIONS.includes(action)) return;
@@ -218,7 +302,20 @@ function submitAction(button) {
   requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
 }
 
+function submitWhatsapp(button) {
+  const ref = button.dataset.discoveryRef;
+  if (!ref) return;
+  closeModal({ skipHistoryBack: true });
+  requestDiscovery('service', ref, button, null, 'request', null, 'whatsapp');
+}
+
 function handleAction(event) {
+  const whatsapp = event.target.closest('[data-discovery-whatsapp][data-discovery-ref]');
+  if (whatsapp?.matches('button')) {
+    submitWhatsapp(whatsapp);
+    return;
+  }
+
   const selector = event.target.closest('[data-discovery-select-action]');
   if (selector?.matches('button')) {
     selectAction(selector);
@@ -230,12 +327,15 @@ function handleAction(event) {
 }
 
 export function setupDiscoveryModalDetail() {
-  if (_installed) return;
-  _installed = true;
-
   const slot = document.getElementById(SLOT_ID);
-  if (!slot) return;
-  slot.addEventListener('click', handleAction);
+  if (slot && slot !== _installedSlot) {
+    _installedSlot?.removeEventListener('click', handleAction);
+    slot.addEventListener('click', handleAction);
+    _installedSlot = slot;
+  }
+
+  if (_busInstalled) return;
+  _busInstalled = true;
   bus.on('modal:discovery-opened', renderDiscoveryModalDetail);
   bus.on('modal:closed', clearDiscoveryModalDetail);
 }

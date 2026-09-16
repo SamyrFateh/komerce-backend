@@ -4,7 +4,7 @@
  * @domain        providers-services
  * @layer         adapter
  * @owner         public/boutique/js/providers-services-api.js
- * @purpose       Frontière frontend des mutations providers-services ; le téléphone reste exclusivement dérivé de la session serveur.
+ * @purpose       Frontière frontend des mutations providers-services ; le téléphone requester reste exclusivement dérivé de la session serveur et le handoff WhatsApp reste serveur-owned.
  * @impact-areas  boutique, discovery-rail, providers-services
  * @version       2026-09
  */
@@ -22,6 +22,8 @@ function currentMarketCode() {
  * Crée une Inquiry pour une cible locale. La cible elle-même porte le propos
  * connu ; intent choisit demande ou rappel et requesterNote ne fait que
  * préciser ce contexte. Aucun téléphone provider/requester n'est envoyé.
+ * handoff='whatsapp' demande au backend une URL de conversation traçable,
+ * seulement après création de l'Inquiry.
  */
 export async function createProviderInquiry(
   kind,
@@ -29,6 +31,7 @@ export async function createProviderInquiry(
   requestedWindow = null,
   intent = 'request',
   requesterNote = null,
+  handoff = null,
 ) {
   if (!ref || !['service', 'physical_offer'].includes(kind)) {
     return { ok: false, status: 400, code: 'invalid_target', error: 'Cible invalide' };
@@ -36,6 +39,15 @@ export async function createProviderInquiry(
   const normalizedIntent = String(intent || 'request').trim().toLowerCase();
   if (!['request', 'callback'].includes(normalizedIntent)) {
     return { ok: false, status: 400, code: 'invalid_intent', error: 'Intention invalide' };
+  }
+  const normalizedHandoff = handoff == null || handoff === ''
+    ? null
+    : String(handoff).trim().toLowerCase();
+  if (normalizedHandoff && normalizedHandoff !== 'whatsapp') {
+    return { ok: false, status: 400, code: 'invalid_handoff', error: 'Canal invalide' };
+  }
+  if (normalizedHandoff === 'whatsapp' && kind !== 'service') {
+    return { ok: false, status: 400, code: 'invalid_handoff_target', error: 'WhatsApp réservé aux services' };
   }
 
   const market = currentMarketCode();
@@ -46,6 +58,7 @@ export async function createProviderInquiry(
   body.intent = normalizedIntent;
   if (requestedWindow) body.requested_window = requestedWindow;
   if (requesterNote) body.requester_note = requesterNote;
+  if (normalizedHandoff) body.handoff = normalizedHandoff;
 
   try {
     const response = await fetch(`/api/providers-services/inquiries?market=${encodeURIComponent(market)}`, {
@@ -68,8 +81,15 @@ export async function createProviderInquiry(
     if (!payload?.inquiry?.id) {
       return { ok: false, status: 502, code: 'invalid_response', error: 'Réponse de demande invalide' };
     }
+    if (normalizedHandoff === 'whatsapp' && (!payload?.handoff?.url || payload?.handoff?.channel !== 'whatsapp')) {
+      return { ok: false, status: 502, code: 'invalid_handoff_response', error: 'Réponse WhatsApp invalide' };
+    }
 
-    return { ok: true, inquiry: payload.inquiry };
+    return {
+      ok: true,
+      inquiry: payload.inquiry,
+      handoff: payload.handoff || null,
+    };
   } catch (_) {
     return { ok: false, status: 0, code: 'network_error', error: 'Connexion impossible' };
   }

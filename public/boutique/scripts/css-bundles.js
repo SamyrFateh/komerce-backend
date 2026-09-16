@@ -51,6 +51,11 @@ const BUNDLES = [
     files: ['discovery-desktop-v2'],
     versionFile: 'js/discovery-desktop-style.js',
   },
+  {
+    out: 'service-detail.css',
+    files: ['service-detail'],
+    versionFile: 'js/b-modal-discovery-detail.js',
+  },
 ];
 
 module.exports = { BUNDLES };

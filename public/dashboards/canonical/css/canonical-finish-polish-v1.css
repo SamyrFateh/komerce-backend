@@ -1,0 +1,166 @@
+/*
+ * KOMERCE CANONICAL — FINISH POLISH V1
+ *
+ * Derniere couche strictement presentationnelle du shell Canonical.
+ * Aucun etat metier, endpoint, role, capability ou calcul n'est porte ici.
+ */
+
+body.kmc-shell-v4 {
+  overflow-x: clip;
+}
+
+body.kmc-shell-v4 #canonical-admin-root,
+body.kmc-shell-v4 #market-autonomy-root,
+body.kmc-shell-v4 #market-catalog-root,
+body.kmc-shell-v4 .kmc-dashboard,
+body.kmc-shell-v4 .kmc-workspace,
+body.kmc-shell-v4 .kmc-operations-workspace,
+body.kmc-shell-v4 .kmc-client-index,
+body.kmc-shell-v4 .kmc-entity-shell {
+  min-width: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-inner {
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.kmc-admin-topbar {
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+}
+
+.kmc-admin-domain-tabs {
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 18px;
+  scroll-snap-type: inline proximity;
+}
+
+.kmc-admin-domain-tab {
+  scroll-snap-align: nearest;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-nav {
+  scrollbar-gutter: stable;
+  overscroll-behavior-block: contain;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-home:focus-visible,
+body.kmc-shell-v4 .kmc-admin-settings-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-logout:focus-visible,
+.kmc-admin-domain-tab:focus-visible,
+.kmc-admin-search-input:focus-visible,
+.kmc-admin-topbar .kmc-admin-market-select:focus-visible,
+.kmc-workspace-action:focus-visible,
+.kmc-workspace-nav-link:focus-visible,
+.kmc-access-button:focus-visible {
+  outline: 2px solid #6f7fff;
+  outline-offset: 2px;
+}
+
+.kmc-admin-search,
+.kmc-admin-search-input,
+.kmc-admin-topbar-right,
+.kmc-admin-topbar .kmc-admin-market-control {
+  min-width: 0;
+}
+
+.kmc-dashboard-title,
+.kmc-workspace-title,
+.kmc-access-hero h1,
+.kmc-section-title,
+.kmc-chart-title,
+.kmc-decision-card-label,
+.kmc-summary-card-label,
+.kmc-metric-label {
+  overflow-wrap: anywhere;
+}
+
+.kmc-workspace-nav {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.kmc-table-wrap,
+.kmc-workspace-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kmc-data-table,
+.kmc-workspace-table {
+  min-width: max-content;
+}
+
+@media (max-width: 980px) {
+  body.kmc-shell-v4 .kmc-admin-primary-link {
+    min-height: 44px;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-settings-link,
+  body.kmc-shell-v4 .kmc-admin-logout {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 680px) {
+  .kmc-admin-topbar {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .kmc-admin-domain-tabs {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    scroll-padding-inline: 12px;
+  }
+
+  .kmc-admin-search {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .kmc-admin-topbar-right {
+    flex: 0 0 auto;
+  }
+
+  .kmc-dashboard-header,
+  .kmc-workspace-header,
+  .kmc-access-hero,
+  .kmc-decision-surface-card,
+  .kmc-section,
+  .kmc-alert-panel,
+  .kmc-chart-panel {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .kmc-admin-topbar .kmc-admin-market-select {
+    min-width: 92px;
+    max-width: 104px;
+  }
+
+  .kmc-admin-domain-tabs {
+    gap: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  .kmc-admin-domain-tabs,
+  body.kmc-shell-v4 .kmc-admin-primary-nav,
+  .kmc-table-wrap,
+  .kmc-workspace-table-wrap {
+    scroll-behavior: auto !important;
+  }
+}

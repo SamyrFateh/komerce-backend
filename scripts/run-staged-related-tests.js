@@ -81,6 +81,10 @@ function isBoutiqueUnitTest(file) {
   return /^public\/boutique\/tests\/unit\/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(file);
 }
 
+function workspaceSourceFiles(files, isSource) {
+  return files.filter(isSource);
+}
+
 // Angle mort n°2 : plusieurs tests de "doctrine" ne testent pas un module
 // importe mais lisent une source en texte (fs.readFileSync / un helper
 // read('routes/xxx.js')) pour asserter sur son contenu litteral. Ce couplage
@@ -183,9 +187,12 @@ function directStagedTests(workspace, files) {
 }
 
 function runWorkspace(workspace, files, tracked) {
-  const sources = files.filter(workspace.isSource);
+  const sources = workspaceSourceFiles(files, workspace.isSource);
   const directTests = directStagedTests(workspace, files);
-  const contentMatches = workspace.contentAware ? contentRelatedTests(files, tracked) : [];
+  // Le fallback textuel doit rester dans la frontière du workspace. Sans ce
+  // scope, un fichier Boutique peut faire sélectionner un test racine et
+  // exiger le Jest backend dans un job qui n'installe que le workspace Boutique.
+  const contentMatches = workspace.contentAware ? contentRelatedTests(sources, tracked) : [];
   if (sources.length === 0 && directTests.length === 0 && contentMatches.length === 0) return { ran: false, tests: 0 };
 
   jestInvocation(workspace.cwd);
@@ -280,5 +287,6 @@ module.exports = {
   isRootUnitTest,
   isBoutiqueUnitTest,
   isSchemaOrMigrationChange,
+  workspaceSourceFiles,
   contentReferencesSource,
 };

@@ -37,6 +37,7 @@ const mockCalls = {
   watchlistCandidate: jest.fn(),
   rejectCandidate: jest.fn(),
   promoteCandidate: jest.fn(),
+  setSourceAutopilot: jest.fn(),
   createSupplier: jest.fn(),
   updateSupplier: jest.fn(),
   setSupplierActive: jest.fn(),
@@ -52,6 +53,7 @@ jest.mock('../../services/sourcing-workspace', () => ({
   watchlistCandidate: (...args) => mockCalls.watchlistCandidate(...args),
   rejectCandidate: (...args) => mockCalls.rejectCandidate(...args),
   promoteCandidate: (...args) => mockCalls.promoteCandidate(...args),
+  setSourceAutopilot: (...args) => mockCalls.setSourceAutopilot(...args),
   createSupplier: (...args) => mockCalls.createSupplier(...args),
   updateSupplier: (...args) => mockCalls.updateSupplier(...args),
   setSupplierActive: (...args) => mockCalls.setSupplierActive(...args),
@@ -75,7 +77,7 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockSourcingAllowed = true;
-  mockCalls.buildWorkspace.mockResolvedValue({ scope: { mode: 'global_sourcing' }, summary: {}, portfolio: {}, imports: [], candidates: [], suppliers: [] });
+  mockCalls.buildWorkspace.mockResolvedValue({ scope: { mode: 'global_sourcing' }, summary: {}, portfolio: {}, imports: [], candidates: [], suppliers: [], sources: [] });
   mockCalls.buildHealthDashboard.mockResolvedValue({
     schema_version: 'sourcing-health-dashboard-v1',
     scope: { mode: 'global_sourcing' },
@@ -84,6 +86,7 @@ beforeEach(() => {
   mockCalls.updatePortfolioProduct.mockResolvedValue({ product_ref: 'KPR-000001' });
   mockCalls.scanCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', state: 'scanned' });
   mockCalls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
+  mockCalls.setSourceAutopilot.mockResolvedValue({ source_ref: 'api:cj', autopilot_enabled: true });
   mockCalls.createSupplier.mockResolvedValue({ partner_ref: 'KPT-000001', name: 'Supplier' });
 });
 
@@ -134,6 +137,19 @@ test('mutation candidat délègue candidate_ref et jamais UUID', async () => {
     .send({});
   expect(res.status).toBe(200);
   expect(mockCalls.scanCandidate).toHaveBeenCalledWith('KSC-000001', expect.objectContaining({ id: 'central-sourcing' }));
+});
+
+test.each([
+  ['activate', true],
+  ['deactivate', false],
+])('interrupteur source %s délègue uniquement la référence métier', async (action, enabled) => {
+  mockCalls.setSourceAutopilot.mockResolvedValueOnce({ source_ref: 'api:cj', autopilot_enabled: enabled });
+  const res = await request(app())
+    .post(`/api/admin/workspaces/sourcing/sources/api%3Acj/${action}`)
+    .send({});
+  expect(res.status).toBe(200);
+  expect(mockCalls.setSourceAutopilot).toHaveBeenCalledWith('api:cj', enabled);
+  expect(res.body.action).toBe(`${action === 'activate' ? 'activate' : 'deactivate'}_source_autopilot`);
 });
 
 test('création fournisseur reste dans la frontière sourcing', async () => {

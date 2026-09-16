@@ -8,6 +8,8 @@
 
 let mockDbQuery;
 let mockIsStockExposable;
+let mockGetExposure;
+let mockResolveActiveProductMarketPricing;
 let mockIsServiceExposable, mockGetService;
 let mockIsPhysicalOfferExposable, mockGetPhysicalOffer;
 
@@ -16,6 +18,13 @@ function loadComposer() {
   jest.mock('../../db', () => ({ query: (...a) => mockDbQuery(...a) }));
   jest.mock('../../services/local-stock-service', () => ({
     isStockExposable: (...a) => mockIsStockExposable(...a),
+  }));
+  jest.mock('../../services/catalog-market-exposure-service', () => ({
+    EXPOSURE: Object.freeze({ ENABLED: 'ENABLED', DISABLED: 'DISABLED' }),
+    getExposure: (...a) => mockGetExposure(...a),
+  }));
+  jest.mock('../../services/market-local-price-resolution-service', () => ({
+    resolveActiveProductMarketPricing: (...a) => mockResolveActiveProductMarketPricing(...a),
   }));
   jest.mock('../../services/providers-service', () => ({
     isServiceExposable: (...a) => mockIsServiceExposable(...a),
@@ -29,6 +38,12 @@ function loadComposer() {
 beforeEach(() => {
   mockDbQuery = jest.fn();
   mockIsStockExposable = jest.fn();
+  mockGetExposure = jest.fn().mockResolvedValue('ENABLED');
+  mockResolveActiveProductMarketPricing = jest.fn().mockResolvedValue({
+    buyer_effective: true,
+    effective_unit_price_kmf: 195000,
+    promo_applied: false,
+  });
   mockIsServiceExposable = jest.fn();
   mockGetService = jest.fn();
   mockIsPhysicalOfferExposable = jest.fn();
@@ -42,21 +57,57 @@ const SERVICE_ID = '44444444-4444-4444-4444-444444444444';
 const PROVIDER_ID = '55555555-5555-5555-5555-555555555555';
 
 describe('productCard', () => {
-  it('non exposable -> null, jamais de requête produit inutile', async () => {
+  it('stock local non exposable -> null avant toute autre frontière', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(false);
+
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
+    expect(mockGetExposure).not.toHaveBeenCalled();
     expect(mockDbQuery).not.toHaveBeenCalled();
+    expect(mockResolveActiveProductMarketPricing).not.toHaveBeenCalled();
   });
 
-  it('exposable mais produit introuvable/inactif -> null', async () => {
+  it('stock local exposable mais produit non exposé sur le marché -> null fail-closed', async () => {
+    const c = loadComposer();
+    mockIsStockExposable.mockResolvedValue(true);
+    mockGetExposure.mockResolvedValue('DISABLED');
+
+    expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
+    expect(mockGetExposure).toHaveBeenCalledWith(PRODUCT_ID, MARKET_ID, expect.objectContaining({ query: expect.any(Function) }));
+    expect(mockDbQuery).not.toHaveBeenCalled();
+    expect(mockResolveActiveProductMarketPricing).not.toHaveBeenCalled();
+  });
+
+  it('exposé mais produit public introuvable/inactif -> null', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({ rows: [] });
+
+    expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
+    expect(mockResolveActiveProductMarketPricing).not.toHaveBeenCalled();
+  });
+
+  it('produit public et exposé mais sans prix LOCAL_ACTIVE -> null', async () => {
+    const c = loadComposer();
+    mockIsStockExposable.mockResolvedValue(true);
+    mockDbQuery.mockResolvedValue({
+      rows: [{
+        id: PRODUCT_ID,
+        name: 'Climatiseur 12000 BTU',
+        image_url: 'https://cdn/clim.jpg',
+        price_kmf: 195000,
+        category: 'Tech',
+        promo_pct: 0,
+        is_promo: false,
+        promo_until: null,
+      }],
+    });
+    mockResolveActiveProductMarketPricing.mockResolvedValue(null);
+
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toBeNull();
   });
 
-  it('projette la catégorie catalog et Soldes quand le produit est en promo', async () => {
+  it('projette le prix acheteur pays effectif et Soldes seulement si la promo est réellement appliquée', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
@@ -67,7 +118,14 @@ describe('productCard', () => {
         price_kmf: 195000,
         category: 'Tech',
         promo_pct: 10,
+        is_promo: true,
+        promo_until: null,
       }],
+    });
+    mockResolveActiveProductMarketPricing.mockResolvedValue({
+      buyer_effective: true,
+      effective_unit_price_kmf: 180000,
+      promo_applied: true,
     });
 
     expect(await c.productCard(PRODUCT_ID, MARKET_ID)).toEqual({
@@ -77,12 +135,44 @@ describe('productCard', () => {
       cta_label: 'Acheter',
       cta_action_ref: PRODUCT_ID,
       image_ref: 'https://cdn/clim.jpg',
-      price: 195000,
+      price: 180000,
       zone: null,
       provider_name: null,
       description: null,
       category_keys: ['Tech', 'Soldes'],
     });
+    expect(mockResolveActiveProductMarketPricing).toHaveBeenCalledWith(
+      expect.objectContaining({ query: expect.any(Function) }),
+      expect.objectContaining({
+        marketId: MARKET_ID,
+        product: expect.objectContaining({ id: PRODUCT_ID, price_kmf: 195000 }),
+      })
+    );
+  });
+
+  it('promo_pct global seul ne crée pas un faux badge Soldes si le prix pays ne l applique pas', async () => {
+    const c = loadComposer();
+    mockIsStockExposable.mockResolvedValue(true);
+    mockDbQuery.mockResolvedValue({
+      rows: [{
+        id: PRODUCT_ID,
+        name: 'Climatiseur',
+        image_url: '/p.webp',
+        price_kmf: 195000,
+        category: 'Tech',
+        promo_pct: 10,
+        is_promo: false,
+        promo_until: null,
+      }],
+    });
+    mockResolveActiveProductMarketPricing.mockResolvedValue({
+      buyer_effective: true,
+      effective_unit_price_kmf: 195000,
+      promo_applied: false,
+    });
+
+    const card = await c.productCard(PRODUCT_ID, MARKET_ID);
+    expect(card.category_keys).toEqual(['Tech']);
   });
 });
 
@@ -195,7 +285,7 @@ describe('composeDiscoveryRail', () => {
     expect(await c.composeDiscoveryRail({ marketId: MARKET_ID, productIds: [PRODUCT_ID] })).toEqual([]);
   });
 
-  it('rail mixte conserve les verbes, médias et contexte catégorie source', async () => {
+  it('rail mixte conserve les verbes, médias et contexte catégorie source avec prix Product buyer-ready', async () => {
     const c = loadComposer();
     mockIsStockExposable.mockResolvedValue(true);
     mockDbQuery.mockResolvedValue({
@@ -206,7 +296,14 @@ describe('composeDiscoveryRail', () => {
         price_kmf: 195000,
         category: 'Tech',
         promo_pct: 0,
+        is_promo: false,
+        promo_until: null,
       }],
+    });
+    mockResolveActiveProductMarketPricing.mockResolvedValue({
+      buyer_effective: true,
+      effective_unit_price_kmf: 189000,
+      promo_applied: false,
     });
     mockIsPhysicalOfferExposable.mockResolvedValue(true);
     mockGetPhysicalOffer.mockResolvedValue({
@@ -239,7 +336,7 @@ describe('composeDiscoveryRail', () => {
     });
 
     const product = rail.find(card => card.kind === 'product');
-    expect(product.price).toBe(195000);
+    expect(product.price).toBe(189000);
     expect(product.provider_name).toBeNull();
     expect(product.category_keys).toEqual(['Tech']);
 

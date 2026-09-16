@@ -62,15 +62,39 @@ test('URL Catalogue et anciens points d’entrée convergent vers Canonical avec
 test('runtime charge Catalogue sans importer les vues Legacy ni leurs API', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'catalog-workspace.js'), 'utf8');
+  const controlTower = fs.readFileSync(path.join(CANONICAL, 'js', 'catalog-control-tower.js'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js');
   expect(index).toContain('/dashboards/canonical/js/catalog-workspace-decision.js');
+  expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=1801');
+  expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=1801');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
+  expect(controlTower).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ProductsView|CategoriesView|CatalogApprovalView|ApiClient)\b/);
+  expect(controlTower).not.toMatch(/\b(?:ProductsView|CategoriesView|CatalogApprovalView|ApiClient)\b/);
   expect(source).not.toContain("'/api/products");
   expect(source).not.toContain('/api/admin/boutique-categories');
   expect(source).not.toContain('/api/admin/catalog/approval-queue');
   expect(source).toContain('/api/admin/workspaces/catalog');
+  expect(controlTower).toContain('/api/admin/workspaces/catalog');
+});
+
+test('Control Tower respecte le contrat visuel du mock et conserve la vue avancée', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'catalog-control-tower.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'catalog-control-tower.css'), 'utf8');
+
+  expect(source).toContain('Sources catalogue');
+  expect(source).toContain('La raffinerie en temps réel');
+  expect(source).toContain('En train d’arriver');
+  expect(source).toContain('Catalogue & Boutique');
+  expect(source).toContain('En résumé');
+  expect(source).toContain('Prochains événements');
+  expect(source).toContain('Ajouter une source');
+  expect(source).toContain("new URLSearchParams(root?.location?.search || '').get('view') === 'advanced'");
+  expect(css).toContain('.kmc-ctl-sidebar');
+  expect(css).toContain('.kmc-ctl-source-grid');
+  expect(css).toContain('.kmc-ctl-pipeline');
+  expect(css).toContain('.kmc-ctl-drawer');
 });
 
 test('Catalogue est global central et Product 360 reste le drill-down', () => {

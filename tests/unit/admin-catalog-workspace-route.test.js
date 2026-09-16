@@ -41,7 +41,7 @@ const mockCreateSubcategory = jest.fn();
 const mockUpdateSubcategory = jest.fn();
 const mockDeactivateSubcategory = jest.fn();
 
-jest.mock('../../services/catalog-workspace', () => {
+jest.mock('../../services/catalog-workspace-live-composer', () => {
   class CatalogWorkspaceError extends Error {}
   return {
     CatalogWorkspaceError,
@@ -81,7 +81,7 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCatalogAllowed = true;
-  mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_catalog' }, summary: {}, categories: [], products: [], approval: [] });
+  mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_catalog' }, summary: {}, categories: [], products: [], approval: [], live: {} });
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
   mockDeactivateProduct.mockResolvedValue({ product_ref: 'KPR-000001', deactivated: true });
