@@ -73,6 +73,24 @@ if (!hasIntegrationEnv) {
   const bearer = (t) => ['Authorization', `Bearer ${t}`];
   const NEUTRAL_UUID = '00000000-0000-0000-0000-000000000001';
 
+  async function resetLocalRateLimiters() {
+    const limiters = require('../../middleware/rate-limit');
+    // Supertest peut exposer localhost sous l'une de ces formes selon Node.
+    // Chaque preuve doit partir d'un compteur propre ; le test XREL-02 dédié
+    // accumule ensuite volontairement ses requêtes dans UN même test.
+    const localKeys = ['::ffff:127.0.0.1', '::1', '127.0.0.1'];
+    for (const limiter of Object.values(limiters)) {
+      if (!limiter || typeof limiter.resetKey !== 'function') continue;
+      for (const key of localKeys) {
+        await Promise.resolve(limiter.resetKey(key));
+      }
+    }
+  }
+
+  beforeEach(async () => {
+    await resetLocalRateLimiters();
+  });
+
   // ───────────────────────────────────────────────────────────────────────
   // Volet 1 — Matrice rôle×route (toutes les routes PROTECTED non-admin-only)
   // ───────────────────────────────────────────────────────────────────────
@@ -127,6 +145,9 @@ if (!hasIntegrationEnv) {
       // Échantillon (pas les 100 routes) pour garder le run rapide : 1 route / méthode.
       const sample = targetRoutes.filter((_, i) => i % 7 === 0);
       for (const r of sample) {
+        // Les routes de l'échantillon peuvent partager le même limiter strict :
+        // on isole ici la preuve d'auth de la preuve de throttling.
+        await resetLocalRateLimiters();
         const { method, concretePath } = buildPath(r.key);
         const res = await request(app)[method](concretePath);
         expect(res.status).toBe(401);
