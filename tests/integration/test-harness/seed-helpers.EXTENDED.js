@@ -70,6 +70,24 @@ async function createTestRelais(opts = {}) {
   return rows[0];
 }
 
+async function resolveOrderMarketId(opts = {}) {
+  if (!opts.relais_id) {
+    throw new Error('ITest order requires relais_id so market authority can be resolved');
+  }
+  const { rows } = await getDb().query(
+    `SELECT market_id FROM relais WHERE id = $1 LIMIT 1`,
+    [opts.relais_id]
+  );
+  if (!rows[0]?.market_id) {
+    throw new Error(`ITest relais ${opts.relais_id} has no market authority`);
+  }
+  const relayMarketId = rows[0].market_id;
+  if (opts.market_id && String(opts.market_id) !== String(relayMarketId)) {
+    throw new Error(`ITest order market ${opts.market_id} does not match relais market ${relayMarketId}`);
+  }
+  return relayMarketId;
+}
+
 async function createLegacyProduct(opts = {}) {
   const { rows } = await getDb().query(
     `INSERT INTO products (name, price_kmf, price_eur, stock, inventory_model, is_active)
@@ -100,16 +118,18 @@ async function createSkuProduct(opts = {}) {
 
 async function createPendingOrder(opts = {}) {
   const ref = opts.reference || `ITEST-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  const marketId = await resolveOrderMarketId(opts);
   const { rows } = await getDb().query(
     `INSERT INTO orders
-       (reference, user_id, relais_id, total_kmf, total_eur,
+       (reference, user_id, relais_id, market_id, total_kmf, total_eur,
         payment_mode, payment_status, status, paypal_order_id, cash_ref_code, stripe_payment_id)
-     VALUES ($1,$2,$3,$4,$5,$6::payment_mode,'pending','pending',$7,$8,$9)
+     VALUES ($1,$2,$3,$4,$5,$6,$7::payment_mode,'pending','pending',$8,$9,$10)
      RETURNING *`,
     [
       ref,
       opts.user_id || null,
       opts.relais_id,
+      marketId,
       opts.total_kmf != null ? opts.total_kmf : 10000,
       opts.total_eur != null ? opts.total_eur : 20,
       opts.payment_mode || 'paypal_eur',
@@ -150,6 +170,6 @@ module.exports = {
   createUser, tokenFor, revoke, cleanup,
   // POST-O8 business fixtures
   ITEST_TAG,
-  resolveTestMarketId, createTestRelais, createLegacyProduct, createSkuProduct,
+  resolveTestMarketId, resolveOrderMarketId, createTestRelais, createLegacyProduct, createSkuProduct,
   createPendingOrder, createOrderItem, cleanupBusinessFixtures,
 };
