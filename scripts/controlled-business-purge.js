@@ -53,12 +53,16 @@ const ROOT_CANDIDATES = Object.freeze([
   'shared_lists',
   'shared_list_items',
   'supplier_catalog_imports',
+  'supplier_catalog_sync_checkpoints',
   'sourcing_candidates',
   'sourcing_captures',
   'sourcing_observations',
   'sourcing_candidate_events',
   'sourcing_resolutions',
   'sourcing_offers',
+  'sourcing_canonical_entities',
+  'sourcing_canonical_entity_refs',
+  'sourcing_source_provides',
   'products',
 ]);
 
@@ -84,6 +88,11 @@ const PROTECTED_TABLES = Object.freeze(new Set([
   'market_operator_delegations',
   'loyalty_tiers',
   'pricing_rules',
+  'catalog_exclusions',
+  'catalog_global_access_grants',
+  'catalog_glossary',
+  'sourcing_global_access_grants',
+  'market_payment_providers',
 ]));
 
 const TRANSIENT_HINT_RE = /(order|purchase|payment|refund|invoice|notification|parcel|scan|shipping|basket|cart|sourcing|catalog|product|incident|inventory|outbox|receipt)/i;
