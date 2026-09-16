@@ -189,7 +189,7 @@ function sourceDiscoveryCatalog() {
       label: source.label,
       kind: 'api',
       connector_ready: Boolean(source.active),
-      automation_available: Boolean(source.automation_available),
+      automation_available: Boolean(importDispatch.sourceAutomationDescriptor(source.supplier)),
       reason: source.reason || null,
     })),
     ...(connectors.sources || []).map(source => ({
