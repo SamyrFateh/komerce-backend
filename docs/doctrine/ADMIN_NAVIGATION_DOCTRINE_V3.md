@@ -143,6 +143,17 @@ Les Entity 360 héritent du parent métier de leur entrée : Order/Client 360 �
 
 Aucun dashboard ne doit créer sa propre navigation globale parallèle.
 
+### Propriétaire unique et déduplication
+
+Le shell applique un contrat **single-owner** :
+
+- au plus **une** navigation/sidebar canonique dans le document ;
+- au plus **une** topbar transverse ;
+- au plus **un** conteneur N2 horizontal ;
+- tout remount, changement de route ou bootstrap standalone supprime les projections orphelines avant de reconstruire le chrome courant ;
+- la déduplication se fait par rôle de shell (`navigation`, `topbar`, `domain-tabs`) et non uniquement par ID DOM ;
+- la présence de deux éléments jouant le même rôle est une non-conformité, même si un seul est visuellement apparent.
+
 ### Navigation sans flash
 
 Dans le runtime Admin Canonical chargé par `index.html` :
@@ -154,7 +165,7 @@ Dans le runtime Admin Canonical chargé par `index.html` :
 - les tabs d'ancre (`#...`) utilisent l'historique navigateur et le scroll local, sans remount complet ;
 - Back/Forward doit restaurer la bonne rubrique sans revenir à un shell intermédiaire.
 
-Les pages Canonical encore standalone peuvent conserver une navigation documentaire tant qu'elles ne sont pas intégrées au runtime unique ; cette exception doit rester explicite et bornée.
+Les pages Canonical encore standalone peuvent conserver une navigation documentaire tant qu'elles ne sont pas intégrées au runtime unique ; cette exception doit rester explicite et bornée. **Elles doivent toutefois résoudre la session et remonter le shell V4 avec l'utilisateur authentifié et son contexte serveur avant d'être considérées conformes. Un shell anonyme ou une page Canonical sans issue de navigation est interdit.**
 
 ## 9. Critères de conformité
 
@@ -169,4 +180,6 @@ Le lot est conforme si :
 7. les mocks validés sont traduits en contrat de style mesurable ;
 8. les tests empêchent le retour à une top-nav N1 ou à une sidebar locale par dashboard ;
 9. chaque tab visible a une cible réelle prouvée ;
-10. la navigation interne au runtime Canonical est atomique et sans reload document.
+10. la navigation interne au runtime Canonical est atomique et sans reload document ;
+11. toute entrée Canonical standalone remonte le shell après résolution de la session et ne peut jamais devenir un cul-de-sac de navigation ;
+12. sidebar, topbar et N2 respectent chacun le contrat single-owner, sans doublon DOM latent.
