@@ -75,6 +75,16 @@ async function restoreScans() {
   await pool.query('ALTER TABLE scans_hidden RENAME TO scans');
 }
 
+async function resolveKmMarketId() {
+  const { rows } = await pool.query(
+    `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+  );
+  if (!rows[0]) {
+    throw new Error('TXG-03 requires canonical active market KM');
+  }
+  return rows[0].id;
+}
+
 async function resetOrderState() {
   // Ré-assure l'existence de la fixture order/order_items : le mode
   // 'factory' de TXG-04 exécute TRUNCATE orders CASCADE de façon
@@ -87,6 +97,7 @@ async function resetOrderState() {
   // order_comments.author_id de la route auto-prepare. On le réhydrate ici
   // aussi pour ne pas dépendre de l'ordre d'exécution des suites jest (le
   // séquenceur par défaut ne garantit aucun ordre stable entre fichiers).
+  const marketId = await resolveKmMarketId();
   await pool.query(`
     INSERT INTO users (id, full_name, email, role)
     VALUES ('${HUB_USER_ID}', 'Hub Agent Test', 'hub-test@komerce.test', 'agent_hub')
@@ -98,20 +109,33 @@ async function resetOrderState() {
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address)
-    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni')
-    ON CONFLICT (id) DO NOTHING;
-  `);
+    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', $1)
+    ON CONFLICT (id) DO UPDATE SET market_id = EXCLUDED.market_id;
+  `, [marketId]);
   await pool.query(`
-    INSERT INTO orders (id, reference, relais_id, total_kmf, payment_mode, status)
-    VALUES ($1, 'KOM-TEST-TXG03', '00000000-0000-0000-0000-0000000000a1', 10000, 'cash_relais', 'preparation')
-    ON CONFLICT (id) DO UPDATE SET status = 'preparation'
-  `, [ORDER_ID]);
+    INSERT INTO orders (id, reference, relais_id, market_id, total_kmf, payment_mode, status)
+    VALUES ($1, 'KOM-TEST-TXG03', '00000000-0000-0000-0000-0000000000a1', $2, 10000, 'cash_relais', 'preparation')
+    ON CONFLICT (id) DO UPDATE SET
+      status = 'preparation',
+      relais_id = EXCLUDED.relais_id,
+      market_id = EXCLUDED.market_id
+  `, [ORDER_ID, marketId]);
   await pool.query(`
     INSERT INTO order_items (id, order_id, product_id, price_kmf, quantity)
     VALUES ('00000000-0000-0000-0000-0000000000d1', $1, '00000000-0000-0000-0000-0000000000b1', 10000, 1)
     ON CONFLICT (id) DO UPDATE SET quantity = 1
   `, [ORDER_ID]);
+
+  const { rows: [authority] } = await pool.query(`
+    SELECT o.market_id AS order_market_id, r.market_id AS relais_market_id
+      FROM orders o
+      JOIN relais r ON r.id = o.relais_id
+     WHERE o.id = $1
+  `, [ORDER_ID]);
+  if (!authority || String(authority.order_market_id) !== String(authority.relais_market_id)) {
+    throw new Error('TXG-03 fixture violates order/relais market authority');
+  }
 
   // Nettoyer tout colis / assignation créés par des runs précédents
   await pool.query(`
