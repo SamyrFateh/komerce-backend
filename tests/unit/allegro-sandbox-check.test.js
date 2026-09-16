@@ -1,6 +1,6 @@
 'use strict';
 const {
-  run, seedCount, createdOfferId, seedOfferIds, SEED_EXTERNAL_IDS,
+  run, seedCount, createdOfferId, seedOfferIds, selectSellerSettings, prepareOfferIds, SEED_EXTERNAL_IDS,
 } = require('../../scripts/allegro-sandbox-check');
 const dispatch = require('../../services/sourcing-import-dispatch');
 const connector = require('../../services/suppliers/connectors/allegro-connector');
@@ -24,6 +24,39 @@ test('default check reads without importing or claiming purchase, notification o
     purchase_confirmed: false, notification_verified: false, invoice_verified: false,
   });
   expect(d.importCatalog).not.toHaveBeenCalled();
+});
+
+test('seller settings select a physical shipping rate and fail closed when any prerequisite is missing', () => {
+  const selected = selectSellerSettings({
+    shipping_rates: [{ id: 'electronic', type: 'ELECTRONIC' }, { id: 'physical', type: 'PHYSICAL' }],
+    return_policies: [{ id: 'return' }],
+    implied_warranties: [{ id: 'implied' }],
+  });
+  expect(selected).toEqual({
+    shipping_rate_id: 'physical', return_policy_id: 'return', implied_warranty_id: 'implied',
+  });
+  expect(() => selectSellerSettings({ shipping_rates: [], return_policies: [], implied_warranties: [] }))
+    .toThrow('SELLER_SETTINGS_MISSING_SHIPPING_RATE_RETURN_POLICY_IMPLIED_WARRANTY');
+});
+
+test('seller preparation binds existing settings and skips already active offers', async () => {
+  const api = {
+    getSellerSettings: jest.fn().mockResolvedValue({
+      shipping_rates: [{ id: 'ship', type: 'PHYSICAL' }],
+      return_policies: [{ id: 'ret' }],
+      implied_warranties: [{ id: 'imp' }],
+    }),
+    get: jest.fn()
+      .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
+      .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
+    completeSeedOffer: jest.fn().mockResolvedValue({ offer_id: '123', delivery_bound: true }),
+  };
+  const proof = await prepareOfferIds(['123', '456'], api);
+  expect(api.completeSeedOffer).toHaveBeenCalledWith('123', {
+    shippingRateId: 'ship', returnPolicyId: 'ret', impliedWarrantyId: 'imp',
+  });
+  expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
+  expect(proof.offers[1]).toEqual({ offer_id: '456', skipped: true, reason: 'ALREADY_ACTIVE' });
 });
 
 test('explicit activation waits for observed ACTIVE seller state before canonical reread', async () => {
@@ -52,6 +85,68 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
   expect(api.activateOffer).toHaveBeenCalledWith('123');
   expect(api.getPublicationTasks).toHaveBeenCalledWith('123e4567-e89b-42d3-a456-426614174000');
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
+});
+
+test('one-command Golden reuses seed, prepares seller prerequisites, activates and imports', async () => {
+  const d = deps();
+  let detailReads = 0;
+  const api = {
+    seedConfiguration: jest.fn(),
+    get: jest.fn(async (path, params) => {
+      if (path === '/sale/offers') {
+        return { offers: [{ id: '123', external: { id: params['external.id'] } }] };
+      }
+      if (path === '/sale/product-offers/123') {
+        detailReads += 1;
+        return { publication: { status: detailReads >= 3 ? 'ACTIVE' : 'INACTIVE' } };
+      }
+      throw new Error(`unexpected ${path}`);
+    }),
+    getSellerSettings: jest.fn().mockResolvedValue({
+      shipping_rates: [{ id: '11111111-1111-4111-8111-111111111111', type: 'PHYSICAL' }],
+      return_policies: [{ id: '22222222-2222-4222-8222-222222222222' }],
+      implied_warranties: [{ id: '33333333-3333-4333-8333-333333333333' }],
+    }),
+    completeSeedOffer: jest.fn().mockResolvedValue({
+      offer_id: '123', delivery_bound: true, return_policy_bound: true, implied_warranty_bound: true,
+    }),
+    activateOffer: jest.fn().mockResolvedValue({
+      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+    }),
+    getPublicationTasks: jest.fn().mockResolvedValue({
+      tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
+    }),
+  };
+  const env = { KOMERCE_ENV: 'staging', KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED: '1' };
+  const report = await run(['--golden'], {
+    ...d, client: api, env, activationPollMs: 0, sleepImpl: jest.fn(),
+  });
+  expect(report).toMatchObject({
+    mode: 'golden', seeded: 1, offer_ids: ['123'], accepted: 1,
+    preparation: { offers: [{ offer_id: '123', delivery_bound: true }] },
+    activations: [{ offer_id: '123', publication_status: 'ACTIVE' }],
+  });
+  expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
+  expect(api.activateOffer).toHaveBeenCalledTimes(1);
+  expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
+  expect(d.importCatalog).toHaveBeenCalledTimes(1);
+});
+
+test('Golden stops before activation and import when seller prerequisites are absent', async () => {
+  const d = deps();
+  const api = {
+    seedConfiguration: jest.fn(),
+    get: jest.fn().mockResolvedValue({ offers: [{ id: '123', external: { id: SEED_EXTERNAL_IDS[0] } }] }),
+    getSellerSettings: jest.fn().mockResolvedValue({ shipping_rates: [], return_policies: [], implied_warranties: [] }),
+    completeSeedOffer: jest.fn(),
+    activateOffer: jest.fn(),
+  };
+  await expect(run(['--golden'], { ...d, client: api, env: {} }))
+    .rejects.toThrow('SELLER_SETTINGS_MISSING');
+  expect(api.completeSeedOffer).not.toHaveBeenCalled();
+  expect(api.activateOffer).not.toHaveBeenCalled();
+  expect(d.fetchProducts).not.toHaveBeenCalled();
+  expect(d.importCatalog).not.toHaveBeenCalled();
 });
 
 test('failed seller publication exposes only bounded provider codes and never free text', async () => {
@@ -91,6 +186,7 @@ test('bad arguments and invalid import batch cannot mutate catalog', async () =>
   await expect(run([], d)).rejects.toThrow('Usage');
   await expect(run(Array(101).fill('123'), d)).rejects.toThrow('Usage');
   await expect(run(['--execute'], d)).rejects.toThrow('OFFER_ID');
+  await expect(run(['--golden', '123'], d)).rejects.toThrow('--golden');
   await expect(run(['--seed=1', '123'], { ...d, client: {} })).rejects.toThrow('mutuellement exclusifs');
   d.fetchProducts.mockResolvedValue({ products: [], invalid: [] });
   await expect(run(['--import', '123'], d)).rejects.toThrow('VALID_BATCH');
