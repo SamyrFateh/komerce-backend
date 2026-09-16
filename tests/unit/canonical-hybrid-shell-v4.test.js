@@ -50,10 +50,12 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const shell = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
     const v3 = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js?v=2001');
     const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2101');
+    const sync = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
     expect(theme).toBeGreaterThanOrEqual(0);
     expect(shell).toBeGreaterThan(theme);
     expect(v3).toBeGreaterThanOrEqual(0);
     expect(v4).toBeGreaterThan(v3);
+    expect(sync).toBeGreaterThan(v4);
   });
 
   test('le CSS porte strictement le shell des mocks validés', () => {
@@ -81,10 +83,22 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(source).toContain("data-shell', 'hybrid-sidebar-tabs");
   });
 
+  test('le sync V4 est syntaxiquement valide et resynchronise après remplacement du header', () => {
+    const source = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
+    expect(() => new vm.Script(source)).not.toThrow();
+    expect(source).toContain('let lastHeader = null');
+    expect(source).toContain("'canonical-admin-topbar'");
+    expect(source).toContain("'canonical-admin-domain-tabs'");
+    expect(source).toContain('nav._applyHybridShell');
+    expect(source).toContain('MutationObserver');
+  });
+
   test('le shell n’invente aucune autorité métier', () => {
     const js = read('public/dashboards/canonical/js/navigation-policy-v4.js');
+    const sync = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     const css = read('public/dashboards/canonical/css/canonical-shell-v4.css');
     expect(js).not.toMatch(/\/api\//);
+    expect(sync).not.toMatch(/\/api\//);
     expect(js).not.toMatch(/price_kmf|supplier_order_identity|UPDATE |INSERT INTO/i);
     expect(css).not.toMatch(/\/api\//);
     expect(css).not.toMatch(/market_id|price_kmf|supplier_order_identity/i);
