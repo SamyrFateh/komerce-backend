@@ -23,6 +23,12 @@ const KEY = 'allegro_sandbox';
 const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_PROVIDER_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
+const GOLDEN_PRODUCER_NAME = 'KOMERCE GOLDEN TEST ONLY';
+const GOLDEN_PRODUCER_DATA = Object.freeze({
+  tradeName: 'Komerce Golden Sandbox Manufacturer',
+  address: Object.freeze({ countryCode: 'PL', street: 'Testowa 1', postalCode: '00-001', city: 'Warszawa' }),
+  contact: Object.freeze({ email: 'sandbox-golden@komerce.co' }),
+});
 
 function configuration(env) {
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX !== '1') throw new Error('ALLEGRO_SANDBOX_DISABLED');
@@ -70,6 +76,13 @@ function safeSettingRows(rows, { includeType = false } = {}) {
       return out;
     })
     .filter(Boolean);
+}
+
+function requiredProductParameterIds(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter(row => row?.requiredForProduct === true)
+    .map(row => String(row.id || '').trim())
+    .filter(id => /^[0-9]{1,20}$/.test(id));
 }
 
 function safeProvider422Diagnostic(payload) {
@@ -211,7 +224,50 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     return { ...payload, products };
   }
 
-  async function createDraftOffer({ productId, name, externalId, pricePln, stock = 10 }) {
+  async function inspectProductPublishability(productId) {
+    const c = seedConfiguration(env);
+    const id = String(productId || '').trim();
+    if (!/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_SEED_PRODUCT_ID_INVALID');
+    const product = await authorizedJson(c, new URL(`/sale/products/${id}`, API), { method: 'GET' });
+    const categoryId = String(product?.category?.id || '').trim();
+    if (!/^[0-9]{1,20}$/.test(categoryId)) throw new Error('ALLEGRO_SANDBOX_SEED_CATEGORY_ID_MISSING');
+    const category = await authorizedJson(c, new URL(`/sale/categories/${categoryId}/parameters`, API), { method: 'GET' });
+    const required = requiredProductParameterIds(category?.parameters);
+    const present = new Set((Array.isArray(product?.parameters) ? product.parameters : [])
+      .map(row => String(row?.id || '').trim()));
+    const missing = required.filter(idValue => !present.has(idValue));
+    const productSafety = product?.productSafety || {};
+    const imageCount = Array.isArray(product?.images) ? product.images.length : 0;
+    const safetyInformationPresent = Boolean(productSafety.safetyInformation || product?.safetyInformation);
+    return {
+      product_id: id,
+      category_id: categoryId,
+      image_count: imageCount,
+      safety_information_present: safetyInformationPresent,
+      responsible_producer_present: Boolean(productSafety.responsibleProducer || product?.responsibleProducer),
+      missing_required_product_parameter_ids: missing,
+      publishable: imageCount > 0 && safetyInformationPresent && missing.length === 0,
+    };
+  }
+
+  async function ensureGoldenResponsibleProducer() {
+    const c = seedConfiguration(env);
+    const listUrl = new URL('/sale/responsible-producers', API);
+    listUrl.search = new URLSearchParams({ limit: '1000', offset: '0' }).toString();
+    const listed = await authorizedJson(c, listUrl, { method: 'GET' });
+    const matches = (Array.isArray(listed?.responsibleProducers) ? listed.responsibleProducers : [])
+      .filter(row => row?.name === GOLDEN_PRODUCER_NAME && UUID_RE.test(String(row?.id || '').toLowerCase()));
+    if (matches.length > 1) throw new Error('ALLEGRO_SANDBOX_GOLDEN_PRODUCER_AMBIGUOUS');
+    if (matches.length === 1) return { id: String(matches[0].id).toLowerCase(), created: false };
+    const created = await authorizedJson(c, new URL('/sale/responsible-producers', API), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify({ name: GOLDEN_PRODUCER_NAME, producerData: GOLDEN_PRODUCER_DATA }),
+    });
+    return { id: sellerSettingId(created?.id, 'GOLDEN_PRODUCER'), created: true };
+  }
+
+  async function createDraftOffer({ productId, name, externalId, pricePln, stock = 10, responsibleProducerId }) {
     const c = seedConfiguration(env);
     const id = String(productId || '').trim();
     const title = String(name || '').trim();
@@ -219,11 +275,12 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     const price = Number(pricePln);
     if (!/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_SEED_PRODUCT_ID_INVALID');
     if (title.length < 3 || title.length > 75) throw new Error('ALLEGRO_SANDBOX_SEED_NAME_INVALID');
-    if (!/^komerce-sandbox-seed-[1-3]$/.test(external)) throw new Error('ALLEGRO_SANDBOX_SEED_EXTERNAL_ID_INVALID');
+    if (!/^komerce-sandbox-publishable-seed-[1-3]$/.test(external)) throw new Error('ALLEGRO_SANDBOX_SEED_EXTERNAL_ID_INVALID');
     if (!Number.isFinite(price) || price <= 0 || price > 1000000) throw new Error('ALLEGRO_SANDBOX_SEED_PRICE_INVALID');
     if (!Number.isSafeInteger(stock) || stock < 1 || stock > 1000) throw new Error('ALLEGRO_SANDBOX_SEED_STOCK_INVALID');
+    const producer = sellerSettingId(responsibleProducerId, 'GOLDEN_PRODUCER');
     const payload = {
-      productSet: [{ product: { id } }],
+      productSet: [{ product: { id }, responsibleProducer: { type: 'ID', id: producer } }],
       name: title,
       external: { id: external },
       sellingMode: { price: { amount: price.toFixed(2), currency: 'PLN' } },
@@ -252,12 +309,13 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     };
   }
 
-  async function completeSeedOffer(offerId, { shippingRateId, returnPolicyId, impliedWarrantyId }) {
+  async function completeSeedOffer(offerId, { shippingRateId, returnPolicyId, impliedWarrantyId, responsibleProducerId }) {
     const c = seedConfiguration(env);
     const id = publicationOfferId(offerId);
     const shipping = sellerSettingId(shippingRateId, 'SHIPPING_RATE');
     const returns = sellerSettingId(returnPolicyId, 'RETURN_POLICY');
     const implied = sellerSettingId(impliedWarrantyId, 'IMPLIED_WARRANTY');
+    const producer = sellerSettingId(responsibleProducerId, 'GOLDEN_PRODUCER');
 
     const current = await authorizedJson(c, new URL(`/sale/product-offers/${id}`, API), { method: 'GET' });
     const productId = String(current?.productSet?.[0]?.product?.id || '').trim();
@@ -267,7 +325,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     // product data, including GPSR information when Allegro's product catalog has it.
     // We only bind seller-owned settings that already exist on this account.
     const payload = {
-      productSet: [{ product: { id: productId } }],
+      productSet: [{ product: { id: productId }, responsibleProducer: { type: 'ID', id: producer } }],
       delivery: { shippingRates: { id: shipping } },
       afterSalesServices: {
         impliedWarranty: { id: implied },
@@ -325,6 +383,8 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     get,
     getSellerOrder,
     searchProducts,
+    inspectProductPublishability,
+    ensureGoldenResponsibleProducer,
     createDraftOffer,
     getSellerSettings,
     completeSeedOffer,
@@ -339,10 +399,14 @@ module.exports = {
   seedConfiguration,
   safeProvider422Diagnostic,
   safeSettingRows,
+  requiredProductParameterIds,
+  GOLDEN_PRODUCER_NAME,
   createClient,
   get: client.get,
   getSellerOrder: client.getSellerOrder,
   searchProducts: client.searchProducts,
+  inspectProductPublishability: client.inspectProductPublishability,
+  ensureGoldenResponsibleProducer: client.ensureGoldenResponsibleProducer,
   createDraftOffer: client.createDraftOffer,
   getSellerSettings: client.getSellerSettings,
   completeSeedOffer: client.completeSeedOffer,

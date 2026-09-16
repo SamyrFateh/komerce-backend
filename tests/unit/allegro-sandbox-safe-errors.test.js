@@ -15,6 +15,7 @@ const env = () => ({
 });
 
 const ok = data => ({ ok: true, json: async () => data });
+const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
 const token = () => ({ access_token: 'access', refresh_token: 'refresh', expires_in: 3600, token_type: 'bearer' });
 
 function dbImpl() {
@@ -64,16 +65,18 @@ test('422 error exposes only sanitized diagnostic and never provider free text',
   await expect(client.createDraftOffer({
     productId: 'abc-123',
     name: 'Komerce Sandbox Seed Product',
-    externalId: 'komerce-sandbox-seed-1',
+    externalId: 'komerce-sandbox-publishable-seed-1',
     pricePln: 29.9,
     stock: 10,
+    responsibleProducerId: PRODUCER_ID,
   })).rejects.toThrow('ALLEGRO_HTTP_422[VALIDATION_ERROR@sellingMode.format]');
   await client.createDraftOffer({
     productId: 'abc-123',
     name: 'Komerce Sandbox Seed Product',
-    externalId: 'komerce-sandbox-seed-1',
+    externalId: 'komerce-sandbox-publishable-seed-1',
     pricePln: 29.9,
     stock: 10,
+    responsibleProducerId: PRODUCER_ID,
   }).catch(error => {
     expect(error.message).not.toMatch(/seller secret|do not leak/i);
   });
@@ -99,16 +102,18 @@ test('403 error exposes only sanitized provider code/path and never free text', 
   await expect(client.createDraftOffer({
     productId: 'abc-123',
     name: 'Komerce Sandbox Seed Product',
-    externalId: 'komerce-sandbox-seed-1',
+    externalId: 'komerce-sandbox-publishable-seed-1',
     pricePln: 29.9,
     stock: 10,
+    responsibleProducerId: PRODUCER_ID,
   })).rejects.toThrow('ALLEGRO_HTTP_403[AccessDeniedException@sale.productOffers]');
   await client.createDraftOffer({
     productId: 'abc-123',
     name: 'Komerce Sandbox Seed Product',
-    externalId: 'komerce-sandbox-seed-1',
+    externalId: 'komerce-sandbox-publishable-seed-1',
     pricePln: 29.9,
     stock: 10,
+    responsibleProducerId: PRODUCER_ID,
   }).catch(error => {
     expect(error.message).not.toMatch(/seller data|missing or insufficient/i);
   });
