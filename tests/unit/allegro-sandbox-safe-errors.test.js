@@ -78,3 +78,38 @@ test('422 error exposes only sanitized diagnostic and never provider free text',
     expect(error.message).not.toMatch(/seller secret|do not leak/i);
   });
 });
+
+test('403 error exposes only sanitized provider code/path and never free text', async () => {
+  const fetchImpl = jest.fn(async url => {
+    if (url.includes('/auth/')) return ok(token());
+    return {
+      ok: false,
+      status: 403,
+      json: async () => ({
+        errors: [{
+          code: 'AccessDeniedException',
+          path: 'sale.productOffers',
+          userMessage: 'seller data must stay private',
+          message: 'missing or insufficient authorization',
+        }],
+      }),
+    };
+  });
+  const client = createClient({ env: env(), dbImpl: dbImpl(), fetchImpl, now: () => 0 });
+  await expect(client.createDraftOffer({
+    productId: 'abc-123',
+    name: 'Komerce Sandbox Seed Product',
+    externalId: 'komerce-sandbox-seed-1',
+    pricePln: 29.9,
+    stock: 10,
+  })).rejects.toThrow('ALLEGRO_HTTP_403[AccessDeniedException@sale.productOffers]');
+  await client.createDraftOffer({
+    productId: 'abc-123',
+    name: 'Komerce Sandbox Seed Product',
+    externalId: 'komerce-sandbox-seed-1',
+    pricePln: 29.9,
+    stock: 10,
+  }).catch(error => {
+    expect(error.message).not.toMatch(/seller data|missing or insufficient/i);
+  });
+});
