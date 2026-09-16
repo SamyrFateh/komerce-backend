@@ -25,6 +25,7 @@ const SEED_PRICES = Object.freeze([29.90, 49.90, 79.90]);
 const SEED_EXTERNAL_IDS = Object.freeze(['komerce-sandbox-seed-1', 'komerce-sandbox-seed-2', 'komerce-sandbox-seed-3']);
 const ACTIVATION_ATTEMPTS = 10;
 const ACTIVATION_POLL_MS = 1000;
+const SAFE_TASK_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
 
 function seedCount(argv) {
   const raw = argv.find(arg => arg.startsWith('--seed='));
@@ -82,9 +83,10 @@ async function seedOfferIds(count, api = sandboxClient, env = process.env) {
 function sanitizedPublicationTasks(payload) {
   return (Array.isArray(payload?.tasks) ? payload.tasks : []).slice(0, 20).map(task => ({
     offer_id: String(task?.offer?.id || task?.offerId || ''),
-    status: task?.status ? String(task.status) : null,
+    status: SAFE_TASK_TOKEN_RE.test(String(task?.status || '').trim()) ? String(task.status).trim() : null,
     error_codes: (Array.isArray(task?.errors) ? task.errors : []).slice(0, 10)
-      .map(error => String(error?.code || '')).filter(Boolean),
+      .map(error => String(error?.code || '').trim())
+      .filter(code => SAFE_TASK_TOKEN_RE.test(code)),
   }));
 }
 
@@ -118,7 +120,9 @@ async function activateOfferIds(ids, api = sandboxClient, {
     const tasks = sanitizedPublicationTasks(taskPayload);
     if (publicationStatus !== 'ACTIVE') {
       const taskStatus = tasks.map(task => task.status).filter(Boolean).join('_') || 'NO_TASK_STATUS';
-      throw new Error(`ALLEGRO_SANDBOX_ACTIVATION_NOT_ACTIVE_${id}_${publicationStatus}_${taskStatus}`);
+      const errorCodes = [...new Set(tasks.flatMap(task => task.error_codes))].slice(0, 10);
+      const diagnostic = errorCodes.length ? errorCodes.join('_') : 'NO_ERROR_CODE';
+      throw new Error(`ALLEGRO_SANDBOX_ACTIVATION_NOT_ACTIVE_${id}_${publicationStatus}_${taskStatus}_${diagnostic}`);
     }
     out.push({
       offer_id: id,

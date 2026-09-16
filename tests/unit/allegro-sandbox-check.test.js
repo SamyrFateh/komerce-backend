@@ -54,6 +54,31 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
 });
 
+test('failed seller publication exposes only bounded provider codes and never free text', async () => {
+  const d = deps();
+  const api = {
+    get: jest.fn()
+      .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
+      .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } }),
+    activateOffer: jest.fn().mockResolvedValue({
+      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174001',
+    }),
+    getPublicationTasks: jest.fn().mockResolvedValue({
+      tasks: [{
+        offer: { id: '123' }, status: 'FAIL',
+        errors: [
+          { code: 'VALIDATION_ERROR', message: 'seller secret should never leak' },
+          { code: 'unsafe code with spaces', message: 'another secret' },
+        ],
+      }],
+    }),
+  };
+  await expect(run(['--activate', '123'], {
+    ...d, client: api, activationAttempts: 1, activationPollMs: 0, sleepImpl: jest.fn(),
+  })).rejects.toThrow('ALLEGRO_SANDBOX_ACTIVATION_NOT_ACTIVE_123_INACTIVE_FAIL_VALIDATION_ERROR');
+  expect(d.fetchProducts).not.toHaveBeenCalled();
+});
+
 test('explicit import uses refinery with fixed sandbox identity and bounded snapshot', async () => {
   const d = deps(); await run(['--import', '123'], d);
   const [body, actor, loader] = d.importCatalog.mock.calls[0];
