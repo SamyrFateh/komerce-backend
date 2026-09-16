@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3, visible_destination_must_have_server_guard, market_id_is_transverse_context
  * @impact-areas  admin-dashboard, navigation, market-authorization
- * @version       2026-09-v4
+ * @version       2026-09-v4.1
  */
 'use strict';
 
@@ -64,6 +64,12 @@
     'Stratégie & concurrence': 'pricing-strategy',
   });
 
+  const SHELL_SELECTORS = Object.freeze({
+    navigation: '#canonical-admin-navigation, [data-canonical-navigation="true"], [data-canonical-shell-role="navigation"]',
+    topbar: '#canonical-admin-topbar, [data-canonical-shell-role="topbar"]',
+    tabs: '#canonical-admin-domain-tabs, [data-canonical-shell-role="domain-tabs"]',
+  });
+
   function roleOf(user) {
     return String(user && user.role || '');
   }
@@ -80,6 +86,29 @@
     if (className) node.className = className;
     if (value != null) node.textContent = String(value);
     return node;
+  }
+
+  function uniqueNodes(doc, selector) {
+    const nodes = Array.from(doc.querySelectorAll?.(selector) || []);
+    return nodes.filter((node, index) => nodes.indexOf(node) === index);
+  }
+
+  function dedupeRole(doc, role, keep = null) {
+    const selector = SHELL_SELECTORS[role];
+    if (!selector) return keep;
+    const nodes = uniqueNodes(doc, selector);
+    let survivor = keep && nodes.includes(keep) ? keep : (keep || nodes[0] || null);
+    nodes.forEach(node => {
+      if (node !== survivor) node.remove?.();
+    });
+    return survivor;
+  }
+
+  function dedupeShell(doc, keepHeader = null) {
+    const navigation = dedupeRole(doc, 'navigation', keepHeader);
+    dedupeRole(doc, 'topbar');
+    dedupeRole(doc, 'tabs');
+    return navigation;
   }
 
   function decoratePrimaryLinks(header) {
@@ -164,6 +193,7 @@
 
     const nav = createNode(doc, 'nav', 'kmc-admin-domain-tabs');
     nav.id = 'canonical-admin-domain-tabs';
+    nav.setAttribute('data-canonical-shell-role', 'domain-tabs');
     nav.setAttribute('aria-label', `Rubriques ${domainId}`);
     const active = activeLocalTab(domainId, surface);
     tabs.forEach(tab => {
@@ -224,11 +254,12 @@
   }
 
   function createTopbar(doc, header) {
-    let topbar = doc.getElementById?.('canonical-admin-topbar');
+    let topbar = dedupeRole(doc, 'topbar');
     if (topbar) return topbar;
 
     topbar = createNode(doc, 'div', 'kmc-admin-topbar');
     topbar.id = 'canonical-admin-topbar';
+    topbar.setAttribute('data-canonical-shell-role', 'topbar');
 
     const search = createNode(doc, 'label', 'kmc-admin-search');
     search.appendChild(createNode(doc, 'span', 'kmc-admin-search-icon', '⌕'));
@@ -255,10 +286,12 @@
     if (!root) return;
     const parent = root.parentNode || doc.body;
 
-    if (topbar && topbar.parentNode !== parent) parent.insertBefore(topbar, root);
+    dedupeRole(doc, 'navigation', header);
+    if (topbar) dedupeRole(doc, 'topbar', topbar);
+    if (tabs) dedupeRole(doc, 'tabs', tabs);
+    else dedupeRole(doc, 'tabs', null)?.remove?.();
 
-    const oldTabs = doc.getElementById?.('canonical-admin-domain-tabs');
-    if (oldTabs && oldTabs !== tabs && oldTabs.parentNode) oldTabs.parentNode.removeChild(oldTabs);
+    if (topbar && topbar.parentNode !== parent) parent.insertBefore(topbar, root);
     if (tabs && tabs.parentNode !== parent) parent.insertBefore(tabs, root);
   }
 
@@ -270,6 +303,8 @@
   function applyHybridShell(header, options = {}) {
     if (!header) return header;
     const doc = options.document || global.document;
+    dedupeShell(doc, header);
+
     const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
     const surface = currentSurface(options);
     const domainId = currentDomain(surface);
@@ -277,6 +312,7 @@
     doc.body?.classList?.add('kmc-shell-v4');
     header.setAttribute('data-navigation-policy', 'v4');
     header.setAttribute('data-shell', 'hybrid-sidebar-tabs');
+    header.setAttribute('data-canonical-shell-role', 'navigation');
 
     decoratePrimaryLinks(header);
     removeLegacySecondary(header);
@@ -288,6 +324,8 @@
   }
 
   function mount(options = {}) {
+    const doc = options.document || global.document;
+    dedupeShell(doc);
     const header = base.mount(options);
     return applyHybridShell(header, options);
   }
@@ -299,6 +337,8 @@
     _applyHybridShell: applyHybridShell,
     _activeLocalTab: activeLocalTab,
     _localTabsFor: localTabsFor,
+    _dedupeShell: dedupeShell,
+    _dedupeRole: dedupeRole,
   });
 
   global.KomerceCanonicalNavigation = api;
@@ -306,7 +346,7 @@
   function finalizeExistingNavigation() {
     const doc = global.document;
     if (!doc) return;
-    const existing = doc.getElementById?.('canonical-admin-navigation');
+    const existing = dedupeRole(doc, 'navigation');
     if (!existing) return;
     applyHybridShell(existing, {
       document: doc,
