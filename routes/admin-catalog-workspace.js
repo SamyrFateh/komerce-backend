@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_central_admin, catalog_action_payload
  * @outputs       catalog_workspace_projection, catalog_mutation_result
- * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, services/catalog-workspace.js
+ * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, services/catalog-workspace-live-composer.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       catalog_global_access_grants
  * @db-write      none
  * @db-txn        delegated_to_catalog_domain_services
  * @doctrine      catalog_global_authority_explicit, workspace_acts_dashboard_observes, global_catalog_not_market_scoped
  * @impact-areas  admin-dashboard, catalog, authorization
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -21,7 +21,7 @@
 const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireCatalogGlobalAuthority } = require('../middleware/require-catalog-global-authority');
-const workspace = require('../services/catalog-workspace');
+const workspace = require('../services/catalog-workspace-live-composer');
 const taxonomy = require('../services/boutique-taxonomy-admin');
 const log = require('../utils/logger').child({ module: 'admin-catalog-workspace' });
 

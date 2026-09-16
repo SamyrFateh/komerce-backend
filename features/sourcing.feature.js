@@ -46,6 +46,7 @@ module.exports = {
   perimeter: {
     in: [
       'ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)',
+      'activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source',
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
       'Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection',
       'preuve multi-source read-only avant essai de projection canonique Product',
@@ -90,6 +91,7 @@ module.exports = {
       'migrations/149_sourcing_workspace_business_refs.sql',
       'migrations/226_sourcing_observation_foundation.sql',
       'migrations/227_sourcing_resolution_foundation.sql',
+      'migrations/238_sourcing_source_autopilot.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
@@ -98,6 +100,7 @@ module.exports = {
       'scripts/catalog-product-read-cutover-trial-staging.js',
       'scripts/sourcing-golden-e2e-staging.js',
       'scripts/sourcing-integrity-audit.js',
+      'scripts/sourcing-source-autopilot.js',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
@@ -119,6 +122,7 @@ module.exports = {
       'services/catalog-product-read-cutover-trial.js',
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
+      'services/sourcing-source-autopilot.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -145,6 +149,7 @@ module.exports = {
       'tests/unit/catalog-product-read-cutover-trial.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
+      'tests/unit/sourcing-source-autopilot.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
       'tests/unit/sourcing-observation-foundation-migration.test.js',
@@ -212,6 +217,8 @@ module.exports = {
       'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/update',
       'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/deactivate',
       'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/activate',
+      'POST /api/admin/workspaces/sourcing/sources/:sourceRef/activate',
+      'POST /api/admin/workspaces/sourcing/sources/:sourceRef/deactivate',
     ],
     internalApi: [
       { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
@@ -275,6 +282,8 @@ module.exports = {
     'l absence de produit catalogue relié bloque le gate de cutover sans invalider la projection canonique',
     'Manual, CJ et AliExpress sont des preuves minimales, jamais une whitelist : une source future reste compatible via refs namespacées et SOI opaque',
     'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
+    'l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement',
+    'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
     'le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intégrité est rompu ; ATTENTION couvre les exceptions opérationnelles bloquées',
     'le dashboard ne fabrique aucune tendance sans historique persistant',
     'le routage Hub et la destination physique restent hors autorité Sourcing et constituent le domaine suivant',

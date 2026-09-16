@@ -297,6 +297,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate', method: 'post', schema: null },
 
   // LOT 4F — Canonical Pricing Workspace (global central actions)
   { prefix: '/api/admin/workspaces/pricing', method: 'get', schema: null },
@@ -453,7 +455,7 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/cost-components/{key}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/pricing/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
-  '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors'], source: 'test' } },
+  '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' } },
   '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },

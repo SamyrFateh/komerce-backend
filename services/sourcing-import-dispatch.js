@@ -5,13 +5,13 @@
  * @layer         service
  * @criticality   medium
  * @inputs        supplier_import_payload
- * @outputs       normalized_supplier_products, connector_catalog
+ * @outputs       normalized_supplier_products, connector_catalog, source_automation_catalog
  * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js
- * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
+ * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js, services/sourcing-source-autopilot.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      single_connector_dispatch_authority
+ * @doctrine      single_connector_dispatch_authority, source_autopull_is_registry_metadata_not_provider_branching
  * @impact-areas  sourcing, supplier-import
  * @version       2026-09
  */
@@ -25,18 +25,45 @@ const cjModule = require('./suppliers/connectors/cj-connector');
 const aliexpressModule = require('./suppliers/connectors/aliexpress-connected-connector');
 const allegroModule = require('./suppliers/connectors/allegro-connector');
 
+// `automation` is deliberately declarative. The autopilot runner never branches
+// on provider names: adding a future source means registering a connector and
+// its bounded pull defaults here, not editing the runner.
 const CONNECTORS = Object.freeze({
   csv: { module: csvConnector, active: true, label: 'CSV import' },
   manual: { module: manualConnector, active: true, label: 'Saisie manuelle' },
   api: {
-    noon: { module: noonModule, active: noonModule.IS_ACTIVE, label: 'Noon API', reason: noonModule.INACTIVE_REASON },
-    cj: { module: cjModule, active: cjModule.IS_ACTIVE, label: 'CJdropshipping API', reason: cjModule.INACTIVE_REASON },
-    allegro: { supportsFullSnapshot: false, module: allegroModule, get active() { return allegroModule.IS_ACTIVE; }, label: 'Allegro Sandbox (seller test offers)', get reason() { return allegroModule.INACTIVE_REASON; } },
+    noon: {
+      module: noonModule,
+      active: noonModule.IS_ACTIVE,
+      label: 'Noon API',
+      reason: noonModule.INACTIVE_REASON,
+      supplierName: 'Noon',
+      automation: null,
+    },
+    cj: {
+      module: cjModule,
+      active: cjModule.IS_ACTIVE,
+      label: 'CJdropshipping API',
+      reason: cjModule.INACTIVE_REASON,
+      supplierName: 'CJdropshipping',
+      automation: Object.freeze({ page: 1, size: 20, include_commandable_units: true }),
+    },
+    allegro: {
+      supportsFullSnapshot: false,
+      module: allegroModule,
+      get active() { return allegroModule.IS_ACTIVE; },
+      label: 'Allegro Sandbox (seller test offers)',
+      get reason() { return allegroModule.INACTIVE_REASON; },
+      supplierName: 'Allegro Sandbox',
+      automation: Object.freeze({}),
+    },
     aliexpress: {
       module: aliexpressModule,
       active: aliexpressModule.IS_ACTIVE,
       label: 'AliExpress Dropshipper API',
       reason: aliexpressModule.INACTIVE_REASON,
+      supplierName: 'AliExpress',
+      automation: Object.freeze({ page: 1, size: 20 }),
     },
   },
 });
@@ -54,6 +81,25 @@ function connectorCatalog() {
       reason: CONNECTORS.api[supplier].active ? null : CONNECTORS.api[supplier].reason,
     })),
   };
+}
+
+function sourceAutomationCatalog() {
+  return Object.entries(CONNECTORS.api)
+    .filter(([, entry]) => entry.automation)
+    .map(([adapter, entry]) => ({
+      adapter,
+      supplier_name: entry.supplierName || entry.label || adapter,
+      label: entry.label,
+      connector_ready: Boolean(entry.active),
+      reason: entry.active ? null : (entry.reason || 'connecteur inactif'),
+      pull_options: { ...entry.automation },
+      supports_full_snapshot: entry.supportsFullSnapshot !== false,
+    }));
+}
+
+function sourceAutomationDescriptor(adapter) {
+  const key = String(adapter || '').trim().toLowerCase();
+  return sourceAutomationCatalog().find((entry) => entry.adapter === key) || null;
 }
 
 function apiConnectorOptions(body = {}) {
@@ -109,6 +155,8 @@ async function dispatchToConnector(body = {}) {
 module.exports = {
   CONNECTORS,
   connectorCatalog,
+  sourceAutomationCatalog,
+  sourceAutomationDescriptor,
   apiConnectorOptions,
   dispatchToConnector,
 };

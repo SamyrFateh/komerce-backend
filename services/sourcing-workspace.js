@@ -6,17 +6,18 @@
  * @criticality   high
  * @inputs        business_references, sourcing_action_payloads, authenticated_actor
  * @outputs       global_sourcing_projection, sourcing_mutation_result
- * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
+ * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
+ * @db-write-via:sourcing-source-autopilot sourcing_sources, sourcing_captures
  * @db-write-via:partner-admin-service partners
  * @db-txn        delegated_to_domain_authorities
- * @doctrine      global_sourcing_authority, browser_business_refs_only, sourcing_partners_only, workspace_orchestrates_not_reimplements
+ * @doctrine      global_sourcing_authority, browser_business_refs_only, sourcing_partners_only, source_autopilot_authority_delegated, workspace_orchestrates_not_reimplements
  * @impact-areas  sourcing, catalog, partners, admin-dashboard
- * @version       2026-08
+ * @version       2026-09
  */
 
 'use strict';
@@ -26,6 +27,7 @@ const sourcingAnalysis = require('./sourcing-analysis');
 const sourcingMutations = require('./sourcing-mutations');
 const candidateActions = require('./sourcing-candidate-actions');
 const importDispatch = require('./sourcing-import-dispatch');
+const sourceAutopilot = require('./sourcing-source-autopilot');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
 
@@ -197,7 +199,7 @@ async function listSourcingSuppliers() {
   }));
 }
 
-function buildSummary({ portfolio, candidates, imports, suppliers }) {
+function buildSummary({ portfolio, candidates, imports, suppliers, sources }) {
   const states = {};
   candidates.forEach(candidate => { states[candidate.state] = (states[candidate.state] || 0) + 1; });
   return {
@@ -209,23 +211,27 @@ function buildSummary({ portfolio, candidates, imports, suppliers }) {
     candidates_promoted: states.imported_to_catalog || 0,
     imports: imports.length,
     sourcing_suppliers: suppliers.length,
+    sourcing_sources: sources.length,
+    sourcing_sources_autopilot_on: sources.filter(source => source.autopilot_enabled).length,
   };
 }
 
 async function buildWorkspace() {
-  const [portfolio, imports, candidates, suppliers] = await Promise.all([
+  const [portfolio, imports, candidates, suppliers, sources] = await Promise.all([
     listPortfolio(),
     listImports(),
     listCandidates(),
     listSourcingSuppliers(),
+    sourceAutopilot.listSources(),
   ]);
   return {
     scope: { mode: 'global_sourcing' },
-    summary: buildSummary({ portfolio, candidates, imports, suppliers }),
+    summary: buildSummary({ portfolio, candidates, imports, suppliers, sources }),
     portfolio,
     imports,
     candidates,
     suppliers,
+    sources,
     connectors: importDispatch.connectorCatalog(),
   };
 }
@@ -299,6 +305,10 @@ async function promoteCandidate(candidateRef, body, actor) {
   };
 }
 
+async function setSourceAutopilot(sourceRef, enabled) {
+  return sourceAutopilot.setSourceActive(sourceRef, Boolean(enabled), { runNow: Boolean(enabled) });
+}
+
 async function createSupplier(body) {
   if (!body?.name) throw new SourcingWorkspaceError(400, 'name obligatoire', 'sourcing_partner_name_required');
   if (body.partner_type && body.partner_type !== 'sourcing') {
@@ -334,6 +344,7 @@ module.exports = {
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
+  setSourceAutopilot,
   createSupplier,
   updateSupplier,
   setSupplierActive,

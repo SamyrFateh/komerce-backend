@@ -4,15 +4,15 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   high
- * @inputs        authenticated_central_admin, catalog_workspace_projection
- * @outputs       canonical_catalog_workspace_dom, authorized_catalog_action_requests
+ * @inputs        authenticated_central_admin, catalog_workspace_projection, live_source_flow_projection
+ * @outputs       canonical_catalog_workspace_dom, authorized_catalog_action_requests, live_source_controls
  * @depends       canonical primitives
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, product_360_explains, curated_catalog_not_crud
- * @impact-areas  admin-dashboard, catalog
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, product_360_explains, curated_catalog_not_crud, sourcing_keeps_source_mutation_authority
+ * @impact-areas  admin-dashboard, catalog, sourcing, boutique
  * @version       2026-09
  */
 
@@ -24,6 +24,7 @@
   if (root) root.KomerceCanonicalCatalogWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCatalogWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/catalog';
+  const SOURCING_ENDPOINT = '/api/admin/workspaces/sourcing';
 
   function text(doc, tag, className, value) {
     const node = doc.createElement(tag);
@@ -54,6 +55,32 @@
       manual: 'Préparation humaine',
     };
     return labels[value] || value || '—';
+  }
+
+  function formatRelativeTime(value) {
+    if (!value) return 'Jamais';
+    const at = new Date(value).getTime();
+    if (!Number.isFinite(at)) return '—';
+    const seconds = Math.max(0, Math.round((Date.now() - at) / 1000));
+    if (seconds < 60) return `il y a ${seconds} s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `il y a ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `il y a ${hours} h`;
+    return new Date(value).toLocaleString('fr-FR');
+  }
+
+  function stageLabel(stage) {
+    const labels = {
+      captured: 'Capturé',
+      normalized: 'Normalisé',
+      qualified: 'Qualifié',
+      fr_ready: 'FR prêt',
+      curation: 'Curation',
+      catalog: 'Catalogue',
+      boutique: 'Boutique',
+    };
+    return labels[stage] || stage || '—';
   }
 
   async function jsonRequest(fetchFn, url, options = {}) {
@@ -94,9 +121,9 @@
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE CURATÉ'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Curater le catalogue Komerce'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Catalogue maître global · sélection courte · sources traçables · première publication validée humainement'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Catalogue'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Sources → Raffinerie → Boutique · pilotez le peuplement sans manipuler les imports un par un'));
     header.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -104,7 +131,7 @@
     const commerce = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Commerce');
     commerce.href = '/admin/commerce';
     nav.appendChild(commerce);
-    const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Alimenter via Sourcing');
+    const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Sourcing avancé');
     sourcing.href = '/admin/sourcing';
     nav.appendChild(sourcing);
     header.appendChild(nav);
@@ -156,6 +183,193 @@
     return cell;
   }
 
+  function renderLiveSources(rootNode, ui, doc, payload, context) {
+    const live = payload.live || {};
+    const sources = live.sources || [];
+    const slot = createSection(
+      rootNode,
+      ui,
+      'Sources catalogue · LIVE',
+      'ON signifie : la source est aspirée automatiquement et alimente la Raffinerie. La mutation reste gouvernée par Sourcing.'
+    );
+
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-workspace-section-actions';
+    const add = makeButton(doc, 'Ajouter une source', 'show-source-catalog', true);
+    bar.appendChild(add);
+    slot.appendChild(bar);
+
+    const discovery = doc.createElement('div');
+    discovery.hidden = true;
+    discovery.setAttribute('data-source-discovery', '');
+    const discoveryRows = live.source_catalog || [];
+    if (discoveryRows.length) {
+      const table = doc.createElement('table');
+      table.className = 'kmc-workspace-table';
+      table.innerHTML = '<thead><tr><th>Source</th><th>Type</th><th>Connecteur</th><th>Autopilot</th><th>Besoin</th></tr></thead>';
+      const tbody = doc.createElement('tbody');
+      discoveryRows.forEach(row => {
+        const tr = doc.createElement('tr');
+        tr.appendChild(td(doc, row.label));
+        tr.appendChild(td(doc, row.kind));
+        tr.appendChild(td(doc, row.connector_ready ? 'Prêt' : 'À connecter'));
+        tr.appendChild(td(doc, row.automation_available ? 'Disponible' : 'À raccorder'));
+        tr.appendChild(td(doc, row.reason || (row.automation_available ? 'Aucun blocage détecté' : 'Contrat de connectivité à définir')));
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      const wrap = doc.createElement('div');
+      wrap.className = 'kmc-workspace-table-wrap';
+      wrap.appendChild(table);
+      discovery.appendChild(wrap);
+    } else {
+      discovery.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune source déclarée.'));
+    }
+    slot.appendChild(discovery);
+
+    add.addEventListener('click', () => {
+      discovery.hidden = !discovery.hidden;
+      add.textContent = discovery.hidden ? 'Ajouter une source' : 'Masquer les sources';
+    });
+
+    if (!sources.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune source récurrente enregistrée.'));
+      return;
+    }
+
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Source</th><th>Connectivité</th><th>Autopilot</th><th>Dernier passage</th><th>Capturés</th><th>FR prêts</th><th>Catalogue</th><th>Boutique</th><th></th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    sources.forEach(source => {
+      const tr = doc.createElement('tr');
+      const pipeline = source.pipeline || {};
+      tr.appendChild(td(doc, source.label || source.supplier_name || source.adapter_type));
+      tr.appendChild(td(doc, source.connector_ready ? '● Prêt' : `Bloqué · ${source.connector_reason || 'connecteur indisponible'}`));
+      tr.appendChild(td(doc, source.autopilot_enabled ? 'ON' : 'OFF'));
+      tr.appendChild(td(doc, formatRelativeTime(source.last_capture_at)));
+      tr.appendChild(td(doc, formatNumber(pipeline.captured)));
+      tr.appendChild(td(doc, formatNumber(pipeline.fr_ready)));
+      tr.appendChild(td(doc, formatNumber(pipeline.catalog)));
+      tr.appendChild(td(doc, formatNumber(pipeline.boutique)));
+
+      const actions = doc.createElement('td');
+      const active = Boolean(source.autopilot_enabled);
+      const toggle = makeButton(doc, active ? 'Désactiver' : 'Activer', 'toggle-source', !active);
+      if (!active && (!source.connector_ready || !source.runtime_enabled)) {
+        toggle.disabled = true;
+        toggle.title = !source.runtime_enabled ? 'Autopilot désactivé sur ce runtime' : (source.connector_reason || 'Connecteur non prêt');
+      }
+      toggle.addEventListener('click', () => runAction(context, toggle, {
+        url: `${SOURCING_ENDPOINT}/sources/${encodeURIComponent(source.source_ref)}/${active ? 'deactivate' : 'activate'}`,
+        runningMessage: `${active ? 'Arrêt' : 'Démarrage'} de ${source.label || source.supplier_name}…`,
+        successMessage: `${source.label || source.supplier_name} ${active ? 'désactivée' : 'activée'} pour le peuplement automatique.`,
+      }));
+      actions.appendChild(toggle);
+      tr.appendChild(actions);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
+  function renderRefinery(rootNode, ui, doc, payload) {
+    const live = payload.live || {};
+    const pipeline = live.pipeline || {};
+    const slot = createSection(
+      rootNode,
+      ui,
+      'La Raffinerie en temps réel',
+      'Les compteurs sont issus des états réellement persistés. Les étapes encore non automatisées restent visibles au lieu d’être simulées.'
+    );
+    const metrics = doc.createElement('section');
+    metrics.className = 'kmc-workspace-metrics';
+    slot.appendChild(metrics);
+    ui.MetricStrip.render(metrics, { items: [
+      { key: 'captured', label: 'Capturés', value: formatNumber(pipeline.captured), tone: 'neutral' },
+      { key: 'normalized', label: 'Normalisés', value: formatNumber(pipeline.normalized), tone: 'neutral' },
+      { key: 'qualified', label: 'Qualifiés', value: formatNumber(pipeline.qualified), tone: 'neutral' },
+      { key: 'fr', label: 'FR prêts', value: formatNumber(pipeline.fr_ready), tone: 'neutral' },
+      { key: 'curation', label: 'Curation', value: formatNumber(pipeline.curation), tone: pipeline.curation ? 'warning' : 'neutral' },
+      { key: 'catalog', label: 'Catalogue', value: formatNumber(pipeline.catalog), tone: 'neutral' },
+      { key: 'boutique', label: 'Boutique effective', value: formatNumber(pipeline.boutique), tone: 'neutral' },
+    ] });
+
+    const sources = live.sources || [];
+    if (!sources.length) return;
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Source</th><th>Capturés</th><th>Normalisés</th><th>Qualifiés</th><th>FR prêts</th><th>Curation</th><th>Catalogue</th><th>Boutique</th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    sources.forEach(source => {
+      const row = source.pipeline || {};
+      const tr = doc.createElement('tr');
+      tr.appendChild(td(doc, source.supplier_name || source.label));
+      tr.appendChild(td(doc, formatNumber(row.captured)));
+      tr.appendChild(td(doc, formatNumber(row.normalized)));
+      tr.appendChild(td(doc, formatNumber(row.qualified)));
+      tr.appendChild(td(doc, formatNumber(row.fr_ready)));
+      tr.appendChild(td(doc, formatNumber(row.curation)));
+      tr.appendChild(td(doc, formatNumber(row.catalog)));
+      tr.appendChild(td(doc, formatNumber(row.boutique)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
+  function renderIncoming(rootNode, ui, doc, payload) {
+    const rows = payload.live?.incoming || [];
+    const slot = createSection(
+      rootNode,
+      ui,
+      'En train d’arriver · LIVE',
+      'Dernières références qui circulent dans la Raffinerie, avec leur vraie prochaine étape.'
+    );
+    if (!rows.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit en circulation.'));
+      return;
+    }
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Source</th><th>Prix achat</th><th>Stock</th><th>État</th><th>Prochaine étape</th><th>Mise à jour</th><th></th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    rows.forEach(row => {
+      const tr = doc.createElement('tr');
+      tr.appendChild(td(doc, row.product_name));
+      tr.appendChild(td(doc, row.supplier_name));
+      const purchase = row.purchase_price_kmf != null
+        ? formatKmf(row.purchase_price_kmf)
+        : (row.purchase_price == null ? '—' : `${row.purchase_price} ${row.currency || ''}`);
+      tr.appendChild(td(doc, purchase));
+      tr.appendChild(td(doc, row.stock_available == null ? '—' : formatNumber(row.stock_available)));
+      tr.appendChild(td(doc, stageLabel(row.stage)));
+      tr.appendChild(td(doc, row.next_step));
+      tr.appendChild(td(doc, formatRelativeTime(row.updated_at)));
+      const actions = doc.createElement('td');
+      if (row.product_ref) {
+        const detail = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir');
+        detail.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+        actions.appendChild(detail);
+      } else {
+        actions.appendChild(text(doc, 'span', 'kmc-workspace-subtitle', row.candidate_ref || '—'));
+      }
+      tr.appendChild(actions);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
   function renderCurationPolicy(rootNode, ui, doc, payload) {
     const curation = payload.curation || {};
     const slot = createSection(
@@ -173,7 +387,7 @@
       : `${published}/${cap} produits publiés · ${remaining} places restantes · ${fill} % du cap utilisé.`;
     const tone = curation.at_cap ? 'is-critical' : 'is-positive';
     slot.appendChild(text(doc, 'div', `kmc-workspace-feedback ${tone}`, message));
-    slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Entrée : Sourcing / connecteurs / manuel → préparation FR → validation humaine → sélection publiée. Product 360 reste le drill-down explicatif.'));
+    slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Entrée : sources automatiques / manuel → préparation FR → validation humaine → sélection publiée. Product 360 reste le drill-down explicatif.'));
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
@@ -387,6 +601,9 @@
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation) });
+    renderLiveSources(rootNode, ui, doc, payload, context);
+    renderRefinery(rootNode, ui, doc, payload);
+    renderIncoming(rootNode, ui, doc, payload);
     renderCurationPolicy(rootNode, ui, doc, payload);
     renderApproval(rootNode, ui, doc, payload, context);
     renderProducts(rootNode, ui, doc, payload, context);
@@ -408,6 +625,7 @@
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       reload: null,
+      liveTimer: null,
     };
     context.reload = async () => {
       try {
@@ -418,15 +636,24 @@
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
-        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE CURATÉ'));
+        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
         panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Accès Catalogue indisponible'));
         panel.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', error.message));
         rootNode.appendChild(panel);
         throw error;
       }
     };
-    return context.reload();
+    const initial = await context.reload();
+    const refreshSeconds = Math.max(5, Math.min(Number(initial?.live?.refresh_hint_seconds) || 10, 60));
+    context.liveTimer = setInterval(() => {
+      if (!doc.contains(rootNode)) {
+        clearInterval(context.liveTimer);
+        return;
+      }
+      context.reload().catch(() => {});
+    }, refreshSeconds * 1000);
+    return initial;
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, mount });
+  return Object.freeze({ ENDPOINT, SOURCING_ENDPOINT, metricItems, stageLabel, mount });
 });
