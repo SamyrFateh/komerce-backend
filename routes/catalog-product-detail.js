@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        product_id, optional_market_code
  * @outputs       public_product_detail_v1
- * @depends       db.js, services/catalog-product-detail.js, services/catalog-public-view.js, services/catalog-market-exposure-service.js, services/market-local-price-resolution-service.js
+ * @depends       db.js, services/catalog-product-detail.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js
  * @used-by       routes/products.js, public/boutique/js/b-modal-product-detail-bootstrap.js
- * @db-read       product_skus, product_variants, products, product_market_exposure, markets
+ * @db-read       product_skus, product_variants, products, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
  * @db-txn        none
- * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, only_LOCAL_ACTIVE_is_buyer_effective
+ * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
  * @impact-areas  catalog, product-detail, modal, market-autonomy
- * @version       2026-09
+ * @version       2026-09-business-truth
  */
 
 'use strict';
@@ -25,8 +25,8 @@ const { applyActiveMarketPricesToCatalogRows } = require('../services/market-loc
 const {
   isExcludedPublicProductRef,
   isSyntheticPublicMediaUrl,
+  publicCatalogVisibilitySql,
 } = require('../services/catalog-public-view');
-const { isProductExposedForMarketCode } = require('../services/catalog-market-exposure-service');
 
 const router = express.Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,53 +46,58 @@ router.get('/:id/detail', async (req, res, next) => {
       return res.status(400).json({ error: 'ID produit invalide' });
     }
 
+    const rawMarket = req.query.market || null;
+    if (rawMarket && !/^[A-Z]{2}$/i.test(rawMarket)) {
+      return res.status(400).json({ error: 'Code marché invalide' });
+    }
+    const marketCode = rawMarket ? String(rawMarket).toUpperCase() : null;
+
+    // Frontière publique unique : une fiche accessible directement doit passer
+    // exactement le même prédicat que la grille /api/products. Avec un marché,
+    // cela inclut exposition + LOCAL_ACTIVE sur CE marché et unité vendable.
+    const visibilitySql = publicCatalogVisibilitySql(
+      'p',
+      marketCode ? { marketCodeParamIndex: 2 } : {}
+    );
+    const visibilityParams = marketCode ? [req.params.id, marketCode] : [req.params.id];
+    const { rows: [visibleProduct] } = await db.query(
+      `SELECT p.id, p.price_kmf, p.promo_pct, p.is_promo, p.promo_until
+         FROM products p
+        WHERE p.id = $1
+          AND ${visibilitySql}
+        LIMIT 1`,
+      visibilityParams
+    );
+    if (!visibleProduct) {
+      return res.status(404).json({ error: marketCode ? 'Produit non disponible sur ce marché' : 'Produit introuvable' });
+    }
+
     const detail = await getProductDetail(db, req.params.id);
     if (!isPublicDetail(detail)) {
       return res.status(404).json({ error: 'Produit introuvable' });
     }
 
-    // Fail-closed par marché (cutover product_market_exposure) : un code
-    // marché fourni doit correspondre à une exposition ENABLED explicite.
-    // Sans code marché (comportement historique préservé), aucune
-    // vérification supplémentaire — c'était déjà le cas avant le cutover.
-    const rawMarket = req.query.market || null;
-    const marketCode = rawMarket && /^[A-Z]{2}$/i.test(rawMarket) ? String(rawMarket).toUpperCase() : null;
     if (marketCode) {
-      const exposed = await isProductExposedForMarketCode(req.params.id, marketCode, db);
-      if (!exposed) {
-        return res.status(404).json({ error: 'Produit introuvable' });
+      const [marketProduct] = await applyActiveMarketPricesToCatalogRows(db, {
+        marketCode,
+        products: [visibleProduct],
+      });
+      if (marketProduct?.purchasable === false) {
+        return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
       }
-    }
-
-    if (req.query.market) {
-      const { rows: [priceProduct] } = await db.query(
-        `SELECT id, price_kmf, promo_pct, is_promo, promo_until
-           FROM products
-          WHERE id = $1 AND is_active = TRUE`,
-        [req.params.id]
-      );
-      if (priceProduct) {
-        const [marketProduct] = await applyActiveMarketPricesToCatalogRows(db, {
-          marketCode: req.query.market,
-          products: [priceProduct],
-        });
-        if (marketProduct?.purchasable === false) {
-          return res.status(404).json({ error: 'Produit non disponible sur ce marché' });
-        }
-        if (marketProduct?.market_price_source === 'LOCAL_ACTIVE') {
-          detail.pricing.price_kmf = marketProduct.price_kmf;
-          detail.pricing.old_price_kmf = marketProduct.market_price_promo_applied
-            ? marketProduct.market_price_base_kmf
-            : null;
-          detail.pricing.promo_pct = marketProduct.market_price_promo_applied
-            ? Number(priceProduct.promo_pct) || null
-            : null;
-          if (Array.isArray(detail.sellable_units)) {
-            detail.sellable_units = detail.sellable_units.map(unit => ({
-              ...unit,
-              price_kmf: marketProduct.price_kmf,
-            }));
-          }
+      if (marketProduct?.market_price_source === 'LOCAL_ACTIVE') {
+        detail.pricing.price_kmf = marketProduct.price_kmf;
+        detail.pricing.old_price_kmf = marketProduct.market_price_promo_applied
+          ? marketProduct.market_price_base_kmf
+          : null;
+        detail.pricing.promo_pct = marketProduct.market_price_promo_applied
+          ? Number(visibleProduct.promo_pct) || null
+          : null;
+        if (Array.isArray(detail.sellable_units)) {
+          detail.sellable_units = detail.sellable_units.map(unit => ({
+            ...unit,
+            price_kmf: marketProduct.price_kmf,
+          }));
         }
       }
     }

@@ -5,15 +5,15 @@
  * @layer         service
  * @criticality   high
  * @inputs        catalog_workspace_projection, sourcing_live_flow_projection
- * @outputs       catalog_workspace_with_live_flow
+ * @outputs       catalog_workspace_with_live_flow_and_business_truth
  * @depends       services/catalog-workspace.js, services/catalog-live-flow.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       delegated
  * @db-write      none
  * @db-txn        delegated
- * @doctrine      catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority
- * @impact-areas  catalog, sourcing, admin-dashboard
- * @version       2026-09
+ * @doctrine      catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority, dashboard_exposes_business_truth
+ * @impact-areas  catalog, sourcing, boutique, admin-dashboard
+ * @version       2026-09-business-truth
  */
 'use strict';
 
@@ -25,7 +25,7 @@ async function buildWorkspace(query = {}) {
     catalogWorkspace.buildWorkspace(query),
     liveFlow.buildProjection({ incomingLimit: query.live_limit }),
   ]);
-  return { ...catalog, live };
+  return { ...catalog, live, business: live.business };
 }
 
 module.exports = {

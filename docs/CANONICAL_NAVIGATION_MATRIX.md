@@ -33,13 +33,15 @@ Ordre canonique :
 | Rôle effectif | Domaines N1 visibles | Landing |
 |---|---|---|
 | `admin` | Dashboard · Atelier économique · Catalogue · Commandes · Marchés · Opérations · Finance | `/admin/pilotage` |
-| `market_operator` | Dashboard · Atelier économique · Catalogue pays · Commandes · Marchés · Opérations · Finance | `/admin/pilotage` |
+| `market_operator` | Dashboard · Atelier économique · Commandes · Marchés · Opérations · Finance | `/admin/pilotage` |
 | `finance` | Finance | `/admin/workspaces/accounting` |
 | `sourcing` | Opérations | `/admin/workspaces/sourcing` |
 | `agent_hub` | Opérations | `/admin/workspaces/operations` |
 | `agent_relais` | Opérations · Finance | `/admin/workspaces/operations` |
 | `agent_transitaire` | Opérations | `/admin/workspaces/shipping-customs` |
 | `support` | aucun domaine Canonical livré | `/portail` |
+
+Le responsable pays n'a pas l'autorité **Catalogue global**. Son catalogue local est une projection du domaine **Marchés**.
 
 ## N2 — Atelier économique
 
@@ -54,17 +56,19 @@ Les onglets internes restent sur **la même autorité Pricing** ; ils ne créent
 
 ## N2 — Catalogue
 
-Pour l'admin global, les onglets organisent la Control Tower déjà existante :
+Le Catalogue global n'expose plus de navigation qui répète le même pipeline sous plusieurs formes.
 
 | Onglet | Cible réelle | Rôle |
 |---|---|---|
 | Vue catalogue | `/admin/workspaces/catalog` | `admin` |
-| Sources | `#catalog-sources` | `admin` |
-| Raffinerie | `#catalog-refinery` | `admin` |
 | Produits | `/admin/workspaces/catalog?view=advanced` | `admin` |
-| Boutique | `#catalog-boutique` | `admin` |
 
-Le `market_operator` ne reçoit jamais cette autorité globale ; son entrée Catalogue reste `/dashboards/canonical/market-catalog.html`.
+La **Vue catalogue** porte la lecture métier unique `Sourcé → Prêt à publier → Publié → Visible`. Les détails techniques de normalisation/qualification restent des drill-downs, pas des onglets.
+
+- `Sources` appartient à `Opérations > Sourcing` ;
+- `Raffinerie` est un détail technique du flux, pas une rubrique ;
+- `Boutique` est une conséquence du statut `Visible` par marché, pas un dashboard parallèle ;
+- `Catalogue pays` appartient à `Marchés`.
 
 ## N2 — Commandes
 
@@ -82,8 +86,9 @@ Order 360 et Client 360 restent des drill-downs.
 |---|---|---|
 | Accès pays | `/dashboards/canonical/access.html` | `admin` |
 | Autonomie marché | `/dashboards/canonical/market-autonomy.html` | `market_operator` |
+| Catalogue pays | `/dashboards/canonical/market-catalog.html` | `market_operator` |
 
-Un profil ne voit qu'une destination Marchés aujourd'hui ; aucun faux second onglet n'est fabriqué.
+`Catalogue pays` exprime l'exposition/prix/visibilité d'un catalogue global sur un marché. Il n'accorde jamais l'autorité Catalogue globale.
 
 ## N2 — Opérations
 
@@ -107,6 +112,7 @@ Un profil ne voit qu'une destination Marchés aujourd'hui ; aucun faux second on
 |---|---|---|
 | Action Center | Dashboard | — |
 | Product 360 | Catalogue | Produits |
+| Catalogue pays | Marchés | Catalogue pays |
 | Order 360 | Commandes | Commandes |
 | Client Index / Client 360 | Commandes | Clients |
 | Hub / Relais | Opérations | Hub / Relais |
@@ -121,9 +127,10 @@ Un profil ne voit qu'une destination Marchés aujourd'hui ; aucun faux second on
 3. N3 reste local à la page.
 4. Dashboard n'est pas un fallback universel.
 5. Un rôle spécialisé atterrit sur son premier workspace réellement lisible.
-6. `market_operator` utilise les surfaces pays, pas les autorités globales admin.
+6. `market_operator` utilise les surfaces pays sous Marchés, pas les autorités globales admin.
 7. Paramètres n'est jamais N1.
 8. Market ID n'est jamais N1/N2.
 9. Catalogue et Atelier économique utilisent exactement le même shell que les autres domaines.
 10. Les mocks sont traduits par `docs/doctrine/CANONICAL_UI_STYLE_CONTRACT_V1.md` en valeurs mesurables.
 11. Toute évolution d'un guard serveur qui change une destination visible met à jour cette matrice et les tests de navigation dans le même lot.
+12. Une donnée technique ne devient jamais un onglet uniquement parce qu'elle possède un endpoint ou un compteur.

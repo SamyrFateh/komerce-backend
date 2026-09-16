@@ -44,12 +44,19 @@ Les rubriques sont affichées sous forme d'onglets horizontaux immédiatement au
 
 Exemples cibles :
 
-- Catalogue : `Vue catalogue | Sources | Raffinerie | Produits | Boutique`
+- Catalogue : `Vue catalogue | Produits`
 - Atelier économique : `Portefeuille | Coûts | Prix & contribution | Simulations`
 - Commandes : `Vue d'ensemble | Commandes | Clients`
 - Marchés : `Accès pays | Autonomie marché | Catalogue pays`
-- Opérations : `Vue d'ensemble | Hub & Relais | Expéditions & Douane`
+- Opérations : `Vue d'ensemble | Hub & Relais | Expéditions & Douane | Sourcing`
 - Finance : `Vue d'ensemble | Comptabilité`
+
+Dans Catalogue, `Sources`, `Raffinerie` et `Boutique` ne sont pas des rubriques de navigation :
+
+- les **Sources** appartiennent à `Opérations > Sourcing` ;
+- la **Raffinerie** est un détail technique/drill-down de la chaîne `Sourcé → Prêt à publier`, pas une destination métier ;
+- la **Boutique** est une conséquence de la visibilité par marché, pas un écran qui répète les mêmes compteurs ;
+- le **Catalogue pays** appartient à `Marchés`, jamais à l'autorité Catalogue globale.
 
 Une rubrique N2 ne doit pas devenir un N1 uniquement parce qu'elle possède une route technique.
 

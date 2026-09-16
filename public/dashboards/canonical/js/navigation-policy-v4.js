@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3, visible_destination_must_have_server_guard, market_id_is_transverse_context
  * @impact-areas  admin-dashboard, navigation, market-authorization
- * @version       2026-09-v4.1
+ * @version       2026-09-v4.2-business-truth
  */
 'use strict';
 
@@ -41,11 +41,7 @@
     ]),
     catalog: Object.freeze([
       Object.freeze({ id: 'catalog-overview', label: 'Vue catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-sources', label: 'Sources', href: '/admin/workspaces/catalog#catalog-sources', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog#catalog-refinery', roles: ['admin'] }),
       Object.freeze({ id: 'catalog-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-boutique', label: 'Boutique', href: '/admin/workspaces/catalog#catalog-boutique', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'] }),
     ]),
     orders: Object.freeze([
       Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'] }),
@@ -55,6 +51,7 @@
     markets: Object.freeze([
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
       Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
+      Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'] }),
     ]),
   });
 
@@ -170,9 +167,7 @@
       return 'pricing-overview';
     }
     if (domainId === 'catalog') {
-      if (surface === 'market-catalog') return 'catalog-country';
       if (search.get('view') === 'advanced') return 'catalog-products';
-      if (hash && ['catalog-sources', 'catalog-refinery', 'catalog-boutique'].includes(hash)) return hash;
       return 'catalog-overview';
     }
     if (domainId === 'orders') {
@@ -181,6 +176,7 @@
       return 'commerce';
     }
     if (domainId === 'markets') {
+      if (surface === 'market-catalog') return 'catalog-country';
       return surface === 'market-autonomy' ? 'market-autonomy' : 'market-access';
     }
     if (typeof base.activeSpaceFor === 'function') return base.activeSpaceFor(surface);
