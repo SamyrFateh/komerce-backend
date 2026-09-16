@@ -91,6 +91,34 @@ jobs:
             );
           }
 
+          // Market resolved at checkout => only a LOCAL_ACTIVE decision is buyer-effective.
+          // These legacy E2Es exercise order/inventory/refund semantics, so seed the
+          // market decision explicitly instead of relying on products.price_kmf.
+          patch(
+            'tests/e2e-api/inventory.stock-never-negative.e2e.test.js',
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, 25000, $3)`,\n      [id, `E2E Stock ${tag(label)}`, stock]\n    );\n    return id;",
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, 25000, $3)`,\n      [id, `E2E Stock ${tag(label)}`, stock]\n    );\n    await db.query(\n      `INSERT INTO product_market_price_drafts\n         (market_id, product_id, amount, currency, status, reason, authorized_at, authorization_snapshot, active_at)\n       SELECT id, $1, 25000, 'KMF', 'LOCAL_ACTIVE', 'E2E KM active price', NOW(), '{\"e2e\":true}'::jsonb, NOW()\n         FROM markets WHERE code = 'KM'`,\n      [id]\n    );\n    return id;",
+            'inventory LOCAL_ACTIVE price'
+          );
+          patch(
+            'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js',
+            "    await db.query(\n      'INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, $3, 30)',\n      [id, `E2E Orders ${tag(label)}`, priceKmf]\n    );\n    return id;",
+            "    await db.query(\n      'INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, $3, 30)',\n      [id, `E2E Orders ${tag(label)}`, priceKmf]\n    );\n    await db.query(\n      `INSERT INTO product_market_price_drafts\n         (market_id, product_id, amount, currency, status, reason, authorized_at, authorization_snapshot, active_at)\n       SELECT id, $1, $2, 'KMF', 'LOCAL_ACTIVE', 'E2E KM active price', NOW(), '{\"e2e\":true}'::jsonb, NOW()\n         FROM markets WHERE code = 'KM'`,\n      [id, priceKmf]\n    );\n    return id;",
+            'orders doctrine LOCAL_ACTIVE price'
+          );
+          patch(
+            'tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js',
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock)\n       VALUES ($1, $2, 25000, 50)`,\n      [productId, `E2E Produit ${tag('sku')}`]\n    );\n    cleanup.track('products', 'id', productId);",
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock)\n       VALUES ($1, $2, 25000, 50)`,\n      [productId, `E2E Produit ${tag('sku')}`]\n    );\n    await db.query(\n      `INSERT INTO product_market_price_drafts\n         (market_id, product_id, amount, currency, status, reason, authorized_at, authorization_snapshot, active_at)\n       SELECT id, $1, 25000, 'KMF', 'LOCAL_ACTIVE', 'E2E KM active price', NOW(), '{\"e2e\":true}'::jsonb, NOW()\n         FROM markets WHERE code = 'KM'`,\n      [productId]\n    );\n    cleanup.track('products', 'id', productId);",
+            'checkout LOCAL_ACTIVE price'
+          );
+          patch(
+            'tests/e2e-api/refunds.no-double-application.e2e.test.js',
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, 25000, 20)`,\n      [id, `E2E Refund ${tag(label)}`]\n    );\n    return id;",
+            "    await db.query(\n      `INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, 25000, 20)`,\n      [id, `E2E Refund ${tag(label)}`]\n    );\n    await db.query(\n      `INSERT INTO product_market_price_drafts\n         (market_id, product_id, amount, currency, status, reason, authorized_at, authorization_snapshot, active_at)\n       SELECT id, $1, 25000, 'KMF', 'LOCAL_ACTIVE', 'E2E KM active price', NOW(), '{\"e2e\":true}'::jsonb, NOW()\n         FROM markets WHERE code = 'KM'`,\n      [id]\n    );\n    return id;",
+            'refund LOCAL_ACTIVE price'
+          );
+
           // Legacy viewer projection now requires the complete read baseline.
           patch(
             'tests/helpers/marketDelegationE2EKit.js',
