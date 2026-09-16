@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        sandbox credentials, bounded read request, guarded seller draft seed
+ * @inputs        sandbox credentials, bounded read request, guarded seller draft seed/publication
  * @outputs       provider JSON, ephemeral access token
  * @depends       db.js, node:crypto
  * @used-by       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-purchase-reconciliation.js, scripts/allegro-sandbox-check.js
@@ -21,6 +21,8 @@ const API = 'https://api.allegro.pl.allegrosandbox.pl';
 const TOKEN = 'https://allegro.pl.allegrosandbox.pl/auth/oauth/token';
 const KEY = 'allegro_sandbox';
 const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SAFE_PROVIDER_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
 
 function configuration(env) {
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX !== '1') throw new Error('ALLEGRO_SANDBOX_DISABLED');
@@ -38,6 +40,48 @@ function seedConfiguration(env) {
   if (runtime !== 'staging') throw new Error('ALLEGRO_SANDBOX_SEED_STAGING_ONLY');
   if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED !== '1') throw new Error('ALLEGRO_SANDBOX_SEED_DISABLED');
   return c;
+}
+
+function publicationOfferId(value) {
+  const id = String(value ?? '').trim();
+  if (!/^[0-9]{1,30}$/.test(id)) throw new Error('ALLEGRO_SANDBOX_PUBLICATION_OFFER_ID_INVALID');
+  return id;
+}
+
+function publicationCommandId(value) {
+  const id = String(value ?? '').trim().toLowerCase();
+  if (!UUID_RE.test(id)) throw new Error('ALLEGRO_SANDBOX_PUBLICATION_COMMAND_ID_INVALID');
+  return id;
+}
+
+function sellerSettingId(value, label) {
+  const id = String(value ?? '').trim().toLowerCase();
+  if (!UUID_RE.test(id)) throw new Error(`ALLEGRO_SANDBOX_${label}_ID_INVALID`);
+  return id;
+}
+
+function safeSettingRows(rows, { includeType = false } = {}) {
+  return (Array.isArray(rows) ? rows : []).slice(0, 60)
+    .map(row => {
+      const id = String(row?.id || '').trim().toLowerCase();
+      if (!UUID_RE.test(id)) return null;
+      const out = { id };
+      if (includeType && SAFE_PROVIDER_TOKEN_RE.test(String(row?.type || '').trim())) out.type = String(row.type).trim();
+      return out;
+    })
+    .filter(Boolean);
+}
+
+function safeProvider422Diagnostic(payload) {
+  const errors = Array.isArray(payload?.errors) ? payload.errors : [];
+  const safe = [];
+  for (const item of errors.slice(0, 5)) {
+    const code = String(item?.code || '').trim();
+    const path = String(item?.path || '').trim();
+    if (!SAFE_PROVIDER_TOKEN_RE.test(code)) continue;
+    safe.push(SAFE_PROVIDER_TOKEN_RE.test(path) ? `${code}@${path}` : code);
+  }
+  return safe.length ? `[${safe.join(',')}]` : '';
 }
 
 function encrypt(token, key) {
@@ -66,8 +110,13 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     } catch {
       throw new Error('ALLEGRO_TRANSPORT_UNAVAILABLE');
     }
-    // Never expose provider bodies or fetch errors: they can echo credentials.
-    if (!response.ok) throw new Error(`ALLEGRO_HTTP_${response.status}`);
+    if (!response.ok) {
+      let diagnostic = '';
+      if (response.status === 403 || response.status === 422) {
+        try { diagnostic = safeProvider422Diagnostic(await response.json()); } catch { diagnostic = ''; }
+      }
+      throw new Error(`ALLEGRO_HTTP_${response.status}${diagnostic}`);
+    }
     try { return await response.json(); } catch { throw new Error('ALLEGRO_INVALID_JSON'); }
   }
 
@@ -77,7 +126,6 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
       inFlight = (async () => {
         const db = dbImpl || require('../../db');
         const token = await db.withTransaction(async (tx) => {
-          // Serializes refresh across replicas AND the first bootstrap (no row yet).
           await tx.query('SELECT pg_advisory_xact_lock(218, 7411)');
           const { rows } = await tx.query('SELECT refresh_token_ciphertext, refresh_token_iv, refresh_token_tag FROM supplier_oauth_connections WHERE supplier_key = $1', [KEY]);
           let refresh;
@@ -99,8 +147,6 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
             || !Number.isFinite(payload.expires_in) || payload.expires_in <= 60
             || String(payload.token_type).toLowerCase() !== 'bearer') throw new Error('ALLEGRO_INVALID_TOKEN_RESPONSE');
           const [ciphertext, iv, tag] = encrypt(payload.refresh_token, c.key);
-          // Legacy NOT NULL access columns hold empty sentinels, never an access token.
-          // The rotated refresh token must commit before a bearer is released to callers.
           await tx.query(`INSERT INTO supplier_oauth_connections
             (supplier_key, access_token_ciphertext, access_token_iv, access_token_tag, access_expires_at,
              refresh_token_ciphertext, refresh_token_iv, refresh_token_tag, token_type, last_refreshed_at)
@@ -126,6 +172,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
         headers: {
           Authorization: `Bearer ${bearer}`,
           Accept: 'application/vnd.allegro.public.v1+json',
+          'Accept-Language': 'pl-PL',
           'User-Agent': c.userAgent,
           ...(init.headers || {}),
         },
@@ -137,7 +184,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
   }
 
   async function get(path, params = {}) {
-    const c = configuration(env); // Gate is rechecked for every call, even with a cached token.
+    const c = configuration(env);
     if (!/^\/sale\/(offers|product-offers\/[0-9]{1,30})$/.test(path)) throw new Error('ALLEGRO_READ_PATH_NOT_ALLOWED');
     const url = new URL(path, API);
     url.search = new URLSearchParams(params).toString();
@@ -147,9 +194,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
   async function getSellerOrder(checkoutFormId) {
     const c = configuration(env);
     const id = String(checkoutFormId || '').trim().toLowerCase();
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
-      throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
-    }
+    if (!UUID_RE.test(id)) throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
     const url = new URL(`/order/checkout-forms/${id}`, API);
     return authorizedJson(c, url, { method: 'GET' });
   }
@@ -160,8 +205,6 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     if (q.length < 2 || q.length > 120) throw new Error('ALLEGRO_SANDBOX_SEED_QUERY_INVALID');
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) throw new Error('ALLEGRO_SANDBOX_SEED_LIMIT_INVALID');
     const url = new URL('/sale/products', API);
-    // The live contract does not expose a generic `limit` query parameter here.
-    // Keep our operator bound local rather than sending an unsupported parameter.
     url.search = new URLSearchParams({ phrase: q }).toString();
     const payload = await authorizedJson(c, url, { method: 'GET' });
     const products = Array.isArray(payload?.products) ? payload.products.slice(0, limit) : [];
@@ -179,8 +222,6 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     if (!/^komerce-sandbox-seed-[1-3]$/.test(external)) throw new Error('ALLEGRO_SANDBOX_SEED_EXTERNAL_ID_INVALID');
     if (!Number.isFinite(price) || price <= 0 || price > 1000000) throw new Error('ALLEGRO_SANDBOX_SEED_PRICE_INVALID');
     if (!Number.isSafeInteger(stock) || stock < 1 || stock > 1000) throw new Error('ALLEGRO_SANDBOX_SEED_STOCK_INVALID');
-    // Deliberately mirror Allegro's minimal draft contract. Product-specific
-    // parameters, delivery, payments and location must not be guessed by Komerce.
     const payload = {
       productSet: [{ product: { id } }],
       name: title,
@@ -197,16 +238,114 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     });
   }
 
-  return { get, getSellerOrder, searchProducts, createDraftOffer };
+  async function getSellerSettings() {
+    const c = seedConfiguration(env);
+    const [shipping, returns, implied] = await Promise.all([
+      authorizedJson(c, new URL('/sale/shipping-rates', API), { method: 'GET' }),
+      authorizedJson(c, new URL('/after-sales-service-conditions/return-policies', API), { method: 'GET' }),
+      authorizedJson(c, new URL('/after-sales-service-conditions/implied-warranties', API), { method: 'GET' }),
+    ]);
+    return {
+      shipping_rates: safeSettingRows(shipping?.shippingRates, { includeType: true }),
+      return_policies: safeSettingRows(returns?.returnPolicies),
+      implied_warranties: safeSettingRows(implied?.impliedWarranties),
+    };
+  }
+
+  async function completeSeedOffer(offerId, { shippingRateId, returnPolicyId, impliedWarrantyId }) {
+    const c = seedConfiguration(env);
+    const id = publicationOfferId(offerId);
+    const shipping = sellerSettingId(shippingRateId, 'SHIPPING_RATE');
+    const returns = sellerSettingId(returnPolicyId, 'RETURN_POLICY');
+    const implied = sellerSettingId(impliedWarrantyId, 'IMPLIED_WARRANTY');
+
+    const current = await authorizedJson(c, new URL(`/sale/product-offers/${id}`, API), { method: 'GET' });
+    const productId = String(current?.productSet?.[0]?.product?.id || '').trim();
+    if (!/^[A-Za-z0-9-]{1,80}$/.test(productId)) throw new Error('ALLEGRO_SANDBOX_SEED_PRODUCT_ID_MISSING');
+
+    // Re-sending the canonical product id intentionally refreshes catalog-owned
+    // product data, including GPSR information when Allegro's product catalog has it.
+    // We only bind seller-owned settings that already exist on this account.
+    const payload = {
+      productSet: [{ product: { id: productId } }],
+      delivery: { shippingRates: { id: shipping } },
+      afterSalesServices: {
+        impliedWarranty: { id: implied },
+        returnPolicy: { id: returns },
+      },
+    };
+    const patched = await authorizedJson(c, new URL(`/sale/product-offers/${id}`, API), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(payload),
+    });
+    const product = patched?.productSet?.[0] || {};
+    return {
+      offer_id: id,
+      product_id: productId,
+      publication_status: String(patched?.publication?.status || 'UNKNOWN').toUpperCase(),
+      delivery_bound: String(patched?.delivery?.shippingRates?.id || '').toLowerCase() === shipping,
+      return_policy_bound: String(patched?.afterSalesServices?.returnPolicy?.id || '').toLowerCase() === returns,
+      implied_warranty_bound: String(patched?.afterSalesServices?.impliedWarranty?.id || '').toLowerCase() === implied,
+      responsible_producer_present: Boolean(product?.responsibleProducer),
+      safety_information_present: Boolean(product?.safetyInformation),
+    };
+  }
+
+  async function activateOffer(offerId, { commandId = crypto.randomUUID() } = {}) {
+    const c = seedConfiguration(env);
+    const id = publicationOfferId(offerId);
+    const command = publicationCommandId(commandId);
+    const url = new URL(`/sale/offer-publication-commands/${command}`, API);
+    const payload = {
+      offerCriteria: [{ offers: [{ id }], type: 'CONTAINS_OFFERS' }],
+      publication: { action: 'ACTIVATE' },
+    };
+    const provider = await authorizedJson(c, url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(payload),
+    });
+    return { offer_id: id, command_id: command, provider };
+  }
+
+  async function getPublicationTasks(commandId, { limit = 100, offset = 0 } = {}) {
+    const c = seedConfiguration(env);
+    const command = publicationCommandId(commandId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000
+      || !Number.isSafeInteger(offset) || offset < 0 || offset > 999) {
+      throw new Error('ALLEGRO_SANDBOX_PUBLICATION_TASK_PAGE_INVALID');
+    }
+    const url = new URL(`/sale/offer-publication-commands/${command}/tasks`, API);
+    url.search = new URLSearchParams({ limit: String(limit), offset: String(offset) }).toString();
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
+  return {
+    get,
+    getSellerOrder,
+    searchProducts,
+    createDraftOffer,
+    getSellerSettings,
+    completeSeedOffer,
+    activateOffer,
+    getPublicationTasks,
+  };
 }
 
 const client = createClient();
 module.exports = {
   configuration,
   seedConfiguration,
+  safeProvider422Diagnostic,
+  safeSettingRows,
   createClient,
   get: client.get,
   getSellerOrder: client.getSellerOrder,
   searchProducts: client.searchProducts,
   createDraftOffer: client.createDraftOffer,
+  getSellerSettings: client.getSellerSettings,
+  completeSeedOffer: client.completeSeedOffer,
+  activateOffer: client.activateOffer,
+  getPublicationTasks: client.getPublicationTasks,
 };
