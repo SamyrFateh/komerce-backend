@@ -29,11 +29,12 @@
     const header = doc.getElementById?.('canonical-admin-navigation')
       || doc.querySelector?.('[data-canonical-shell-role="navigation"]');
     if (!header) return;
+    if (header === lastHeader) return;
+    lastHeader = header;
 
-    if (header !== lastHeader) lastHeader = header;
-
-    // Topbar et tabs sont des projections du header courant. On les
-    // reconstruit systématiquement pour éviter tout chrome orphelin/stale.
+    // Topbar et tabs sont des projections du header courant. Lorsqu'un
+    // nouveau header devient propriétaire, on détruit toutes les projections
+    // précédentes avant de reconstruire le chrome une seule fois.
     Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || [])
       .forEach(node => node.remove?.());
     Array.from(doc.querySelectorAll?.('#canonical-admin-domain-tabs, [data-canonical-shell-role="domain-tabs"]') || [])
