@@ -13,6 +13,7 @@
 import { bus } from './b-bus.js';
 
 const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
+const HANDOFFS = Object.freeze(['whatsapp']);
 
 export function requestDiscovery(
   kind,
@@ -21,6 +22,7 @@ export function requestDiscovery(
   requestedWindow = null,
   action = 'request',
   requesterNote = null,
+  handoff = null,
 ) {
   if ((kind !== 'service' && kind !== 'physical_offer') || !ref) return false;
   const normalizedAction = String(action || 'request').trim().toLowerCase();
@@ -32,6 +34,11 @@ export function requestDiscovery(
   const normalizedNote = typeof requesterNote === 'string'
     ? (requesterNote.trim() || null)
     : null;
+  const normalizedHandoff = handoff == null || handoff === ''
+    ? null
+    : String(handoff).trim().toLowerCase();
+  if (normalizedHandoff && !HANDOFFS.includes(normalizedHandoff)) return false;
+  if (normalizedHandoff === 'whatsapp' && kind !== 'service') return false;
 
   const payload = {
     kind,
@@ -41,6 +48,7 @@ export function requestDiscovery(
     requesterNote: normalizedNote,
   };
   if (normalizedAction !== 'request') payload.action = normalizedAction;
+  if (normalizedHandoff) payload.handoff = normalizedHandoff;
   bus.emit('discovery:request', payload);
   return true;
 }
