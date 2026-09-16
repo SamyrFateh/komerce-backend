@@ -151,7 +151,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `mobile_money_transactions` | Tentatives et transactions Mobile Money idempotentes ; snapshot provider, marché, MSISDN, devise/montant et statut externe avant confirmation canonique paiement→stock. **Migration 169 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `cash_confirmation_controls` | État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement. **Migration 199 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 | `market_settlements` | Vérité de règlement du Market Operating Assignment ; snapshot amount + currency immuable et cycle READY -> REQUESTED -> PAID -> RECEIVED, sans payout implicite. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
-| `market_settlement_events` | Journal financier append-only du lifecycle settlement ; UPDATE et DELETE interdits, distinct de market_delegation_audit. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `market_settlement_events` | Journal financier append-only du lifecycle settlement ; UPDATE et DELETE interdits, distinct des faits économiques. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
 
 ### 4.5 Paniers et catalogue
@@ -255,7 +255,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `garment_models` | Modèles vêtements (module cérémonie). |
 | `supplier_catalog_sync_checkpoints` | Checkpoints reprenables par fournisseur, synchronisation et catégorie pour alimenter le pool CJ propre plafonné à 1000 références sans publication automatique. **Migration 163 — promue le 2026-09-05 (schema-promote, dump live verifie).** |
 | `supplier_oauth_connections` | Connexion OAuth fournisseur persistée côté serveur ; access/refresh tokens chiffrés AES-256-GCM, expirations et rotation, sans secret exposé au navigateur. **Migration 218 — promue le 2026-09-12 (schema-promote, dump live verifie).** |
-| `sourcing_sources` | Instances de sources de sourcing avec adapter, acquisition/continuity et reference externe de credential ; aucune autorite runtime en PR 1A. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `sourcing_sources` | Instances de sources de sourcing avec adapter, acquisition/continuity et reference externe de credential ; aucune autorite runtime en PR 1A. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** **Migration 238 (2026-09-16, `intended_migration_schema`)** : + `autopilot_enabled` BOOLEAN NOT NULL DEFAULT false, autorisation explicite de collecte automatique récurrente ; `false` garantit qu’aucune source historique ne démarre sans action opérateur. |
 | `sourcing_source_provides` | Capabilities relationnelles catalog/offers/units d'une source ; invariant api => units en base. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
 | `sourcing_source_execution_modes` | Modes d'execution supportes human/api, distincts de la readiness instantanee. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
 | `sourcing_captures` | Runs/lots d'acquisition d'une source ; lifecycle operationnel mutable, sans verite produit. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
