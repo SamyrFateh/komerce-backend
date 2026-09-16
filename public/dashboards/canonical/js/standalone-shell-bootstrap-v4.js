@@ -20,6 +20,16 @@
 (function initStandaloneShellBootstrapV4(global) {
   const doc = global.document;
 
+  const CHROME_SELECTOR = [
+    '#canonical-admin-navigation',
+    '[data-canonical-navigation="true"]',
+    '[data-canonical-shell-role="navigation"]',
+    '#canonical-admin-topbar',
+    '[data-canonical-shell-role="topbar"]',
+    '#canonical-admin-domain-tabs',
+    '[data-canonical-shell-role="domain-tabs"]',
+  ].join(', ');
+
   function loginUrl() {
     const location = global.location || {};
     const next = `${location.pathname || ''}${location.search || ''}${location.hash || ''}`;
@@ -74,9 +84,8 @@
   }
 
   function clearAnonymousChrome() {
-    doc?.getElementById?.('canonical-admin-navigation')?.remove?.();
-    doc?.getElementById?.('canonical-admin-topbar')?.remove?.();
-    doc?.getElementById?.('canonical-admin-domain-tabs')?.remove?.();
+    const nodes = Array.from(doc?.querySelectorAll?.(CHROME_SELECTOR) || []);
+    nodes.filter((node, index) => nodes.indexOf(node) === index).forEach(node => node.remove?.());
   }
 
   function surfaceForCurrentPath(nav) {
@@ -109,6 +118,7 @@
       surface,
       pathname: global.location?.pathname,
     });
+    if (typeof nav._dedupeShell === 'function') nav._dedupeShell(doc);
 
     doc.body?.classList?.add('kmc-standalone-shell-authenticated');
     return { user, adminContext, surface };
@@ -123,6 +133,7 @@
   }
 
   const api = Object.freeze({
+    CHROME_SELECTOR,
     loginUrl,
     requestJson,
     resolveUser,
