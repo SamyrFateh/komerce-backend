@@ -40,13 +40,15 @@ if (!hasIntegrationEnv) {
     cleanupBusinessFixtures,
   } = require('./test-harness/seed-helpers.EXTENDED');
 
-  // Fake PayPal provider boundary — no network.
+  // Fake PayPal provider boundary — no network. The real service validates
+  // both amount and capture currency; the fake must therefore expose EUR.
   function fakePaypal({ amountEur, captureId = 'CAP-itest-1', orderId = null }) {
     return {
       captureOrder: jest.fn().mockResolvedValue({ id: captureId, status: 'COMPLETED' }),
       extractCaptureInfo: jest.fn().mockReturnValue({
         status: 'COMPLETED',
         amount_value: amountEur,
+        currency: 'EUR',
         paypal_capture_id: captureId,
         paypal_order_id: orderId,
         payer_email: 'itest@paypal.test',
