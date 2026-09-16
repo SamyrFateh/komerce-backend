@@ -346,7 +346,7 @@ describeE2E(
       // transaction ni sur le chemin critique.
       expect(mockNotifyText).toHaveBeenCalledWith(
         expect.any(String),
-        expect.stringContaining('a été remis'),
+        expect.stringContaining('retrait exceptionnel autorisé'),
         'exceptional_pickup_collected',
         successOrderId,
       );

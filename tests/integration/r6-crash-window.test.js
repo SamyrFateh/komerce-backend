@@ -25,29 +25,13 @@
  *
  * REMÈDE — Outbox transactionnelle
  * ════════════════════════════════
- * DDL à migrer :
+ * Ce test démontre le PATTERN avec une table TEMP locale à la session.
+ * Il ne doit jamais écrire dans l'outbox canonique de production : depuis F0,
+ * `outbox_events` est volontairement étroite, append-only et réservée au
+ * contrat `physical_outcome_reported`.
  *
- *   CREATE TABLE outbox_events (
- *     id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
- *     event_type   text NOT NULL,
- *     payload      jsonb NOT NULL,
- *     created_at   timestamptz DEFAULT NOW(),
- *     processed_at timestamptz,
- *     attempts     int DEFAULT 0,
- *     last_error   text
- *   );
- *
- * Dans la TX, AVANT COMMIT :
- *   await client.query(
- *     `INSERT INTO outbox_events (event_type, payload) VALUES ($1, $2)`,
- *     ['order.created', JSON.stringify({ orderId, phones, ... })]
- *   );
- *   await client.query('COMMIT'); // atomique avec la commande
- *
- * Worker (cron/pg_notify) :
- *   SELECT ... FROM outbox_events WHERE processed_at IS NULL
- *   FOR UPDATE SKIP LOCKED LIMIT 10
- *   → exécute l'effet → UPDATE processed_at = NOW()
+ * La simulation conserve la propriété que l'on veut prouver ici :
+ * commande + intention d'effet sont committées dans la MÊME transaction.
  */
 
 const { Pool } = require('pg');
@@ -86,22 +70,9 @@ beforeAll(async () => {
     VALUES ('${R6_PRODUCT}', 'Produit R6', 5000)
     ON CONFLICT (id) DO NOTHING
   `);
-  // Table outbox (simulation — en prod : migration versionnée)
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS outbox_events (
-      id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      event_type   text NOT NULL,
-      payload      jsonb NOT NULL,
-      created_at   timestamptz DEFAULT NOW(),
-      processed_at timestamptz,
-      attempts     int DEFAULT 0,
-      last_error   text
-    )
-  `);
 });
 
 afterAll(async () => {
-  await pool.query(`DELETE FROM outbox_events WHERE payload->>'reason' = 'r6-proof'`);
   await pool.query(`DELETE FROM orders WHERE id IN ('${R6_ORDER1}', '${R6_ORDER2}')`);
   await pool.query(`DELETE FROM products WHERE id = '${R6_PRODUCT}'`);
   await pool.query(`DELETE FROM relais WHERE id = '${R6_RELAIS}'`);
@@ -140,15 +111,28 @@ describe('[R6] Crash-window post-COMMIT — preuve et outbox', () => {
       client.release();
     }
 
-    expect(orderCreated).toBe(true);   // commande en DB ✓
+    expect(orderCreated).toBe(true);    // commande en DB ✓
     expect(effectExecuted).toBe(false); // effet perdu ✓ — fenêtre prouvée
   });
 
-  test('OUTBOX — un effet inscrit dans la TX est durable et rejouable', async () => {
-    // Pattern outbox : effet INSERT dans la MÊME TX → atomique avec la commande
+  test('OUTBOX — commande + intention d’effet sont atomiques dans la même TX', async () => {
     const client = await pool.connect();
 
     try {
+      // Simulation locale du pattern générique. TEMP évite toute collision avec
+      // l'outbox canonique F0 et disparaît à la fermeture de cette session.
+      await client.query(`
+        CREATE TEMP TABLE r6_outbox_events (
+          id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          event_type   text NOT NULL,
+          payload      jsonb NOT NULL,
+          created_at   timestamptz DEFAULT NOW(),
+          processed_at timestamptz,
+          attempts     int DEFAULT 0,
+          last_error   text
+        ) ON COMMIT PRESERVE ROWS
+      `);
+
       await client.query('BEGIN');
 
       await client.query(`
@@ -157,9 +141,8 @@ describe('[R6] Crash-window post-COMMIT — preuve et outbox', () => {
         ON CONFLICT (id) DO UPDATE SET reference = EXCLUDED.reference
       `);
 
-      // [OUTBOX] inséré dans la MÊME TX → atomique avec la commande
       await client.query(`
-        INSERT INTO outbox_events (event_type, payload)
+        INSERT INTO r6_outbox_events (event_type, payload)
         VALUES ('order.created', $1::jsonb)
       `, [JSON.stringify({
         orderId: R6_ORDER2,
@@ -168,30 +151,35 @@ describe('[R6] Crash-window post-COMMIT — preuve et outbox', () => {
         reason: 'r6-proof',
       })]);
 
-      await client.query('COMMIT'); // commande + outbox committés atomiquement
-      // → même si process.exit(1) ici, l'outbox est en DB
+      await client.query('COMMIT');
+
+      // Après COMMIT, les deux écritures sont visibles dans la même session.
+      const { rows } = await client.query(
+        `SELECT id, event_type, processed_at, attempts
+         FROM r6_outbox_events WHERE payload->>'reference' = 'KOM-R6-OUTBOX'`
+      );
+      expect(rows.length).toBe(1);
+      expect(rows[0].event_type).toBe('order.created');
+      expect(rows[0].processed_at).toBeNull();
+
+      const { rows: orderRows } = await client.query(
+        `SELECT id FROM orders WHERE id = $1`,
+        [R6_ORDER2]
+      );
+      expect(orderRows).toHaveLength(1);
+
+      // Simule le worker sur l'outbox de démonstration.
+      await client.query(
+        `UPDATE r6_outbox_events SET processed_at = NOW(), attempts = 1 WHERE id = $1`,
+        [rows[0].id]
+      );
+
+      const { rows: [checked] } = await client.query(
+        `SELECT processed_at FROM r6_outbox_events WHERE id = $1`, [rows[0].id]
+      );
+      expect(checked.processed_at).not.toBeNull();
     } finally {
       client.release();
     }
-
-    // Vérifier durabilité : l'outbox est bien en DB après COMMIT
-    const { rows } = await pool.query(
-      `SELECT id, event_type, processed_at, attempts
-       FROM outbox_events WHERE payload->>'reference' = 'KOM-R6-OUTBOX'`
-    );
-    expect(rows.length).toBe(1);
-    expect(rows[0].event_type).toBe('order.created');
-    expect(rows[0].processed_at).toBeNull(); // pas encore traité
-
-    // Simuler le worker : traite et marque comme processed
-    await pool.query(
-      `UPDATE outbox_events SET processed_at = NOW(), attempts = 1 WHERE id = $1`,
-      [rows[0].id]
-    );
-
-    const { rows: [checked] } = await pool.query(
-      `SELECT processed_at FROM outbox_events WHERE id = $1`, [rows[0].id]
-    );
-    expect(checked.processed_at).not.toBeNull(); // worker a traité ✓
   });
 });

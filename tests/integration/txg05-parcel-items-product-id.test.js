@@ -23,10 +23,14 @@ const { Pool } = require('pg');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const ORDER_ID = '00000000-0000-0000-0000-0000000000c1';
-const PRODUCT_ID = '00000000-0000-0000-0000-0000000000b1';
-const RELAIS_ID = '00000000-0000-0000-0000-0000000000a1';
-const MARKET_ID = '00000000-0000-0000-0000-0000000000e1';
+// Fixtures volontairement propres à TXG-05. Les anciens a1/b1/c1/d1 sont
+// partagés par TXG-03/04 et ne peuvent plus être réaffectés à un autre marché
+// depuis l'invariant orders/relais market authority.
+const ORDER_ID = '00000000-0000-0000-0000-0000000000c5';
+const PRODUCT_ID = '00000000-0000-0000-0000-0000000000b5';
+const RELAIS_ID = '00000000-0000-0000-0000-0000000000a5';
+const ORDER_ITEM_ID = '00000000-0000-0000-0000-0000000000d5';
+const MARKET_ID = '00000000-0000-0000-0000-0000000000e5';
 const HUB_USER_ID = '00000000-0000-0000-0000-000000000002';
 
 jest.setTimeout(30000);
@@ -57,11 +61,9 @@ async function resetOrderState() {
   `);
   await pool.query(`
     INSERT INTO products (id, name, price_kmf)
-    VALUES ('${PRODUCT_ID}', 'Produit Test TXG', 10000)
+    VALUES ('${PRODUCT_ID}', 'Produit Test TXG-05', 10000)
     ON CONFLICT (id) DO NOTHING;
   `);
-  // market_id est désormais NOT NULL sur relais/orders (doctrine market-scoping) —
-  // fixture dédiée TXG-05 pour ne pas dépendre d'un marché de seed externe.
   await pool.query(`
     INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
     VALUES ('${MARKET_ID}', 'TX5', 'TXG-05 Test Market', 'KMF', 0, TRUE)
@@ -69,8 +71,8 @@ async function resetOrderState() {
   `);
   await pool.query(`
     INSERT INTO relais (id, name, agent_name, phone, address, market_id)
-    VALUES ('${RELAIS_ID}', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', '${MARKET_ID}')
-    ON CONFLICT (id) DO NOTHING;
+    VALUES ('${RELAIS_ID}', 'Relais Test TXG-05', 'Agent Relais TXG-05', '+269000005', 'Adresse Test TXG-05', '${MARKET_ID}')
+    ON CONFLICT (id) DO UPDATE SET market_id = EXCLUDED.market_id;
   `);
   await pool.query(`
     INSERT INTO orders (id, reference, market_id, relais_id, total_kmf, payment_mode, status)
@@ -79,10 +81,10 @@ async function resetOrderState() {
   `, [ORDER_ID, RELAIS_ID, MARKET_ID]);
   await pool.query(`
     INSERT INTO order_items (id, order_id, product_id, price_kmf, quantity)
-    VALUES ('00000000-0000-0000-0000-0000000000d1', $1, $2, 10000, 1)
+    VALUES ($3, $1, $2, 10000, 1)
     ON CONFLICT (id) DO UPDATE SET quantity = 1
-  `, [ORDER_ID, PRODUCT_ID]);
-  await pool.query(`DELETE FROM parcel_items WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`, [ORDER_ID]);
+  `, [ORDER_ID, PRODUCT_ID, ORDER_ITEM_ID]);
+  await pool.query(`DELETE FROM parcel_items WHERE order_item_id = $1`, [ORDER_ITEM_ID]);
   // Trigger DB interdit le DELETE sur parcels (RAISE EXCEPTION, cf. db/schema.sql:458) —
   // on neutralise les colis des runs précédents via status=cancelled au lieu de les supprimer.
   await pool.query("UPDATE parcels SET status = 'cancelled' WHERE order_id = $1", [ORDER_ID]);
@@ -106,8 +108,8 @@ describe('TXG-05 — parcel_items.product_id (bug préexistant, 3 sites jumeaux)
     const { rows } = await pool.query(
       `SELECT pi.product_id FROM parcel_items pi
        JOIN parcels pa ON pa.id = pi.parcel_id
-       WHERE pa.order_id = $1`,
-      [ORDER_ID]
+       WHERE pa.order_id = $1 AND pi.order_item_id = $2`,
+      [ORDER_ID, ORDER_ITEM_ID]
     );
     expect(rows.length).toBe(1);
     expect(rows[0].product_id).toBe(PRODUCT_ID); // <- avant fix: violation NOT NULL, INSERT échouait
@@ -118,12 +120,13 @@ describe('TXG-05 — parcel_items.product_id (bug préexistant, 3 sites jumeaux)
     const app = buildApp();
     const res = await request(app)
       .post(`/api/hub/orders/${ORDER_ID}/create-parcel`)
-      .send({ type: 'standard', item_ids: ['00000000-0000-0000-0000-0000000000d1'] });
+      .send({ type: 'standard', item_ids: [ORDER_ITEM_ID] });
 
     expect(res.status).toBe(201);
 
     const { rows } = await pool.query(
-      `SELECT product_id FROM parcel_items WHERE order_item_id = '00000000-0000-0000-0000-0000000000d1'`
+      `SELECT product_id FROM parcel_items WHERE order_item_id = $1`,
+      [ORDER_ITEM_ID]
     );
     expect(rows.length).toBe(1);
     expect(rows[0].product_id).toBe(PRODUCT_ID); // <- avant fix: violation NOT NULL (silencieuse via .catch(()=>{}))
@@ -142,7 +145,7 @@ describe('TXG-05 — parcel_items.product_id (bug préexistant, 3 sites jumeaux)
 
     const res = await request(app)
       .post(`/api/hub/parcels/${parcelId}/add-item`)
-      .send({ order_item_id: '00000000-0000-0000-0000-0000000000d1' });
+      .send({ order_item_id: ORDER_ITEM_ID });
 
     expect(res.status).toBe(200);
     expect(res.body.item.product_id).toBe(PRODUCT_ID); // <- avant fix: violation NOT NULL, route cassée

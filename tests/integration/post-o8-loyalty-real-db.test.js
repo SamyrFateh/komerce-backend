@@ -67,11 +67,16 @@ if (!hasIntegrationEnv) {
         );
         tierId = tier.id;
 
+        const { rows: [market] } = await db.query(
+          `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+        );
+        if (!market) throw new Error('LOYALTY-4 requires canonical active market KM');
+
         const { rows: [relais] } = await db.query(
-          `INSERT INTO relais (name, agent_name, phone, address, island)
-           VALUES ($1, 'ITest Loyalty', $2, 'Adresse test loyalty', 'Anjouan')
+          `INSERT INTO relais (name, agent_name, phone, address, island, market_id)
+           VALUES ($1, 'ITest Loyalty', $2, 'Adresse test loyalty', 'Anjouan', $3)
            RETURNING id`,
-          [`ITest Loyalty ${Date.now()}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`]
+          [`ITest Loyalty ${Date.now()}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`, market.id]
         );
         relaisId = relais.id;
         user = await createUser({ role: 'client' });
@@ -80,14 +85,14 @@ if (!hasIntegrationEnv) {
         // commandes sont nécessaires pour dépasser le plus haut palier existant.
         await db.query(
           `INSERT INTO orders
-             (reference, user_id, relais_id, total_kmf, total_eur,
+             (reference, user_id, relais_id, market_id, total_kmf, total_eur,
               payment_mode, payment_status, status)
            SELECT
              'ITEST-LOYALTY-' || gen_random_uuid()::text,
-             $1, $2, 10000, 20,
+             $1, $2, $3, 10000, 20,
              'cash_relais', 'paid', 'collected'
-           FROM generate_series(1, $3::int)`,
-          [user.id, relaisId, tierMinOrders]
+           FROM generate_series(1, $4::int)`,
+          [user.id, relaisId, market.id, tierMinOrders]
         );
       });
 

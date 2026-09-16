@@ -192,9 +192,14 @@ describe('F3 PostgreSQL — SLA escalation', () => {
     try {
       await client.query('BEGIN');
       await client.query('ALTER TABLE signals RENAME TO signals_unavailable');
+      // Sans ce masque local, `search_path = <schema>, public` retombe sur
+      // public.signals et la panne simulée n'existe pas. Cette table volontairement
+      // incompatible force bien le sink Action Center à échouer dans la transaction.
+      await client.query('CREATE TABLE signals (unavailable BOOLEAN)');
       await expect(escalateOneOverdueIncident(client)).rejects.toThrow();
       await client.query('ROLLBACK');
     } finally {
+      try { await client.query('ROLLBACK'); } catch (_) {}
       client.release();
     }
 

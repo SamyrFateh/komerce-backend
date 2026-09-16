@@ -41,7 +41,7 @@ const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(30000);
 
@@ -112,11 +112,15 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
       [productId, `E2E Produit ${tag('sku')}`]
     );
     cleanup.track('products', 'id', productId);
+    // Depuis la doctrine L1 (market-local-price-resolution-service.js), un
+    // marketId résolu côté serveur exige un LOCAL_ACTIVE pour être achetable.
+    const { rows: [market] } = await db.query(`SELECT id FROM markets WHERE code = 'KM'`);
+    await activateLocalPrice(db, cleanup, { marketId: market.id, productId, amount: 25000, currency: 'KMF' });
 
     // ── Précondition métier : point de retrait ──────────────────────────────
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
-       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, island, market_id)
+       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test', 'Ngazidja', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
     cleanup.track('relais', 'id', relaisId);

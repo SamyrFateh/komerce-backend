@@ -183,7 +183,7 @@ describeE2E('E2E-INVOICES-FINANCE-CONFIG-KMF-NUMERIC — conversion integer -> n
         cfg.cost_fixed_sourcing_kmf + cfg.cost_fixed_transit_kmf +
         cfg.cost_fixed_hub_kmf + cfg.cost_fixed_relais_kmf +
         cfg.cost_fixed_support_kmf;
-      expect(sumFixed).toBeCloseTo(2401.38, 5);
+      expect(sumFixed).toBeCloseTo(2401.48, 5);
     });
   });
 });

@@ -31,7 +31,11 @@ if (!hasIntegrationEnv) {
   });
 } else {
   const request = require('supertest');
-  const { createUser, tokenFor, revoke, cleanup } = require('./test-harness/seed-helpers');
+  const {
+    createUser, tokenFor, revoke,
+    createTestRelais, createPendingOrder,
+    cleanupBusinessFixtures, cleanup,
+  } = require('./test-harness/seed-helpers.EXTENDED');
 
   let app;
 
@@ -44,6 +48,7 @@ if (!hasIntegrationEnv) {
 
   afterAll(async () => {
     if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
+    await cleanupBusinessFixtures();
     await cleanup();
     await new Promise(r => setTimeout(r, 500));
   });
@@ -100,20 +105,21 @@ if (!hasIntegrationEnv) {
     test('un client ne peut pas accéder à la facture liée à la commande d\'un autre', async () => {
       const victim = await createUser({ role: 'client' });
       const attacker = await createUser({ role: 'client' });
+      const relais = await createTestRelais({ name: `itest-post-o8 security-grid ${Date.now()}` });
+      const order = await createPendingOrder({
+        user_id: victim.id,
+        relais_id: relais.id,
+        total_kmf: 10000,
+        payment_mode: 'cash_relais',
+      });
 
-      // Crée une commande appartenant à la victime
-      const db = require('../../db');
-      const { rows } = await db.query(
-        `INSERT INTO orders (user_id, status, total_kmf)
-         VALUES ($1, 'pending', 10000) RETURNING id`,
-        [victim.id]
-      ).catch(() => ({ rows: [] }));
-
-      if (!rows.length) return; // schéma orders différent → on ne casse pas le run
-      const orderId = rows[0].id;
+      // Cette preuve doit être non-vide : une fixture invalide est un FAIL,
+      // jamais un motif pour sortir du test sans assertion.
+      expect(order.id).toBeTruthy();
+      expect(order.market_id).toBe(relais.market_id);
 
       const res = await request(app)
-        .get(`/api/invoices/${orderId}`)
+        .get(`/api/invoices/${order.id}`)
         .set(...bearer(attacker.token));
 
       // L'attaquant doit être bloqué : 403 (ownership) ou 404 (non révélé). Jamais 200.

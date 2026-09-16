@@ -29,15 +29,26 @@ if (!hasIntegrationEnv) {
       if (!req.user || req.user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
       next();
     },
+    requireRole: (roles) => (req, res, next) => {
+      if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
+      if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden' });
+      next();
+    },
   }));
 
   jest.mock('../../services/dashboard-pilotage-market', () => ({
     buildMarketPilotage: (...args) => mockBuildMarketPilotage(...args),
   }));
 
-  jest.mock('../../utils/logger', () => ({
-    child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
-  }));
+  jest.mock('../../utils/logger', () => {
+    const makeLogger = () => ({
+      warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn(),
+    });
+    return {
+      child: jest.fn(() => makeLogger()),
+      forModule: jest.fn(() => makeLogger()),
+    };
+  });
 
   const express = require('express');
   const request = require('supertest');

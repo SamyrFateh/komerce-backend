@@ -22,10 +22,24 @@ async function createUser(opts = {}) {
   const jti = opts.jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   return { ...u, jti, token: tokenFor(u.id, { jti }) };
 }
-function tokenFor(id, { jti } = {}) {
-  const p = { id }; if (jti) p.jti = jti;
-  return jwt.sign(p, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+
+/**
+ * Émet une vraie SESSION de test AUTH-8, pas seulement un JWT signé.
+ * Le middleware runtime exige jti + auth_time + amr + token_use=session ;
+ * le harnais doit donc suivre exactement cette frontière de sécurité.
+ * `jti` reste injectable pour les preuves de révocation.
+ */
+function tokenFor(id, { jti, method = 'integration-test' } = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign({
+    id,
+    jti: jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    auth_time: now,
+    amr: [String(method)],
+    token_use: 'session',
+  }, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
 }
+
 async function revoke(jti) {
   await getDb().query(`INSERT INTO revoked_tokens (jti, expires_at) VALUES ($1, now()+interval '1 hour') ON CONFLICT DO NOTHING`, [jti]);
 }

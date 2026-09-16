@@ -80,7 +80,7 @@ const {
  * Valide category + subcategory contre boutique_categories / boutique_subcategories.
  * Iso-comportement avec l'ancien helper inline.
  *
- * @param {import('pg').Pool|import('pg').PoolClient} dbOrClient
+ * @param {{ query: Function }} dbOrClient
  * @param {{ category?: string, subcategory?: string }} payload
  * @returns {Promise<{ ok: true }|{ ok: false, status: number, body: object }>}
  */
@@ -280,7 +280,7 @@ async function updateProduct(db, productId, payload, adminUser) {
   // Lire avant — content_source pilote le régime d'écriture (§5), lifecycle_status
   // pilote le garde d'approbation (§6).
   const { rows: [before] } = await db.query(
-    'SELECT id, name, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1',
+    'SELECT id, name, description, source_locale, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1',
     [productId]
   );
   if (!before) return { status: 404, body: { error: 'Produit introuvable' } };
@@ -460,7 +460,7 @@ async function appendImages(db, productId, imageUrls) {
 
 // ── Variantes : replaceVariants()/deleteVariant() → product-variant-service.js
 // (nettoyage architectural, sous-domaine legacy variants ; réexportées
-// ci-dessous). SKU : resolveActiveSku(), getSkuCandidates(),
+// ci-dessous). SKU : resolveActiveSku(), getSkuCandidates,
 // upsertProductSku(), deactivateProductSku(), auditProductSkuReadiness(),
 // canonicalizeVariantCombo() → product-sku-service.js (domaine 3/5).
 

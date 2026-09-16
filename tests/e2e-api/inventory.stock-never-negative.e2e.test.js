@@ -45,7 +45,7 @@ const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(60000);
 
@@ -107,6 +107,10 @@ describeE2E('E2E-P0-STOCK — inventory · stock jamais négatif', ({ db }) => {
       `INSERT INTO products (id, name, price_kmf, stock) VALUES ($1, $2, 25000, $3)`,
       [id, `E2E Stock ${tag(label)}`, stock]
     );
+    // Depuis la doctrine L1 (market-local-price-resolution-service.js), un
+    // marketId résolu côté serveur exige un LOCAL_ACTIVE pour être achetable.
+    const { rows: [market] } = await db.query(`SELECT id FROM markets WHERE code = 'KM'`);
+    await activateLocalPrice(db, cleanup, { marketId: market.id, productId: id, amount: 25000, currency: 'KMF' });
     return id;
   }
 
@@ -166,8 +170,8 @@ describeE2E('E2E-P0-STOCK — inventory · stock jamais négatif', ({ db }) => {
     );
 
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
-       VALUES ($1, 'E2E Relais Stock', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, island, market_id)
+       VALUES ($1, 'E2E Relais Stock', 'E2E Agent', '+269000111', 'Moroni Test', 'Ngazidja', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 

@@ -186,7 +186,47 @@ function describeE2E(title, body) {
   });
 }
 
+// ── 5. Prix local actif (achat marché) ──────────────────────────────────────
+/**
+ * Insertion directe d'un `product_market_price_drafts` en statut LOCAL_ACTIVE.
+ *
+ * Doctrine (2026-09, décision L1, services/market-local-price-resolution-
+ * service.js) : dès qu'un marketId est résolu côté serveur, SEUL un
+ * LOCAL_ACTIVE pour ce marché rend un produit achetable — jamais de fallback
+ * silencieux vers products.price_kmf. Le chemin applicatif réel pour y
+ * arriver passe par tout le gate économique (pricing-engine, CDR, politique
+ * de décision marché — cf. services/market-local-price-activation-service.js),
+ * volontairement lourd et non pertinent pour un E2E qui ne teste pas la
+ * tarification elle-même. Ce helper court-circuite ce gate en insertion
+ * directe, à l'identique de l'esprit des autres fixtures E2E/intégration
+ * (markets, ceiling_templates, ...) : une vérité d'état minimale, pas un
+ * rejeu du workflow applicatif complet.
+ *
+ * @param {object} db
+ * @param {ReturnType<typeof createCleanup>} cleanup
+ * @param {{ marketId: string, productId: string, amount: number|string, currency: string }} opts
+ */
+async function activateLocalPrice(db, cleanup, { marketId, productId, amount, currency }) {
+  const id = uuid();
+  await db.query(
+    `INSERT INTO product_market_price_drafts
+       (id, market_id, product_id, amount, currency, status, reason, authorized_at, authorization_snapshot, active_at)
+     VALUES ($1,$2,$3,$4,$5,'LOCAL_ACTIVE','E2E — activation directe de test', NOW(), '{}'::jsonb, NOW())
+     ON CONFLICT (market_id, product_id) DO UPDATE SET
+       amount = EXCLUDED.amount,
+       currency = EXCLUDED.currency,
+       status = 'LOCAL_ACTIVE',
+       authorized_at = NOW(),
+       authorization_snapshot = '{}'::jsonb,
+       active_at = NOW()`,
+    [id, marketId, productId, amount, currency]
+  );
+  cleanup.track('product_market_price_drafts', 'id', id);
+  return { id, market_id: marketId, product_id: productId, amount, currency };
+}
+
 module.exports = {
+  activateLocalPrice,
   assertTestDatabase,
   createCleanup,
   describeE2E,

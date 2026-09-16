@@ -21,9 +21,9 @@ jobs:
       - run: npx jest --config jest.unit.config.js --ci --runInBand --forceExit
 
   integration:
-    name: Tests intégration backend
+    name: From-scratch intégration + E2E API
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16
@@ -61,8 +61,11 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Charger le schéma canonique
+      - name: Reconstruire la base canonique depuis zéro
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
-          node scripts/ci-migrate.js
-      - run: npm run test:integration
+          node scripts/ci-db-bootstrap.js
+      - name: Tests intégration backend
+        run: npm run test:integration
+      - name: E2E API feature-first
+        run: npm run test:e2e:features

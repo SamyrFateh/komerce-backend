@@ -75,7 +75,18 @@ async function restorePartners() {
   await pool.query('ALTER TABLE partners_hidden RENAME TO partners');
 }
 
+async function resolveKmMarketId() {
+  const { rows } = await pool.query(
+    `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
+  );
+  if (!rows[0]) {
+    throw new Error('TXG-04 requires canonical active market KM');
+  }
+  return rows[0].id;
+}
+
 async function seedFactoryFixtures() {
+  const marketId = await resolveKmMarketId();
   await pool.query(`
     INSERT INTO users (id, full_name, email, role)
     VALUES ('${ADMIN_ID}', 'Admin Test', 'admin-test@komerce.test', 'admin')
@@ -87,10 +98,10 @@ async function seedFactoryFixtures() {
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address)
-    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni')
-    ON CONFLICT (id) DO NOTHING;
-  `);
+    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', $1)
+    ON CONFLICT (id) DO UPDATE SET market_id = EXCLUDED.market_id;
+  `, [marketId]);
 }
 
 async function restoreSharedSeed() {
@@ -108,6 +119,7 @@ async function restoreSharedSeed() {
   // ici, TXG-03/GREEN échoue en 500 (violation FK) quand TXG-04 s'exécute
   // avant lui dans un run groupé (constaté : jest peut ordonner txg03 avant
   // OU après txg04 selon son séquenceur interne — ce n'est jamais garanti).
+  const marketId = await resolveKmMarketId();
   await pool.query(`
     INSERT INTO users (id, full_name, email, role)
     VALUES
@@ -121,10 +133,10 @@ async function restoreSharedSeed() {
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address)
-    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni')
-    ON CONFLICT (id) DO NOTHING;
-  `);
+    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', $1)
+    ON CONFLICT (id) DO UPDATE SET market_id = EXCLUDED.market_id;
+  `, [marketId]);
   await pool.query(`
     INSERT INTO pricing_category_dims (category, label_fr, length_cm, width_cm, height_cm)
     VALUES ('electronique', 'Électronique', 30, 20, 10)
@@ -136,15 +148,28 @@ async function restoreSharedSeed() {
     ON CONFLICT (category) DO UPDATE SET douane_pct=0.10, tva_pct=0.20, taxe_add_pct=0;
   `);
   await pool.query(`
-    INSERT INTO orders (id, reference, relais_id, total_kmf, payment_mode, status)
-    VALUES ('00000000-0000-0000-0000-0000000000c1', 'KOM-TEST-TXG03', '00000000-0000-0000-0000-0000000000a1', 10000, 'cash_relais', 'preparation')
-    ON CONFLICT (id) DO UPDATE SET status='preparation';
-  `);
+    INSERT INTO orders (id, reference, relais_id, market_id, total_kmf, payment_mode, status)
+    VALUES ('00000000-0000-0000-0000-0000000000c1', 'KOM-TEST-TXG03', '00000000-0000-0000-0000-0000000000a1', $1, 10000, 'cash_relais', 'preparation')
+    ON CONFLICT (id) DO UPDATE SET
+      status = 'preparation',
+      relais_id = EXCLUDED.relais_id,
+      market_id = EXCLUDED.market_id;
+  `, [marketId]);
   await pool.query(`
     INSERT INTO order_items (id, order_id, product_id, price_kmf, quantity)
     VALUES ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000b1', 10000, 1)
     ON CONFLICT (id) DO UPDATE SET quantity=1;
   `);
+
+  const { rows: [authority] } = await pool.query(`
+    SELECT o.market_id AS order_market_id, r.market_id AS relais_market_id
+      FROM orders o
+      JOIN relais r ON r.id = o.relais_id
+     WHERE o.id = '00000000-0000-0000-0000-0000000000c1'
+  `);
+  if (!authority || String(authority.order_market_id) !== String(authority.relais_market_id)) {
+    throw new Error('TXG-04 shared fixture violates order/relais market authority');
+  }
 }
 
 beforeAll(async () => {

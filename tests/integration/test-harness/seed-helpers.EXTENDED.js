@@ -22,9 +22,15 @@ async function createUser(opts = {}) {
   const jti = opts.jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   return { ...u, jti, token: tokenFor(u.id, { jti }) };
 }
-function tokenFor(id, { jti } = {}) {
-  const p = { id }; if (jti) p.jti = jti;
-  return jwt.sign(p, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+function tokenFor(id, { jti, method = 'integration-test' } = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign({
+    id,
+    jti: jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    auth_time: now,
+    amr: [String(method)],
+    token_use: 'session',
+  }, SECRET, { algorithm: 'HS256', expiresIn: '1h' });
 }
 async function revoke(jti) {
   await getDb().query(`INSERT INTO revoked_tokens (jti, expires_at) VALUES ($1, now()+interval '1 hour') ON CONFLICT DO NOTHING`, [jti]);
@@ -40,19 +46,52 @@ async function cleanup() {
 // ─────────────────────────────────────────────────────────────────────────────
 const ITEST_TAG = 'itest-post-o8';
 
-async function createTestRelais(opts = {}) {
+async function resolveTestMarketId(opts = {}) {
+  if (opts.market_id) return opts.market_id;
+  const marketCode = String(opts.market_code || 'KM').trim().toUpperCase();
   const { rows } = await getDb().query(
-    `INSERT INTO relais (name, agent_name, phone, address, island, is_active)
-     VALUES ($1,$2,$3,$4,$5,true) RETURNING *`,
+    `SELECT id FROM markets WHERE code = $1 AND is_active = TRUE LIMIT 1`,
+    [marketCode]
+  );
+  if (!rows[0]) {
+    throw new Error(`ITest reference market ${marketCode} is missing; run scripts/ci-db-bootstrap.js`);
+  }
+  return rows[0].id;
+}
+
+async function createTestRelais(opts = {}) {
+  const marketId = await resolveTestMarketId(opts);
+  const { rows } = await getDb().query(
+    `INSERT INTO relais (name, agent_name, phone, address, island, market_id, is_active)
+     VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING *`,
     [
       opts.name || `${ITEST_TAG} relais`,
       opts.agent_name || `${ITEST_TAG} agent`,
       opts.phone || `+2693${Math.floor(1000000 + Math.random()*8999999)}`,
       opts.address || 'ITest address, Moroni',
       opts.island || 'Ngazidja',
+      marketId,
     ]
   );
   return rows[0];
+}
+
+async function resolveOrderMarketId(opts = {}) {
+  if (!opts.relais_id) {
+    throw new Error('ITest order requires relais_id so market authority can be resolved');
+  }
+  const { rows } = await getDb().query(
+    `SELECT market_id FROM relais WHERE id = $1 LIMIT 1`,
+    [opts.relais_id]
+  );
+  if (!rows[0]?.market_id) {
+    throw new Error(`ITest relais ${opts.relais_id} has no market authority`);
+  }
+  const relayMarketId = rows[0].market_id;
+  if (opts.market_id && String(opts.market_id) !== String(relayMarketId)) {
+    throw new Error(`ITest order market ${opts.market_id} does not match relais market ${relayMarketId}`);
+  }
+  return relayMarketId;
 }
 
 async function createLegacyProduct(opts = {}) {
@@ -85,16 +124,18 @@ async function createSkuProduct(opts = {}) {
 
 async function createPendingOrder(opts = {}) {
   const ref = opts.reference || `ITEST-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  const marketId = await resolveOrderMarketId(opts);
   const { rows } = await getDb().query(
     `INSERT INTO orders
-       (reference, user_id, relais_id, total_kmf, total_eur,
+       (reference, user_id, relais_id, market_id, total_kmf, total_eur,
         payment_mode, payment_status, status, paypal_order_id, cash_ref_code, stripe_payment_id)
-     VALUES ($1,$2,$3,$4,$5,$6::payment_mode,'pending','pending',$7,$8,$9)
+     VALUES ($1,$2,$3,$4,$5,$6,$7::payment_mode,'pending','pending',$8,$9,$10)
      RETURNING *`,
     [
       ref,
       opts.user_id || null,
       opts.relais_id,
+      marketId,
       opts.total_kmf != null ? opts.total_kmf : 10000,
       opts.total_eur != null ? opts.total_eur : 20,
       opts.payment_mode || 'paypal_eur',
@@ -135,6 +176,6 @@ module.exports = {
   createUser, tokenFor, revoke, cleanup,
   // POST-O8 business fixtures
   ITEST_TAG,
-  createTestRelais, createLegacyProduct, createSkuProduct,
+  resolveTestMarketId, resolveOrderMarketId, createTestRelais, createLegacyProduct, createSkuProduct,
   createPendingOrder, createOrderItem, cleanupBusinessFixtures,
 };
