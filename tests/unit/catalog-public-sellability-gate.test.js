@@ -22,13 +22,17 @@ describe('catalog public visibility = static sellability + market truth', () => 
     expect(sql).toContain('sellable_sku.stock > 0');
   });
 
-  test('un SKU fournisseur visible doit porter son identité de commande exacte', () => {
+  test('un SKU fournisseur visible doit porter une SOI conforme au contrat canonique minimal', () => {
     const sql = sellableCatalogUnitSql('p');
     expect(sql).toContain("sellable_sku.source, 'MANUAL'");
     expect(sql).toContain("<> 'SUPPLIER'");
+    expect(sql).toContain('sellable_sku.supplier_sku');
     expect(sql).toContain('sellable_sku.supplier_unit_ref');
     expect(sql).toContain('sellable_sku.supplier_order_identity');
     expect(sql).toContain("supplier_order_identity->>'provider'");
+    expect(sql).toContain("supplier_order_identity->>'version'");
+    expect(sql).toContain("supplier_order_identity->'payload'");
+    expect(sql).toContain("<> '{}'::jsonb");
   });
 
   test('la visibilité marché exige exposition et prix actif sur le même code marché', () => {
