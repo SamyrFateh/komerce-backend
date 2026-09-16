@@ -4,8 +4,8 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional import flag
- * @outputs       sanitized catalog and purchasing evidence
+ * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional activation/import flags
+ * @outputs       sanitized seller publication, catalog and purchasing evidence
  * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/allegro-sandbox-client.js
  * @used-by       operator CLI
  * @db-read       supplier_oauth_connections
@@ -23,6 +23,8 @@ const SEED_PREFIX = 'Komerce Sandbox Seed';
 const SEED_SEARCHES = Object.freeze(['kabel usb', 'mysz bezprzewodowa', 'lampka led']);
 const SEED_PRICES = Object.freeze([29.90, 49.90, 79.90]);
 const SEED_EXTERNAL_IDS = Object.freeze(['komerce-sandbox-seed-1', 'komerce-sandbox-seed-2', 'komerce-sandbox-seed-3']);
+const ACTIVATION_ATTEMPTS = 10;
+const ACTIVATION_POLL_MS = 1000;
 
 function seedCount(argv) {
   const raw = argv.find(arg => arg.startsWith('--seed='));
@@ -77,22 +79,85 @@ async function seedOfferIds(count, api = sandboxClient, env = process.env) {
   return ids;
 }
 
+function sanitizedPublicationTasks(payload) {
+  return (Array.isArray(payload?.tasks) ? payload.tasks : []).slice(0, 20).map(task => ({
+    offer_id: String(task?.offer?.id || task?.offerId || ''),
+    status: task?.status ? String(task.status) : null,
+    error_codes: (Array.isArray(task?.errors) ? task.errors : []).slice(0, 10)
+      .map(error => String(error?.code || '')).filter(Boolean),
+  }));
+}
+
+async function activateOfferIds(ids, api = sandboxClient, {
+  sleepImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  attempts = ACTIVATION_ATTEMPTS,
+  pollMs = ACTIVATION_POLL_MS,
+} = {}) {
+  if (!Number.isSafeInteger(attempts) || attempts < 1 || attempts > 30) throw new Error('ALLEGRO_SANDBOX_ACTIVATION_ATTEMPTS_INVALID');
+  if (!Number.isSafeInteger(pollMs) || pollMs < 0 || pollMs > 10000) throw new Error('ALLEGRO_SANDBOX_ACTIVATION_POLL_INVALID');
+  const out = [];
+
+  for (const rawId of ids) {
+    const id = connector.offerId(rawId);
+    let offer = await api.get(`/sale/product-offers/${id}`);
+    if (String(offer?.publication?.status || '').toUpperCase() === 'ACTIVE') {
+      out.push({ offer_id: id, command_id: null, publication_status: 'ACTIVE', already_active: true, tasks: [] });
+      continue;
+    }
+
+    const command = await api.activateOffer(id);
+    let publicationStatus = String(offer?.publication?.status || 'UNKNOWN').toUpperCase();
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (attempt > 0 || pollMs > 0) await sleepImpl(pollMs);
+      offer = await api.get(`/sale/product-offers/${id}`);
+      publicationStatus = String(offer?.publication?.status || 'UNKNOWN').toUpperCase();
+      if (publicationStatus === 'ACTIVE') break;
+    }
+
+    const taskPayload = await api.getPublicationTasks(command.command_id);
+    const tasks = sanitizedPublicationTasks(taskPayload);
+    if (publicationStatus !== 'ACTIVE') {
+      const taskStatus = tasks.map(task => task.status).filter(Boolean).join('_') || 'NO_TASK_STATUS';
+      throw new Error(`ALLEGRO_SANDBOX_ACTIVATION_NOT_ACTIVE_${id}_${publicationStatus}_${taskStatus}`);
+    }
+    out.push({
+      offer_id: id,
+      command_id: command.command_id,
+      publication_status: publicationStatus,
+      already_active: false,
+      tasks,
+    });
+  }
+  return out;
+}
+
 async function run(argv, {
   fetchProducts = connector.fetchProducts,
   evaluate = adapter.evaluate,
   importCatalog,
   client = sandboxClient,
   env = process.env,
+  sleepImpl,
+  activationAttempts = ACTIVATION_ATTEMPTS,
+  activationPollMs = ACTIVATION_POLL_MS,
 } = {}) {
   const importing = argv.includes('--import');
+  const activating = argv.includes('--activate');
   const count = seedCount(argv);
-  const plainArgs = argv.filter(arg => arg !== '--import' && !arg.startsWith('--seed='));
+  const plainArgs = argv.filter(arg => arg !== '--import' && arg !== '--activate' && !arg.startsWith('--seed='));
   if (count && plainArgs.length) throw new Error('Usage: --seed et OFFER_ID sont mutuellement exclusifs');
   const ids = count
     ? await seedOfferIds(count, client, env)
     : plainArgs.map(connector.offerId);
-  if (!ids.length || ids.length > 100) throw new Error('Usage: node scripts/allegro-sandbox-check.js [--import] [--seed=1..3 | OFFER_ID ...]');
+  if (!ids.length || ids.length > 100) throw new Error('Usage: node scripts/allegro-sandbox-check.js [--activate] [--import] [--seed=1..3 | OFFER_ID ...]');
 
+  const activations = activating
+    ? await activateOfferIds(ids, client, { sleepImpl, attempts: activationAttempts, pollMs: activationPollMs })
+    : [];
+
+  // Always re-read through the canonical connector after optional seller activation.
+  // `--activate` is not considered successful merely because Allegro accepted the
+  // command: the seller offer itself must have been observed ACTIVE first.
   const fetched = await fetchProducts({ productIds: ids });
   const checks = [];
   for (const product of fetched.products) {
@@ -106,8 +171,9 @@ async function run(argv, {
     imported = await importer({ source_type: 'api', supplier_id: 'allegro', supplier_name: 'Allegro Sandbox',
       product_ids: ids, is_full_snapshot: false }, null, async () => fetched);
   }
-  return { environment: 'sandbox', mode: importing ? 'import' : 'read',
-    seeded: count, offer_ids: ids,
+  const mode = importing ? (activating ? 'activate_import' : 'import') : (activating ? 'activate' : 'read');
+  return { environment: 'sandbox', mode,
+    seeded: count, offer_ids: ids, activations,
     accepted: fetched.products.length, invalid: fetched.invalid, checks, imported,
     purchase_confirmed: false, notification_verified: false, invoice_verified: false };
 }
@@ -122,5 +188,5 @@ if (require.main === module) {
 }
 module.exports = {
   SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS,
-  seedCount, createdOfferId, seedOfferIds, run,
+  seedCount, createdOfferId, seedOfferIds, sanitizedPublicationTasks, activateOfferIds, run,
 };
