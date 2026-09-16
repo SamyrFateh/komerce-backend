@@ -31,12 +31,12 @@ module.exports = {
       'endpoint de suggestions',
       'DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée',
       'politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre',
-      'surface read-only surface=local sur la façade /api/boutique/suggestions',
     ],
     out: [
       'données produit source (feature catalog)',
-      'prix affiché (feature economic-engine)',
+      'prix affiché (feature economic-engine / market-autonomy)',
       'vérité d’exposabilité stock/service/offre physique (local-stock / providers-services)',
+      'décision d’exposition commerciale pays (catalog)',
       'cycle Inquiry, paiement, réservation ou settlement',
       'taxonomie ou navigation frontend parallèle pour le local',
     ],
@@ -88,6 +88,8 @@ module.exports = {
     ],
     consumes: [
       'catalog (lecture produit)',
+      'catalog — getExposure() pour aligner les Product cards sur product_market_exposure du marché',
+      'market-autonomy — resolveActiveProductMarketPricing() pour n’exposer qu’un prix LOCAL_ACTIVE buyer-effective',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (DB et composition root)',
       'logistics',
@@ -116,6 +118,10 @@ module.exports = {
     { statement: 'discovery-rail-composer.js ne fait jamais de SQL direct sur les tables ' +
       'local_stock, services ou physical_offers — uniquement via les fonctions propriétaires ; ' +
       'Discovery ne possède aucune vérité, il la compose',
+      test: 'tests/unit/discovery-rail-composer.test.js' },
+    { statement: 'un Product affiché « Disponible maintenant » cumule stock local exposable, ' +
+      'product_market_exposure ENABLED et prix LOCAL_ACTIVE buyer-effective ; le prix de la carte ' +
+      'est le prix marché effectif, jamais products.price_kmf en fallback',
       test: 'tests/unit/discovery-rail-composer.test.js' },
     { statement: 'un objet non exposable est silencieusement omis du rail, jamais un objet ' +
       'd’erreur ni le pourquoi',
@@ -156,5 +162,7 @@ module.exports = {
   // 2026-08-30 — V2 native Boutique : activation serveur OFF par défaut,
   // sélection éditoriale explicite et façade surface=local ; le frontend reste
   // absent lorsque cards=[] (capability != exposure).
+  // 2026-09-16 — Product Discovery buyer-ready : stock local + exposition pays
+  // + prix LOCAL_ACTIVE effectif avant d'annoncer « Disponible maintenant ».
 
 };
