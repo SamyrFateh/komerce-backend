@@ -5,21 +5,23 @@
  * @layer         service
  * @criticality   medium
  * @inputs        sourcing_source_runtime, sourcing_candidates, catalog_products, market_visibility
- * @outputs       catalog_live_sources, refinery_pipeline, incoming_products, source_discovery
- * @depends       db.js, services/sourcing-source-autopilot.js, services/sourcing-import-dispatch.js
+ * @outputs       catalog_live_sources, refinery_pipeline, incoming_products, source_discovery, catalog_business_truth
+ * @depends       db.js, services/sourcing-source-autopilot.js, services/sourcing-import-dispatch.js, services/product-publication-guard.js, services/catalog-public-view.js
  * @used-by       services/catalog-workspace-live-composer.js
- * @db-read       sourcing_candidates, products, product_market_exposure, product_market_price_drafts, markets
+ * @db-read       sourcing_candidates, products, catalog_media, product_market_exposure, product_market_price_drafts, product_skus, product_variants, markets
  * @db-write      none
  * @db-txn        none
- * @doctrine      catalog_observes_sourcing_without_stealing_mutation_authority, live_flow_uses_real_boutique_visibility_predicate, downstream_counts_are_distinct_canonical_products
+ * @doctrine      catalog_observes_sourcing_without_stealing_mutation_authority, dashboard_exposes_business_truth_not_backend_states, visible_means_sellable
  * @impact-areas  catalog, sourcing, boutique, admin-dashboard
- * @version       2026-09
+ * @version       2026-09-business-truth
  */
 'use strict';
 
 const db = require('../db');
 const sourceAutopilot = require('./sourcing-source-autopilot');
 const importDispatch = require('./sourcing-import-dispatch');
+const { validatePublicationUpdate } = require('./product-publication-guard');
+const { publicCatalogVisibilitySql } = require('./catalog-public-view');
 
 const QUALIFIED_STATES = Object.freeze(['scanned', 'test_ready', 'watchlist', 'imported_to_catalog']);
 const NORMALIZED_STATES = Object.freeze(['normalized', ...QUALIFIED_STATES]);
@@ -28,24 +30,14 @@ function number(value) {
   return Number(value) || 0;
 }
 
+/**
+ * Compatibilité interne historique uniquement. La Control Tower ne doit plus
+ * afficher ce compteur comme une vérité "Boutique" : sans market explicite,
+ * il n'existe pas de visibilité boutique. Le vrai chiffre par marché est dans
+ * queryMarketVisibility(), calculé avec publicCatalogVisibilitySql().
+ */
 function boutiqueEffectiveSql(productAlias = 'p') {
-  return `
-    ${productAlias}.is_active = TRUE
-    AND ${productAlias}.is_available = TRUE
-    AND EXISTS (
-      SELECT 1
-        FROM product_market_exposure pme
-        JOIN markets em ON em.id = pme.market_id AND em.is_active = TRUE
-       WHERE pme.product_id = ${productAlias}.id
-         AND pme.commercial_exposure = 'ENABLED'
-    )
-    AND EXISTS (
-      SELECT 1
-        FROM product_market_price_drafts pmpd
-        JOIN markets pm ON pm.id = pmpd.market_id AND pm.is_active = TRUE
-       WHERE pmpd.product_id = ${productAlias}.id
-         AND pmpd.status = 'LOCAL_ACTIVE'
-    )`;
+  return publicCatalogVisibilitySql(productAlias);
 }
 
 function stageFromRow(row) {
@@ -67,7 +59,7 @@ function nextStep(stage) {
     qualified: 'Promotion catalogue',
     fr_ready: 'Curation',
     curation: 'Décision catalogue',
-    catalog: 'Exposition + prix marché',
+    catalog: 'Décision marché',
     boutique: 'Boutique',
   };
   return steps[stage] || 'Raffinerie';
@@ -203,12 +195,105 @@ function sourceDiscoveryCatalog() {
   ];
 }
 
+async function querySourcedCount() {
+  const { rows: [row] } = await db.query(`
+    SELECT COUNT(DISTINCT COALESCE(sc.product_id::text, sc.candidate_ref))::int AS count
+      FROM sourcing_candidates sc
+     WHERE sc.state NOT IN ('rejected', 'archived')
+  `);
+  return number(row?.count);
+}
+
+async function queryReadyToPublish() {
+  const { rows } = await db.query(`
+    SELECT p.*,
+           COUNT(cm.id) FILTER (WHERE cm.is_active = TRUE)::int AS catalog_media_count
+      FROM products p
+      LEFT JOIN catalog_media cm ON cm.product_id = p.id
+     WHERE p.lifecycle_status = 'candidate'
+       AND p.is_active = FALSE
+     GROUP BY p.id
+  `);
+
+  return rows.reduce((count, product) => {
+    const check = validatePublicationUpdate({
+      before: product,
+      patch: { is_active: true },
+      context: { catalogMediaCount: number(product.catalog_media_count) },
+    });
+    return count + (check.ok ? 1 : 0);
+  }, 0);
+}
+
+async function queryPublishedCount() {
+  const { rows: [row] } = await db.query(`
+    SELECT COUNT(*)::int AS count
+      FROM products
+     WHERE is_active = TRUE
+  `);
+  return number(row?.count);
+}
+
+async function queryMarketVisibility() {
+  const { rows: markets } = await db.query(`
+    SELECT id, code, name, currency
+      FROM markets
+     WHERE is_active = TRUE
+     ORDER BY name ASC, code ASC
+  `);
+  const visibleSql = publicCatalogVisibilitySql('p', { marketCodeParamIndex: 1 });
+  const result = [];
+  for (const market of markets) {
+    const { rows: [row] } = await db.query(
+      `SELECT COUNT(*)::int AS count FROM products p WHERE ${visibleSql}`,
+      [market.code]
+    );
+    result.push({
+      market_id: market.id,
+      market_code: market.code,
+      market_name: market.name,
+      currency: market.currency,
+      visible: number(row?.count),
+    });
+  }
+  return result;
+}
+
+async function queryBusinessTruth() {
+  const [sourced, readyToPublish, published, markets] = await Promise.all([
+    querySourcedCount(),
+    queryReadyToPublish(),
+    queryPublishedCount(),
+    queryMarketVisibility(),
+  ]);
+  return {
+    mode: 'business_truth',
+    stages: {
+      sourced,
+      ready_to_publish: readyToPublish,
+      published,
+    },
+    markets,
+    vocabulary: {
+      sourced: 'Sourcé',
+      ready_to_publish: 'Prêt à publier',
+      published: 'Publié',
+      visible: 'Visible',
+    },
+    semantics: {
+      visible: 'Passe exactement le prédicat de la boutique pour ce marché et possède au moins une unité vendable.',
+      checkout: 'Le checkout revalide ensuite dynamiquement stock, prix, fret et fournisseur avant paiement.',
+    },
+  };
+}
+
 async function buildProjection({ incomingLimit = 12 } = {}) {
-  const [sources, totals, bySupplier, incoming] = await Promise.all([
+  const [sources, totals, bySupplier, incoming, business] = await Promise.all([
     sourceAutopilot.listSources(),
     queryPipelineTotals(),
     queryPipelineBySupplier(),
     queryIncoming(incomingLimit),
+    queryBusinessTruth(),
   ]);
 
   const sourceRows = sources.map(source => ({
@@ -230,6 +315,7 @@ async function buildProjection({ incomingLimit = 12 } = {}) {
     pipeline: totals,
     incoming,
     source_catalog: sourceDiscoveryCatalog(),
+    business,
     refresh_hint_seconds: 10,
     mutation_authority: 'sourcing',
     source_toggle_endpoint: '/api/admin/workspaces/sourcing/sources/{sourceRef}/{activate|deactivate}',
@@ -246,5 +332,10 @@ module.exports = {
     queryPipelineTotals,
     queryPipelineBySupplier,
     queryIncoming,
+    querySourcedCount,
+    queryReadyToPublish,
+    queryPublishedCount,
+    queryMarketVisibility,
+    queryBusinessTruth,
   },
 };
