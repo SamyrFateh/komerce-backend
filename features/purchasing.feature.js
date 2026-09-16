@@ -24,7 +24,8 @@ module.exports = {
 
   perimeter: {
     in: [
-      'préflight Allegro Sandbox : identité exacte et stock/prix live, achat bloqué faute de checkout acheteur supporté',
+      'préflight Allegro Sandbox : identité exacte et stock/prix live ; fulfillment manuel prêt sans prétendre à un buyer placeOrder API',
+      'réconciliation d\'achat manuel Allegro Sandbox : une PO n\'est confirmée par le proof runner que si le checkoutForm vendeur READY_FOR_PROCESSING correspond exactement à son offer_id/SOI et à sa quantité',
       'déclenchement automatique d\'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur',
       'notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande',
       'réception (partielle ou totale) d\'un bon de commande, et rattachement au flux logistique',
@@ -53,11 +54,13 @@ module.exports = {
   docs: [
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
     'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
+    'docs/allegro-sandbox.md',
   ],
 
   files: {
     services: [
       'services/suppliers/allegro-fulfillment-adapter.js',
+      'services/suppliers/allegro-purchase-reconciliation.js',
       'services/purchasing-trigger-service.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
@@ -79,8 +82,14 @@ module.exports = {
     migrations: [
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
     ],
+    scripts: [
+      'scripts/allegro-sandbox-purchase-proof.js',
+    ],
     tests: [
       'tests/unit/allegro-fulfillment-adapter.test.js',
+      'tests/unit/allegro-purchase-reconciliation.test.js',
+      'tests/unit/allegro-seller-order-read.test.js',
+      'tests/unit/allegro-sandbox-purchase-proof.test.js',
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/integration/purchasing-exact-sku-po.test.js',
       'tests/unit/purchasing.test.js',
@@ -140,12 +149,13 @@ module.exports = {
       { fn: 'evaluateSupplierFulfillmentReadiness', file: 'services/suppliers/supplier-fulfillment-readiness.js' },
       { fn: 'prepareCanonicalUnitPurchase', file: 'services/suppliers/canonical-unit-purchasing-gate.js' },
       { fn: 'compareLegacyCanonicalUnit', file: 'services/suppliers/canonical-unit-cutover-comparison.js' },
+      { fn: 'reconcile', file: 'services/suppliers/allegro-purchase-reconciliation.js' },
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
     ],
     consumes: [
       'sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)',
-      'catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs)',
+      'catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (lecture : order_items, orders — le besoin d\'achat et l\'intention d\'annulation naissent d\'une commande client)',
       'auth (garde admin)',
@@ -182,6 +192,10 @@ module.exports = {
       test: 'tests/unit/supplier-fulfillment-adapter-contract.test.js' },
     { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
+    { statement: 'Allegro Sandbox peut être fulfillment-ready en exécution manuelle après identité + stock + prix live, tout en restant auto_order_ready=false et sans jamais invoquer de buyer placeOrder API',
+      test: 'tests/unit/allegro-fulfillment-adapter.test.js' },
+    { statement: 'une preuve d\'achat manuel Allegro ne confirme la PO que si la commande vendeur est READY_FOR_PROCESSING et correspond exactement au checkout id, offer id/SOI et à la quantité persistée ; un rejeu identique est idempotent et un rebind différent est refusé',
+      test: 'tests/unit/allegro-sandbox-purchase-proof.test.js' },
     { statement: 'la destination fournisseur est dérivée d\'une Procurement Route explicite ; le moteur actuel n\'ouvre que PROCUREMENT_HUB et refuse une destination Market/client brute ainsi que tout mode direct fournisseur-client implicite',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
     { statement: 'pour AliExpress freight.calculate, l\'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination hub encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n\'est inventé',

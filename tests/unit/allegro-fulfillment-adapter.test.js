@@ -9,10 +9,13 @@ function args() {
       productSet: [{ quantity: { value: 1 } }], sellingMode: { format: 'BUY_NOW', price: { amount: '10.00', currency: 'PLN' } },
       stock: { available: 2 }, publication: { status: 'ACTIVE' } }) } } };
 }
-test('healthy live stock/price never becomes fulfillment-ready or purchase confirmation', async () => {
+test('healthy live offer is manual-fulfillment ready without claiming auto-order', async () => {
   const r = await adapter.evaluate(args());
-  expect(r).toMatchObject({ ready: false, status: 'PREFLIGHT_FAILED', reason: 'ALLEGRO_BUYER_CHECKOUT_UNSUPPORTED',
-    evidence: { exact_unit_resolved: true, stock_available: 2, unit_price: 10, currency: 'PLN', place_order_invoked: false, supplier_leg_checked: false } });
+  expect(r).toMatchObject({ ready: true, status: 'FULFILLMENT_READY', reason: null,
+    evidence: { exact_unit_resolved: true, stock_available: 2, unit_price: 10, currency: 'PLN',
+      execution_mode: 'manual', manual_procurement_ready: true, auto_order_ready: false,
+      buyer_checkout_api_supported: false, place_order_invoked: false, payment_invoked: false,
+      supplier_offer_url: 'https://allegro.pl.allegrosandbox.pl/oferta/123' } });
 });
 test.each([
   { identity: null }, { identity: { provider: 'allegro', version: 2 } },
@@ -39,19 +42,34 @@ test('inactive and insufficient stock have canonical verdicts', async () => {
   expect((await adapter.evaluate(a)).status).toBe('SKU_INACTIVE');
   expect((await adapter.evaluate({ ...a, quantity: 3 })).status).toBe('OUT_OF_STOCK');
 });
-test('both Purchasing gates accept adapter but preserve block and never place order', async () => {
+test('both Purchasing gates expose manual readiness while preserving the external-order hard stop', async () => {
   const a = args();
   const row = { ...a.row, id: 1, is_active: true, source: 'SUPPLIER', supplier_order_identity: a.identity };
   const db = { query: jest.fn().mockResolvedValue({ rows: [row] }) };
   const out = await readiness.evaluateSupplierFulfillmentReadiness({ db, productSkuId: 1,
     procurementRoute: { mode: 'PROCUREMENT_HUB', hub: { id: 1, country_code: 'PL' } },
     adapters: { allegro: adapter }, context: a.context });
-  expect(out.reason).toBe('ALLEGRO_BUYER_CHECKOUT_UNSUPPORTED');
+  expect(out).toMatchObject({ ready: true, status: 'FULFILLMENT_READY',
+    evidence: { procurement_route_mode: 'PROCUREMENT_HUB', manual_procurement_ready: true, auto_order_ready: false } });
   const resolver = require('../../services/sourcing-canonical-unit-product-sku-resolution');
   const canonical = await gate.prepareCanonicalUnitPurchase({ productSkuId: 1, adapters: { allegro: adapter }, context: a.context,
     resolveFn: async () => ({ status: resolver.STATUS.RESOLVED, supplier_order_identity: a.identity, supplier_unit_ref: '123', legacy_sku: row,
       canonical_unit: { current_state: { stock_available: 2, purchase_price: 10, currency: 'PLN' } } }) });
-  expect(canonical).toMatchObject({ ready: false, place_order_invoked: false, reason: 'ALLEGRO_BUYER_CHECKOUT_UNSUPPORTED' });
+  expect(canonical).toMatchObject({
+    ready: false, status: 'HARD_STOP', provider: 'allegro', place_order_invoked: false,
+    payload: { execution_mode: 'manual', offer_id: '123', quantity: 1, auto_order_ready: false, place_order_invoked: false },
+    preflight: { ready: true, status: 'FULFILLMENT_READY' },
+  });
+});
+test('manual order payload requires a successful exact preflight and never fabricates execution', async () => {
+  const a = args();
+  const preflight = await adapter.evaluate(a);
+  await expect(adapter.buildOrderPayload({ identity: a.identity, quantity: 1, preflight })).resolves.toMatchObject({
+    provider: 'allegro', environment: 'sandbox', execution_mode: 'manual', offer_id: '123', quantity: 1,
+    expected_unit_price: 10, expected_currency: 'PLN', auto_order_ready: false, place_order_invoked: false,
+  });
+  await expect(adapter.buildOrderPayload({ identity: a.identity, quantity: 1, preflight: { ready: false } }))
+    .rejects.toThrow('MANUAL_PREFLIGHT_REQUIRED');
 });
 test('default context uses configured client boundary', async () => {
   const a = args(); delete a.context;
