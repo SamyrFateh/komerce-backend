@@ -7,12 +7,12 @@
  * @inputs        sandbox credentials, bounded read request, guarded seller draft seed
  * @outputs       provider JSON, ephemeral access token
  * @depends       db.js, node:crypto
- * @used-by       services/suppliers/connectors/allegro-connector.js, scripts/allegro-sandbox-check.js
+ * @used-by       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-purchase-reconciliation.js, scripts/allegro-sandbox-check.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
  * @db-txn        owned
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
- * @impact-areas  catalog, supplier-import, secrets
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
+ * @impact-areas  catalog, supplier-import, purchasing, secrets
  */
 'use strict';
 
@@ -144,6 +144,16 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     return authorizedJson(c, url, { method: 'GET' });
   }
 
+  async function getSellerOrder(checkoutFormId) {
+    const c = configuration(env);
+    const id = String(checkoutFormId || '').trim().toLowerCase();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
+      throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
+    }
+    const url = new URL(`/order/checkout-forms/${id}`, API);
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
   async function searchProducts(phrase, { limit = 10 } = {}) {
     const c = seedConfiguration(env);
     const q = String(phrase || '').trim();
@@ -187,7 +197,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     });
   }
 
-  return { get, searchProducts, createDraftOffer };
+  return { get, getSellerOrder, searchProducts, createDraftOffer };
 }
 
 const client = createClient();
@@ -196,6 +206,7 @@ module.exports = {
   seedConfiguration,
   createClient,
   get: client.get,
+  getSellerOrder: client.getSellerOrder,
   searchProducts: client.searchProducts,
   createDraftOffer: client.createDraftOffer,
 };
