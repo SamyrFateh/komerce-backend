@@ -3752,7 +3752,7 @@ CREATE TABLE public.suppliers (
     secure_transport_fee_pct numeric(4,2) DEFAULT 0 NOT NULL,
     secure_transport_contact character varying(200),
     deleted_at timestamp with time zone,
-    CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text])))
+    CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text, 'allegro'::text])))
 );
 
 
