@@ -30,12 +30,21 @@ test('default check reads without importing or claiming purchase, notification o
 test('seller settings select a physical shipping rate and fail closed when any prerequisite is missing', () => {
   const selected = selectSellerSettings({
     shipping_rates: [{ id: 'electronic', type: 'ELECTRONIC' }, { id: 'physical', type: 'PHYSICAL' }],
-    return_policies: [{ id: 'return' }],
+    return_policies: [
+      { id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' },
+      { id: 'disabled', is_fulfillment: false, availability_range: 'DISABLED', withdrawal_period: null },
+      { id: 'return', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' },
+    ],
     implied_warranties: [{ id: 'implied' }],
   });
   expect(selected).toEqual({
     shipping_rate_id: 'physical', return_policy_id: 'return', implied_warranty_id: 'implied',
   });
+  expect(() => selectSellerSettings({
+    shipping_rates: [{ id: 'physical', type: 'PHYSICAL' }],
+    return_policies: [{ id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' }],
+    implied_warranties: [{ id: 'implied' }],
+  })).toThrow('SELLER_SETTINGS_MISSING_RETURN_POLICY');
   expect(() => selectSellerSettings({ shipping_rates: [], return_policies: [], implied_warranties: [] }))
     .toThrow('SELLER_SETTINGS_MISSING_SHIPPING_RATE_RETURN_POLICY_IMPLIED_WARRANTY');
 });
@@ -44,7 +53,7 @@ test('seller preparation binds existing settings and skips already active offers
   const api = {
     getSellerSettings: jest.fn().mockResolvedValue({
       shipping_rates: [{ id: 'ship', type: 'PHYSICAL' }],
-      return_policies: [{ id: 'ret' }],
+      return_policies: [{ id: 'ret', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
       implied_warranties: [{ id: 'imp' }],
     }),
     get: jest.fn()
@@ -106,7 +115,10 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
     }),
     getSellerSettings: jest.fn().mockResolvedValue({
       shipping_rates: [{ id: '11111111-1111-4111-8111-111111111111', type: 'PHYSICAL' }],
-      return_policies: [{ id: '22222222-2222-4222-8222-222222222222' }],
+      return_policies: [{
+        id: '22222222-2222-4222-8222-222222222222',
+        is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
+      }],
       implied_warranties: [{ id: '33333333-3333-4333-8333-333333333333' }],
     }),
     completeSeedOffer: jest.fn().mockResolvedValue({

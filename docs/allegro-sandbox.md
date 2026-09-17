@@ -107,6 +107,9 @@ customer-purchasable offer and does not auto-publish anything.
 `--golden` is the one-command composition of one publishability-first seed,
 seller settings preparation, observed Allegro activation and bounded refinery
 import. Any missing prerequisite stops the flow before activation and import.
+Seller preparation selects a physical shipping rate and only a non-Fulfillment,
+fully available `P14D` return policy; it fails closed instead of attaching the
+first policy returned by the account.
 When a Golden setup deliberately needs a controlled seller offer, the same
 staging-only seed gate exposes an explicit operator action that sends Allegro's
 asynchronous publication command with hard-coded `ACTIVATE` for the exact offer
