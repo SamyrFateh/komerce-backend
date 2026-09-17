@@ -48,6 +48,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'purchasing' });
 
 const { triggerPurchasing } = require('../services/purchasing-trigger-service');
+const { resolveCanonicalMappingMoney } = require('../services/purchasing-canonical-money');
 const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 
@@ -158,14 +159,27 @@ router.post('/suppliers/:id/map', ...guard, async (req, res, next) => {
       product_id,
       supplier_sku,
       supplier_url,
-      supplier_price_aed,
+      supplier_price_aed = null,
       min_order_qty = 1,
       priority = 1,
       notes,
     } = req.body;
 
-    if (!product_id || !supplier_sku || !supplier_price_aed) {
-      return res.status(400).json({ error: 'product_id, supplier_sku et supplier_price_aed obligatoires' });
+    if (!product_id || !supplier_sku) {
+      return res.status(400).json({ error: 'product_id et supplier_sku obligatoires' });
+    }
+
+    if (supplier_price_aed !== null && !(Number(supplier_price_aed) > 0)) {
+      return res.status(400).json({ error: 'supplier_price_aed doit être strictement positif lorsqu’il est fourni' });
+    }
+
+    if (supplier_price_aed === null) {
+      const canonicalMoney = await resolveCanonicalMappingMoney(db, product_id, supplier_sku);
+      if (!canonicalMoney) {
+        return res.status(400).json({
+          error: 'supplier_price_aed obligatoire pour un mapping legacy sans prix canonique SKU/SOI résolu',
+        });
+      }
     }
 
     const { rows: [mapping] } = await db.query(`
