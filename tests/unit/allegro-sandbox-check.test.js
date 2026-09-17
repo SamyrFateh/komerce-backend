@@ -1,7 +1,9 @@
 'use strict';
 const {
-  run, seedCount, createdOfferId, seedOfferIds, selectSellerSettings, prepareOfferIds, SEED_EXTERNAL_IDS,
+  run, seedCount, createdOfferId, seedOfferIds, selectSellerSettings, prepareOfferIds,
+  buildSellerContractProof, SEED_EXTERNAL_IDS,
 } = require('../../scripts/allegro-sandbox-check');
+const { assertThrough } = require('../../scripts/provider-contract-proof');
 const dispatch = require('../../services/sourcing-import-dispatch');
 const connector = require('../../services/suppliers/connectors/allegro-connector');
 const client = require('../../services/suppliers/allegro-sandbox-client');
@@ -18,18 +20,36 @@ function deps() {
   };
 }
 
+function sellerSettings() {
+  return {
+    shipping_rates: [{
+      id: '11111111-1111-4111-8111-111111111111',
+      type: 'PHYSICAL', managed_by_allegro: false, is_fulfillment: false,
+    }],
+    return_policies: [{
+      id: '22222222-2222-4222-8222-222222222222',
+      is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
+    }],
+    implied_warranties: [{ id: '33333333-3333-4333-8333-333333333333' }],
+  };
+}
+
 test('default check reads without importing or claiming purchase, notification or invoice', async () => {
   const d = deps(); const report = await run(['123'], d);
   expect(report).toMatchObject({
-    mode: 'read', seeded: 0, offer_ids: ['123'],
+    mode: 'read', seeded: 0, offer_ids: ['123'], contract_proof: null,
     purchase_confirmed: false, notification_verified: false, invoice_verified: false,
   });
   expect(d.importCatalog).not.toHaveBeenCalled();
 });
 
-test('seller settings select a physical shipping rate and fail closed when any prerequisite is missing', () => {
+test('seller settings select only a seller-managed non-Fulfillment physical rate', () => {
   const selected = selectSellerSettings({
-    shipping_rates: [{ id: 'electronic', type: 'ELECTRONIC' }, { id: 'physical', type: 'PHYSICAL' }],
+    shipping_rates: [
+      { id: 'managed', type: 'PHYSICAL', managed_by_allegro: true, is_fulfillment: true },
+      { id: 'electronic', type: 'ELECTRONIC', managed_by_allegro: false, is_fulfillment: false },
+      { id: 'physical', type: 'PHYSICAL', managed_by_allegro: false, is_fulfillment: false },
+    ],
     return_policies: [
       { id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' },
       { id: 'disabled', is_fulfillment: false, availability_range: 'DISABLED', withdrawal_period: null },
@@ -41,21 +61,28 @@ test('seller settings select a physical shipping rate and fail closed when any p
     shipping_rate_id: 'physical', return_policy_id: 'return', implied_warranty_id: 'implied',
   });
   expect(() => selectSellerSettings({
-    shipping_rates: [{ id: 'physical', type: 'PHYSICAL' }],
-    return_policies: [{ id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' }],
+    shipping_rates: [{ id: 'managed', type: 'PHYSICAL', managed_by_allegro: true, is_fulfillment: true }],
+    return_policies: [{ id: 'return', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
     implied_warranties: [{ id: 'implied' }],
-  })).toThrow('SELLER_SETTINGS_MISSING_RETURN_POLICY');
-  expect(() => selectSellerSettings({ shipping_rates: [], return_policies: [], implied_warranties: [] }))
-    .toThrow('SELLER_SETTINGS_MISSING_SHIPPING_RATE_RETURN_POLICY_IMPLIED_WARRANTY');
+  })).toThrow('SELLER_SETTINGS_MISSING_SHIPPING_RATE');
+});
+
+test('seller contract proof reports the smallest blocked capability', () => {
+  const proof = buildSellerContractProof({
+    shipping_rates: Array.from({ length: 7 }, (_, index) => ({
+      id: `rate-${index}`, type: null, managed_by_allegro: true, is_fulfillment: true,
+    })),
+    return_policies: [{ id: 'return', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
+    implied_warranties: [{ id: 'implied' }],
+  });
+  expect(() => assertThrough(proof, 'P1'))
+    .toThrow('PROVIDER_CONTRACT_BLOCKED_ALLEGRO_P0_SELLER_MANAGED_SHIPPING_RATE');
 });
 
 test('seller preparation binds existing settings and skips already active offers', async () => {
+  const settings = sellerSettings();
   const api = {
-    getSellerSettings: jest.fn().mockResolvedValue({
-      shipping_rates: [{ id: 'ship', type: 'PHYSICAL' }],
-      return_policies: [{ id: 'ret', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
-      implied_warranties: [{ id: 'imp' }],
-    }),
+    getSellerSettings: jest.fn().mockResolvedValue(settings),
     get: jest.fn()
       .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
       .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
@@ -64,7 +91,10 @@ test('seller preparation binds existing settings and skips already active offers
   };
   const proof = await prepareOfferIds(['123', '456'], api);
   expect(api.completeSeedOffer).toHaveBeenCalledWith('123', {
-    shippingRateId: 'ship', returnPolicyId: 'ret', impliedWarrantyId: 'imp', responsibleProducerId: PRODUCER_ID,
+    shippingRateId: settings.shipping_rates[0].id,
+    returnPolicyId: settings.return_policies[0].id,
+    impliedWarrantyId: settings.implied_warranties[0].id,
+    responsibleProducerId: PRODUCER_ID,
   });
   expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
   expect(proof.offers[1]).toEqual({ offer_id: '456', skipped: true, reason: 'ALREADY_ACTIVE' });
@@ -98,9 +128,10 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
 });
 
-test('one-command Golden reuses seed, prepares seller prerequisites, activates and imports', async () => {
+test('one-command Golden proves P0/P1 before seed, then prepares, activates and imports', async () => {
   const d = deps();
   let detailReads = 0;
+  const settings = sellerSettings();
   const api = {
     seedConfiguration: jest.fn(),
     get: jest.fn(async (path, params) => {
@@ -113,14 +144,7 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
       }
       throw new Error(`unexpected ${path}`);
     }),
-    getSellerSettings: jest.fn().mockResolvedValue({
-      shipping_rates: [{ id: '11111111-1111-4111-8111-111111111111', type: 'PHYSICAL' }],
-      return_policies: [{
-        id: '22222222-2222-4222-8222-222222222222',
-        is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
-      }],
-      implied_warranties: [{ id: '33333333-3333-4333-8333-333333333333' }],
-    }),
+    getSellerSettings: jest.fn().mockResolvedValue(settings),
     completeSeedOffer: jest.fn().mockResolvedValue({
       offer_id: '123', delivery_bound: true, return_policy_bound: true, implied_warranty_bound: true,
     }),
@@ -138,27 +162,46 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
   });
   expect(report).toMatchObject({
     mode: 'golden', seeded: 1, offer_ids: ['123'], accepted: 1,
+    contract_proof: {
+      provider: 'ALLEGRO', environment: 'SANDBOX',
+      stages: [
+        { id: 'P0', status: 'PASS' },
+        { id: 'P1', status: 'PASS' },
+      ],
+    },
     preparation: { offers: [{ offer_id: '123', delivery_bound: true }] },
     activations: [{ offer_id: '123', publication_status: 'ACTIVE' }],
   });
+  expect(api.getSellerSettings).toHaveBeenCalledTimes(1);
   expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
   expect(api.activateOffer).toHaveBeenCalledTimes(1);
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
   expect(d.importCatalog).toHaveBeenCalledTimes(1);
 });
 
-test('Golden stops before activation and import when seller prerequisites are absent', async () => {
+test('Golden stops before any seed mutation when provider contract is blocked', async () => {
   const d = deps();
   const api = {
     seedConfiguration: jest.fn(),
-    get: jest.fn().mockResolvedValue({ offers: [{ id: '123', external: { id: SEED_EXTERNAL_IDS[0] } }] }),
-    getSellerSettings: jest.fn().mockResolvedValue({ shipping_rates: [], return_policies: [], implied_warranties: [] }),
+    get: jest.fn(),
+    getSellerSettings: jest.fn().mockResolvedValue({
+      shipping_rates: [{
+        id: 'managed', type: null, managed_by_allegro: true, is_fulfillment: true,
+      }],
+      return_policies: [{ id: 'return', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
+      implied_warranties: [{ id: 'implied' }],
+    }),
     completeSeedOffer: jest.fn(),
     ensureGoldenResponsibleProducer: jest.fn(),
+    createDraftOffer: jest.fn(),
     activateOffer: jest.fn(),
   };
   await expect(run(['--golden'], { ...d, client: api, env: {} }))
-    .rejects.toThrow('SELLER_SETTINGS_MISSING');
+    .rejects.toThrow('PROVIDER_CONTRACT_BLOCKED_ALLEGRO_P0_SELLER_MANAGED_SHIPPING_RATE');
+  expect(api.seedConfiguration).not.toHaveBeenCalled();
+  expect(api.get).not.toHaveBeenCalled();
+  expect(api.ensureGoldenResponsibleProducer).not.toHaveBeenCalled();
+  expect(api.createDraftOffer).not.toHaveBeenCalled();
   expect(api.completeSeedOffer).not.toHaveBeenCalled();
   expect(api.activateOffer).not.toHaveBeenCalled();
   expect(d.fetchProducts).not.toHaveBeenCalled();
