@@ -249,20 +249,20 @@ async function triggerPurchasing(orderId) {
           const apiResult = await callSupplierAPI(purchaseTarget, item);
           if (apiResult.success) {
             await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
-            results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id, supplier_unit_price: money.amount, supplier_currency: money.currency });
+            results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id });
           } else {
             await notifyAdminManual(order, item, purchaseTarget);
             await client.query(`UPDATE purchase_orders SET status='notified', trigger_mode='manual', updated_at=NOW() WHERE id=$1`, [po.id]);
-            results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id, supplier_unit_price: money.amount, supplier_currency: money.currency });
+            results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id });
           }
         } else if (ps.platform === 'whatsapp') {
           await notifySupplierWhatsApp(client, purchaseTarget, order, item, po.id);
           await client.query(`UPDATE purchase_orders SET status='notified', ordered_at=NOW(), updated_at=NOW() WHERE id=$1`, [po.id]);
-          results.push({ item: item.product_name, status: 'whatsapp_sent', purchase_order_id: po.id, supplier_unit_price: money.amount, supplier_currency: money.currency });
+          results.push({ item: item.product_name, status: 'whatsapp_sent', purchase_order_id: po.id });
         } else {
           await notifyAdminManual(order, item, purchaseTarget);
           await client.query(`UPDATE purchase_orders SET status='notified', updated_at=NOW() WHERE id=$1`, [po.id]);
-          results.push({ item: item.product_name, status: 'admin_notified', purchase_order_id: po.id, supplier_unit_price: money.amount, supplier_currency: money.currency });
+          results.push({ item: item.product_name, status: 'admin_notified', purchase_order_id: po.id });
         }
         await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
       } catch (itemErr) {
