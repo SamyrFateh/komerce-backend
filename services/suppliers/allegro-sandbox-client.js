@@ -371,6 +371,33 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     return authorizedJson(c, url, { method: 'GET' });
   }
 
+  async function listSellerOrders({
+    status = 'READY_FOR_PROCESSING',
+    limit = 20,
+    boughtAtGte = null,
+  } = {}) {
+    const c = configuration(env);
+    if (status !== 'READY_FOR_PROCESSING') {
+      throw new Error('ALLEGRO_SELLER_ORDERS_STATUS_UNSUPPORTED');
+    }
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new Error('ALLEGRO_SELLER_ORDERS_LIMIT_INVALID');
+    }
+    const params = {
+      status,
+      limit: String(limit),
+      sort: '-lineItems.boughtAt',
+    };
+    if (boughtAtGte != null) {
+      const millis = Date.parse(String(boughtAtGte));
+      if (!Number.isFinite(millis)) throw new Error('ALLEGRO_SELLER_ORDERS_BOUGHT_AT_GTE_INVALID');
+      params['lineItems.boughtAt.gte'] = new Date(millis).toISOString();
+    }
+    const url = new URL('/order/checkout-forms', API);
+    url.search = new URLSearchParams(params).toString();
+    return authorizedJson(c, url, { method: 'GET' });
+  }
+
   async function getSellerOrder(checkoutFormId) {
     const c = configuration(env);
     const id = String(checkoutFormId || '').trim().toLowerCase();
@@ -579,6 +606,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
 
   return {
     get,
+    listSellerOrders,
     getSellerOrder,
     getShippingRateDetail,
     getDeliveryMethods,
@@ -606,6 +634,7 @@ module.exports = {
   GOLDEN_SHIPPING_RATE_NAME,
   createClient,
   get: client.get,
+  listSellerOrders: client.listSellerOrders,
   getSellerOrder: client.getSellerOrder,
   getShippingRateDetail: client.getShippingRateDetail,
   getDeliveryMethods: client.getDeliveryMethods,

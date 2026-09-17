@@ -25,7 +25,7 @@ module.exports = {
   perimeter: {
     in: [
       'préflight Allegro Sandbox : identité exacte et stock/prix live ; fulfillment manuel prêt sans prétendre à un buyer placeOrder API',
-      'réconciliation d\'achat manuel Allegro Sandbox : une PO n\'est confirmée par le proof runner que si le checkoutForm vendeur READY_FOR_PROCESSING correspond exactement à son offer_id/SOI et à sa quantité',
+      'réconciliation d\'achat manuel Allegro Sandbox : le proof runner peut découvrir de façon bornée la commande vendeur READY_FOR_PROCESSING postérieure à la PO, exige un match unique sur offer_id/SOI + quantité + monnaie native, puis confirme uniquement ce checkoutForm exact',
       'déclenchement automatique d\'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur',
       'notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande',
       'réception (partielle ou totale) d\'un bon de commande, et rattachement au flux logistique',
@@ -214,7 +214,7 @@ module.exports = {
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
     { statement: 'Allegro Sandbox peut être fulfillment-ready en exécution manuelle après identité + stock + prix live, tout en restant auto_order_ready=false et sans jamais invoquer de buyer placeOrder API',
       test: 'tests/unit/allegro-fulfillment-adapter.test.js' },
-    { statement: 'une preuve d\'achat manuel Allegro ne confirme la PO que si la commande vendeur est READY_FOR_PROCESSING et correspond exactement au checkout id, offer id/SOI et à la quantité persistée ; un rejeu identique est idempotent et un rebind différent est refusé',
+    { statement: 'une preuve d\'achat manuel Allegro ne confirme la PO que si une commande vendeur READY_FOR_PROCESSING correspond exactement à offer id/SOI, quantité et monnaie native ; la discovery est bornée dans le temps, zéro ou plusieurs matchs bloquent, un rejeu identique est idempotent et un rebind différent est refusé',
       test: 'tests/unit/allegro-sandbox-purchase-proof.test.js' },
     { statement: 'la destination fournisseur est dérivée d\'une Procurement Route explicite ; le moteur actuel n\'ouvre que PROCUREMENT_HUB et refuse une destination Market/client brute ainsi que tout mode direct fournisseur-client implicite',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
