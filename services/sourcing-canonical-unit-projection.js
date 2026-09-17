@@ -32,7 +32,7 @@ function buildCanonicalUnitProjection(rows = [], refs = []) {
   const externalRefs = refs.length ? refs : core.identityRefs(rows, UNIT_IDENTITY_FIELDS);
   const { state, latest } = core.currentState(rows, UNIT_STATE_FIELDS);
   const deterministicRefs = externalRefs.filter((ref) =>
-    ref.kind === 'source_ref' || UNIT_IDENTITY_FIELDS.includes(ref.kind)
+    ref.kind === 'source_ref' || ref.kind === 'unit.source_ref' || UNIT_IDENTITY_FIELDS.includes(ref.kind)
   );
   const hasSoi = Boolean(state.supplier_order_identity);
   const identityDeterministic = deterministicRefs.length > 0;
