@@ -1,9 +1,11 @@
 'use strict';
 jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
 const {
-  createClient, configuration, seedConfiguration, safeReturnPolicyRows, GOLDEN_PRODUCER_NAME,
+  createClient, configuration, seedConfiguration, safeReturnPolicyRows,
+  GOLDEN_PRODUCER_NAME, GOLDEN_RETURN_POLICY_NAME,
 } = require('../../services/suppliers/allegro-sandbox-client');
 const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
+const RETURN_POLICY_ID = '55555555-5555-4555-8555-555555555555';
 const env = () => ({ KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1', ALLEGRO_SANDBOX_CLIENT_ID: 'app',
   ALLEGRO_SANDBOX_CLIENT_SECRET: 'secret', ALLEGRO_SANDBOX_USER_AGENT: 'KomerceTest/1',
   ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32), ALLEGRO_SANDBOX_REFRESH_TOKEN: 'bootstrap' });
@@ -270,6 +272,53 @@ test('Golden responsible producer is reused exactly or created once with TEST ON
   const createCall = fresh.fetchImpl.mock.calls.find(([url, init]) => url.includes('/sale/responsible-producers') && init.method === 'POST');
   expect(JSON.parse(createCall[1].body)).toMatchObject({ name: GOLDEN_PRODUCER_NAME,
     producerData: { tradeName: 'Komerce Golden Sandbox Manufacturer' } });
+});
+
+test('Golden return policy is reused exactly or created once with publishable TEST ONLY data', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [{
+      id: RETURN_POLICY_ID, name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: false,
+      availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    }] });
+    return ok({});
+  });
+  await expect(s.client.ensureGoldenReturnPolicy()).resolves.toEqual({ id: RETURN_POLICY_ID, created: false });
+
+  const fresh = setup();
+  fresh.runtime.KOMERCE_ENV = 'staging';
+  fresh.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  fresh.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [] });
+    if (url.includes('/return-policies') && init.method === 'POST') return ok({ id: RETURN_POLICY_ID });
+    return ok({});
+  });
+  await expect(fresh.client.ensureGoldenReturnPolicy()).resolves.toEqual({ id: RETURN_POLICY_ID, created: true });
+  const createCall = fresh.fetchImpl.mock.calls.find(([url, init]) => url.includes('/return-policies') && init.method === 'POST');
+  expect(JSON.parse(createCall[1].body)).toMatchObject({
+    name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: false,
+    availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    returnCost: { coveredBy: 'BUYER' },
+  });
+});
+
+test('Golden return policy fails closed on an incompatible namesake', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [{
+      id: RETURN_POLICY_ID, name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: true,
+      availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    }] });
+    return ok({});
+  });
+  await expect(s.client.ensureGoldenReturnPolicy()).rejects.toThrow('GOLDEN_RETURN_POLICY_INVALID');
 });
 
 test('seller publication activation is sandbox-only, explicit ACTIVATE and asynchronously inspectable', async () => {
