@@ -79,7 +79,7 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
       .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
       .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
     activateOffer: jest.fn().mockResolvedValue({
-      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+      offer_id: '123', command_id: null,
     }),
     getPublicationTasks: jest.fn().mockResolvedValue({
       tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
@@ -92,11 +92,11 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
     mode: 'activate', offer_ids: ['123'],
     activations: [{
       offer_id: '123', publication_status: 'ACTIVE', already_active: false,
-      tasks: [{ offer_id: '123', status: 'SUCCESS', error_codes: [] }],
+      tasks: [],
     }],
   });
   expect(api.activateOffer).toHaveBeenCalledWith('123');
-  expect(api.getPublicationTasks).toHaveBeenCalledWith('123e4567-e89b-42d3-a456-426614174000');
+  expect(api.getPublicationTasks).not.toHaveBeenCalled();
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
 });
 
@@ -129,7 +129,7 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
     ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
     ensureGoldenReturnPolicy: jest.fn().mockResolvedValue({ id: RETURN_POLICY_ID, created: false }),
     activateOffer: jest.fn().mockResolvedValue({
-      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+      offer_id: '123', command_id: null,
     }),
     getPublicationTasks: jest.fn().mockResolvedValue({
       tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
@@ -146,6 +146,7 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
   });
   expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
   expect(api.activateOffer).toHaveBeenCalledTimes(1);
+  expect(api.getPublicationTasks).not.toHaveBeenCalled();
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
   expect(d.importCatalog).toHaveBeenCalledTimes(1);
 });
