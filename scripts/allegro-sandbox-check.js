@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional seller preparation/activation/import flags
+ * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional contract/preparation/activation/import flags
  * @outputs       sanitized seller publication, provider contract, catalog and purchasing evidence
  * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/allegro-sandbox-client.js, scripts/provider-contract-proof.js
  * @used-by       operator CLI
@@ -139,11 +139,15 @@ function buildSellerContractProof(settings) {
   });
 }
 
-async function probeSellerContract(api = sandboxClient) {
+async function observeSellerContract(api = sandboxClient) {
   const settings = await api.getSellerSettings();
-  const proof = buildSellerContractProof(settings);
-  assertThrough(proof, 'P1');
-  return { settings, proof };
+  return { settings, proof: buildSellerContractProof(settings) };
+}
+
+async function probeSellerContract(api = sandboxClient) {
+  const observed = await observeSellerContract(api);
+  assertThrough(observed.proof, 'P1');
+  return observed;
 }
 
 function selectSellerSettings(settings) {
@@ -251,12 +255,27 @@ async function run(argv, {
   activationPollMs = ACTIVATION_POLL_MS,
 } = {}) {
   const golden = argv.includes('--golden');
+  const contractOnly = argv.includes('--contract');
   if (golden && argv.length !== 1) throw new Error('Usage: --golden doit être utilisé seul');
+  if (contractOnly && argv.length !== 1) throw new Error('Usage: --contract doit être utilisé seul');
+
+  if (contractOnly) {
+    const contract = await observeSellerContract(client);
+    let contractReady = true;
+    try { assertThrough(contract.proof, 'P1'); } catch { contractReady = false; }
+    return {
+      environment: 'sandbox', mode: 'contract', contract_ready: contractReady,
+      seeded: 0, offer_ids: [], contract_proof: summary(contract.proof), preparation: null, activations: [],
+      accepted: 0, invalid: [], checks: [], imported: null,
+      purchase_confirmed: false, notification_verified: false, invoice_verified: false,
+    };
+  }
+
   const importing = golden || argv.includes('--import');
   const preparing = golden || argv.includes('--prepare');
   const activating = golden || argv.includes('--activate');
   const count = golden ? 1 : seedCount(argv);
-  const plainArgs = argv.filter(arg => !['--golden', '--prepare', '--import', '--activate'].includes(arg) && !arg.startsWith('--seed='));
+  const plainArgs = argv.filter(arg => !['--golden', '--contract', '--prepare', '--import', '--activate'].includes(arg) && !arg.startsWith('--seed='));
   if (count && plainArgs.length) throw new Error('Usage: --seed et OFFER_ID sont mutuellement exclusifs');
 
   // Golden is composition, never discovery. Prove P0/P1 before creating a producer,
@@ -267,7 +286,7 @@ async function run(argv, {
     ? await seedOfferIds(count, client, env)
     : plainArgs.map(connector.offerId);
   if (!ids.length || ids.length > 100) {
-    throw new Error('Usage: node scripts/allegro-sandbox-check.js [--prepare] [--activate] [--import] [--seed=1..3 | OFFER_ID ...] | --golden');
+    throw new Error('Usage: node scripts/allegro-sandbox-check.js --contract | [--prepare] [--activate] [--import] [--seed=1..3 | OFFER_ID ...] | --golden');
   }
 
   const preparation = preparing ? await prepareOfferIds(ids, client, contract?.settings || null) : null;
@@ -290,6 +309,7 @@ async function run(argv, {
   }
   const mode = golden ? 'golden' : importing ? (activating ? 'activate_import' : 'import') : (activating ? 'activate' : (preparing ? 'prepare' : 'read'));
   return { environment: 'sandbox', mode,
+    contract_ready: contract ? true : null,
     seeded: count, offer_ids: ids, contract_proof: contract ? summary(contract.proof) : null, preparation, activations,
     accepted: fetched.products.length, invalid: fetched.invalid, checks, imported,
     purchase_confirmed: false, notification_verified: false, invoice_verified: false };
@@ -298,13 +318,15 @@ async function run(argv, {
 if (require.main === module) {
   run(process.argv.slice(2)).then(report => {
     console.log(JSON.stringify(report, null, 2));
-    if (report.invalid.length || !report.accepted || (report.imported && (report.imported.status >= 400 || report.imported.body?.rejected > 0 || report.imported.body?.accepted === 0))) process.exitCode = 1;
+    if ((report.mode === 'contract' && !report.contract_ready)
+      || report.invalid.length || (report.mode !== 'contract' && !report.accepted)
+      || (report.imported && (report.imported.status >= 400 || report.imported.body?.rejected > 0 || report.imported.body?.accepted === 0))) process.exitCode = 1;
   }).catch(error => { console.error(error.message); process.exitCode = 1; })
     .finally(async () => { await require('../db').pool.end(); process.exit(process.exitCode || 0); });
 }
 module.exports = {
   SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS, SEED_CANDIDATES_PER_SEARCH,
   seedCount, createdOfferId, seedOfferIds, sellerManagedShippingRate, eligibleReturnPolicy,
-  buildSellerContractProof, probeSellerContract, selectSellerSettings, prepareOfferIds,
+  buildSellerContractProof, observeSellerContract, probeSellerContract, selectSellerSettings, prepareOfferIds,
   sanitizedPublicationTasks, activateOfferIds, run,
 };
