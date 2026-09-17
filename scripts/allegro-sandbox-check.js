@@ -121,10 +121,46 @@ function buildSellerContractProof(settings) {
   const implied = impliedRows[0];
   const shippingFeaturesObserved = shippingRows.every(row => typeof row?.managed_by_allegro === 'boolean'
     && typeof row?.is_fulfillment === 'boolean');
+  const shippingCandidates = shippingRows.filter(row => row?.managed_by_allegro === false
+    && row?.is_fulfillment === false);
+  const shippingTypeObserved = shippingCandidates.every(row => row?.type === 'PHYSICAL' || row?.type === 'ELECTRONIC');
 
   return buildProof({
     provider: 'ALLEGRO',
     environment: 'SANDBOX',
+    conversation: {
+      operation: 'SELLER_OFFER_PREREQUISITES',
+      phases: {
+        EXPECTS: [
+          { id: 'STANDARD_SELLER_OFFER', state: 'KNOWN', evidence: 'PHYSICAL_NON_FULFILLMENT' },
+        ],
+        REQUIRES: [
+          { id: 'SHIPPING_RATE', state: 'KNOWN', evidence: 'ALLEGRO_OFFER_DELIVERY_CONTRACT' },
+          { id: 'RETURN_POLICY', state: 'KNOWN', evidence: 'ALLEGRO_AFTER_SALES_CONTRACT' },
+          { id: 'IMPLIED_WARRANTY', state: 'KNOWN', evidence: 'ALLEGRO_AFTER_SALES_CONTRACT' },
+        ],
+        SENDS: [
+          { id: 'SELLER_SETTINGS_READ', state: 'KNOWN', evidence: 'GET_SHIPPING_RETURN_WARRANTY' },
+        ],
+        RECEIVES: [
+          { id: 'SHIPPING_RATES', state: 'KNOWN', evidence: `${shippingRows.length}_RATES_OBSERVED` },
+          { id: 'RETURN_POLICIES', state: 'KNOWN', evidence: `${returnRows.length}_POLICIES_OBSERVED` },
+          { id: 'IMPLIED_WARRANTIES', state: 'KNOWN', evidence: `${impliedRows.length}_WARRANTIES_OBSERVED` },
+        ],
+        CONFIRMS: [
+          { id: 'SHIPPING_OWNERSHIP_AND_FULFILLMENT', state: shippingFeaturesObserved ? 'KNOWN' : 'UNKNOWN', evidence: `${shippingRows.length}_RATES_SANITIZED` },
+          { id: 'SHIPPING_TYPE', state: shippingTypeObserved ? 'KNOWN' : 'UNKNOWN', evidence: shippingTypeObserved ? `${shippingCandidates.length}_CANDIDATE_TYPES_OBSERVED` : 'CANDIDATE_DETAIL_READ_REQUIRED' },
+          { id: 'RETURN_POLICY_SHAPE', state: 'KNOWN', evidence: `${returnRows.length}_POLICIES_SANITIZED` },
+          { id: 'IMPLIED_WARRANTY_REFERENCE', state: 'KNOWN', evidence: `${impliedRows.length}_WARRANTIES_SANITIZED` },
+        ],
+        EXPOSES: [
+          { id: 'SELLER_MANAGED_PHYSICAL_RATE', state: 'KNOWN', evidence: shipping?.id || 'NONE_OBSERVED' },
+          { id: 'ELIGIBLE_RETURN_POLICY', state: 'KNOWN', evidence: returns?.id || 'NONE_OBSERVED' },
+          { id: 'IMPLIED_WARRANTY', state: 'KNOWN', evidence: implied?.id || 'NONE_OBSERVED' },
+          { id: 'OFFER_PREREQUISITES_READY', state: 'DERIVED', evidence: shipping?.id && returns?.id && implied?.id ? 'ALL_REQUIRED_REFERENCES_PRESENT' : 'ONE_OR_MORE_REQUIRED_REFERENCES_MISSING' },
+        ],
+      },
+    },
     stages: {
       P0: [
         { id: 'SELLER_MANAGED_SHIPPING_RATE', pass: Boolean(shipping?.id), evidence: shipping?.id || `${shippingRows.length}_RATES_OBSERVED` },
@@ -278,8 +314,8 @@ async function run(argv, {
   const plainArgs = argv.filter(arg => !['--golden', '--contract', '--prepare', '--import', '--activate'].includes(arg) && !arg.startsWith('--seed='));
   if (count && plainArgs.length) throw new Error('Usage: --seed et OFFER_ID sont mutuellement exclusifs');
 
-  // Golden is composition, never discovery. Prove P0/P1 before creating a producer,
-  // draft offer, publication command or canonical import.
+  // Golden is composition, never discovery. Prove conversation + P0/P1 before
+  // creating a producer, draft offer, publication command or canonical import.
   const contract = golden ? await probeSellerContract(client) : null;
 
   const ids = count
