@@ -4,10 +4,10 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        sandbox credentials, bounded read request, guarded seller draft seed/publication
- * @outputs       provider JSON, ephemeral access token
+ * @inputs        sandbox credentials, bounded read request, guarded seller draft/shipping seed/publication
+ * @outputs       provider JSON, bounded shipping capabilities, ephemeral access token
  * @depends       db.js, node:crypto
- * @used-by       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-purchase-reconciliation.js, scripts/allegro-sandbox-check.js
+ * @used-by       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-purchase-reconciliation.js, scripts/allegro-sandbox-check.js, scripts/allegro-shipping-rate-contract.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
  * @db-txn        owned
@@ -23,7 +23,10 @@ const KEY = 'allegro_sandbox';
 const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_PROVIDER_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
+const MONEY_RE = /^(?:0|[1-9][0-9]{0,6})\.[0-9]{2}$/;
+const WEIGHT_RE = /^(?:0|[1-9][0-9]{0,6})\.[0-9]{3}$/;
 const GOLDEN_PRODUCER_NAME = 'KOMERCE GOLDEN TEST ONLY';
+const GOLDEN_SHIPPING_RATE_NAME = 'Komerce Golden Test Only';
 const GOLDEN_PRODUCER_DATA = Object.freeze({
   tradeName: 'Komerce Golden Sandbox Manufacturer',
   address: Object.freeze({ countryCode: 'PL', street: 'Testowa 1', postalCode: '00-001', city: 'Warszawa' }),
@@ -66,6 +69,26 @@ function sellerSettingId(value, label) {
   return id;
 }
 
+function safeCountry(value) {
+  const country = String(value || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(country) ? country : null;
+}
+
+function safeMoney(value) {
+  const amount = String(value ?? '').trim();
+  return MONEY_RE.test(amount) ? amount : null;
+}
+
+function safeWeight(value) {
+  const weight = String(value ?? '').trim();
+  return WEIGHT_RE.test(weight) ? weight : null;
+}
+
+function safeDuration(value) {
+  const duration = String(value ?? '').trim().toUpperCase();
+  return duration.startsWith('P') && SAFE_PROVIDER_TOKEN_RE.test(duration) ? duration : null;
+}
+
 function safeSettingRows(rows, { includeType = false } = {}) {
   return (Array.isArray(rows) ? rows : []).slice(0, 60)
     .map(row => {
@@ -83,15 +106,89 @@ function safeShippingRateRows(rows) {
     .map(row => {
       const id = String(row?.id || '').trim().toLowerCase();
       if (!UUID_RE.test(id)) return null;
-      const type = String(row?.type || '').trim();
+      const type = String(row?.type || '').trim().toUpperCase();
       return {
         id,
-        type: SAFE_PROVIDER_TOKEN_RE.test(type) ? type : null,
+        type: ['PHYSICAL', 'ELECTRONIC'].includes(type) ? type : null,
+        dispatch_country: safeCountry(row?.dispatchCountry),
         managed_by_allegro: typeof row?.features?.managedByAllegro === 'boolean' ? row.features.managedByAllegro : null,
         is_fulfillment: typeof row?.features?.isFulfillment === 'boolean' ? row.features.isFulfillment : null,
       };
     })
     .filter(Boolean);
+}
+
+function safeShippingRateDetail(payload) {
+  const row = safeShippingRateRows([payload])[0];
+  if (!row) return null;
+  const rates = (Array.isArray(payload?.rates) ? payload.rates : []).slice(0, 60).map(rate => {
+    const methodId = String(rate?.deliveryMethod?.id || '').trim().toLowerCase();
+    if (!UUID_RE.test(methodId)) return null;
+    const quantity = Number(rate?.maxQuantityPerPackage);
+    const firstAmount = safeMoney(rate?.firstItemRate?.amount);
+    const firstCurrency = String(rate?.firstItemRate?.currency || '').trim().toUpperCase();
+    const weightSupported = rate?.maxPackageWeight != null;
+    const weightValue = weightSupported ? safeWeight(rate?.maxPackageWeight?.value) : null;
+    const weightUnit = weightSupported && SAFE_PROVIDER_TOKEN_RE.test(String(rate?.maxPackageWeight?.unit || '').trim())
+      ? String(rate.maxPackageWeight.unit).trim().toUpperCase() : null;
+    return {
+      delivery_method_id: methodId,
+      max_quantity_per_package: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null,
+      first_item_rate: {
+        amount: firstAmount,
+        currency: SAFE_PROVIDER_TOKEN_RE.test(firstCurrency) ? firstCurrency : null,
+      },
+      max_package_weight: weightSupported ? { value: weightValue, unit: weightUnit } : null,
+      shipping_time: rate?.shippingTime == null ? null : {
+        from: safeDuration(rate?.shippingTime?.from),
+        to: safeDuration(rate?.shippingTime?.to),
+      },
+    };
+  }).filter(Boolean);
+  return { ...row, rates };
+}
+
+function safeDeliveryMethodRows(rows) {
+  return (Array.isArray(rows) ? rows : []).slice(0, 500).map(row => {
+    const id = String(row?.id || '').trim().toLowerCase();
+    if (!UUID_RE.test(id)) return null;
+    const constraints = row?.shippingRatesConstraints || {};
+    const maxQuantity = Number(constraints?.maxQuantityPerPackage?.max);
+    const paymentPolicy = String(row?.paymentPolicy || '').trim().toUpperCase();
+    const currency = String(constraints?.firstItemRate?.currency || '').trim().toUpperCase();
+    const weightSupported = typeof constraints?.maxPackageWeight?.supported === 'boolean'
+      ? constraints.maxPackageWeight.supported : null;
+    return {
+      id,
+      payment_policy: SAFE_PROVIDER_TOKEN_RE.test(paymentPolicy) ? paymentPolicy : null,
+      dispatch_country: safeCountry(row?.dispatchCountry),
+      destination_country: safeCountry(row?.destinationCountry),
+      shipping_rates_constraints: {
+        allowed: typeof constraints?.allowed === 'boolean' ? constraints.allowed : null,
+        max_quantity_per_package_max: Number.isSafeInteger(maxQuantity) && maxQuantity > 0 ? maxQuantity : null,
+        max_package_weight: {
+          supported: weightSupported,
+          min: safeWeight(constraints?.maxPackageWeight?.min),
+          max: safeWeight(constraints?.maxPackageWeight?.max),
+          unit: SAFE_PROVIDER_TOKEN_RE.test(String(constraints?.maxPackageWeight?.unit || '').trim())
+            ? String(constraints.maxPackageWeight.unit).trim().toUpperCase() : null,
+        },
+        first_item_rate: {
+          min: safeMoney(constraints?.firstItemRate?.min),
+          max: safeMoney(constraints?.firstItemRate?.max),
+          currency: SAFE_PROVIDER_TOKEN_RE.test(currency) ? currency : null,
+        },
+        shipping_time: {
+          default: {
+            from: safeDuration(constraints?.shippingTime?.default?.from),
+            to: safeDuration(constraints?.shippingTime?.default?.to),
+          },
+          customizable: typeof constraints?.shippingTime?.customizable === 'boolean'
+            ? constraints.shippingTime.customizable : null,
+        },
+      },
+    };
+  }).filter(Boolean);
 }
 
 function safeReturnPolicyRows(rows) {
@@ -130,6 +227,41 @@ function safeProvider422Diagnostic(payload) {
   return safe.length ? `[${safe.join(',')}]` : '';
 }
 
+function goldenShippingRatePayload(input) {
+  if (!input || input.name !== GOLDEN_SHIPPING_RATE_NAME || input.type !== 'PHYSICAL' || input.dispatchCountry !== 'PL') {
+    throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_PAYLOAD_INVALID');
+  }
+  if (!Array.isArray(input.rates) || input.rates.length !== 1) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_RATES_INVALID');
+  const rate = input.rates[0];
+  const methodId = sellerSettingId(rate?.deliveryMethod?.id, 'DELIVERY_METHOD');
+  const quantity = Number(rate?.maxQuantityPerPackage);
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 999999) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_QUANTITY_INVALID');
+  const amount = safeMoney(rate?.firstItemRate?.amount);
+  if (!amount || String(rate?.firstItemRate?.currency || '').toUpperCase() !== 'PLN') throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_PRICE_INVALID');
+  const from = safeDuration(rate?.shippingTime?.from);
+  const to = safeDuration(rate?.shippingTime?.to);
+  if (!from || !to) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_TIME_INVALID');
+  if (Object.prototype.hasOwnProperty.call(rate, 'nextItemRate')) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_NEXT_ITEM_RATE_FORBIDDEN');
+  const normalized = {
+    name: GOLDEN_SHIPPING_RATE_NAME,
+    type: 'PHYSICAL',
+    dispatchCountry: 'PL',
+    rates: [{
+      deliveryMethod: { id: methodId },
+      maxQuantityPerPackage: quantity,
+      firstItemRate: { amount, currency: 'PLN' },
+      shippingTime: { from, to },
+    }],
+  };
+  if (rate?.maxPackageWeight != null) {
+    const value = safeWeight(rate.maxPackageWeight.value);
+    const unit = String(rate.maxPackageWeight.unit || '').trim().toUpperCase();
+    if (!value || !SAFE_PROVIDER_TOKEN_RE.test(unit)) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_WEIGHT_INVALID');
+    normalized.rates[0].maxPackageWeight = { value, unit };
+  }
+  return normalized;
+}
+
 function encrypt(token, key) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -158,7 +290,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     }
     if (!response.ok) {
       let diagnostic = '';
-      if (response.status === 403 || response.status === 422) {
+      if ([400, 403, 422].includes(response.status)) {
         try { diagnostic = safeProvider422Diagnostic(await response.json()); } catch { diagnostic = ''; }
       }
       throw new Error(`ALLEGRO_HTTP_${response.status}${diagnostic}`);
@@ -243,6 +375,24 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     if (!UUID_RE.test(id)) throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
     const url = new URL(`/order/checkout-forms/${id}`, API);
     return authorizedJson(c, url, { method: 'GET' });
+  }
+
+  async function getShippingRateDetail(shippingRateId) {
+    const c = configuration(env);
+    const id = sellerSettingId(shippingRateId, 'SHIPPING_RATE');
+    const payload = await authorizedJson(c, new URL(`/sale/shipping-rates/${id}`, API), { method: 'GET' });
+    const detail = safeShippingRateDetail(payload);
+    if (!detail || detail.id !== id) throw new Error('ALLEGRO_SANDBOX_SHIPPING_RATE_DETAIL_INVALID');
+    return detail;
+  }
+
+  async function getDeliveryMethods({ marketplace = 'allegro-pl' } = {}) {
+    const c = configuration(env);
+    if (marketplace !== 'allegro-pl') throw new Error('ALLEGRO_SANDBOX_DELIVERY_MARKETPLACE_INVALID');
+    const url = new URL('/sale/delivery-methods', API);
+    url.search = new URLSearchParams({ marketplace }).toString();
+    const payload = await authorizedJson(c, url, { method: 'GET' });
+    return { delivery_methods: safeDeliveryMethodRows(payload?.deliveryMethods) };
   }
 
   async function searchProducts(phrase, { limit = 10 } = {}) {
@@ -342,6 +492,19 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     };
   }
 
+  async function createGoldenShippingRate(payload) {
+    const c = seedConfiguration(env);
+    const body = goldenShippingRatePayload(payload);
+    const created = await authorizedJson(c, new URL('/sale/shipping-rates', API), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(body),
+    });
+    const detail = safeShippingRateDetail(created);
+    if (!detail?.id) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_CREATE_INVALID');
+    return detail;
+  }
+
   async function completeSeedOffer(offerId, { shippingRateId, returnPolicyId, impliedWarrantyId, responsibleProducerId }) {
     const c = seedConfiguration(env);
     const id = publicationOfferId(offerId);
@@ -415,11 +578,14 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
   return {
     get,
     getSellerOrder,
+    getShippingRateDetail,
+    getDeliveryMethods,
     searchProducts,
     inspectProductPublishability,
     ensureGoldenResponsibleProducer,
     createDraftOffer,
     getSellerSettings,
+    createGoldenShippingRate,
     completeSeedOffer,
     activateOffer,
     getPublicationTasks,
@@ -431,17 +597,22 @@ module.exports = {
   configuration,
   seedConfiguration,
   safeProvider422Diagnostic,
-  safeSettingRows, safeShippingRateRows, safeReturnPolicyRows,
+  safeSettingRows, safeShippingRateRows, safeShippingRateDetail, safeDeliveryMethodRows, safeReturnPolicyRows,
+  goldenShippingRatePayload,
   requiredProductParameterIds,
   GOLDEN_PRODUCER_NAME,
+  GOLDEN_SHIPPING_RATE_NAME,
   createClient,
   get: client.get,
   getSellerOrder: client.getSellerOrder,
+  getShippingRateDetail: client.getShippingRateDetail,
+  getDeliveryMethods: client.getDeliveryMethods,
   searchProducts: client.searchProducts,
   inspectProductPublishability: client.inspectProductPublishability,
   ensureGoldenResponsibleProducer: client.ensureGoldenResponsibleProducer,
   createDraftOffer: client.createDraftOffer,
   getSellerSettings: client.getSellerSettings,
+  createGoldenShippingRate: client.createGoldenShippingRate,
   completeSeedOffer: client.completeSeedOffer,
   activateOffer: client.activateOffer,
   getPublicationTasks: client.getPublicationTasks,

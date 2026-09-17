@@ -15,10 +15,12 @@ test('shipping rate sanitizer preserves only capability facts needed by the cont
 
   expect(rows).toEqual([{
     id: '41a15216-e03b-4b16-971d-6e141256ee67',
-    type: 'PHYSICAL', managed_by_allegro: true, is_fulfillment: true,
+    type: 'PHYSICAL', dispatch_country: null,
+    managed_by_allegro: true, is_fulfillment: true,
   }, {
     id: '11111111-1111-4111-8111-111111111111',
-    type: 'PHYSICAL', managed_by_allegro: false, is_fulfillment: false,
+    type: 'PHYSICAL', dispatch_country: null,
+    managed_by_allegro: false, is_fulfillment: false,
   }]);
   expect(JSON.stringify(rows)).not.toContain('provider free text');
 });
