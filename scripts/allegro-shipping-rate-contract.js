@@ -34,8 +34,13 @@ function shippingRateDecision(detail) {
 
 function deliveryMethodDecision(method) {
   if (!method) return 'UNKNOWN';
-  if (method.dispatch_country == null || method.destination_country == null || method.payment_policy == null) return 'UNKNOWN';
-  if (method.dispatch_country !== 'PL' || method.destination_country !== 'PL' || method.payment_policy !== 'IN_ADVANCE') return 'REJECTED';
+  // Allegro's delivery-method contract defines dispatchCountry=null as
+  // "from any country". That is a KNOWN capability and therefore includes PL.
+  if (method.destination_country == null || method.payment_policy == null) return 'UNKNOWN';
+  const dispatchCountry = method.dispatch_country == null ? 'ANY' : method.dispatch_country;
+  if (!['ANY', 'PL'].includes(dispatchCountry)
+    || method.destination_country !== 'PL'
+    || method.payment_policy !== 'IN_ADVANCE') return 'REJECTED';
 
   const c = method.shipping_rates_constraints || {};
   if (c.allowed == null) return 'UNKNOWN';
