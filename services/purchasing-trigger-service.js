@@ -6,12 +6,12 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/suppliers/supplier-order-identity.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/purchasing-canonical-money.js, services/suppliers/supplier-order-identity.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_orders, relais, suppliers
  * @db-write      alerts, purchase_orders
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
+ * @doctrine      resolve_before_behavior_change, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
  * @impact-areas  purchasing, supplier-integration
  * @version       2026-09
  */
@@ -22,10 +22,22 @@ const db = require('../db');
 const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
 const { blockedSupplierIdentity, normalizeIdentity } = require('./suppliers/supplier-order-identity');
+const { resolveCanonicalSupplierMoney } = require('./purchasing-canonical-money');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
 if (!ADMIN_WA) log.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
+
+function requireSupplierMoney(target) {
+  const amount = Number(target?.supplier_unit_price ?? target?.supplier_price_aed);
+  const currency = String(
+    target?.supplier_currency || (target?.supplier_price_aed != null ? 'AED' : '')
+  ).trim().toUpperCase();
+  if (!Number.isFinite(amount) || amount <= 0 || !/^[A-Z]{3}$/.test(currency)) {
+    throw new Error('SUPPLIER_MONEY_UNAVAILABLE');
+  }
+  return { amount, currency };
+}
 
 async function notifyAdminNoSupplier(order, item) {
   const msg = [
@@ -44,15 +56,16 @@ async function notifyAdminNoSupplier(order, item) {
 }
 
 async function notifyAdminManual(order, item, ps) {
-  const totalAed = (ps.supplier_price_aed * item.quantity).toFixed(2);
+  const money = requireSupplierMoney(ps);
+  const total = (money.amount * item.quantity).toFixed(2);
   const msg = [
     '🛒 KOMERCE — À commander',
     `Commande client : ${order.reference}`,
     `Produit : ${item.product_name} (x${item.quantity})`,
     `Fournisseur : ${ps.supplier_name} (${ps.platform})`,
     `SKU : ${ps.supplier_sku}`,
-    `Prix unitaire : ${ps.supplier_price_aed} AED`,
-    `Total : ${totalAed} AED`,
+    `Prix unitaire : ${money.amount} ${money.currency}`,
+    `Total : ${total} ${money.currency}`,
     ps.supplier_url ? `Lien : ${ps.supplier_url}` : '',
     '',
     '→ Confirmer sur le dashboard ou via :',
@@ -65,11 +78,12 @@ async function notifyAdminManual(order, item, ps) {
 }
 
 async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId) {
-  const totalAed = (ps.supplier_price_aed * item.quantity).toFixed(2);
+  const money = requireSupplierMoney(ps);
+  const total = (money.amount * item.quantity).toFixed(2);
   const msg = encodeURIComponent([
     `Bonjour ${ps.supplier_name},`, '', 'Je souhaite commander :',
     `- ${item.product_name} (x${item.quantity})`, `- Ref : ${ps.supplier_sku}`,
-    `- Total : ${totalAed} AED`, '', `Référence commande Komerce : ${order.reference}`,
+    `- Total : ${total} ${money.currency}`, '', `Référence commande Komerce : ${order.reference}`,
     'Livraison au Hub Dubai.', 'Merci de confirmer la disponibilité.',
   ].join('\n'));
   const waUrl = `https://wa.me/${ps.contact_phone}?text=${msg}`;
@@ -179,8 +193,10 @@ async function triggerPurchasing(orderId) {
       }
 
       let exactSku = null;
+      let canonicalMoney = null;
       try {
         exactSku = await loadExactSoldSku(client, item);
+        canonicalMoney = exactSku ? await resolveCanonicalSupplierMoney(client, exactSku) : null;
       } catch (itemErr) {
         await alertItemFailure(client, orderId, item, idx, itemErr);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });
@@ -203,16 +219,31 @@ async function triggerPurchasing(orderId) {
         }
 
         const triggerMode = ps.auto_order ? 'auto' : (ps.platform === 'whatsapp' ? 'whatsapp' : 'manual');
-        const purchaseTarget = exactSku ? { ...ps, supplier_sku: exactSku.supplier_sku } : ps;
+        const purchaseTarget = exactSku ? {
+          ...ps,
+          supplier_sku: exactSku.supplier_sku,
+          supplier_unit_price: canonicalMoney.unit_price,
+          supplier_currency: canonicalMoney.currency,
+        } : {
+          ...ps,
+          supplier_unit_price: Number(ps.supplier_price_aed),
+          supplier_currency: 'AED',
+        };
+        const money = requireSupplierMoney(purchaseTarget);
+        const unitPriceAed = money.currency === 'AED' ? money.amount : null;
+        const supplierUnitRef = exactSku ? canonicalMoney.supplier_unit_ref : null;
+        const supplierOrderIdentity = exactSku ? canonicalMoney.supplier_order_identity : null;
+
         const { rows: [po] } = await client.query(`
           INSERT INTO purchase_orders
             (order_id, order_item_id, supplier_id, product_supplier_id, product_sku_id,
-             supplier_sku, supplier_unit_ref, supplier_order_identity, qty, unit_price_aed, status, trigger_mode)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,'pending',$11) RETURNING *
+             supplier_sku, supplier_unit_ref, supplier_order_identity, qty,
+             unit_price_aed, supplier_unit_price, supplier_currency, status, trigger_mode)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,'pending',$13) RETURNING *
         `, [orderId, item.id || null, ps.supplier_id, ps.id, exactSku?.id || null,
-          purchaseTarget.supplier_sku, exactSku?.supplier_unit_ref || null,
-          exactSku?.supplier_order_identity ? JSON.stringify(exactSku.supplier_order_identity) : null,
-          item.quantity, ps.supplier_price_aed, triggerMode]);
+          purchaseTarget.supplier_sku, supplierUnitRef,
+          supplierOrderIdentity ? JSON.stringify(supplierOrderIdentity) : null,
+          item.quantity, unitPriceAed, money.amount, money.currency, triggerMode]);
 
         if (ps.auto_order) {
           const apiResult = await callSupplierAPI(purchaseTarget, item);
@@ -252,4 +283,4 @@ async function triggerPurchasing(orderId) {
   return { purchase_orders: results };
 }
 
-module.exports = { triggerPurchasing };
+module.exports = { triggerPurchasing, _requireSupplierMoney: requireSupplierMoney };
