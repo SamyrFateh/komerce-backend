@@ -11,7 +11,7 @@
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
  * @db-txn        owned
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md
  * @impact-areas  catalog, supplier-import, purchasing, secrets
  */
 'use strict';
@@ -74,6 +74,22 @@ function safeSettingRows(rows, { includeType = false } = {}) {
       const out = { id };
       if (includeType && SAFE_PROVIDER_TOKEN_RE.test(String(row?.type || '').trim())) out.type = String(row.type).trim();
       return out;
+    })
+    .filter(Boolean);
+}
+
+function safeShippingRateRows(rows) {
+  return (Array.isArray(rows) ? rows : []).slice(0, 60)
+    .map(row => {
+      const id = String(row?.id || '').trim().toLowerCase();
+      if (!UUID_RE.test(id)) return null;
+      const type = String(row?.type || '').trim();
+      return {
+        id,
+        type: SAFE_PROVIDER_TOKEN_RE.test(type) ? type : null,
+        managed_by_allegro: typeof row?.features?.managedByAllegro === 'boolean' ? row.features.managedByAllegro : null,
+        is_fulfillment: typeof row?.features?.isFulfillment === 'boolean' ? row.features.isFulfillment : null,
+      };
     })
     .filter(Boolean);
 }
@@ -320,7 +336,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
       authorizedJson(c, new URL('/after-sales-service-conditions/implied-warranties', API), { method: 'GET' }),
     ]);
     return {
-      shipping_rates: safeSettingRows(shipping?.shippingRates, { includeType: true }),
+      shipping_rates: safeShippingRateRows(shipping?.shippingRates),
       return_policies: safeReturnPolicyRows(returns?.returnPolicies),
       implied_warranties: safeSettingRows(implied?.impliedWarranties),
     };
@@ -415,7 +431,7 @@ module.exports = {
   configuration,
   seedConfiguration,
   safeProvider422Diagnostic,
-  safeSettingRows, safeReturnPolicyRows,
+  safeSettingRows, safeShippingRateRows, safeReturnPolicyRows,
   requiredProductParameterIds,
   GOLDEN_PRODUCER_NAME,
   createClient,
