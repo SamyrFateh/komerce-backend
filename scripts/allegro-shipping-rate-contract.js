@@ -53,8 +53,15 @@ function deliveryMethodDecision(method) {
   if (price.min == null || price.max == null) return 'UNKNOWN';
   if (Number(price.min) > Number(price.max)) return 'UNKNOWN';
 
-  const time = c.shipping_time?.default || {};
-  if (!time.from || !time.to) return 'UNKNOWN';
+  // Real Sandbox proof: customizable=false means Allegro owns shippingTime and
+  // rejects it in POST /sale/shipping-rates. We only need a default when the
+  // provider explicitly allows the seller to customize this field.
+  const shippingTime = c.shipping_time || {};
+  if (typeof shippingTime.customizable !== 'boolean') return 'UNKNOWN';
+  if (shippingTime.customizable === true) {
+    const time = shippingTime.default || {};
+    if (!time.from || !time.to) return 'UNKNOWN';
+  }
 
   const weight = c.max_package_weight || {};
   if (weight.supported == null) return 'UNKNOWN';
@@ -78,15 +85,17 @@ function buildCreatePayload(method) {
     deliveryMethod: { id: method.id },
     maxQuantityPerPackage: 1,
     firstItemRate: { amount: c.first_item_rate.min, currency: 'PLN' },
-    shippingTime: {
-      from: c.shipping_time.default.from,
-      to: c.shipping_time.default.to,
-    },
   };
   if (c.max_package_weight.supported === true) {
     rate.maxPackageWeight = {
       value: c.max_package_weight.min,
       unit: c.max_package_weight.unit,
+    };
+  }
+  if (c.shipping_time.customizable === true) {
+    rate.shippingTime = {
+      from: c.shipping_time.default.from,
+      to: c.shipping_time.default.to,
     };
   }
   return {
@@ -232,9 +241,7 @@ function readbackMatches(detail, methodId) {
       && Number.isSafeInteger(rate?.max_quantity_per_package)
       && rate.max_quantity_per_package >= 1
       && rate?.first_item_rate?.currency === 'PLN'
-      && rate?.first_item_rate?.amount
-      && rate?.shipping_time?.from
-      && rate?.shipping_time?.to);
+      && rate?.first_item_rate?.amount);
 }
 
 async function ensureShippingRate(api = client) {
