@@ -238,9 +238,6 @@ function goldenShippingRatePayload(input) {
   if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 999999) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_QUANTITY_INVALID');
   const amount = safeMoney(rate?.firstItemRate?.amount);
   if (!amount || String(rate?.firstItemRate?.currency || '').toUpperCase() !== 'PLN') throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_PRICE_INVALID');
-  const from = safeDuration(rate?.shippingTime?.from);
-  const to = safeDuration(rate?.shippingTime?.to);
-  if (!from || !to) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_TIME_INVALID');
   if (Object.prototype.hasOwnProperty.call(rate, 'nextItemRate')) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_NEXT_ITEM_RATE_FORBIDDEN');
   const normalized = {
     name: GOLDEN_SHIPPING_RATE_NAME,
@@ -250,9 +247,14 @@ function goldenShippingRatePayload(input) {
       deliveryMethod: { id: methodId },
       maxQuantityPerPackage: quantity,
       firstItemRate: { amount, currency: 'PLN' },
-      shippingTime: { from, to },
     }],
   };
+  if (rate?.shippingTime != null) {
+    const from = safeDuration(rate.shippingTime.from);
+    const to = safeDuration(rate.shippingTime.to);
+    if (!from || !to) throw new Error('ALLEGRO_SANDBOX_GOLDEN_SHIPPING_RATE_TIME_INVALID');
+    normalized.rates[0].shippingTime = { from, to };
+  }
   if (rate?.maxPackageWeight != null) {
     const value = safeWeight(rate.maxPackageWeight.value);
     const unit = String(rate.maxPackageWeight.unit || '').trim().toUpperCase();
