@@ -35,7 +35,7 @@ function eligibleMethod() {
       },
       first_item_rate: { min: '0.00', max: '14.99', currency: 'PLN' },
       shipping_time: {
-        default: { from: 'PT24H', to: 'PT24H' }, customizable: false,
+        default: { from: 'PT24H', to: 'PT72H' }, customizable: false,
       },
     },
   };
@@ -53,7 +53,7 @@ function eligibleRate(id = RATE_ID) {
       max_quantity_per_package: 1,
       first_item_rate: { amount: '0.00', currency: 'PLN' },
       max_package_weight: { value: '5.000', unit: 'KILOGRAM' },
-      shipping_time: { from: 'PT24H', to: 'PT24H' },
+      shipping_time: { from: 'PT24H', to: 'PT72H' },
     }],
   };
 }
@@ -82,9 +82,9 @@ test('seven managed Fulfillment rates are a known business gap, then delivery co
       maxQuantityPerPackage: 1,
       firstItemRate: { amount: '0.00', currency: 'PLN' },
       maxPackageWeight: { value: '5.000', unit: 'KILOGRAM' },
-      shippingTime: { from: 'PT24H', to: 'PT24H' },
     }],
   });
+  expect(JSON.stringify(inspected.create_payload)).not.toContain('shippingTime');
   expect(JSON.stringify(inspected.create_payload)).not.toContain('nextItemRate');
   expect(inspected.conversation_ready).toBe(true);
   expect(inspected.p0_ready).toBe(true);
@@ -178,10 +178,24 @@ test('known absence of a compatible delivery method blocks P0 without pretending
   expect(api.createGoldenShippingRate).not.toHaveBeenCalled();
 });
 
-test('delivery method constraints fail closed when a decision-relevant field is absent', () => {
+test('delivery method constraints fail closed when shipping-time authority is unknown', () => {
   const method = eligibleMethod();
-  method.shipping_rates_constraints.shipping_time.default.from = null;
+  method.shipping_rates_constraints.shipping_time.customizable = null;
   expect(deliveryMethodDecision(method)).toBe('UNKNOWN');
+});
+
+test('non-customizable shipping time is provider-owned and its default is not sent', () => {
+  const method = eligibleMethod();
+  method.shipping_rates_constraints.shipping_time.default = { from: null, to: null };
+  expect(deliveryMethodDecision(method)).toBe('ELIGIBLE');
+  expect(buildCreatePayload(method).rates[0]).not.toHaveProperty('shippingTime');
+});
+
+test('customizable shipping time is sent using the provider default bounds', () => {
+  const method = eligibleMethod();
+  method.shipping_rates_constraints.shipping_time.customizable = true;
+  expect(deliveryMethodDecision(method)).toBe('ELIGIBLE');
+  expect(buildCreatePayload(method).rates[0].shippingTime).toEqual({ from: 'PT24H', to: 'PT72H' });
 });
 
 test('delivery dispatchCountry null is a known ANY-country capability and includes PL', () => {
