@@ -167,6 +167,9 @@ test('one-command Golden proves P0/P1 before seed, then prepares, activates and 
       stages: [
         { id: 'P0', status: 'PASS' },
         { id: 'P1', status: 'PASS' },
+        { id: 'P2', status: 'BLOCKED' },
+        { id: 'P3', status: 'BLOCKED' },
+        { id: 'P4', status: 'BLOCKED' },
       ],
     },
     preparation: { offers: [{ offer_id: '123', delivery_bound: true }] },
