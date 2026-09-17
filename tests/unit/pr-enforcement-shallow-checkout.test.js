@@ -26,10 +26,10 @@ describe('PR enforcement — shallow checkout ratchet', () => {
     expect(targetedFetches).toHaveLength(3);
   });
 
-  test('les quatre checkouts concernés restent explicitement shallow', () => {
-    // changes, migrations, boutique, governance.
+  test('les cinq checkouts concernés restent explicitement shallow', () => {
+    // changes, migrations, from_scratch, boutique, governance.
     const shallow = workflow.match(/fetch-depth: 1/g) || [];
-    expect(shallow).toHaveLength(4);
+    expect(shallow).toHaveLength(5);
   });
 
   test('migration/schema fait un seul fetch blobless head+base pour restaurer la baseline', () => {
