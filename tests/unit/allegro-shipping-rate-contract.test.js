@@ -183,3 +183,10 @@ test('delivery method constraints fail closed when a decision-relevant field is 
   method.shipping_rates_constraints.shipping_time.default.from = null;
   expect(deliveryMethodDecision(method)).toBe('UNKNOWN');
 });
+
+test('delivery dispatchCountry null is a known ANY-country capability and includes PL', () => {
+  const method = eligibleMethod();
+  method.dispatch_country = null;
+  expect(deliveryMethodDecision(method)).toBe('ELIGIBLE');
+  expect(buildCreatePayload(method)).toMatchObject({ type: 'PHYSICAL', dispatchCountry: 'PL' });
+});
