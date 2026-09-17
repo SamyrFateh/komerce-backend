@@ -1,12 +1,42 @@
 'use strict';
 jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
-const { createClient, configuration, seedConfiguration, GOLDEN_PRODUCER_NAME } = require('../../services/suppliers/allegro-sandbox-client');
+const {
+  createClient, configuration, seedConfiguration, safeReturnPolicyRows, GOLDEN_PRODUCER_NAME,
+} = require('../../services/suppliers/allegro-sandbox-client');
 const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
 const env = () => ({ KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1', ALLEGRO_SANDBOX_CLIENT_ID: 'app',
   ALLEGRO_SANDBOX_CLIENT_SECRET: 'secret', ALLEGRO_SANDBOX_USER_AGENT: 'KomerceTest/1',
   ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32), ALLEGRO_SANDBOX_REFRESH_TOKEN: 'bootstrap' });
 const token = (suffix = '1') => ({ access_token: `access-${suffix}`, refresh_token: `refresh-${suffix}`, expires_in: 3600, token_type: 'bearer' });
 const ok = data => ({ ok: true, json: async () => data });
+
+test('return policy projection preserves only bounded activation criteria', () => {
+  expect(safeReturnPolicyRows([
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      isFulfillment: false,
+      availability: { range: 'FULL', restrictionCause: { name: 'provider detail' } },
+      withdrawalPeriod: 'P14D',
+      name: 'private seller label',
+    },
+    { id: 'not-a-uuid', isFulfillment: false },
+    { id: '22222222-2222-4222-8222-222222222222', availability: { range: 'unsafe value' } },
+  ])).toEqual([
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      is_fulfillment: false,
+      availability_range: 'FULL',
+      withdrawal_period: 'P14D',
+    },
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      is_fulfillment: null,
+      availability_range: null,
+      withdrawal_period: null,
+    },
+  ]);
+});
+
 function setup() {
   let row;
   let time = 0;
