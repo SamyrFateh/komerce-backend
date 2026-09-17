@@ -203,6 +203,14 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+      - name: Fetch full history for migration baseline resolution
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch --no-tags --filter=blob:none --unshallow origin \
+            "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
