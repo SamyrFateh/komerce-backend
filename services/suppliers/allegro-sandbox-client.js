@@ -329,7 +329,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
   }
 
   async function getSellerSettings() {
-    const c = seedConfiguration(env);
+    const c = configuration(env);
     const [shipping, returns, implied] = await Promise.all([
       authorizedJson(c, new URL('/sale/shipping-rates', API), { method: 'GET' }),
       authorizedJson(c, new URL('/after-sales-service-conditions/return-policies', API), { method: 'GET' }),
