@@ -17,6 +17,8 @@ but does **not** expose a buyer checkout-creation endpoint that Komerce can use 
 
 Official contracts: [OpenAPI](https://developer.allegro.pl/swagger.yaml),
 [API documentation](https://developer.allegro.pl/documentation).
+The cross-marketplace lessons learned from this first transactional boundary
+are recorded in `docs/ALLEGRO_REX_MARKETPLACE_TRANSACTION_CONTRACT.md`.
 Resources used by Komerce are deliberately bounded:
 
 - `GET /sale/offers`;
@@ -106,8 +108,10 @@ customer-purchasable offer and does not auto-publish anything.
 `--golden` is the one-command composition of one publishability-first seed,
 seller settings preparation, observed Allegro activation and bounded refinery
 import. Any missing prerequisite stops the flow before activation and import.
-Seller preparation selects a physical shipping rate and only a non-Fulfillment,
-fully available `P14D` return policy. The policy named `KOMERCE GOLDEN TEST ONLY`
+Seller preparation must select a seller-managed physical shipping rate that is
+explicitly compatible with the non-Fulfillment profile; `PHYSICAL` alone is not
+sufficient evidence. It also selects only a non-Fulfillment, fully available
+`P14D` return policy. The policy named `KOMERCE GOLDEN TEST ONLY`
 is reused by exact name or created once from the guarded staging runner; an
 existing namesake with incompatible semantics fails closed.
 When a Golden setup deliberately needs a controlled seller offer, the same
