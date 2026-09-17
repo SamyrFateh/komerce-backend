@@ -77,6 +77,84 @@ test('multi-line or malformed supplier order cannot certify the one-product Gold
   expect(() => reconciliation.verifyCheckoutForm(payload(), options({ quantity: 0 }))).toThrow('QUANTITY_INVALID');
 });
 
+test('discovery finds exactly one paid seller order matching SOI, quantity and native money', async () => {
+  const client = {
+    listSellerOrders: jest.fn().mockResolvedValue({
+      checkoutForms: [
+        payload(),
+        payload({
+          id: '11111111-1111-4111-8111-111111111111',
+          lineItems: [{ ...payload().lineItems[0], offer: { id: '999' } }],
+        }),
+      ],
+    }),
+  };
+  await expect(reconciliation.discoverCheckoutForm({
+    ...options(),
+    client,
+    expectedUnitPrice: 10,
+    expectedCurrency: 'PLN',
+    boughtAtGte: '2026-09-17T22:34:00.000Z',
+  })).resolves.toEqual({
+    checkoutFormId: checkoutId,
+    provider_status: 'READY_FOR_PROCESSING',
+    bought_at: '2026-09-16T10:00:00.000Z',
+  });
+  expect(client.listSellerOrders).toHaveBeenCalledWith({
+    status: 'READY_FOR_PROCESSING',
+    limit: 20,
+    boughtAtGte: '2026-09-17T22:34:00.000Z',
+  });
+});
+
+test('discovery is fail-closed on no match, ambiguity, malformed list or expected money', async () => {
+  const base = {
+    ...options(),
+    expectedUnitPrice: 10,
+    expectedCurrency: 'PLN',
+  };
+  await expect(reconciliation.discoverCheckoutForm({
+    ...base,
+    client: { listSellerOrders: jest.fn().mockResolvedValue({ checkoutForms: [] }) },
+  })).rejects.toThrow('ORDER_NOT_FOUND');
+
+  await expect(reconciliation.discoverCheckoutForm({
+    ...base,
+    client: { listSellerOrders: jest.fn().mockResolvedValue({ checkoutForms: [payload(), payload()] }) },
+  })).rejects.toThrow('ORDER_AMBIGUOUS');
+
+  await expect(reconciliation.discoverCheckoutForm({
+    ...base,
+    client: { listSellerOrders: jest.fn().mockResolvedValue({ nope: [] }) },
+  })).rejects.toThrow('DISCOVERY_RESPONSE_INVALID');
+
+  await expect(reconciliation.discoverCheckoutForm({
+    ...base,
+    expectedCurrency: 'EUR',
+    client: { listSellerOrders: jest.fn() },
+  })).rejects.toThrow('EXPECTED_CURRENCY_INVALID');
+
+  await expect(reconciliation.discoverCheckoutForm({
+    ...base,
+    expectedUnitPrice: 0,
+    client: { listSellerOrders: jest.fn() },
+  })).rejects.toThrow('EXPECTED_PRICE_INVALID');
+});
+
+test('discovery does not match a paid order with the wrong exact unit price', async () => {
+  const client = {
+    listSellerOrders: jest.fn().mockResolvedValue({
+      checkoutForms: [payload()],
+    }),
+  };
+  await expect(reconciliation.discoverCheckoutForm({
+    ...options(),
+    client,
+    expectedUnitPrice: 11,
+    expectedCurrency: 'PLN',
+  })).rejects.toThrow('ORDER_NOT_FOUND');
+});
+
 test('reconcile delegates only the checkout id to the sandbox client then validates locally', async () => {
   const client = { getSellerOrder: jest.fn().mockResolvedValue(payload()) };
   await expect(reconciliation.reconcile({ ...options(), client })).resolves.toMatchObject({ verified: true, supplier_order_id: checkoutId });
