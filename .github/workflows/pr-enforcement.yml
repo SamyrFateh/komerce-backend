@@ -83,6 +83,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          # fetch-depth: 0 requis — mêmes tests de gouvernance (baseline
+          # railway-live-schema.sql, cf. ci-migrate.js) que le job `integration`,
+          # qui utilise déjà fetch-depth: 0 pour la même raison. Sous shallow
+          # clone (défaut depth=1), `git log -1 -- <dump>` retombe sur HEAD
+          # lui-même — faux positif de baseline (incident constaté sur #1594).
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
