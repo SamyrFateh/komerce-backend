@@ -133,6 +133,28 @@ function identityPlanFields(identity) {
   };
 }
 
+/**
+ * Canonicalise the option projection carried by a sellable unit.
+ *
+ * An empty option object means "this unit has no variant dimensions". In the
+ * canonical SKU model, a product without variants is represented by the single
+ * default SKU whose variant_combo is SQL NULL — never by an empty JSON object.
+ *
+ * Keeping this rule at the promotion boundary also repairs historical `{}` rows
+ * on replay without changing supplier_sku/product_skus.id.
+ */
+function canonicalVariantCombo(optionValues) {
+  if (optionValues == null) return null;
+  if (
+    typeof optionValues === 'object'
+    && !Array.isArray(optionValues)
+    && Object.keys(optionValues).length === 0
+  ) {
+    return null;
+  }
+  return optionValues;
+}
+
 function planSkuReconciliation(existingSkus, sellableUnits) {
   if (!Array.isArray(existingSkus)) {
     const e = new Error('existingSkus doit être un tableau'); e.status = 422; throw e;
@@ -186,12 +208,13 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
     const stock = stockKnown ? unit.stock_available : 0;
     const existing = bySupplierSku.get(supplierSku);
     const orderIdentity = reconcileOrderIdentity(existing, incomingIdentity, supplierSku);
+    const variantCombo = canonicalVariantCombo(unit.option_values);
 
     if (!existing) {
       toCreate.push({
         supplier_sku: supplierSku,
         ...identityPlanFields(orderIdentity),
-        variant_combo: unit.option_values || null,
+        variant_combo: variantCombo,
         stock,
         stockKnown,
         source: 'SUPPLIER',
@@ -205,7 +228,7 @@ function planSkuReconciliation(existingSkus, sellableUnits) {
       id: existing.id,
       supplier_sku: supplierSku,
       ...identityPlanFields(orderIdentity),
-      variant_combo: unit.option_values || null,
+      variant_combo: variantCombo,
       stock,
       stockKnown,
       media_refs: unit.media_refs || null,
