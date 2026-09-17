@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveOfferPrerequisites } = require('../../services/suppliers/allegro-offer-prerequisites');
+const { resolveOfferPrerequisites } = require('../../scripts/allegro-offer-prerequisites-proof');
 
 const SHIPPING_ID = 'c5a73d48-2eda-42ad-abe1-0b2cf405bf9f';
 const RETURN_ID = '22222222-2222-4222-8222-222222222222';
