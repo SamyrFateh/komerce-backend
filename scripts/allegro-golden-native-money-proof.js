@@ -92,7 +92,8 @@ async function runGoldenNativeMoneyProof({
   });
   await responseJson(loginResponse);
   const cookie = authCookie(loginResponse);
-  const authHeaders = { Cookie: cookie };
+  const origin = new URL(apiUrl).origin;
+  const authHeaders = { Cookie: cookie, Origin: origin };
   const jsonHeaders = { ...authHeaders, 'content-type': 'application/json' };
 
   const supplierList = await responseJson(await fetchImpl(
