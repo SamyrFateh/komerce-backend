@@ -76,13 +76,15 @@ test('service sans WhatsApp garde request/callback dans sa surface dédiée', ()
   const slot = document.getElementById('k-modal-discovery-detail');
   expect(slot.querySelector('.k-service-detail-shell')).not.toBeNull();
   expect(slot.textContent).toContain('Service local');
-  expect(slot.textContent).toContain('Près de vous');
+  expect(slot.textContent).toContain('Disponible');
+  expect(slot.textContent).toContain('Votre demande');
+  expect(slot.textContent).toContain('Comment ça marche ?');
   expect(slot.textContent).toContain('Demander ce service');
   expect(slot.textContent).toContain('Être rappelé');
   expect(slot.textContent).toContain('Recherche et sourcing de pièces auto · Atelier Mutsamudu');
 });
 
-test('service WhatsApp affiche un CTA unique qui crée une Inquiry avant handoff', () => {
+test('service WhatsApp conserve les actions métier et crée une Inquiry avant handoff', () => {
   setupDiscoveryModalDetail();
   listeners['modal:discovery-opened']({
     kind: 'service', ref: 'svc-plomberie',
@@ -94,17 +96,45 @@ test('service WhatsApp affiche un CTA unique qui crée une Inquiry avant handoff
 
   const slot = document.getElementById('k-modal-discovery-detail');
   const whatsapp = slot.querySelector('[data-discovery-whatsapp]');
+  const callback = slot.querySelector('[data-discovery-select-action="callback"]');
   expect(whatsapp).not.toBeNull();
+  expect(callback).not.toBeNull();
   expect(whatsapp.textContent).toContain('Discuter sur WhatsApp');
   expect(slot.textContent).not.toContain('Ajouter au panier');
   expect(slot.textContent).not.toContain('Acheter maintenant');
-  expect(slot.querySelector('[data-discovery-select-action]')).toBeNull();
+
+  callback.click();
+  expect(slot.querySelector('[data-discovery-action-form="callback"]').hidden).toBe(false);
+  expect(mockRequestDiscovery).not.toHaveBeenCalled();
 
   whatsapp.click();
   expect(mockCloseModal).toHaveBeenCalledWith({ skipHistoryBack: true });
   expect(mockRequestDiscovery).toHaveBeenCalledWith(
     'service', 'svc-plomberie', expect.any(HTMLElement), null, 'request', null, 'whatsapp'
   );
+});
+
+test('la surface service décore le shell canonique puis nettoie ses classes à la fermeture', () => {
+  document.body.innerHTML = `
+    <div class="k-modal-overlay">
+      <div class="k-modal">
+        <div id="k-modal-discovery-detail" hidden></div>
+      </div>
+    </div>`;
+
+  renderDiscoveryModalDetail({
+    kind: 'service', ref: 'svc-plomberie',
+    detail: { title: 'Plomberie maison', actions: ['request'] },
+  });
+
+  const modal = document.querySelector('.k-modal');
+  const overlay = document.querySelector('.k-modal-overlay');
+  expect(modal.classList.contains('k-modal--service')).toBe(true);
+  expect(overlay.classList.contains('k-modal-overlay--service')).toBe(true);
+
+  clearDiscoveryModalDetail();
+  expect(modal.classList.contains('k-modal--service')).toBe(false);
+  expect(overlay.classList.contains('k-modal-overlay--service')).toBe(false);
 });
 
 test('les anciennes capacités convergent vers request/callback sans contact direct dans la fiche', () => {
