@@ -35,6 +35,36 @@ test('SOI absente: identité possible mais readiness non prouvée', () => {
   expect(unit.commandability).toMatchObject({ capability_identified: true, supplier_order_identity_present: false, ready_now: false });
 });
 
+test('unit.source_ref persistée par la résolution reste une identité déterministe', () => {
+  const soi = { provider: 'allegro', version: 1, payload: { environment: 'sandbox', offer_id: '7782182471' } };
+  const unit = buildCanonicalUnitProjection([
+    {
+      ...row('unit-1', '7782182471', '2026-09-17', {
+        supplier_unit_ref: '7782182471',
+        supplier_order_identity: soi,
+        stock_available: 10,
+        purchase_price: 29.9,
+        currency: 'PLN',
+        is_active: true,
+      }),
+      source_id: 'api:allegro',
+      adapter_type: 'allegro',
+    },
+  ], [{ namespace: 'api:allegro', kind: 'unit.source_ref', value: '7782182471' }]);
+
+  expect(unit.identity).toMatchObject({
+    deterministic: true,
+    ambiguity_preserved: false,
+    deterministic_refs: [{ namespace: 'api:allegro', kind: 'unit.source_ref', value: '7782182471' }],
+  });
+  expect(unit.current_state.supplier_order_identity).toEqual(soi);
+  expect(unit.commandability).toMatchObject({
+    capability_identified: true,
+    supplier_order_identity_present: true,
+    blockers: [],
+  });
+});
+
 test('sans ref déterministe: ambiguïté préservée et non commandable', () => {
   const unit = buildCanonicalUnitProjection([{ ...row('unit-1', null, '2026-01-01'), source_ref: null }]);
   expect(unit.identity).toMatchObject({ deterministic: false, ambiguity_preserved: true });
