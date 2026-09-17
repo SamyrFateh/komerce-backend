@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-06T04:33:07.960Z",
+  "generatedAt": "2026-09-17T06:28:32.585Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 550,
+  "count": 624,
   "routes": [
     {
       "method": "GET",
@@ -26,6 +26,46 @@
       "fullPath": "/api/admin/action-center/generate",
       "mountPrefix": "/api/admin/action-center",
       "localPath": "/generate",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/action-center/market/:marketCode",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/market/:marketCode",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/market/:marketCode/signals/:signalRef/acknowledge",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/market/:marketCode/signals/:signalRef/acknowledge",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/market/:marketCode/signals/:signalRef/resolve",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/market/:marketCode/signals/:signalRef/resolve",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/market/:marketCode/signals/:signalRef/snooze",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/market/:marketCode/signals/:signalRef/snooze",
       "routeFile": "routes/admin-action-center.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -837,6 +877,36 @@
         "bootstrap/api-routes.js",
         "routes/admin.js",
         "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/settlements",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/settlements",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/settlements/ready",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/settlements/ready",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/settlements/:settlementId/paid",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/settlements/:settlementId/paid",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
       ]
     },
     {
@@ -2042,6 +2112,36 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/charges",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/charges",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/commercial-prices",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/commercial-prices",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/corridor",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/corridor",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -2072,6 +2172,126 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/decision",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/decision",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/decision-policy",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/decision-policy",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/decision-policy/history",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/decision-policy/history",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/price-observations",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/price-observations/:observationRef/deactivate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price/activate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price/activation-preview",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/local-price/reset",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/simulate-impact",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/simulate-impact",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/structure-events",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/structure-events",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/structure-events",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/structure-events",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/products/:productRef/apply-price",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -2092,6 +2312,16 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/simulate-impact",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/simulate-impact",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/admin/workspaces/pricing/strategy",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -2106,6 +2336,26 @@
       "fullPath": "/api/admin/workspaces/pricing/strategy/apply",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/strategy/apply",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2256,6 +2506,26 @@
       "fullPath": "/api/admin/workspaces/sourcing/products/:productRef/update",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/products/:productRef/update",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/activate",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/activate",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/deactivate",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/deactivate",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -3289,10 +3559,30 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/hub/move",
+      "mountPrefix": "/api/hub",
+      "localPath": "/move",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/hub/orders/mark-ordered",
       "mountPrefix": "/api/hub",
       "localPath": "/orders/mark-ordered",
       "routeFile": "routes/hub-mark-ordered.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/hub/outcome",
+      "mountPrefix": "/api/hub",
+      "localPath": "/outcome",
+      "routeFile": "routes/hub.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -3322,6 +3612,16 @@
       "fullPath": "/api/hub/photo",
       "mountPrefix": "/api/hub",
       "localPath": "/photo",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/hub/revalidate",
+      "mountPrefix": "/api/hub",
+      "localPath": "/revalidate",
       "routeFile": "routes/hub.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -3379,10 +3679,60 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/hub/transition",
+      "mountPrefix": "/api/hub",
+      "localPath": "/transition",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/hub/unit",
+      "mountPrefix": "/api/hub",
+      "localPath": "/unit",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/hub/volume",
       "mountPrefix": "/api/hub",
       "localPath": "/volume",
       "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/integrations/aliexpress/oauth/refresh",
+      "mountPrefix": "/api/integrations/aliexpress",
+      "localPath": "/oauth/refresh",
+      "routeFile": "routes/integrations-aliexpress.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/integrations/aliexpress/oauth/start",
+      "mountPrefix": "/api/integrations/aliexpress",
+      "localPath": "/oauth/start",
+      "routeFile": "routes/integrations-aliexpress.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/integrations/aliexpress/status",
+      "mountPrefix": "/api/integrations/aliexpress",
+      "localPath": "/status",
+      "routeFile": "routes/integrations-aliexpress.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -3563,6 +3913,326 @@
       "mountPrefix": "/api/loyalty",
       "localPath": "/users",
       "routeFile": "routes/loyalty.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-control-policy",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-control-policy",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-control-policy",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-control-policy",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/catalog/exposure",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/catalog/exposure",
+      "routeFile": "routes/market-delegation-catalog.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/catalog/exposure/:productId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/catalog/exposure/:productId",
+      "routeFile": "routes/market-delegation-catalog.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/client-cases/disputes",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/client-cases/disputes",
+      "routeFile": "routes/market-delegation-client-case.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/client-cases/disputes/:disputeId",
+      "routeFile": "routes/market-delegation-client-case.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/local-offer/physical-offers",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/local-offer/physical-offers",
+      "routeFile": "routes/market-delegation-local-offer.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/local-offer/physical-offers/:physicalOfferId",
+      "routeFile": "routes/market-delegation-local-offer.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/local-offer/services",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/local-offer/services",
+      "routeFile": "routes/market-delegation-local-offer.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/local-offer/services/:serviceId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/local-offer/services/:serviceId",
+      "routeFile": "routes/market-delegation-local-offer.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/providers",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/providers",
+      "routeFile": "routes/market-delegation-provider.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/providers",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/providers",
+      "routeFile": "routes/market-delegation-provider.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/providers/:providerId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/providers/:providerId",
+      "routeFile": "routes/market-delegation-provider.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/providers/:providerId/activate",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/providers/:providerId/activate",
+      "routeFile": "routes/market-delegation-provider.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/providers/:providerId/suspend",
+      "routeFile": "routes/market-delegation-provider.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais/:relaisId",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais/:relaisId/activate",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais/:relaisId/suspend",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/performance",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/performance",
+      "routeFile": "routes/market-delegation-performance.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/settlements",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/settlements",
+      "routeFile": "routes/market-delegation-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/settlements/:settlementId/receive",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/settlements/:settlementId/receive",
+      "routeFile": "routes/market-delegation-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/settlements/:settlementId/request",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/settlements/:settlementId/request",
+      "routeFile": "routes/market-delegation-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/structure-events",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/structure-events",
+      "routeFile": "routes/market-delegation-structure-event.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/structure-events",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/structure-events",
+      "routeFile": "routes/market-delegation-structure-event.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/team",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/team",
+      "routeFile": "routes/market-delegation-team.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/market-delegation/markets/:marketCode/team/:membershipId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/team/:membershipId",
+      "routeFile": "routes/market-delegation-team.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/market-delegation/markets/:marketCode/team/:membershipId/capabilities",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/team/:membershipId/capabilities",
+      "routeFile": "routes/market-delegation-team.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/team/invitations",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/team/invitations",
+      "routeFile": "routes/market-delegation-team.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/market-delegation/markets/:marketCode/team/invitations/:invitationId",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/team/invitations/:invitationId",
+      "routeFile": "routes/market-delegation-team.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/team/invitations/:token/accept",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/team/invitations/:token/accept",
+      "routeFile": "routes/market-delegation-team.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -3972,6 +4642,76 @@
       "mountPrefix": "/api/payments",
       "localPath": "/config",
       "routeFile": "routes/payments.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/payments/mobile-money/admin/pending",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/admin/pending",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/payments/mobile-money/availability",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/availability",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/payments/mobile-money/callback/:provider/:transactionId",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/callback/:provider/:transactionId",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/payments/mobile-money/initiate",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/initiate",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/payments/mobile-money/transactions/:transactionId",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/transactions/:transactionId",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/payments/mobile-money/transactions/:transactionId/refresh",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/transactions/:transactionId/refresh",
+      "routeFile": "routes/payments-mobile-money.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/payments/mobile-money/webhook/:provider",
+      "mountPrefix": "/api/payments/mobile-money",
+      "localPath": "/webhook/:provider",
+      "routeFile": "routes/payments-mobile-money.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

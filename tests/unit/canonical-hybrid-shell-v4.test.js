@@ -49,7 +49,7 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=1901');
     const shell = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
     const v3 = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js?v=2001');
-    const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2101');
+    const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2501');
     const sync = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
     expect(theme).toBeGreaterThanOrEqual(0);
     expect(shell).toBeGreaterThan(theme);
@@ -74,12 +74,15 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
   test('Policy V4 est syntaxiquement valide et formalise les rubriques Catalogue / Atelier', () => {
     const source = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     expect(() => new vm.Script(source)).not.toThrow();
-    expect(source).toContain("label: 'Sources'");
-    expect(source).toContain("label: 'Raffinerie'");
+    // Post #1559 (« business truth ») : Sources/Raffinerie/Boutique retirés du
+    // menu Catalogue, la nav ne doit plus promettre de destinations qui
+    // n'existent pas côté produit — voir @version 2026-09-v4.2-business-truth.
+    expect(source).toContain("label: 'Vue catalogue'");
     expect(source).toContain("label: 'Produits'");
-    expect(source).toContain("label: 'Boutique'");
     expect(source).toContain("label: 'Coûts'");
     expect(source).toContain("label: 'Stratégie'");
+    expect(source).not.toContain("label: 'Sources'");
+    expect(source).not.toContain("label: 'Raffinerie'");
     expect(source).toContain("data-shell', 'hybrid-sidebar-tabs");
   });
 
@@ -87,8 +90,11 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const source = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     expect(() => new vm.Script(source)).not.toThrow();
     expect(source).toContain('let lastHeader = null');
-    expect(source).toContain("'canonical-admin-topbar'");
-    expect(source).toContain("'canonical-admin-domain-tabs'");
+    // Depuis 57896f892 (dédup shell), topbar/domain-tabs sont ciblés via un
+    // sélecteur combiné plutôt qu'un id isolé — le comportement (destruction
+    // des projections avant reconstruction) est inchangé.
+    expect(source).toContain('#canonical-admin-topbar');
+    expect(source).toContain('#canonical-admin-domain-tabs');
     expect(source).toContain('nav._applyHybridShell');
     expect(source).toContain('MutationObserver');
   });
