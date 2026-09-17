@@ -4,12 +4,12 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        P3 offer prerequisite bundle, guarded Sandbox seed, canonical import
- * @outputs       active Allegro offer, imported SKU and canonical Purchasing HARD_STOP
- * @depends       scripts/allegro-offer-prerequisites-proof.js, scripts/allegro-sandbox-check.js, services/suppliers/canonical-unit-purchasing-gate.js
+ * @inputs        P3 offer prerequisite bundle, guarded Sandbox seed, explicit promotion price, canonical import
+ * @outputs       active Allegro offer, promoted SKU and canonical Purchasing HARD_STOP
+ * @depends       scripts/allegro-offer-prerequisites-proof.js, scripts/allegro-sandbox-check.js, services/sourcing-candidate-actions.js, services/suppliers/canonical-unit-purchasing-gate.js
  * @used-by       operator CLI before manual Allegro Sandbox buyer purchase
- * @db-read       supplier_oauth_connections, product_skus, canonical sourcing projection
- * @db-write      supplier_oauth_connections; guarded Sandbox offer setup; delegated canonical import writes
+ * @db-read       supplier_oauth_connections, sourcing_candidates, product_skus, canonical sourcing projection
+ * @db-write      supplier_oauth_connections; guarded Sandbox offer setup; delegated canonical import/promotion writes
  * @db-txn        delegated
  * @doctrine      docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md, docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
  * @impact-areas  catalog, purchasing, supplier-integration
@@ -22,6 +22,7 @@ const connector = require('../services/suppliers/connectors/allegro-connector');
 const fulfillmentAdapter = require('../services/suppliers/allegro-fulfillment-adapter');
 const sandboxClient = require('../services/suppliers/allegro-sandbox-client');
 const purchasingGate = require('../services/suppliers/canonical-unit-purchasing-gate');
+const candidateActions = require('../services/sourcing-candidate-actions');
 const db = require('../db');
 
 function selectedFromPrerequisites(prerequisites) {
@@ -39,6 +40,15 @@ function selectedFromPrerequisites(prerequisites) {
     return_policy_id: returnPolicyId,
     implied_warranty_id: impliedWarrantyId,
   };
+}
+
+function explicitPromotionPrice(argv) {
+  if (!Array.isArray(argv) || argv.length !== 1 || !String(argv[0]).startsWith('--price-kmf=')) {
+    throw new Error('Usage: node scripts/allegro-golden-prebuyer-proof.js --price-kmf=POSITIVE_NUMBER');
+  }
+  const value = Number(String(argv[0]).slice('--price-kmf='.length));
+  if (!Number.isFinite(value) || value <= 0) throw new Error('ALLEGRO_GOLDEN_PROMOTION_PRICE_INVALID');
+  return value;
 }
 
 async function prepareOfferIdsFromPrerequisites(ids, prerequisites, api = sandboxClient) {
@@ -60,6 +70,33 @@ async function prepareOfferIdsFromPrerequisites(ids, prerequisites, api = sandbo
     }));
   }
   return { selected, responsible_producer_id: producer.id, offers };
+}
+
+function assertCandidateIdentity(candidate, offerId) {
+  const units = Array.isArray(candidate?.normalized_source_contract?.sellable_units)
+    ? candidate.normalized_source_contract.sellable_units : [];
+  const exact = units.filter(unit => String(unit?.supplier_unit_ref || '') === String(offerId)
+    && String(unit?.supplier_sku || '') === `allegro-sandbox:${offerId}`
+    && unit?.supplier_order_identity?.provider === 'allegro'
+    && unit?.supplier_order_identity?.version === 1
+    && unit?.supplier_order_identity?.payload?.environment === 'sandbox'
+    && String(unit?.supplier_order_identity?.payload?.offer_id || '') === String(offerId));
+  if (exact.length !== 1) throw new Error(`ALLEGRO_GOLDEN_CANDIDATE_UNIT_NOT_EXACT_${exact.length}`);
+  return exact[0];
+}
+
+async function findExactImportedCandidate(offerId, query = db.query.bind(db)) {
+  const result = await query(`
+    SELECT id, supplier_name, supplier_product_id, state, product_id, normalized_source_contract
+      FROM sourcing_candidates
+     WHERE supplier_name = 'Allegro Sandbox'
+       AND supplier_product_id = $1
+     ORDER BY created_at
+  `, [String(offerId)]);
+  const rows = result.rows || [];
+  if (rows.length !== 1) throw new Error(`ALLEGRO_GOLDEN_IMPORTED_CANDIDATE_NOT_EXACT_${rows.length}`);
+  assertCandidateIdentity(rows[0], offerId);
+  return rows[0];
 }
 
 async function findExactImportedSku(offerId, query = db.query.bind(db)) {
@@ -94,12 +131,13 @@ async function run(argv, {
   fetchProducts = connector.fetchProducts,
   importCatalog,
   query = db.query.bind(db),
+  promoteCandidate = candidateActions.promoteCandidate,
   prepareCanonicalUnitPurchase = purchasingGate.prepareCanonicalUnitPurchase,
   sleepImpl,
   activationAttempts,
   activationPollMs,
 } = {}) {
-  if (argv.length) throw new Error('Usage: node scripts/allegro-golden-prebuyer-proof.js');
+  const priceKmf = explicitPromotionPrice(argv);
 
   // P4 composition starts only after the already-proven read-only P3 boundary.
   const p3 = await provePrerequisites(client);
@@ -129,6 +167,14 @@ async function run(argv, {
     throw new Error('ALLEGRO_GOLDEN_CANONICAL_IMPORT_FAILED');
   }
 
+  const candidate = await findExactImportedCandidate(offerId, query);
+  let promotion;
+  if (candidate.state === 'imported_to_catalog' && candidate.product_id) {
+    promotion = { candidate_id: candidate.id, product_id: candidate.product_id, skipped: true, reason: 'ALREADY_PROMOTED' };
+  } else {
+    promotion = await promoteCandidate(candidate.id, { price_kmf: priceKmf, enrichment_mode: 'source_only' }, null);
+  }
+
   const sku = await findExactImportedSku(offerId, query);
   const purchasing = await prepareCanonicalUnitPurchase({
     productSkuId: sku.id,
@@ -149,10 +195,13 @@ async function run(argv, {
     environment: 'sandbox',
     phase: 'PRE_BUYER',
     offer_id: offerId,
+    promotion_price_kmf: priceKmf,
     p3_contract_proof: p3.contract_proof,
     preparation,
     activations,
     imported,
+    candidate_id: candidate.id,
+    promotion,
     product_sku_id: sku.id,
     supplier_order_identity: sku.supplier_order_identity,
     purchasing,
@@ -169,7 +218,10 @@ if (require.main === module) {
 
 module.exports = {
   selectedFromPrerequisites,
+  explicitPromotionPrice,
   prepareOfferIdsFromPrerequisites,
+  assertCandidateIdentity,
+  findExactImportedCandidate,
   findExactImportedSku,
   run,
 };
