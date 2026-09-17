@@ -40,6 +40,7 @@ module.exports = {
       'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d\'achat sans exécution automatique',
       'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
+      'Shipping Capability Adapter Contract : les faits de livraison natifs d\'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus',
       'Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue',
     ],
     out: [
@@ -55,12 +56,15 @@ module.exports = {
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
     'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
     'docs/allegro-sandbox.md',
+    'docs/allegro-shipping-capability-p2.md',
   ],
 
   files: {
     services: [
       'services/suppliers/allegro-fulfillment-adapter.js',
       'services/suppliers/allegro-purchase-reconciliation.js',
+      'services/suppliers/allegro-shipping-capability-adapter.js',
+      'services/suppliers/shipping-capability-contract.js',
       'services/purchasing-trigger-service.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
@@ -84,12 +88,15 @@ module.exports = {
     ],
     scripts: [
       'scripts/allegro-sandbox-purchase-proof.js',
+      'scripts/allegro-shipping-capability-proof.js',
     ],
     tests: [
       'tests/unit/allegro-fulfillment-adapter.test.js',
       'tests/unit/allegro-purchase-reconciliation.test.js',
       'tests/unit/allegro-seller-order-read.test.js',
       'tests/unit/allegro-sandbox-purchase-proof.test.js',
+      'tests/unit/allegro-shipping-capability-adapter.test.js',
+      'tests/unit/allegro-shipping-capability-proof.test.js',
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/integration/purchasing-exact-sku-po.test.js',
       'tests/unit/purchasing.test.js',
@@ -147,6 +154,8 @@ module.exports = {
       { fn: 'resolveSupplierUnit', file: 'services/suppliers/supplier-order-identity.js' },
       { fn: 'validateAdapter', file: 'services/suppliers/supplier-fulfillment-adapter-contract.js' },
       { fn: 'evaluateSupplierFulfillmentReadiness', file: 'services/suppliers/supplier-fulfillment-readiness.js' },
+      { fn: 'normalizeCapability', file: 'services/suppliers/shipping-capability-contract.js' },
+      { fn: 'adaptShippingRate', file: 'services/suppliers/allegro-shipping-capability-adapter.js' },
       { fn: 'prepareCanonicalUnitPurchase', file: 'services/suppliers/canonical-unit-purchasing-gate.js' },
       { fn: 'compareLegacyCanonicalUnit', file: 'services/suppliers/canonical-unit-cutover-comparison.js' },
       { fn: 'reconcile', file: 'services/suppliers/allegro-purchase-reconciliation.js' },
@@ -190,6 +199,8 @@ module.exports = {
       test: 'tests/unit/supplier-order-identity.test.js' },
     { statement: 'tout adapter fulfillment est provider-scopé, traite un payload d\'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent',
       test: 'tests/unit/supplier-fulfillment-adapter-contract.test.js' },
+    { statement: 'une capacité de livraison provider ne franchit la frontière Purchasing que sous forme ShippingCapability canonique ; les champs natifs restent dans l\'adapter et tout fait décisionnel inconnu bloque au lieu d\'être inventé',
+      test: 'tests/unit/allegro-shipping-capability-adapter.test.js' },
     { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
     { statement: 'Allegro Sandbox peut être fulfillment-ready en exécution manuelle après identité + stock + prix live, tout en restant auto_order_ready=false et sans jamais invoquer de buyer placeOrder API',
