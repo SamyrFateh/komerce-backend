@@ -182,8 +182,9 @@ async function activateOfferIds(ids, api = sandboxClient, {
       if (publicationStatus === 'ACTIVE') break;
     }
 
-    const taskPayload = await api.getPublicationTasks(command.command_id);
-    const tasks = sanitizedPublicationTasks(taskPayload);
+    const tasks = command.command_id
+      ? sanitizedPublicationTasks(await api.getPublicationTasks(command.command_id))
+      : [];
     if (publicationStatus !== 'ACTIVE') {
       const taskStatus = tasks.map(task => task.status).filter(Boolean).join('_') || 'NO_TASK_STATUS';
       const errorCodes = [...new Set(tasks.flatMap(task => task.error_codes))].slice(0, 10);
