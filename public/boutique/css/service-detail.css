@@ -456,7 +456,6 @@
     position: absolute;
     top: 18px;
     right: 18px;
-    z-index: 20;
     width: auto;
     min-height: 0;
     padding: 0;
@@ -469,11 +468,11 @@
   #k-modal.k-modal--service #k-modal-nav,
   #k-modal.k-modal--service .k-modal-topbar-product,
   #k-modal.k-modal--service .k-modal-cart-btn {
-    display: none !important;
+    display: none;
   }
 
   #k-modal.k-modal--service .k-modal-topbar-right {
-    display: flex !important;
+    display: flex;
     gap: 0;
   }
 
