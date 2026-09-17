@@ -4,20 +4,21 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional seller preparation/activation/import flags
- * @outputs       sanitized seller publication, catalog and purchasing evidence
- * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/allegro-sandbox-client.js
+ * @inputs        explicit sandbox offer IDs or guarded bounded sandbox seed, optional contract/preparation/activation/import flags
+ * @outputs       sanitized seller publication, provider contract, catalog and purchasing evidence
+ * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/catalog-import-orchestrator.js, services/suppliers/allegro-sandbox-client.js, scripts/provider-contract-proof.js
  * @used-by       operator CLI
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections; delegated canonical import writes when --import
  * @db-txn        delegated
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md
  * @impact-areas  catalog, purchasing
  */
 'use strict';
 const connector = require('../services/suppliers/connectors/allegro-connector');
 const adapter = require('../services/suppliers/allegro-fulfillment-adapter');
 const sandboxClient = require('../services/suppliers/allegro-sandbox-client');
+const { buildProof, assertThrough, summary } = require('./provider-contract-proof');
 
 const SEED_PREFIX = 'Komerce Sandbox Seed';
 const SEED_SEARCHES = Object.freeze(['kabel usb', 'mysz bezprzewodowa', 'lampka led']);
@@ -97,14 +98,62 @@ async function seedOfferIds(count, api = sandboxClient, env = process.env) {
   return ids;
 }
 
-function selectSellerSettings(settings) {
+function sellerManagedShippingRate(settings) {
+  const rows = Array.isArray(settings?.shipping_rates) ? settings.shipping_rates : [];
+  return rows.find(row => row?.type === 'PHYSICAL'
+    && row?.managed_by_allegro === false
+    && row?.is_fulfillment === false);
+}
+
+function eligibleReturnPolicy(settings) {
+  const rows = Array.isArray(settings?.return_policies) ? settings.return_policies : [];
+  return rows.find(row => row?.is_fulfillment === false
+    && row?.availability_range === 'FULL'
+    && row?.withdrawal_period === 'P14D');
+}
+
+function buildSellerContractProof(settings) {
   const shippingRows = Array.isArray(settings?.shipping_rates) ? settings.shipping_rates : [];
   const returnRows = Array.isArray(settings?.return_policies) ? settings.return_policies : [];
   const impliedRows = Array.isArray(settings?.implied_warranties) ? settings.implied_warranties : [];
-  const shipping = shippingRows.find(row => row?.type === 'PHYSICAL') || shippingRows[0];
-  const returns = returnRows.find(row => row?.is_fulfillment === false
-    && row?.availability_range === 'FULL'
-    && row?.withdrawal_period === 'P14D');
+  const shipping = sellerManagedShippingRate(settings);
+  const returns = eligibleReturnPolicy(settings);
+  const implied = impliedRows[0];
+  const shippingFeaturesObserved = shippingRows.every(row => typeof row?.managed_by_allegro === 'boolean'
+    && typeof row?.is_fulfillment === 'boolean');
+
+  return buildProof({
+    provider: 'ALLEGRO',
+    environment: 'SANDBOX',
+    stages: {
+      P0: [
+        { id: 'SELLER_MANAGED_SHIPPING_RATE', pass: Boolean(shipping?.id), evidence: shipping?.id || `${shippingRows.length}_RATES_OBSERVED` },
+        { id: 'RETURN_POLICY', pass: Boolean(returns?.id), evidence: returns?.id || `${returnRows.length}_POLICIES_OBSERVED` },
+        { id: 'IMPLIED_WARRANTY', pass: Boolean(implied?.id), evidence: implied?.id || `${impliedRows.length}_WARRANTIES_OBSERVED` },
+      ],
+      P1: [
+        { id: 'SELLER_SETTINGS_API', pass: true, evidence: 'GET_SHIPPING_RETURN_WARRANTY_OK' },
+        { id: 'SHIPPING_CAPABILITY_FIELDS', pass: shippingFeaturesObserved, evidence: `${shippingRows.length}_RATES_SANITIZED` },
+      ],
+    },
+  });
+}
+
+async function observeSellerContract(api = sandboxClient) {
+  const settings = await api.getSellerSettings();
+  return { settings, proof: buildSellerContractProof(settings) };
+}
+
+async function probeSellerContract(api = sandboxClient) {
+  const observed = await observeSellerContract(api);
+  assertThrough(observed.proof, 'P1');
+  return observed;
+}
+
+function selectSellerSettings(settings) {
+  const shipping = sellerManagedShippingRate(settings);
+  const returns = eligibleReturnPolicy(settings);
+  const impliedRows = Array.isArray(settings?.implied_warranties) ? settings.implied_warranties : [];
   const implied = impliedRows[0];
   const missing = [];
   if (!shipping?.id) missing.push('SHIPPING_RATE');
@@ -118,8 +167,8 @@ function selectSellerSettings(settings) {
   };
 }
 
-async function prepareOfferIds(ids, api = sandboxClient) {
-  const selected = selectSellerSettings(await api.getSellerSettings());
+async function prepareOfferIds(ids, api = sandboxClient, observedSettings = null) {
+  const selected = selectSellerSettings(observedSettings || await api.getSellerSettings());
   const producer = await api.ensureGoldenResponsibleProducer();
   const offers = [];
   for (const rawId of ids) {
@@ -206,21 +255,41 @@ async function run(argv, {
   activationPollMs = ACTIVATION_POLL_MS,
 } = {}) {
   const golden = argv.includes('--golden');
+  const contractOnly = argv.includes('--contract');
   if (golden && argv.length !== 1) throw new Error('Usage: --golden doit être utilisé seul');
+  if (contractOnly && argv.length !== 1) throw new Error('Usage: --contract doit être utilisé seul');
+
+  if (contractOnly) {
+    const contract = await observeSellerContract(client);
+    let contractReady = true;
+    try { assertThrough(contract.proof, 'P1'); } catch { contractReady = false; }
+    return {
+      environment: 'sandbox', mode: 'contract', contract_ready: contractReady,
+      seeded: 0, offer_ids: [], contract_proof: summary(contract.proof), preparation: null, activations: [],
+      accepted: 0, invalid: [], checks: [], imported: null,
+      purchase_confirmed: false, notification_verified: false, invoice_verified: false,
+    };
+  }
+
   const importing = golden || argv.includes('--import');
   const preparing = golden || argv.includes('--prepare');
   const activating = golden || argv.includes('--activate');
   const count = golden ? 1 : seedCount(argv);
-  const plainArgs = argv.filter(arg => !['--golden', '--prepare', '--import', '--activate'].includes(arg) && !arg.startsWith('--seed='));
+  const plainArgs = argv.filter(arg => !['--golden', '--contract', '--prepare', '--import', '--activate'].includes(arg) && !arg.startsWith('--seed='));
   if (count && plainArgs.length) throw new Error('Usage: --seed et OFFER_ID sont mutuellement exclusifs');
+
+  // Golden is composition, never discovery. Prove P0/P1 before creating a producer,
+  // draft offer, publication command or canonical import.
+  const contract = golden ? await probeSellerContract(client) : null;
+
   const ids = count
     ? await seedOfferIds(count, client, env)
     : plainArgs.map(connector.offerId);
   if (!ids.length || ids.length > 100) {
-    throw new Error('Usage: node scripts/allegro-sandbox-check.js [--prepare] [--activate] [--import] [--seed=1..3 | OFFER_ID ...] | --golden');
+    throw new Error('Usage: node scripts/allegro-sandbox-check.js --contract | [--prepare] [--activate] [--import] [--seed=1..3 | OFFER_ID ...] | --golden');
   }
 
-  const preparation = preparing ? await prepareOfferIds(ids, client) : null;
+  const preparation = preparing ? await prepareOfferIds(ids, client, contract?.settings || null) : null;
   const activations = activating
     ? await activateOfferIds(ids, client, { sleepImpl, attempts: activationAttempts, pollMs: activationPollMs })
     : [];
@@ -240,7 +309,8 @@ async function run(argv, {
   }
   const mode = golden ? 'golden' : importing ? (activating ? 'activate_import' : 'import') : (activating ? 'activate' : (preparing ? 'prepare' : 'read'));
   return { environment: 'sandbox', mode,
-    seeded: count, offer_ids: ids, preparation, activations,
+    contract_ready: contract ? true : null,
+    seeded: count, offer_ids: ids, contract_proof: contract ? summary(contract.proof) : null, preparation, activations,
     accepted: fetched.products.length, invalid: fetched.invalid, checks, imported,
     purchase_confirmed: false, notification_verified: false, invoice_verified: false };
 }
@@ -248,12 +318,15 @@ async function run(argv, {
 if (require.main === module) {
   run(process.argv.slice(2)).then(report => {
     console.log(JSON.stringify(report, null, 2));
-    if (report.invalid.length || !report.accepted || (report.imported && (report.imported.status >= 400 || report.imported.body?.rejected > 0 || report.imported.body?.accepted === 0))) process.exitCode = 1;
+    if ((report.mode === 'contract' && !report.contract_ready)
+      || report.invalid.length || (report.mode !== 'contract' && !report.accepted)
+      || (report.imported && (report.imported.status >= 400 || report.imported.body?.rejected > 0 || report.imported.body?.accepted === 0))) process.exitCode = 1;
   }).catch(error => { console.error(error.message); process.exitCode = 1; })
     .finally(async () => { await require('../db').pool.end(); process.exit(process.exitCode || 0); });
 }
 module.exports = {
   SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS, SEED_CANDIDATES_PER_SEARCH,
-  seedCount, createdOfferId, seedOfferIds, selectSellerSettings, prepareOfferIds,
+  seedCount, createdOfferId, seedOfferIds, sellerManagedShippingRate, eligibleReturnPolicy,
+  buildSellerContractProof, observeSellerContract, probeSellerContract, selectSellerSettings, prepareOfferIds,
   sanitizedPublicationTasks, activateOfferIds, run,
 };

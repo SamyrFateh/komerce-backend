@@ -81,6 +81,38 @@ Native prices remain PLN in V2. Migration 235 adds nullable
 Finance configuration API/UI. Without a positive rate, valuation/import is
 blocked (`PLN_FX_RATE_REQUIRED`). This is not a payment or market currency change.
 
+## Contract proof first
+
+The provider contract proof doctrine is defined in
+`docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md`.
+
+Before a Golden run, execute the read-only P0/P1 probe:
+
+```sh
+node scripts/allegro-sandbox-check.js --contract
+```
+
+This command does not create a producer, draft offer, publication command,
+canonical import, purchase order or payment. It reads the seller prerequisites
+and emits a bounded `contract_proof` with `PASS` / `BLOCKED` stages.
+
+For the delivery contract, a usable classic seller tariff must be explicitly
+observed as all of:
+
+```text
+type = PHYSICAL
+managed_by_allegro = false
+is_fulfillment = false
+```
+
+A Fulfillment or Allegro-managed tariff is never selected by fallback. Missing
+capability fields are also fail-closed. The same probe verifies the required
+non-Fulfillment `P14D` return policy and an implied warranty.
+
+If P0 or P1 is blocked, the Golden is forbidden. The `--golden` runner repeats
+this proof before any mutating setup so a failed prerequisite cannot create new
+test data.
+
 ## Reproducible catalog check
 
 In the configured backend runtime:
@@ -106,10 +138,12 @@ customer-purchasable offer and does not auto-publish anything.
 
 `--golden` is the one-command composition of one publishability-first seed,
 seller settings preparation, observed Allegro activation and bounded refinery
-import. Any missing prerequisite stops the flow before activation and import.
-Seller preparation selects a physical shipping rate and only a non-Fulfillment,
-fully available `P14D` return policy; it fails closed instead of attaching the
-first policy returned by the account.
+import. It first re-runs the P0/P1 contract proof. Any missing prerequisite stops
+the flow before producer creation, draft creation, activation and import.
+Seller preparation selects only a seller-managed, non-Fulfillment physical
+shipping rate and a non-Fulfillment, fully available `P14D` return policy; it
+fails closed instead of attaching the first policy or tariff returned by the
+account.
 When a Golden setup deliberately needs a controlled seller offer, the same
 staging-only seed gate exposes an explicit operator action that sends Allegro's
 asynchronous publication command with hard-coded `ACTIVATE` for the exact offer
