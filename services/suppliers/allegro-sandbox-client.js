@@ -78,6 +78,23 @@ function safeSettingRows(rows, { includeType = false } = {}) {
     .filter(Boolean);
 }
 
+function safeReturnPolicyRows(rows) {
+  return (Array.isArray(rows) ? rows : []).slice(0, 60)
+    .map(row => {
+      const id = String(row?.id || '').trim().toLowerCase();
+      if (!UUID_RE.test(id)) return null;
+      const range = String(row?.availability?.range || '').trim().toUpperCase();
+      const withdrawalPeriod = String(row?.withdrawalPeriod || '').trim().toUpperCase();
+      return {
+        id,
+        is_fulfillment: typeof row?.isFulfillment === 'boolean' ? row.isFulfillment : null,
+        availability_range: SAFE_PROVIDER_TOKEN_RE.test(range) ? range : null,
+        withdrawal_period: /^P[1-9][0-9]{0,2}D$/.test(withdrawalPeriod) ? withdrawalPeriod : null,
+      };
+    })
+    .filter(Boolean);
+}
+
 function requiredProductParameterIds(rows) {
   return (Array.isArray(rows) ? rows : [])
     .filter(row => row?.requiredForProduct === true)
@@ -304,7 +321,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     ]);
     return {
       shipping_rates: safeSettingRows(shipping?.shippingRates, { includeType: true }),
-      return_policies: safeSettingRows(returns?.returnPolicies),
+      return_policies: safeReturnPolicyRows(returns?.returnPolicies),
       implied_warranties: safeSettingRows(implied?.impliedWarranties),
     };
   }
@@ -398,7 +415,7 @@ module.exports = {
   configuration,
   seedConfiguration,
   safeProvider422Diagnostic,
-  safeSettingRows,
+  safeSettingRows, safeReturnPolicyRows,
   requiredProductParameterIds,
   GOLDEN_PRODUCER_NAME,
   createClient,
