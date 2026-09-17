@@ -17,7 +17,7 @@ import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
 const SERVICE_STYLE_ID = 'k-service-detail-style';
-const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260916';
+const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260917';
 const STORED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
 const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
 let _installedSlot = null;
@@ -167,25 +167,96 @@ function buildContextFormHTML(kind, ref, detail, action) {
   </section>`;
 }
 
-function buildServiceFallbackActions(ref, detail) {
-  const actions = normalizeActions(detail);
+function buildServiceIdentity(detail) {
+  const provider = detail.provider_name
+    ? `<span class="k-service-detail-provider-name">${sanitize(detail.provider_name)}</span>`
+    : '';
+  const zone = detail.zone
+    ? `<span class="k-service-detail-zone"><span aria-hidden="true">⌖</span>${sanitize(detail.zone)}</span>`
+    : '';
+  if (!provider && !zone) return '';
+  return `<div class="k-service-detail-identity">${zone}${provider}</div>`;
+}
+
+function buildServiceHighlights(detail) {
+  const zoneLabel = detail.zone ? sanitize(detail.zone) : 'Votre zone';
+  const providerLabel = detail.provider_name ? sanitize(detail.provider_name) : 'Prestataire local';
   return `
-    <div class="k-service-detail-fallback">
-      <span class="k-modal-discovery-request-label">Que souhaitez-vous faire ?</span>
-      <div class="k-modal-discovery-actions" aria-label="Actions disponibles">
-        ${buildActionChooserHTML('service', ref, actions)}
+    <div class="k-service-detail-highlights" aria-label="Repères du service">
+      <div class="k-service-detail-highlight">
+        <span class="k-service-detail-highlight-icon" aria-hidden="true">◷</span>
+        <span><strong>Disponible localement</strong><small>Demande transmise au prestataire</small></span>
       </div>
-      ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
+      <div class="k-service-detail-highlight">
+        <span class="k-service-detail-highlight-icon" aria-hidden="true">⌖</span>
+        <span><strong>Dans votre zone</strong><small>${zoneLabel}</small></span>
+      </div>
+      <div class="k-service-detail-highlight">
+        <span class="k-service-detail-highlight-icon" aria-hidden="true">✓</span>
+        <span><strong>Prestataire identifié</strong><small>${providerLabel}</small></span>
+      </div>
     </div>`;
 }
 
-function buildServiceDetailHTML(ref, detail) {
-  ensureServiceDetailStyles();
-  const image = buildImage(detail, true);
-  const provider = buildProvider(detail);
-  const description = buildDescription(detail);
-  const whatsapp = detail.whatsapp_available === true
-    ? `<div class="k-service-detail-conversion">
+function buildServiceMediaTrust() {
+  return `
+    <div class="k-service-detail-media-trust" aria-label="Garanties de parcours Komerce">
+      <div><span aria-hidden="true">✓</span><strong>Service local</strong><small>proposé dans votre marché</small></div>
+      <div><span aria-hidden="true">#</span><strong>Référence Komerce</strong><small>créée avec votre demande</small></div>
+      <div><span aria-hidden="true">↗</span><strong>Échange direct</strong><small>avec le prestataire</small></div>
+    </div>`;
+}
+
+function buildServiceRequestGuide() {
+  return `
+    <section class="k-service-detail-request-guide" aria-labelledby="k-service-request-guide-title">
+      <h3 id="k-service-request-guide-title">Votre demande</h3>
+      <ul>
+        <li><span aria-hidden="true">✓</span>Expliquez simplement votre besoin</li>
+        <li><span aria-hidden="true">✓</span>Précisez le délai souhaité si nécessaire</li>
+        <li><span aria-hidden="true">✓</span>Le prestataire revient vers vous pour organiser la suite</li>
+      </ul>
+    </section>`;
+}
+
+function buildServiceHowItWorks() {
+  return `
+    <section class="k-service-detail-how" aria-labelledby="k-service-how-title">
+      <div class="k-service-detail-how-title"><span aria-hidden="true">i</span><strong id="k-service-how-title">Comment ça marche ?</strong></div>
+      <ol>
+        <li><span>1</span>Faites votre demande</li>
+        <li><span>2</span>Komerce crée sa référence</li>
+        <li><span>3</span>Échangez avec le prestataire</li>
+      </ol>
+    </section>`;
+}
+
+function buildServiceFallbackActions(ref, detail) {
+  const actions = normalizeActions(detail);
+  return `
+    <div class="k-service-detail-conversion k-service-detail-fallback">
+      <div class="k-service-detail-action-bar" aria-label="Actions disponibles">
+        ${buildActionChooserHTML('service', ref, actions)}
+      </div>
+      <div class="k-service-detail-action-forms">
+        ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
+      </div>
+    </div>`;
+}
+
+function buildServiceWhatsappActions(ref, detail) {
+  const actions = normalizeActions(detail);
+  return `
+    <div class="k-service-detail-conversion">
+      <div class="k-service-detail-action-bar" aria-label="Actions disponibles">
+        ${actions.map((action) => {
+          const label = sanitize(actionLabelFor(action, 'service'));
+          return `<button class="k-discovery-cta k-modal-discovery-cta k-modal-discovery-action is-secondary" type="button"
+            data-discovery-select-action="${sanitize(action)}"
+            data-discovery-kind="service"
+            data-discovery-ref="${sanitize(ref)}"
+            aria-expanded="false">${label}</button>`;
+        }).join('')}
         <button class="k-service-detail-whatsapp" type="button"
           data-discovery-whatsapp
           data-discovery-kind="service"
@@ -193,29 +264,43 @@ function buildServiceDetailHTML(ref, detail) {
           <span class="k-service-detail-whatsapp-mark" aria-hidden="true">↗</span>
           Discuter sur WhatsApp
         </button>
-        <p class="k-service-detail-handoff-note">Komerce crée d’abord votre demande et sa référence, puis ouvre la conversation WhatsApp avec le prestataire.</p>
-      </div>`
+      </div>
+      <div class="k-service-detail-action-forms">
+        ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
+      </div>
+      <p class="k-service-detail-handoff-note">Komerce crée d’abord votre demande et sa référence, puis ouvre la conversation WhatsApp avec le prestataire.</p>
+    </div>`;
+}
+
+function buildServiceDetailHTML(ref, detail) {
+  ensureServiceDetailStyles();
+  const image = buildImage(detail, true);
+  const identity = buildServiceIdentity(detail);
+  const description = buildDescription(detail);
+  const conversion = detail.whatsapp_available === true
+    ? buildServiceWhatsappActions(ref, detail)
     : buildServiceFallbackActions(ref, detail);
 
   return `
-    <div class="k-service-detail-shell">
-      <div class="k-service-detail-media">${image}</div>
+    <article class="k-service-detail-shell">
+      <div class="k-service-detail-left">
+        <div class="k-service-detail-media">${image}</div>
+        ${buildServiceMediaTrust()}
+      </div>
       <div class="k-service-detail-body">
-        <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
-          <span class="k-modal-discovery-badge k-modal-discovery-kind">Service local</span>
-          <span class="k-modal-discovery-badge">Près de vous</span>
+        <div class="k-service-detail-heading-row">
+          <span class="k-service-detail-eyebrow">Service local</span>
+          <span class="k-service-detail-availability"><span aria-hidden="true"></span>Disponible</span>
         </div>
         <h2 class="k-service-detail-title">${sanitize(detail.title)}</h2>
-        ${provider}
+        ${identity}
         ${description}
-        <div class="k-service-detail-divider" aria-hidden="true"></div>
-        <div class="k-service-detail-promise">
-          <strong>Échange direct avec le prestataire</strong>
-          <span>La conversation se fait sur WhatsApp. Komerce garde la demande comme point de référence.</span>
-        </div>
-        ${whatsapp}
+        ${buildServiceHighlights(detail)}
+        ${buildServiceRequestGuide()}
+        ${buildServiceHowItWorks()}
+        ${conversion}
       </div>
-    </div>`;
+    </article>`;
 }
 
 function buildPhysicalOfferDetailHTML(ref, detail) {
@@ -252,12 +337,20 @@ function buildDetailHTML(kind, ref, detail) {
     : buildPhysicalOfferDetailHTML(ref, detail);
 }
 
+function syncServiceShellClasses(slot, isService) {
+  const modal = slot.closest('.k-modal');
+  const overlay = slot.closest('.k-modal-overlay');
+  modal?.classList.toggle('k-modal--service', isService);
+  overlay?.classList.toggle('k-modal-overlay--service', isService);
+}
+
 export function renderDiscoveryModalDetail(payload) {
   const slot = document.getElementById(SLOT_ID);
   if (!slot || !payload) return false;
   const { kind, ref, detail } = payload;
   if ((kind !== 'service' && kind !== 'physical_offer') || !ref || !detail?.title) return false;
 
+  syncServiceShellClasses(slot, kind === 'service');
   slot.dataset.discoveryKind = kind;
   slot.innerHTML = buildDetailHTML(kind, ref, detail);
   slot.hidden = false;
@@ -267,6 +360,7 @@ export function renderDiscoveryModalDetail(payload) {
 export function clearDiscoveryModalDetail() {
   const slot = document.getElementById(SLOT_ID);
   if (!slot) return;
+  syncServiceShellClasses(slot, false);
   slot.hidden = true;
   slot.innerHTML = '';
   delete slot.dataset.discoveryKind;
