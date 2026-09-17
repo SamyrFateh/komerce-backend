@@ -111,8 +111,8 @@ describe('purchasing exact SKU procurement', () => {
 
     const result = await triggerPurchasing(ORDER.id);
 
-    expect(result.purchase_orders[0]).toMatchObject({
-      status: 'admin_notified', purchase_order_id: 'po1', supplier_unit_price: 29.9, supplier_currency: 'PLN',
+    expect(result.purchase_orders[0]).toEqual({
+      item: 'T-shirt', status: 'admin_notified', purchase_order_id: 'po1',
     });
     expect(resolveCanonicalSupplierMoney).toHaveBeenCalledWith(client, expect.objectContaining({ id: 'sku-black-m' }));
     expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2)');
